@@ -73,6 +73,9 @@ reap() {
 cleanup() {
   rc=$?
   trap - EXIT
+  if [[ -n "${PROXY_PID_FILE:-}" && -f "$PROXY_PID_FILE" ]]; then
+    reap "$(tr -d '[:space:]' <"$PROXY_PID_FILE")"
+  fi
   reap "$PROXY_PID"
   reap "$REF_PID"
   if [[ -n "${ELM_PID_DIR:-}" && -f "$ELM_PID_DIR/ircama.pid" ]]; then
@@ -134,24 +137,72 @@ stop_elm() {
   ELM_PID=""
 }
 
+PROXY_PID_FILE="$STATE/proxy.pid"
+
+# Every caller reads the log path out of this with `log="$(start_proxy …)"`, which runs the
+# whole function in a subshell — so `PROXY_PID=$!` was assigned in a child and lost. The
+# parent's `stop_proxy` then reaped an empty variable and killed nothing.
+#
+# That is not a leak, it is a wrong answer. The scenario proxy stayed on the port; the next
+# scenario's proxy failed to bind and exited; `wait_listen` saw the OLD one still listening
+# and returned success; and the next test ran against a proxy armed with the PREVIOUS
+# scenario's fault. A close-on-command run against a fragment-only proxy never sees its
+# fault and fails, having reported nothing about why.
+#
+# The pid crosses the subshell boundary in a file, and each scenario refuses to start until
+# the port is genuinely free.
 start_proxy() {
+  # `${extra[@]+…}` rather than a bare `"${extra[@]}"`: macOS ships bash 3.2, where an
+  # EMPTY array expanded under `set -u` is an unbound-variable error. The fragment-only
+  # scenario is the one caller that passes no extra flags, so on any maintainer's Mac this
+  # script died there before the proxy was ever launched — which is why the stale-proxy bug
+  # below reached CI without anyone being able to reproduce it locally.
   local extra=("$@")
   local log="$STATE/chaos-$RANDOM.jsonl"
   : >"$log"
+  if listening "$PROXY_PORT"; then
+    echo "Refusing: ${BIND}:${PROXY_PORT} is still occupied — a previous scenario's proxy" \
+         "was not stopped, so this scenario would test the wrong fault" >&2
+    return 1
+  fi
   "$PYTHON" tool/obd_test_rig/chaos_proxy.py \
     --listen-host "$BIND" --listen-port "$PROXY_PORT" \
     --upstream-host "$BIND" --upstream-port "$ELM_PORT" \
     --chunk-sizes 1,2,5,3 --delay-ms 1 \
     --log "$log" \
-    "${extra[@]}" >"$STATE/proxy.stdout" 2>"$STATE/proxy.stderr" &
-  PROXY_PID=$!
-  wait_listen "$PROXY_PORT"
+    ${extra[@]+"${extra[@]}"} >"$STATE/proxy.stdout" 2>"$STATE/proxy.stderr" &
+  local pid=$!
+  printf '%s' "$pid" >"$PROXY_PID_FILE"
+  if ! wait_listen "$PROXY_PORT"; then
+    echo "--- chaos proxy stderr ---" >&2
+    cat "$STATE/proxy.stderr" >&2 || true
+    return 1
+  fi
+  # The port being open is not proof that OUR process opened it.
+  if ! kill -0 "$pid" 2>/dev/null; then
+    echo "Refusing: the chaos proxy exited during startup while ${BIND}:${PROXY_PORT}" \
+         "is listening — something else owns that port" >&2
+    cat "$STATE/proxy.stderr" >&2 || true
+    return 1
+  fi
   echo "$log"
 }
 
 stop_proxy() {
+  if [[ -f "$PROXY_PID_FILE" ]]; then
+    reap "$(tr -d '[:space:]' <"$PROXY_PID_FILE")"
+    rm -f "$PROXY_PID_FILE"
+  fi
   reap "$PROXY_PID"
   PROXY_PID=""
+  # Killing the owner is not the same as the port being free again.
+  local i
+  for i in $(seq 1 50); do
+    listening "$PROXY_PORT" || return 0
+    sleep 0.1
+  done
+  echo "Refusing: ${BIND}:${PROXY_PORT} is still listening after the proxy was stopped" >&2
+  return 1
 }
 
 count_tests() {
