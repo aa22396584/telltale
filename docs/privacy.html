@@ -137,12 +137,22 @@ itself initiates is to the ELM327 adapter you configure. Recommended-adapter
 links open Shopee or a browser only after you tap them.</p>
 
 <h2>What we collect</h2>
-<p><strong>Nothing.</strong> We have no servers.</p>
+<p><strong>Nothing.</strong> Telltale does not collect personal data, and does not send any
+data to our servers or to third parties. We have no servers.</p>
 
 <h2>What the app stores on your device</h2>
-<p>Vehicle profile and its per-field source references, your custom PID definitions, the
-last adapter used, interface preferences, and a diagnostic transcript of the most recent
-session. These are written to the app's private storage and are not sent to our servers.</p>
+<p>The following are written to the app's private storage and are not sent to our
+servers:</p>
+<div class="wrap">
+<table>
+  <tr><th>What</th><th>Why</th></tr>
+  <tr><td>Your vehicle profile (displacement, mass, drag coefficient, and the per-field source of each)</td><td>Estimating power and fuel use needs them; the source references exist so a default is never presented as a manufacturer specification</td></tr>
+  <tr><td>Your custom PID definitions</td><td>You wrote them</td></tr>
+  <tr><td>The last adapter and Wi-Fi address used</td><td>So you do not have to find it again</td></tr>
+  <tr><td>Interface preferences (dark/light, gauge skin)</td><td>To remember what you chose</td></tr>
+  <tr><td>The diagnostic transcript (most recent session)</td><td>So you can export it for someone to read when a connection fails</td></tr>
+</table>
+</div>
 <p>The <strong>diagnostic transcript</strong> records the raw bytes exchanged with the
 adapter, including the VIN and fault codes the vehicle reports. The app never uploads it on
 its own; pressing Export hands it to another app that you choose.</p>
