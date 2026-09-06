@@ -8,6 +8,68 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+## 1.0.11 — 2026-09-07
+
+Google Play production target `1.0.11` / versionCode 12. GitHub community
+pre-release `v1.0.11-beta.1` (separate signing lineage). iOS App Store remains
+deferred until 2027.
+
+This is the release where the English interface is real. See the correction
+under `1.0.10` below.
+
+### Added
+
+- The interface reads in English. Connect, dashboard, gauges, fault codes,
+  freeze frame, the PID manager and editor, the powertrain battery catalog,
+  the telemetry screens, acceleration, settings and the Wear OS shell. The
+  message catalogue went from 53 entries to 907.
+- An English Play Store listing. There has never been one; the app has been on
+  Play in Traditional Chinese only.
+- Store screenshots in both listing languages, under `store/en-US/` and
+  `store/zh-TW/`.
+- The store listing copy is now in the repository under `store/metadata/`,
+  with `store/upload.sh` to publish it. It used to exist only inside a web
+  form, where no one could diff it or say when a sentence changed.
+- The project site is one page per language —
+  `iml1s.github.io/telltale/` stays Traditional Chinese and
+  `index.en.html` is English. The privacy policy stays one bilingual document
+  with an anchor per language, because Google Play registers exactly one
+  privacy-policy URL and a reader of either language has to be able to read it.
+
+### Fixed
+
+- The estimated-values panel named its air-mass and fuel sources in Chinese in
+  the English build — 「MAF 感測器」 in the middle of an otherwise English
+  dashboard, and in the screenshot on the store page. The gauge skin names had
+  the same problem, and so did the source label on a recorded telemetry
+  session.
+- A status pill with a long label overflowed at 320dp with large text instead
+  of wrapping. It wraps rather than truncates, because these pills give a
+  reason — "estimated", "unverified", "stale" — and half a reason is worse
+  than a taller pill.
+- The powertrain battery catalog joined command lists with the fullwidth
+  separator 「、」 in both languages, so an English reader saw
+  `Battery temperature 1、Battery temperature 2`. This one had shipped.
+- The estimate details dialog listed the vehicle assumptions it rests on in
+  Chinese — `車重 1500 kg（通用預設）；Cd 0.30…` — in the English build. The
+  sentence is composed for the telemetry export, where it stays Traditional
+  Chinese so that two people can compare one evidence file; rendering the
+  stored sentence on screen was the mistake. The exported text is unchanged,
+  byte for byte.
+- Settings offered its fuel types as 汽油 / 柴油 / 液化石油氣 (LPG) /
+  E85 酒精汽油 regardless of the chosen language.
+
+### Known
+
+- Wi-Fi route-binding failures and the Bluetooth and location permission labels
+  are still Chinese. They reach the connect screen when Android refuses to bind
+  a route or the reader declines a permission. Tracked in #45.
+- Ten load-bearing sentences ship correct English and have no test that would
+  fail if a translation reversed them. Named individually in #47.
+- Transcripts, evidence headers and telemetry CSV/JSON exports stay in
+  Traditional Chinese on purpose. An evidence file whose language depends on a
+  phone setting is one that two readers cannot compare. Tracked in #46.
+
 ## 1.0.10 — 2026-09-06
 
 Google Play production target `1.0.10` / versionCode 11. GitHub community
@@ -16,14 +78,24 @@ deferred until 2027.
 
 ### Added
 
-- English UI, with a language control on the connect screen (`Language / 語言`)
-  and in Settings. Choose English, Traditional Chinese, or follow the system.
-  This is the store build that includes that switch; `1.0.9` on Play and
-  GitHub `v1.0.9-beta.1` shipped before it landed.
+- A language control on the connect screen (`Language / 語言`) and in Settings:
+  English, Traditional Chinese, or follow the system — and the locale
+  resolution behind it.
 
 ### Fixed
 
 - Retryable startup failure uses its own title, not the “checking” copy.
+
+### Correction
+
+This entry originally read “English UI, with a language control…”. That was
+wrong, and it is left here rather than rewritten because the build carrying the
+claim is on Google Play production and people read it.
+
+What `1.0.10` actually shipped was the switch and the machinery: 53 translated
+messages against an app whose interface is 907. Choosing English moved the
+startup copy and little else; every screen stayed in Traditional Chinese. The
+English interface arrives in `1.0.11`.
 
 ## 1.0.9 — 2026-09-06
 
