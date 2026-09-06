@@ -17,6 +17,15 @@ Round 9 added a proxy in that socket that logs every byte and can hold a reply
 back, which is how the timing findings were tested and how one of them was
 found to have been testing nothing at all.
 
+## 2026-09-06 — 1.0.8 release APK, OBDBLE still unpowered
+
+Samsung `R5CX10VFFBA`: installed Play-upload-key `app-field-release.apk`
+(`com.cbstudio.telltale` 1.0.8 / versionCode 9). Connect screen remembered
+**OBDBLE** (`Bluetooth LE · AA:BB:CC:11:22:33`). Tap 直接連線 → app copy
+`無法連線到 OBDBLE。請確認轉接器已通電且在範圍內。` `dumpsys bluetooth_manager`
+still `ACL BR/EDR:N LE:N`. **Not** a field BLE/Classic/vehicle pass. When the
+dongle is powered, `cd app && tool/field_bt_verify/run.sh`.
+
 ## 2026-09-01 — OBDBLE ACL recheck + field_bt_verify harness
 
 Samsung `R5CX10VFFBA`: Bluetooth adapter **ON**, bonded **OBDBLE** /

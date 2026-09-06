@@ -42,6 +42,10 @@ GitHub APK 發布順序：
 這些步驟只宣告 GitHub community APK 發布。它不等於 Google Play
 production、不等於實車驗證，也不等於公開上架已可在每個區域下載。
 
+**iOS App Store：延到 2027。** 今年不要走 TestFlight 或正式送審。
+`DEVELOPMENT_TEAM` `ABHJVZBWQN` 是 Personal Team；付費 team `ZAZT4JZ625` 的
+Apple Distribution 憑證已 REVOKED，現有 ASC API key 回 401。
+
 ---
 
 ## 1. 先把 `pubspec.yaml` 的 `version:` 往上帶
@@ -56,15 +60,14 @@ Android 的 versionCode 完全由 `pubspec.yaml` 第 4 行的 `version: x.y.z+N`
 grep '^version:' pubspec.yaml
 ```
 
-截至 2026-08-20，**versionCode 1、2 已被 Google Play 消耗，3 與 4 已用於 GitHub
-的 `v1.0.2-beta.1` 與 `v1.0.3-beta.1`**（社群金鑰，沒上 Play，但版本號一樣不該
-重用）。Play 不接受
-重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
+截至 **2026-09-06**，Play production 已發布 **`1.0.8` / versionCode 9**（completed /
+`PUBLISHED`）。1–8 都已消耗（含 GitHub community 用過的號碼）；**下一版 `+N` 必須 > 9**。
+Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。
 
 ```bash
-# 2026-08-18 之後的下一版範例：1.0.1+2 → 1.0.2+3
+# 2026-09-06 之後的下一版範例：1.0.8+9 → 1.0.9+10
 ```
 
 版本名（`+` 左邊）是給使用者看的，versionCode（`+` 右邊）是給 Play 排序用的，
@@ -156,7 +159,7 @@ release 打包任務丟 `GradleException` 而不是靜靜退回 debug 金鑰。�
 
 1. 確認 `grep -n universal_ble pubspec.yaml` 有命中，而 `flutter_blue_plus` 只出現在
    解釋為什麼不用它的註解裡
-2. 依第 1 節把 `version:` bump（versionCode 只能往上，1 與 2 都已消耗）
+2. 依第 1 節把 `version:` bump（versionCode 只能往上，Play 已用到 9）
 3. 重新 `flutter build appbundle --release --flavor field`
 4. 上傳新 AAB 並確認軌道頁顯示的「有效草稿版本」就是它
 5. 走第 5 節的實機閘門，才輪到送審

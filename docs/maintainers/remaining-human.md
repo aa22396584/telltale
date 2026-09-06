@@ -1,15 +1,17 @@
-# Remaining human-only steps (2026-09-01)
+# Remaining human-only steps (2026-09-06)
 
-Machine-checkable wrap-up is on `origin/master` (`5b25bae`) and the
-public mirror `telltale` `origin/main` (`9d92848`). The app trees match
-(586 files, SHA-256 equal, publish-only `.github` / `store` / GitHub
-Pages excluded). None of the items below were claimed done.
+Play production **1.0.8 / versionCode 9 is PUBLISHED**. GitHub community
+pre-release is `v1.0.8-beta.1`. **iOS App Store is deferred until 2027** —
+do not TestFlight or submit this year (Personal Team `ABHJVZBWQN`; paid
+team `ZAZT4JZ625` Distribution cert REVOKED; ASC API 401).
+
+Public CI oracle remains `ImL1s/telltale`. Next Android `+N` must be **> 9**.
 
 Attached hardware at check time:
 
 - Phone: Galaxy S24 Ultra `R5CX10VFFBA` (`SM-S9280`)
 - Wear: Android emulator `emulator-5554` (`sdk_gwear_arm64`) only
-- No physical Wear OS watch, no BLE adapter on a watch, no Play Console session
+- No physical Wear OS watch; bonded **OBDBLE** exists but was unpowered on 2026-09-06
 
 ## Wear BLE Gate 0
 
@@ -31,24 +33,19 @@ on a real watch until a provisioning / Data Layer path exists.
 
 Preflight that does **not** need a Console click (current `origin/master`):
 
-- `pubspec.yaml` `version: 1.0.7+8` (versionCode 8; 1 and 2 are already used)
+- `pubspec.yaml` `version: 1.0.8+9` (Play production is 9; next upload must be > 9)
 - `applicationId` = `com.cbstudio.telltale`
 - BLE dependency is `universal_ble`; `flutter_blue_plus` is comment-only
 - Privacy policy URL in `docs/maintainers/release.md` is
   `https://iml1s.github.io/telltale/privacy.html` and that page loads
   (last updated 2026-08-29)
 
-Still human-only, per `docs/maintainers/release.md` §5–5.5:
+Phone Play **1.0.8 is done** (production completed / published). Remaining:
 
-1. Re-read Play Console for the highest consumed versionCode (do not guess)
-2. `flutter build appbundle --release --flavor field` with the real keystore
-3. Replace the **effective draft** bundle; do not submit an older uploaded AAB
-4. Physical-device walkthrough of every user-facing changelog flow on a
-   **release** APK, both themes
-5. At least one install from the internal testing track (Play App Signing
-   splits), which requires uninstalling a locally signed build
-6. Wear OS Play track (API 35+, 384×384 screenshots, Wear signing) is
-   separate and still unshipped
+1. Re-read Play Console for the highest consumed versionCode before the *next* bump (do not guess; currently 9)
+2. Wear OS Play track (API 35+, 384×384 screenshots, Wear signing) is still unshipped
+3. Store listing copy change (USABILITY-R2) was submitted 2026-09-06 and may still be in Play review
+4. Powered OBDBLE / vehicle field walk when the dongle is actually on
 
 Do not treat green `flutter test` / `flutter analyze` as Play-ready.
 
@@ -75,8 +72,7 @@ to start again. Do not treat a billing skip as a green private run.
 
 ## Dirty main worktree
 
-`/Users/iml1s/Documents/mine/torque` stays dirty at `2503abb` on purpose.
-Do not stash, checkout, or commit it. Shipping telemetry is
-`origin/master` (the Windows/Linux merge). The
-`.worktrees/telemetry-sessions` copy of that dirty tree is a backup
-of unshipped 2503abb WIP, not a second product branch.
+Resolved 2026-09-06: the unpublished local telemetry tree was snapshotted to
+`wip/local-telemetry-snapshot-20260906` (pushed) and `master` was
+fast-forwarded to `origin/master`. Do not treat that wip branch as product
+source — shipping code is `origin/master`.

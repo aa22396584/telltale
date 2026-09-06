@@ -12,7 +12,10 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## 1.0.8 — 2026-09-06
 
-GitHub pre-release `v1.0.8-beta.1`. Physical ELM327 / vehicle ECU still unverified.
+Google Play production `1.0.8` / versionCode 9 (`PUBLISHED`). GitHub community
+pre-release `v1.0.8-beta.1` (separate signing lineage). iOS App Store is deferred
+until 2027. S24 Ultra 1.0.8 release APK reached bonded OBDBLE but the dongle was
+unpowered (`無法連線到 OBDBLE`).
 
 ### Added
 
