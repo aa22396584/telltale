@@ -254,6 +254,111 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardWorkspaceTrends => '趨勢';
 
   @override
+  String get datumBadgeCommunityDecode => '社群解碼';
+
+  @override
+  String get datumBadgeDemo => '示範';
+
+  @override
+  String get datumBadgeEstimated => '估算';
+
+  @override
+  String get datumBadgeExperimental => '實驗';
+
+  @override
+  String get datumBadgeFieldVerified => '已驗證';
+
+  @override
+  String get datumBadgeInvalid => '無效';
+
+  @override
+  String get datumBadgeJustUpdated => '剛更新';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => '異常';
+
+  @override
+  String get datumBadgePartial => '部分';
+
+  @override
+  String get datumBadgeStale => '過期';
+
+  @override
+  String get datumBadgeTentativeDecode => '暫定解碼';
+
+  @override
+  String get datumBadgeUnverified => '未驗證';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => '本車未驗證';
+
+  @override
+  String get datumBadgeUserSupplied => '使用者提供';
+
+  @override
+  String get datumGapModelYearUnknown => '年式未知';
+
+  @override
+  String get datumGapNoCatalogMatch => '型錄無匹配';
+
+  @override
+  String get datumGapVinNotRead => 'VIN 未讀到';
+
+  @override
+  String get datumNextStepEstimateOnly => '只影響此估算，其他讀值照用';
+
+  @override
+  String get datumNextStepGenericObd => '可繼續通用 OBD，或手動選車、補參數';
+
+  @override
+  String get datumNextStepOtherReadings => '失敗只影響此項，其他讀值照用';
+
+  @override
+  String get datumNextStepRawOnly => '可看 raw / error，不可當成正常數值';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed => '假設尚未確認，仍可估算';
+
+  @override
+  String get datumReasonBusError => '匯流排錯誤';
+
+  @override
+  String get datumReasonFormulaError => '公式錯誤';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs => '油耗缺少必要輸入';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus => '標頭不符本車匯流排';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs => '馬力缺少必要輸入';
+
+  @override
+  String get datumReasonMalformedPacket => '壞封包，只可查看原文';
+
+  @override
+  String get datumReasonNoAnswer => '無回應，稍後重試';
+
+  @override
+  String get datumReasonNoReadingYet => '尚無讀值';
+
+  @override
+  String get datumReasonNonFiniteValue => '非有限數值';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept => '超出一般參考範圍，已保留';
+
+  @override
+  String get datumReasonPidUnsupported => '此車輛不支援這個 PID';
+
+  @override
+  String get datumReasonUnsafeService => '此服務不是唯讀查詢';
+
+  @override
+  String get datumReasonUnsafeServiceStopped => '此服務不是唯讀查詢，已停止發送';
+
+  @override
   String get datumStatusAssumptions => '假設';
 
   @override
@@ -2461,6 +2566,111 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
+  String get datumBadgeCommunityDecode => '社群解碼';
+
+  @override
+  String get datumBadgeDemo => '示範';
+
+  @override
+  String get datumBadgeEstimated => '估算';
+
+  @override
+  String get datumBadgeExperimental => '實驗';
+
+  @override
+  String get datumBadgeFieldVerified => '已驗證';
+
+  @override
+  String get datumBadgeInvalid => '無效';
+
+  @override
+  String get datumBadgeJustUpdated => '剛更新';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => '異常';
+
+  @override
+  String get datumBadgePartial => '部分';
+
+  @override
+  String get datumBadgeStale => '過期';
+
+  @override
+  String get datumBadgeTentativeDecode => '暫定解碼';
+
+  @override
+  String get datumBadgeUnverified => '未驗證';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => '本車未驗證';
+
+  @override
+  String get datumBadgeUserSupplied => '使用者提供';
+
+  @override
+  String get datumGapModelYearUnknown => '年式未知';
+
+  @override
+  String get datumGapNoCatalogMatch => '型錄無匹配';
+
+  @override
+  String get datumGapVinNotRead => 'VIN 未讀到';
+
+  @override
+  String get datumNextStepEstimateOnly => '只影響此估算，其他讀值照用';
+
+  @override
+  String get datumNextStepGenericObd => '可繼續通用 OBD，或手動選車、補參數';
+
+  @override
+  String get datumNextStepOtherReadings => '失敗只影響此項，其他讀值照用';
+
+  @override
+  String get datumNextStepRawOnly => '可看 raw / error，不可當成正常數值';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed => '假設尚未確認，仍可估算';
+
+  @override
+  String get datumReasonBusError => '匯流排錯誤';
+
+  @override
+  String get datumReasonFormulaError => '公式錯誤';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs => '油耗缺少必要輸入';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus => '標頭不符本車匯流排';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs => '馬力缺少必要輸入';
+
+  @override
+  String get datumReasonMalformedPacket => '壞封包，只可查看原文';
+
+  @override
+  String get datumReasonNoAnswer => '無回應，稍後重試';
+
+  @override
+  String get datumReasonNoReadingYet => '尚無讀值';
+
+  @override
+  String get datumReasonNonFiniteValue => '非有限數值';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept => '超出一般參考範圍，已保留';
+
+  @override
+  String get datumReasonPidUnsupported => '此車輛不支援這個 PID';
+
+  @override
+  String get datumReasonUnsafeService => '此服務不是唯讀查詢';
+
+  @override
+  String get datumReasonUnsafeServiceStopped => '此服務不是唯讀查詢，已停止發送';
 
   @override
   String get datumStatusAssumptions => '假設';

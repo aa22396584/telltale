@@ -525,6 +525,216 @@ abstract class AppLocalizations {
   /// **'Trends'**
   String get dashboardWorkspaceTrends;
 
+  /// EvidenceKind.community. A claim about the SOURCE of the decode, never about this car; it is always shown together with datumBadgeUnverifiedOnThisVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community decode'**
+  String get datumBadgeCommunityDecode;
+
+  /// DatumOrigin.demo. The number came from Telltale's own simulator, not from a vehicle. This has to be unmistakable: a simulated reading that passes for a live one is the worst thing this app can do.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated'**
+  String get datumBadgeDemo;
+
+  /// DatumOrigin.calculated. Computed from a vehicle profile, never read off the bus. Estimated is not measured, and the two must stay two different words.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated'**
+  String get datumBadgeEstimated;
+
+  /// EvidenceKind.experimental. Always shown with datumBadgeUnverifiedOnThisVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental'**
+  String get datumBadgeExperimental;
+
+  /// EvidenceKind.fieldVerified. Verified on a real vehicle, which is why the English says field rather than just verified — a catalog entry passing validation is not this.
+  ///
+  /// In en, this message translates to:
+  /// **'Field-verified'**
+  String get datumBadgeFieldVerified;
+
+  /// DatumQuality.invalid. The datum failed a structural check and may not be read as a value at all. Distinct from datumBadgeUnverified, which says nothing about the value.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid'**
+  String get datumBadgeInvalid;
+
+  /// The value arrived on the most recent poll. The opposite pole of datumBadgeStale; never render either as the other.
+  ///
+  /// In en, this message translates to:
+  /// **'Just updated'**
+  String get datumBadgeJustUpdated;
+
+  /// DatumQuality.outOfReferenceRange. A check was run against the definition's own minimum and maximum and the value fell outside it. Not merely 'unusual' — a check failed, and the reading is kept rather than hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of range'**
+  String get datumBadgeOutOfReferenceRange;
+
+  /// DatumQuality.partial. Something was not read. Partial is not all clear and must never read as a completed or fault-free result.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get datumBadgePartial;
+
+  /// DatumQuality.stale. The reading stopped updating. Stale is not live; a reading that stopped updating must never render as a current one.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale'**
+  String get datumBadgeStale;
+
+  /// DatumQuality.tentativeDecode. The bytes were decoded with a formula that is not confirmed for this vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tentative decode'**
+  String get datumBadgeTentativeDecode;
+
+  /// EvidenceKind.notTested and EvidenceKind.unknown. Nobody has checked this against a real vehicle. Unverified is not invalid and it is not verified; it is a statement about evidence, not about the number.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get datumBadgeUnverified;
+
+  /// The second half of the community and experimental pairs. The source may be corroborated elsewhere; nobody has driven it on THIS car. Never shorten to 'unverified' — the scope is the whole point.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified on this vehicle'**
+  String get datumBadgeUnverifiedOnThisVehicle;
+
+  /// DatumOrigin.userEntered and EvidenceKind.userSupplied. The definition came from the person holding the phone, so the app makes no claim about it.
+  ///
+  /// In en, this message translates to:
+  /// **'User-supplied'**
+  String get datumBadgeUserSupplied;
+
+  /// DatumGap.modelYearUnknown. One of the optional identification gaps listed on the dashboard session chip. None of them blocks generic OBD.
+  ///
+  /// In en, this message translates to:
+  /// **'Model year unknown'**
+  String get datumGapModelYearUnknown;
+
+  /// DatumGap.noCatalogMatch. The catalog holds no entry for this vehicle. Not a fault, and not a reason to stop reading generic OBD.
+  ///
+  /// In en, this message translates to:
+  /// **'No catalog match'**
+  String get datumGapNoCatalogMatch;
+
+  /// DatumGap.vinNotRead. A read outcome, never a claim that the vehicle has no VIN. VIN is on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'VIN not read'**
+  String get datumGapVinNotRead;
+
+  /// DatumNextStep.estimateOnlyOtherReadingsUnaffected. Scopes a failed estimate so nobody reads it as the session going wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'This affects only the estimate; the other readings still apply.'**
+  String get datumNextStepEstimateOnly;
+
+  /// DatumNextStep.genericObdContinues. Missing identification never blocks generic OBD, and this sentence is what says so.
+  ///
+  /// In en, this message translates to:
+  /// **'You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.'**
+  String get datumNextStepGenericObd;
+
+  /// DatumNextStep.otherReadingsUnaffected. One PID failing is not the session failing.
+  ///
+  /// In en, this message translates to:
+  /// **'The failure affects only this item; the other readings still apply.'**
+  String get datumNextStepOtherReadings;
+
+  /// DatumNextStep.rawOnlyNeverANumber. The raw bytes stay available for diagnosis, and the sentence exists to stop somebody reading them as a measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'The raw reply and the error can be inspected; neither may be read as a normal value.'**
+  String get datumNextStepRawOnly;
+
+  /// DatumReason.assumptionsUnconfirmed. docs/i18n/hedge-register.md entry 18: both halves are required. 'Unconfirmed' alone reads as an error and 'an estimate is shown' alone reads as a validated number.
+  ///
+  /// In en, this message translates to:
+  /// **'The assumptions are unconfirmed; an estimate is still shown.'**
+  String get datumReasonAssumptionsUnconfirmed;
+
+  /// PidFault.busError. A fault on the link, not a statement about the vehicle's capabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus error.'**
+  String get datumReasonBusError;
+
+  /// PidFault.formulaError. The definition's own equation failed, so the fault is in the app or the imported PID, not in the car.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula error.'**
+  String get datumReasonFormulaError;
+
+  /// DatumReason.fuelEstimateMissingInputs. Says the estimate could not be made, never that the vehicle uses no fuel.
+  ///
+  /// In en, this message translates to:
+  /// **'The fuel-use estimate is missing a required input.'**
+  String get datumReasonFuelEstimateMissingInputs;
+
+  /// PidFault.headerNotOnThisBus. A statement about the PID DEFINITION, deliberately kept apart from datumReasonPidUnsupported, which is a statement about the car. Merging them sends somebody looking at their vehicle for a problem that is in a field they can edit.
+  ///
+  /// In en, this message translates to:
+  /// **'The header does not match the bus this vehicle uses.'**
+  String get datumReasonHeaderNotOnThisBus;
+
+  /// DatumReason.horsepowerEstimateMissingInputs. Says the estimate could not be made, never that the engine produced no power.
+  ///
+  /// In en, this message translates to:
+  /// **'The horsepower estimate is missing a required input.'**
+  String get datumReasonHorsepowerEstimateMissingInputs;
+
+  /// The response did not parse. Nothing here may be shown as a number.
+  ///
+  /// In en, this message translates to:
+  /// **'Malformed packet; only the raw reply can be inspected.'**
+  String get datumReasonMalformedPacket;
+
+  /// PidFault.noAnswer. Temporary silence, and docs/i18n/hedge-register.md entry 16 requires it stay distinguishable from datumReasonPidUnsupported: silence is not a controller saying it lacks a PID.
+  ///
+  /// In en, this message translates to:
+  /// **'No response; try again shortly.'**
+  String get datumReasonNoAnswer;
+
+  /// docs/i18n/hedge-register.md entry 25. Explicitly not zero and not unsupported — the app's baseline refusal to print a number it does not have.
+  ///
+  /// In en, this message translates to:
+  /// **'No reading yet.'**
+  String get datumReasonNoReadingYet;
+
+  /// The formula produced NaN or an infinity, so there is no value to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a finite number.'**
+  String get datumReasonNonFiniteValue;
+
+  /// DatumQuality.outOfReferenceRange. Both halves matter: a check failed, AND the reading was not silently discarded or clamped.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside the usual reference range; kept as it was read.'**
+  String get datumReasonOutOfReferenceRangeKept;
+
+  /// PidFault.unsupported, the only state that justifies an assertion about the CAR. docs/i18n/hedge-register.md entry 16: it must stay distinguishable from datumReasonNoAnswer, which is temporary.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle does not support this PID.'**
+  String get datumReasonPidUnsupported;
+
+  /// PidFault.refusedUnsafeService as a reason on a datum.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is not a read-only query.'**
+  String get datumReasonUnsafeService;
+
+  /// The same fact plus the action taken. The app refused to transmit; nothing was written to the vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is not a read-only query, so it was not sent.'**
+  String get datumReasonUnsafeServiceStopped;
+
   /// No description provided for @datumStatusAssumptions.
   ///
   /// In en, this message translates to:

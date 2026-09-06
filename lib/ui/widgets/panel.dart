@@ -106,6 +106,7 @@ class StatusPill extends StatelessWidget {
     this.icon,
     this.tone = StatusTone.neutral,
     this.dense = false,
+    this.softWrap = false,
     super.key,
   });
 
@@ -113,6 +114,18 @@ class StatusPill extends StatelessWidget {
   final IconData? icon;
   final StatusTone tone;
   final bool dense;
+
+  /// Lets a long label run onto a second line instead of overflowing.
+  ///
+  /// Off by default, because a pill that reflows changes the height of every
+  /// row it sits in and most of them carry two or three words that never need
+  /// it. It is on for the per-value status badge, whose label is a list —
+  /// "Estimated · Unverified · Just updated" is three separate claims, and at
+  /// 200% text scaling on a 320dp screen the row it sits in has nowhere near
+  /// the width for them. Wrapping keeps all three; ellipsising would silently
+  /// drop the last one, and dropping "Unverified" or "Estimated" off the end
+  /// of a badge is exactly the failure this vocabulary exists to prevent.
+  final bool softWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -142,12 +155,26 @@ class StatusPill extends StatelessWidget {
             Icon(icon, size: dense ? 12 : 14, color: colour),
             const SizedBox(width: Spacing.xs + 1),
           ],
-          Text(
-            label,
-            style:
-                (dense ? context.texts.labelSmall : context.texts.labelMedium)
-                    ?.copyWith(color: colour, letterSpacing: 0.2),
-          ),
+          if (softWrap)
+            Flexible(
+              child: Text(
+                label,
+                style:
+                    (dense
+                            ? context.texts.labelSmall
+                            : context.texts.labelMedium)
+                        ?.copyWith(color: colour, letterSpacing: 0.2),
+              ),
+            )
+          else
+            Text(
+              label,
+              style:
+                  (dense
+                          ? context.texts.labelSmall
+                          : context.texts.labelMedium)
+                      ?.copyWith(color: colour, letterSpacing: 0.2),
+            ),
         ],
       ),
     );

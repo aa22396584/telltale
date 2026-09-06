@@ -53,7 +53,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | transports | transports | README.md:174 ↔ README.zh-TW.md:148 (T1 — unchanged in zh) | evidenced | INCONSISTENCY: kept English in the repo-layout table and at README.md:124 ↔ README.zh-TW.md:103-104, but the user-facing concept is 連線方式 (app_zh_Hant.arb:9, store/README.md:12). Engineering doc = transports; UI = 連線方式. |
 | 二次空氣噴射 | secondary air | lib/obd/readiness.dart:45 secondaryAir('二次空氣噴射') (T3) | evidenced |  |
 | 內建模擬器 | built-in simulator | lib/l10n/app_en.arb:52 ↔ lib/l10n/app_zh_Hant.arb:26 (T1 same ARB key) | evidenced | The in-app label is 'Demo 模擬器' (docs/field-guide.zh-TW.md:27); the ARB says 內建模擬器; README says Demo ECU. Pick per surface, do not unify silently. |
-| 公式錯誤 | formula error | lib/diagnostics/availability.dart:315 PidFault.formulaError => '公式錯誤' (T3); lib/ui/screens/dashboard/dashboard_screen.dart:325 | evidenced |  |
+| 公式錯誤 | formula error | lib/diagnostics/availability.dart:407 PidFault.formulaError => '公式錯誤' (T3); lib/ui/screens/dashboard/dashboard_screen.dart:326 | evidenced |  |
 | 凍結幀 | freeze frame | README.md:56 'freeze frames' ↔ README.zh-TW.md:50 '凍結幀' (T1); docs/field-guide.zh-TW.md:213 heading | evidenced |  |
 | 動力系統 | powertrain | lib/obd/dtc/dtc.dart:21 powertrain('P', '動力系統') (T3 — the DTC letter P) | evidenced | Distinct from 大電池 used for 'powertrain battery' at README.md:58 ↔ README.zh-TW.md:52. Same English word, two zh renderings by domain. |
 | 化學計量比推算 | stoichiometric estimate | lib/obd/physics/physics_engine.dart:52 FuelSource.stoichiometricEstimate => '化學計量比推算' (T3) | evidenced |  |
@@ -74,11 +74,11 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 排氣感知器 | exhaust sensor | lib/obd/readiness.dart:55 exhaustSensor('排氣感知器') (T3) | evidenced |  |
 | 控制器 | controller | lib/state/dtc_scan.dart:47 'Controllers that gave this category a terminal answer.' ↔ same file :581 '控制器 … 回報…' (T3 same file); docs/field-guide.zh-TW.md:206 | inferred | zh at lib/state/dtc_scan.dart:581; en at :47 of the same file, 534 lines away — not one place. |
 | 故障碼 | fault code | README.md:56 'fault codes' ↔ README.zh-TW.md:50 '故障碼' (T1) | evidenced | DTC as an acronym stays English (see doNotTranslate); the spelled-out concept is 故障碼. |
-| 標頭 | header | lib/diagnostics/availability.dart:316 PidFault.headerNotOnThisBus ↔ '標頭不符本車匯流排' (T3); docs/protocol-deviations.zh-TW.md:69 '發送標頭' | evidenced |  |
+| 標頭 | header | lib/diagnostics/availability.dart:408 PidFault.headerNotOnThisBus ↔ '標頭不符本車匯流排' (T3); docs/protocol-deviations.zh-TW.md:69 '發送標頭' | evidenced |  |
 | 故障燈 | MIL | lib/obd/polling_engine.dart:2849 (T3) | inferred | The app ships 故障燈 in Chinese prose and MIL only inside an English PID name (`Distance Travelled With MIL On`); no place writes both, so the pairing is this glossary's. Spell it out on first mention in English if the audience may not know the acronym |
 | 永久 | permanent | lib/obd/dtc/dtc.dart:37 permanent('永久', '0A', …) (T3) | evidenced | A permanent code is NOT clearable, and English copy must never imply that pressing Clear removes it. lib/obd/dtc/dtc.dart:37 says 無法用診斷儀清除，需修復後由 ECU 自行確認; lib/ui/screens/dtc/dtc_screen.dart:78 repeats it. #45 names this explicitly |
 | 汽油微粒濾清器（GPF） | gasoline particulate filter (GPF) | lib/obd/readiness.dart:46 gasolineParticulateFilter('汽油微粒濾清器（GPF）') (T3); docs/field-guide.zh-TW.md:247-250 explains it | evidenced | LOAD-BEARING: field-guide:247-249 says many OBD tables mistranslate this bit as 空調冷媒 (A/C refrigerant) and that is wrong. Keep GPF in the string. |
-| 無回應，稍後重試 | no answer | lib/diagnostics/availability.dart:313 PidFault.noAnswer => '無回應，稍後重試' (T3) | evidenced |  |
+| 無回應，稍後重試 | no answer | lib/diagnostics/availability.dart:405 PidFault.noAnswer => '無回應，稍後重試' (T3) | evidenced |  |
 | 燃油系統監控 | fuel system | lib/obd/readiness.dart:37 fuelSystem('燃油系統監控') (T3) | evidenced |  |
 | 監控項目 | readiness monitor | lib/obd/readiness.dart:1 'The emissions readiness monitors' + enum ReadinessMonitor :34 ↔ docs/field-guide.zh-TW.md:240,243-245 '監控項目' (T3 identifier ↔ zh prose) | inferred | zh at docs/field-guide.zh-TW.md:240; en at lib/obd/readiness.dart:1. Assembled from two documents. |
 | 綜合元件監控 | components | lib/obd/readiness.dart:38 components('綜合元件監控') (T3) | evidenced |  |
@@ -118,13 +118,13 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
 | App 截圖與實車示範 | Screenshots and vehicle demo | README.md:17 ↔ README.zh-TW.md:16 (T1 heading) | evidenced |  |
-| Language / 語言 | Language / 語言 | lib/l10n/app_en.arb:512 ↔ lib/l10n/app_zh_Hant.arb:145 (T1 same ARB key) | evidenced | DO NOT localize. app_en.arb:10 description: 'Bilingual label for the language picker. Options use self-names.' |
+| Language / 語言 | Language / 語言 | lib/l10n/app_en.arb:652 ↔ lib/l10n/app_zh_Hant.arb:180 (T1 same ARB key) | evidenced | DO NOT localize. app_en.arb:10 description: 'Bilingual label for the language picker. Options use self-names.' |
 | 主打圖片（feature graphic） | feature graphic | store/README.md:11 '主打圖片（feature graphic）' (T1 — the project's own inline gloss) | evidenced |  |
 | 儀表 | gauge | README.md:64 'read-only BMS gauges' ↔ README.zh-TW.md:57 '唯讀 BMS 儀表' (T1) | evidenced | See the 即時 PID 儀表 note: 儀表 renders both 'gauge' and 'PID dashboard'. |
 | 儀表板 | dashboard | README.md:21 alt 'Telltale live telemetry dashboard' ↔ README.zh-TW.md:20 alt 'Telltale 即時遙測儀表板' (T1); store/README.md:13 | evidenced |  |
-| 刪除 | delete | lib/l10n/app_en.arb:1558 ↔ lib/l10n/app_zh_Hant.arb:173 (T1 same ARB key) | evidenced |  |
+| 刪除 | delete | lib/l10n/app_en.arb:1698 ↔ lib/l10n/app_zh_Hant.arb:208 (T1 same ARB key) | evidenced |  |
 | 匯出 | export | lib/l10n/app_en.arb:22 ↔ lib/l10n/app_zh_Hant.arb:16 (T1); README.md:57 'export' ↔ README.zh-TW.md:51 '匯出' | evidenced |  |
-| 回放 | replay | lib/l10n/app_en.arb:1561 ↔ lib/l10n/app_zh_Hant.arb:455 (T1 same ARB key) | evidenced |  |
+| 回放 | replay | lib/l10n/app_en.arb:1701 ↔ lib/l10n/app_zh_Hant.arb:490 (T1 same ARB key) | evidenced |  |
 | 外觀 | Appearance | lib/l10n/app_en.arb:8 ↔ lib/l10n/app_zh_Hant.arb:8 (T1 same ARB key) | evidenced |  |
 | 性能量測 | performance | store/README.md:15 '`05-performance.png` … 手機截圖：性能量測' (T1) | evidenced |  |
 | 應用程式圖示 | app icon | store/README.md:10 '`icon-512.png` … 應用程式圖示' (T1) | proposed | English has no source in the tree; the cited file is Chinese-only |
@@ -132,7 +132,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 設定 | Settings | lib/l10n/app_en.arb:14 settingsHeadline ↔ lib/l10n/app_zh_Hant.arb:11 (T1) | evidenced |  |
 | 設定頁 | Settings | README.md:123 'Settings shows the full disclosure card' ↔ README.zh-TW.md:103 '設定頁是完整揭露卡' (T1) | evidenced | context: screen |
 | 連線頁 | Connect | README.md:124 'Connect keeps a secondary text link' ↔ README.zh-TW.md:103-104 '連線頁只在轉接器列表下方放次要文字連結' (T1) | evidenced | context: screen |
-| 重試 | Retry | lib/l10n/app_en.arb:396 ↔ lib/l10n/app_zh_Hant.arb:115 (T1 same ARB key) | evidenced |  |
+| 重試 | Retry | lib/l10n/app_en.arb:536 ↔ lib/l10n/app_zh_Hant.arb:150 (T1 same ARB key) | evidenced |  |
 | 面盤外觀 | skins | store/README.md:16 '`06-skins.png` … 手機截圖：面盤外觀' (T1 filename ↔ zh gloss in the same table row) | evidenced | 面盤 = the dial face. Related: README.md:64 'BMS gauges' ↔ README.zh-TW.md:57 'BMS 儀表'. |
 
 
@@ -140,22 +140,22 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
-| 資料已過期 | stale | lib/l10n/app_en.arb:498 ↔ lib/l10n/app_zh_Hant.arb:552 (T1 same ARB key) | evidenced | #45 names this explicitly: stale ≠ live. A reading that stopped updating is not a current one, and must never render as though it were |
+| 資料已過期 | stale | lib/l10n/app_en.arb:638 ↔ lib/l10n/app_zh_Hant.arb:587 (T1 same ARB key) | evidenced | #45 names this explicitly: stale ≠ live. A reading that stopped updating is not a current one, and must never render as though it were |
 | ECU 回報 | reported by the ECU | lib/obd/physics/physics_engine.dart:51 `FuelSource.measured => 'ECU 回報'` (T3) | proposed | The identifier says `measured`; the shipped Chinese says ECU 回報. English copy should say **reported by the ECU**, not "measured" — #44 forbids rendering 推算/estimate as measured, and using the bare word here for the true case invites exactly that slip. The pairing has never been written down, hence inferred |
 | VE | VE | README.md:75 ↔ README.zh-TW.md:65 (T1 — unchanged); spelled out as 容積效率 in lib/obd/session_evidence.dart:205 'volumetricEfficiency' | evidenced |  |
 | make／廠牌（製造商部門） | make label | README.md:73 '146 make labels' ↔ README.zh-TW.md:64 '146 個 make／廠牌（製造商部門）標籤' (T1 — the project's own inline gloss) | evidenced | zh keeps the English token AND glosses it, because EPA 'make' means a manufacturer division, not a brand. Keep both halves. |
 | 來源 | provenance | README.md:189 'evidence, provenance, and real-vehicle limits' ↔ README.zh-TW.md:163 '證據、來源與實車限制' (T2) | evidenced |  |
 | 來源 revision | source revision | README.md:91-92 ↔ README.zh-TW.md:77 (T1 — 'revision' kept English) | evidenced |  |
 | 傳動效率 | transmission efficiency | README.md:75 ↔ README.zh-TW.md:65 (T1) | evidenced |  |
-| 原廠資料 | manufacturer publication | lib/diagnostics/availability.dart:625 VehicleFieldOrigin.manufacturerPublication => '原廠資料' (T3) | evidenced |  |
+| 原廠資料 | manufacturer publication | lib/diagnostics/availability.dart:758 VehicleFieldOrigin.manufacturerPublication => '原廠資料' (T3) | evidenced |  |
 | 大電池目錄 | powertrain-battery catalog | README.md:58 'powertrain-battery catalog' ↔ README.zh-TW.md:52 '大電池目錄' (T1) | evidenced |  |
 | 大電池車型設定 | powertrain battery profiles | README.md:189 doc table ↔ README.zh-TW.md:163 doc table (T2 same table row) | evidenced |  |
-| 官方型錄 | official registry | lib/diagnostics/availability.dart:624 VehicleFieldOrigin.officialRegistry => '官方型錄' (T3) | evidenced |  |
+| 官方型錄 | official registry | lib/diagnostics/availability.dart:757 VehicleFieldOrigin.officialRegistry => '官方型錄' (T3) | evidenced |  |
 | 容積效率 | volumetric efficiency | lib/obd/session_evidence.dart:205 'volumetricEfficiency' => '容積效率' (T3) | evidenced |  |
 | 實驗室 | laboratory | README.md:69 'the one-shot laboratory' ↔ README.zh-TW.md:59 '單次實驗室' (T1); README.md:81-82 ↔ README.zh-TW.md:70 | evidenced |  |
 | 年式 | model year | README.md:73 'model years 1984–2027' ↔ README.zh-TW.md:64 '年式 1984–2027' (T1); README.md:85 'selected year' ↔ README.zh-TW.md:72 '所選年式' | evidenced |  |
 | 快照 | snapshot | README.md:72 'EPA Find-a-Car snapshot' ↔ README.zh-TW.md:63 'EPA Find-a-Car 快照' (T1); README.md:179 ↔ README.zh-TW.md:153 | evidenced |  |
-| 手動輸入 | user entered | lib/diagnostics/availability.dart:623 VehicleFieldOrigin.userEntered => '手動輸入' (T3) | evidenced |  |
+| 手動輸入 | user entered | lib/diagnostics/availability.dart:756 VehicleFieldOrigin.userEntered => '手動輸入' (T3) | evidenced |  |
 | 扭力 | torque | README.md:75 ↔ README.zh-TW.md:65 (T1); README.md:77 ↔ README.zh-TW.md:67 | evidenced | 扭力 (TW) not 扭矩 (CN). Distinct from the Torque/Torque Pro product name at README.md:210 ↔ README.zh-TW.md:181, which is never translated. |
 | 排氣量 | displacement | lib/obd/session_evidence.dart:203 'displacementL' => '排氣量' (T3 key ↔ label); docs/field-guide.zh-TW.md:164 | evidenced |  |
 | 正面投影面積 | frontal area | lib/obd/session_evidence.dart:209 'frontalAreaM2' => '正面投影面積' (T3) | evidenced |  |
@@ -165,7 +165,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 經完整性檢查 | integrity-checked | README.md:58 ↔ README.zh-TW.md:52 (T1); README.md:72 ↔ README.zh-TW.md:63 | evidenced |  |
 | 車輛設定 | vehicle profile | README.md:76 'every configured vehicle profile' ↔ README.zh-TW.md:66 '每組車輛設定' (T1) | evidenced | INCONSISTENCY: 'profile' is 車輛設定 here, 車型設定 at README.md:189 ↔ README.zh-TW.md:163, and kept as bare `profile` at README.zh-TW.md:77. Three renderings. |
 | 車重 | mass | README.md:75 'does not infer mass, torque, drag, VE' ↔ README.zh-TW.md:65 '不推測車重、扭力、風阻、VE' (T1); lib/obd/session_evidence.dart:204 'massKg' => '車重' | evidenced |  |
-| 通用預設 | generic default | lib/diagnostics/availability.dart:622 VehicleFieldOrigin.genericDefault => '通用預設' (T3) | evidenced |  |
+| 通用預設 | generic default | lib/diagnostics/availability.dart:755 VehicleFieldOrigin.genericDefault => '通用預設' (T3) | evidenced |  |
 | 雜湊 | hash | README.md:91 'verified catalog hash' ↔ README.zh-TW.md:77 '已驗證的目錄雜湊' (T1); README.md:188 'hashes' ↔ README.zh-TW.md:162 '雜湊' | evidenced |  |
 | 風阻 | drag | README.md:75 ↔ README.zh-TW.md:65 (T1); lib/obd/session_evidence.dart:208 'dragCoefficient' => '風阻係數' | evidenced |  |
 | 馬力 | horsepower | README.md:77 'profile-derived horsepower, torque, and fuel estimates' ↔ README.zh-TW.md:67 '實車的馬力、扭力或油耗' (T1) | evidenced |  |

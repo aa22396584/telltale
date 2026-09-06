@@ -10,6 +10,7 @@ import '../../../diagnostics/availability.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../../telemetry/session/telemetry_session.dart';
 import '../../widgets/panel.dart';
+import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
 import 'telemetry_export_sheet.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -345,7 +346,7 @@ class _ReplayLanePanel extends StatelessWidget {
     final valueLabel = currentValue?.toStringAsFixed(1) ?? '--';
     final title = [
       '${lane.name} · $valueLabel ${lane.unit}',
-      if (status.badgeText.isNotEmpty) status.badgeText,
+      if (status.badges.isNotEmpty) datumBadgeText(l10n, status),
     ].join(' · ');
     final laneDetail =
         '${l10n.telemetryReplaySampleCount(lane.primitives.length)} · '

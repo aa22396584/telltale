@@ -267,6 +267,124 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardWorkspaceTrends => 'Trends';
 
   @override
+  String get datumBadgeCommunityDecode => 'Community decode';
+
+  @override
+  String get datumBadgeDemo => 'Simulated';
+
+  @override
+  String get datumBadgeEstimated => 'Estimated';
+
+  @override
+  String get datumBadgeExperimental => 'Experimental';
+
+  @override
+  String get datumBadgeFieldVerified => 'Field-verified';
+
+  @override
+  String get datumBadgeInvalid => 'Invalid';
+
+  @override
+  String get datumBadgeJustUpdated => 'Just updated';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => 'Out of range';
+
+  @override
+  String get datumBadgePartial => 'Partial';
+
+  @override
+  String get datumBadgeStale => 'Stale';
+
+  @override
+  String get datumBadgeTentativeDecode => 'Tentative decode';
+
+  @override
+  String get datumBadgeUnverified => 'Unverified';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => 'Unverified on this vehicle';
+
+  @override
+  String get datumBadgeUserSupplied => 'User-supplied';
+
+  @override
+  String get datumGapModelYearUnknown => 'Model year unknown';
+
+  @override
+  String get datumGapNoCatalogMatch => 'No catalog match';
+
+  @override
+  String get datumGapVinNotRead => 'VIN not read';
+
+  @override
+  String get datumNextStepEstimateOnly =>
+      'This affects only the estimate; the other readings still apply.';
+
+  @override
+  String get datumNextStepGenericObd =>
+      'You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.';
+
+  @override
+  String get datumNextStepOtherReadings =>
+      'The failure affects only this item; the other readings still apply.';
+
+  @override
+  String get datumNextStepRawOnly =>
+      'The raw reply and the error can be inspected; neither may be read as a normal value.';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed =>
+      'The assumptions are unconfirmed; an estimate is still shown.';
+
+  @override
+  String get datumReasonBusError => 'Bus error.';
+
+  @override
+  String get datumReasonFormulaError => 'Formula error.';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs =>
+      'The fuel-use estimate is missing a required input.';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus =>
+      'The header does not match the bus this vehicle uses.';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs =>
+      'The horsepower estimate is missing a required input.';
+
+  @override
+  String get datumReasonMalformedPacket =>
+      'Malformed packet; only the raw reply can be inspected.';
+
+  @override
+  String get datumReasonNoAnswer => 'No response; try again shortly.';
+
+  @override
+  String get datumReasonNoReadingYet => 'No reading yet.';
+
+  @override
+  String get datumReasonNonFiniteValue => 'Not a finite number.';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept =>
+      'Outside the usual reference range; kept as it was read.';
+
+  @override
+  String get datumReasonPidUnsupported =>
+      'This vehicle does not support this PID.';
+
+  @override
+  String get datumReasonUnsafeService =>
+      'This service is not a read-only query.';
+
+  @override
+  String get datumReasonUnsafeServiceStopped =>
+      'This service is not a read-only query, so it was not sent.';
+
+  @override
   String get datumStatusAssumptions => 'Assumptions';
 
   @override
