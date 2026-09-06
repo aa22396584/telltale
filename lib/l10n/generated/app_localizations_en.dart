@@ -194,6 +194,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'The full transcript of this attempt was kept. Bringing that back helps more than a one-line message.';
 
   @override
+  String get connectTransportBleDescription =>
+      'GATT UART — a newer low-energy adapter';
+
+  @override
+  String get connectTransportBleTitle => 'Bluetooth LE';
+
+  @override
+  String get connectTransportClassicDescription =>
+      'RFCOMM / SPP — the most common budget ELM327';
+
+  @override
+  String get connectTransportClassicTitle => 'Bluetooth Classic';
+
+  @override
+  String get connectTransportDemoDescription =>
+      'A built-in simulated ECU — the whole app with no hardware';
+
+  @override
+  String get connectTransportDemoTitle => 'Demo simulator';
+
+  @override
+  String get connectTransportWifiDescription =>
+      'A TCP port, usually 192.168.0.10:35000';
+
+  @override
+  String get connectTransportWifiTitle => 'Wi-Fi';
+
+  @override
   String get connectWhichIntro =>
       'Never mind the words SPP and GATT. Go by what your adapter does once it is plugged in:';
 
@@ -439,6 +467,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dtcMilOn => 'The fault lamp is lit';
+
+  @override
+  String get dtcMonitorBoostPressure => 'Boost pressure';
+
+  @override
+  String get dtcMonitorCatalyst => 'Catalyst';
+
+  @override
+  String get dtcMonitorComponents => 'Comprehensive components';
+
+  @override
+  String get dtcMonitorEgr => 'EGR / VVT system';
+
+  @override
+  String get dtcMonitorEvaporative => 'Evaporative system';
+
+  @override
+  String get dtcMonitorExhaustSensor => 'Exhaust sensor';
+
+  @override
+  String get dtcMonitorFuelSystem => 'Fuel system';
+
+  @override
+  String get dtcMonitorGasolineParticulateFilter =>
+      'Gasoline particulate filter (GPF)';
+
+  @override
+  String get dtcMonitorHeatedCatalyst => 'Heated catalyst';
+
+  @override
+  String get dtcMonitorMisfire => 'Misfire';
+
+  @override
+  String get dtcMonitorNmhcCatalyst => 'NMHC catalyst';
+
+  @override
+  String get dtcMonitorNoxAftertreatment => 'NOx / SCR aftertreatment';
+
+  @override
+  String get dtcMonitorOxygenSensor => 'Oxygen sensor';
+
+  @override
+  String get dtcMonitorOxygenSensorHeater => 'Oxygen sensor heater';
+
+  @override
+  String get dtcMonitorParticulateFilter => 'Particulate filter';
+
+  @override
+  String get dtcMonitorSecondaryAir => 'Secondary air system';
 
   @override
   String dtcNoDescriptionForSubsystem(Object subsystem) {

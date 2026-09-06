@@ -10,15 +10,28 @@ library;
 import 'dart:async';
 
 enum TransportKind {
-  bluetoothClassic('Bluetooth Classic', 'RFCOMM / SPP — 最常見的平價 ELM327'),
-  bluetoothLe('Bluetooth LE', 'GATT UART — 較新的低功耗轉接器'),
-  wifi('Wi-Fi', 'TCP 通訊埠，多為 192.168.0.10:35000'),
-  demo('Demo 模擬器', '內建模擬 ECU，無需硬體即可完整體驗');
+  bluetoothClassic('Bluetooth Classic'),
+  bluetoothLe('Bluetooth LE'),
+  wifi('Wi-Fi'),
+  demo('Demo 模擬器');
 
-  const TransportKind(this.label, this.description);
+  const TransportKind(this.label);
 
+  /// The transport's identity **in an exported artifact**, not its tile title.
+  ///
+  /// This string is written into the evidence header (`# 連線方式：`, via
+  /// `SessionEvidenceMetadata.transportKind`) and into the transcript notes
+  /// that go out with it. Two people compare those files against each other, weeks
+  /// apart, on different phones; an evidence field whose language depends on a
+  /// phone setting is one nobody can diff. So it stays fixed, and the screen
+  /// gets its own copy from the ARBs.
+  ///
+  /// **Do not put this in a `Text` widget.** The connect screen's tile title
+  /// and the "last adapter used" line come from `transportKindTitle` in
+  /// lib/ui/screens/connect/transport_kind_copy.dart, which answers in the
+  /// driver's language. `test/l10n/l03_connect_l10n_test.dart` fails if this
+  /// one reaches the screen again.
   final String label;
-  final String description;
 
   /// Bluetooth Classic SPP: Android RFCOMM cascade, or Windows Bluetooth COM.
   /// iOS has no third-party SPP; macOS/Linux remain product-gated.

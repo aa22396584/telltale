@@ -399,6 +399,54 @@ abstract class AppLocalizations {
   /// **'The full transcript of this attempt was kept. Bringing that back helps more than a one-line message.'**
   String get connectTranscriptKept;
 
+  /// Subtitle of the Bluetooth LE tile on the connect screen. GATT and UART are on docs/i18n/do-not-translate.md. Must NOT tell the driver to pair the adapter: a BLE adapter is discovered by scanning inside the app, and pairing it in system settings is the route that does not work (connectAnswerBleWithClassic says so at length).
+  ///
+  /// In en, this message translates to:
+  /// **'GATT UART — a newer low-energy adapter'**
+  String get connectTransportBleDescription;
+
+  /// Title of the Bluetooth LE tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth LE'**
+  String get connectTransportBleTitle;
+
+  /// Subtitle of the Bluetooth Classic tile on the connect screen. RFCOMM, SPP and ELM327 are on docs/i18n/do-not-translate.md. Must NOT say pairing can be skipped: Classic is the one transport the app cannot pair for the driver (connectAnswerClassic and connectClassicEmptyPaired carry that instruction).
+  ///
+  /// In en, this message translates to:
+  /// **'RFCOMM / SPP — the most common budget ELM327'**
+  String get connectTransportClassicDescription;
+
+  /// Title of the Bluetooth Classic tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Classic'**
+  String get connectTransportClassicTitle;
+
+  /// Subtitle of the Demo tile on the connect screen. ECU is on docs/i18n/do-not-translate.md. Scoped to the app deliberately: Demo crosses no radio, no socket and no vehicle, so it must not be described as evidence that a car will work (docs/field-guide.zh-TW.md:27-32).
+  ///
+  /// In en, this message translates to:
+  /// **'A built-in simulated ECU — the whole app with no hardware'**
+  String get connectTransportDemoDescription;
+
+  /// Title of the Demo tile on the connect screen. Same English as wearDemoSimulator, which names the same feature on the watch face.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo simulator'**
+  String get connectTransportDemoTitle;
+
+  /// Subtitle of the Wi-Fi tile on the connect screen. The address is a literal on docs/i18n/do-not-translate.md and must stay byte-identical in both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'A TCP port, usually 192.168.0.10:35000'**
+  String get connectTransportWifiDescription;
+
+  /// Title of the Wi-Fi tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi'**
+  String get connectTransportWifiTitle;
+
   /// No description provided for @connectWhichIntro.
   ///
   /// In en, this message translates to:
@@ -776,6 +824,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The fault lamp is lit'**
   String get dtcMilOn;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost pressure'**
+  String get dtcMonitorBoostPressure;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol).
+  ///
+  /// In en, this message translates to:
+  /// **'Catalyst'**
+  String get dtcMonitorCatalyst;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor; J1979 calls it the comprehensive component monitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Comprehensive components'**
+  String get dtcMonitorComponents;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. EGR and VVT are on docs/i18n/do-not-translate.md; keep both acronyms and the slash.
+  ///
+  /// In en, this message translates to:
+  /// **'EGR / VVT system'**
+  String get dtcMonitorEgr;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The evaporative emission system, not the exhaust.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative system'**
+  String get dtcMonitorEvaporative;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust sensor'**
+  String get dtcMonitorExhaustSensor;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel system'**
+  String get dtcMonitorFuelSystem;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. LOAD-BEARING: many OBD reference tables name bit 4 of byte C an air-conditioning refrigerant monitor. That is wrong — the bit sat Reserved in J1979 for years and was recently defined as the gasoline particulate filter, and no car that sets it has an A/C refrigerant monitor at all. Keep GPF spelled out; never render this as refrigerant or air conditioning (docs/field-guide.zh-TW.md:247-250).
+  ///
+  /// In en, this message translates to:
+  /// **'Gasoline particulate filter (GPF)'**
+  String get dtcMonitorGasolineParticulateFilter;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol).
+  ///
+  /// In en, this message translates to:
+  /// **'Heated catalyst'**
+  String get dtcMonitorHeatedCatalyst;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Misfire'**
+  String get dtcMonitorMisfire;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NMHC is on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'NMHC catalyst'**
+  String get dtcMonitorNmhcCatalyst;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NOx and SCR are on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'NOx / SCR aftertreatment'**
+  String get dtcMonitorNoxAftertreatment;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol).
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor'**
+  String get dtcMonitorOxygenSensor;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The heater circuit, which is monitored separately from the sensor itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor heater'**
+  String get dtcMonitorOxygenSensorHeater;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only — the diesel particulate filter. Distinct from dtcMonitorGasolineParticulateFilter, which is the petrol bit.
+  ///
+  /// In en, this message translates to:
+  /// **'Particulate filter'**
+  String get dtcMonitorParticulateFilter;
+
+  /// One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol).
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary air system'**
+  String get dtcMonitorSecondaryAir;
 
   /// The subsystem the code's own third digit names. Says the app is missing the description rather than pretending to one.
   ///

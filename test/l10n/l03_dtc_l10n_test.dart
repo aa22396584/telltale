@@ -268,18 +268,20 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
 
 /// Everything this screen renders that it does not own.
 ///
-/// `lib/obd/dtc/dtc.dart` and `lib/obd/readiness.dart` are the diagnostic
-/// engine and belong to a later localization wave; `lib/state/dtc_scan.dart`
-/// writes the scan error and the clear outcome. This branch cannot translate
-/// any of it, so the assertion below subtracts it and then insists that
-/// nothing Chinese is left.
+/// `lib/obd/dtc/dtc.dart` is the diagnostic engine and belongs to a later
+/// localization wave; `lib/state/dtc_scan.dart` writes the scan error and the
+/// clear outcome. This branch cannot translate any of it, so the assertion
+/// below subtracts it and then insists that nothing Chinese is left.
+///
+/// `lib/obd/readiness.dart` used to be on this list. It is not any more: the
+/// readiness chips now read their names through `readinessMonitorLabel`, so
+/// the assertion below covers them and the hole is closed rather than moved.
 ///
 /// Keeping the list computed from the enums rather than typed out means a new
 /// engine label cannot quietly widen the hole.
 List<String> _engineOwnedStrings() => [
       for (final kind in DtcKind.values) ...[kind.label, kind.description],
       for (final category in DtcCategory.values) category.label,
-      for (final monitor in ReadinessMonitor.values) monitor.label,
       ...DtcDecoder.powertrainSubsystems.values,
       ...DtcDecoder.genericDescriptions.values,
       PidLibrary.engineRpm.name,

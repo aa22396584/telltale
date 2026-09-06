@@ -28,6 +28,7 @@ import '../../../obd/transport/serial_transport.dart';
 import '../../../obd/transport/wifi_transport.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/obd_session.dart';
+import 'transport_kind_copy.dart';
 import '../../../state/settings.dart';
 import '../../widgets/language_picker.dart';
 import '../../widgets/panel.dart';
@@ -691,10 +692,17 @@ class _TransportCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(kind.label, style: context.texts.titleMedium),
+                        Text(
+                          transportKindTitle(AppLocalizations.of(context), kind),
+                          style: context.texts.titleMedium,
+                        ),
                         const SizedBox(height: 2),
                         Text(
-                          disabledReason ?? kind.description,
+                          disabledReason ??
+                              transportKindDescription(
+                                AppLocalizations.of(context),
+                                kind,
+                              ),
                           style: context.texts.bodySmall,
                         ),
                       ],
@@ -1400,9 +1408,12 @@ class _LastAdapterCard extends ConsumerWidget {
               style: context.texts.bodyMedium,
             ),
             Text(
+              // The transport name is localized; the address is not. An IP
+              // and a MAC are things somebody retypes or searches for, so they
+              // stay verbatim on both sides of the separator.
               last.port == null
-                  ? '${last.kind.label} · ${last.id}'
-                  : '${last.kind.label} · ${last.id}:${last.port}',
+                  ? '${transportKindTitle(l10n, last.kind)} · ${last.id}'
+                  : '${transportKindTitle(l10n, last.kind)} · ${last.id}:${last.port}',
               style: context.texts.labelSmall,
             ),
             const SizedBox(height: Spacing.sm),

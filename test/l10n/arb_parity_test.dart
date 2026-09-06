@@ -100,6 +100,15 @@ void main() {
       // Placeholders and a unit. Units are not a language: MiB is MiB in both,
       // and translating it would make two exports incomparable.
       'telemetryLibraryBytes',
+      // The three transport product names, all on
+      // docs/i18n/do-not-translate.md. They are ARB entries rather than
+      // literals so that the rule is enforced here — a future translation of
+      // "Wi-Fi" fails this test instead of shipping — and the fourth tile,
+      // connectTransportDemoTitle, is deliberately NOT on this list because
+      // 'Demo 模擬器' is copy and does get translated.
+      'connectTransportBleTitle',
+      'connectTransportClassicTitle',
+      'connectTransportWifiTitle',
     };
     final untranslated = <String>[];
     for (final key in _messageKeys(en)) {

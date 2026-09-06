@@ -152,22 +152,19 @@ void main() {
     testWidgets('connect screen at Locale(en)', (tester) async {
       await _pumpConnect(tester, englishLocale);
 
-      // Two sources of Chinese on this screen are not this screen's to fix,
-      // and are excluded by where they come from rather than by their text,
-      // so the exclusion evaporates on its own once they are localized:
+      // One source of Chinese on this screen is not this screen's to fix, and
+      // is excluded by where it comes from rather than by its text:
+      // `languageSectionTitle` is deliberately bilingual and byte-identical in
+      // both ARBs — it is how a reader who cannot read the current language
+      // finds the picker.
       //
-      //   * `languageSectionTitle` is deliberately bilingual and byte-identical
-      //     in both ARBs — it is how a reader who cannot read the current
-      //     language finds the picker.
-      //   * `TransportKind.label` and `.description` live in
-      //     lib/obd/transport/obd_transport.dart, which another group owns.
-      final foreign = <String>{
-        en.languageSectionTitle,
-        for (final kind in TransportKind.values) ...[
-          kind.label,
-          kind.description,
-        ],
-      };
+      // `TransportKind.label` and `.description` used to be excluded here too.
+      // They are not any more: the tile titles and subtitles now come from
+      // `transportKindTitle` / `transportKindDescription`, so this assertion
+      // covers them, and putting `kind.label` back into a `Text` widget turns
+      // this test red — which is the point of dropping the exclusion rather
+      // than leaving a hole that nothing fills.
+      final foreign = <String>{en.languageSectionTitle};
 
       final offenders = _renderedStrings(
         tester,
