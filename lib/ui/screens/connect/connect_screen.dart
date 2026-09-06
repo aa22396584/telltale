@@ -32,6 +32,7 @@ import '../../../state/settings.dart';
 import '../../widgets/language_picker.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_connect_recorder_status.dart';
+import 'handshake_copy.dart';
 import '../../widgets/telemetry/telemetry_history_entry.dart';
 import '../../widgets/telemetry/telemetry_startup_recovery_notice.dart';
 import '../../widgets/transcript_export.dart';
@@ -1318,9 +1319,7 @@ class _StepRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              progress.detail?.isNotEmpty == true
-                  ? progress.detail!
-                  : progress.step.purpose,
+              initProgressLine(AppLocalizations.of(context), progress),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.texts.bodySmall,

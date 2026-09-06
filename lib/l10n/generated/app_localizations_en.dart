@@ -10,6 +10,55 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get adapterErrorActivityAlert => 'Bus activity alert.';
+
+  @override
+  String get adapterErrorBufferFull => 'The adapter\'s buffer overflowed.';
+
+  @override
+  String get adapterErrorBus => 'Bus error; the wiring may be the cause.';
+
+  @override
+  String get adapterErrorBusBusy => 'The bus is busy.';
+
+  @override
+  String get adapterErrorBusInit => 'Bus initialisation failed.';
+
+  @override
+  String get adapterErrorCan => 'CAN bus error.';
+
+  @override
+  String get adapterErrorData => 'The data that arrived is not correct.';
+
+  @override
+  String get adapterErrorFeedback => 'Signal feedback error.';
+
+  @override
+  String get adapterErrorInternal => 'Adapter internal error.';
+
+  @override
+  String get adapterErrorLowPowerAlert =>
+      'The adapter is about to enter low-power mode.';
+
+  @override
+  String get adapterErrorLowVoltageReset => 'Low voltage reset the adapter.';
+
+  @override
+  String get adapterErrorNoData =>
+      'No reply arrived — it may be temporary silence, or the vehicle may not support this.';
+
+  @override
+  String get adapterErrorStopped => 'The transfer was interrupted.';
+
+  @override
+  String get adapterErrorUnableToConnect =>
+      'Cannot reach the ECU. Check that the ignition is on.';
+
+  @override
+  String get adapterErrorUnknownCommand =>
+      'The adapter does not support this command.';
+
+  @override
   String get appTagline => 'Live vehicle telemetry';
 
   @override
@@ -763,6 +812,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gaugeUnsupportedByVehicle => 'Not supported by this vehicle';
+
+  @override
+  String get handshakeNoteAborted => 'Stopped after an earlier step failed.';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'The ECU refused the support query (negative response).';
+
+  @override
+  String get handshakeNoteEcuSilent => 'The ECU did not answer.';
+
+  @override
+  String get handshakeNoteNotAcknowledged =>
+      'The adapter did not acknowledge this command.';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply =>
+      'The reply is not a Mode 01 positive response.';
+
+  @override
+  String get handshakeNotePidEchoMismatch =>
+      'The reply echoes a different PID from the one that was asked for.';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort =>
+      'The support reply is too short; 41 00 and four more bytes are required.';
+
+  @override
+  String get handshakeNoteTimedOut => 'Timed out.';
+
+  @override
+  String get handshakeStepAdapterVersion => 'Read the adapter version';
+
+  @override
+  String get handshakeStepAdaptiveTiming =>
+      'Enable adaptive timing, the setting the datasheet recommends';
+
+  @override
+  String get handshakeStepBatteryVoltage => 'Read the battery voltage';
+
+  @override
+  String get handshakeStepDeviceIdentity => 'Read the device identifier string';
+
+  @override
+  String get handshakeStepEchoOff => 'Turn off command echo';
+
+  @override
+  String get handshakeStepLinefeedsOff => 'Turn off linefeeds';
+
+  @override
+  String get handshakeStepMemoryOff => 'Turn off memory writes';
+
+  @override
+  String get handshakeStepProtocolAuto =>
+      'Detect the bus protocol automatically';
+
+  @override
+  String get handshakeStepProtocolDescription =>
+      'Read the protocol description';
+
+  @override
+  String get handshakeStepProtocolNumber => 'Read the protocol number';
+
+  @override
+  String get handshakeStepReset => 'Software-reset the adapter';
+
+  @override
+  String get handshakeStepResponseTimeout =>
+      'Set the response timeout to about 408 ms';
+
+  @override
+  String get handshakeStepSpacesOff =>
+      'Turn off spaces, cutting a third of the traffic';
+
+  @override
+  String get handshakeStepSupportProbe =>
+      'Ask which PIDs the ECU supports, proving a vehicle answered';
 
   @override
   String get languageSaveFailed => 'Could not save the language. Try again.';

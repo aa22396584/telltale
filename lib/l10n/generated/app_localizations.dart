@@ -99,6 +99,96 @@ abstract class AppLocalizations {
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
   ];
 
+  /// No description provided for @adapterErrorActivityAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus activity alert.'**
+  String get adapterErrorActivityAlert;
+
+  /// No description provided for @adapterErrorBufferFull.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter\'s buffer overflowed.'**
+  String get adapterErrorBufferFull;
+
+  /// No description provided for @adapterErrorBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus error; the wiring may be the cause.'**
+  String get adapterErrorBus;
+
+  /// No description provided for @adapterErrorBusBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The bus is busy.'**
+  String get adapterErrorBusBusy;
+
+  /// No description provided for @adapterErrorBusInit.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus initialisation failed.'**
+  String get adapterErrorBusInit;
+
+  /// The adapter answered CAN ERROR. The literal stays untranslated wherever the reply itself is quoted; this is the sentence written for a driver.
+  ///
+  /// In en, this message translates to:
+  /// **'CAN bus error.'**
+  String get adapterErrorCan;
+
+  /// No description provided for @adapterErrorData.
+  ///
+  /// In en, this message translates to:
+  /// **'The data that arrived is not correct.'**
+  String get adapterErrorData;
+
+  /// No description provided for @adapterErrorFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal feedback error.'**
+  String get adapterErrorFeedback;
+
+  /// No description provided for @adapterErrorInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapter internal error.'**
+  String get adapterErrorInternal;
+
+  /// No description provided for @adapterErrorLowPowerAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter is about to enter low-power mode.'**
+  String get adapterErrorLowPowerAlert;
+
+  /// No description provided for @adapterErrorLowVoltageReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Low voltage reset the adapter.'**
+  String get adapterErrorLowVoltageReset;
+
+  /// Elm327ErrorCode.noData. Deliberately NOT 'the vehicle does not support this': NO DATA is the adapter reporting that nothing arrived before its own timeout, and a busy ECU, a receive filter or one aggressive timing window produces it exactly as an absent sensor does. Both possibilities must survive translation.
+  ///
+  /// In en, this message translates to:
+  /// **'No reply arrived — it may be temporary silence, or the vehicle may not support this.'**
+  String get adapterErrorNoData;
+
+  /// No description provided for @adapterErrorStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'The transfer was interrupted.'**
+  String get adapterErrorStopped;
+
+  /// Elm327ErrorCode.unableToConnect. The remedy is half the message: most OBD sockets are unpowered until the ignition is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the ECU. Check that the ignition is on.'**
+  String get adapterErrorUnableToConnect;
+
+  /// Elm327ErrorCode.unknownCommand. A statement about the ADAPTER, never about the vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter does not support this command.'**
+  String get adapterErrorUnknownCommand;
+
   /// No description provided for @appTagline.
   ///
   /// In en, this message translates to:
@@ -1262,6 +1352,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not supported by this vehicle'**
   String get gaugeUnsupportedByVehicle;
+
+  /// InitNote.aborted. The remaining steps were not attempted, which is not the same as their having failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped after an earlier step failed.'**
+  String get handshakeNoteAborted;
+
+  /// InitNote.ecuRefusedSupportQuery. A refusal is an answer: something is on the bus. Distinct from handshakeNoteEcuSilent.
+  ///
+  /// In en, this message translates to:
+  /// **'The ECU refused the support query (negative response).'**
+  String get handshakeNoteEcuRefusedSupportQuery;
+
+  /// InitNote.ecuSilent. 0100 is the only step that proves a vehicle is on the bus; every AT command answers happily with the ignition off.
+  ///
+  /// In en, this message translates to:
+  /// **'The ECU did not answer.'**
+  String get handshakeNoteEcuSilent;
+
+  /// InitNote.notAcknowledged. The reply printed no error but never said OK either, and 'printed no error' is a much weaker claim than 'answered correctly'.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter did not acknowledge this command.'**
+  String get handshakeNoteNotAcknowledged;
+
+  /// InitNote.notModeOnePositiveReply. Mode 01 is on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply is not a Mode 01 positive response.'**
+  String get handshakeNoteNotModeOnePositiveReply;
+
+  /// InitNote.pidEchoMismatch. Accepting it would build the supported-PID set out of bytes that answer a different question.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply echoes a different PID from the one that was asked for.'**
+  String get handshakeNotePidEchoMismatch;
+
+  /// InitNote.supportMaskTooShort. The hex bytes are wire values and are never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'The support reply is too short; 41 00 and four more bytes are required.'**
+  String get handshakeNoteSupportMaskTooShort;
+
+  /// InitNote.timedOut. Silence within the window, not a refusal and not a capability claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out.'**
+  String get handshakeNoteTimedOut;
+
+  /// No description provided for @handshakeStepAdapterVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the adapter version'**
+  String get handshakeStepAdapterVersion;
+
+  /// ATAT1. The app sends AT1 rather than the more aggressive AT2, which shortens the window an ECU has to answer; see docs/protocol-deviations.zh-TW.md.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable adaptive timing, the setting the datasheet recommends'**
+  String get handshakeStepAdaptiveTiming;
+
+  /// No description provided for @handshakeStepBatteryVoltage.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the battery voltage'**
+  String get handshakeStepBatteryVoltage;
+
+  /// No description provided for @handshakeStepDeviceIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the device identifier string'**
+  String get handshakeStepDeviceIdentity;
+
+  /// ATE0. An echoed command is valid hex that prepends bytes to a reading, which is why this step is critical.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off command echo'**
+  String get handshakeStepEchoOff;
+
+  /// No description provided for @handshakeStepLinefeedsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off linefeeds'**
+  String get handshakeStepLinefeedsOff;
+
+  /// No description provided for @handshakeStepMemoryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off memory writes'**
+  String get handshakeStepMemoryOff;
+
+  /// ATSP0. Nothing downstream works without a protocol, which is why this step is critical.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect the bus protocol automatically'**
+  String get handshakeStepProtocolAuto;
+
+  /// No description provided for @handshakeStepProtocolDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the protocol description'**
+  String get handshakeStepProtocolDescription;
+
+  /// No description provided for @handshakeStepProtocolNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the protocol number'**
+  String get handshakeStepProtocolNumber;
+
+  /// No description provided for @handshakeStepReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Software-reset the adapter'**
+  String get handshakeStepReset;
+
+  /// ATST66. The figure is what the command means (0x66 timer units of 4 ms), not a constant the code enforces elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the response timeout to about 408 ms'**
+  String get handshakeStepResponseTimeout;
+
+  /// No description provided for @handshakeStepSpacesOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off spaces, cutting a third of the traffic'**
+  String get handshakeStepSpacesOff;
+
+  /// 0100. The only step that proves a VEHICLE is there: every AT command answers with the ignition off and this one does not. Both halves of the sentence are load-bearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask which PIDs the ECU supports, proving a vehicle answered'**
+  String get handshakeStepSupportProbe;
 
   /// No description provided for @languageSaveFailed.
   ///

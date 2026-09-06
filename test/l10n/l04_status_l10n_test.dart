@@ -29,9 +29,11 @@ import 'package:torque_obd/diagnostics/availability.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/physics/vehicle_profile.dart';
+import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/telemetry.dart';
 import 'package:torque_obd/state/vehicle_identity.dart';
+import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 
 final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
@@ -415,6 +417,166 @@ void main() {
       expect(status.reasonCode, DatumReason.pidUnsupported);
       expect(datumReasonText(en, status), en.datumReasonPidUnsupported);
       expect(datumReasonText(zh, status), zh.datumReasonPidUnsupported);
+    });
+  });
+
+  group('the handshake speaks to whoever is standing at the car', () {
+    test('every step in the shipped sequence is explained twice', () {
+      for (final step in Elm327Client.initSequence) {
+        for (final entry in locales.entries) {
+          final label = initStepPurposeLabel(entry.value, step.command);
+          expect(label.trim(), isNotEmpty, reason: '${step.command} ${entry.key}');
+          expect(
+            label,
+            isNot(step.command),
+            reason: '${step.command} has no ${entry.key} purpose, so the row '
+                'prints the command twice',
+          );
+        }
+        expect(
+          initStepPurposeLabel(en, step.command),
+          isNot(initStepPurposeLabel(zh, step.command)),
+          reason: '${step.command} fell back to the English template',
+        );
+        expect(
+          _cjk.hasMatch(initStepPurposeLabel(en, step.command)),
+          isFalse,
+          reason: '${step.command} en',
+        );
+      }
+    });
+
+    test('an unknown command falls back to itself, never to a guess', () {
+      expect(initStepPurposeLabel(en, 'ATPPS'), 'ATPPS');
+      expect(initStepPurposeLabel(zh, 'ATPPS'), 'ATPPS');
+    });
+
+    test('InitNote', () {
+      for (final note in InitNote.values) {
+        for (final entry in locales.entries) {
+          expect(
+            initNoteLabel(entry.value, note).trim(),
+            isNotEmpty,
+            reason: '$note ${entry.key}',
+          );
+        }
+        expect(
+          initNoteLabel(en, note),
+          isNot(initNoteLabel(zh, note)),
+          reason: '$note fell back to the English template',
+        );
+        expect(_cjk.hasMatch(initNoteLabel(en, note)), isFalse, reason: '$note');
+      }
+    });
+
+    test('Elm327ErrorCode, and none says nothing', () {
+      for (final entry in locales.entries) {
+        expect(adapterErrorLabel(entry.value, Elm327ErrorCode.none), isEmpty);
+      }
+      for (final code in Elm327ErrorCode.values) {
+        if (code == Elm327ErrorCode.none) continue;
+        for (final entry in locales.entries) {
+          expect(
+            adapterErrorLabel(entry.value, code).trim(),
+            isNotEmpty,
+            reason: '$code ${entry.key}',
+          );
+        }
+        expect(
+          adapterErrorLabel(en, code),
+          isNot(adapterErrorLabel(zh, code)),
+          reason: '$code fell back to the English template',
+        );
+        expect(
+          _cjk.hasMatch(adapterErrorLabel(en, code)),
+          isFalse,
+          reason: '$code en',
+        );
+      }
+    });
+
+    test('NO DATA keeps both of its explanations', () {
+      // Silence is the adapter reporting that nothing arrived before its own
+      // timeout. Rendering it as a flat capability claim is the mistake this
+      // codebase is organised against.
+      final english = en.adapterErrorNoData.toLowerCase();
+      expect(english, contains('may'));
+      expect(zh.adapterErrorNoData, contains('可能'));
+      for (final entry in locales.entries) {
+        expect(
+          adapterErrorLabel(entry.value, Elm327ErrorCode.noData),
+          isNot(
+            adapterErrorLabel(entry.value, Elm327ErrorCode.unknownCommand),
+          ),
+          reason: '${entry.key}: the adapter and the vehicle are not the same '
+              'subject',
+        );
+      }
+    });
+
+    test('a classified failure is never flattened into silence', () {
+      // `obd_session` writes 初始化在 X 失敗（<detail> 或 無回應）. If the error
+      // moved into `errorCode` and left `detail` null, every handshake failure
+      // — CAN ERROR, UNABLE TO CONNECT, LV RESET — would come out as "no
+      // response", which is the one thing it is not.
+      for (final code in Elm327ErrorCode.values) {
+        if (code == Elm327ErrorCode.none) continue;
+        final progress = InitProgress(
+          step: Elm327Client.initSequence.first,
+          index: 0,
+          total: Elm327Client.initSequence.length,
+          status: InitStatus.failed,
+          errorCode: code,
+        );
+        expect(progress.detail, code.description, reason: '$code');
+        expect(progress.detail, isNotEmpty, reason: '$code');
+        expect(initProgressLine(en, progress), adapterErrorLabel(en, code));
+      }
+    });
+
+    test('the note keeps the wording the transcript already reads', () {
+      for (final note in InitNote.values) {
+        final progress = InitProgress(
+          step: Elm327Client.initSequence.first,
+          index: 0,
+          total: Elm327Client.initSequence.length,
+          status: InitStatus.failed,
+          note: note,
+        );
+        expect(progress.detail, initNoteText(note), reason: '$note');
+        expect(initProgressLine(en, progress), initNoteLabel(en, note));
+        expect(_cjk.hasMatch(initProgressLine(en, progress)), isFalse);
+      }
+      expect(initNoteText(InitNote.aborted), '已中止');
+      expect(initNoteText(InitNote.timedOut), '逾時');
+    });
+
+    test('adapter data is shown as it arrived, never translated', () {
+      // Version strings, voltages and protocol names are evidence, not copy.
+      final progress = InitProgress(
+        step: Elm327Client.initSequence.first,
+        index: 0,
+        total: Elm327Client.initSequence.length,
+        status: InitStatus.ok,
+        detail: 'ELM327 v1.5',
+      );
+      for (final entry in locales.entries) {
+        expect(initProgressLine(entry.value, progress), 'ELM327 v1.5');
+      }
+    });
+
+    test('a running step explains what it is doing', () {
+      final step = Elm327Client.initSequence.firstWhere(
+        (candidate) => candidate.command == '0100',
+      );
+      final progress = InitProgress(
+        step: step,
+        index: 0,
+        total: Elm327Client.initSequence.length,
+        status: InitStatus.running,
+      );
+      expect(initProgressLine(en, progress), en.handshakeStepSupportProbe);
+      expect(initProgressLine(zh, progress), zh.handshakeStepSupportProbe);
     });
   });
 

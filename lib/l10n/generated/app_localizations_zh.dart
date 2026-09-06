@@ -10,6 +10,51 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get adapterErrorActivityAlert => '匯流排活動警示';
+
+  @override
+  String get adapterErrorBufferFull => '轉接器緩衝區溢位';
+
+  @override
+  String get adapterErrorBus => '匯流排錯誤，可能是接線問題';
+
+  @override
+  String get adapterErrorBusBusy => '匯流排忙碌';
+
+  @override
+  String get adapterErrorBusInit => '匯流排初始化失敗';
+
+  @override
+  String get adapterErrorCan => 'CAN 匯流排錯誤';
+
+  @override
+  String get adapterErrorData => '收到的資料不正確';
+
+  @override
+  String get adapterErrorFeedback => '訊號回授錯誤';
+
+  @override
+  String get adapterErrorInternal => '轉接器內部錯誤';
+
+  @override
+  String get adapterErrorLowPowerAlert => '轉接器即將進入低功耗模式';
+
+  @override
+  String get adapterErrorLowVoltageReset => '電壓過低導致轉接器重置';
+
+  @override
+  String get adapterErrorNoData => '沒有收到回應（可能是暫時無回應，或車輛不支援）';
+
+  @override
+  String get adapterErrorStopped => '傳輸被中斷';
+
+  @override
+  String get adapterErrorUnableToConnect => '無法與 ECU 通訊，請確認電門已開啟';
+
+  @override
+  String get adapterErrorUnknownCommand => '轉接器不支援此指令';
+
+  @override
   String get appTagline => '車輛即時遙測';
 
   @override
@@ -673,6 +718,73 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get handshakeNoteAborted => '已中止';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'ECU 拒絕了支援度查詢（negative response）';
+
+  @override
+  String get handshakeNoteEcuSilent => 'ECU 沒有回應';
+
+  @override
+  String get handshakeNoteNotAcknowledged => '轉接器未確認此指令';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply => '回應不是 Mode 01 的正向回覆';
+
+  @override
+  String get handshakeNotePidEchoMismatch => '回應的 PID 與查詢不符';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）';
+
+  @override
+  String get handshakeNoteTimedOut => '逾時';
+
+  @override
+  String get handshakeStepAdapterVersion => '讀取轉接器版本';
+
+  @override
+  String get handshakeStepAdaptiveTiming => '啟用自適應計時（datasheet 建議值）';
+
+  @override
+  String get handshakeStepBatteryVoltage => '讀取電瓶電壓';
+
+  @override
+  String get handshakeStepDeviceIdentity => '讀取裝置識別字串';
+
+  @override
+  String get handshakeStepEchoOff => '關閉指令回音';
+
+  @override
+  String get handshakeStepLinefeedsOff => '關閉換行字元';
+
+  @override
+  String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepProtocolAuto => '自動偵測匯流排協定';
+
+  @override
+  String get handshakeStepProtocolDescription => '讀取協定描述';
+
+  @override
+  String get handshakeStepProtocolNumber => '讀取協定編號';
+
+  @override
+  String get handshakeStepReset => '軟體重置轉接器';
+
+  @override
+  String get handshakeStepResponseTimeout => '設定回應逾時 ~408ms';
+
+  @override
+  String get handshakeStepSpacesOff => '關閉空白字元，減少 33% 傳輸量';
+
+  @override
+  String get handshakeStepSupportProbe => '查詢 ECU 支援的 PID（確認車輛已回應）';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
@@ -2324,6 +2436,51 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   AppLocalizationsZhHant() : super('zh_Hant');
 
   @override
+  String get adapterErrorActivityAlert => '匯流排活動警示';
+
+  @override
+  String get adapterErrorBufferFull => '轉接器緩衝區溢位';
+
+  @override
+  String get adapterErrorBus => '匯流排錯誤，可能是接線問題';
+
+  @override
+  String get adapterErrorBusBusy => '匯流排忙碌';
+
+  @override
+  String get adapterErrorBusInit => '匯流排初始化失敗';
+
+  @override
+  String get adapterErrorCan => 'CAN 匯流排錯誤';
+
+  @override
+  String get adapterErrorData => '收到的資料不正確';
+
+  @override
+  String get adapterErrorFeedback => '訊號回授錯誤';
+
+  @override
+  String get adapterErrorInternal => '轉接器內部錯誤';
+
+  @override
+  String get adapterErrorLowPowerAlert => '轉接器即將進入低功耗模式';
+
+  @override
+  String get adapterErrorLowVoltageReset => '電壓過低導致轉接器重置';
+
+  @override
+  String get adapterErrorNoData => '沒有收到回應（可能是暫時無回應，或車輛不支援）';
+
+  @override
+  String get adapterErrorStopped => '傳輸被中斷';
+
+  @override
+  String get adapterErrorUnableToConnect => '無法與 ECU 通訊，請確認電門已開啟';
+
+  @override
+  String get adapterErrorUnknownCommand => '轉接器不支援此指令';
+
+  @override
   String get appTagline => '車輛即時遙測';
 
   @override
@@ -2987,6 +3144,73 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get handshakeNoteAborted => '已中止';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'ECU 拒絕了支援度查詢（negative response）';
+
+  @override
+  String get handshakeNoteEcuSilent => 'ECU 沒有回應';
+
+  @override
+  String get handshakeNoteNotAcknowledged => '轉接器未確認此指令';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply => '回應不是 Mode 01 的正向回覆';
+
+  @override
+  String get handshakeNotePidEchoMismatch => '回應的 PID 與查詢不符';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）';
+
+  @override
+  String get handshakeNoteTimedOut => '逾時';
+
+  @override
+  String get handshakeStepAdapterVersion => '讀取轉接器版本';
+
+  @override
+  String get handshakeStepAdaptiveTiming => '啟用自適應計時（datasheet 建議值）';
+
+  @override
+  String get handshakeStepBatteryVoltage => '讀取電瓶電壓';
+
+  @override
+  String get handshakeStepDeviceIdentity => '讀取裝置識別字串';
+
+  @override
+  String get handshakeStepEchoOff => '關閉指令回音';
+
+  @override
+  String get handshakeStepLinefeedsOff => '關閉換行字元';
+
+  @override
+  String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepProtocolAuto => '自動偵測匯流排協定';
+
+  @override
+  String get handshakeStepProtocolDescription => '讀取協定描述';
+
+  @override
+  String get handshakeStepProtocolNumber => '讀取協定編號';
+
+  @override
+  String get handshakeStepReset => '軟體重置轉接器';
+
+  @override
+  String get handshakeStepResponseTimeout => '設定回應逾時 ~408ms';
+
+  @override
+  String get handshakeStepSpacesOff => '關閉空白字元，減少 33% 傳輸量';
+
+  @override
+  String get handshakeStepSupportProbe => '查詢 ECU 支援的 PID（確認車輛已回應）';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
