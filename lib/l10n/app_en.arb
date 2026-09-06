@@ -98,5 +98,403 @@
   },
   "telemetryBlockedByRecorder": "Stop and save the recording first",
   "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "telemetrySignalCount": "{count, plural, =1{1 signal} other{{count} signals}}",
+  "@telemetrySignalCount": {
+    "description": "Number of recorded signals in one session.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryValueCount": "{count, plural, =1{1 valid value} other{{count} valid values}}",
+  "@telemetryValueCount": {
+    "description": "Values the recorder actually wrote. Not the number of samples attempted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStatusCount": "{count, plural, =1{1 status} other{{count} statuses}}",
+  "@telemetryStatusCount": {
+    "description": "Status events (no answer, unsupported, bus error) stored beside the values.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryGapCount": "{count, plural, =1{1 gap} other{{count} gaps}}",
+  "@telemetryGapCount": {
+    "description": "Breaks in the recorded stream. A gap is missing data, never a zero reading.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryPhraseJoin": "{first}. {second}",
+  "@telemetryPhraseJoin": {
+    "description": "Joins two phrases inside one screen-reader label. The separator is punctuation and differs by language; folding the list through this keeps it out of the Dart.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetrySentenceJoin": "{first}. {second}",
+  "@telemetrySentenceJoin": {
+    "description": "Joins two complete sentences. Chinese uses the ideographic full stop, so the separator cannot be hard-coded.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetrySessionsTitle": "Local recordings",
+  "@telemetrySessionsTitle": {
+    "description": "Title of the saved-recordings screen and of the entry that opens it."
+  },
+  "telemetryReload": "Reload",
+  "telemetrySessionsLoadFailed": "Could not load — retry",
+  "telemetrySessionsEmpty": "No local recordings yet\nConnect, then start recording",
+  "telemetryLibraryQuotaSemantics": "Local storage: {groups} of {groupLimit} groups, {used} of {byteLimit} MiB",
+  "@telemetryLibraryQuotaSemantics": {
+    "description": "Screen-reader form of the two quota chips. Both limits come from TelemetryQuota, never from the prose.",
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "groupLimit": {
+        "type": "int"
+      },
+      "used": {
+        "type": "String"
+      },
+      "byteLimit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryGroupCount": "{groups}/{limit} groups",
+  "@telemetryLibraryGroupCount": {
+    "description": "{limit} is TelemetryQuota.groupLimit.",
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryBytes": "{used}/{limit} MiB",
+  "@telemetryLibraryBytes": {
+    "description": "{limit} is TelemetryQuota.libraryByteLimit in MiB. MiB is a unit and is not translated.",
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryOmitted": "{count, plural, =1{1 more group not shown} other{{count} more groups not shown}}",
+  "@telemetryLibraryOmitted": {
+    "description": "Groups the index found but did not list. Not a claim that they are unreadable.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetrySessionsReplayable": "Recordings you can replay",
+  "telemetrySessionsDamaged": "Damaged recording files",
+  "telemetryDeleteDamagedTooltip": "Delete damaged recording",
+  "telemetryDeleteDamagedTitle": "Delete this damaged recording?",
+  "telemetryDeleteDamagedBody": "This deletes {id} (file time {time}). It cannot be undone.",
+  "@telemetryDeleteDamagedBody": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryDamagedCollision": "A finished and an unfinished file share this id — neither was chosen",
+  "@telemetryDamagedCollision": {
+    "description": "The app refuses to guess which file is the real one. 'neither was chosen' must survive translation: picking one silently is the failure this reports."
+  },
+  "telemetryDamagedCorrupt": "The recording is damaged and cannot be read safely",
+  "@telemetryDamagedCorrupt": {
+    "description": "Damaged, not empty. It is never replayed or exported."
+  },
+  "telemetryDamagedFileTime": "File time {time}",
+  "@telemetryDamagedFileTime": {
+    "description": "Filesystem modification time, not a recording timestamp — the file is unreadable, so it has none.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryCancel": "Cancel",
+  "telemetryDelete": "Delete",
+  "telemetryDeleteFailed": "Delete did not finish: {reason}",
+  "@telemetryDeleteFailed": {
+    "description": "Says the delete did not complete, never that it failed harmlessly.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryReplayTitle": "Recording replay",
+  "telemetryReplayLoadFailed": "Could not load the recording",
+  "telemetryReplayUnreadable": "The recording is damaged or cannot be read",
+  "@telemetryReplayUnreadable": {
+    "description": "Two possibilities, both stated. Not 'empty'."
+  },
+  "telemetryDeleteSessionTitle": "Delete this local recording?",
+  "telemetryDeleteSessionBody": "This deletes the recording from {time}. It cannot be undone.",
+  "@telemetryDeleteSessionBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryExportFailed": "Export did not finish: {reason}",
+  "@telemetryExportFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryOfflineSampledReplay": "Offline sampled replay",
+  "@telemetryOfflineSampledReplay": {
+    "description": "Sampled, not the full recording. The exported file keeps every event; this preview does not."
+  },
+  "telemetryPlay": "Play",
+  "telemetryPause": "Pause",
+  "telemetryReplayPositionSemantics": "Replay position {percent}%",
+  "@telemetryReplayPositionSemantics": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryExport": "Export",
+  "telemetryReplaySampleCount": "{count, plural, =1{1 sampled point} other{{count} sampled points}}",
+  "@telemetryReplaySampleCount": {
+    "description": "Points kept by the downsampler for this lane's preview, not values recorded.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryReplayBreakCount": "{count, plural, =1{1 break} other{{count} breaks}}",
+  "@telemetryReplayBreakCount": {
+    "description": "Discontinuities in this lane. The line is not drawn across them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryExportSheetTitle": "Export a local recording",
+  "telemetryExportCsv": "Export CSV",
+  "telemetryExportJson": "Export JSON",
+  "telemetryRecorderPhaseIdle": "Foreground local recording",
+  "@telemetryRecorderPhaseIdle": {
+    "description": "Idle title. Foreground-only is a property of the recorder, not a suggestion."
+  },
+  "telemetryRecorderPhasePreparing": "Preparing to record",
+  "@telemetryRecorderPhasePreparing": {
+    "description": "Shared by the recorder panel and the shell strip — one key, so the two surfaces cannot disagree about the phase."
+  },
+  "telemetryRecorderPhaseAwaitingValues": "Recording — no values yet",
+  "@telemetryRecorderPhaseAwaitingValues": {
+    "description": "The recorder is running and nothing has arrived. Distinct from preparing (not started) and from recording (values are landing)."
+  },
+  "telemetryRecorderPhaseRecording": "Recording",
+  "telemetryRecorderPhaseFinalizing": "Saving the recording",
+  "@telemetryRecorderPhaseFinalizing": {
+    "description": "Shared by the recorder panel and the shell strip."
+  },
+  "telemetryRecorderPhaseCompleted": "Recording saved",
+  "telemetryRecorderPhaseFailed": "Saving the recording failed",
+  "telemetryRecorderStripRecording": "Recording {duration}",
+  "@telemetryRecorderStripRecording": {
+    "description": "{duration} is the elapsed clock, already formatted.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryOpenHistory": "Open local recordings",
+  "telemetryDismissNotice": "Dismiss",
+  "telemetryRecorderDisclosure": "Records only the OBD signals you have enabled — no location, VIN, or account data. Trends show at most {laneLimit} signals; a recording keeps all {activeCount} enabled signals and adds estimated horsepower and estimated fuel rate, which rest on the vehicle assumptions.",
+  "@telemetryRecorderDisclosure": {
+    "description": "{laneLimit} is maximumTelemetryTrendLanes, {activeCount} the enabled PID count. 'estimated' must never read as 'measured': these two columns are computed from vehicle assumptions the app cannot verify.",
+    "placeholders": {
+      "laneLimit": {
+        "type": "int"
+      },
+      "activeCount": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStarting": "Starting",
+  "telemetryStartRecordingButton": "Start recording",
+  "telemetryStopAndSave": "Stop and save",
+  "@telemetryStopAndSave": {
+    "description": "The button. Distinct from telemetryBlockedByRecorder, which is the refusal that names this action."
+  },
+  "telemetryReturnToTrends": "Back to trends",
+  "telemetryRecoveryTitle": "Startup check of the recordings finished",
+  "@telemetryRecoveryTitle": {
+    "description": "The check finished. It does not claim damaged data was repaired."
+  },
+  "telemetryRecoveryInstalled": "{count, plural, =1{1 interrupted recording was safely sealed} other{{count} interrupted recordings were safely sealed}}",
+  "@telemetryRecoveryInstalled": {
+    "description": "Sealed as they were found. Nothing was reconstructed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryCleaned": "{count, plural, =1{1 unfinished file with no valid values was cleaned up} other{{count} unfinished files with no valid values were cleaned up}}",
+  "@telemetryRecoveryCleaned": {
+    "description": "Only files that held no valid value were removed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryDamaged": "{count, plural, =1{1 damaged or conflicting file was left unchanged} other{{count} damaged or conflicting files were left unchanged}}",
+  "@telemetryRecoveryDamaged": {
+    "description": "Left unchanged, not repaired and not deleted. The app never edits a file it cannot read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryDamagedNote": "Damaged content is never used for replay or export, and can only be deleted by hand while it is safe to do so.",
+  "@telemetryRecoveryDamagedNote": {
+    "description": "Both halves are load-bearing: never used, and deletable only under the safety gate."
+  },
+  "telemetryHistoryEntrySubtitle": "{count, plural, =1{1 saved group — replay and export offline} other{{count} saved groups — replay and export offline}}",
+  "@telemetryHistoryEntrySubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "transcriptSizeBytes": "{bytes, plural, =1{1 byte} other{{bytes} bytes}}",
+  "@transcriptSizeBytes": {
+    "description": "Below a kilobyte the exact byte count is shown, because a failed handshake is a few hundred bytes and '0 KB' reads as empty.",
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "transcriptNothingToExport": "There is no transcript to export.",
+  "transcriptExportFailed": "Export failed: {error}",
+  "@transcriptExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptExportExplanation": "This connection keeps the opening handshake and the most recent raw traffic; if a long connection drops the middle, the file says so. When something will not read on the car, exporting the transcript and bringing it back is worth far more than one message on screen.",
+  "@transcriptExportExplanation": {
+    "description": "The middle-omitted disclosure is load-bearing: a truncated transcript must announce its truncation."
+  },
+  "transcriptExportButton": "Export transcript",
+  "transcriptExportWithHex": "With hex",
+  "transcriptExport": "Export",
+  "transcriptDelete": "Delete",
+  "transcriptRecoveredTitle": "Transcript from the previous connection",
+  "@transcriptRecoveredTitle": {
+    "description": "Previous connection, not this one. Somebody looking at a working car must not mistake it for the log they are about to make."
+  },
+  "transcriptRecoveredBody": "Left at {timestamp}, {size}. It survived the system killing Telltale or the phone losing power.",
+  "@transcriptRecoveredBody": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptRecoveredChanged": "The previous connection's transcript has changed — check it again.",
+  "@transcriptRecoveredChanged": {
+    "description": "Refuses to export or delete bytes that are no longer the ones on screen."
+  },
+  "transcriptDeleteBusy": "Another file operation has not finished.",
+  "transcriptDeleteRefusedBySafety": "The current speed or connection state does not allow deleting the transcript.",
+  "@transcriptDeleteRefusedBySafety": {
+    "description": "A refusal, not advice."
+  },
+  "transcriptDeleteFailed": "Could not delete the previous connection's transcript.",
+  "powertrainConfirmTitle": "Vehicle battery signals await confirmation",
+  "powertrainConfirmBody": "Installed profile signals are read only after you confirm this car is that model, and the confirmation lasts for this connection alone.",
+  "@powertrainConfirmBody": {
+    "description": "Installing makes definitions available; it does not say the car on the wire is that vehicle. The per-connection scope is the point — plugging into a different car must never inherit the grant."
+  },
+  "powertrainConfirmButton": "Confirm vehicle",
+  "powertrainConfirmDialogTitle": "Confirm the connected vehicle",
+  "powertrainConfirmDialogBody": "Once confirmed, this profile's read-only battery queries are polled for the rest of this connection. The wrong profile can produce numbers that look plausible and are wrong — cancel if you are not sure.",
+  "@powertrainConfirmDialogBody": {
+    "description": "Carries this project's organising principle into product copy: a plausible wrong number is worse than no number. Never soften 'look plausible and are wrong'."
+  },
+  "powertrainCancel": "Cancel",
+  "powertrainConfirmAccept": "This is the car",
+  "powertrainConnectionChanged": "The connection changed — confirm the vehicle again for the new connection.",
+  "@powertrainConnectionChanged": {
+    "description": "The acceptance was a statement about the vehicle on the wire at prompt time; it cannot carry over."
+  },
+  "powertrainAuthorizationGranted": "Battery signals for {profile} are on for this connection",
+  "@powertrainAuthorizationGranted": {
+    "description": "The per-connection scope is part of the sentence, not a footnote.",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainAuthorizationRefused": "Could not enable: {reason}",
+  "@powertrainAuthorizationRefused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainProfileNotVerified": "The profile is not in the verified catalog"
 }
