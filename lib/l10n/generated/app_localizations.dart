@@ -416,6 +416,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing'**
   String get telemetryArtifactRestartRequired;
+
+  /// Performance screen title. The screen times a run; it never states a vehicle's rated performance.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration test'**
+  String get performanceHeadline;
+
+  /// Says what the number is: one timed run beginning at rest. Not a manufacturer figure, not a rating.
+  ///
+  /// In en, this message translates to:
+  /// **'A timed run from a standing start to a target speed'**
+  String get performanceSubhead;
+
+  /// No description provided for @performanceNotConnectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get performanceNotConnectedTitle;
+
+  /// No description provided for @performanceNotConnectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.'**
+  String get performanceNotConnectedBody;
+
+  /// No description provided for @performanceSpeedGaugeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get performanceSpeedGaugeLabel;
+
+  /// No description provided for @performanceStateIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a target speed, then start'**
+  String get performanceStateIdle;
+
+  /// {speed} is the live road speed, already formatted by the caller. Units never change with language.
+  ///
+  /// In en, this message translates to:
+  /// **'Come to a complete stop first — now {speed} km/h'**
+  String performanceStateAwaitingStandstill(String speed);
+
+  /// No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a speed signal'**
+  String get performanceStateAwaitingSpeedSignal;
+
+  /// No description provided for @performanceStateStaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready — the clock starts when you move off'**
+  String get performanceStateStaged;
+
+  /// No description provided for @performanceStateRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing'**
+  String get performanceStateRunning;
+
+  /// {target} is the selected target speed from the screen's own list, never spelled into the sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished 0 → {target} km/h'**
+  String performanceStateFinished(int target);
+
+  /// An incomplete run whose partial evidence is kept. Must never read as a finished time.
+  ///
+  /// In en, this message translates to:
+  /// **'The speed signal stopped — this run was not completed; below is what was recorded before it went'**
+  String get performanceStateAborted;
+
+  /// No description provided for @performanceSecondsUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get performanceSecondsUnit;
+
+  /// No description provided for @performanceTargetSpeedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Target speed'**
+  String get performanceTargetSpeedHeading;
+
+  /// No description provided for @performanceSpeedTraceHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed trace'**
+  String get performanceSpeedTraceHeading;
+
+  /// No description provided for @performanceSplitsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Splits'**
+  String get performanceSplitsHeading;
+
+  /// No description provided for @performancePeakSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak speed'**
+  String get performancePeakSpeed;
+
+  /// No description provided for @performanceArm.
+  ///
+  /// In en, this message translates to:
+  /// **'Arm the timer'**
+  String get performanceArm;
+
+  /// No description provided for @performanceReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get performanceReset;
+
+  /// PID 010D is an adapter-facing token and stays byte-identical in every language.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.'**
+  String get performanceNoSpeedSignal;
+
+  /// Load-bearing hedge. Both halves must survive translation: indicative only, AND not equivalent to professional test equipment. The ranges describe vehicles and adapters, not a constant this app enforces, so they stay in the prose.
+  ///
+  /// In en, this message translates to:
+  /// **'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.'**
+  String get performanceDisclaimer;
 }
 
 class _AppLocalizationsDelegate

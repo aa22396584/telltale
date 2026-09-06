@@ -175,6 +175,74 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get performanceHeadline => '加速測試';
+
+  @override
+  String get performanceSubhead => '由靜止起步計時至目標車速';
+
+  @override
+  String get performanceNotConnectedTitle => '尚未連線';
+
+  @override
+  String get performanceNotConnectedBody => '加速測試需要即時車速資料，請先連線或啟動模擬器。';
+
+  @override
+  String get performanceSpeedGaugeLabel => '車速';
+
+  @override
+  String get performanceStateIdle => '選擇目標車速後開始';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return '請先完全停車 — 目前 $speed km/h';
+  }
+
+  @override
+  String get performanceStateAwaitingSpeedSignal => '等待車速訊號';
+
+  @override
+  String get performanceStateStaged => '已就緒 — 起步即開始計時';
+
+  @override
+  String get performanceStateRunning => '計時中';
+
+  @override
+  String performanceStateFinished(int target) {
+    return '完成 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+
+  @override
+  String get performanceSecondsUnit => '秒';
+
+  @override
+  String get performanceTargetSpeedHeading => '目標車速';
+
+  @override
+  String get performanceSpeedTraceHeading => '速度軌跡';
+
+  @override
+  String get performanceSplitsHeading => '分段成績';
+
+  @override
+  String get performancePeakSpeed => '最高車速';
+
+  @override
+  String get performanceArm => '準備計時';
+
+  @override
+  String get performanceReset => '重置';
+
+  @override
+  String get performanceNoSpeedSignal => '目前沒有有效的車速訊號（PID 010D）。加速測試需要它才能計時。';
+
+  @override
+  String get performanceDisclaimer =>
+      '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -347,4 +415,72 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get performanceHeadline => '加速測試';
+
+  @override
+  String get performanceSubhead => '由靜止起步計時至目標車速';
+
+  @override
+  String get performanceNotConnectedTitle => '尚未連線';
+
+  @override
+  String get performanceNotConnectedBody => '加速測試需要即時車速資料，請先連線或啟動模擬器。';
+
+  @override
+  String get performanceSpeedGaugeLabel => '車速';
+
+  @override
+  String get performanceStateIdle => '選擇目標車速後開始';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return '請先完全停車 — 目前 $speed km/h';
+  }
+
+  @override
+  String get performanceStateAwaitingSpeedSignal => '等待車速訊號';
+
+  @override
+  String get performanceStateStaged => '已就緒 — 起步即開始計時';
+
+  @override
+  String get performanceStateRunning => '計時中';
+
+  @override
+  String performanceStateFinished(int target) {
+    return '完成 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+
+  @override
+  String get performanceSecondsUnit => '秒';
+
+  @override
+  String get performanceTargetSpeedHeading => '目標車速';
+
+  @override
+  String get performanceSpeedTraceHeading => '速度軌跡';
+
+  @override
+  String get performanceSplitsHeading => '分段成績';
+
+  @override
+  String get performancePeakSpeed => '最高車速';
+
+  @override
+  String get performanceArm => '準備計時';
+
+  @override
+  String get performanceReset => '重置';
+
+  @override
+  String get performanceNoSpeedSignal => '目前沒有有效的車速訊號（PID 010D）。加速測試需要它才能計時。';
+
+  @override
+  String get performanceDisclaimer =>
+      '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
 }

@@ -98,5 +98,60 @@
   },
   "telemetryBlockedByRecorder": "Stop and save the recording first",
   "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "performanceHeadline": "Acceleration test",
+  "@performanceHeadline": {
+    "description": "Performance screen title. The screen times a run; it never states a vehicle's rated performance."
+  },
+  "performanceSubhead": "A timed run from a standing start to a target speed",
+  "@performanceSubhead": {
+    "description": "Says what the number is: one timed run beginning at rest. Not a manufacturer figure, not a rating."
+  },
+  "performanceNotConnectedTitle": "Not connected",
+  "performanceNotConnectedBody": "The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.",
+  "performanceSpeedGaugeLabel": "Speed",
+  "performanceStateIdle": "Pick a target speed, then start",
+  "performanceStateAwaitingStandstill": "Come to a complete stop first — now {speed} km/h",
+  "@performanceStateAwaitingStandstill": {
+    "description": "{speed} is the live road speed, already formatted by the caller. Units never change with language.",
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "performanceStateAwaitingSpeedSignal": "Waiting for a speed signal",
+  "@performanceStateAwaitingSpeedSignal": {
+    "description": "No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet."
+  },
+  "performanceStateStaged": "Ready — the clock starts when you move off",
+  "performanceStateRunning": "Timing",
+  "performanceStateFinished": "Finished 0 → {target} km/h",
+  "@performanceStateFinished": {
+    "description": "{target} is the selected target speed from the screen's own list, never spelled into the sentence.",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "performanceStateAborted": "The speed signal stopped — this run was not completed; below is what was recorded before it went",
+  "@performanceStateAborted": {
+    "description": "An incomplete run whose partial evidence is kept. Must never read as a finished time."
+  },
+  "performanceSecondsUnit": "seconds",
+  "performanceTargetSpeedHeading": "Target speed",
+  "performanceSpeedTraceHeading": "Speed trace",
+  "performanceSplitsHeading": "Splits",
+  "performancePeakSpeed": "Peak speed",
+  "performanceArm": "Arm the timer",
+  "performanceReset": "Reset",
+  "performanceNoSpeedSignal": "There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.",
+  "@performanceNoSpeedSignal": {
+    "description": "PID 010D is an adapter-facing token and stays byte-identical in every language."
+  },
+  "performanceDisclaimer": "Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.",
+  "@performanceDisclaimer": {
+    "description": "Load-bearing hedge. Both halves must survive translation: indicative only, AND not equivalent to professional test equipment. The ranges describe vehicles and adapters, not a constant this app enforces, so they stay in the prose."
+  }
 }

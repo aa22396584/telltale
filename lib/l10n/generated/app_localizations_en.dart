@@ -199,4 +199,78 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get telemetryArtifactRestartRequired =>
       'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing';
+
+  @override
+  String get performanceHeadline => 'Acceleration test';
+
+  @override
+  String get performanceSubhead =>
+      'A timed run from a standing start to a target speed';
+
+  @override
+  String get performanceNotConnectedTitle => 'Not connected';
+
+  @override
+  String get performanceNotConnectedBody =>
+      'The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.';
+
+  @override
+  String get performanceSpeedGaugeLabel => 'Speed';
+
+  @override
+  String get performanceStateIdle => 'Pick a target speed, then start';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return 'Come to a complete stop first — now $speed km/h';
+  }
+
+  @override
+  String get performanceStateAwaitingSpeedSignal =>
+      'Waiting for a speed signal';
+
+  @override
+  String get performanceStateStaged =>
+      'Ready — the clock starts when you move off';
+
+  @override
+  String get performanceStateRunning => 'Timing';
+
+  @override
+  String performanceStateFinished(int target) {
+    return 'Finished 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateAborted =>
+      'The speed signal stopped — this run was not completed; below is what was recorded before it went';
+
+  @override
+  String get performanceSecondsUnit => 'seconds';
+
+  @override
+  String get performanceTargetSpeedHeading => 'Target speed';
+
+  @override
+  String get performanceSpeedTraceHeading => 'Speed trace';
+
+  @override
+  String get performanceSplitsHeading => 'Splits';
+
+  @override
+  String get performancePeakSpeed => 'Peak speed';
+
+  @override
+  String get performanceArm => 'Arm the timer';
+
+  @override
+  String get performanceReset => 'Reset';
+
+  @override
+  String get performanceNoSpeedSignal =>
+      'There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.';
+
+  @override
+  String get performanceDisclaimer =>
+      'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.';
 }
