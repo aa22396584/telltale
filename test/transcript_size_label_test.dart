@@ -15,13 +15,20 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/ui/widgets/transcript_export.dart';
 
 void main() {
+  // The label moved into the ARBs, so the formatter now takes the
+  // localizations it renders with. The assertions below are unchanged; only
+  // the call sites carry the extra argument.
+  final zh = lookupAppLocalizations(traditionalChineseLocale);
+
   test('a recording under a kilobyte is never shown as zero', () {
     // The size of a failed handshake: ATZ out, nothing back, one note.
     for (final bytes in [1, 40, 199, 400, 511, 1023]) {
-      final label = formatTranscriptSize(bytes);
+      final label = formatTranscriptSize(zh, bytes);
       expect(label.startsWith('0'), isFalse,
           reason: '$bytes bytes rendered as "$label", which reads as empty');
       expect(label, contains('$bytes'),
@@ -30,9 +37,9 @@ void main() {
   });
 
   test('kilobytes are still kilobytes', () {
-    expect(formatTranscriptSize(1024), '1 KB');
-    expect(formatTranscriptSize(140 * 1024), '140 KB');
+    expect(formatTranscriptSize(zh, 1024), '1 KB');
+    expect(formatTranscriptSize(zh, 140 * 1024), '140 KB');
     // Rounding, not truncation, at the boundary — 1536 is closer to 2 KB.
-    expect(formatTranscriptSize(1536), '2 KB');
+    expect(formatTranscriptSize(zh, 1536), '2 KB');
   });
 }

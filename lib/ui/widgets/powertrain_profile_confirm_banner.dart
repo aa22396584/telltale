@@ -10,6 +10,7 @@ import '../../obd/powertrain_battery/powertrain_battery_profile.dart';
 import '../../state/obd_session.dart';
 import '../../state/pid_registry.dart';
 import '../../state/powertrain_battery_profiles.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'panel.dart';
 
 /// Shown on the dashboard while a connection is live and an installed
@@ -24,6 +25,7 @@ class PowertrainProfileConfirmBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final connected = ref.watch(obdSessionProvider).isConnected;
     if (!connected) return const SizedBox.shrink();
 
@@ -54,29 +56,18 @@ class PowertrainProfileConfirmBanner extends ConsumerWidget {
     ];
     if (unconfirmed.isEmpty) return const SizedBox.shrink();
 
-    final snapshot = ref
-        .watch(powertrainBatteryCatalogSnapshotProvider)
-        .value;
+    final snapshot = ref.watch(powertrainBatteryCatalogSnapshotProvider).value;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
-        0,
-        Spacing.lg,
-        Spacing.md,
-      ),
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.md),
       child: Panel(
         key: const Key('powertrain_profile_confirm_banner'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('車輛電池訊號待確認', style: context.texts.titleMedium),
+            Text(l10n.powertrainConfirmTitle, style: context.texts.titleMedium),
             const SizedBox(height: Spacing.xs),
-            Text(
-              '已安裝的車型訊號要先確認這台車就是該車型，本次連線才會開始讀取。'
-              '確認只對這次連線有效。',
-              style: context.texts.bodySmall,
-            ),
+            Text(l10n.powertrainConfirmBody, style: context.texts.bodySmall),
             const SizedBox(height: Spacing.sm),
             for (final profileId in unconfirmed)
               _ConfirmRow(
@@ -106,6 +97,7 @@ class _ConfirmRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final resolved = profile;
     final resolvedSnapshot = snapshot;
     final year = ref
@@ -123,10 +115,11 @@ class _ConfirmRow extends ConsumerWidget {
         ),
         FilledButton(
           key: Key('powertrain_confirm_connection_$profileId'),
-          onPressed: resolved == null || resolvedSnapshot == null || year == null
+          onPressed:
+              resolved == null || resolvedSnapshot == null || year == null
               ? null
               : () => _confirm(context, ref, resolvedSnapshot, resolved, year),
-          child: const Text('確認車輛'),
+          child: Text(l10n.powertrainConfirmButton),
         ),
       ],
     );
@@ -143,13 +136,17 @@ class _ConfirmRow extends ConsumerWidget {
     // about the vehicle on the wire *now*; if the connection changes while
     // the dialog sits open — a different adapter, a different car — the
     // acceptance must not carry over to whatever connected next.
+    // Read before the dialog opens, for the same reason the generation is: the
+    // answer belongs to the language that was on screen when the driver was
+    // asked, not to whatever the app is set to when the dialog closes.
+    final l10n = AppLocalizations.of(context);
     final session = ref.read(obdSessionProvider.notifier);
     final generationAtPrompt = session.connectionGeneration;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('確認連線中的車輛'),
+        title: Text(l10n.powertrainConfirmDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,8 +157,7 @@ class _ConfirmRow extends ConsumerWidget {
             ),
             const SizedBox(height: Spacing.sm),
             Text(
-              '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。'
-              '接錯車型可能得到看似合理但錯誤的數字——不確定就取消。',
+              l10n.powertrainConfirmDialogBody,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -169,12 +165,12 @@ class _ConfirmRow extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.powertrainCancel),
           ),
           FilledButton(
             key: const Key('powertrain_confirm_connection_accept'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('就是這台車'),
+            child: Text(l10n.powertrainConfirmAccept),
           ),
         ],
       ),
@@ -184,9 +180,9 @@ class _ConfirmRow extends ConsumerWidget {
     if (!ref.read(obdSessionProvider).isConnected ||
         session.connectionGeneration != generationAtPrompt) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('連線已改變，請對新的連線重新確認車輛。')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.powertrainConnectionChanged)));
       return;
     }
 
@@ -204,8 +200,12 @@ class _ConfirmRow extends ConsumerWidget {
       SnackBar(
         content: Text(
           granted
-              ? '已啟用 ${profile.displayName} 的電池訊號（本次連線）'
-              : '無法啟用：${result == null || result.issues.isEmpty ? '設定檔不在已驗證目錄中' : result.issues.first.message}',
+              ? l10n.powertrainAuthorizationGranted(profile.displayName)
+              : l10n.powertrainAuthorizationRefused(
+                  result == null || result.issues.isEmpty
+                      ? l10n.powertrainProfileNotVerified
+                      : result.issues.first.message,
+                ),
         ),
       ),
     );

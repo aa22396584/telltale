@@ -45,6 +45,7 @@ class _HistoryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final permitted = access == TelemetryHistoryAccess.permitted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -62,12 +63,15 @@ class _HistoryPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('本機紀錄', style: context.texts.titleMedium),
+                    Text(
+                      l10n.telemetrySessionsTitle,
+                      style: context.texts.titleMedium,
+                    ),
                     const SizedBox(height: Spacing.xs),
                     Text(
                       permitted
-                          ? '已儲存 $count 組，可離線回放與匯出'
-                          : access.message(AppLocalizations.of(context))!,
+                          ? l10n.telemetryHistoryEntrySubtitle(count ?? 0)
+                          : access.message(l10n)!,
                       style: context.texts.bodySmall,
                     ),
                   ],

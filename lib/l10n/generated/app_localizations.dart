@@ -1611,6 +1611,18 @@ abstract class AppLocalizations {
   /// **'{units} · stale'**
   String pidRowStaleUnits(String units);
 
+  /// The per-connection scope is part of the sentence, not a footnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery signals for {profile} are on for this connection'**
+  String powertrainAuthorizationGranted(String profile);
+
+  /// No description provided for @powertrainAuthorizationRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not enable: {reason}'**
+  String powertrainAuthorizationRefused(String reason);
+
   /// No description provided for @powertrainCancel.
   ///
   /// In en, this message translates to:
@@ -1683,11 +1695,53 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get powertrainClose;
 
+  /// No description provided for @powertrainConfirmAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the car'**
+  String get powertrainConfirmAccept;
+
+  /// Installing makes definitions available; it does not say the car on the wire is that vehicle. The per-connection scope is the point — plugging into a different car must never inherit the grant.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed profile signals are read only after you confirm this car is that model, and the confirmation lasts for this connection alone.'**
+  String get powertrainConfirmBody;
+
+  /// No description provided for @powertrainConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm vehicle'**
+  String get powertrainConfirmButton;
+
+  /// Carries this project's organising principle into product copy: a plausible wrong number is worse than no number. Never soften 'look plausible and are wrong'.
+  ///
+  /// In en, this message translates to:
+  /// **'Once confirmed, this profile\'s read-only battery queries are polled for the rest of this connection. The wrong profile can produce numbers that look plausible and are wrong — cancel if you are not sure.'**
+  String get powertrainConfirmDialogBody;
+
+  /// No description provided for @powertrainConfirmDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the connected vehicle'**
+  String get powertrainConfirmDialogTitle;
+
+  /// No description provided for @powertrainConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle battery signals await confirmation'**
+  String get powertrainConfirmTitle;
+
   /// No description provided for @powertrainConnectFirst.
   ///
   /// In en, this message translates to:
   /// **'Connect first; experimental authorization is never kept across connections.'**
   String get powertrainConnectFirst;
+
+  /// The acceptance was a statement about the vehicle on the wire at prompt time; it cannot carry over.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection changed — confirm the vehicle again for the new connection.'**
+  String get powertrainConnectionChanged;
 
   /// No description provided for @powertrainEnableLabInSettings.
   ///
@@ -1982,6 +2036,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try one read first'**
   String get powertrainProbeTryOnceFirst;
+
+  /// No description provided for @powertrainProfileNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The profile is not in the verified catalog'**
+  String get powertrainProfileNotVerified;
 
   /// Scoped to this connection, not permanent, and reconnecting is what lifts it. Kept to the pill width at 360dp: 'Quarantined for this connection' overflowed the card header row.
   ///
@@ -2764,11 +2824,83 @@ abstract class AppLocalizations {
   /// **'Stop and save the recording first'**
   String get telemetryBlockedByRecorder;
 
+  /// No description provided for @telemetryCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get telemetryCancel;
+
+  /// The app refuses to guess which file is the real one. 'neither was chosen' must survive translation: picking one silently is the failure this reports.
+  ///
+  /// In en, this message translates to:
+  /// **'A finished and an unfinished file share this id — neither was chosen'**
+  String get telemetryDamagedCollision;
+
+  /// Damaged, not empty. It is never replayed or exported.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording is damaged and cannot be read safely'**
+  String get telemetryDamagedCorrupt;
+
+  /// Filesystem modification time, not a recording timestamp — the file is unreadable, so it has none.
+  ///
+  /// In en, this message translates to:
+  /// **'File time {time}'**
+  String telemetryDamagedFileTime(String time);
+
+  /// No description provided for @telemetryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get telemetryDelete;
+
+  /// No description provided for @telemetryDeleteDamagedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes {id} (file time {time}). It cannot be undone.'**
+  String telemetryDeleteDamagedBody(String id, String time);
+
+  /// No description provided for @telemetryDeleteDamagedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this damaged recording?'**
+  String get telemetryDeleteDamagedTitle;
+
+  /// No description provided for @telemetryDeleteDamagedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete damaged recording'**
+  String get telemetryDeleteDamagedTooltip;
+
+  /// Says the delete did not complete, never that it failed harmlessly.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete did not finish: {reason}'**
+  String telemetryDeleteFailed(String reason);
+
   /// No description provided for @telemetryDeleteNeedsConfirmation.
   ///
   /// In en, this message translates to:
   /// **'Confirm this delete first'**
   String get telemetryDeleteNeedsConfirmation;
+
+  /// No description provided for @telemetryDeleteSessionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes the recording from {time}. It cannot be undone.'**
+  String telemetryDeleteSessionBody(String time);
+
+  /// No description provided for @telemetryDeleteSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this local recording?'**
+  String get telemetryDeleteSessionTitle;
+
+  /// No description provided for @telemetryDismissNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get telemetryDismissNotice;
 
   /// No description provided for @telemetryEndedByBackground.
   ///
@@ -2836,11 +2968,238 @@ abstract class AppLocalizations {
   /// **'Stopped by you'**
   String get telemetryEndedByUser;
 
+  /// No description provided for @telemetryExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get telemetryExport;
+
+  /// No description provided for @telemetryExportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get telemetryExportCsv;
+
+  /// No description provided for @telemetryExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export did not finish: {reason}'**
+  String telemetryExportFailed(String reason);
+
+  /// No description provided for @telemetryExportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON'**
+  String get telemetryExportJson;
+
+  /// No description provided for @telemetryExportSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export a local recording'**
+  String get telemetryExportSheetTitle;
+
+  /// Breaks in the recorded stream. A gap is missing data, never a zero reading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 gap} other{{count} gaps}}'**
+  String telemetryGapCount(int count);
+
+  /// No description provided for @telemetryHistoryEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 saved group — replay and export offline} other{{count} saved groups — replay and export offline}}'**
+  String telemetryHistoryEntrySubtitle(int count);
+
+  /// {limit} is TelemetryQuota.libraryByteLimit in MiB. MiB is a unit and is not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'{used}/{limit} MiB'**
+  String telemetryLibraryBytes(String used, int limit);
+
+  /// {limit} is TelemetryQuota.groupLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'{groups}/{limit} groups'**
+  String telemetryLibraryGroupCount(int groups, int limit);
+
+  /// Groups the index found but did not list. Not a claim that they are unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more group not shown} other{{count} more groups not shown}}'**
+  String telemetryLibraryOmitted(int count);
+
+  /// Screen-reader form of the two quota chips. Both limits come from TelemetryQuota, never from the prose.
+  ///
+  /// In en, this message translates to:
+  /// **'Local storage: {groups} of {groupLimit} groups, {used} of {byteLimit} MiB'**
+  String telemetryLibraryQuotaSemantics(
+    int groups,
+    int groupLimit,
+    String used,
+    int byteLimit,
+  );
+
+  /// Sampled, not the full recording. The exported file keeps every event; this preview does not.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline sampled replay'**
+  String get telemetryOfflineSampledReplay;
+
+  /// No description provided for @telemetryOpenHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Open local recordings'**
+  String get telemetryOpenHistory;
+
+  /// No description provided for @telemetryPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get telemetryPause;
+
   /// No description provided for @telemetryPendingOwnerRecovery.
   ///
   /// In en, this message translates to:
   /// **'This process still holds the operation. If it stays here, quit Telltale completely and reopen it'**
   String get telemetryPendingOwnerRecovery;
+
+  /// Joins two phrases inside one screen-reader label. The separator is punctuation and differs by language; folding the list through this keeps it out of the Dart.
+  ///
+  /// In en, this message translates to:
+  /// **'{first}. {second}'**
+  String telemetryPhraseJoin(String first, String second);
+
+  /// No description provided for @telemetryPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get telemetryPlay;
+
+  /// {laneLimit} is maximumTelemetryTrendLanes, {activeCount} the enabled PID count. 'estimated' must never read as 'measured': these two columns are computed from vehicle assumptions the app cannot verify.
+  ///
+  /// In en, this message translates to:
+  /// **'Records only the OBD signals you have enabled — no location, VIN, or account data. Trends show at most {laneLimit} signals; a recording keeps all {activeCount} enabled signals and adds estimated horsepower and estimated fuel rate, which rest on the vehicle assumptions.'**
+  String telemetryRecorderDisclosure(int laneLimit, int activeCount);
+
+  /// The recorder is running and nothing has arrived. Distinct from preparing (not started) and from recording (values are landing).
+  ///
+  /// In en, this message translates to:
+  /// **'Recording — no values yet'**
+  String get telemetryRecorderPhaseAwaitingValues;
+
+  /// No description provided for @telemetryRecorderPhaseCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording saved'**
+  String get telemetryRecorderPhaseCompleted;
+
+  /// No description provided for @telemetryRecorderPhaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the recording failed'**
+  String get telemetryRecorderPhaseFailed;
+
+  /// Shared by the recorder panel and the shell strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the recording'**
+  String get telemetryRecorderPhaseFinalizing;
+
+  /// Idle title. Foreground-only is a property of the recorder, not a suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Foreground local recording'**
+  String get telemetryRecorderPhaseIdle;
+
+  /// Shared by the recorder panel and the shell strip — one key, so the two surfaces cannot disagree about the phase.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing to record'**
+  String get telemetryRecorderPhasePreparing;
+
+  /// No description provided for @telemetryRecorderPhaseRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get telemetryRecorderPhaseRecording;
+
+  /// {duration} is the elapsed clock, already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording {duration}'**
+  String telemetryRecorderStripRecording(String duration);
+
+  /// Only files that held no valid value were removed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unfinished file with no valid values was cleaned up} other{{count} unfinished files with no valid values were cleaned up}}'**
+  String telemetryRecoveryCleaned(int count);
+
+  /// Left unchanged, not repaired and not deleted. The app never edits a file it cannot read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 damaged or conflicting file was left unchanged} other{{count} damaged or conflicting files were left unchanged}}'**
+  String telemetryRecoveryDamaged(int count);
+
+  /// Both halves are load-bearing: never used, and deletable only under the safety gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged content is never used for replay or export, and can only be deleted by hand while it is safe to do so.'**
+  String get telemetryRecoveryDamagedNote;
+
+  /// Sealed as they were found. Nothing was reconstructed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 interrupted recording was safely sealed} other{{count} interrupted recordings were safely sealed}}'**
+  String telemetryRecoveryInstalled(int count);
+
+  /// The check finished. It does not claim damaged data was repaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Startup check of the recordings finished'**
+  String get telemetryRecoveryTitle;
+
+  /// No description provided for @telemetryReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get telemetryReload;
+
+  /// Discontinuities in this lane. The line is not drawn across them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 break} other{{count} breaks}}'**
+  String telemetryReplayBreakCount(int count);
+
+  /// No description provided for @telemetryReplayLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the recording'**
+  String get telemetryReplayLoadFailed;
+
+  /// No description provided for @telemetryReplayPositionSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay position {percent}%'**
+  String telemetryReplayPositionSemantics(int percent);
+
+  /// Points kept by the downsampler for this lane's preview, not values recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sampled point} other{{count} sampled points}}'**
+  String telemetryReplaySampleCount(int count);
+
+  /// No description provided for @telemetryReplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording replay'**
+  String get telemetryReplayTitle;
+
+  /// Two possibilities, both stated. Not 'empty'.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording is damaged or cannot be read'**
+  String get telemetryReplayUnreadable;
 
   /// No description provided for @telemetryRestartToRepairSave.
   ///
@@ -2853,6 +3212,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Startup cleanup did not finish — restart Telltale to repair the recordings'**
   String get telemetryRestartToRepairStartup;
+
+  /// No description provided for @telemetryReturnToTrends.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to trends'**
+  String get telemetryReturnToTrends;
+
+  /// Joins two complete sentences. Chinese uses the ideographic full stop, so the separator cannot be hard-coded.
+  ///
+  /// In en, this message translates to:
+  /// **'{first}. {second}'**
+  String telemetrySentenceJoin(String first, String second);
+
+  /// No description provided for @telemetrySessionsDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged recording files'**
+  String get telemetrySessionsDamaged;
+
+  /// No description provided for @telemetrySessionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No local recordings yet\nConnect, then start recording'**
+  String get telemetrySessionsEmpty;
+
+  /// No description provided for @telemetrySessionsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load — retry'**
+  String get telemetrySessionsLoadFailed;
+
+  /// No description provided for @telemetrySessionsReplayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Recordings you can replay'**
+  String get telemetrySessionsReplayable;
+
+  /// Title of the saved-recordings screen and of the entry that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Local recordings'**
+  String get telemetrySessionsTitle;
+
+  /// Number of recorded signals in one session.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 signal} other{{count} signals}}'**
+  String telemetrySignalCount(int count);
 
   /// No description provided for @telemetryStartBusy.
   ///
@@ -2932,6 +3339,12 @@ abstract class AppLocalizations {
   /// **'Recording started'**
   String get telemetryStartRecording;
 
+  /// No description provided for @telemetryStartRecordingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording'**
+  String get telemetryStartRecordingButton;
+
   /// Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car.
   ///
   /// In en, this message translates to:
@@ -2944,11 +3357,23 @@ abstract class AppLocalizations {
   /// **'Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first'**
   String get telemetryStartTooManyPids;
 
+  /// No description provided for @telemetryStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get telemetryStarting;
+
   /// No description provided for @telemetryStatusBusError.
   ///
   /// In en, this message translates to:
   /// **'Bus error'**
   String get telemetryStatusBusError;
+
+  /// Status events (no answer, unsupported, bus error) stored beside the values.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 status} other{{count} statuses}}'**
+  String telemetryStatusCount(int count);
 
   /// No description provided for @telemetryStatusFormulaError.
   ///
@@ -2985,6 +3410,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The controller answered that it does not support this'**
   String get telemetryStatusUnsupported;
+
+  /// The button. Distinct from telemetryBlockedByRecorder, which is the refusal that names this action.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and save'**
+  String get telemetryStopAndSave;
+
+  /// Values the recorder actually wrote. Not the number of samples attempted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 valid value} other{{count} valid values}}'**
+  String telemetryValueCount(int count);
+
+  /// No description provided for @transcriptDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get transcriptDelete;
+
+  /// No description provided for @transcriptDeleteBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Another file operation has not finished.'**
+  String get transcriptDeleteBusy;
+
+  /// No description provided for @transcriptDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the previous connection\'s transcript.'**
+  String get transcriptDeleteFailed;
+
+  /// A refusal, not advice.
+  ///
+  /// In en, this message translates to:
+  /// **'The current speed or connection state does not allow deleting the transcript.'**
+  String get transcriptDeleteRefusedBySafety;
+
+  /// No description provided for @transcriptExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get transcriptExport;
+
+  /// No description provided for @transcriptExportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Export transcript'**
+  String get transcriptExportButton;
+
+  /// The middle-omitted disclosure is load-bearing: a truncated transcript must announce its truncation.
+  ///
+  /// In en, this message translates to:
+  /// **'This connection keeps the opening handshake and the most recent raw traffic; if a long connection drops the middle, the file says so. When something will not read on the car, exporting the transcript and bringing it back is worth far more than one message on screen.'**
+  String get transcriptExportExplanation;
+
+  /// No description provided for @transcriptExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String transcriptExportFailed(String error);
+
+  /// No description provided for @transcriptExportWithHex.
+  ///
+  /// In en, this message translates to:
+  /// **'With hex'**
+  String get transcriptExportWithHex;
+
+  /// No description provided for @transcriptNothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no transcript to export.'**
+  String get transcriptNothingToExport;
+
+  /// No description provided for @transcriptRecoveredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Left at {timestamp}, {size}. It survived the system killing Telltale or the phone losing power.'**
+  String transcriptRecoveredBody(String timestamp, String size);
+
+  /// Refuses to export or delete bytes that are no longer the ones on screen.
+  ///
+  /// In en, this message translates to:
+  /// **'The previous connection\'s transcript has changed — check it again.'**
+  String get transcriptRecoveredChanged;
+
+  /// Previous connection, not this one. Somebody looking at a working car must not mistake it for the log they are about to make.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript from the previous connection'**
+  String get transcriptRecoveredTitle;
+
+  /// Below a kilobyte the exact byte count is shown, because a failed handshake is a few hundred bytes and '0 KB' reads as empty.
+  ///
+  /// In en, this message translates to:
+  /// **'{bytes, plural, =1{1 byte} other{{bytes} bytes}}'**
+  String transcriptSizeBytes(int bytes);
 
   /// No description provided for @wearBack.
   ///
