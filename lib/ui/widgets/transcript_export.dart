@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../obd/transcript_store.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'panel.dart';
 import '../../state/obd_session.dart';
 import '../../state/app_share_entry_controller.dart';
@@ -27,8 +28,14 @@ import '../../state/transcript_store_runtime.dart';
 /// — is a few hundred bytes. That is the most diagnostic recording this app
 /// produces, and it was the one being offered as nothing. Nobody exports a file
 /// the app has just called empty.
-String formatTranscriptSize(int bytes) =>
-    bytes < 1024 ? '$bytes 位元組' : '${(bytes / 1024).round()} KB';
+///
+/// Takes an [AppLocalizations] rather than a [BuildContext]: it is called from
+/// a top-level function with no widget above it, and a plain parameter lets a
+/// pure-Dart test assert both languages. KB stays a unit in both — units do not
+/// change with language.
+String formatTranscriptSize(AppLocalizations l10n, int bytes) => bytes < 1024
+    ? l10n.transcriptSizeBytes(bytes)
+    : '${(bytes / 1024).round()} KB';
 
 /// Writes the transcript to a file and hands it to the share sheet.
 ///
@@ -37,6 +44,7 @@ String formatTranscriptSize(int bytes) =>
 /// so two exports from one afternoon do not overwrite each other.
 Future<String?> exportTranscript(
   WidgetRef ref, {
+  required AppLocalizations l10n,
   required bool withHex,
   Rect? sharePositionOrigin,
 }) async {
@@ -47,7 +55,7 @@ Future<String?> exportTranscript(
   // directory — and a connection begun in that gap relabelled the old
   // session's bytes with the new session's adapter and protocol.
   final record = session.exportableRecord;
-  if (record == null) return '沒有可匯出的紀錄。';
+  if (record == null) return l10n.transcriptNothingToExport;
   try {
     final outcome = await ref
         .read(appShareEntryControllerProvider)
@@ -60,7 +68,7 @@ Future<String?> exportTranscript(
         );
     return outcome.userFacingError;
   } on Object catch (e) {
-    return '匯出失敗：$e';
+    return l10n.transcriptExportFailed('$e');
   }
 }
 
@@ -79,15 +87,19 @@ class TranscriptExportButtons extends ConsumerWidget {
     // Watched, not read: the buttons have to come alive the moment a failed
     // attempt leaves something behind.
     ref.watch(obdSessionProvider);
+    final l10n = AppLocalizations.of(context);
     final available = ref.read(obdSessionProvider.notifier).hasTranscript;
 
     Future<void> run(bool withHex) async {
+      // Read outside the await, above: the message describes the export the
+      // user asked for, in the language that was on screen when they asked.
       final box = context.findRenderObject() as RenderBox?;
       final origin = box == null
           ? null
           : box.localToGlobal(Offset.zero) & box.size;
       final error = await exportTranscript(
         ref,
+        l10n: l10n,
         withHex: withHex,
         sharePositionOrigin: origin,
       );
@@ -101,10 +113,7 @@ class TranscriptExportButtons extends ConsumerWidget {
       children: [
         if (!compact) ...[
           Text(
-            '這次連線會保留開頭握手與最新的原始往返資料；'
-            '長時間連線若省略中段，檔案會明確標出。'
-            '在車上遇到讀不到、判斷不出來的情況時，把紀錄匯出帶回來，'
-            '比畫面上的一句訊息有用得多。',
+            l10n.transcriptExportExplanation,
             style: context.texts.bodySmall,
           ),
           const SizedBox(height: Spacing.md),
@@ -115,7 +124,7 @@ class TranscriptExportButtons extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: available ? () => run(false) : null,
                 icon: const Icon(Icons.ios_share, size: 18),
-                label: const Text('匯出紀錄'),
+                label: Text(l10n.transcriptExportButton),
               ),
             ),
             const SizedBox(width: Spacing.sm),
@@ -123,7 +132,7 @@ class TranscriptExportButtons extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: available ? () => run(true) : null,
                 icon: const Icon(Icons.data_object, size: 18),
-                label: const Text('含十六進位'),
+                label: Text(l10n.transcriptExportWithHex),
               ),
             ),
           ],
@@ -154,6 +163,7 @@ final recoveredTranscriptProvider = FutureProvider<StoredTranscript?>((ref) {
 Future<String?> exportRecoveredTranscript(
   WidgetRef ref,
   StoredTranscript displayed, {
+  required AppLocalizations l10n,
   Rect? sharePositionOrigin,
 }) async {
   try {
@@ -168,11 +178,11 @@ Future<String?> exportRecoveredTranscript(
     if (outcome.error == ShareError.storageFailure) {
       // openStreaming returned null because the file changed or vanished.
       ref.invalidate(recoveredTranscriptProvider);
-      return '上一次連線的紀錄已更新，請再確認。';
+      return l10n.transcriptRecoveredChanged;
     }
     return outcome.userFacingError;
   } on Object catch (e) {
-    return '匯出失敗：$e';
+    return l10n.transcriptExportFailed('$e');
   }
 }
 
@@ -186,25 +196,32 @@ class RecoveredTranscriptPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final recovered = ref.watch(recoveredTranscriptProvider);
     final stored = recovered.asData?.value;
     if (stored == null) return const SizedBox.shrink();
 
     final at = stored.savedAt;
     String two(int v) => v.toString().padLeft(2, '0');
+    final savedAtLabel =
+        '${at.year}/${two(at.month)}/${two(at.day)} '
+        '${two(at.hour)}:${two(at.minute)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
       child: Panel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('上一次連線的紀錄', style: context.texts.titleSmall),
+            Text(
+              l10n.transcriptRecoveredTitle,
+              style: context.texts.titleSmall,
+            ),
             const SizedBox(height: Spacing.xs),
             Text(
-              '${at.year}/${two(at.month)}/${two(at.day)} '
-              '${two(at.hour)}:${two(at.minute)} 留下的，'
-              '${formatTranscriptSize(stored.bytes)}。'
-              'App 被系統關掉或手機沒電時，紀錄還是留下來了。',
+              l10n.transcriptRecoveredBody(
+                savedAtLabel,
+                formatTranscriptSize(l10n, stored.bytes),
+              ),
               style: context.texts.bodySmall,
             ),
             const SizedBox(height: Spacing.sm),
@@ -219,6 +236,7 @@ class RecoveredTranscriptPanel extends ConsumerWidget {
                     final error = await exportRecoveredTranscript(
                       ref,
                       stored,
+                      l10n: l10n,
                       sharePositionOrigin: origin,
                     );
                     if (error != null && context.mounted) {
@@ -227,7 +245,7 @@ class RecoveredTranscriptPanel extends ConsumerWidget {
                     }
                   },
                   icon: const Icon(Icons.ios_share, size: 18),
-                  label: const Text('匯出'),
+                  label: Text(l10n.transcriptExport),
                 ),
                 const SizedBox(width: Spacing.sm),
                 TextButton(
@@ -243,21 +261,22 @@ class RecoveredTranscriptPanel extends ConsumerWidget {
                         ref.invalidate(recoveredTranscriptProvider);
                       }
                       final message = switch (outcome.error) {
-                        TranscriptMutationError.artifactBusy => '另一個檔案作業尚未完成。',
+                        TranscriptMutationError.artifactBusy =>
+                          l10n.transcriptDeleteBusy,
                         TranscriptMutationError.policyDenied ||
                         TranscriptMutationError.safetyChanged =>
-                          '目前車速或連線狀態不允許刪除紀錄。',
+                          l10n.transcriptDeleteRefusedBySafety,
                         TranscriptMutationError.identityChanged =>
-                          '上一次連線的紀錄已更新，請再確認。',
+                          l10n.transcriptRecoveredChanged,
                         TranscriptMutationError.storageFailure =>
-                          '無法刪除上一次連線的紀錄。',
+                          l10n.transcriptDeleteFailed,
                         null => '',
                       };
                       ScaffoldMessenger.of(context)
                           .showSnackBar(SnackBar(content: Text(message)));
                     }
                   },
-                  child: const Text('刪除'),
+                  child: Text(l10n.transcriptDelete),
                 ),
               ],
             ),
