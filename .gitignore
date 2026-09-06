@@ -56,3 +56,7 @@ app.*.map.json
 
 # Local git worktrees. Never pack a nested checkout into a commit.
 .worktrees/
+
+# Kotlin compiler daemon session files. A stray one reached a commit via
+# `git add -A` on 2026-09-06; they are per-build and per-machine.
+android/.kotlin/
