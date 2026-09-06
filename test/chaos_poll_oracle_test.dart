@@ -17,6 +17,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
+import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
 import 'package:torque_obd/obd/telemetry.dart';
 import 'package:torque_obd/obd/transport/wifi_transport.dart';
@@ -45,7 +46,22 @@ void main() {
       final transport = WifiTransport(host: _host, port: _port);
       final client = Elm327Client(transport);
       addTearDown(client.dispose);
-      final poller = PollingEngine(client);
+      // `setActivePids` before `start()`, and it is load-bearing rather than
+      // tidy: a PollingEngine with an empty active set has nothing to ask for,
+      // so `start()` runs a loop that sends no command and publishes no
+      // snapshot. This test spent a CI cycle and a diagnosis on that — the
+      // handshake completed in full, 15 commands answered, and then the client
+      // sent nothing for the whole 20-second window. The timeout was honest;
+      // the setup was incomplete.
+      //
+      // Two PIDs rather than one so a reply that arrives against the wrong
+      // definition cannot masquerade as the right one, matching what
+      // `emulator_integration_test.dart` polls against the same emulator.
+      final poller = PollingEngine(client)
+        ..setActivePids(const [
+          PidLibrary.engineRpm,
+          PidLibrary.vehicleSpeed,
+        ], includeProfileDerivedInputs: false);
       addTearDown(poller.dispose);
 
       expect(
@@ -64,7 +80,9 @@ void main() {
       final live = await firstReading.future.timeout(
         const Duration(seconds: 20),
         onTimeout: () => throw TimeoutException(
-          'no live reading before arming the close',
+          'no live reading before arming the close. If the proxy log shows a '
+          'complete handshake and then no client writes at all, the poller has '
+          'no active PIDs rather than the link being at fault.',
           const Duration(seconds: 20),
         ),
       );
