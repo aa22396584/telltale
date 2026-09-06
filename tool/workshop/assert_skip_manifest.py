@@ -151,9 +151,11 @@ def main(argv: list[str]) -> int:
             if row.get("applicable_platforms")
             and host not in row["applicable_platforms"]
         }
-        # unittest -v prints "test_foo (module.Class.test_foo) ... skipped"
+        # unittest -v prints "test_foo (module.Class.test_foo) ... skipped".
+        # The run summary "OK (skipped=N)" / "FAILED (..., skipped=N)" also
+        # contains the word skipped and must not be treated as a test event.
         for line in output.splitlines():
-            if "skipped" not in line.lower():
+            if "... skipped" not in line.lower():
                 continue
             matched = None
             for row in committed:
@@ -162,7 +164,6 @@ def main(argv: list[str]) -> int:
                     matched = ident
                     break
             if matched is None:
-                # also match class-less ids
                 print(f"FAIL: unlisted skip: {line}", file=sys.stderr)
                 return 1
             if matched not in allowed:
