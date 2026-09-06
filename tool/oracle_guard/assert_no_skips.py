@@ -33,10 +33,15 @@ def _parse_events(text: str) -> list[dict]:
         raw = raw_line.strip()
         if not raw:
             continue
+        # `flutter test --reporter json` can print a lock/startup line before
+        # the first event. Ignore non-objects. A line that starts with '{' is
+        # claiming to be an event and must parse.
+        if not raw.startswith("{"):
+            continue
         try:
             event = json.loads(raw)
         except json.JSONDecodeError as exc:
-            if raw.startswith("{") and not raw.endswith("}"):
+            if not raw.endswith("}"):
                 raise GuardError(f"truncated JSON at line {line_no}") from exc
             raise GuardError(f"malformed JSON at line {line_no}") from exc
         if not isinstance(event, dict):
@@ -61,7 +66,7 @@ def assert_oracle_report(
     evidence_dir: Path | None = None,
 ) -> tuple[int, str]:
     """Return (visible_passed, ok_message) or raise GuardError."""
-    text = report.read_text(encoding="utf-8", errors="replace")
+    text = report.read_text(encoding="utf-8", errors="replace").lstrip("\ufeff")
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     passed = 0
     message = ""

@@ -238,6 +238,15 @@ class OracleGuardTest(unittest.TestCase):
             self._eval(jsonl(events))
         self.assertIn("result", str(raised.exception).lower())
 
+    def test_flutter_startup_noise_before_json_is_ignored(self) -> None:
+        text = (
+            "Waiting for another flutter command to release the startup lock...\n"
+            + jsonl(visible_successes(6))
+        )
+        passed, message = self._eval(text)
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
     def test_normal_lifecycle_fixture_passes(self) -> None:
         events = [
             {"type": "start", "protocolVersion": "0.1.1", "pid": 9},
