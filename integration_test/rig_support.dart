@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/core/share/app_share_platform_bridge.dart';
 import 'package:torque_obd/core/share/rig_app_share_platform.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/main.dart' as app;
 import 'package:torque_obd/obd/session_evidence.dart';
 import 'package:torque_obd/obd/transcript.dart';
@@ -32,7 +33,15 @@ import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 /// successful connection or transcript.
 Future<void> startCleanRigApp(WidgetTester tester) async {
   await requireIsolatedRigIdentity();
-  await (await SharedPreferences.getInstance()).clear();
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+  // The rig asserts shipped Traditional Chinese copy. Without this the
+  // journey reads whichever language the physical handset happens to be
+  // set to, so the same build passes on one device and fails on another.
+  await prefs.setString(
+    kLocalePreferenceKey,
+    localePreferenceToStored(LocalePreference.traditionalChinese),
+  );
   final clearOutcome = await TranscriptStore(
     destructivePolicy: const _RigDestructivePolicy(),
   ).clear();
