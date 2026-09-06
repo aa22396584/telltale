@@ -60,13 +60,16 @@ Android 的 versionCode 完全由 `pubspec.yaml` 第 4 行的 `version: x.y.z+N`
 grep '^version:' pubspec.yaml
 ```
 
-截至 **2026-09-07 重讀 Console 當下**，Play production 已發布 **`1.0.10` / versionCode 11**
-（completed）。GitHub community 預發行停在 **`v1.0.10-beta.1`**，跟 Play 不是同一條簽章線
-（community 金鑰不能覆蓋 Play 安裝）。本樹是 **`1.0.11+12`**。
-Play 已消耗 1–11；**下一份上傳 Play 的 `+N` 必須 > 11**。
+截至 **2026-09-07 重讀 Console 當下**，Play production 軌道掛著 **`1.0.11` / versionCode 12**
+（`completed`、100%，在審核中）。GitHub community 預發行是 **`v1.0.11-beta.1`**，跟 Play
+不是同一條簽章線（community 金鑰不能覆蓋 Play 安裝）。
+Play 已消耗 1–12；**下一份上傳 Play 的 `+N` 必須 > 12**。
 
 這一段每次發版都會過期，而過期的數字不會讓任何指令失敗 —— 它只會讓下一位讀者
-相信一件已經不成立的事。所以真正的指令是下面那一行，不是這一段文字：
+相信一件已經不成立的事。**這不是假設：上面那三行在 2026-09-07 當天就過期過一次** ——
+它原本寫「已發布 1.0.10 / versionCode 11，下一份必須 > 11」，而同一天 12 就上去了。
+照著它設 `+12` 的人會撞上 `Version code 12 has already been used`，正是這一節要防的事。
+所以真正的指令是下面那一行，不是這一段文字：
 
 ```bash
 gplay status --package com.cbstudio.telltale | python3 -c "import sys,json; \
@@ -74,14 +77,28 @@ gplay status --package com.cbstudio.telltale | python3 -c "import sys,json; \
 ```
 
 **這道指令給的是下界，不是最大值。** 它只列出各軌道**現行的 release**，所以已經燒掉
-但不再是現行版本的 versionCode 看不到（實測輸出只有 6 與 11，而 1–5、7–10 都已用過）。
+但不再是現行版本的 versionCode 看不到（2026-09-07 實測輸出只有 6 與 12，而 1、2、5、9、
+10、11 同樣已經用掉了）。
 更要緊的是：**上傳過但從未 release 的 bundle 一樣會佔用它的 versionCode，而這道指令
 完全看不到它**。撞到的代價是上傳被擋（`Version code N has already been used`），不是
 錯誤的發布 —— 但既然這一段的用意就是「用可靠的指令取代會過期的數字」，這個缺口必須
 一起寫下來，否則它只是換了一種方式讓人自信地弄錯。
 
-真正的最大值要到 Play Console → 版本 → App bundle 探索工具去讀，那裡才列出每一個
-上傳過的 bundle，不論它有沒有被發布。
+真正的最大值用這道指令讀，**不必開 Console** —— `bundles list` 列的是那個 edit 裡
+Play 見過的每一個 bundle，包含上傳過但從未發布的：
+
+```bash
+ED=$(gplay edits create --package com.cbstudio.telltale | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+gplay bundles list --package com.cbstudio.telltale --edit "$ED" | python3 -c "import sys,json; \
+  print(sorted(b['versionCode'] for b in json.load(sys.stdin).get('bundles') or []))"
+# --confirm 是必要的：少了它會 exit 1 什麼也不做（見 §4.7(d)）。
+gplay edits delete --package com.cbstudio.telltale --edit "$ED" --confirm
+```
+
+2026-09-07 上架 1.0.11 之後實跑輸出 `[1, 2, 5, 6, 9, 10, 11, 12]` —— 注意 3、4、7、8
+是缺的，而 `gplay status` 那道指令只會顯示 6 與 12。兩者的差距就是這一段存在的理由。
+
+（Console → 版本 → App bundle 探索工具是同一份清單的網頁版，指令跑不通時用它對照。）
 Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。
@@ -179,6 +196,111 @@ release 打包任務丟 `GradleException` 而不是靜靜退回 debug 金鑰。�
 3. 重新 `flutter build appbundle --release --flavor field`
 4. 上傳新 AAB 並確認軌道頁顯示的「有效草稿版本」就是它
 5. 走第 5 節的實機閘門，才輪到送審
+
+## 4.6 打 tag 之前：等 main 的 push CI 跑完
+
+**這一節講的是 GitHub community 發布線，不是 Play。** 它夾在兩節 Play 中間是排版
+順序造成的；兩條線的分別見 §0，不要把這裡的 tag 流程套到 Play 上傳。
+
+`release.yml` 的 `Require successful exact-head main CI`（第三個 step，在解析 tag 與
+比對版本之後）—— 它
+向 API 查「有沒有一個針對這個 commit SHA 的 push 事件 CI run 成功」，沒有就
+`exit 1`。
+
+**merge 完立刻 `git push origin <tag>` 會撞上它**（2026-09-07 實踩）：tag 的
+workflow 比 main 的 push CI 早跑完，於是 release 建置以
+`No successful main CI push run exists for <sha>` 失敗。
+
+這是閘門正確運作 —— 它擋的是「從一個還沒證明能建的 commit 發 APK 給別人」。
+不要繞過它，等 CI 綠了再重跑：
+
+閘門查的是**這個 commit SHA 的 push 事件**，不是「main 上最近一次 CI」。所以要等的
+也必須是同一個條件，否則你會看著一個無關的綠燈去重跑：
+
+```bash
+SHA=$(git rev-parse main)
+gh api --method GET repos/ImL1s/telltale/actions/workflows/ci.yml/runs \
+  -f branch=main -f event=push -f status=success -f head_sha="$SHA" \
+  --jq '.workflow_runs[] | .html_url'          # 有輸出才算過閘
+
+# release.yml 的 workflow_dispatch 有一個 required 的 tag 輸入，漏了會直接被擋。
+gh workflow run release.yml -f tag=<tag>
+```
+
+## 4.7 上傳當下：edit 很脆弱，而商店頁需要另一種權限
+
+**先讀 §5。** 這一節寫的是上傳的機制，不是上傳的許可 —— §5 的實機閘門在它之前，
+而按頁面順序讀下來的人會先遇到這裡。沒走過 §5 就不要執行這一節的任何一步。
+
+兩件都在 2026-09-07 上架 1.0.11 時實踩，都會再發生。
+
+**(a) 開著一個 release edit 的時候，不要跑任何其他 edit 操作。**
+
+AAB 已上傳、軌道已指派、還沒 commit 的那個 edit，會被期間**再開一個 edit**
+弄失效，之後對它的每道指令都回：
+
+```
+Error: googleapi: Error 400: This Edit has been deleted., failedPrecondition
+```
+
+當天是跑了 `store/upload.sh` 的 dry run 把 release edit 弄死的 —— 它會自己
+`gplay edits create` 一個來預演。**是 create 做掉的，不是 delete**：見下面 (d)，
+那個 delete 當時根本沒有執行。
+
+**而 edit 一死，裡面上傳的 bundle 一起消失** —— 重開 edit 後 `bundles list` 仍是
+`[1, 2, 5, 6, 9, 10, 11]`，versionCode 12 不在裡面，也沒有被燒掉。所以要整顆重傳，
+不是接著 commit 就好。
+
+順序是：upload → tracks update → 讀回 → commit，**中間不插任何指令**。
+
+**(b) `gplay edits validate` 在空 edit 上會回成功。** 它不是「commit 的 dry run」，
+它只驗內容合法性。真正的證據是把 edit 的內容讀回來：
+
+```bash
+gplay bundles list --package "$PKG" --edit "$ED"      # versionCode 在不在
+gplay tracks get  --package "$PKG" --edit "$ED" --track production
+```
+
+**(c) `telltale-try` 這組 service account 沒有商店頁（store presence）權限。**
+
+它可以：開 edit、傳 bundle、指派軌道、commit 一個純發版的 edit —— 1.0.11 就是這樣
+上去的。它不可以：commit 任何**帶商店頁或圖片變更**的 edit，`validate` 與 `commit`
+都回 `Error 403: The caller does not have permission`。所以 `store/upload.sh --apply`
+會把 14 張圖都傳完、最後一步倒在 commit。
+
+二分過，範圍很明確：
+
+| edit 內容 | commit |
+|---|---|
+| 什麼都沒改 | 成功 |
+| 只有 bundle + 軌道 | 成功 |
+| 只有 en-US 文字（新語言，無圖無影片） | **403** |
+| 只有 zh-TW 圖片（既有語言） | **403** |
+
+既有語言也擋，所以**不是「不能新增語言」，是整個商店頁寫不了**。要修得在
+Play Console → 使用者與權限 → 這組 service account，補上這個 app 的商店頁權限。
+
+**(d) `gplay edits delete` 需要 `--confirm`，沒帶就 exit 1 什麼也不做。**
+
+`store/upload.sh` 原本寫的是 `gplay edits delete ... >/dev/null 2>&1 || true`，
+於是這個腳本從寫出來到 2026-09-07 為止，**每一次 dry run 都漏掉一個 edit 而且不出聲**。
+
+**但要說清楚：補好這個漏洞並不能防止 (a)。** 弄死 release edit 的是 upload.sh 的
+`gplay edits create`，不是它沒刪掉的那個 edit —— 就算刪除一直都正常，release edit
+一樣會死。漏掉的 edit 是另一個問題（它會累積，而且沒人知道），(a) 的唯一解法仍然是
+**release edit 開著的時候不要跑 upload.sh，dry run 也不行**。
+
+現在清理改掛在 `trap ... EXIT` 上（不只 commit 失敗那條分支 —— `import-listings`
+與 `import-images` 在它前面跑，一張被拒的 PNG 就會讓 `set -e` 中止），而且清理失敗會
+印到 stderr。驗證方式是在 edit 建立後注入 `false` 再跑，然後 `gplay edits get` 確認
+它真的不見了 —— 2026-09-07 實跑：修之前那個 edit 還在，修之後 `edits get` 回
+`Bad request`（也就是不見了），而這正是 `--confirm` 這件事被發現的經過。
+
+> **一個假的對照組，差點讓我下錯結論。** 中途我用 `listings patch --title` 把 zh-TW
+> 標題寫成**它原本的值**，然後 commit 成功，於是我一度認為「改既有語言可以，只有新增
+> 語言被擋」。那是空 edit：Play 對沒有實際變更的 patch 不產生變更，commit 當然過。
+> 直到改跑真的會動到內容的 `--apply zh-TW`（重傳 7 張圖）才看到同樣的 403。
+> **一個寫入等值資料的測試，測不到寫入權限。**
 
 ## 5. 上傳之前：實機走一遍（硬性閘門，不可跳過）
 
