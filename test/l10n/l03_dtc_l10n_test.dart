@@ -34,6 +34,7 @@ import 'package:torque_obd/obd/readiness.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
+import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
 
 import '../support/localized_app.dart';
@@ -277,11 +278,13 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
 /// Keeping the list computed from the enums rather than typed out means a new
 /// engine label cannot quietly widen the hole.
 List<String> _engineOwnedStrings() => [
-      for (final kind in DtcKind.values) ...[kind.label, kind.description],
-      for (final category in DtcCategory.values) category.label,
+      // The fault-code vocabulary used to be listed here — the three class
+      // labels and their explanations, the four system names, the nine J2012
+      // subsystems and every code description. It is not any more: it moved
+      // into the ARBs, so this screen renders it in the reader's language and
+      // the no-Chinese assertion below has nothing to subtract. What is left
+      // is what other lanes still own.
       for (final monitor in ReadinessMonitor.values) monitor.label,
-      ...DtcDecoder.powertrainSubsystems.values,
-      ...DtcDecoder.genericDescriptions.values,
       PidLibrary.engineRpm.name,
       PidLibrary.coolantTemp.name,
       _engineFailureMessage,
@@ -512,7 +515,7 @@ void main() {
         }
         final headers = {
           for (final kind in DtcKind.values)
-            l10n.dtcGroupHeader(kind.label, kind.mode, 1),
+            l10n.dtcGroupHeader(dtcKindLabel(l10n, kind), kind.mode, 1),
         };
         expect(headers, hasLength(DtcKind.values.length));
       }

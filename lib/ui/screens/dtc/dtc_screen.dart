@@ -17,6 +17,7 @@ import '../../../obd/readiness.dart';
 import '../../../state/dtc_scan.dart';
 import '../../../state/obd_session.dart';
 import '../../widgets/panel.dart';
+import 'dtc_copy.dart';
 
 class DtcScreen extends ConsumerStatefulWidget {
   const DtcScreen({super.key});
@@ -59,8 +60,9 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
     // undoable and it costs the vehicle a drive cycle; the one screen that
     // asks before doing it should say what is unknown.
     final scan = ref.read(dtcScanProvider);
-    final unanswered =
-        scan.unanswered.map((e) => e.key.label).toList(growable: false);
+    final unanswered = scan.unanswered
+        .map((e) => dtcKindLabel(l10n, e.key))
+        .toList(growable: false);
     // The frames this clear is about to destroy, named at the point of no
     // return.
     //
@@ -150,7 +152,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
     final verdict = scan.verdict;
     final unansweredLabel = DtcKind.values
         .where((k) => !(results[k]?.answered ?? false))
-        .map((k) => k.label)
+        .map((k) => dtcKindLabel(l10n, k))
         .join(l10n.dtcListSeparator);
 
     return Scaffold(
@@ -562,16 +564,17 @@ class _DtcGroup extends StatelessWidget {
               ),
               const SizedBox(width: Spacing.sm),
               Text(
-                // `kind.label` and `kind.description` below still come from
-                // `lib/obd/dtc/dtc.dart`, which the engine wave owns. They
-                // render Chinese in both locales until that lands.
-                l10n.dtcGroupHeader(kind.label, kind.mode, codes.length),
+                l10n.dtcGroupHeader(
+                  dtcKindLabel(l10n, kind),
+                  kind.mode,
+                  codes.length,
+                ),
                 style: context.texts.labelSmall?.copyWith(color: tone),
               ),
             ],
           ),
         ),
-        Text(kind.description, style: context.texts.bodySmall),
+        Text(dtcKindExplanation(l10n, kind), style: context.texts.bodySmall),
         const SizedBox(height: Spacing.md),
         ...codes.map(
           (dtc) => Padding(
@@ -606,7 +609,7 @@ class _DtcGroup extends StatelessWidget {
                           // A code with no description shows the raw code and
                           // says the description is missing. Never an invented
                           // one.
-                          dtc.description ??
+                          dtcCodeDescription(l10n, dtc) ??
                               (dtc.isManufacturerSpecific
                                   ? l10n.dtcManufacturerSpecific
                                   // The subsystem where the code's own third
@@ -615,10 +618,13 @@ class _DtcGroup extends StatelessWidget {
                                   // tells nobody anything.
                                   : dtc.subsystem != null
                                       ? l10n.dtcNoDescriptionForSubsystem(
-                                          dtc.subsystem!,
+                                          dtcSubsystemLabel(
+                                            l10n,
+                                            dtc.subsystem!,
+                                          ),
                                         )
                                       : l10n.dtcCategoryFault(
-                                          dtc.category.label,
+                                          dtcSystemLabel(l10n, dtc.category),
                                         )),
                           style: context.texts.bodyMedium?.copyWith(
                             color: palette.textPrimary,
@@ -632,8 +638,8 @@ class _DtcGroup extends StatelessWidget {
                           // between one problem and two — and the parser knew
                           // it all along.
                           dtc.sourceId == null
-                              ? dtc.category.label
-                              : '${dtc.category.label} · '
+                              ? dtcSystemLabel(l10n, dtc.category)
+                              : '${dtcSystemLabel(l10n, dtc.category)} · '
                                   '${l10n.dtcControllerLabel(dtc.sourceId!)}',
                           style: context.texts.labelSmall,
                         ),
@@ -854,7 +860,7 @@ UnansweredCategoryWording unansweredCategoryWording({
     }
   } else {
     detail = l10n.dtcReadFailureDetail(
-      kind.label,
+      dtcKindLabel(l10n, kind),
       kind.mode,
       result.failure?.message ?? l10n.dtcUnknownError,
     );

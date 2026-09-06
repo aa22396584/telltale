@@ -20,17 +20,26 @@ Dtc _dtc(String code) => Dtc(
 
 void main() {
   group('the third digit names the subsystem', () {
+    // The subsystem is an identifier now, not a label: the words moved to the
+    // ARBs when `lib/obd/` stopped carrying screen copy. What each identifier
+    // says in each language is asserted in `test/l10n/l04_dtc_l10n_test.dart`,
+    // including the block 9 wording this test was written to pin.
     test('each block maps to what J2012 assigns it', () {
-      expect(_dtc('P0087').subsystem, '燃油與空氣計量、輔助排放控制');
-      expect(_dtc('P0171').subsystem, '燃油與空氣計量');
-      expect(_dtc('P0201').subsystem, '燃油與空氣計量（噴油嘴迴路）');
-      expect(_dtc('P0301').subsystem, '點火系統或失火');
-      expect(_dtc('P0455').subsystem, '輔助排放控制');
-      expect(_dtc('P0505').subsystem, '車速控制與怠速系統');
-      expect(_dtc('P0627').subsystem, '電腦輸出迴路');
-      expect(_dtc('P0731').subsystem, '變速箱');
-      expect(_dtc('P0868').subsystem, '變速箱');
-      expect(_dtc('P0966').subsystem, '控制模組輸入／輸出訊號',
+      expect(_dtc('P0087').subsystem,
+          PowertrainSubsystem.fuelAirMeteringAndAuxiliaryEmissions);
+      expect(_dtc('P0171').subsystem, PowertrainSubsystem.fuelAirMetering);
+      expect(_dtc('P0201').subsystem,
+          PowertrainSubsystem.fuelAirMeteringInjectorCircuit);
+      expect(_dtc('P0301').subsystem, PowertrainSubsystem.ignitionOrMisfire);
+      expect(_dtc('P0455').subsystem,
+          PowertrainSubsystem.auxiliaryEmissionControls);
+      expect(_dtc('P0505').subsystem, PowertrainSubsystem.speedAndIdleControl);
+      expect(_dtc('P0627').subsystem,
+          PowertrainSubsystem.computerOutputCircuit);
+      expect(_dtc('P0731').subsystem, PowertrainSubsystem.transmission);
+      expect(_dtc('P0868').subsystem, PowertrainSubsystem.transmission);
+      expect(_dtc('P0966').subsystem,
+          PowertrainSubsystem.controlModuleSignals,
           reason: 'block 9 was the one entry with no test, and its wording had '
               'drifted into something no published block table says');
     });
@@ -49,9 +58,11 @@ void main() {
 
     test('a described code keeps its description', () {
       // The subsystem is a fallback, not a replacement. Nothing about adding it
-      // should make a known code less specific.
-      expect(_dtc('P0301').description, isNotNull);
-      expect(_dtc('P0301').description, contains('失火'));
+      // should make a known code less specific. That the description says
+      // "misfire" in both languages is asserted in
+      // `test/l10n/l04_dtc_l10n_test.dart`, where both locales are reachable.
+      expect(_dtc('P0301').hasGenericDescription, isTrue);
+      expect(DtcDecoder.describedCodes, contains('P0301'));
     });
   });
 
@@ -91,7 +102,7 @@ void main() {
       // Catches a typo in a key — `P0O11` with a letter O, say — which would
       // otherwise sit in the table forever as a description that can never be
       // looked up, and read as coverage the app does not have.
-      for (final code in DtcDecoder.genericDescriptions.keys) {
+      for (final code in DtcDecoder.describedCodes) {
         final pair = DtcDecoder.encode(code);
         expect(pair, isNotNull, reason: '$code is not a well-formed DTC');
         final round = DtcDecoder.decodePair(pair!.$1, pair.$2, DtcKind.stored);
@@ -100,19 +111,25 @@ void main() {
     });
 
     test('no key is in a manufacturer range', () {
-      // `description` returns null for those regardless, so such an entry would
-      // be unreachable data claiming to be coverage.
-      for (final code in DtcDecoder.genericDescriptions.keys) {
+      // `hasGenericDescription` is false for those regardless, so such an entry
+      // would be unreachable data claiming to be coverage.
+      for (final code in DtcDecoder.describedCodes) {
         expect(code[1], isNot(anyOf('1', '3')),
             reason: '$code is manufacturer-specific and can never be shown');
       }
     });
 
-    test('no description is empty or a bare restatement of the code', () {
-      for (final entry in DtcDecoder.genericDescriptions.entries) {
-        expect(entry.value.trim(), isNotEmpty, reason: entry.key);
-        expect(entry.value.contains(entry.key), isFalse,
-            reason: '${entry.key} restates itself instead of describing');
+    test('every described code is reachable through Dtc', () {
+      // A code can be well-formed, non-manufacturer and still never surface if
+      // `hasGenericDescription` disagrees about what counts as generic.
+      //
+      // That no description is empty, and that none is a bare restatement of
+      // its own code, moved to `test/l10n/l04_dtc_l10n_test.dart` with the
+      // descriptions themselves — it is now checked in both languages rather
+      // than one.
+      for (final code in DtcDecoder.describedCodes) {
+        expect(_dtc(code).hasGenericDescription, isTrue,
+            reason: '$code is in the set but nothing can ever show it');
       }
     });
   });
