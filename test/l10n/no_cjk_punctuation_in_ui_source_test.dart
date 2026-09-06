@@ -71,11 +71,26 @@ Iterable<File> get _scanned sync* {
 
 /// The line with any trailing `//` comment removed.
 ///
-/// Naive, and deliberately so: a `//` inside a string literal would truncate
-/// the line early, which can only ever make this scan miss something rather
-/// than invent an offence, and no line in these directories does that today.
-/// Matching Dart's real lexer here would be a parser, and a parser is a second
-/// thing to get wrong.
+/// Naive, and deliberately so: matching Dart's real lexer would be a parser,
+/// and a parser is a second thing to get wrong.
+///
+/// The cost is that a `//` inside a string literal — a URL, a path — truncates
+/// the line early. In the ordinary shape, Chinese words before a URL, that can
+/// only cause a miss. It can also produce a **false positive**, in the one
+/// arrangement where CJK punctuation sits before the `//` and every Han
+/// character after it:
+///
+///     const note = '「https://example.com/x」的說明';
+///
+/// leaves `const note = '「https:` — punctuation present, and the 的說明 that
+/// would have excused it gone with the tail. A reviewer found that; the first
+/// version of this comment claimed a false positive was impossible, which was
+/// not true.
+///
+/// It is still the right trade. A false positive is loud and diagnosable at a
+/// glance, which is the opposite of the silent miss the truncation was added to
+/// fix, and the test below asserts that no line in these directories puts a
+/// `//` inside a string at all.
 String _code(String line) {
   final at = line.indexOf('//');
   return at < 0 ? line : line.substring(0, at);

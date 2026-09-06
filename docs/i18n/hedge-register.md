@@ -12,8 +12,14 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-41 entries. Every entry that names a **Shipped as** key is checked against the shipped
+45 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
+The comparison is **exact** by default. An entry may write `**English (clause)**` to record
+only the load-bearing fragment of a longer shipped sentence, and the guard then checks that
+the fragment survives and that the shipped string has not grown by more than one sentence
+around it — because a hedge is just as dead when a translation keeps it and appends
+'…but this is usually fine' as when it deletes it. Prefer recording the whole sentence; no
+entry needs the clause form today.
 
 ### 1. 一個看起來合理的錯數字，比沒有數字更糟。
 
@@ -99,9 +105,9 @@ English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here ad
 
 **繁體中文** — 這次沒有讀到凍結幀 —— 不代表車上沒有。
 
-**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear
+**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.
 
-**Shipped as** `dtcClearDialogFrameUnread`, `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). Recorded without the closing full stop because the panel continues the sentence (‘…whether to clear the fault codes, because clearing destroys…’) while the dialog ends there; what both must carry is the clause, and `hedge_register_guard_test.dart` checks exactly that. The same sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
+**Shipped as** `dtcClearDialogFrameUnread` (lib/l10n/app_en.arb). The panel says more and is entry 45. The sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3053 '凍結幀沒有讀到 —— 這不代表車上沒有。'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss.
 
@@ -265,7 +271,7 @@ maintainer.
 
 **English** — The fault lamp is not lit
 
-**Shipped as** `dtcMilOff` (lib/l10n/app_en.arb), against `dtcMilOn` — 故障燈已亮 / 'The fault lamp is lit'.
+**Shipped as** `dtcMilOff` (lib/l10n/app_en.arb). Its opposite is entry 42.
 
 **Why it is load-bearing.** `lib/ui/screens/dtc/dtc_screen.dart:1072` picks between the two with `summary.milOn ? … : …`, so the pair is one binary readout of a physical lamp. A reviewer inverted `dtcMilOff` to 'The fault lamp is lit' and the whole suite stayed green: both branches would have said the same thing, and a driver reading the screen instead of the dashboard would be told a warning lamp is on when it is not — or worse, off when it is. The negation is the entire content of this string.
 
@@ -295,7 +301,7 @@ maintainer.
 
 **English** — Air mass unavailable
 
-**Shipped as** `derivedAirflowSourceUnavailable` (lib/l10n/app_en.arb), and `derivedFuelSourceUnavailable` — 油耗無法取得 / 'Fuel rate unavailable' — for the same reason.
+**Shipped as** `derivedAirflowSourceUnavailable` (lib/l10n/app_en.arb). Entry 43 is the fuel half, for the same reason.
 
 **Why it is load-bearing.** `lib/obd/physics/physics_engine.dart:26-27`: 'Neither was available. Not the same as zero air flow, which would mean a stopped engine.' A reviewer changed this to 'No air flow' and the whole suite — including the guard file written for these very keys — stayed green. Rendered beside a rev counter reading 3000 rpm, 'No air flow' is the text form of the defect `derived_provenance_test.dart:152-162` already exists to prevent: a confident statement that the engine is not breathing, from a car that is. The word must say *unavailable*, and the string must not be readable as a measurement. `engine_vocabulary_copy_test.dart` now checks both positively.
 
@@ -395,6 +401,46 @@ maintainer.
 
 **English** — Experimental · unverified
 
-**Shipped as** `powertrainStatusExperimental` (lib/l10n/app_en.arb), alongside `powertrainNotInstallableInThisRelease` — 此版本不可安裝 / 'Not installable in this release'.
+**Shipped as** `powertrainStatusExperimental` (lib/l10n/app_en.arb). Entry 44 sits beside it on the same screen.
 
 **Why it is load-bearing.** Two words, both of them the point, on a screen that sends manufacturer-specific commands to a high-voltage battery controller. 未驗證/'unverified' is the same hedge as `DatumBadge.unverified` and must not be smoothed into 'beta' or 'preview', neither of which says that nobody has checked the results against a real vehicle.
+
+### 42. 故障燈已亮
+
+**繁體中文** — 故障燈已亮
+
+**English** — The fault lamp is lit
+
+**Shipped as** `dtcMilOn` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** The other half of entry 28's binary. It was written into that entry's `Shipped as` line as prose, which read as though it were guarded and was not — a reviewer hollowed it out to 'Warning lamp active', chosen to stay distinct from its partner so the must-differ pair test did not fire either, and the whole suite stayed green. Each key now carries its own English, because an entry holding two shipped sentences under one `**English**` line can only ever check one of them.
+
+### 43. 油耗無法取得
+
+**繁體中文** — 油耗無法取得
+
+**English** — Fuel rate unavailable
+
+**Shipped as** `derivedFuelSourceUnavailable` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** Entry 31's reasoning applies unchanged: an absence rendered as a number is the failure this app exists to prevent, and 'Fuel rate unavailable' is not 'no fuel used'. It was the second key on entry 31's `Shipped as` line and therefore invisible to the guard — one of the two keys this whole review round was about.
+
+### 44. 此版本不可安裝
+
+**繁體中文** — 此版本不可安裝
+
+**English** — Not installable in this release
+
+**Shipped as** `powertrainNotInstallableInThisRelease` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** A refusal, not a status. Inverted to 'Installable in this release' the suite stayed green, and a reader would be told they can install a manufacturer-specific profile onto a high-voltage battery controller that this build will not install.
+
+### 45. 這次沒有讀到凍結幀 —— 不代表車上沒有。（面板全文）
+
+**繁體中文** — 這次沒有讀到凍結幀 —— 不代表車上沒有。請先重新掃描再決定要不要清除故障碼，因為清除會永久銷毀故障當下的紀錄。如果每次掃描都一樣，可能是這台車不提供。
+
+**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear the fault codes, because clearing destroys the record of the moment of the fault permanently. If every scan looks the same, this vehicle may not provide one.
+
+**Shipped as** `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). Entry 11 is the shorter form the clear dialog uses.
+
+**Why it is load-bearing.** Entry 11's reasoning, plus two clauses the dialog has no room for: that clearing destroys the record permanently, and that a vehicle which never produces a frame is a possibility rather than a fault. It shared entry 11's `**English**` line as a clause, which meant the guard could only check that its first two sentences survived — a translation was free to append 'On most vehicles this is safe, so clearing now is fine', and a reviewer proved that passed everything. Recording the whole sentence is what makes the check a fence rather than a floor.

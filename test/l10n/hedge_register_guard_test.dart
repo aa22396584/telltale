@@ -24,9 +24,26 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 final _entry = RegExp(r'^### (\d+)\. (.*)$');
-final _english = RegExp(r'^\*\*English\*\* — (.*)$');
+
+/// `**English** — text`, or `**English (clause)** — text` for the few entries
+/// that record only the load-bearing clause of a longer shipped sentence.
+///
+/// The dash and the spaces around it are deliberately loose. A reviewer changed
+/// one em dash to an en dash — the substitution any editor or autocorrect makes
+/// without being asked — and the entry vanished from the guard silently, taking
+/// `dtcRescanFirst` with it. Punctuation drift in a Markdown file must not be
+/// able to disarm a test.
+final _english = RegExp(r'^\*\*English( \(clause\))?\*\*[\s\u00a0]*[—–-][\s\u00a0]*(.*)$');
 final _shipped = RegExp(r'^\*\*Shipped as\*\* (.*)$');
-final _key = RegExp(r'`([A-Za-z][A-Za-z0-9_]*)`');
+
+/// A backticked ARB key, optionally qualified by a class: `AppLocalizations.foo`
+/// names the same key as `foo`, and someone will write it that way.
+///
+/// The qualifier must be UpperCamel, which is what keeps this from reading
+/// `hedge_register_guard_test.dart` as a key called `dart`. Anchored at both
+/// ends so a filename, a path or a snippet cannot match part of itself — the
+/// looser first version did exactly that on its first run.
+final _key = RegExp(r'`(?:[A-Z][A-Za-z0-9_]*\.)?([a-z][A-Za-z0-9_]*)`');
 
 /// Markdown emphasis and the register's own em-dash conventions are formatting,
 /// not copy. A shipped string never contains `**`.
@@ -36,12 +53,24 @@ String _plain(String value) => value
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
+/// How many sentences a string is, roughly: a terminator followed by a space.
+///
+/// Blunt on purpose. It exists to make 'append a paragraph' fail while leaving
+/// 'wrap the clause in a sentence' alone, and a real sentence splitter would be
+/// a second thing to get wrong for no gain.
+int _sentences(String value) =>
+    RegExp(r'[.!?](\s|$)').allMatches(value).length.clamp(1, 1 << 30);
+
 class _Hedge {
-  _Hedge(this.number, this.title, this.english, this.keys);
+  _Hedge(this.number, this.title, this.english, this.keys, this.clauseOnly);
   final int number;
   final String title;
   final String english;
   final List<String> keys;
+
+  /// True when the register records a fragment of a longer shipped sentence
+  /// rather than the whole of it, so the comparison has to be `contains`.
+  final bool clauseOnly;
 }
 
 List<_Hedge> _readRegister() {
@@ -52,13 +81,14 @@ List<_Hedge> _readRegister() {
   int? number;
   var title = '';
   String? english;
+  var clauseOnly = false;
   var keys = <String>[];
 
   void flush() {
     final n = number;
     final e = english;
     if (n != null && e != null && keys.isNotEmpty) {
-      hedges.add(_Hedge(n, title, e, keys));
+      hedges.add(_Hedge(n, title, e, keys, clauseOnly));
     }
   }
 
@@ -69,20 +99,31 @@ List<_Hedge> _readRegister() {
       number = int.parse(entry.group(1)!);
       title = entry.group(2)!;
       english = null;
+      clauseOnly = false;
       keys = <String>[];
       continue;
     }
     final en = _english.firstMatch(line);
     if (en != null) {
-      english = _plain(en.group(1)!);
+      clauseOnly = en.group(1) != null;
+      english = _plain(en.group(2)!);
       continue;
     }
     final shipped = _shipped.firstMatch(line);
     if (shipped != null) {
-      // Only the backticked identifiers before the closing paren are keys; the
-      // prose after it may name files and screens.
-      final head = shipped.group(1)!.split(')').first;
-      keys = _key.allMatches(head).map((m) => m.group(1)!).toList();
+      // Every backticked identifier on the line, not just those before the
+      // first `)`.
+      //
+      // It used to stop at `split(')').first`, to avoid reading the prose after
+      // the `(lib/l10n/app_en.arb)` parenthetical. That parenthetical contains
+      // no backticks, so there was nothing to avoid — and three entries named a
+      // second key after it, which the guard therefore never saw. `dtcMilOn`,
+      // `derivedFuelSourceUnavailable` and
+      // `powertrainNotInstallableInThisRelease` all read as guarded and were
+      // not, one of them a key this file was written for. Each of those now has
+      // its own entry, which is the deeper fix; this is the one that stops the
+      // shape recurring.
+      keys = _key.allMatches(shipped.group(1)!).map((m) => m.group(1)!).toList();
     }
   }
   flush();
@@ -126,11 +167,29 @@ void main() {
       for (final key in hedge.keys) {
         final shipped = arb[key];
         if (shipped == null) continue;
-        if (!_plain(shipped).contains(hedge.english)) {
+        final actual = _plain(shipped);
+        // `==` by default. `contains` is opt-in, per entry, and visible in the
+        // register as `**English (clause)**` — because a substring check passes
+        // a translation that keeps the hedge and appends a sentence reversing
+        // it. A reviewer proved that: adding 'On most vehicles this is safe, so
+        // clearing now is fine.' after entry 11's clause satisfied every
+        // positive-presence check in the suite. Softening by addition instead
+        // of subtraction is the ordinary shape of translation drift, and with
+        // `contains` everywhere it was invisible everywhere.
+        // A clause entry is checked twice: the fragment must survive, and the
+        // shipped string must not have grown by more than one sentence around
+        // it. Without the second half the escape hatch is free — a hedge is
+        // just as dead when a translation keeps it and appends '…but this is
+        // usually fine' as when it deletes it.
+        final ok = hedge.clauseOnly
+            ? actual.contains(hedge.english) &&
+                  _sentences(actual) <= _sentences(hedge.english) + 1
+            : actual == hedge.english;
+        if (!ok) {
           broken.add(
-            '#${hedge.number} $key\n'
+            '#${hedge.number} $key  (${hedge.clauseOnly ? 'clause' : 'exact'})\n'
             '  register: ${hedge.english}\n'
-            '  shipped:  ${_plain(shipped)}',
+            '  shipped:  $actual',
           );
         }
       }
@@ -146,22 +205,37 @@ void main() {
     );
   });
 
-  test('the register is not quietly empty', () {
-    // A parser that silently matched nothing would make both tests above pass
-    // for ever. This is the control: it fails if the register's format changes
-    // under the regexes rather than letting them go blind.
+  test('the parser reads every entry the file actually contains', () {
+    // The control, and it counts against the file rather than against a floor.
+    //
+    // A floor cannot see a key lost inside a line that still parses, nor an
+    // entry that stops parsing: 21 keyed entries becoming 20 satisfied
+    // `>= 20` while `dtcRescanFirst` sat unguarded behind one substituted
+    // dash. A control that counts is not a control that reads.
+    final lines = File('docs/i18n/hedge-register.md').readAsLinesSync();
+    final shippedLines =
+        lines.where((l) => l.startsWith('**Shipped as**')).length;
+    final headings = lines.where((l) => _entry.hasMatch(l)).length;
+
     expect(
-      hedges,
-      isNotEmpty,
-      reason: 'no register entry parsed — the file format changed',
-    );
-    final keyed = hedges.where((h) => h.keys.isNotEmpty).length;
-    expect(
-      keyed,
-      greaterThanOrEqualTo(20),
+      hedges.length,
+      shippedLines,
       reason:
-          'only $keyed register entries name a shipped key. The register has '
-          'more than that; the parser has probably stopped seeing them.',
+          'the file has $shippedLines "Shipped as" lines and the parser built '
+          '${hedges.length} hedges. Every one of them names at least one key, '
+          'so a shortfall means an entry stopped parsing — most likely its '
+          '**English** line, whose dash and spacing are the fragile part.',
     );
+
+    // Every entry must reach a shipped key eventually; the ones that have not
+    // are `proposed` and are named, so the number is a fact rather than a
+    // budget.
+    final unkeyed = headings - hedges.length;
+    expect(
+      unkeyed,
+      greaterThanOrEqualTo(0),
+      reason: 'more hedges than headings — the parser is inventing entries',
+    );
+    expect(hedges, isNotEmpty);
   });
 }
