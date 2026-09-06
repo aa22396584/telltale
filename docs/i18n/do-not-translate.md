@@ -1,0 +1,249 @@
+# Do not translate
+
+These tokens must appear **byte-identical** in English and in Traditional Chinese.
+
+Some are commands sent to hardware, where one changed character is a different instruction.
+Some are values the adapter sends back, which the parser matches literally — translating
+`NO DATA` breaks the code that decides a controller did not answer. Some are identifiers a
+reader will paste into a search box, a bug report, or another tool, and an obliging
+translation makes them unfindable.
+
+The rule is not "leave English words alone". `adapter` is translated (轉接器); `ATCFC0` is
+not. The line is whether the token is *addressed to a machine or a search*, or to a person.
+
+227 tokens.
+
+## AT commands and ELM327 control
+- `ATZ`
+- `ATE0`
+- `ATL0`
+- `ATM0`
+- `ATS0`
+- `ATAT1`
+- `ATAT2`
+- `ATST66`
+- `ATSP0`
+- `ATI`
+- `AT@1`
+- `ATRV`
+- `ATDP`
+- `ATDPN`
+- `ATSH`
+- `ATSH 7E0`
+- `ATCFC0`
+- `ATCRA`
+- `ATCRA 7B0`
+- `ATPPS`
+- `ATFCSM1`
+- `ATH1`
+- `CFC0`
+- `CFC1`
+
+## CAN identifiers and OBD2 mode/PID numbers
+- `7DF`
+- `7E0`
+- `7E1`
+- `7E8`
+- `7E9`
+- `7B0`
+- `7E0–7E7`
+- `7E8–7EF`
+- `781/789`
+- `0100`
+- `010C`
+- `0104`
+- `0105`
+- `010B`
+- `010D`
+- `010E`
+- `010F`
+- `0110`
+- `0111`
+- `014`
+- `00A`
+
+## Adapter responses (must appear exactly as the hardware sends them)
+- `PID 01`
+- `PID 02`
+- `NO DATA`
+- `DATA ERROR`
+- `BUS INIT`
+- `CAN ERROR`
+- `BUFFER FULL`
+- `UNABLE TO CONNECT`
+- `SAE J1979`
+- `ISO 15765-4`
+- `ISO 15765-2`
+- `ISO 9141-2`
+- `ISO 14230-4`
+- `CARLZS LAB`
+
+## Everything else
+- `020500`
+- `221101`
+- `Mode 01`
+- `Mode 02`
+- `Mode 03`
+- `Mode 04`
+- `Mode 07`
+- `Mode 09`
+- `Mode 0A`
+- `Mode 21`
+- `Mode 22`
+- `ReadDataByIdentifier`
+- `DID (Data Identifier, UDS)`
+- `SEARCHING...`
+- `STOPPED`
+- `OK (ELM327 success token — only when quoted as an adapter response)`
+- `0:/1:/2: (multi-frame line prefixes)`
+- `P0011`
+- `P0014`
+- `P0016`
+- `P0087`
+- `P0171`
+- `P0301`
+- `B0001`
+- `J1979`
+- `J1850`
+- `KWP2000`
+- `ELM327`
+- `ELM327 v1.5`
+- `OBD2`
+- `OBD-II`
+- `RFCOMM`
+- `SPP`
+- `GATT`
+- `UART`
+- `BLE`
+- `MTU`
+- `RSSI`
+- `BMS`
+- `ECU`
+- `ECM`
+- `VIN`
+- `MAF`
+- `MAP`
+- `VE`
+- `EGR`
+- `VVT`
+- `NMHC`
+- `NOx`
+- `SCR`
+- `GPF`
+- `DTC`
+- `MIL`
+- `CAN 11-bit`
+- `CAN 29-bit`
+- `500 kbit/s`
+- `PHEV`
+- `HEV`
+- `BEV`
+- `MHEV`
+- `REEV`
+- `FCEV`
+- `Telltale`
+- `Torque`
+- `Torque Pro`
+- `Ian Hawkins`
+- `Elm Electronics`
+- `OBDLink`
+- `vLinker`
+- `Vgate`
+- `V-LINK`
+- `Car Scanner`
+- `Ircama`
+- `ELM327-emulator`
+- `Shopee`
+- `Quick Share`
+- `One UI`
+- `Samsung`
+- `Galaxy S24 Ultra`
+- `Galaxy Tab S`
+- `Google Play`
+- `GitHub`
+- `GitHub Releases`
+- `YouTube`
+- `Flutter`
+- `Dart`
+- `BlueZ`
+- `D-Bus`
+- `IOBluetooth`
+- `universal_ble`
+- `flutter_blue_plus`
+- `U.S. EPA Find-a-Car`
+- `com.cbstudio.telltale`
+- `torque_obd (pubspec name — deliberately not renamed)`
+- ``field` (build flavor id)`
+- ``rig` (build flavor id — but the prose word 'rig' IS translated: 馬具, README.zh-TW.md:142)`
+- `flavor (build term, kept English in zh prose)`
+- `GPL-3.0`
+- `BSD-3-Clause`
+- `LICENSE`
+- `CHANGELOG.md`
+- `PRIVACY.md`
+- `SECURITY.md`
+- `CODE_OF_CONDUCT.md`
+- `THIRD_PARTY_NOTICES_POWERTRAIN_BATTERY.md`
+- `telltale-v*.apk`
+- `-recovered`
+- `/dev/rfcomm*`
+- `app-field-debug.apk`
+- `CL-OBDII-M25B`
+- `OBDBLE`
+- `CCAH22LP5300T8`
+- `SM-S9280`
+- `1D4GP00R55B123456`
+- `MAT403096BNL00000`
+- `TORQUEDEMO0000001`
+- ``researchOnly` (catalog source label)`
+- ``community` (catalog source label — NOT the ordinary word: README.md:204 'community expectations' IS translated, as 社群互動規範)`
+- ``experimental` (catalog source label)`
+- `classicTransportAvailable`
+- `fastMode`
+- `PIDs/s`
+- `schema v3 / schema-v3 (README.md:58; NOTE docs/README.md:13 still says schema-v2 — stale, do not propagate)`
+- `Elm327Client.initSequence`
+- `lib/obd/addressing.dart`
+- `BusAddressing.shouldTransmit`
+- `sendAddressed`
+- `sendGlobal`
+- `_parse`
+- `PollingEngine`
+- `ObdSession`
+- `LocalePreference`
+- `AppLocalizations`
+- `appTitle`
+- `appTagline`
+- `languageSectionTitle`
+- `connectHeadline`
+- `connectBody`
+- `settingsHeadline`
+- `startupChecking`
+- `startupCannotComplete`
+- `startupRetry`
+- `startupRestartRequired`
+- `startupRetryHint`
+- `startupRestartHint`
+- `languageSaveFailed`
+- `appearanceSectionTitle`
+- `en / zh / zh_Hant (locale codes and ARB @@locale values)`
+- `zh-Hant`
+- `zh-TW`
+- `locale_preference_v1`
+- `English (picker self-name — lib/ui/widgets/language_picker.dart:13-15; never render as 英文)`
+- `繁體中文 (picker self-name — never render as Traditional Chinese)`
+- `Language / 語言 (bilingual section title, byte-identical in both ARBs)`
+- `System default / 跟隨系統 (bilingual picker option)`
+- `# Telltale 實車證據 v1`
+- `# Telltale 無車測試馬具證據 v1`
+- `https://play.google.com/store/apps/details?id=com.cbstudio.telltale`
+- `https://github.com/ImL1s/telltale`
+- `https://github.com/ImL1s/telltale/releases`
+- `https://iml1s.github.io/telltale/privacy.html`
+- `https://youtu.be/Ugyg4RXhjVQ`
+- `https://s.shopee.tw/3LQPiOY7uv`
+- `https://pub.dev/packages/universal_ble`
+- `221 / 205 / 157 / 50,242 / 146 / 1984–2027 / 418,028 (catalog and evidence counts — copy verbatim, never re-derive or round)`
+- `35000 (default TCP port)`
+- `192.168.0.10:35000`
+- `192.168.4.1`

@@ -34,6 +34,12 @@ certifications of an adapter, diagnosis, repair, vehicle, or safety outcome.
 - [Vehicle data sources](vehicle-data-sources.md) — official offline snapshots,
   reproducibility hashes, per-field semantics, market coverage, and known gaps.
 
+## Localization
+
+- [Localization working documents](i18n/README.md) — the glossary, the
+  do-not-translate list and the hedge register that a translation is reviewed
+  against, plus what is checked automatically and what is not.
+
 ## Maintainer documents
 
 - [Release guide](maintainers/release.md) — signing, build identities, artifacts,
