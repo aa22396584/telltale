@@ -542,6 +542,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.'**
   String get performanceDisclaimer;
+
+  /// Wear connect button for the built-in simulator. Kept short for a 454px round face.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo simulator'**
+  String get wearDemoSimulator;
+
+  /// No description provided for @wearBleAdapters.
+  ///
+  /// In en, this message translates to:
+  /// **'BLE adapters'**
+  String get wearBleAdapters;
+
+  /// No description provided for @wearConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get wearConnecting;
+
+  /// No description provided for @wearScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning…'**
+  String get wearScanning;
+
+  /// Nothing answered the scan. Not a claim that no adapter exists.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices found'**
+  String get wearNoDevicesFound;
+
+  /// No description provided for @wearBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get wearBack;
+
+  /// Shares a row with wearBack on a 227dp-wide watch face; keep it to one short word.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get wearScanAgain;
+
+  /// No description provided for @wearScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan failed — try again'**
+  String get wearScanFailed;
+
+  /// {adapter} is the device name the adapter advertised, or its id when the name is empty. Passed through, never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect: {adapter}'**
+  String wearConnectFailed(String adapter);
+
+  /// No description provided for @wearPermissionBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth'**
+  String get wearPermissionBluetooth;
+
+  /// No description provided for @wearPermissionLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get wearPermissionLocation;
+
+  /// {permission} is wearPermissionBluetooth or wearPermissionLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning needs {permission} permission'**
+  String wearScanPermissionNeeded(String permission);
+
+  /// A refusal the app cannot re-ask for. States the only remedy.
+  ///
+  /// In en, this message translates to:
+  /// **'{permission} permission is permanently denied — turn it on in system settings, then try again'**
+  String wearScanPermissionPermanentlyDenied(String permission);
+
+  /// No description provided for @wearCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get wearCancel;
+
+  /// No description provided for @wearDisconnectQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect?'**
+  String get wearDisconnectQuestion;
+
+  /// No description provided for @wearDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get wearDisconnect;
+
+  /// No description provided for @wearConfirmVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm vehicle'**
+  String get wearConfirmVehicle;
+
+  /// Affirms the identity shown above it. Must stay short enough for a watch dialog action.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, this car'**
+  String get wearConfirmVehicleAccept;
+
+  /// Load-bearing: read-only, and the plausible-but-wrong-number warning. Neither may be dropped for length.
+  ///
+  /// In en, this message translates to:
+  /// **'Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.'**
+  String get wearConfirmVehicleBody;
+
+  /// The 12V battery reading on the watch numbers grid. Not the powertrain battery, which has its own page.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get wearBatteryVoltageLabel;
 }
 
 class _AppLocalizationsDelegate

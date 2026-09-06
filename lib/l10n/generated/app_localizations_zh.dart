@@ -243,6 +243,73 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get performanceDisclaimer =>
       '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
+
+  @override
+  String get wearDemoSimulator => 'Demo 模擬器';
+
+  @override
+  String get wearBleAdapters => 'BLE 轉接器';
+
+  @override
+  String get wearConnecting => '連線中…';
+
+  @override
+  String get wearScanning => '掃描中…';
+
+  @override
+  String get wearNoDevicesFound => '沒有找到裝置';
+
+  @override
+  String get wearBack => '返回';
+
+  @override
+  String get wearScanAgain => '重新掃描';
+
+  @override
+  String get wearScanFailed => '掃描失敗，請再試一次';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return '連線失敗：$adapter';
+  }
+
+  @override
+  String get wearPermissionBluetooth => '藍牙';
+
+  @override
+  String get wearPermissionLocation => '位置';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return '需要$permission權限才能掃描';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission權限已被永久拒絕，請到系統設定開啟後再試';
+  }
+
+  @override
+  String get wearCancel => '取消';
+
+  @override
+  String get wearDisconnectQuestion => '中斷連線？';
+
+  @override
+  String get wearDisconnect => '中斷';
+
+  @override
+  String get wearConfirmVehicle => '確認車輛';
+
+  @override
+  String get wearConfirmVehicleAccept => '就是這台車';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。接錯車型可能得到看似合理但錯誤的數字——不確定就取消。';
+
+  @override
+  String get wearBatteryVoltageLabel => '電瓶';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -483,4 +550,71 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get performanceDisclaimer =>
       '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
+
+  @override
+  String get wearDemoSimulator => 'Demo 模擬器';
+
+  @override
+  String get wearBleAdapters => 'BLE 轉接器';
+
+  @override
+  String get wearConnecting => '連線中…';
+
+  @override
+  String get wearScanning => '掃描中…';
+
+  @override
+  String get wearNoDevicesFound => '沒有找到裝置';
+
+  @override
+  String get wearBack => '返回';
+
+  @override
+  String get wearScanAgain => '重新掃描';
+
+  @override
+  String get wearScanFailed => '掃描失敗，請再試一次';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return '連線失敗：$adapter';
+  }
+
+  @override
+  String get wearPermissionBluetooth => '藍牙';
+
+  @override
+  String get wearPermissionLocation => '位置';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return '需要$permission權限才能掃描';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission權限已被永久拒絕，請到系統設定開啟後再試';
+  }
+
+  @override
+  String get wearCancel => '取消';
+
+  @override
+  String get wearDisconnectQuestion => '中斷連線？';
+
+  @override
+  String get wearDisconnect => '中斷';
+
+  @override
+  String get wearConfirmVehicle => '確認車輛';
+
+  @override
+  String get wearConfirmVehicleAccept => '就是這台車';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。接錯車型可能得到看似合理但錯誤的數字——不確定就取消。';
+
+  @override
+  String get wearBatteryVoltageLabel => '電瓶';
 }

@@ -273,4 +273,71 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get performanceDisclaimer =>
       'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.';
+
+  @override
+  String get wearDemoSimulator => 'Demo simulator';
+
+  @override
+  String get wearBleAdapters => 'BLE adapters';
+
+  @override
+  String get wearConnecting => 'Connecting…';
+
+  @override
+  String get wearScanning => 'Scanning…';
+
+  @override
+  String get wearNoDevicesFound => 'No devices found';
+
+  @override
+  String get wearBack => 'Back';
+
+  @override
+  String get wearScanAgain => 'Rescan';
+
+  @override
+  String get wearScanFailed => 'Scan failed — try again';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return 'Could not connect: $adapter';
+  }
+
+  @override
+  String get wearPermissionBluetooth => 'Bluetooth';
+
+  @override
+  String get wearPermissionLocation => 'Location';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return 'Scanning needs $permission permission';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission permission is permanently denied — turn it on in system settings, then try again';
+  }
+
+  @override
+  String get wearCancel => 'Cancel';
+
+  @override
+  String get wearDisconnectQuestion => 'Disconnect?';
+
+  @override
+  String get wearDisconnect => 'Disconnect';
+
+  @override
+  String get wearConfirmVehicle => 'Confirm vehicle';
+
+  @override
+  String get wearConfirmVehicleAccept => 'Yes, this car';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      'Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.';
+
+  @override
+  String get wearBatteryVoltageLabel => 'Battery';
 }

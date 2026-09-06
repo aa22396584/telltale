@@ -25,6 +25,7 @@ import '../../core/ble_scan_permissions.dart';
 import '../../core/screen_wake.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../obd/pid/pid.dart';
 import '../../obd/pid/pid_library.dart';
 import '../../obd/powertrain_battery/powertrain_battery_catalog.dart';
@@ -128,6 +129,22 @@ class _WearShellState extends ConsumerState<WearShell> {
   }
 }
 
+/// Names the permission the user refused, in the reader's language.
+///
+/// `BlePermissionResult.deniedLabel` is a display string, and the module that
+/// produces it (`lib/core/ble_scan_permissions.dart`) writes it in Traditional
+/// Chinese. Interpolating it straight into a sentence put 「藍牙」 inside the
+/// English build. Mapping it back onto localized copy here keeps that fix
+/// inside this file; the proper repair is an enum on `BlePermissionResult`,
+/// which belongs to a change that owns that file. A label this does not
+/// recognise — including `null`, which is what the old `?? '藍牙'` handled —
+/// falls to Bluetooth, so the behaviour is unchanged for every case that
+/// reaches it today.
+String _permissionName(AppLocalizations l10n, String? deniedLabel) =>
+    deniedLabel == '位置'
+    ? l10n.wearPermissionLocation
+    : l10n.wearPermissionBluetooth;
+
 class _DemoBadge extends StatelessWidget {
   const _DemoBadge();
 
@@ -161,6 +178,11 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
   }
 
   Future<void> _startBleScan() async {
+    // Captured before the first await, and again before the listener closure
+    // below: reading the context after an await trips
+    // use_build_context_synchronously, and the note belongs to the language
+    // that was on screen when the user asked for the scan.
+    final l10n = AppLocalizations.of(context);
     // The shared version-aware rule: on Android 12+ this asks for the two
     // Bluetooth runtime permissions, below that it asks for location —
     // skipping which makes the scan return an empty list with no error,
@@ -168,12 +190,12 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
     final permission = await ensureBluetoothPermissions(forScanning: true);
     if (!mounted) return;
     if (!permission.granted) {
-      final what = permission.deniedLabel ?? '藍牙';
+      final what = _permissionName(l10n, permission.deniedLabel);
       setState(
         () => _note =
             permission.outcome == BlePermissionOutcome.permanentlyDenied
-            ? '$what權限已被永久拒絕，請到系統設定開啟後再試'
-            : '需要$what權限才能掃描',
+            ? l10n.wearScanPermissionPermanentlyDenied(what)
+            : l10n.wearScanPermissionNeeded(what),
       );
       return;
     }
@@ -199,7 +221,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
         if (!mounted) return;
         setState(() {
           _scanning = false;
-          _note = '掃描失敗，請再試一次';
+          _note = l10n.wearScanFailed;
         });
       },
       onDone: () {
@@ -209,6 +231,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
   }
 
   Future<void> _connectBle((String, String, int?) entry) async {
+    final l10n = AppLocalizations.of(context);
     await _scan?.cancel();
     if (!mounted) return;
     setState(() => _scanning = false);
@@ -219,7 +242,9 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
         );
     if (!ok && mounted) {
       setState(
-        () => _note = '連線失敗：${entry.$2.isEmpty ? entry.$1 : entry.$2}',
+        () => _note = l10n.wearConnectFailed(
+          entry.$2.isEmpty ? entry.$1 : entry.$2,
+        ),
       );
     }
   }
@@ -236,6 +261,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final connecting = ref.watch(
       obdSessionProvider.select(
         (state) => state.phase == ConnectionPhase.connecting,
@@ -247,7 +273,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
         child: Column(
           children: [
             const SizedBox(height: Spacing.sm),
-            Text('BLE 轉接器', style: context.texts.titleSmall),
+            Text(l10n.wearBleAdapters, style: context.texts.titleSmall),
             if (_scanning)
               const Padding(
                 padding: EdgeInsets.all(Spacing.xs),
@@ -273,7 +299,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
               child: _found.isEmpty
                   ? Center(
                       child: Text(
-                        _scanning ? '掃描中…' : '沒有找到裝置',
+                        _scanning ? l10n.wearScanning : l10n.wearNoDevicesFound,
                         style: context.texts.bodySmall,
                       ),
                     )
@@ -302,14 +328,14 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
                   child: TextButton(
                     key: const Key('wear_scan_back'),
                     onPressed: _leaveScanResults,
-                    child: const Text('返回'),
+                    child: Text(l10n.wearBack),
                   ),
                 ),
                 Expanded(
                   child: TextButton(
                     key: const Key('wear_scan_again'),
                     onPressed: _scanning || connecting ? null : _startBleScan,
-                    child: const Text('重新掃描'),
+                    child: Text(l10n.wearScanAgain),
                   ),
                 ),
               ],
@@ -325,7 +351,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Telltale',
+            l10n.appTitle,
             textAlign: TextAlign.center,
             style: context.texts.titleMedium,
           ),
@@ -337,7 +363,9 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
               onPressed: connecting
                   ? null
                   : () => ref.read(obdSessionProvider.notifier).connectDemo(),
-              child: Text(connecting ? '連線中…' : 'Demo 模擬器'),
+              child: Text(
+                connecting ? l10n.wearConnecting : l10n.wearDemoSimulator,
+              ),
             ),
           ),
           const SizedBox(height: Spacing.sm),
@@ -346,7 +374,7 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
             child: OutlinedButton(
               key: const Key('wear_scan_ble'),
               onPressed: connecting ? null : _startBleScan,
-              child: const Text('BLE 轉接器'),
+              child: Text(l10n.wearBleAdapters),
             ),
           ),
           if (_note != null) ...[
@@ -380,19 +408,20 @@ class _WearDialPageState extends ConsumerState<_WearDialPage> {
   int _index = 0;
 
   Future<void> _confirmDisconnect() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        content: const Text('中斷連線？'),
+        content: Text(l10n.wearDisconnectQuestion),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.wearCancel),
           ),
           FilledButton(
             key: const Key('wear_disconnect_confirm'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('中斷'),
+            child: Text(l10n.wearDisconnect),
           ),
         ],
       ),
@@ -467,6 +496,7 @@ class _WearBatteryPage extends ConsumerWidget {
     // before the dialog, refuse if it changed while the dialog sat open.
     // The snapshot and profile were captured together by the caller, so the
     // identity on screen is the identity that gets authorized.
+    final l10n = AppLocalizations.of(context);
     final session = ref.read(obdSessionProvider.notifier);
     final generationAtPrompt = session.connectionGeneration;
 
@@ -485,8 +515,7 @@ class _WearBatteryPage extends ConsumerWidget {
               ),
               const SizedBox(height: Spacing.sm),
               Text(
-                '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。'
-                '接錯車型可能得到看似合理但錯誤的數字——不確定就取消。',
+                l10n.wearConfirmVehicleBody,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -495,12 +524,12 @@ class _WearBatteryPage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.wearCancel),
           ),
           FilledButton(
             key: const Key('wear_confirm_vehicle_accept'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('就是這台車'),
+            child: Text(l10n.wearConfirmVehicleAccept),
           ),
         ],
       ),
@@ -527,6 +556,7 @@ class _WearBatteryPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final registryPids = ref.watch(pidRegistryProvider);
     // One owner only, chosen deterministically. Every lookup below — the
     // liveness check, the confirmation, the signal picks — uses this owner's
@@ -591,7 +621,7 @@ class _WearBatteryPage extends ConsumerWidget {
                         profile,
                         year,
                       ),
-                child: const Text('確認車輛'),
+                child: Text(l10n.wearConfirmVehicle),
               ),
             ),
           ],
@@ -652,6 +682,7 @@ class _WearNumbersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final snapshot =
         ref.watch(telemetryProvider).value ?? const TelemetrySnapshot();
     String reading(Pid pid, int digits) {
@@ -670,6 +701,11 @@ class _WearNumbersPage extends ConsumerWidget {
         physics: const NeverScrollableScrollPhysics(),
         childAspectRatio: 1.4,
         children: [
+          // Coolant / IAT / RPM stay literal, and identical in both languages.
+          // They are what this grid already renders to a Traditional Chinese
+          // reader, and `wear_shell_test.dart` pins the first two at zh-Hant;
+          // an ARB key whose two values are the same word would add a
+          // translation surface without translating anything.
           _MiniNumber(
             label: 'Coolant',
             text: reading(PidLibrary.coolantTemp, 0),
@@ -677,7 +713,7 @@ class _WearNumbersPage extends ConsumerWidget {
           _MiniNumber(label: 'IAT', text: reading(PidLibrary.intakeAirTemp, 0)),
           _MiniNumber(label: 'RPM', text: reading(PidLibrary.engineRpm, 0)),
           _MiniNumber(
-            label: '電瓶',
+            label: l10n.wearBatteryVoltageLabel,
             text: voltage == null ? '--' : voltage.toStringAsFixed(1),
           ),
         ],
