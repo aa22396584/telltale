@@ -410,6 +410,45 @@ jobs:
           if len(html_zh) != len(html_en):
               problems.append(f'privacy.html halves are not the same policy:\n  zh {html_zh}\n  en {html_en}')
 
+          # 3. Shape, per section, between the two language halves of the served
+          #    page. Section lists alone cannot see the failure that actually
+          #    happened: both halves had a heading called "What we collect", and
+          #    under it the Chinese made three promises — no personal data, none
+          #    sent to us OR to third parties, no servers — while the English
+          #    made one. The Chinese "what is stored" section was a five-row
+          #    table with a justification per row; the English was a single
+          #    sentence with no reasons. Every heading matched, so this job was
+          #    green while an English-speaking reader saw a weaker policy.
+          #
+          #    Prose cannot be compared across languages, but shape can, and
+          #    shape is what went wrong: a table on one side and a paragraph on
+          #    the other is a section that does not say the same thing twice.
+          def shape(section_html):
+              return (
+                  section_html.count('<table'),
+                  section_html.count('<tr'),
+                  section_html.count('<li'),
+              )
+
+          def sections_with_bodies(text):
+              parts = re.split(r'<h2>(.+?)</h2>', text)
+              out = {}
+              for i in range(1, len(parts), 2):
+                  out[parts[i]] = parts[i + 1]
+              return out
+
+          html_zh_body, html_en_body = html.split('<h1>Telltale Privacy Policy</h1>', 1)
+          zh_bodies = sections_with_bodies(html_zh_body)
+          en_bodies = sections_with_bodies(html_en_body)
+          for zh_name, en_name in zip(html_zh, html_en):
+              zs, es = shape(zh_bodies.get(zh_name, '')), shape(en_bodies.get(en_name, ''))
+              if zs != es:
+                  problems.append(
+                      f'"{zh_name}" and "{en_name}" are shaped differently: '
+                      f'zh has {zs[0]} table(s)/{zs[1]} row(s)/{zs[2]} list item(s), '
+                      f'en has {es[0]}/{es[1]}/{es[2]}. One language is being told less.'
+                  )
+
           if problems:
               print('The two privacy policies have drifted. docs/privacy.html is the')
               print('authoritative one — it is the URL Google Play holds.\n')

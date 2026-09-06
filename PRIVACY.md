@@ -107,14 +107,21 @@ links open Shopee or a browser only after you tap them.
 
 ## What we collect
 
-**Nothing.** We have no servers.
+**Nothing.** Telltale does not collect personal data, and does not send any data
+to our servers or to third parties. We have no servers.
 
 ## What the app stores on your device
 
-Vehicle profile and its per-field source references, your custom PID
-definitions, the last adapter used, interface preferences, and a diagnostic
-transcript of the most recent session. These are written to the app's private
-storage and are not sent to our servers.
+The following are written to the app's private storage and are not sent to our
+servers:
+
+| What | Why |
+|---|---|
+| Your vehicle profile (displacement, mass, drag coefficient, and the per-field source of each) | Estimating power and fuel use needs them; the source references exist so a default is never presented as a manufacturer specification |
+| Your custom PID definitions | You wrote them |
+| The last adapter and Wi-Fi address used | So you do not have to find it again |
+| Interface preferences (dark/light, gauge skin) | To remember what you chose |
+| The diagnostic transcript (most recent session) | So you can export it for someone to read when a connection fails |
 
 The **diagnostic transcript** records the raw bytes exchanged with the adapter,
 including the VIN and fault codes the vehicle reports. The app never uploads it
