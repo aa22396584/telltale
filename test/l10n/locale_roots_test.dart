@@ -79,8 +79,10 @@ void main() {
 
     expect(en.startupCannotComplete, 'Cannot finish startup checks');
     expect(en.startupCannotComplete, isNot(en.startupChecking));
+    expect(en.startupCannotComplete, isNot(en.startupRestartRequired));
     expect(zh.startupCannotComplete, '目前無法完成啟動檢查');
     expect(zh.startupCannotComplete, isNot(zh.startupChecking));
+    expect(zh.startupCannotComplete, isNot(zh.startupRestartRequired));
 
     expect(
       startupStatusTitle(l10n: en, loading: true, restartRequired: false),
@@ -104,24 +106,19 @@ void main() {
     );
   });
 
-  testWidgets('retryable startup title renders the failure copy, not loading', (
+  testWidgets('retryable AppStartupScreen uses failure copy, Retry, not loading', (
     tester,
   ) async {
+    var retried = false;
     await tester.pumpWidget(
       MaterialApp(
         locale: englishLocale,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: supportedAppLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Builder(
-          builder: (context) {
-            return Text(
-              startupStatusTitle(
-                l10n: AppLocalizations.of(context),
-                loading: false,
-                restartRequired: false,
-              ),
-            );
-          },
+        home: AppStartupScreen(
+          loading: false,
+          restartRequired: false,
+          retry: () => retried = true,
         ),
       ),
     );
@@ -130,5 +127,33 @@ void main() {
       find.text('Checking local share cache and telemetry records'),
       findsNothing,
     );
+    expect(find.text('Restart required to continue safely'), findsNothing);
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    expect(retried, isTrue);
+  });
+
+  testWidgets('loading AppStartupScreen uses checking copy, not failure', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: englishLocale,
+        supportedLocales: supportedAppLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: AppStartupScreen(
+          loading: true,
+          restartRequired: false,
+          retry: () {},
+        ),
+      ),
+    );
+    expect(
+      find.text('Checking local share cache and telemetry records'),
+      findsOneWidget,
+    );
+    expect(find.text('Cannot finish startup checks'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
   });
 }
