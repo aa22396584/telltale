@@ -98,5 +98,304 @@
   },
   "telemetryBlockedByRecorder": "Stop and save the recording first",
   "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "settingsConnectionSection": "Connection",
+  "@settingsConnectionSection": {
+    "description": "Settings section heading above the current-connection panel."
+  },
+  "settingsNotConnected": "Not connected",
+  "settingsDisconnect": "Disconnect",
+  "settingsGoToConnect": "Go to Connect",
+  "@settingsGoToConnect": {
+    "description": "Button that leaves Settings for the Connect screen."
+  },
+  "settingsVehicleProfileSection": "Vehicle profile",
+  "settingsProfileEstimatesIntro": "Horsepower, torque and fuel use are estimated from these parameters; the closer they are to the actual vehicle, the more the estimates mean.",
+  "@settingsProfileEstimatesIntro": {
+    "description": "'estimated' is load-bearing: these numbers are never measured."
+  },
+  "settingsProfileNameProvesNothing": "A brand name or a VIN alone does not establish mass, drag, VE or transmission efficiency.",
+  "@settingsProfileNameProvesNothing": {
+    "description": "VE stays VE in both languages."
+  },
+  "settingsCatalogVerifying": "Verifying the offline catalog…",
+  "settingsCatalogChoose": "Choose from the official catalog",
+  "settingsCatalogScope": "The bundled snapshot is the official U.S. EPA Find-a-Car data; it covers only that market and the configurations inside the snapshot, not every brand or model year worldwide.",
+  "@settingsCatalogScope": {
+    "description": "Scopes the catalog. Must not read as global coverage."
+  },
+  "settingsCatalogCorrupt": "The official offline catalog is damaged or could not be loaded; nothing was applied.",
+  "@settingsCatalogCorrupt": {
+    "description": "Says what did NOT happen: no partial application."
+  },
+  "settingsCatalogNothingApplicable": "This official configuration has no field that can be applied safely to the current formulas; the existing profile is unchanged.",
+  "settingsFieldDisplacement": "Displacement",
+  "settingsFieldMass": "Mass",
+  "settingsFieldMassWithDriver": "Mass (with driver)",
+  "settingsFieldVolumetricEfficiency": "Volumetric efficiency VE",
+  "@settingsFieldVolumetricEfficiency": {
+    "description": "VE is a symbol, not a word; it stays VE in both languages."
+  },
+  "settingsFieldDragCoefficient": "Drag coefficient Cd",
+  "@settingsFieldDragCoefficient": {
+    "description": "Cd is a symbol, not a word; it stays Cd in both languages."
+  },
+  "settingsFieldFrontalArea": "Frontal area",
+  "settingsFieldRollingResistance": "Rolling resistance Crr",
+  "@settingsFieldRollingResistance": {
+    "description": "Crr is a symbol, not a word; it stays Crr in both languages."
+  },
+  "settingsFieldFuel": "Fuel",
+  "settingsFieldDrivetrain": "Drivetrain",
+  "settingsFuelAndDrivetrainSection": "Fuel and drivetrain",
+  "settingsFuelTypeLabel": "Fuel type",
+  "settingsFuelAfrAndDensity": "Air-fuel ratio {afr} · density {density} g/L",
+  "@settingsFuelAfrAndDensity": {
+    "description": "Both values come from the selected FuelType. Units never change with language.",
+    "placeholders": {
+      "afr": {
+        "type": "double"
+      },
+      "density": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDrivetrainEfficiency": "Transmission efficiency {percent} %",
+  "@settingsDrivetrainEfficiency": {
+    "description": "{percent} comes from Drivetrain.efficiency; never spell it into the sentence.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsProfileConfirmedButton": "Confirmed for this connection",
+  "settingsProfileConfirmButton": "Confirm this vehicle for this connection",
+  "settingsProfileConfirmAfterConnect": "Connect to confirm this vehicle",
+  "settingsDiagnosticsSection": "Diagnostic transcript",
+  "settingsManualCommandTitle": "Manual command",
+  "settingsManualCommandBody": "Send one command straight to the adapter — for example ATI, ATDPN, 0100. It joins the same queue as normal polling and does not jump ahead.",
+  "@settingsManualCommandBody": {
+    "description": "ATI, ATDPN and 0100 are wire commands and must stay byte-identical."
+  },
+  "settingsManualCommandFieldLabel": "Command",
+  "settingsManualCommandSend": "Send",
+  "settingsManualCommandNoContent": "(no response content)",
+  "@settingsManualCommandNoContent": {
+    "description": "The adapter answered, and the answer was empty. Not an error, and not a reading."
+  },
+  "settingsExperimentalSection": "Experimental",
+  "settingsBatteryLabSwitchTitle": "Battery laboratory (experimental)",
+  "settingsBatteryLabSwitchSubtitle": "Only reveals one-shot read-only queries whose sources are complete and hash-bound. It does not install PIDs, poll, add gauges, or treat research data as support.",
+  "@settingsBatteryLabSwitchSubtitle": {
+    "description": "The switch reveals the laboratory; it never trusts a vehicle. 'Only reveals' is load-bearing."
+  },
+  "settingsBatteryLabDialogTitle": "Turn on the battery laboratory",
+  "settingsBatteryLabDialogBody": "These are reverse-engineered candidate sources, not manufacturer documentation, and not Telltale support for your vehicle. Even a read-only query can wake a controller; a decoded number may look plausible and still not apply.",
+  "@settingsBatteryLabDialogBody": {
+    "description": "A safety boundary. Three claims must survive translation: reverse-engineered candidates rather than manufacturer documentation; a read-only query can still wake a controller; a decoded number can look plausible and not apply."
+  },
+  "settingsBatteryLabEvidenceAck": "I understand that the source data and the synthetic tests do not prove this applies to my own vehicle",
+  "settingsBatteryLabWireAck": "I understand this unlocks only one-shot queries at fixed Mode 21/22 addresses from the catalog — not scanning, not a diagnostic session, not security access, not writing, not control",
+  "@settingsBatteryLabWireAck": {
+    "description": "States exactly what consent does and does not unlock. Mode 21/22 stay byte-identical. The five refusals are enumerated on purpose."
+  },
+  "settingsCancel": "Cancel",
+  "settingsBatteryLabUnlockReadOnly": "Unlock one-shot read-only queries only",
+  "settingsBatteryLabEnableNotSaved": "Could not save the battery laboratory setting; it stays off.",
+  "settingsBatteryLabDisableNotSaved": "The battery laboratory is off for this run, but the setting could not be saved; the next launch may show the laboratory again, and every query still needs its own confirmation.",
+  "@settingsBatteryLabDisableNotSaved": {
+    "description": "Off now, possibly back next launch, and per-query consent is unaffected. All three halves are load-bearing."
+  },
+  "settingsThemeDark": "Dark",
+  "settingsThemeLight": "Light",
+  "settingsThemeSystem": "Follow system",
+  "settingsGaugeSkinTitle": "Gauge style",
+  "settingsGaugeSkinBody": "Not just a colour change — each one has a different dial face, needle and motion. All of them work on dark and light backgrounds.",
+  "settingsOpenSourceLicenses": "Open source and data licences",
+  "settingsLicenseLegalese": "Powertrain battery sources, transformations, and reuse terms are bundled with this app.",
+  "@settingsLicenseLegalese": {
+    "description": "applicationLegalese on the bundled licence page."
+  },
+  "settingsStandardsFooter": "This app's OBD2 implementation follows public standards including SAE J1979 and the ELM327 datasheet; every formula and AT command that affects hardware behaviour is cross-verified, and the results are recorded in docs/protocol-deviations.zh-TW.md. This app is not affiliated with Torque or Torque Pro.",
+  "@settingsStandardsFooter": {
+    "description": "SAE J1979, ELM327, the file name and the Torque product names stay byte-identical."
+  },
+  "settingsEpaPickerTitle": "Official U.S. EPA vehicle catalog",
+  "settingsClose": "Close",
+  "settingsEpaPickerScope": "U.S.-market snapshot configurations for {firstYear}–{lastYear} only. Models that share a name still need the model year, transmission, fuel and EPA ID to tell them apart.",
+  "@settingsEpaPickerScope": {
+    "description": "Both years come from the loaded catalog, never from the prose.",
+    "placeholders": {
+      "firstYear": {
+        "type": "int"
+      },
+      "lastYear": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaYear": "Model year",
+  "settingsEpaMake": "EPA make",
+  "@settingsEpaMake": {
+    "description": "EPA 'make' is a manufacturer division, not a brand; both languages keep the EPA qualifier."
+  },
+  "settingsEpaModel": "Model",
+  "settingsEpaPickInOrder": "Choose model year, make and model in order",
+  "settingsEpaNoConfigurations": "No configurations available for this model",
+  "settingsEpaFuelUnknown": "Fuel unknown",
+  "settingsEpaDriveUnknown": "Drive unknown",
+  "settingsEpaNoSafeFields": "This configuration has no field that can be applied safely to the current formulas; nothing is guessed.",
+  "settingsEpaWillApplyOnly": "Only {fields} will be applied. Mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.",
+  "@settingsEpaWillApplyOnly": {
+    "description": "Names what is NOT applied. VE, Cd and Crr stay as symbols.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsEpaChooseExact": "Choose an exact configuration",
+  "settingsEpaCloseNoFields": "Close (no fields to apply)",
+  "settingsEpaApplyFields": "Apply {count} official fields",
+  "@settingsEpaApplyFields": {
+    "description": "{count} is the number of fields that survived verification.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaCylinders": "{count} cyl",
+  "@settingsEpaCylinders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaConfiguration": "EPA configuration {epaId}",
+  "@settingsEpaConfiguration": {
+    "description": "Fallback title when a configuration lists no displacement, cylinder count or transmission. The EPA ID is data.",
+    "placeholders": {
+      "epaId": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsProvenanceResolution": "Resolution: official exact {exact} / {total} fields · confirmed this session {sessionConfirmed} / {total} · unresolved {unresolved} / {total} · ambiguous {ambiguous} / {total} · conflicting {conflict} / {total}",
+  "@settingsProvenanceResolution": {
+    "description": "Every count is derived from the profile's own field map. The five states are distinct and must not be merged.",
+    "placeholders": {
+      "exact": {
+        "type": "int"
+      },
+      "sessionConfirmed": {
+        "type": "int"
+      },
+      "unresolved": {
+        "type": "int"
+      },
+      "ambiguous": {
+        "type": "int"
+      },
+      "conflict": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsProvenanceOrigins": "Provenance: official or manufacturer {official} / {total} fields · user entered {user} / {total} · generic default {generic} / {total} · scientific model {scientific} / {total}",
+  "@settingsProvenanceOrigins": {
+    "description": "Counts by VehicleFieldOrigin. A generic default is not a measurement.",
+    "placeholders": {
+      "official": {
+        "type": "int"
+      },
+      "user": {
+        "type": "int"
+      },
+      "generic": {
+        "type": "int"
+      },
+      "scientific": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsProvenanceNoneExact": "No field has been resolved exactly to this vehicle; generic, hand-entered and older source values all still need confirming.",
+  "settingsProvenanceOnlyExact": "Fields with an exact official source: {fields}. Every other field still needs confirming one by one.",
+  "@settingsProvenanceOnlyExact": {
+    "description": "The enumeration is the claim: only these fields are exact.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsProvenancePublishers": "Sources: {publishers}",
+  "@settingsProvenancePublishers": {
+    "description": "Publisher names are data and pass through untranslated.",
+    "placeholders": {
+      "publishers": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsListSeparator": ", ",
+  "@settingsListSeparator": {
+    "description": "Joins the label lists this screen builds at runtime. Chinese uses the enumeration comma; English uses a comma and a space."
+  },
+  "settingsVinNotRead": "VIN not read yet",
+  "@settingsVinNotRead": {
+    "description": "Not read is not unavailable. Must stay distinct from settingsVinUnavailable."
+  },
+  "settingsVinNotReadConnectedDetail": "Mode 09 VIN can be read from the vehicle now; the identity is kept only for this connection. The raw diagnostic transcript may still contain the VIN.",
+  "@settingsVinNotReadConnectedDetail": {
+    "description": "The privacy half — the transcript may still hold the VIN — must survive."
+  },
+  "settingsVinNotReadDisconnectedDetail": "Once connected, the VIN the vehicle reports about itself can be read; the identity does not carry into the next connection. The raw diagnostic transcript may still contain the VIN.",
+  "settingsVinSimulatorReported": "Simulator-reported VIN",
+  "@settingsVinSimulatorReported": {
+    "description": "Must not read as a vehicle-reported VIN."
+  },
+  "settingsVinVehicleReported": "Vehicle-reported VIN",
+  "settingsVinReportedDetail": "A VIN is what the vehicle reports about itself; it does not verify the model's specifications. The identity does not cross connections; the diagnostic transcript may still contain the VIN.",
+  "@settingsVinReportedDetail": {
+    "description": "Self-reported is not verified. Never let this read as a confirmed profile."
+  },
+  "settingsVinUnavailable": "VIN unavailable",
+  "settingsVinUnavailableDetail": "The vehicle may not offer one, the reply may have been incomplete, or it was not read on this connection; nothing is guessed and no characters are filled in.",
+  "@settingsVinUnavailableDetail": {
+    "description": "Three innocent explanations plus the refusal to guess. Do not compress."
+  },
+  "settingsVinConflict": "VIN conflict",
+  "settingsVinConflictDetail": "Controllers reported different VINs, so the vehicle identity cannot be confirmed; every candidate was discarded.",
+  "@settingsVinConflictDetail": {
+    "description": "Discarded, not 'one was picked'."
+  },
+  "settingsVinReading": "Reading…",
+  "settingsVinRead": "Read VIN",
+  "settingsProfileConfirmedDetail": "The profile is confirmed for this connection. Changing any value, or reconnecting, means confirming again.",
+  "settingsProfileUnconfirmedConnectedDetail": "Not confirmed on this connection. Measured OBD readings are still shown, but values estimated from mass, VE and drag are not.",
+  "@settingsProfileUnconfirmedConnectedDetail": {
+    "description": "Measured and estimated are two different things and must stay two different words."
+  },
+  "settingsProfileUnconfirmedDisconnectedDetail": "Connect to this vehicle before confirming. Confirmation expires on every reconnect, so one car's profile is never applied to the next.",
+  "settingsAdapterSelfReportTitle": "What the adapter says about itself",
+  "settingsAdapterNoVersion": "(no version reported)",
+  "settingsAdapterNoContradictions": "No self-description contradictions found. That only means it is consistent about itself — it is not evidence that the chip is genuine, and not evidence that the numbers it reports are correct. On a clone, the version string is just text somebody chose.",
+  "@settingsAdapterNoContradictions": {
+    "description": "Consistency is not a clean bill of health. Both negations are load-bearing."
+  },
+  "settingsAdapterConcernsFooter": "These are places where the adapter's account of itself does not add up, not evidence that it misread the car. The only way to confirm a value is a second independent measurement (see the field guide).",
+  "@settingsAdapterConcernsFooter": {
+    "description": "Distinguishes a self-description mismatch from a wrong reading."
+  }
 }
