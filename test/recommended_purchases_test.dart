@@ -14,6 +14,7 @@ import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 import 'package:torque_obd/ui/widgets/recommended_purchase_panel.dart';
+import 'support/localized_app.dart';
 
 class _IdleSession extends ObdSession {
   @override
@@ -132,8 +133,7 @@ void main() {
             ),
             obdSessionProvider.overrideWith(_IdleSession.new),
           ],
-          child: MaterialApp(
-            theme: AppTheme.dark(),
+          child: localizedMaterialApp(
             home: ConnectScreen(
               onOpenRecommendedPurchase: (uri) async {
                 opened = uri;
@@ -198,8 +198,7 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             obdSessionProvider.overrideWith(_IdleSession.new),
           ],
-          child: MaterialApp(
-            theme: AppTheme.dark(),
+          child: localizedMaterialApp(
             home: SettingsScreen(
               onOpenRecommendedPurchase: (uri) async {
                 opened = uri;
@@ -256,8 +255,7 @@ void main() {
           ),
           obdSessionProvider.overrideWith(_IdleSession.new),
         ],
-        child: MaterialApp(
-          theme: AppTheme.dark(),
+        child: localizedMaterialApp(
           home: ConnectScreen(onOpenRecommendedPurchase: (_) async => false),
         ),
       ),
@@ -295,8 +293,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           obdSessionProvider.overrideWith(_IdleSession.new),
         ],
-        child: MaterialApp(
-          theme: AppTheme.dark(),
+        child: localizedMaterialApp(
           home: SettingsScreen(onOpenRecommendedPurchase: (_) async => false),
         ),
       ),
@@ -336,8 +333,7 @@ void main() {
           ),
           obdSessionProvider.overrideWith(_IdleSession.new),
         ],
-        child: MaterialApp(
-          theme: AppTheme.dark(),
+        child: localizedMaterialApp(
           home: ConnectScreen(
             onOpenRecommendedPurchaseDisclosure: () => openedSettings = true,
           ),

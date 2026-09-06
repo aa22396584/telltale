@@ -1,0 +1,22 @@
+{
+  "@@locale": "en",
+  "appTitle": "Telltale",
+  "@appTitle": {
+    "description": "App name shown in window titles and the connect header."
+  },
+  "appTagline": "Live vehicle telemetry",
+  "languageSectionTitle": "Language / 語言",
+  "@languageSectionTitle": {
+    "description": "Bilingual label for the language picker. Options use self-names."
+  },
+  "connectHeadline": "Choose a connection",
+  "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
+  "settingsHeadline": "Settings",
+  "startupChecking": "Checking local share cache and telemetry records",
+  "startupRetry": "Retry",
+  "startupRestartRequired": "Restart required to continue safely",
+  "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
+  "startupRestartHint": "Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.",
+  "languageSaveFailed": "Could not save the language. Try again.",
+  "appearanceSectionTitle": "Appearance"
+}

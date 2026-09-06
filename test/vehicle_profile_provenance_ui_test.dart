@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/obd/physics/vehicle_evidence.dart';
 import 'package:torque_obd/obd/physics/vehicle_profile.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -16,6 +15,7 @@ import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/state/vehicle_catalog.dart';
 import 'package:torque_obd/state/vehicle_identity.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
+import 'support/localized_app.dart';
 
 const _epaEvidence = EvidenceRef(
   sourceId: 'us-epa-fueleconomy-vehicles',
@@ -163,7 +163,7 @@ Future<void> _pumpSettings(
         else if (catalog != null)
           usVehicleCatalogLoaderProvider.overrideWithValue(() async => catalog),
       ],
-      child: MaterialApp(theme: AppTheme.dark(), home: const SettingsScreen()),
+      child: localizedMaterialApp(home: const SettingsScreen()),
     ),
   );
   await tester.pump();

@@ -22,6 +22,7 @@ import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
+import 'support/localized_app.dart';
 
 class _FastDemoSession extends ObdSession {
   int demoAttempts = 0;
@@ -120,7 +121,7 @@ void main() {
           ),
           obdSessionProvider.overrideWith(() => session = _FastDemoSession()),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: localizedMaterialAppRouter(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();

@@ -26,6 +26,8 @@ import '../../widgets/field_event_markers.dart';
 import '../../../core/theme/gauge_skin.dart';
 import '../../widgets/transcript_export.dart';
 import '../../widgets/recommended_purchase_panel.dart';
+import '../../widgets/language_picker.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../connect/connect_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -285,7 +287,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Spacing.xxl,
           ),
           children: [
-            Text('設定', style: context.texts.headlineMedium),
+            Text(
+              AppLocalizations.of(context).settingsHeadline,
+              style: context.texts.headlineMedium,
+            ),
             const SizedBox(height: Spacing.xl),
 
             const SectionHeading('連線'),
@@ -637,7 +642,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             const SizedBox(height: Spacing.lg),
-            const SectionHeading('外觀'),
+            SectionHeading(AppLocalizations.of(context).languageSectionTitle),
+            const Panel(child: LanguagePicker(showHeading: false)),
+
+            const SizedBox(height: Spacing.lg),
+            SectionHeading(AppLocalizations.of(context).appearanceSectionTitle),
             Panel(
               child: SegmentedButton<ThemeMode>(
                 segments: const [

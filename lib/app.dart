@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/form_factor.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/generated/app_localizations.dart';
+import 'l10n/locale_resolution.dart';
 import 'state/app_share_coordinator.dart';
+import 'state/locale_settings.dart';
 import 'state/powertrain_battery_profiles.dart';
 import 'state/settings.dart';
 import 'state/telemetry_recorder.dart';
@@ -31,15 +35,24 @@ class TorqueApp extends ConsumerStatefulWidget {
   ConsumerState<TorqueApp> createState() => _TorqueAppState();
 }
 
-class _TorqueAppState extends ConsumerState<TorqueApp> {
+class _TorqueAppState extends ConsumerState<TorqueApp>
+    with WidgetsBindingObserver {
   late Future<_AppStartupOutcome> _startupInitialization;
   late final AppLifecycleListener _lifecycleListener;
   bool _startupReady = false;
   bool _startupRequiresRestart = false;
 
+  static const _l10nDelegates = <LocalizationsDelegate<dynamic>>[
+    AppLocalizations.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // These authorities outlive every route. Creating them before the router
     // makes lifecycle, OBD-boundary, and cross-feature file exclusion active
     // even while the user is still on Connect.
@@ -51,8 +64,23 @@ class _TorqueAppState extends ConsumerState<TorqueApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lifecycleListener.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (ref.read(localePreferenceProvider) == LocalePreference.system) {
+      setState(() {});
+    }
+  }
+
+  Locale _resolvedLocale() {
+    return resolveAppLocale(
+      preference: ref.watch(localePreferenceProvider),
+      deviceLocales: WidgetsBinding.instance.platformDispatcher.locales,
+    );
   }
 
   Future<_AppStartupOutcome> _initializeStartup() async {
@@ -98,6 +126,9 @@ class _TorqueAppState extends ConsumerState<TorqueApp> {
         title: 'Telltale',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark(skin: ref.watch(gaugeSkinProvider)),
+        locale: _resolvedLocale(),
+        supportedLocales: supportedAppLocales,
+        localizationsDelegates: _l10nDelegates,
         home: const WearShell(),
       );
     }
@@ -117,6 +148,9 @@ class _TorqueAppState extends ConsumerState<TorqueApp> {
             theme: AppTheme.light(skin: skin),
             darkTheme: AppTheme.dark(skin: skin),
             themeMode: themeMode,
+            locale: _resolvedLocale(),
+            supportedLocales: supportedAppLocales,
+            localizationsDelegates: _l10nDelegates,
             builder: _withTelemetryArtifactNotice,
             home: _AppStartupScreen(outcome: outcome, retry: _retryStartup),
           );
@@ -127,6 +161,9 @@ class _TorqueAppState extends ConsumerState<TorqueApp> {
           theme: AppTheme.light(skin: skin),
           darkTheme: AppTheme.dark(skin: skin),
           themeMode: themeMode,
+          locale: _resolvedLocale(),
+          supportedLocales: supportedAppLocales,
+          localizationsDelegates: _l10nDelegates,
           builder: _withTelemetryArtifactNotice,
           routerConfig: _router,
         );
@@ -179,6 +216,7 @@ class _AppStartupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final blocked = outcome?.requiresRestart == true;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -192,7 +230,7 @@ class _AppStartupScreen extends StatelessWidget {
                   if (outcome == null) ...[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 20),
-                    const Text('正在檢查本機分享暫存與遙測紀錄', textAlign: TextAlign.center),
+                    Text(l10n.startupChecking, textAlign: TextAlign.center),
                   ] else ...[
                     Icon(
                       blocked ? Icons.restart_alt : Icons.lock_clock_outlined,
@@ -200,15 +238,15 @@ class _AppStartupScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      blocked ? '需要重新啟動才能安全繼續' : '目前無法完成啟動檢查',
+                      blocked
+                          ? l10n.startupRestartRequired
+                          : l10n.startupChecking,
                       style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      blocked
-                          ? '本機分享暫存或遙測紀錄的狀態無法確認。為避免覆寫、刪除或分享錯誤檔案，請完全關閉後重新開啟 Telltale。'
-                          : '請讓 Telltale 保持在前景，並在其他檔案作業完成後重試。啟動完成前不會開放紀錄、回放、匯出或刪除。',
+                      blocked ? l10n.startupRestartHint : l10n.startupRetryHint,
                       textAlign: TextAlign.center,
                     ),
                     if (!blocked) ...[
@@ -216,7 +254,7 @@ class _AppStartupScreen extends StatelessWidget {
                       FilledButton.icon(
                         onPressed: retry,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('重試'),
+                        label: Text(l10n.startupRetry),
                       ),
                     ],
                   ],

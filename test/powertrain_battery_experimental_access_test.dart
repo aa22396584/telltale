@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_catalog.dart';
 import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_probe.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -15,6 +14,7 @@ import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/state/powertrain_battery_experiments.dart';
 import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
+import 'support/localized_app.dart';
 
 import 'support/fake_elm327.dart';
 
@@ -1311,10 +1311,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
-          theme: AppTheme.dark(),
-          home: const SettingsScreen(),
-        ),
+        child: localizedMaterialApp(home: const SettingsScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -1366,10 +1363,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
-          theme: AppTheme.dark(),
-          home: const SettingsScreen(),
-        ),
+        child: localizedMaterialApp(home: const SettingsScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -1430,10 +1424,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
-          theme: AppTheme.dark(),
-          home: const SettingsScreen(),
-        ),
+        child: localizedMaterialApp(home: const SettingsScreen()),
       ),
     );
     await tester.pumpAndSettle();
