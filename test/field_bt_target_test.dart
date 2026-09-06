@@ -58,6 +58,17 @@ void main() {
     expect(chosen, isNull);
   });
 
+  test('finder label is device.id when address is set, else the name', () {
+    expect(
+      fieldBtFinderLabel(name: 'OBDBLE', address: right),
+      right,
+    );
+    expect(
+      fieldBtFinderLabel(name: 'OBDBLE', address: ''),
+      'OBDBLE',
+    );
+  });
+
   testWidgets('tap uses device.id when address is set, not the first name', (
     tester,
   ) async {
