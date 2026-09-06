@@ -466,17 +466,21 @@ jobs:
         env:
           PYTHONWARNINGS: error::ResourceWarning
         run: |
-          python3 -m unittest discover \
-            -s tool/ble_test_rig -p 'test_*.py' -v
-          python3 -m unittest discover \
-            -s tool/obd_test_rig -p 'test_*.py' -v
-          python3 -m unittest discover \
-            -s tool/field_bt_verify -p 'test_*.py' -v
-          python3 -m unittest discover \
-            -s tool/desktop_bt_probe -p 'test_*.py' -v
-          python3 -m unittest discover \
-            -s tool/workshop -p 'test_*.py' -v
-          python3 tool/workshop/assert_skip_manifest.py
+          set -euo pipefail
+          {
+            python3 -m unittest discover \
+              -s tool/ble_test_rig -p 'test_*.py' -v
+            python3 -m unittest discover \
+              -s tool/obd_test_rig -p 'test_*.py' -v
+            python3 -m unittest discover \
+              -s tool/field_bt_verify -p 'test_*.py' -v
+            python3 -m unittest discover \
+              -s tool/desktop_bt_probe -p 'test_*.py' -v
+            python3 -m unittest discover \
+              -s tool/workshop -p 'test_*.py' -v
+          } 2>&1 | tee "$RUNNER_TEMP/rig-unittests.txt"
+          python3 tool/workshop/assert_skip_manifest.py \
+            --unittest-output "$RUNNER_TEMP/rig-unittests.txt"
 
   oracle:
     name: public oracles — Ircama, chaos, freeze-frame

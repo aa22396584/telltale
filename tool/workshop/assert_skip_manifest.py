@@ -44,8 +44,14 @@ def _skip_reason(decorator: ast.AST) -> str | None:
     return None
 
 
-def _platform_from_test(test: ast.AST) -> str | None:
+def _platform_from_compare(test: ast.AST) -> str | None:
     """Best-effort: skipUnless(sys.platform == 'darwin', ...)."""
+    if isinstance(test, ast.BoolOp):
+        for value in test.values:
+            found = _platform_from_compare(value)
+            if found:
+                return found
+        return None
     if not isinstance(test, ast.Compare) or len(test.ops) != 1:
         return None
     if not isinstance(test.ops[0], ast.Eq):
@@ -89,7 +95,7 @@ def discover(root: pathlib.Path) -> list[dict[str, object]]:
                         continue
                     reason = maybe_reason
                     if dec.args:
-                        platform = _platform_from_test(dec.args[0])
+                        platform = _platform_from_compare(dec.args[0])
                 if reason is None:
                     continue
                 test_id = f"{path.stem}.{class_node.name}.{func.name}"

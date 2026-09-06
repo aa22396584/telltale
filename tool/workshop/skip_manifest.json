@@ -199,115 +199,153 @@
       "id": "test_run_controller.RunControllerTest.test_controller_lock_serializes_distinct_private_tmp_roots",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_dead_private_ircama_lock_is_removed_before_start",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_emulator_candidates_use_only_the_private_state_pid_lock",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_expiry_stops_live_owned_process_with_missing_pid_file",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_expiry_stops_live_owned_process_without_pid_fingerprint",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_forced_stop_removes_only_matching_dead_private_ircama_lock",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_host_bundle_identity_does_not_change_with_controller_tmpdir",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_invalid_action_returns_usage_error",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_launchservices_executes_only_private_runtime_scripts",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_live_or_recycled_private_ircama_lock_is_preserved",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_malformed_private_ircama_lock_fails_closed",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_old_expiry_preserves_newer_valid_owner_pid_file",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_purge_preserves_per_run_stop_locks_and_removes_only_evidence",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_shared_tmpdir_is_refused_before_state_or_tools_are_used",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_start_readiness_retries_a_transient_full_status_failure",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_status_failure_does_not_fall_through_to_success_event",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_status_refuses_identity_lost_during_final_snapshot",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_stop_discovers_live_owned_processes_without_valid_pid_files",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_run_controller.RunControllerTest.test_stop_removes_dead_malformed_pid_files",
       "file": "tool/ble_test_rig/test_run_controller.py",
       "reason": "the BLE rig controller is macOS-only",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_scoped_command.ScopedCommandContractTest.test_real_unreaped_leader_anchor_contains_detached_same_sid_orphan",
@@ -329,7 +367,9 @@
       "id": "test_sealed_sdk_exec.SealedSdkExecRealTest.test_actual_flutter_command_is_quiet_under_live_source_guard",
       "file": "tool/telemetry_memory_rig/test_sealed_sdk_exec.py",
       "reason": "requires the macOS FSEvents fswatch used by Gate C",
-      "applicable_platforms": []
+      "applicable_platforms": [
+        "darwin"
+      ]
     },
     {
       "id": "test_source_tree_guard.SourceTreeGuardClassificationTest.test_item_cloned_reconciliation_detects_xattr_delta",

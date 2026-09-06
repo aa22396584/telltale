@@ -44,6 +44,10 @@ if listening "$PROXY_PORT"; then
   echo "Refusing: something already listens on ${BIND}:${PROXY_PORT}" >&2
   exit 1
 fi
+if listening "$CONTROL_PORT"; then
+  echo "Refusing: something already listens on ${BIND}:${CONTROL_PORT}" >&2
+  exit 1
+fi
 
 CLEAN_STATE=1
 if [[ -n "${PUBLIC_ORACLE_STATE:-}" ]]; then
@@ -154,6 +158,23 @@ count_tests() {
   "$PYTHON" tool/workshop/count_dart_tests.py "$1"
 }
 
+FLUTTER_TIMEOUT="${FLUTTER_TIMEOUT:-180}"
+
+with_timeout() {
+  local seconds="$1"
+  shift
+  "$PYTHON" -c '
+import subprocess, sys
+timeout = int(sys.argv[1])
+command = sys.argv[2:]
+try:
+    raise SystemExit(subprocess.run(command, timeout=timeout).returncode)
+except subprocess.TimeoutExpired:
+    print("FAIL: command exceeded timeout", file=sys.stderr)
+    raise SystemExit(124)
+' "$seconds" "$@"
+}
+
 assert_report() {
   local json="$1"
   local expected="$2"
@@ -165,13 +186,20 @@ assert_report() {
 }
 
 echo "== skip manifest =="
-"$PYTHON" tool/workshop/assert_skip_manifest.py
+SKIP_OUT="$STATE/python-skips.txt"
+{
+  PYTHONWARNINGS="${PYTHONWARNINGS:-error::ResourceWarning}" \
+    "$PYTHON" -m unittest discover -s tool/ble_test_rig -p 'test_*.py' -v
+  PYTHONWARNINGS="${PYTHONWARNINGS:-error::ResourceWarning}" \
+    "$PYTHON" -m unittest discover -s tool/obd_test_rig -p 'test_*.py' -v
+} 2>&1 | tee "$SKIP_OUT"
+"$PYTHON" tool/workshop/assert_skip_manifest.py --unittest-output "$SKIP_OUT"
 
 echo "== Ircama required =="
 start_elm
 IRCAMA_JSON="$STATE/ircama.json"
 set +e
-"$FLUTTER" test test/emulator_integration_test.dart --reporter json \
+with_timeout "$FLUTTER_TIMEOUT" "$FLUTTER" test test/emulator_integration_test.dart --reporter json \
   --dart-define=ELM_ORACLE_REQUIRED=true \
   --dart-define=ELM_ORACLE_PORT="$ELM_PORT" \
   >"$IRCAMA_JSON"
@@ -183,13 +211,14 @@ echo "== chaos fragment-only =="
 FRAG_LOG="$(start_proxy)"
 FRAG_JSON="$STATE/frag.json"
 set +e
-"$FLUTTER" test test/emulator_integration_test.dart --reporter json \
+with_timeout "$FLUTTER_TIMEOUT" "$FLUTTER" test test/emulator_integration_test.dart --reporter json \
   --dart-define=ELM_ORACLE_REQUIRED=true \
   --dart-define=ELM_ORACLE_PORT="$PROXY_PORT" \
   >"$FRAG_JSON"
 frag_rc=$?
 set -e
 assert_report "$FRAG_JSON" "$(count_tests test/emulator_integration_test.dart)" "$frag_rc"
+"$PYTHON" tool/workshop/assert_chaos_jsonl.py "$FRAG_LOG" --require-chunks 2
 stop_proxy
 
 run_fault() {
@@ -201,7 +230,7 @@ run_fault() {
   log="$(start_proxy "$flag")"
   local json="$STATE/chaos-$fault.json"
   set +e
-  "$FLUTTER" test test/chaos_oracle_test.dart --reporter json \
+  with_timeout "$FLUTTER_TIMEOUT" "$FLUTTER" test test/chaos_oracle_test.dart --reporter json \
     --dart-define=CHAOS_ORACLE=true \
     --dart-define=CHAOS_ORACLE_PORT="$PROXY_PORT" \
     --dart-define=CHAOS_FAULT="$fault" \
@@ -227,7 +256,7 @@ POLL_LOG="$(start_proxy \
   --disconnect-after-armed-fault)"
 POLL_JSON="$STATE/chaos-poll.json"
 set +e
-"$FLUTTER" test test/chaos_poll_oracle_test.dart --reporter json \
+with_timeout "$FLUTTER_TIMEOUT" "$FLUTTER" test test/chaos_poll_oracle_test.dart --reporter json \
   --dart-define=CHAOS_ORACLE=true \
   --dart-define=CHAOS_ORACLE_PORT="$PROXY_PORT" \
   --dart-define=CHAOS_CONTROL_PORT="$CONTROL_PORT" \
@@ -236,7 +265,7 @@ set +e
 poll_rc=$?
 set -e
 assert_report "$POLL_JSON" "$(count_tests test/chaos_poll_oracle_test.dart)" "$poll_rc"
-"$PYTHON" tool/workshop/assert_chaos_jsonl.py "$POLL_LOG" close AT
+"$PYTHON" tool/workshop/assert_chaos_jsonl.py "$POLL_LOG" close 01
 stop_proxy
 stop_elm
 
@@ -252,7 +281,7 @@ REF_PID=$!
 wait_listen "$ELM_PORT"
 FREEZE_JSON="$STATE/freeze.json"
 set +e
-"$FLUTTER" test test/freeze_frame_oracle_test.dart --reporter json \
+with_timeout 240 "$FLUTTER" test test/freeze_frame_oracle_test.dart --reporter json \
   --dart-define=FREEZE_FRAME_ORACLE_REQUIRED=true \
   --dart-define=FREEZE_FRAME_ORACLE_PORT="$ELM_PORT" \
   >"$FREEZE_JSON"

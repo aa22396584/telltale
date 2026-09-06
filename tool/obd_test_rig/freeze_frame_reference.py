@@ -174,12 +174,8 @@ class AdapterState:
         self.ecus = default_vehicle()
 
     def reset(self) -> None:
-        drop_rate = self.drop_rate
-        delay_s = self.delay_s
         rng = self.rng
         self.__init__(rng)
-        self.drop_rate = drop_rate
-        self.delay_s = delay_s
 
 
 def _eol(state: AdapterState) -> str:

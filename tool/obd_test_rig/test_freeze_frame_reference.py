@@ -150,6 +150,11 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(self.state.drop_rate, 0.0)
         self.assertIn("?", _exchange(self.state, "AT#DROPRATE0.85"))
 
+    def test_atz_clears_drop_rate(self) -> None:
+        _exchange(self.state, "AT#DROP RATE 0.85")
+        _exchange(self.state, "ATZ")
+        self.assertEqual(self.state.drop_rate, 0.0)
+
 
 class SocketTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:

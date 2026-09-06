@@ -125,8 +125,8 @@ void main() {
         reason: 'the ECM names a causing code, so it has a frame');
     final frame = frames.single;
 
-    // Its own choice of code, not one this project picked: the server stores
-    // P0133 as what caused the frame.
+    // Fixture choice of code: the project-owned reference stores P0133 as
+    // what caused the frame.
     expect(frame.cause.code, 'P0133');
     expect(frame.source, '7E8');
     expect(
