@@ -60,7 +60,7 @@ void main() {
     );
   });
 
-  test('no message is empty or left as its English source in Chinese', () {
+  test('no message is empty', () {
     for (final key in _messageKeys(en)) {
       for (final entry in {'app_en.arb': en, 'app_zh_Hant.arb': zhHant}.entries) {
         final value = entry.value[key];
@@ -76,6 +76,36 @@ void main() {
         );
       }
     }
+  });
+
+  test('no message is left as its English source in Chinese', () {
+    // The failure gen-l10n cannot report. It does not fail on a missing
+    // translation — it falls back to the template — so a forgotten entry ships
+    // as English inside an otherwise Chinese screen, and every widget test
+    // still passes because the widget rendered something.
+    //
+    // A few entries are identical in both languages on purpose. They are listed
+    // here by name so that adding a fourth is a decision somebody makes rather
+    // than a translation somebody forgot.
+    const identicalOnPurpose = <String>{
+      // A product name is not translated.
+      'appTitle',
+      // The language control names both languages in both languages, so a
+      // reader who cannot read the current one can still find their way out.
+      'languageSectionTitle',
+    };
+    final untranslated = <String>[];
+    for (final key in _messageKeys(en)) {
+      if (identicalOnPurpose.contains(key)) continue;
+      if (zhHant[key] == en[key]) untranslated.add(key);
+    }
+    expect(
+      untranslated,
+      isEmpty,
+      reason:
+          'app_zh_Hant.arb carries the English source verbatim for: '
+          '${untranslated.join(", ")}',
+    );
   });
 
   test('placeholders match across locales, by name', () {
@@ -97,6 +127,14 @@ void main() {
   });
 
   test('every placeholder named in a message is declared for that message', () {
+    // Strip ICU argument blocks before scanning. `{count, plural, other{items}}`
+    // contains `{items}`, which is a branch body and not a placeholder; a naive
+    // scan reports the first legitimate plural message as interpolating an
+    // undeclared `items` and blames the template. gen-l10n accepts the message,
+    // so the test would be wrong and the author would edit good data.
+    final icuBlock = RegExp(
+      r'\{\s*\w+\s*,\s*(?:plural|select|selectordinal)\s*,[\s\S]*\}',
+    );
     final reference = RegExp(r'\{(\w+)\}');
     for (final entry in {
       'app_en.arb': en,
@@ -106,7 +144,9 @@ void main() {
       for (final key in _messageKeys(entry.value)) {
         final value = entry.value[key];
         if (value is! String) continue;
-        final used = reference.allMatches(value).map((m) => m.group(1)!).toSet();
+        final simpleArguments = value.replaceAll(icuBlock, '');
+        final used =
+            reference.allMatches(simpleArguments).map((m) => m.group(1)!).toSet();
         if (used.isEmpty) continue;
         final declared = _placeholders(entry.value, key).isEmpty
             ? _placeholders(en, key)

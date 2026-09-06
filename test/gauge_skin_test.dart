@@ -89,9 +89,18 @@ void main() {
     testWidgets('a widget outside any theme still draws something',
         (tester) async {
       // `context.gaugeSkin` falls back rather than throwing, so a preview or a
-      // test pumping a bare MaterialApp renders a dial instead of nothing.
+      // widget under a theme that carries no GaugeSkin renders a dial instead
+      // of nothing.
+      //
+      // The explicit `theme: ThemeData()` is the whole test. Taking the
+      // helper's default would install AppTheme.dark(), which carries the
+      // extension, and the `??` fallback this case exists to exercise would
+      // never run — the assertion would then be re-checking what the test three
+      // lines above already asserts, and the fallback could be deleted with the
+      // entire suite still green.
       late GaugeSkin seen;
       await tester.pumpWidget(localizedMaterialApp(
+        theme: ThemeData(),
         home: Builder(builder: (context) {
           seen = context.gaugeSkin;
           return const SizedBox.shrink();

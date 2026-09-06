@@ -25,6 +25,7 @@ import 'package:torque_obd/state/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 
 import 'rig_support.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -143,6 +144,13 @@ void main() {
 Future<void> _startCleanFieldApp(WidgetTester tester) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.clear();
+  // Same reason as rig_support.dart: this journey asserts shipped Traditional
+  // Chinese copy, and without a written preference it resolves
+  // LocalePreference.system against whatever language the handset is set to.
+  await prefs.setString(
+    kLocalePreferenceKey,
+    localePreferenceToStored(LocalePreference.traditionalChinese),
+  );
   final docs = await getApplicationDocumentsDirectory();
   final telemetry = Directory('${docs.path}/telltale-telemetry');
   if (await telemetry.exists()) {

@@ -15,20 +15,31 @@ import 'package:torque_obd/l10n/locale_resolution.dart';
 /// without weakening the production fail-closed lifecycle gate or allowing one
 /// lifecycle test to leak a paused state into the next test.
 ///
-/// **Locale.** `flutter_test` starts with an *empty* locale list, and
+/// **Locale.** `flutter_test` starts with an *empty* platform locale list, and
 /// `basicLocaleListResolution` answers an empty list with
-/// `supportedLocales.first`, which `l10n.yaml`'s `preferred-supported-locales:
-/// en` makes English. Every assertion in this suite that was written against
-/// the shipped Traditional Chinese copy would therefore start reading English
-/// the moment a screen becomes localized — not because the copy regressed, but
-/// because nobody ever chose a locale. Choosing one here makes the existing
-/// assertions mean what they were written to mean.
+/// `supportedLocales.first` — which `l10n.yaml`'s `preferred-supported-locales:
+/// en` makes English. This sets the platform list instead of leaving it empty.
 ///
-/// This pin is **not** a claim that English is untested. It is the opposite: an
-/// untested language must be tested by asserting its own literal strings, which
-/// `test/l10n/` does against an explicitly pinned [englishLocale]. A test that
-/// asserted `find.text(l10n.someKey)` would read the same ARB entry the widget
-/// rendered and pass even when the translation is wrong.
+/// Be precise about what that does and does not cover, because the obvious
+/// reading is wrong. It does **not** decide the language of most widget tests:
+/// those pump through `test/support/localized_app.dart`, which passes an
+/// explicit `locale: testUiLocale`, and an explicit locale wins. Deleting this
+/// pin would leave those tests reading Traditional Chinese exactly as before.
+///
+/// What it decides is the language of anything that resolves *through* the
+/// platform — `resolveSystemLocale`, and the production app root under
+/// `LocalePreference.system`. Without the pin that path answers English on a
+/// bare test binding and Traditional Chinese on a zh-TW developer's machine,
+/// which is a test whose result depends on who ran it.
+///
+/// `test/l10n/system_locale_resolution_test.dart` asserts that path, so this
+/// pin is load-bearing rather than decorative: remove it and that file fails.
+///
+/// The pin is **not** a claim that English is untested. An untested language
+/// must be tested by asserting its own literal strings, which `test/l10n/` does
+/// against an explicitly pinned [englishLocale]. A test that asserted
+/// `find.text(l10n.someKey)` would read the same ARB entry the widget rendered
+/// and pass even when the translation is wrong.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
