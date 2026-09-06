@@ -49,6 +49,30 @@ enum PpsProbe {
   unavailable,
 }
 
+/// How the `AT@1` device-identity probe ended.
+///
+/// The same three states as [PpsProbe], and for the same reason: only
+/// [refused] is evidence about the device, [unavailable] is evidence about the
+/// moment. It was a bare `String deviceIdentity` that stayed empty on a refusal,
+/// a timeout, a `DATA ERROR` and a dropped Bluetooth packet alike — so a single
+/// unlucky handshake put a permanent ⚠ and "this chip implements a smaller
+/// command set than any official firmware" against an honest adapter.
+///
+/// A reviewer found that the asymmetry ran the wrong way. The best-evidenced
+/// doubt — a firmware version Elm Electronics never published, a static fact
+/// from the datasheet's revision history — carried a hedge. The worst-evidenced
+/// one, the absence of one reply, carried the word "means".
+enum IdentityProbe {
+  /// The adapter answered with an identity string.
+  read,
+
+  /// The adapter answered `?`: it does not implement AT@1.
+  refused,
+
+  /// Timed out, was unreadable, or errored. Says nothing either way.
+  unavailable,
+}
+
 /// Which doubt this is.
 ///
 /// The words live in `lib/ui/screens/settings/adapter_concern_copy.dart`. They
@@ -101,15 +125,21 @@ class AdapterIdentity {
     required this.version,
     required this.identity,
     required this.pps,
+    this.identityProbe = IdentityProbe.unavailable,
   });
 
   /// The `ATI` banner, verbatim.
   final String version;
 
-  /// The `AT@1` device identifier, verbatim. Empty if it refused.
+  /// The `AT@1` device identifier, verbatim. Empty unless [identityProbe] is
+  /// [IdentityProbe.read].
   final String identity;
 
   final PpsProbe pps;
+
+  /// How the `AT@1` probe ended. An empty [identity] alone cannot tell a
+  /// refusal from a dropped reply, and only the refusal is evidence.
+  final IdentityProbe identityProbe;
 
   /// Firmware versions Elm Electronics never released.
   ///
@@ -160,7 +190,10 @@ class AdapterIdentity {
       ));
     }
 
-    if (identity.isEmpty) {
+    // `refused` only. Silence is a fact about the link, not about the chip,
+    // and this concern is rendered next to a ⚠ on a screen whose whole job is
+    // to be right about the adapter.
+    if (identityProbe == IdentityProbe.refused) {
       found.add(
         const AdapterConcern(AdapterConcernKind.noIdentityResponse),
       );

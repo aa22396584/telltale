@@ -98,35 +98,95 @@ void main() {
   });
 
   group('the two telemetry notices', () {
-    test('the replay notice says the preview is sampled', () {
-      // Drop the word and a reader takes a sampled curve for the whole
-      // recording. That is the failure this app is organised against, arriving
-      // through an omission rather than a wrong number.
-      expect(en.telemetryReplaySampled, contains('sampled'));
-      expect(zh.telemetryReplaySampled, contains('抽樣'));
-      expect(containsChinese(en.telemetryReplaySampled), isFalse);
+    test('the replay notice says the PREVIEW is the sampled half', () {
+      // `contains('sampled')` is satisfied by "The preview is complete; the
+      // export is sampled" — the same words, the two halves swapped, and the
+      // reader now believes the chart is the whole recording and the file is
+      // not. Both of those beliefs are wrong and the second is worse.
+      //
+      // So: preview before export, sampled attached to the preview, and the
+      // export described as keeping everything.
+      final e = en.telemetryReplaySampled;
+      expect(containsChinese(e), isFalse);
+      final preview = e.toLowerCase().indexOf('preview');
+      final export = e.toLowerCase().indexOf('export');
+      final sampled = e.toLowerCase().indexOf('sampled');
+      expect(preview, greaterThanOrEqualTo(0));
+      expect(export, greaterThan(preview),
+          reason: 'the preview is the qualified half and comes first');
+      expect(sampled, inInclusiveRange(preview, export),
+          reason: '"sampled" must attach to the preview, not to the export');
+      expect(e.toLowerCase(), contains('every recorded event'),
+          reason: 'and the export has to be described as keeping all of them');
+
+      final z = zh.telemetryReplaySampled;
+      final zPreview = z.indexOf('預覽');
+      final zExport = z.indexOf('匯出');
+      final zSampled = z.indexOf('抽樣');
+      expect(zExport, greaterThan(zPreview));
+      expect(zSampled, inInclusiveRange(zPreview, zExport));
+      expect(z, contains('完整'));
     });
 
-    test('the export disclosure keeps both of its halves', () {
-      // What IS in the file and what is NOT. The store listing's "no personal
-      // data collected" rests on the second half; the first is what makes the
-      // first half checkable rather than a promise.
+    test('the export disclosure keeps both halves on the right side', () {
+      // Presence is not the property. A reviewer wrote this translation, and
+      // every `contains` above it passed:
+      //
+      //   "The export contains the VIN, GPS, an account and the adapter
+      //    address. It does not contain signal names, values or formulas."
+      //
+      // Four "absent" tokens present, three "present" tokens present, "does
+      // not contain" present, and the sentence says the opposite of the truth.
+      // What matters is which side of the negation each token falls on, so
+      // that is what this splits on and checks.
+      //
+      // The store listing's "no personal data collected" rests on the second
+      // half; the first is what makes the second checkable rather than a bare
+      // promise, which is why both are asserted rather than only the exclusion.
+      void assertSides(
+        String text,
+        String negation,
+        List<String> included,
+        List<String> excluded,
+      ) {
+        final at = text.indexOf(negation);
+        expect(at, greaterThan(0),
+            reason: '"$negation" is the hinge of this sentence and is missing');
+        final before = text.substring(0, at);
+        final after = text.substring(at);
+        for (final token in included) {
+          expect(before, contains(token),
+              reason: '$token must be named as something the export DOES '
+                  'contain, before "$negation"');
+          expect(after, isNot(contains(token)),
+              reason: '$token appears after "$negation", which says the '
+                  'export does not contain it');
+        }
+        for (final token in excluded) {
+          expect(after, contains(token),
+              reason: '$token must be named after "$negation" — this is the '
+                  'clause the store listing rests on');
+          expect(before, isNot(contains(token)),
+              reason: '$token appears before "$negation", which says the '
+                  'export contains it');
+        }
+      }
+
       final e = en.telemetryExportDisclosure;
       expect(containsChinese(e), isFalse);
-      for (final present in ['signal names', 'values', 'formulas']) {
-        expect(e, contains(present), reason: 'the export DOES contain this');
-      }
-      for (final absent in ['VIN', 'GPS', 'account', 'adapter address']) {
-        expect(e, contains(absent), reason: 'the export does NOT contain this, '
-            'and saying so is what the store listing rests on');
-      }
-      expect(e.toLowerCase(), contains('does not contain'));
+      assertSides(
+        e,
+        'does not contain',
+        const ['signal names', 'values', 'formulas'],
+        const ['VIN', 'GPS', 'account', 'adapter address'],
+      );
 
-      final z = zh.telemetryExportDisclosure;
-      for (final absent in ['VIN', 'GPS', '帳號', '轉接器位址']) {
-        expect(z, contains(absent));
-      }
-      expect(z, contains('不含'));
+      assertSides(
+        zh.telemetryExportDisclosure,
+        '不含',
+        const ['訊號名稱', '數值', '公式'],
+        const ['VIN', 'GPS', '帳號', '轉接器位址'],
+      );
     });
   });
 }

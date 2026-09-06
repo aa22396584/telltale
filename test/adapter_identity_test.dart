@@ -18,8 +18,14 @@ import 'package:torque_obd/obd/transport/demo_transport.dart';
 
 AdapterIdentity _id(String version,
         {String identity = 'OBDII to RS232 Interpreter',
-        PpsProbe pps = PpsProbe.read}) =>
-    AdapterIdentity(version: version, identity: identity, pps: pps);
+        PpsProbe pps = PpsProbe.read,
+        IdentityProbe identityProbe = IdentityProbe.read}) =>
+    AdapterIdentity(
+      version: version,
+      identity: identity,
+      pps: pps,
+      identityProbe: identityProbe,
+    );
 
 void main() {
   group('a version that was never released', () {
@@ -92,18 +98,61 @@ void main() {
     });
   });
 
-  test('an adapter that will not answer AT@1 is below every real release', () {
-    final concerns = _id('ELM327 v2.1', identity: '').concerns;
+  test('an adapter that REFUSES AT@1 is below every real release', () {
+    final concerns = _id(
+      'ELM327 v2.1',
+      identity: '',
+      identityProbe: IdentityProbe.refused,
+    ).concerns;
     expect(concerns, hasLength(1));
     expect(concerns.single.kind, AdapterConcernKind.noIdentityResponse);
   });
 
+  test('but silence on AT@1 accuses nobody', () {
+    // The reason this exists: `identity.isEmpty` could not tell a refusal from
+    // a timeout, a DATA ERROR or a dropped Bluetooth packet, so one unlucky
+    // handshake put a permanent ⚠ and "this chip implements a smaller command
+    // set than any official firmware" against an honest adapter — on the
+    // screen whose entire job is to be right about the adapter, and which the
+    // store listing points at with "when it is unsure, it says so".
+    //
+    // `PpsProbe` had solved this sixty lines away in the same file and the
+    // rule was never carried across. It is the same rule: only a refusal is
+    // evidence about the device; an absence is evidence about the moment.
+    for (final probe in [IdentityProbe.unavailable, IdentityProbe.read]) {
+      expect(
+        _id('ELM327 v2.1', identity: '', identityProbe: probe).concerns,
+        isEmpty,
+        reason: '$probe is not the adapter saying anything about itself',
+      );
+    }
+  });
+
   test('concerns accumulate rather than shadowing each other', () {
-    final concerns =
-        _id('ELM327 v1.5', identity: '', pps: PpsProbe.refused).concerns;
+    final concerns = _id(
+      'ELM327 v1.5',
+      identity: '',
+      pps: PpsProbe.refused,
+      identityProbe: IdentityProbe.refused,
+    ).concerns;
     expect(concerns, hasLength(3),
         reason: 'each is a separate observation and the export should carry '
             'all of them');
+    // All three now require a refusal rather than an absence. An adapter that
+    // simply went quiet raises none of them, which is the point: three ⚠ from
+    // one dropped connection would read as a damning verdict assembled
+    // entirely out of silence.
+    expect(
+      _id(
+        'ELM327 v1.5',
+        identity: '',
+        pps: PpsProbe.unavailable,
+        identityProbe: IdentityProbe.unavailable,
+      ).concerns,
+      hasLength(1),
+      reason: 'only the firmware version survives, because it is the one '
+          'thing the adapter actually said',
+    );
   });
 
   group('the export line', () {
