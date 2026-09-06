@@ -274,6 +274,41 @@ void main() {
       expect(keys, isNotEmpty);
     });
 
+    // Hedge register #6 names this sentence, and nothing was checking it in
+    // either language. The switch REVEALS the laboratory; it does not trust
+    // anything. "only" and "does not install" are the two halves, and a
+    // translation that keeps one and loses the other turns a disclosure into
+    // an endorsement of reverse-engineered data.
+    test('the laboratory switch reveals without trusting, in both languages', () {
+      expect(
+        zh['settingsBatteryLabSwitchSubtitle'] as String,
+        allOf(contains('只顯示'), contains('不會自動安裝')),
+      );
+      expect(
+        (en['settingsBatteryLabSwitchSubtitle'] as String).toLowerCase(),
+        allOf(contains('only reveals'), contains('does not install')),
+      );
+    });
+
+    // Its own @description says all three halves are load-bearing, and none of
+    // them was asserted. A driver who turns the laboratory off and is not told
+    // the setting failed to save will meet it enabled again next launch and
+    // assume they never turned it off.
+    test('a failed save says all three things it has to say', () {
+      expect(
+        zh['settingsBatteryLabDisableNotSaved'] as String,
+        allOf(contains('無法儲存'), contains('可能再顯示'), contains('仍需重新確認')),
+      );
+      expect(
+        (en['settingsBatteryLabDisableNotSaved'] as String).toLowerCase(),
+        allOf(
+          contains('could not be saved'),
+          contains('may show the laboratory again'),
+          contains('still needs its own confirmation'),
+        ),
+      );
+    });
+
     test('no English entry carries Chinese', () {
       final offenders = <String>[
         for (final key in keys)

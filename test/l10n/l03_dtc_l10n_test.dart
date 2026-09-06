@@ -574,6 +574,23 @@ void main() {
       );
     });
 
+    // Hedge register #14 says these two must stay short, distinct, and never
+    // merge into one "unknown". Both languages had parity only, so nothing
+    // would have failed if they had merged.
+    //
+    // They answer different questions. "Cannot confirm" means no category
+    // answered. "Partially unconfirmed" means some did and some did not — and
+    // the codes from the ones that answered are real.
+    test('the two unconfirmed verdicts never collapse into one', () {
+      for (final l10n in [_en, _zh]) {
+        expect(l10n.dtcUnconfirmed, isNot(l10n.dtcVerdictPartialClean));
+      }
+      expect(_zh.dtcUnconfirmed, contains('無法確認'));
+      expect(_zh.dtcVerdictPartialClean, contains('部分'));
+      expect(_en.dtcUnconfirmed.toLowerCase(), contains('cannot confirm'));
+      expect(_en.dtcVerdictPartialClean.toLowerCase(), contains('partial'));
+    });
+
     test('the destroyed-by-clearing warning survives in English', () {
       // Also register #11, and unguarded for the same reason: parity only.
       expect(

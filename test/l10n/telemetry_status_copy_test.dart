@@ -114,6 +114,30 @@ void main() {
       );
     });
 
+    // Hedge register #19: this must stay a refusal WITH a remedy. "Cannot
+    // confirm" alone is a complaint; "disconnect first" is what the driver can
+    // actually do. Neither language had a content assertion.
+    test('unknown speed is a refusal with a remedy, not advice', () {
+      expect(
+        telemetryStartOutcomeLabel(zh, TelemetryStartOutcome.speedUnknown),
+        allOf(contains('無法確認'), contains('中斷連線')),
+      );
+      expect(
+        telemetryStartOutcomeLabel(en, TelemetryStartOutcome.speedUnknown)
+            .toLowerCase(),
+        allOf(contains('cannot confirm'), contains('disconnect')),
+      );
+    });
+
+    test('the refusal to send an unsafe service says so in Chinese too', () {
+      // The English half was already guarded; the Chinese, which has been
+      // shipping for months, was not.
+      expect(
+        telemetryStatusLabel(zh, TelemetryStatus.unsafeServiceRefusal),
+        contains('已停止發送'),
+      );
+    });
+
     test('unknown speed refuses as hard as known movement', () {
       for (final l10n in [en, zh]) {
         for (final outcome in [
