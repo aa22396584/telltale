@@ -329,16 +329,24 @@ class OracleGuardTest(unittest.TestCase):
                 "ci.yml lives in the public repo only; private app/ has no .github/"
             )
         workflow = CI_PATH.read_text(encoding="utf-8")
+        self.assertIn("tool/workshop/run_public_oracles.sh", workflow)
         self.assertIn("tool/oracle_guard/assert_no_skips.py", workflow)
-        self.assertIn("--runner-exit", workflow)
-        oracle = workflow.split("name: third-party ELM327 simulator", 1)[1]
-        ircama_run = oracle.split("- name: Ircama ELM327-emulator", 1)[1].split(
-            "- uses:", 1
-        )[0]
-        collapsed = " ".join(ircama_run.split())
-        self.assertNotIn("|| true", ircama_run)
-        self.assertIn('ircama.json" 6', collapsed)
-        self.assertIn("--evidence-dir", ircama_run)
+        script = (APP_DIR / "tool" / "workshop" / "run_public_oracles.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("tool/oracle_guard/assert_no_skips.py", script)
+        self.assertIn("--runner-exit", script)
+        self.assertIn("count_dart_tests.py", script)
+        self.assertIn("chaos_proxy.py", script)
+        self.assertIn("freeze_frame_reference.py", script)
+        flutter_lines = [
+            line
+            for line in script.splitlines()
+            if "test " in line and "FLUTTER" in line
+        ]
+        self.assertGreater(len(flutter_lines), 0)
+        for line in flutter_lines:
+            self.assertNotIn("|| true", line)
 
 
 if __name__ == "__main__":

@@ -448,6 +448,12 @@ jobs:
             tool/ble_test_rig/test_run_controller.py \
             tool/obd_test_rig/chaos_proxy.py \
             tool/obd_test_rig/test_chaos_proxy.py \
+            tool/obd_test_rig/freeze_frame_reference.py \
+            tool/obd_test_rig/test_freeze_frame_reference.py \
+            tool/workshop/assert_chaos_jsonl.py \
+            tool/workshop/assert_skip_manifest.py \
+            tool/workshop/count_dart_tests.py \
+            tool/workshop/test_workshop.py \
             tool/field_bt_verify/probe_acl.py \
             tool/field_bt_verify/run_timeout.py \
             tool/field_bt_verify/test_probe_acl.py \
@@ -468,11 +474,14 @@ jobs:
             -s tool/field_bt_verify -p 'test_*.py' -v
           python3 -m unittest discover \
             -s tool/desktop_bt_probe -p 'test_*.py' -v
+          python3 -m unittest discover \
+            -s tool/workshop -p 'test_*.py' -v
+          python3 tool/workshop/assert_skip_manifest.py
 
   oracle:
-    name: third-party ELM327 simulator
+    name: public oracles — Ircama, chaos, freeze-frame
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash
@@ -500,9 +509,12 @@ jobs:
       # exactly the same green as one that passed. The parser lives in-tree so
       # it can be unit-tested; the Flutter exit code must not be discarded.
       - name: Check the skip guard is in the tree
-        run: test -f tool/oracle_guard/assert_no_skips.py
+        run: |
+          test -f tool/oracle_guard/assert_no_skips.py
+          test -f tool/workshop/run_public_oracles.sh
+          test -f tool/workshop/count_dart_tests.py
 
-      - name: Ircama ELM327-emulator
+      - name: Install hash-pinned Ircama
         run: |
           set -euo pipefail
           python3 -m venv "$RUNNER_TEMP/elmvenv"
@@ -526,46 +538,26 @@ jobs:
             'import importlib.metadata as m; print(m.version("ELM327-emulator"))')" = "3.0.5"
           "$RUNNER_TEMP/elmvenv/bin/pip" check
 
-          # -b is required: without a batch file this CLI exits the moment its
-          # stdin sees EOF, which is exactly what a background CI step gives it.
-          "$RUNNER_TEMP/elmvenv/bin/python" -m elm -n 35000 -s car \
-            -b "$RUNNER_TEMP/elm_batch.log" > "$RUNNER_TEMP/elm.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/elm.pid"
-
-          # Wait for LISTEN only. Deliberately NOT a TCP connect probe: this
-          # emulator serves one client at a time, so a throwaway probe makes the
-          # test's own AT@1 handshake fail, which silently skips every test
-          # instead of failing.
-          for _ in $(seq 1 30); do
-            ss -ltn | grep -q ':35000' && break
-            sleep 1
-          done
-
-          set +e
-          flutter test test/emulator_integration_test.dart --reporter json \
-            > "$RUNNER_TEMP/ircama.json"
-          runner_rc=$?
-          set -e
-          python3 tool/oracle_guard/assert_no_skips.py \
-            "$RUNNER_TEMP/ircama.json" 6 \
-            --runner-exit "$runner_rc" \
-            --evidence-dir "$RUNNER_TEMP/oracle-evidence"
+      - name: Ircama ELM327-emulator
+        env:
+          ELM_PYTHON: ${{ runner.temp }}/elmvenv/bin/python
+          PUBLIC_ORACLE_STATE: ${{ runner.temp }}/public-oracles
+          FLUTTER: flutter
+        run: |
+          set -euo pipefail
+          bash tool/workshop/run_public_oracles.sh
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: oracle-ircama-evidence
-          path: ${{ runner.temp }}/oracle-evidence/
+          name: oracle-public-evidence
+          path: ${{ runner.temp }}/public-oracles/
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Stop the emulator
-        if: always()
-        run: |
-          # Kill by recorded PID. Never `pkill -f <pattern>` — the pattern would
-          # match this very command line.
-          [ -f "$RUNNER_TEMP/elm.pid" ] && kill "$(cat "$RUNNER_TEMP/elm.pid")" 2>/dev/null || true
-
-      - name: Emulator log on failure
+      - name: Oracle logs on failure
         if: failure()
-        run: tail -80 "$RUNNER_TEMP/elm.log" 2>/dev/null || true
+        run: |
+          tail -80 "${RUNNER_TEMP}/public-oracles/elm/elm.log" 2>/dev/null || true
+          tail -40 "${RUNNER_TEMP}/public-oracles/proxy.stderr" 2>/dev/null || true
+          tail -40 "${RUNNER_TEMP}/public-oracles/freeze.stderr" 2>/dev/null || true

@@ -1,22 +1,24 @@
-/// The freeze frame, against an ELM327 this project did not write.
+/// The freeze frame, against the project-owned public reference.
 ///
 /// Every other freeze-frame test in this suite is ultimately my parser checked
-/// against my simulator — the same reading of J1979 on both sides of the wire,
-/// so a misreading agrees with itself. This one runs against the virtual server
-/// on the `research/obd2-apps-analysis` branch, whose Mode 02 was written by a
-/// different agent from a different reading of the standard.
+/// against my in-process simulator — the same reading of J1979 on both sides of
+/// the wire, so a misreading agrees with itself. This file speaks TCP to
+/// `tool/obd_test_rig/freeze_frame_reference.py`, a separately maintained
+/// process with its own framing. It is **not** a third-party oracle; AT@1
+/// answers `Telltale Freeze-Frame Reference`. Ircama remains the independent
+/// third-party check.
 ///
-/// It disagreed usefully on the first contact. It implements the Mode 02 data
-/// PIDs and **no support mask at all** — `020000` answers `NO DATA` — which is
-/// a shape a conforming ECU should not have and a real bus produces anyway,
-/// through a gateway that filters it or a clone adapter that drops it. Against
-/// a mask-first reader that vehicle has a perfectly readable freeze frame and
-/// shows nothing. This is the test that would have caught it.
+/// The fixture implements the Mode 02 data PIDs and **no support mask at all**
+/// — `020000` answers `NO DATA` — which is a shape a conforming ECU should not
+/// have and a real bus produces anyway. Against a mask-first reader that
+/// vehicle has a perfectly readable freeze frame and shows nothing.
 ///
-/// Skipped unless the server is running:
+/// Skipped unless the server is running. Required mode turns absence into a
+/// failure:
 ///
-///     git show research/obd2-apps-analysis:harnesses/elm327_virtual_server.py > /tmp/vsrv.py
-///     python3 /tmp/vsrv.py --port 35000 &
+///     python3 tool/obd_test_rig/freeze_frame_reference.py --port 35000
+///     flutter test test/freeze_frame_oracle_test.dart \
+///       --dart-define=FREEZE_FRAME_ORACLE_REQUIRED=true
 library;
 
 import 'dart:io';
@@ -29,7 +31,13 @@ import 'package:torque_obd/obd/readiness.dart';
 import 'package:torque_obd/obd/transport/wifi_transport.dart';
 
 const _host = '127.0.0.1';
-const _port = 35000;
+const _port = int.fromEnvironment(
+  'FREEZE_FRAME_ORACLE_PORT',
+  defaultValue: 35000,
+);
+const _oracleRequired = bool.fromEnvironment('FREEZE_FRAME_ORACLE_REQUIRED');
+
+const _identity = 'Telltale Freeze-Frame Reference';
 
 /// Whether the thing on the port is *this* oracle.
 ///
@@ -38,8 +46,8 @@ const _port = 35000;
 /// and therefore where anybody's ELM327 simulator ends up. Both servers answer
 /// `ATI` with an `ELM327 v1.x` banner; `AT@1` is the device description and is
 /// the only thing that tells them apart. Ircama's says `OBDII to RS232
-/// Interpreter`; this one says `Virtual OBD Diagnostic Server`.
-Future<bool> _oracleIsVirtualServer() async {
+/// Interpreter`; this one says `Telltale Freeze-Frame Reference`.
+Future<bool> _oracleIsFreezeFrameReference() async {
   Socket? socket;
   try {
     socket = await Socket.connect(_host, _port,
@@ -63,7 +71,7 @@ Future<bool> _oracleIsVirtualServer() async {
       if (replies.toString().contains('>')) break;
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
-    return replies.toString().contains('Virtual OBD Diagnostic Server');
+    return replies.toString().contains(_identity);
   } on Object {
     return false;
   } finally {
@@ -75,7 +83,7 @@ void main() {
   late bool available;
 
   setUpAll(() async {
-    available = await _oracleIsVirtualServer();
+    available = await _oracleIsFreezeFrameReference();
     // The bus is put back before anything runs, not only after.
     //
     // Fault injection lives on the server and outlives the test that set it,
@@ -88,7 +96,18 @@ void main() {
   /// A connected engine against the oracle, or null when it is not running.
   Future<(Elm327Client, PollingEngine)?> connect() async {
     if (!available) {
-      markTestSkipped('virtual server not on $_host:$_port');
+      const message =
+          'Telltale freeze-frame reference not answering on $_host:$_port. '
+          'Start tool/obd_test_rig/freeze_frame_reference.py. A different '
+          'simulator on that port is not valid for these fixtures.';
+      if (_oracleRequired) {
+        fail(message);
+      }
+      markTestSkipped(
+        '$message Re-run with '
+        '`--dart-define=FREEZE_FRAME_ORACLE_REQUIRED=true` when collecting '
+        'oracle evidence so this condition is a failure.',
+      );
       return null;
     }
     final client = Elm327Client(WifiTransport(host: _host, port: _port));
@@ -110,6 +129,11 @@ void main() {
     // P0133 as what caused the frame.
     expect(frame.cause.code, 'P0133');
     expect(frame.source, '7E8');
+    expect(
+      frames.map((item) => item.source).toSet(),
+      {'7E8'},
+      reason: '7E9 answers 00 00 and 7EA answers 7F 02 11 — neither is a frame',
+    );
 
     // The point of the whole test. `020000` answers NO DATA here, so a
     // mask-first reader gets an empty frame; the direct probe of the

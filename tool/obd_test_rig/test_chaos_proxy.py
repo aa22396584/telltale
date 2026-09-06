@@ -177,6 +177,24 @@ class ChaosProxyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([b"ATI\r"], self.elm.commands)
         await self._close_client(writer2)
 
+    async def test_reconnect_does_not_see_bytes_from_the_closed_session(self) -> None:
+        await self._restart(close_on_command=2)
+        reader, writer = await self.connect()
+        writer.write(b"ATI\r")
+        await writer.drain()
+        self.assertEqual(b"ATI\rOK\r>", await self.read_until(reader, b">"))
+        writer.write(b"ATE0\r")
+        await writer.drain()
+        self.assertEqual(b"", await self.read_to_eof(reader))
+        await self._close_client(writer)
+        reader2, writer2 = await self.connect()
+        writer2.write(b"ATZ\r")
+        await writer2.drain()
+        reply = await self.read_until(reader2, b">")
+        self.assertEqual(b"ATZ\rOK\r>", reply)
+        self.assertNotIn(b"ATI", reply)
+        await self._close_client(writer2)
+
     async def test_corrupt_fault_changes_one_payload_byte_and_keeps_prompt(self) -> None:
         await self._restart(corrupt_on_command=1)
         reader, writer = await self.connect()

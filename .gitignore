@@ -53,3 +53,6 @@ app.*.map.json
 # app/ ↔ telltale split.
 .omc/
 .octo-continue.md
+
+# Local git worktrees. Never pack a nested checkout into a commit.
+.worktrees/
