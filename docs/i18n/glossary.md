@@ -8,9 +8,12 @@ check a translation against the repository instead of against taste.
 longer contains the Chinese term. That is deliberate: a glossary nobody can verify decays
 into folklore, and this one is checked on every run.
 
-**Status.** `evidenced` means both languages already appear in the tree at the cited
-place. `proposed` means the English is a reviewer's invention with no source in the
-repository yet, and needs maintainer sign-off before it ships. The status is written by
+**Status.** `evidenced` means both languages appear together at the cited place — the same
+file, or the two language versions of one document. `inferred` means both languages exist in
+the tree but were never written side by side, so the pairing is this glossary's reasoning
+rather than the project's own; it is still usable, and it is labelled so a reviewer knows
+which kind of claim they are reading. `proposed` means the English has no source in the
+repository at all and needs maintainer sign-off before it ships. The status is written by
 hand, never computed — a generator that marked rows using the same rule the test checks
 would only be agreeing with itself.
 
@@ -31,7 +34,7 @@ be added.
 |---|---|---|---|---|
 | Demo ECU | Demo ECU | README.md:55 ↔ README.zh-TW.md:49 (T1 — unchanged in zh) | evidenced | Kept English on both sides. But see 內建模擬器 and 'Demo 模擬器' (docs/field-guide.zh-TW.md:27) — three renderings of one feature. |
 | Flow Control | flow control | docs/protocol-deviations.zh-TW.md:83 '停住等一個永遠不會送出的 Flow Control 幀' (T1 — kept English inside zh prose) | evidenced | DO NOT translate to 流量控制. The zh doc deliberately keeps the ELM327 datasheet term; 幀 is appended as the classifier. |
-| MAF 感測器 | MAF sensor | lib/obd/physics/physics_engine.dart:31 AirflowSource.measured => 'MAF 感測器' (T3) | evidenced | INCONSISTENCY: physics_engine uses 感測器 here while readiness.dart:47 uses 感知器 for oxygen sensor. Both ship. |
+| MAF 感測器 | MAF sensor | lib/obd/physics/physics_engine.dart:31 AirflowSource.measured => 'MAF 感測器' (T3); lib/obd/physics/physics_engine.dart:20 'MAF sensor' in the same enum's doc comment | evidenced | INCONSISTENCY: physics_engine uses 感測器 here while readiness.dart:47 uses 感知器 for oxygen sensor. Both ship. |
 | OBD2 故障診斷 | OBD2 fault diagnosis | README.md:11 ↔ README.zh-TW.md:11 (T1 same sentence) | evidenced |  |
 | Speed-Density 推算 | Speed-Density estimate | lib/obd/physics/physics_engine.dart:32 AirflowSource.speedDensity => 'Speed-Density 推算' (T3) | proposed | English has no source in the tree; the cited file is Chinese-only |
 | transports | transports | README.md:174 ↔ README.zh-TW.md:148 (T1 — unchanged in zh) | evidenced | INCONSISTENCY: kept English in the repo-layout table and at README.md:124 ↔ README.zh-TW.md:103-104, but the user-facing concept is 連線方式 (app_zh_Hant.arb:9, store/README.md:12). Engineering doc = transports; UI = 連線方式. |
@@ -46,9 +49,9 @@ be added.
 | 即時 PID 儀表 | Live PID dashboards | README.md:56 ↔ README.zh-TW.md:50 (T1) | evidenced | INCONSISTENCY: 'dashboard' is 儀表板 at README.md:21/README.zh-TW.md:20 and store/README.md:13, but 'PID dashboards' is 儀表 here and 'BMS gauges' is also 儀表 (README.md:64 ↔ README.zh-TW.md:57). 儀表 does double duty for gauge and dashboard-of-gauges. |
 | 含氧感知器 | oxygen sensor | lib/obd/readiness.dart:47 oxygenSensor('含氧感知器') (T3); :48 oxygenSensorHeater('含氧感知器加熱') | evidenced | 感知器 (TW) not 傳感器 (CN). |
 | 增壓壓力 | boost pressure | lib/obd/readiness.dart:54 boostPressure('增壓壓力') (T3) | evidenced |  |
-| 多幀 | multi-frame | docs/verification/review-log.md:41 '### C2 · 多幀長度行被當成資料' + :43 naming `_parse` ↔ lib/obd/elm327_client.dart:4 'multi-frame reassembly' and :2319 "a multi-frame envelope's total length" (T3, same named function) | evidenced |  |
+| 多幀 | multi-frame | docs/verification/review-log.md:41 '### C2 · 多幀長度行被當成資料' + :43 naming `_parse` ↔ lib/obd/elm327_client.dart:4 'multi-frame reassembly' and :2319 "a multi-frame envelope's total length" (T3, same named function) | inferred | zh at docs/verification/review-log.md:41; en at lib/obd/elm327_client.dart:4. Both are this project's words, never written side by side. |
 | 失火監控 | misfire | lib/obd/readiness.dart:36 misfire('失火監控', continuous: true) (T3) | evidenced |  |
-| 定址 | addressing | docs/protocol-deviations.zh-TW.md:107 names `lib/obd/addressing.dart` in the same sentence as '標頭改為逐請求選擇', and :101 '正確定址被丟掉了' (T3); docs/field-guide.zh-TW.md:211 '功能定址' | evidenced | 'functional addressing' = 功能定址 (field-guide:211); 'physical header' = 實體標頭 (protocol-deviations:107). |
+| 定址 | addressing | docs/protocol-deviations.zh-TW.md:101 '正確定址被丟掉了' ↔ docs/protocol-deviations.zh-TW.md:107 names `lib/obd/addressing.dart` and 'addressing' (T3) | evidenced | 'functional addressing' = 功能定址 (field-guide:211); 'physical header' = 實體標頭 (protocol-deviations:107). |
 | 已儲存 | stored | lib/obd/dtc/dtc.dart:35 stored('已儲存', '03', …) (T3 — enum arm carries label + mode) | evidenced |  |
 | 底盤 | chassis | lib/obd/dtc/dtc.dart:22 chassis('C', '底盤') (T3) | evidenced |  |
 | 待確認 | pending | lib/obd/dtc/dtc.dart:36 pending('待確認', '07', …) (T3) | evidenced |  |
@@ -56,14 +59,14 @@ be added.
 | 批次 | batch | README.md:87 'no identifier scan, batch, automatic retry' ↔ README.zh-TW.md:73 '不掃描 identifier、不批次、不自動重試' (T1); docs/protocol-deviations.zh-TW.md:83 'fastMode 批次查詢' | evidenced |  |
 | 排放就緒 | readiness | README.md:56 'readiness' ↔ README.zh-TW.md:50 '排放就緒' (T1); docs/field-guide.zh-TW.md:238 '排放就緒狀態' | evidenced | zh adds 排放 (emissions) that bare English 'readiness' omits; keep it — the field guide relies on the emissions sense. |
 | 排氣感知器 | exhaust sensor | lib/obd/readiness.dart:55 exhaustSensor('排氣感知器') (T3) | evidenced |  |
-| 控制器 | controller | lib/state/dtc_scan.dart:47 'Controllers that gave this category a terminal answer.' ↔ same file :581 '控制器 … 回報…' (T3 same file); docs/field-guide.zh-TW.md:206 | evidenced |  |
+| 控制器 | controller | lib/state/dtc_scan.dart:47 'Controllers that gave this category a terminal answer.' ↔ same file :581 '控制器 … 回報…' (T3 same file); docs/field-guide.zh-TW.md:206 | inferred | zh at lib/state/dtc_scan.dart:581; en at :47 of the same file, 534 lines away — not one place. |
 | 故障碼 | fault code | README.md:56 'fault codes' ↔ README.zh-TW.md:50 '故障碼' (T1) | evidenced | DTC as an acronym stays English (see doNotTranslate); the spelled-out concept is 故障碼. |
 | 標頭 | header | lib/diagnostics/availability.dart:316 PidFault.headerNotOnThisBus ↔ '標頭不符本車匯流排' (T3); docs/protocol-deviations.zh-TW.md:69 '發送標頭' | evidenced |  |
 | 永久 | permanent | lib/obd/dtc/dtc.dart:37 permanent('永久', '0A', …) (T3) | evidenced |  |
 | 汽油微粒濾清器（GPF） | gasoline particulate filter (GPF) | lib/obd/readiness.dart:46 gasolineParticulateFilter('汽油微粒濾清器（GPF）') (T3); docs/field-guide.zh-TW.md:247-250 explains it | evidenced | LOAD-BEARING: field-guide:247-249 says many OBD tables mistranslate this bit as 空調冷媒 (A/C refrigerant) and that is wrong. Keep GPF in the string. |
 | 無回應，稍後重試 | no answer | lib/diagnostics/availability.dart:313 PidFault.noAnswer => '無回應，稍後重試' (T3) | evidenced |  |
 | 燃油系統監控 | fuel system | lib/obd/readiness.dart:37 fuelSystem('燃油系統監控') (T3) | evidenced |  |
-| 監控項目 | readiness monitor | lib/obd/readiness.dart:1 'The emissions readiness monitors' + enum ReadinessMonitor :34 ↔ docs/field-guide.zh-TW.md:240,243-245 '監控項目' (T3 identifier ↔ zh prose) | evidenced |  |
+| 監控項目 | readiness monitor | lib/obd/readiness.dart:1 'The emissions readiness monitors' + enum ReadinessMonitor :34 ↔ docs/field-guide.zh-TW.md:240,243-245 '監控項目' (T3 identifier ↔ zh prose) | inferred | zh at docs/field-guide.zh-TW.md:240; en at lib/obd/readiness.dart:1. Assembled from two documents. |
 | 綜合元件監控 | components | lib/obd/readiness.dart:38 components('綜合元件監控') (T3) | evidenced |  |
 | 網路 | network | lib/obd/dtc/dtc.dart:24 network('U', '網路') (T3 — the DTC letter U) | evidenced |  |
 | 自訂 PID | custom PID | README.md:56 'custom PIDs' ↔ README.zh-TW.md:50 '自訂 PID' (T1) | evidenced |  |
