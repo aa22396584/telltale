@@ -248,6 +248,294 @@ class AppLocalizationsEn extends AppLocalizations {
   String get datumStatusFormula => 'Formula';
 
   @override
+  String dtcBothSilentDetail(Object mode) {
+    return 'The vehicle did not answer the Mode $mode query, and Mode 03 did not answer either — so there is no telling whether the vehicle lacks support or this connection simply did not read it.';
+  }
+
+  @override
+  String dtcCategoryFault(Object category) {
+    return 'A fault related to $category';
+  }
+
+  @override
+  String get dtcClear => 'Clear';
+
+  @override
+  String get dtcClearCancel => 'Cancel';
+
+  @override
+  String get dtcClearConfirm => 'Clear them';
+
+  @override
+  String get dtcClearDialogBody =>
+      'This erases stored and pending fault codes and turns the fault lamp off, and it also resets emissions readiness — the vehicle has to complete a full round of self-diagnosis again before it can pass an inspection. Permanent fault codes (Mode 0A) cannot be cleared.';
+
+  @override
+  String get dtcClearDialogFrameUnread =>
+      'This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.';
+
+  @override
+  String dtcClearDialogFrames(Object codes) {
+    return 'The freeze frame for $codes goes with it — the whole record of engine speed, coolant temperature and load at the moment the fault happened — and it cannot be read back until the fault happens again.';
+  }
+
+  @override
+  String get dtcClearDialogTitle => 'Clear fault codes?';
+
+  @override
+  String dtcClearDialogUnanswered(int count, Object categories) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count categories in this scan did not answer completely',
+      one: 'One category in this scan did not answer completely',
+    );
+    return '$_temp0 ($categories), so there may be fault codes you have not seen. After a clear they can never be read again.';
+  }
+
+  @override
+  String get dtcClearing => 'Clearing…';
+
+  @override
+  String get dtcCompleteCleanBody =>
+      'That means every controller that replied reported no fault code. It does not mean every module on the vehicle was asked.';
+
+  @override
+  String get dtcCompleteCleanTitle =>
+      'None of the controllers that answered reported a fault code.';
+
+  @override
+  String dtcControllerLabel(Object controller) {
+    return 'Controller $controller';
+  }
+
+  @override
+  String get dtcDismiss => 'Dismiss';
+
+  @override
+  String dtcFreezeFrameBody(Object code) {
+    return 'The values this controller recorded at the instant $code was confirmed. Clearing fault codes destroys this record with them.';
+  }
+
+  @override
+  String get dtcFreezeFrameContentsUnknown =>
+      'This controller has a freeze frame, but it did not answer the query asking which items are in it, so the contents could not be read. A rescan may work.';
+
+  @override
+  String get dtcFreezeFrameNothingDecodable =>
+      'This controller has a freeze frame, but none of the items in it are ones this app can decode.';
+
+  @override
+  String get dtcFreezeFrameTitle => 'The vehicle at the moment of the fault';
+
+  @override
+  String dtcFreezeFrameUndecodable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count further items in this freeze frame have no conversion formula in this app, so they are not listed.',
+      one: 'A further item in this freeze frame has no conversion formula in this app, so it is not listed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dtcFreezeFrameUnreadItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read them.',
+      one: 'One item did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dtcFreezeFrameUnreadPanel =>
+      'This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear the fault codes, because clearing destroys the record of the moment of the fault permanently. If every scan looks the same, this vehicle may not provide one.';
+
+  @override
+  String dtcGroupHeader(Object label, Object mode, int count) {
+    return '$label (Mode $mode) · $count';
+  }
+
+  @override
+  String get dtcHeadline => 'Fault codes';
+
+  @override
+  String get dtcListSeparator => ', ';
+
+  @override
+  String get dtcManufacturerSpecific =>
+      'Manufacturer-specific code — check the service manual for this vehicle';
+
+  @override
+  String get dtcMilOff => 'The fault lamp is not lit';
+
+  @override
+  String get dtcMilOn => 'The fault lamp is lit';
+
+  @override
+  String dtcNoDescriptionForSubsystem(Object subsystem) {
+    return '$subsystem — this app has no detailed description for this code';
+  }
+
+  @override
+  String get dtcNotConnectedBody =>
+      'Reading fault codes needs a connected ELM327 adapter, or the simulator running.';
+
+  @override
+  String get dtcNotConnectedTitle => 'Not connected';
+
+  @override
+  String get dtcNotScanned => 'Not scanned yet';
+
+  @override
+  String dtcPartialCleanOptionalGaps(int count, Object controllers) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count controllers',
+      one: 'One controller',
+    );
+    return 'All three categories were queried to completion. $_temp0 ($controllers) implement neither pending nor permanent fault codes — normal on many vehicles, and also why this cannot be declared a fault-free vehicle.';
+  }
+
+  @override
+  String get dtcPartialCleanTitle =>
+      'The categories that answered reported no fault codes.';
+
+  @override
+  String dtcPartialCleanUnanswered(Object categories) {
+    return '$categories did not answer, so their state cannot be confirmed — that is not the same as the vehicle having no problem.';
+  }
+
+  @override
+  String dtcPartialCodesRead(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fault codes were read',
+      one: 'One fault code was read',
+    );
+    return '$_temp0 before this category stopped, but the coverage is incomplete:';
+  }
+
+  @override
+  String dtcPartiallyAnsweredDetail(Object message) {
+    return 'Only some controllers in this category answered and the rest did not reply, so this cannot stand as a result for the whole vehicle. $message';
+  }
+
+  @override
+  String get dtcReadFailed => 'Read failed';
+
+  @override
+  String dtcReadFailureDetail(Object label, Object mode, Object message) {
+    return '$label (Mode $mode): $message';
+  }
+
+  @override
+  String get dtcReadinessAllComplete =>
+      'Every readiness monitor this controller is responsible for is complete.';
+
+  @override
+  String dtcReadinessIncomplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count monitors are still unfinished',
+      one: '1 monitor is still unfinished',
+    );
+    return '$_temp0 — an inspection now may not pass.';
+  }
+
+  @override
+  String get dtcReadinessSaysNothing =>
+      'This controller reported no readiness monitors at all — it may not be responsible for emissions monitoring, and that does not mean it is ready.';
+
+  @override
+  String get dtcReadinessTitle => 'Emissions readiness';
+
+  @override
+  String get dtcRescanFirst => 'Rescan first';
+
+  @override
+  String get dtcRetry => 'Retry';
+
+  @override
+  String get dtcScanBody =>
+      'Reads Mode 03 stored, Mode 07 pending and Mode 0A permanent fault codes.';
+
+  @override
+  String get dtcScanTitle => 'Scan the vehicle for fault codes';
+
+  @override
+  String get dtcScanning => 'Scanning…';
+
+  @override
+  String dtcSelfReportedCodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This controller self-reports $count confirmed fault codes.',
+      one: 'This controller self-reports 1 confirmed fault code.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dtcSelfReportedNoCodes =>
+      'This controller self-reports no confirmed fault codes.';
+
+  @override
+  String get dtcSilentCategoryHeadline => 'This category did not answer';
+
+  @override
+  String get dtcSilentPendingDetail =>
+      'Pending fault codes (Mode 07) did not answer. This ECU may not implement the service, or it may simply not have been read this time — no answer cannot tell the two apart, and must not be taken to mean there are no pending faults. The stored fault-code result is unaffected.';
+
+  @override
+  String get dtcSilentPermanentDetail =>
+      'Permanent fault codes (Mode 0A) did not answer. This category arrived with the OBD-II generation around 2010, so older vehicles do not always support it — but no answer can equally mean it simply was not read this time, and the two cannot be told apart. The stored fault-code result is unaffected.';
+
+  @override
+  String get dtcStartScan => 'Start scan';
+
+  @override
+  String dtcStoredSilentDetail(Object mode) {
+    return 'The vehicle did not answer the Mode $mode query, so whether it has stored fault codes cannot be confirmed. That is not the same thing as having no fault codes.';
+  }
+
+  @override
+  String dtcTotalCodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count codes',
+      one: '1 code',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dtcUnconfirmed => 'Cannot confirm';
+
+  @override
+  String get dtcUnknownError => 'Unknown error';
+
+  @override
+  String get dtcUnknownMonitor => 'Unknown monitor';
+
+  @override
+  String get dtcVerdictCompleteClean =>
+      'No fault codes from the controllers that answered';
+
+  @override
+  String get dtcVerdictPartialClean => 'Partially unconfirmed';
+
+  @override
   String get fieldEventBody =>
       'Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.';
 

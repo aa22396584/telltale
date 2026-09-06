@@ -151,6 +151,270 @@
     "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
   },
   "datumStatusFormula": "Formula",
+  "dtcBothSilentDetail": "The vehicle did not answer the Mode {mode} query, and Mode 03 did not answer either — so there is no telling whether the vehicle lacks support or this connection simply did not read it.",
+  "@dtcBothSilentDetail": {
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "dtcCategoryFault": "A fault related to {category}",
+  "@dtcCategoryFault": {
+    "placeholders": {
+      "category": {}
+    }
+  },
+  "dtcClear": "Clear",
+  "dtcClearCancel": "Cancel",
+  "dtcClearConfirm": "Clear them",
+  "dtcClearDialogBody": "This erases stored and pending fault codes and turns the fault lamp off, and it also resets emissions readiness — the vehicle has to complete a full round of self-diagnosis again before it can pass an inspection. Permanent fault codes (Mode 0A) cannot be cleared.",
+  "@dtcClearDialogBody": {
+    "description": "The point of no return. Mode 0A permanent codes must never read as something this clear can remove."
+  },
+  "dtcClearDialogFrameUnread": "This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.",
+  "@dtcClearDialogFrameUnread": {
+    "description": "A read failure, not an absent frame. Collapsing the two causes irreversible evidence loss."
+  },
+  "dtcClearDialogFrames": "The freeze frame for {codes} goes with it — the whole record of engine speed, coolant temperature and load at the moment the fault happened — and it cannot be read back until the fault happens again.",
+  "@dtcClearDialogFrames": {
+    "description": "Fault codes come back if the fault recurs; the snapshot of the moment it first happened does not.",
+    "placeholders": {
+      "codes": {}
+    }
+  },
+  "dtcClearDialogTitle": "Clear fault codes?",
+  "dtcClearDialogUnanswered": "{count, plural, =1{One category in this scan did not answer completely} other{{count} categories in this scan did not answer completely}} ({categories}), so there may be fault codes you have not seen. After a clear they can never be read again.",
+  "@dtcClearDialogUnanswered": {
+    "description": "What the scan could not establish, said at the point of no return.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "categories": {}
+    }
+  },
+  "dtcClearing": "Clearing…",
+  "dtcCompleteCleanBody": "That means every controller that replied reported no fault code. It does not mean every module on the vehicle was asked.",
+  "@dtcCompleteCleanBody": {
+    "description": "A controller whose reply is lost outright leaves nothing to count as missing, and the app has no inventory of who should have answered."
+  },
+  "dtcCompleteCleanTitle": "None of the controllers that answered reported a fault code.",
+  "@dtcCompleteCleanTitle": {
+    "description": "'that answered' is the whole hedge. Never render this as 'no fault codes' or 'your car is fine'."
+  },
+  "dtcControllerLabel": "Controller {controller}",
+  "@dtcControllerLabel": {
+    "description": "Attribution for a reply that carried a header. Two modules reporting one code is two of them seeing the fault.",
+    "placeholders": {
+      "controller": {}
+    }
+  },
+  "dtcDismiss": "Dismiss",
+  "@dtcDismiss": {
+    "description": "Tooltip that closes the clear-outcome panel. Closing a message is not learning what happened; only a rescan is."
+  },
+  "dtcFreezeFrameBody": "The values this controller recorded at the instant {code} was confirmed. Clearing fault codes destroys this record with them.",
+  "@dtcFreezeFrameBody": {
+    "description": "Names the code in the card itself: a car with three stored codes has a frame belonging to exactly one of them.",
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "dtcFreezeFrameContentsUnknown": "This controller has a freeze frame, but it did not answer the query asking which items are in it, so the contents could not be read. A rescan may work.",
+  "@dtcFreezeFrameContentsUnknown": {
+    "description": "'It would not tell us' — worth another scan. Distinct from dtcFreezeFrameNothingDecodable, which is a limit of this app."
+  },
+  "dtcFreezeFrameNothingDecodable": "This controller has a freeze frame, but none of the items in it are ones this app can decode.",
+  "dtcFreezeFrameTitle": "The vehicle at the moment of the fault",
+  "@dtcFreezeFrameTitle": {
+    "description": "The only view of the car while the fault was actually happening, and the one thing a clear destroys for good."
+  },
+  "dtcFreezeFrameUndecodable": "{count, plural, =1{A further item in this freeze frame has no conversion formula in this app, so it is not listed.} other{{count} further items in this freeze frame have no conversion formula in this app, so they are not listed.}}",
+  "@dtcFreezeFrameUndecodable": {
+    "description": "An app limitation that rescanning will not change. Must stay distinct from dtcFreezeFrameUnreadItems, which rescanning usually fixes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcFreezeFrameUnreadItems": "{count, plural, =1{One item did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read it.} other{{count} items did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read them.}}",
+  "@dtcFreezeFrameUnreadItems": {
+    "description": "A read failure, not an app limitation. Rescanning usually fixes it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcFreezeFrameUnreadPanel": "This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear the fault codes, because clearing destroys the record of the moment of the fault permanently. If every scan looks the same, this vehicle may not provide one.",
+  "@dtcFreezeFrameUnreadPanel": {
+    "description": "A controller with no stored frame shows nothing, which is exactly what a failed read shows. Saying so is the only thing standing between a Mode 02 timeout and a clear."
+  },
+  "dtcGroupHeader": "{label} (Mode {mode}) · {count}",
+  "@dtcGroupHeader": {
+    "description": "Heading for one class of codes. {label} still comes from lib/obd/dtc/dtc.dart and is Chinese in both locales until the engine wave lands.",
+    "placeholders": {
+      "label": {},
+      "mode": {},
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcHeadline": "Fault codes",
+  "@dtcHeadline": {
+    "description": "Fault-code screen title."
+  },
+  "dtcListSeparator": ", ",
+  "@dtcListSeparator": {
+    "description": "Joins fault codes, categories or controller ids in a sentence. Chinese uses the enumeration comma; English uses a comma and a space."
+  },
+  "dtcManufacturerSpecific": "Manufacturer-specific code — check the service manual for this vehicle",
+  "@dtcManufacturerSpecific": {
+    "description": "Shown instead of a description this app does not have. Never invent one."
+  },
+  "dtcMilOff": "The fault lamp is not lit",
+  "dtcMilOn": "The fault lamp is lit",
+  "dtcNoDescriptionForSubsystem": "{subsystem} — this app has no detailed description for this code",
+  "@dtcNoDescriptionForSubsystem": {
+    "description": "The subsystem the code's own third digit names. Says the app is missing the description rather than pretending to one.",
+    "placeholders": {
+      "subsystem": {}
+    }
+  },
+  "dtcNotConnectedBody": "Reading fault codes needs a connected ELM327 adapter, or the simulator running.",
+  "dtcNotConnectedTitle": "Not connected",
+  "dtcNotScanned": "Not scanned yet",
+  "dtcPartialCleanOptionalGaps": "All three categories were queried to completion. {count, plural, =1{One controller} other{{count} controllers}} ({controllers}) implement neither pending nor permanent fault codes — normal on many vehicles, and also why this cannot be declared a fault-free vehicle.",
+  "@dtcPartialCleanOptionalGaps": {
+    "description": "Modes 07 and 0A are optional in SAE J1979. A vehicle that implements neither is compliant and fine; that is a different situation from a class nobody answered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "controllers": {}
+    }
+  },
+  "dtcPartialCleanTitle": "The categories that answered reported no fault codes.",
+  "dtcPartialCleanUnanswered": "{categories} did not answer, so their state cannot be confirmed — that is not the same as the vehicle having no problem.",
+  "@dtcPartialCleanUnanswered": {
+    "placeholders": {
+      "categories": {}
+    }
+  },
+  "dtcPartialCodesRead": "{count, plural, =1{One fault code was read} other{{count} fault codes were read}} before this category stopped, but the coverage is incomplete:",
+  "@dtcPartialCodesRead": {
+    "description": "Incomplete coverage is a reason to qualify a finding, never to hide it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcPartiallyAnsweredDetail": "Only some controllers in this category answered and the rest did not reply, so this cannot stand as a result for the whole vehicle. {message}",
+  "@dtcPartiallyAnsweredDetail": {
+    "description": "{message} is the engine's own failure text and is still Chinese in both locales.",
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "dtcReadFailed": "Read failed",
+  "@dtcReadFailed": {
+    "description": "Two call sites, one sentence: the empty-state title after a failed scan, and the headline of a category whose read errored rather than went silent."
+  },
+  "dtcReadFailureDetail": "{label} (Mode {mode}): {message}",
+  "@dtcReadFailureDetail": {
+    "placeholders": {
+      "label": {},
+      "mode": {},
+      "message": {}
+    }
+  },
+  "dtcReadinessAllComplete": "Every readiness monitor this controller is responsible for is complete.",
+  "dtcReadinessIncomplete": "{count, plural, =1{1 monitor is still unfinished} other{{count} monitors are still unfinished}} — an inspection now may not pass.",
+  "@dtcReadinessIncomplete": {
+    "description": "Counts monitors this app cannot name as well, so one left unfinished still blocks 'ready'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcReadinessSaysNothing": "This controller reported no readiness monitors at all — it may not be responsible for emissions monitoring, and that does not mean it is ready.",
+  "@dtcReadinessSaysNothing": {
+    "description": "A module outside emissions monitoring answers with all zeroes. Reading that as a clean bill of health turns silence into an answer."
+  },
+  "dtcReadinessTitle": "Emissions readiness",
+  "dtcRescanFirst": "Rescan first",
+  "@dtcRescanFirst": {
+    "description": "Label of the disabled clear button. The button IS the verdict of the last clear: something may already have been erased, so a second global Mode 04 would reset a completed controller's readiness. Keep it an imperative."
+  },
+  "dtcRetry": "Retry",
+  "@dtcRetry": {
+    "description": "Retries the fault-code scan. Deliberately not shared with startupRetry: the two screens are free to reword independently."
+  },
+  "dtcScanBody": "Reads Mode 03 stored, Mode 07 pending and Mode 0A permanent fault codes.",
+  "@dtcScanBody": {
+    "description": "The three classes are three different things and must stay distinguishable."
+  },
+  "dtcScanTitle": "Scan the vehicle for fault codes",
+  "dtcScanning": "Scanning…",
+  "dtcSelfReportedCodes": "{count, plural, =1{This controller self-reports 1 confirmed fault code.} other{This controller self-reports {count} confirmed fault codes.}}",
+  "@dtcSelfReportedCodes": {
+    "description": "The controller's own claim, which can contradict what Mode 03 returned. Keep it attributed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcSelfReportedNoCodes": "This controller self-reports no confirmed fault codes.",
+  "dtcSilentCategoryHeadline": "This category did not answer",
+  "@dtcSilentCategoryHeadline": {
+    "description": "Not 'this vehicle does not provide the category'. NO DATA cannot tell an unimplemented service from a lost, filtered or late reply."
+  },
+  "dtcSilentPendingDetail": "Pending fault codes (Mode 07) did not answer. This ECU may not implement the service, or it may simply not have been read this time — no answer cannot tell the two apart, and must not be taken to mean there are no pending faults. The stored fault-code result is unaffected.",
+  "@dtcSilentPendingDetail": {
+    "description": "Distinct from dtcSilentPermanentDetail on purpose. Telling a driver their 2004 car is too old for pending codes is simply wrong."
+  },
+  "dtcSilentPermanentDetail": "Permanent fault codes (Mode 0A) did not answer. This category arrived with the OBD-II generation around 2010, so older vehicles do not always support it — but no answer can equally mean it simply was not read this time, and the two cannot be told apart. The stored fault-code result is unaffected.",
+  "@dtcSilentPermanentDetail": {
+    "description": "Mode 07 and Mode 0A are not the same feature and must not share a sentence: pending codes date from 1996, permanent codes from around 2010."
+  },
+  "dtcStartScan": "Start scan",
+  "dtcStoredSilentDetail": "The vehicle did not answer the Mode {mode} query, so whether it has stored fault codes cannot be confirmed. That is not the same thing as having no fault codes.",
+  "@dtcStoredSilentDetail": {
+    "description": "Mode 03 is mandatory, so silence here is never ordinary.",
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "dtcTotalCodes": "{count, plural, =1{1 code} other{{count} codes}}",
+  "@dtcTotalCodes": {
+    "description": "Count of observed codes, including partial reads.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcUnconfirmed": "Cannot confirm",
+  "@dtcUnconfirmed": {
+    "description": "Two call sites, one sentence: the header subtitle for any other verdict, and the headline of a category that failed to answer. Must never be read as 'no problem'."
+  },
+  "dtcUnknownError": "Unknown error",
+  "dtcUnknownMonitor": "Unknown monitor",
+  "@dtcUnknownMonitor": {
+    "description": "A readiness monitor the vehicle reported and this app has no name for. It is still counted as unfinished — not being able to name it is not permission to discount it. Never 'N/A' or 'other'."
+  },
+  "dtcVerdictCompleteClean": "No fault codes from the controllers that answered",
+  "@dtcVerdictCompleteClean": {
+    "description": "Header subtitle for ScanVerdict.completeClean. The qualifier 'that answered' is the whole hedge: this is the line a glance lands on, and it must never read as 'this vehicle has no faults'."
+  },
+  "dtcVerdictPartialClean": "Partially unconfirmed",
+  "@dtcVerdictPartialClean": {
+    "description": "ScanVerdict.partialClean. Some categories could not be read, so the verdict is incomplete. Keep it short and distinct from dtcUnconfirmed; never merge the two into one 'unknown'."
+  },
   "fieldEventBody": "Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.",
   "@fieldEventBody": {
     "description": "Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does."

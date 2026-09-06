@@ -236,6 +236,234 @@ class AppLocalizationsZh extends AppLocalizations {
   String get datumStatusFormula => '公式';
 
   @override
+  String dtcBothSilentDetail(Object mode) {
+    return '車輛沒有回應 Mode $mode 查詢，而 Mode 03 同樣沒有回應 — 因此無法判斷這是車輛不支援，還是這次連線沒有讀到。';
+  }
+
+  @override
+  String dtcCategoryFault(Object category) {
+    return '$category相關故障';
+  }
+
+  @override
+  String get dtcClear => '清除';
+
+  @override
+  String get dtcClearCancel => '取消';
+
+  @override
+  String get dtcClearConfirm => '確定清除';
+
+  @override
+  String get dtcClearDialogBody =>
+      '這會清掉已儲存與待確認的故障碼並熄滅故障燈，同時重置排放就緒狀態 — 車輛需要重新完成一輪自我診斷才能通過驗車。永久故障碼（Mode 0A）無法清除。';
+
+  @override
+  String get dtcClearDialogFrameUnread =>
+      '這次沒有讀到凍結幀，但不代表車上沒有。先重新掃描一次，再決定要不要清除。';
+
+  @override
+  String dtcClearDialogFrames(Object codes) {
+    return '連同 $codes 的凍結幀 —— 故障發生當下的轉速、水溫、負荷那一整份紀錄 —— 也會一起消失，而且故障再次發生前讀不回來。';
+  }
+
+  @override
+  String get dtcClearDialogTitle => '清除故障碼？';
+
+  @override
+  String dtcClearDialogUnanswered(int count, Object categories) {
+    return '這次掃描有 $count 個類別沒有得到完整回應（$categories），可能還有你沒看到的故障碼。清除後就再也讀不到了。';
+  }
+
+  @override
+  String get dtcClearing => '清除中…';
+
+  @override
+  String get dtcCompleteCleanBody => '這代表每個回覆的控制器都回報無故障碼，不代表車上每個模組都已被問到。';
+
+  @override
+  String get dtcCompleteCleanTitle => '已回應的控制器都沒有故障碼。';
+
+  @override
+  String dtcControllerLabel(Object controller) {
+    return '控制器 $controller';
+  }
+
+  @override
+  String get dtcDismiss => '關閉';
+
+  @override
+  String dtcFreezeFrameBody(Object code) {
+    return '$code 被確認的那一刻，這個控制器記下的數值。清除故障碼會一併銷毀這份紀錄。';
+  }
+
+  @override
+  String get dtcFreezeFrameContentsUnknown =>
+      '這個控制器有凍結幀，但沒有回應「裡面有哪些項目」的查詢，所以讀不到內容。可以重新掃描再試一次。';
+
+  @override
+  String get dtcFreezeFrameNothingDecodable => '這個控制器有凍結幀，但其中沒有本 App 能解讀的項目。';
+
+  @override
+  String get dtcFreezeFrameTitle => '故障發生當下的車況';
+
+  @override
+  String dtcFreezeFrameUndecodable(int count) {
+    return '另有 $count 個項目在這份凍結幀裡，本 App 沒有對應的換算公式，所以沒有列出。';
+  }
+
+  @override
+  String dtcFreezeFrameUnreadItems(int count) {
+    return '有 $count 個項目這次沒有讀回來（可能是時間不夠或控制器沒回應）。重新掃描可能會讀到。';
+  }
+
+  @override
+  String get dtcFreezeFrameUnreadPanel =>
+      '這次沒有讀到凍結幀 —— 不代表車上沒有。請先重新掃描再決定要不要清除故障碼，因為清除會永久銷毀故障當下的紀錄。如果每次掃描都一樣，可能是這台車不提供。';
+
+  @override
+  String dtcGroupHeader(Object label, Object mode, int count) {
+    return '$label（Mode $mode）· $count';
+  }
+
+  @override
+  String get dtcHeadline => '故障碼';
+
+  @override
+  String get dtcListSeparator => '、';
+
+  @override
+  String get dtcManufacturerSpecific => '原廠自訂碼 — 需查閱該車系維修手冊';
+
+  @override
+  String get dtcMilOff => '故障燈沒有亮';
+
+  @override
+  String get dtcMilOn => '故障燈亮著';
+
+  @override
+  String dtcNoDescriptionForSubsystem(Object subsystem) {
+    return '$subsystem — 本 App 沒有這一碼的詳細說明';
+  }
+
+  @override
+  String get dtcNotConnectedBody => '需要連上 ELM327 轉接器或啟動模擬器才能讀取故障碼。';
+
+  @override
+  String get dtcNotConnectedTitle => '尚未連線';
+
+  @override
+  String get dtcNotScanned => '尚未掃描';
+
+  @override
+  String dtcPartialCleanOptionalGaps(int count, Object controllers) {
+    return '三個類別都查詢完成了。有 $count 個控制器（$controllers）沒有實作待確認或永久故障碼 —— 這在很多車上是正常的，但也因此不能宣告全車都沒有故障碼。';
+  }
+
+  @override
+  String get dtcPartialCleanTitle => '已回應的項目沒有故障碼。';
+
+  @override
+  String dtcPartialCleanUnanswered(Object categories) {
+    return '$categories 沒有回應，狀態無法確認 — 這不等於車輛沒有問題。';
+  }
+
+  @override
+  String dtcPartialCodesRead(int count) {
+    return '這個類別中止前已讀到 $count 筆故障碼，但涵蓋範圍不完整：';
+  }
+
+  @override
+  String dtcPartiallyAnsweredDetail(Object message) {
+    return '這個類別只有部分控制器回應，其餘沒有回覆，因此不能當作全車的結果。$message';
+  }
+
+  @override
+  String get dtcReadFailed => '讀取失敗';
+
+  @override
+  String dtcReadFailureDetail(Object label, Object mode, Object message) {
+    return '$label（Mode $mode）：$message';
+  }
+
+  @override
+  String get dtcReadinessAllComplete => '這個控制器負責的監控項目都已完成。';
+
+  @override
+  String dtcReadinessIncomplete(int count) {
+    return '還有 $count 項沒有完成，現在去驗車可能不會過。';
+  }
+
+  @override
+  String get dtcReadinessSaysNothing =>
+      '這個控制器沒有回報任何監控項目 —— 它可能不負責排放監控，這不代表已經就緒。';
+
+  @override
+  String get dtcReadinessTitle => '排放就緒狀態';
+
+  @override
+  String get dtcRescanFirst => '請先重新掃描';
+
+  @override
+  String get dtcRetry => '重試';
+
+  @override
+  String get dtcScanBody => '讀取 Mode 03 已儲存、Mode 07 待確認與 Mode 0A 永久故障碼。';
+
+  @override
+  String get dtcScanTitle => '掃描車輛故障碼';
+
+  @override
+  String get dtcScanning => '掃描中…';
+
+  @override
+  String dtcSelfReportedCodes(int count) {
+    return '這個控制器自報有 $count 個已確認的故障碼。';
+  }
+
+  @override
+  String get dtcSelfReportedNoCodes => '這個控制器自報沒有已確認的故障碼。';
+
+  @override
+  String get dtcSilentCategoryHeadline => '這個類別沒有回應';
+
+  @override
+  String get dtcSilentPendingDetail =>
+      '待確認故障碼（Mode 07）沒有回應。可能是這具 ECU 未實作這個服務，也可能是這次沒有讀到 —— 沒有回應無法分辨兩者，也不能當作「沒有待確認故障」。已儲存故障碼的結果不受影響。';
+
+  @override
+  String get dtcSilentPermanentDetail =>
+      '永久故障碼（Mode 0A）沒有回應。這個類別在 2010 年前後才隨新一代 OBD-II 導入，較舊的車輛不一定支援 —— 但沒有回應也可能只是這次沒讀到，兩者無法分辨。已儲存故障碼的結果不受影響。';
+
+  @override
+  String get dtcStartScan => '開始掃描';
+
+  @override
+  String dtcStoredSilentDetail(Object mode) {
+    return '車輛沒有回應 Mode $mode 查詢，因此無法確認是否有已儲存的故障碼。這與「沒有故障碼」不是同一件事。';
+  }
+
+  @override
+  String dtcTotalCodes(int count) {
+    return '共 $count 筆';
+  }
+
+  @override
+  String get dtcUnconfirmed => '無法確認';
+
+  @override
+  String get dtcUnknownError => '未知錯誤';
+
+  @override
+  String get dtcUnknownMonitor => '未知監控項目';
+
+  @override
+  String get dtcVerdictCompleteClean => '已回應的控制器沒有故障碼';
+
+  @override
+  String get dtcVerdictPartialClean => '部分未確認';
+
+  @override
   String get fieldEventBody =>
       '只在車輛完全停妥時，由乘客或停車中的操作人員按下。事件會與 OBD 原始資料使用同一條時間軸並嘗試立即保存。';
 
@@ -711,6 +939,234 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get datumStatusFormula => '公式';
+
+  @override
+  String dtcBothSilentDetail(Object mode) {
+    return '車輛沒有回應 Mode $mode 查詢，而 Mode 03 同樣沒有回應 — 因此無法判斷這是車輛不支援，還是這次連線沒有讀到。';
+  }
+
+  @override
+  String dtcCategoryFault(Object category) {
+    return '$category相關故障';
+  }
+
+  @override
+  String get dtcClear => '清除';
+
+  @override
+  String get dtcClearCancel => '取消';
+
+  @override
+  String get dtcClearConfirm => '確定清除';
+
+  @override
+  String get dtcClearDialogBody =>
+      '這會清掉已儲存與待確認的故障碼並熄滅故障燈，同時重置排放就緒狀態 — 車輛需要重新完成一輪自我診斷才能通過驗車。永久故障碼（Mode 0A）無法清除。';
+
+  @override
+  String get dtcClearDialogFrameUnread =>
+      '這次沒有讀到凍結幀，但不代表車上沒有。先重新掃描一次，再決定要不要清除。';
+
+  @override
+  String dtcClearDialogFrames(Object codes) {
+    return '連同 $codes 的凍結幀 —— 故障發生當下的轉速、水溫、負荷那一整份紀錄 —— 也會一起消失，而且故障再次發生前讀不回來。';
+  }
+
+  @override
+  String get dtcClearDialogTitle => '清除故障碼？';
+
+  @override
+  String dtcClearDialogUnanswered(int count, Object categories) {
+    return '這次掃描有 $count 個類別沒有得到完整回應（$categories），可能還有你沒看到的故障碼。清除後就再也讀不到了。';
+  }
+
+  @override
+  String get dtcClearing => '清除中…';
+
+  @override
+  String get dtcCompleteCleanBody => '這代表每個回覆的控制器都回報無故障碼，不代表車上每個模組都已被問到。';
+
+  @override
+  String get dtcCompleteCleanTitle => '已回應的控制器都沒有故障碼。';
+
+  @override
+  String dtcControllerLabel(Object controller) {
+    return '控制器 $controller';
+  }
+
+  @override
+  String get dtcDismiss => '關閉';
+
+  @override
+  String dtcFreezeFrameBody(Object code) {
+    return '$code 被確認的那一刻，這個控制器記下的數值。清除故障碼會一併銷毀這份紀錄。';
+  }
+
+  @override
+  String get dtcFreezeFrameContentsUnknown =>
+      '這個控制器有凍結幀，但沒有回應「裡面有哪些項目」的查詢，所以讀不到內容。可以重新掃描再試一次。';
+
+  @override
+  String get dtcFreezeFrameNothingDecodable => '這個控制器有凍結幀，但其中沒有本 App 能解讀的項目。';
+
+  @override
+  String get dtcFreezeFrameTitle => '故障發生當下的車況';
+
+  @override
+  String dtcFreezeFrameUndecodable(int count) {
+    return '另有 $count 個項目在這份凍結幀裡，本 App 沒有對應的換算公式，所以沒有列出。';
+  }
+
+  @override
+  String dtcFreezeFrameUnreadItems(int count) {
+    return '有 $count 個項目這次沒有讀回來（可能是時間不夠或控制器沒回應）。重新掃描可能會讀到。';
+  }
+
+  @override
+  String get dtcFreezeFrameUnreadPanel =>
+      '這次沒有讀到凍結幀 —— 不代表車上沒有。請先重新掃描再決定要不要清除故障碼，因為清除會永久銷毀故障當下的紀錄。如果每次掃描都一樣，可能是這台車不提供。';
+
+  @override
+  String dtcGroupHeader(Object label, Object mode, int count) {
+    return '$label（Mode $mode）· $count';
+  }
+
+  @override
+  String get dtcHeadline => '故障碼';
+
+  @override
+  String get dtcListSeparator => '、';
+
+  @override
+  String get dtcManufacturerSpecific => '原廠自訂碼 — 需查閱該車系維修手冊';
+
+  @override
+  String get dtcMilOff => '故障燈沒有亮';
+
+  @override
+  String get dtcMilOn => '故障燈亮著';
+
+  @override
+  String dtcNoDescriptionForSubsystem(Object subsystem) {
+    return '$subsystem — 本 App 沒有這一碼的詳細說明';
+  }
+
+  @override
+  String get dtcNotConnectedBody => '需要連上 ELM327 轉接器或啟動模擬器才能讀取故障碼。';
+
+  @override
+  String get dtcNotConnectedTitle => '尚未連線';
+
+  @override
+  String get dtcNotScanned => '尚未掃描';
+
+  @override
+  String dtcPartialCleanOptionalGaps(int count, Object controllers) {
+    return '三個類別都查詢完成了。有 $count 個控制器（$controllers）沒有實作待確認或永久故障碼 —— 這在很多車上是正常的，但也因此不能宣告全車都沒有故障碼。';
+  }
+
+  @override
+  String get dtcPartialCleanTitle => '已回應的項目沒有故障碼。';
+
+  @override
+  String dtcPartialCleanUnanswered(Object categories) {
+    return '$categories 沒有回應，狀態無法確認 — 這不等於車輛沒有問題。';
+  }
+
+  @override
+  String dtcPartialCodesRead(int count) {
+    return '這個類別中止前已讀到 $count 筆故障碼，但涵蓋範圍不完整：';
+  }
+
+  @override
+  String dtcPartiallyAnsweredDetail(Object message) {
+    return '這個類別只有部分控制器回應，其餘沒有回覆，因此不能當作全車的結果。$message';
+  }
+
+  @override
+  String get dtcReadFailed => '讀取失敗';
+
+  @override
+  String dtcReadFailureDetail(Object label, Object mode, Object message) {
+    return '$label（Mode $mode）：$message';
+  }
+
+  @override
+  String get dtcReadinessAllComplete => '這個控制器負責的監控項目都已完成。';
+
+  @override
+  String dtcReadinessIncomplete(int count) {
+    return '還有 $count 項沒有完成，現在去驗車可能不會過。';
+  }
+
+  @override
+  String get dtcReadinessSaysNothing =>
+      '這個控制器沒有回報任何監控項目 —— 它可能不負責排放監控，這不代表已經就緒。';
+
+  @override
+  String get dtcReadinessTitle => '排放就緒狀態';
+
+  @override
+  String get dtcRescanFirst => '請先重新掃描';
+
+  @override
+  String get dtcRetry => '重試';
+
+  @override
+  String get dtcScanBody => '讀取 Mode 03 已儲存、Mode 07 待確認與 Mode 0A 永久故障碼。';
+
+  @override
+  String get dtcScanTitle => '掃描車輛故障碼';
+
+  @override
+  String get dtcScanning => '掃描中…';
+
+  @override
+  String dtcSelfReportedCodes(int count) {
+    return '這個控制器自報有 $count 個已確認的故障碼。';
+  }
+
+  @override
+  String get dtcSelfReportedNoCodes => '這個控制器自報沒有已確認的故障碼。';
+
+  @override
+  String get dtcSilentCategoryHeadline => '這個類別沒有回應';
+
+  @override
+  String get dtcSilentPendingDetail =>
+      '待確認故障碼（Mode 07）沒有回應。可能是這具 ECU 未實作這個服務，也可能是這次沒有讀到 —— 沒有回應無法分辨兩者，也不能當作「沒有待確認故障」。已儲存故障碼的結果不受影響。';
+
+  @override
+  String get dtcSilentPermanentDetail =>
+      '永久故障碼（Mode 0A）沒有回應。這個類別在 2010 年前後才隨新一代 OBD-II 導入，較舊的車輛不一定支援 —— 但沒有回應也可能只是這次沒讀到，兩者無法分辨。已儲存故障碼的結果不受影響。';
+
+  @override
+  String get dtcStartScan => '開始掃描';
+
+  @override
+  String dtcStoredSilentDetail(Object mode) {
+    return '車輛沒有回應 Mode $mode 查詢，因此無法確認是否有已儲存的故障碼。這與「沒有故障碼」不是同一件事。';
+  }
+
+  @override
+  String dtcTotalCodes(int count) {
+    return '共 $count 筆';
+  }
+
+  @override
+  String get dtcUnconfirmed => '無法確認';
+
+  @override
+  String get dtcUnknownError => '未知錯誤';
+
+  @override
+  String get dtcUnknownMonitor => '未知監控項目';
+
+  @override
+  String get dtcVerdictCompleteClean => '已回應的控制器沒有故障碼';
+
+  @override
+  String get dtcVerdictPartialClean => '部分未確認';
 
   @override
   String get fieldEventBody =>
