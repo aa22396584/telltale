@@ -119,21 +119,21 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 |---|---|---|---|---|
 | App 截圖與實車示範 | Screenshots and vehicle demo | README.md:17 ↔ README.zh-TW.md:16 (T1 heading) | evidenced |  |
 | Language / 語言 | Language / 語言 | lib/l10n/app_en.arb:885 ↔ lib/l10n/app_zh_Hant.arb:250 (T1 same ARB key) | evidenced | DO NOT localize. app_en.arb:10 description: 'Bilingual label for the language picker. Options use self-names.' |
-| 主打圖片（feature graphic） | feature graphic | store/README.md:11 '主打圖片（feature graphic）' (T1 — the project's own inline gloss) | evidenced |  |
+| 主打圖片（feature graphic） | feature graphic | store/README.md:25 '主打圖片（feature graphic）' (T1 — the project's own inline gloss) | evidenced |  |
 | 儀表 | gauge | README.md:64 'read-only BMS gauges' ↔ README.zh-TW.md:57 '唯讀 BMS 儀表' (T1) | evidenced | See the 即時 PID 儀表 note: 儀表 renders both 'gauge' and 'PID dashboard'. |
 | 儀表板 | dashboard | README.md:21 alt 'Telltale live telemetry dashboard' ↔ README.zh-TW.md:20 alt 'Telltale 即時遙測儀表板' (T1); store/README.md:13 | evidenced |  |
 | 刪除 | delete | lib/l10n/app_en.arb:1931 ↔ lib/l10n/app_zh_Hant.arb:278 (T1 same ARB key) | evidenced |  |
 | 匯出 | export | lib/l10n/app_en.arb:22 ↔ lib/l10n/app_zh_Hant.arb:16 (T1); README.md:57 'export' ↔ README.zh-TW.md:51 '匯出' | evidenced |  |
 | 回放 | replay | lib/l10n/app_en.arb:1934 ↔ lib/l10n/app_zh_Hant.arb:560 (T1 same ARB key) | evidenced |  |
 | 外觀 | Appearance | lib/l10n/app_en.arb:35 ↔ lib/l10n/app_zh_Hant.arb:23 (T1 same ARB key) | evidenced |  |
-| 性能量測 | performance | store/README.md:15 '`05-performance.png` … 手機截圖：性能量測' (T1) | evidenced |  |
-| 應用程式圖示 | app icon | store/README.md:10 '`icon-512.png` … 應用程式圖示' (T1) | proposed | English has no source in the tree; the cited file is Chinese-only |
-| 手機截圖 | phone screenshot | store/README.md:12-16 (T1 table, paired with the English PNG filenames) | proposed | English has no source in the tree; the cited file is Chinese-only |
+| 性能量測 | performance | store/README.md:29 '`05-performance.png` … 手機截圖：性能量測' (T1) | evidenced |  |
+| 應用程式圖示 | app icon | store/README.md:24 '`icon-512.png` … 應用程式圖示' (T1) | proposed | English has no source in the tree; the cited file is Chinese-only |
+| 手機截圖 | phone screenshot | store/README.md:26-30 (T1 table, paired with the English PNG filenames) | proposed | English has no source in the tree; the cited file is Chinese-only |
 | 設定 | Settings | lib/l10n/app_en.arb:45 settingsHeadline ↔ lib/l10n/app_zh_Hant.arb:27 (T1) | evidenced |  |
 | 設定頁 | Settings | README.md:123 'Settings shows the full disclosure card' ↔ README.zh-TW.md:103 '設定頁是完整揭露卡' (T1) | evidenced | context: screen |
 | 連線頁 | Connect | README.md:124 'Connect keeps a secondary text link' ↔ README.zh-TW.md:103-104 '連線頁只在轉接器列表下方放次要文字連結' (T1) | evidenced | context: screen |
 | 重試 | Retry | lib/l10n/app_en.arb:704 ↔ lib/l10n/app_zh_Hant.arb:197 (T1 same ARB key) | evidenced |  |
-| 面盤外觀 | skins | store/README.md:16 '`06-skins.png` … 手機截圖：面盤外觀' (T1 filename ↔ zh gloss in the same table row) | evidenced | 面盤 = the dial face. Related: README.md:64 'BMS gauges' ↔ README.zh-TW.md:57 'BMS 儀表'. |
+| 面盤外觀 | skins | store/README.md:30 '`06-skins.png` … 手機截圖：語言與面盤外觀' (T1 filename ↔ zh gloss in the same table row) | evidenced | 面盤 = the dial face. Related: README.md:64 'BMS gauges' ↔ README.zh-TW.md:57 'BMS 儀表'. |
 
 
 ## Data, evidence and status
