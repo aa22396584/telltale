@@ -22,6 +22,7 @@
 // than a `BuildContext`, which is what lets this file walk both locales.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,7 @@ import 'package:torque_obd/obd/physics/vehicle_profile.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/telemetry.dart';
+import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/vehicle_identity.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
@@ -577,6 +579,158 @@ void main() {
       );
       expect(initProgressLine(en, progress), en.handshakeStepSupportProbe);
       expect(initProgressLine(zh, progress), zh.handshakeStepSupportProbe);
+    });
+  });
+
+  group('why a connection ended', () {
+    InitProgress step({
+      required int index,
+      InitNote? note,
+      Elm327ErrorCode? errorCode,
+    }) => InitProgress(
+      step: Elm327Client.initSequence[index],
+      index: index,
+      total: Elm327Client.initSequence.length,
+      status: InitStatus.failed,
+      note: note,
+      errorCode: errorCode,
+    );
+
+    ObdConnectionState failed(ObdConnectionIssue issue, {InitProgress? at}) =>
+        ObdConnectionState(
+          phase: ConnectionPhase.failed,
+          error: 'exported sentence',
+          issue: issue,
+          issueStep: at,
+        );
+
+    test('every issue is answered in both languages', () {
+      for (final issue in ObdConnectionIssue.values) {
+        final state = failed(
+          issue,
+          at: step(index: 1, errorCode: Elm327ErrorCode.canError),
+        );
+        for (final entry in locales.entries) {
+          final text = connectionIssueText(entry.value, state);
+          expect(text, isNotNull, reason: '$issue ${entry.key}');
+          expect(text!.trim(), isNotEmpty, reason: '$issue ${entry.key}');
+        }
+        expect(
+          connectionIssueText(en, state),
+          isNot(connectionIssueText(zh, state)),
+          reason: '$issue fell back to the English template',
+        );
+        expect(
+          _cjk.hasMatch(connectionIssueText(en, state)!),
+          isFalse,
+          reason: '$issue en',
+        );
+      }
+    });
+
+    test('every busy activity is answered in both languages', () {
+      for (final activity in ObdConnectionActivity.values) {
+        final state = ObdConnectionState(
+          phase: ConnectionPhase.connecting,
+          activity: activity,
+        );
+        expect(_cjk.hasMatch(connectionActivityText(en, state)!), isFalse);
+        expect(
+          connectionActivityText(en, state),
+          isNot(connectionActivityText(zh, state)),
+          reason: '$activity fell back to the English template',
+        );
+      }
+      expect(
+        connectionActivityText(en, const ObdConnectionState()),
+        isNull,
+      );
+    });
+
+    test('a classified handshake failure never reads as silence', () {
+      // The trap this refactor could have walked into: move the adapter's
+      // error into `errorCode`, leave `detail` null, and every failure —
+      // CAN ERROR, UNABLE TO CONNECT, LV RESET — comes out of the sentence
+      // 初始化在 X 失敗（無回應）as "no response", which is the one thing it
+      // is not.
+      for (final code in Elm327ErrorCode.values) {
+        if (code == Elm327ErrorCode.none) continue;
+        final state = failed(
+          ObdConnectionIssue.handshakeStepFailed,
+          at: step(index: 3, errorCode: code),
+        );
+        final text = connectionIssueText(en, state)!;
+        expect(text, contains(adapterErrorLabel(en, code)), reason: '$code');
+        expect(
+          text,
+          isNot(contains(en.handshakeStepNoReason)),
+          reason: '$code was flattened into silence',
+        );
+        expect(
+          text,
+          contains(Elm327Client.initSequence[3].command),
+          reason: 'the command that died is the value of the message',
+        );
+      }
+    });
+
+    test('a refused reply names the refusal, not the step purpose', () {
+      final state = failed(
+        ObdConnectionIssue.handshakeStepFailed,
+        at: step(index: 1, note: InitNote.notAcknowledged),
+      );
+      final text = connectionIssueText(en, state)!;
+      expect(text, contains(en.handshakeNoteNotAcknowledged));
+      expect(text, isNot(contains(en.handshakeStepEchoOff)));
+    });
+
+    test('a transport sentence is still shown rather than dropped', () {
+      // The four transports author their own messages and this wave did not
+      // move them. `issue` is null there, and the caller falls back.
+      const state = ObdConnectionState(
+        phase: ConnectionPhase.failed,
+        error: '轉接器不在範圍內',
+      );
+      expect(connectionIssueText(en, state), isNull);
+      expect(state.error, '轉接器不在範圍內');
+    });
+
+    test('the exported sentence and the identifier are cleared together', () {
+      final state = failed(ObdConnectionIssue.adapterStoppedResponding);
+      final cleared = state.copyWith(clearError: true);
+      expect(cleared.error, isNull);
+      expect(cleared.issue, isNull);
+      expect(cleared.issueStep, isNull);
+    });
+
+    test('a new busy line drops the activity the last one carried', () {
+      // Otherwise a Bluetooth Classic tier notice inherits "stopping the
+      // previous connection" and the screen keeps saying it.
+      const aborting = ObdConnectionState(
+        phase: ConnectionPhase.connecting,
+        detail: '正在中止上一個連線，請稍候…',
+        activity: ObdConnectionActivity.abortingPreviousConnection,
+      );
+      final tier = aborting.copyWith(detail: '未加密 SPP 連線');
+      expect(tier.activity, isNull);
+      expect(connectionActivityText(en, tier), isNull);
+    });
+
+    test('the transcript keeps the sentence it always wrote', () {
+      // `_failAttempt` records `error` into the attempt transcript, which is
+      // evidence. Localizing it would make two readers' records incomparable.
+      expect(
+        describeConnectException(TimeoutException('x')),
+        contains('多數 OBD 插座要電門轉到 ON 才供電'),
+      );
+      expect(
+        connectExceptionIssue(TimeoutException('x')),
+        ObdConnectionIssue.adapterAcceptedThenSilent,
+      );
+      expect(
+        connectExceptionIssue(StateError('x')),
+        ObdConnectionIssue.connectionSetupFailed,
+      );
     });
   });
 

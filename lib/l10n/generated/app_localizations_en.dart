@@ -68,6 +68,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceSectionTitle => 'Appearance';
 
   @override
+  String get connectActivityAbortingPreviousConnection =>
+      'Stopping the previous connection, one moment…';
+
+  @override
   String get connectAnswerBleWithClassic =>
       'Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, the 4.0 on the box was only the chip spec — use Bluetooth Classic instead.';
 
@@ -192,6 +196,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectHeadline => 'Choose a connection';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      'The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return 'The adapter did not answer the reset command ($command). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding =>
+      'The adapter stopped responding and the connection has been dropped.';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      'The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.';
+
+  @override
+  String get connectIssueHandshakeIncomplete =>
+      'Initialisation did not pass. The adapter may not be compatible.';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return 'Initialisation failed at $command ($reason). Check that the adapter is seated properly and the vehicle\'s ignition is on.';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      'The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.';
 
   @override
   String get connectLastAdapterConnect => 'Connect now';
@@ -863,6 +897,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handshakeStepMemoryOff => 'Turn off memory writes';
+
+  @override
+  String get handshakeStepNoReason => 'no response';
 
   @override
   String get handshakeStepProtocolAuto =>

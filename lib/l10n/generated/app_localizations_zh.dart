@@ -64,6 +64,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appearanceSectionTitle => '外觀';
 
   @override
+  String get connectActivityAbortingPreviousConnection => '正在中止上一個連線，請稍候…';
+
+  @override
   String get connectAnswerBleWithClassic =>
       '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— 就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。如果掃描不到，那盒子上的 4.0 只是晶片規格，改用 Bluetooth Classic。';
 
@@ -180,6 +183,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectHeadline => '選擇連線方式';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      '轉接器接受了連線，但在時限內沒有回應。通常是它還沒通電 —— 多數 OBD 插座要電門轉到 ON 才供電；也可能是它正被另一個 App 連著，先關掉那個再試。';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return '轉接器沒有回應重置指令（$command）。這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding => '轉接器停止回應，連線已中斷。';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，然後再試一次。完整的錯誤留在下方的紀錄裡。';
+
+  @override
+  String get connectIssueHandshakeIncomplete => '初始化未通過，轉接器可能不相容。';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return '初始化在 $command 失敗（$reason）。請確認轉接器已插好、車輛電門已開啟。';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。';
 
   @override
   String get connectLastAdapterConnect => '直接連線';
@@ -764,6 +795,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepNoReason => '無回應';
 
   @override
   String get handshakeStepProtocolAuto => '自動偵測匯流排協定';
@@ -2490,6 +2524,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get appearanceSectionTitle => '外觀';
 
   @override
+  String get connectActivityAbortingPreviousConnection => '正在中止上一個連線，請稍候…';
+
+  @override
   String get connectAnswerBleWithClassic =>
       '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— 就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。如果掃描不到，那盒子上的 4.0 只是晶片規格，改用 Bluetooth Classic。';
 
@@ -2606,6 +2643,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectHeadline => '選擇連線方式';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      '轉接器接受了連線，但在時限內沒有回應。通常是它還沒通電 —— 多數 OBD 插座要電門轉到 ON 才供電；也可能是它正被另一個 App 連著，先關掉那個再試。';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return '轉接器沒有回應重置指令（$command）。這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding => '轉接器停止回應，連線已中斷。';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，然後再試一次。完整的錯誤留在下方的紀錄裡。';
+
+  @override
+  String get connectIssueHandshakeIncomplete => '初始化未通過，轉接器可能不相容。';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return '初始化在 $command 失敗（$reason）。請確認轉接器已插好、車輛電門已開啟。';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。';
 
   @override
   String get connectLastAdapterConnect => '直接連線';
@@ -3190,6 +3255,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepNoReason => '無回應';
 
   @override
   String get handshakeStepProtocolAuto => '自動偵測匯流排協定';

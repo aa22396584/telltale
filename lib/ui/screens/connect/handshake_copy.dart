@@ -14,6 +14,7 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/elm327_client.dart';
+import '../../../state/obd_session.dart';
 
 /// What a handshake command is for.
 ///
@@ -96,3 +97,59 @@ String initProgressLine(AppLocalizations l10n, InitProgress progress) {
   if (detail != null && detail.isNotEmpty) return detail;
   return initStepPurposeLabel(l10n, progress.step.command);
 }
+
+/// What a failed step said about itself, or that it said nothing.
+///
+/// Mirrors `first.detail ?? '無回應'`: unlike [initProgressLine] it never falls
+/// back to the step's purpose, because "software-reset the adapter" is not a
+/// reason a handshake failed.
+String _failureReason(AppLocalizations l10n, InitProgress? step) {
+  if (step == null) return l10n.handshakeStepNoReason;
+  final note = step.note;
+  if (note != null) return initNoteLabel(l10n, note);
+  final code = step.errorCode;
+  if (code != null && code != Elm327ErrorCode.none) {
+    return adapterErrorLabel(l10n, code);
+  }
+  final detail = step.detail;
+  if (detail != null && detail.isNotEmpty) return detail;
+  return l10n.handshakeStepNoReason;
+}
+
+/// Why the wizard is showing a failure banner.
+///
+/// Returns null when the sentence came from a transport rather than from
+/// `obd_session` — those are still Chinese, and the caller falls back to
+/// [ObdConnectionState.error] so nothing is dropped on the floor.
+String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
+  final issue = state.issue;
+  if (issue == null) return null;
+  final step = state.issueStep;
+  return switch (issue) {
+    ObdConnectionIssue.handshakeIncomplete => l10n.connectIssueHandshakeIncomplete,
+    ObdConnectionIssue.adapterSilentOnReset => l10n.connectIssueAdapterSilentOnReset(
+      step?.step.command ?? '',
+    ),
+    ObdConnectionIssue.handshakeStepFailed =>
+      l10n.connectIssueHandshakeStepFailed(
+        step?.step.command ?? '',
+        _failureReason(l10n, step),
+      ),
+    ObdConnectionIssue.adapterAcceptedThenSilent =>
+      l10n.connectIssueAdapterAcceptedThenSilent,
+    ObdConnectionIssue.connectionSetupFailed =>
+      l10n.connectIssueConnectionSetupFailed,
+    ObdConnectionIssue.previousConnectionStillAborting =>
+      l10n.connectIssuePreviousConnectionStillAborting,
+    ObdConnectionIssue.adapterStoppedResponding =>
+      l10n.connectIssueAdapterStoppedResponding,
+  };
+}
+
+/// The line under a busy spinner, or null when there is nothing to say.
+String? connectionActivityText(AppLocalizations l10n, ObdConnectionState state) =>
+    switch (state.activity) {
+      ObdConnectionActivity.abortingPreviousConnection =>
+        l10n.connectActivityAbortingPreviousConnection,
+      null => null,
+    };

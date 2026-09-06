@@ -207,6 +207,12 @@ abstract class AppLocalizations {
   /// **'Appearance'**
   String get appearanceSectionTitle;
 
+  /// ObdConnectionActivity.abortingPreviousConnection. Says the tap registered and what is being waited for; the wizard showed nothing at all here before.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping the previous connection, one moment…'**
+  String get connectActivityAbortingPreviousConnection;
+
   /// Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec.
   ///
   /// In en, this message translates to:
@@ -404,6 +410,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a connection'**
   String get connectHeadline;
+
+  /// ObdConnectionIssue.adapterAcceptedThenSilent. Both causes are load-bearing: an unpowered socket and a second app holding the adapter look identical from here, and naming only one sends half the readers looking in the wrong place.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.'**
+  String get connectIssueAdapterAcceptedThenSilent;
+
+  /// ObdConnectionIssue.adapterSilentOnReset. Failing on the very first command is a different diagnosis from failing later, and the command is named rather than described. {command} is an AT command and is never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter did not answer the reset command ({command}). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.'**
+  String connectIssueAdapterSilentOnReset(String command);
+
+  /// ObdConnectionIssue.adapterStoppedResponding. States what already happened, not a warning about what might.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter stopped responding and the connection has been dropped.'**
+  String get connectIssueAdapterStoppedResponding;
+
+  /// ObdConnectionIssue.connectionSetupFailed. The raw exception text is deliberately not shown here; it is written to the transcript, which is where somebody can act on it.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.'**
+  String get connectIssueConnectionSetupFailed;
+
+  /// ObdConnectionIssue.handshakeIncomplete. No step reported a failure, so this is the least specific thing that is still true. It must stay a possibility, never a verdict on the adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialisation did not pass. The adapter may not be compatible.'**
+  String get connectIssueHandshakeIncomplete;
+
+  /// ObdConnectionIssue.handshakeStepFailed. Which command died is the whole value of this message: it separates 'this is not an ELM327' from 'the adapter is fine but the ignition is off'. {command} is an AT command or a mode/PID and is never translated; {reason} is the step's own outcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialisation failed at {command} ({reason}). Check that the adapter is seated properly and the vehicle\'s ignition is on.'**
+  String connectIssueHandshakeStepFailed(String command, String reason);
+
+  /// ObdConnectionIssue.previousConnectionStillAborting. A refusal that says what happened and what to do about it; a silent false here was the defect this replaced.
+  ///
+  /// In en, this message translates to:
+  /// **'The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.'**
+  String get connectIssuePreviousConnectionStillAborting;
 
   /// No description provided for @connectLastAdapterConnect.
   ///
@@ -1442,6 +1490,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn off memory writes'**
   String get handshakeStepMemoryOff;
+
+  /// Stands in when a failed step reported nothing at all about why. Not a claim that the vehicle lacks something — only that this step said nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'no response'**
+  String get handshakeStepNoReason;
 
   /// ATSP0. Nothing downstream works without a protocol, which is why this step is critical.
   ///

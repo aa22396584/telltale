@@ -403,7 +403,14 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _ErrorBanner(message: connection.error!),
+                      _ErrorBanner(
+                        message:
+                            connectionIssueText(
+                              AppLocalizations.of(context),
+                              connection,
+                            ) ??
+                            connection.error!,
+                      ),
                       const SizedBox(height: Spacing.md),
                       // Where the failure is, not two screens away behind a
                       // connection that does not exist. This is the moment the
@@ -1249,9 +1256,12 @@ class _HandshakePanel extends ConsumerWidget {
           // bar at zero for all of it. Up to thirty-six seconds of that in a
           // windscreen mount reads as a frozen app, and a frozen app gets
           // force-quit rather than waited out.
-          if (connection.isBusy && connection.detail.isNotEmpty) ...[
+          if (connection.isBusy && _busyLine(context, connection) != null) ...[
             const SizedBox(height: Spacing.sm),
-            Text(connection.detail, style: context.texts.bodySmall),
+            Text(
+              _busyLine(context, connection)!,
+              style: context.texts.bodySmall,
+            ),
           ],
           if (steps.isNotEmpty) ...[
             const SizedBox(height: Spacing.md),
@@ -1281,6 +1291,20 @@ class _HandshakePanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The busy line, translated where this app authored it.
+///
+/// `ObdConnectionState.detail` also carries text a transport wrote — the
+/// Bluetooth Classic tier notices — which is passed through as it arrived and
+/// is still Chinese.
+String? _busyLine(BuildContext context, ObdConnectionState connection) {
+  final activity = connectionActivityText(
+    AppLocalizations.of(context),
+    connection,
+  );
+  if (activity != null) return activity;
+  return connection.detail.isEmpty ? null : connection.detail;
 }
 
 class _StepRow extends StatelessWidget {
