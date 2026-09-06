@@ -153,16 +153,40 @@ enum DatumAssumptionNote { recordedVehicleSettings }
 /// catalog can supply — the stoichiometric AFR and the fuel density come from
 /// the fuel type, so asking where they came from has no answer beyond "the
 /// fuel you picked".
+/// [fuelType] and [drivetrain] are the two parameters whose value is a *word*
+/// rather than a number, so they cannot be formatted into [value] without
+/// choosing a language. They travel here as identifiers instead.
+///
+/// They were briefly not carried at all: the renderer took a `VehicleProfile?`
+/// and read them off it, [value] was `''` for the fuel, and one of the two
+/// dashboard call sites did not pass a profile. That screen then read
+/// `Fuel  (generic default)` in English and 「燃料 （通用預設）」 in Chinese — an
+/// origin claim about a blank, and for a Chinese reader a straight regression
+/// from what shipped. A record that needs a second object to be readable is a
+/// record with two ways to be wrong.
 final class VehicleAssumption {
   const VehicleAssumption({
     required this.field,
     required this.value,
     this.origin,
+    this.fuelType,
+    this.drivetrain,
   });
 
   final AssumptionField field;
+
+  /// Already formatted and carrying its unit, because a number with a unit
+  /// reads the same in both languages. Never empty.
   final String value;
+
   final VehicleFieldOrigin? origin;
+
+  /// Set only for [AssumptionField.fuelType].
+  final FuelType? fuelType;
+
+  /// Set only for [AssumptionField.drivetrainEfficiency], where [value] is the
+  /// efficiency percentage and this names the layout it belongs to.
+  final Drivetrain? drivetrain;
 }
 
 class DatumStatus {
@@ -615,13 +639,19 @@ abstract final class AvailabilityPolicy {
         // here belong to the caller's language. The UI appends its own.
         value: '${(profile.drivetrainEfficiency * 100).toStringAsFixed(0)}%',
         origin: profile.drivetrainField.origin,
+        drivetrain: profile.drivetrain,
       ),
     ],
     EstimateKind.fuel => [
       VehicleAssumption(
         field: AssumptionField.fuelType,
-        value: '',
+        // The fuel's whole value is its name, so there is no number to format.
+        // `value` carries the export wording — the one place the frozen
+        // Chinese has to appear for formatAssumptionsForExport to reproduce
+        // the sentence byte for byte — and the screen reads `fuelType`.
+        value: profile.fuelType.exportLabel,
         origin: profile.fuelTypeField.origin,
+        fuelType: profile.fuelType,
       ),
       VehicleAssumption(
         field: AssumptionField.stoichAfr,
@@ -650,11 +680,9 @@ abstract final class AvailabilityPolicy {
   static String formatAssumptionsForExport(
     VehicleProfile profile,
     EstimateKind kind,
-  ) => assumptionsFor(profile, kind)
-      .map((a) => _exportNote(profile, a))
-      .join('；');
+  ) => assumptionsFor(profile, kind).map(_exportNote).join('；');
 
-  static String _exportNote(VehicleProfile profile, VehicleAssumption a) {
+  static String _exportNote(VehicleAssumption a) {
     final name = switch (a.field) {
       AssumptionField.mass => '車重',
       AssumptionField.dragCoefficient => 'Cd',
@@ -667,12 +695,10 @@ abstract final class AvailabilityPolicy {
       AssumptionField.displacement => '排氣量',
       AssumptionField.volumetricEfficiency => 'VE',
     };
-    final value = switch (a.field) {
-      AssumptionField.fuelType => profile.fuelType.exportLabel,
-      AssumptionField.drivetrainEfficiency =>
-        '${a.value} ${profile.drivetrain.exportLabel}',
-      _ => a.value,
-    };
+    final drivetrain = a.drivetrain;
+    final value = drivetrain == null
+        ? a.value
+        : '${a.value} ${drivetrain.exportLabel}';
     final origin = a.origin;
     return origin == null
         ? '$name $value'

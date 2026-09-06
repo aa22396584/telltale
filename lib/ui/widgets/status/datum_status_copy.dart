@@ -25,7 +25,6 @@ library;
 import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/physics/vehicle_evidence.dart';
-import '../../../obd/physics/vehicle_profile.dart';
 import '../../screens/settings/vehicle_profile_copy.dart';
 import '../telemetry/telemetry_status_copy.dart';
 
@@ -135,13 +134,10 @@ String? datumFormulaText(AppLocalizations l10n, DatumStatus status) =>
 ///
 /// The drivetrain's name is appended to its efficiency here rather than being
 /// baked into [VehicleAssumption.value], because it is a word and words belong
-/// to the reader's language. [profile] is needed for exactly that and for the
-/// fuel's name; everything else in the list is already a number with a unit.
-String? assumptionsText(
-  AppLocalizations l10n,
-  DatumStatus status,
-  VehicleProfile? profile,
-) {
+/// to the reader's language. It arrives on the assumption itself, as does the
+/// fuel type, so this needs no `VehicleProfile` — the parameter existed, one of
+/// two callers forgot it, and the fuel's name silently became a blank.
+String? assumptionsText(AppLocalizations l10n, DatumStatus status) {
   if (status.assumptionFields.isEmpty) {
     // The app speaking for itself, keyed.
     if (status.assumptionNote == DatumAssumptionNote.recordedVehicleSettings) {
@@ -154,15 +150,13 @@ String? assumptionsText(
   }
   final parts = status.assumptionFields.map((assumption) {
     final field = assumptionFieldLabel(l10n, assumption.field);
-    final value = switch (assumption.field) {
-      AssumptionField.fuelType => profile == null
-          ? assumption.value
-          : fuelTypeLabel(l10n, profile.fuelType),
-      AssumptionField.drivetrainEfficiency => profile == null
-          ? assumption.value
-          : '${assumption.value} ${drivetrainLabel(l10n, profile.drivetrain)}',
-      _ => assumption.value,
-    };
+    final fuel = assumption.fuelType;
+    final drivetrain = assumption.drivetrain;
+    final value = fuel != null
+        ? fuelTypeLabel(l10n, fuel)
+        : drivetrain != null
+        ? '${assumption.value} ${drivetrainLabel(l10n, drivetrain)}'
+        : assumption.value;
     final origin = assumption.origin;
     return origin == null
         ? l10n.assumptionWithoutOrigin(field, value)

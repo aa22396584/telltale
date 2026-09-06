@@ -8,7 +8,6 @@ import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../panel.dart';
 import 'datum_status_copy.dart';
-import '../../../obd/physics/vehicle_profile.dart';
 
 class DatumStatusBadge extends StatelessWidget {
   const DatumStatusBadge({required this.status, this.dense = true, super.key});
@@ -41,7 +40,6 @@ Future<void> showDatumStatusDetails(
   required String title,
   required DatumStatus status,
   List<DatumStatus> extra = const [],
-  VehicleProfile? profile,
 }) {
   final items = [status, ...extra];
   final l10n = AppLocalizations.of(context);
@@ -82,13 +80,13 @@ Future<void> showDatumStatusDetails(
                   ),
                   Text(datumFormulaText(l10n, items[index])!),
                 ],
-                if (assumptionsText(l10n, items[index], profile) != null) ...[
+                if (assumptionsText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
                     l10n.datumStatusAssumptions,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  Text(assumptionsText(l10n, items[index], profile)!),
+                  Text(assumptionsText(l10n, items[index])!),
                 ],
                 if (items[index].nextStep != null) ...[
                   const SizedBox(height: Spacing.md),

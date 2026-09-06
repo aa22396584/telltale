@@ -766,10 +766,6 @@ class _DerivedStrip extends ConsumerWidget {
           title: l10n.derivedEstimatesDetailsTitle,
           status: hpStatus,
           extra: [if (fuelStatus.badges.isNotEmpty) fuelStatus],
-          // The fuel and drivetrain names in the assumptions list are words,
-          // so the dialog needs the profile to say them in the reader's
-          // language rather than repeating the exported Chinese.
-          profile: profile,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

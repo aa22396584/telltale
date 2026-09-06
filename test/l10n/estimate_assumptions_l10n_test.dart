@@ -105,11 +105,76 @@ void main() {
     });
   });
 
+  group('an assumption is readable on its own', () {
+    // A reviewer found the reason this group exists. `AssumptionField.fuelType`
+    // used to carry `value: ''` and the renderer read the fuel's name off a
+    // `VehicleProfile?` passed in beside it. One of the two dashboard call
+    // sites — the estimated-fuel strip at `dashboard_screen.dart:944`, reached
+    // during every connection warm-up, because acceleration is null until the
+    // EMA seeds — did not pass one. The dialog then read `Fuel  (generic
+    // default)`, and in Chinese 「燃料 （通用預設）」: an origin claim about a
+    // blank, and for a Chinese reader a straight regression from 1.0.9.
+    //
+    // The parameter is gone. These check that it cannot come back by another
+    // door.
+
+    test('no assumption carries an empty value', () {
+      for (final kind in EstimateKind.values) {
+        for (final a in AvailabilityPolicy.assumptionsFor(profile, kind)) {
+          expect(
+            a.value,
+            isNotEmpty,
+            reason: '${a.field.name} has no value, so whatever renders it will '
+                'print its field name and its origin around a blank',
+          );
+        }
+      }
+    });
+
+    test('the two word-valued parameters carry their identifier', () {
+      final byField = {
+        for (final kind in EstimateKind.values)
+          for (final a in AvailabilityPolicy.assumptionsFor(profile, kind))
+            a.field: a,
+      };
+      expect(byField[AssumptionField.fuelType]!.fuelType, isNotNull);
+      expect(byField[AssumptionField.drivetrainEfficiency]!.drivetrain,
+          isNotNull);
+      // And nothing else claims to be one, which is what keeps the renderer's
+      // dispatch on those two fields honest.
+      for (final a in byField.values) {
+        if (a.field != AssumptionField.fuelType) {
+          expect(a.fuelType, isNull, reason: '${a.field.name} carries a fuel');
+        }
+        if (a.field != AssumptionField.drivetrainEfficiency) {
+          expect(a.drivetrain, isNull,
+              reason: '${a.field.name} carries a drivetrain');
+        }
+      }
+    });
+
+    test('the fuel is named in both languages with nothing else supplied', () {
+      // The exact scenario that regressed: render from the status alone.
+      for (final entry in {en: 'Diesel', zh: '柴油'}.entries) {
+        final status = AvailabilityPolicy.forEstimate(
+          profile: const VehicleProfile(fuelType: FuelType.diesel),
+          value: 4,
+          formula: AvailabilityPolicy.fuelEstimateFormula,
+          kind: EstimateKind.fuel,
+        );
+        final text = assumptionsText(entry.key, status)!;
+        expect(text, contains(entry.value));
+        // Not 'Fuel  (' with the doubled space a blank leaves behind.
+        expect(text, isNot(contains('  ')));
+      }
+    });
+  });
+
   group('the screen shows the reader s language', () {
     test('no Chinese reaches the English dialog', () {
       for (final kind in EstimateKind.values) {
         final status = statusFor(kind);
-        final assumptions = assumptionsText(en, status, profile)!;
+        final assumptions = assumptionsText(en, status)!;
         final formula = datumFormulaText(en, status)!;
         expect(
           containsChinese(assumptions),
@@ -125,10 +190,10 @@ void main() {
     });
 
     test('the Chinese dialog keeps the words it shipped with', () {
-      final hp = assumptionsText(zh, statusFor(EstimateKind.horsepower), profile)!;
+      final hp = assumptionsText(zh, statusFor(EstimateKind.horsepower))!;
       expect(hp, contains('車重 1280 kg（通用預設）'));
       expect(hp, contains('傳動效率 85% 前輪驅動（通用預設）'));
-      final fuel = assumptionsText(zh, statusFor(EstimateKind.fuel), profile)!;
+      final fuel = assumptionsText(zh, statusFor(EstimateKind.fuel))!;
       expect(fuel, contains('燃料 汽油（通用預設）'));
       expect(fuel, contains('AFR 14.7'));
     });
@@ -139,7 +204,7 @@ void main() {
       expect(en.assumptionSeparator, '; ');
       expect(zh.assumptionSeparator, '；');
       expect(
-        assumptionsText(en, statusFor(EstimateKind.fuel), profile),
+        assumptionsText(en, statusFor(EstimateKind.fuel)),
         isNot(contains(cjkPunctuation)),
       );
       expect(en.assumptionWithOrigin('Mass', '1280 kg', 'generic default'),
@@ -199,8 +264,8 @@ void main() {
         assumptions: '估算使用記錄當下的車輛設定',
         assumptionNote: DatumAssumptionNote.recordedVehicleSettings,
       );
-      expect(containsChinese(assumptionsText(en, note, null)!), isFalse);
-      expect(assumptionsText(zh, note, null), '估算使用記錄當下的車輛設定');
+      expect(containsChinese(assumptionsText(en, note)!), isFalse);
+      expect(assumptionsText(zh, note), '估算使用記錄當下的車輛設定');
       expect(note.exportFields['assumptions'], '估算使用記錄當下的車輛設定');
     });
 
@@ -219,7 +284,7 @@ void main() {
         assumptions: '車重 1450 kg（手動輸入）；Cd 0.31（原廠資料）',
       );
       expect(
-        assumptionsText(en, recorded, null),
+        assumptionsText(en, recorded),
         '車重 1450 kg（手動輸入）；Cd 0.31（原廠資料）',
       );
     });
@@ -238,7 +303,7 @@ void main() {
         assumptions: '估算使用記錄當下的車輛設定',
       );
       expect(datumFormulaText(en, legacy), 'x = y');
-      expect(assumptionsText(en, legacy, null), '估算使用記錄當下的車輛設定');
+      expect(assumptionsText(en, legacy), '估算使用記錄當下的車輛設定');
     });
   });
 }
