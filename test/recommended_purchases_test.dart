@@ -10,6 +10,7 @@ import 'package:torque_obd/state/app_runtime.dart';
 import 'package:torque_obd/state/app_share_coordinator.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
+import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 import 'package:torque_obd/ui/widgets/recommended_purchase_panel.dart';
@@ -85,10 +86,36 @@ void main() {
     expect(find.text('無法開啟蝦皮連結'), findsOneWidget);
   });
 
+  testWidgets('a throwing opener still shows the snackbar', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(
+          body: RecommendedPurchasePanel(
+            onOpen: (_) async => throw Exception('no handler'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const Key('recommended_purchase_shopee-cl-obdii-m25b')),
+    );
+    await tester.pump();
+    expect(find.text('無法開啟蝦皮連結'), findsOneWidget);
+  });
+
   testWidgets(
     'connect keeps the Shopee entry as a secondary link below transports',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'last_adapter_v1': const LastAdapter(
+          id: '192.168.1.135',
+          name: 'Wi-Fi 192.168.1.135',
+          kind: TransportKind.wifi,
+          port: 35000,
+        ).encode(),
+      });
       final prefs = await SharedPreferences.getInstance();
       tester.view.physicalSize = const Size(1080, 2200);
       tester.view.devicePixelRatio = 1;
@@ -135,9 +162,15 @@ void main() {
       expect(cta, findsOneWidget);
       expect(find.textContaining('完整說明在設定'), findsOneWidget);
 
+      final reconnect = find.text('直接連線');
+      expect(reconnect, findsOneWidget);
       expect(
         tester.getTopLeft(cta).dy,
         greaterThan(tester.getTopLeft(demoCard).dy),
+      );
+      expect(
+        tester.getTopLeft(cta).dy,
+        greaterThan(tester.getTopLeft(reconnect).dy),
       );
 
       await tester.tap(

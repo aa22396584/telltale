@@ -81,7 +81,6 @@ dependencies:
   # Opens the maintainer Shopee affiliate listing in the store app or browser.
   url_launcher: ^6.3.2
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

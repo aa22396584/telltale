@@ -16,7 +16,12 @@ Future<void> _openPurchase(
   required OpenRecommendedPurchase? onOpen,
 }) async {
   final opener = onOpen ?? _launchExternal;
-  final ok = await opener(purchase.uri);
+  var ok = false;
+  try {
+    ok = await opener(purchase.uri);
+  } on Object {
+    ok = false;
+  }
   if (ok || !context.mounted) return;
   ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text('無法開啟${purchase.storeLabel}連結')));
