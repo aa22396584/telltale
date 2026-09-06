@@ -1,124 +1,179 @@
 {
   "@@locale": "en",
+  "appTagline": "Live vehicle telemetry",
   "appTitle": "Telltale",
   "@appTitle": {
     "description": "App name shown in window titles and the connect header."
   },
-  "appTagline": "Live vehicle telemetry",
-  "languageSectionTitle": "Language / 語言",
-  "@languageSectionTitle": {
-    "description": "Bilingual label for the language picker. Options use self-names."
+  "appearanceSectionTitle": "Appearance",
+  "connectAnswerBleWithClassic": "Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, the 4.0 on the box was only the chip spec — use Bluetooth Classic instead.",
+  "@connectAnswerBleWithClassic": {
+    "description": "Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec."
+  },
+  "connectAnswerBleWithoutClassic": "Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, check that the adapter has power, or try Wi‑Fi instead; this host does not offer Bluetooth Classic.",
+  "@connectAnswerBleWithoutClassic": {
+    "description": "Same answer on a host with no Classic path. Must not point at the greyed-out Classic card."
+  },
+  "connectAnswerClassic": "Choose Bluetooth Classic. Pair it in system settings first; the app cannot pair it for you. The code is usually 1234 or 0000.",
+  "@connectAnswerClassic": {
+    "description": "Classic SPP does need system pairing first. This must never tell a user to skip it."
+  },
+  "connectAnswerWifiDesktop": "Choose Wi-Fi. Connect this device to that network first, then come back and enter the address.",
+  "connectAnswerWifiPhone": "Choose Wi-Fi. Join that network on the phone first, then come back and enter the address.",
+  "connectBleBody": "A BLE adapter does not need to be paired first. Search, then pick your device — common names are OBDII, V-LINK, Vgate or IOS-Vlink.",
+  "@connectBleBody": {
+    "description": "A GATT device is not paired the way a Classic one is. This must never tell a user to pair a BLE adapter."
+  },
+  "connectBleEmptyScan": "The scan finished without finding a BLE adapter. Check in order: is the light on the adapter lit — most OBD sockets are unpowered until the ignition is at ON; then range, so sit in the car before scanning. {next} A BLE adapter does not need, and should not have, pairing in system settings; that route does not work.",
+  "@connectBleEmptyScan": {
+    "description": "{next} is one whole sentence, either connectBleEmptyScanNextClassic or connectBleEmptyScanNextWifi, chosen by whether this host has Bluetooth Classic.",
+    "placeholders": {
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "connectBleEmptyScanNextClassic": "Last, check the spec on the box: if it says 2.0 or 3.0 that is Bluetooth Classic, which never appears in this list, so use Bluetooth Classic above instead.",
+  "@connectBleEmptyScanNextClassic": {
+    "description": "A Classic adapter can never appear in a BLE scan, so an empty result has to offer that branch."
+  },
+  "connectBleEmptyScanNextWifi": "Last, check the spec on the box: if it says 2.0/3.0, or Wi‑Fi only, try Wi‑Fi instead (this host does not offer Bluetooth Classic).",
+  "connectBlePermissionDeniedForever": "Bluetooth permission is permanently denied. The system will not ask again, so turn it on in app settings.",
+  "connectBlePermissionNeeded": "Bluetooth permission is needed to search.",
+  "connectBleScan": "Search for BLE devices",
+  "connectBleScanning": "Searching…",
+  "connectBleUnavailableHost": "Bluetooth LE is not available on this host yet",
+  "connectBluetoothOff": "Bluetooth is off. Turn Bluetooth on in system settings first.",
+  "connectBluetoothPermissionDeniedForever": "Bluetooth permission is permanently denied. Turn it on in system settings, then try again.",
+  "@connectBluetoothPermissionDeniedForever": {
+    "description": "Bonded-adapter list. Names Bluetooth: listing a bonded adapter never asks for location, so location can not be the permission that was refused here."
+  },
+  "connectBluetoothPermissionNeededForPairedList": "Bluetooth permission is needed to list paired adapters.",
+  "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
+  "connectCancel": "Cancel",
+  "connectClassicEmptyLinuxPort": "No Bluetooth serial port (/dev/rfcomm*) found. Pair the ELM327 with BlueZ first, then create an RFCOMM TTY with rfcomm bind (or the equivalent) and try again.",
+  "connectClassicEmptyPaired": "No paired adapter found. Pair it in the system Bluetooth settings first (the code for most ELM327s is 1234 or 0000).",
+  "connectClassicEmptyWindowsPort": "No Bluetooth serial port (COMx) found. Pair the ELM327 in the Windows Bluetooth settings first, and check that Device Manager shows “Standard Serial over Bluetooth link”.",
+  "connectClassicListLinuxPort": "This lists the Bluetooth serial ports BlueZ has bound (/dev/rfcomm* or the equivalent). An empty list means the system has not created an RFCOMM node yet, not that the app is broken.",
+  "@connectClassicListLinuxPort": {
+    "description": "An empty port list is a system state, not an app fault. Serial hosts never list headphones."
+  },
+  "connectClassicListPaired": "This lists every device paired with the system — headphones and speakers included, with the ones that look like adapters first. If you pick the wrong one, press Cancel rather than waiting for it to fail; you can pick another straight away.",
+  "connectClassicListWindowsPort": "This lists the COM ports associated with Bluetooth (“Standard Serial over Bluetooth link”). An empty list means the system has not created a virtual serial port yet, not that the app is broken.",
+  "connectClassicUnavailableHost": "Bluetooth Classic (SPP) is currently available on Android, macOS (IOBluetooth RFCOMM), Windows (COM) and Linux (/dev/rfcomm*)",
+  "@connectClassicUnavailableHost": {
+    "description": "Why the Classic card is greyed out on a host with no SPP path. Keep currently: the host list changes."
+  },
+  "connectClassicUnavailableIos": "iOS does not open Bluetooth SPP to third-party apps",
+  "@connectClassicUnavailableIos": {
+    "description": "iOS only. A permanent OS limit, not a missing feature."
+  },
+  "connectConnect": "Connect",
+  "connectDemoBody": "Simulates a 2.0 L turbocharged four-cylinder engine through idle, acceleration, cruise and deceleration cycles, with signals that stay physically related to each other (engine speed drops on a gearshift while road speed keeps rising). Fault codes, VIN reads and fastMode batch queries all work in full.",
+  "connectDemoStart": "Start the simulator",
+  "connectHandshakeTitle": "ELM327 initialisation",
+  "connectHandshakeTitleLastAttempt": "ELM327 initialisation (last attempt)",
+  "@connectHandshakeTitleLastAttempt": {
+    "description": "Past tense, so a panel full of green rows cannot be read as the current connection."
   },
   "connectHeadline": "Choose a connection",
-  "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
-  "settingsHeadline": "Settings",
-  "startupChecking": "Checking local share cache and telemetry records",
-  "startupCannotComplete": "Cannot finish startup checks",
-  "@startupCannotComplete": {
-    "description": "Retryable startup failure title. Distinct from startupChecking (in-progress) and startupRestartRequired (must quit)."
-  },
-  "startupRetry": "Retry",
-  "startupRestartRequired": "Restart required to continue safely",
-  "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
-  "startupRestartHint": "Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.",
-  "languageSaveFailed": "Could not save the language. Try again.",
-  "appearanceSectionTitle": "Appearance",
-  "telemetryStatusStale": "Data is stale",
-  "@telemetryStatusStale": {
-    "description": "A live reading that has stopped updating. Not an error and not a fresh value."
-  },
-  "telemetryStatusUnsupported": "The controller answered that it does not support this",
-  "@telemetryStatusUnsupported": {
-    "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
-  },
-  "telemetryStatusNoAnswer": "No answer — will retry",
-  "@telemetryStatusNoAnswer": {
-    "description": "Silence, not a refusal. Must never read as unsupported."
-  },
-  "telemetryStatusFormulaError": "Formula error",
-  "telemetryStatusBusError": "Bus error",
-  "telemetryStatusHeaderMismatch": "Header does not match this bus",
-  "telemetryStatusUnsafeServiceRefusal": "Not a read-only query — nothing was sent",
-  "@telemetryStatusUnsafeServiceRefusal": {
-    "description": "The app refused to transmit. Says what did NOT happen."
-  },
-  "telemetryEndedByUser": "Stopped by you",
-  "telemetryEndedByDisconnect": "Stopped when the connection dropped",
-  "telemetryEndedBySessionReplacement": "The connection session was replaced",
-  "telemetryEndedByBackground": "Stopped when Telltale went to the background",
-  "telemetryEndedByDurationLimit": "Reached the {minutes}-minute limit",
-  "@telemetryEndedByDurationLimit": {
-    "description": "{minutes} comes from telemetryRecorderDurationLimit; never spell the number in the copy.",
+  "connectLastAdapterConnect": "Connect now",
+  "connectLastAdapterForget": "Forget",
+  "connectLastAdapterTitle": "Last adapter used",
+  "connectOpenAppSettings": "Open app settings",
+  "connectOpenSystemSettings": "Open system settings",
+  "connectOpeningConnection": "Opening the connection…",
+  "connectPairedPill": "Paired",
+  "connectQuestionBle": "Does the box, the shop listing or the device name say BLE, 4.0 or 5.0?",
+  "connectQuestionClassic": "Neither — an older one, with 2.0 or 3.0 printed on the box?",
+  "connectQuestionWifiDesktop": "Is there a new network in the Wi-Fi list on the system (something like V-LINK or WiFi_OBDII)?",
+  "connectQuestionWifiPhone": "Is there a new network in the Wi-Fi list on the phone (something like V-LINK or WiFi_OBDII)?",
+  "connectSearchAgain": "Search again",
+  "connectSignalStrength": "Signal strength {bars}/{total}",
+  "@connectSignalStrength": {
+    "description": "Semantics label for the signal meter. {total} comes from the number of bars drawn, not from prose.",
     "placeholders": {
-      "minutes": {
+      "bars": {
+        "type": "int"
+      },
+      "total": {
         "type": "int"
       }
     }
   },
-  "telemetryEndedBySessionSizeLimit": "This recording reached its size limit",
-  "telemetryEndedByLibrarySizeLimit": "Local recording storage is full",
-  "telemetryEndedByStorageBackpressure": "Storage could not keep up",
-  "telemetryEndedByConfigurationChanged": "The PID selection changed",
-  "telemetryEndedByStorageFailure": "Saving failed",
-  "telemetryEndedByRecoveredAfterInterruption": "Recovered after the last interruption",
-  "telemetryStartRecording": "Recording started",
-  "telemetryStartNeedsConnection": "Connect before starting a recording",
-  "telemetryStartNeedsForeground": "Bring Telltale to the foreground before starting a recording",
-  "telemetryStartSpeedUnknown": "Cannot confirm the vehicle is stopped — disconnect first",
-  "@telemetryStartSpeedUnknown": {
-    "description": "Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car."
+  "connectTranscriptKept": "The full transcript of this attempt was kept. Bringing that back helps more than a one-line message.",
+  "@connectTranscriptKept": {
+    "description": "Says the transcript was kept, not that the connection succeeded."
   },
-  "telemetryStartMoving": "Park the vehicle first",
-  "telemetryStartInvalidatedBackground": "Telltale went to the background — no recording started",
-  "telemetryStartInvalidatedDisconnect": "The connection dropped — no recording started",
-  "telemetryStartInvalidatedSessionReplacement": "The connection session was replaced — no recording started",
-  "telemetryStartLibraryGroupLimit": "Local recordings reached the limit of {limit} — export or delete some first",
-  "@telemetryStartLibraryGroupLimit": {
-    "description": "{limit} comes from TelemetryQuota.groupLimit.",
+  "connectWhichIntro": "Never mind the words SPP and GATT. Go by what your adapter does once it is plugged in:",
+  "connectWhichNoteGuessing": "Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.",
+  "@connectWhichNoteGuessing": {
+    "description": "Permission to fail. The fear of picking wrong is what makes somebody close the app instead of tapping something."
+  },
+  "connectWhichNoteIos": "An iPhone can only use Wi-Fi or BLE — an ordinary Bluetooth ELM327 does not work at all on iOS. That is an OS limit, and no other app gets around it.",
+  "connectWhichTitle": "Not sure which to pick?",
+  "@connectWhichTitle": {
+    "description": "Accepts the uncertainty rather than demanding a confident choice. Not Choose your connection type."
+  },
+  "connectWifiHostLabel": "IP address",
+  "connectWifiHostRequired": "Enter the IP address of the adapter.",
+  "connectWifiInstructionsDesktop": "Connect this computer to the Wi-Fi hotspot the adapter broadcasts first, then enter its address. If the system warns that the network cannot reach the internet, choose to stay on it. Desktop systems usually treat the hotspot as the default route; the Android Wi-Fi route binding is not needed.",
+  "connectWifiInstructionsPhone": "Join the Wi-Fi hotspot the adapter broadcasts on the phone first, then enter its address. If the system asks whether to stay on a Wi-Fi network that cannot reach the internet, choose to stay on it. On Android, Telltale tries to pin its traffic to the Wi-Fi route while connected, so mobile data does not take it away.",
+  "connectWifiPortInvalid": "“{value}” is not a valid port. The range is {min}–{max}.",
+  "@connectWifiPortInvalid": {
+    "description": "{value} is what the user typed, echoed back. {min}/{max} come from the range the connect check enforces.",
     "placeholders": {
-      "limit": {
+      "value": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
         "type": "int"
       }
     }
   },
-  "telemetryStartLibraryByteLimit": "Not enough local storage for a recording — export or delete some first",
-  "telemetryStartInvalidConfiguration": "This PID selection cannot be recorded safely — check the definitions",
-  "telemetryStartCannotCreateFile": "Could not create the recording file",
-  "telemetryStartBusy": "Another recording or file operation has not finished",
-  "telemetryRestartToRepairStartup": "Startup cleanup did not finish — restart Telltale to repair the recordings",
-  "@telemetryRestartToRepairStartup": {
-    "description": "Also the startOutcome for restartRequired; one sentence, one key."
+  "connectWifiPortLabel": "Port",
+  "connectWifiPortRequired": "Enter the port (most adapters use {port}).",
+  "@connectWifiPortRequired": {
+    "description": "{port} is WifiTransport.defaultPort. Never spell the number into the sentence.",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
   },
-  "telemetryRestartToRepairSave": "Saving did not finish — restart Telltale to repair the recordings",
-  "telemetryPendingOwnerRecovery": "This process still holds the operation. If it stays here, quit Telltale completely and reopen it",
-  "telemetryStartNeedsActivePid": "Enable at least one PID first",
-  "telemetryStartTooManyPids": "Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first",
-  "@telemetryStartTooManyPids": {
-    "description": "Refers to DerivedEstimates.maxLiveSignals. 'estimated' must never read as 'measured'."
+  "datumStatusAssumptions": "Assumptions",
+  "datumStatusClose": "Close",
+  "datumStatusFollowsData": "Status follows the data",
+  "@datumStatusFollowsData": {
+    "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
   },
-  "telemetryBlockedByRecorder": "Stop and save the recording first",
-  "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
-  "navDashboard": "Dashboard",
-  "@navDashboard": {
-    "description": "Bottom-navigation and rail destination. On screen on every screen, in a five-tab bar; a label that does not fit is ellipsised by the framework, so keep it short enough to render whole at 360dp."
+  "datumStatusFormula": "Formula",
+  "fieldEventBody": "Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.",
+  "@fieldEventBody": {
+    "description": "Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does."
   },
-  "navPid": "PID",
-  "@navPid": {
-    "description": "Navigation destination for the PID manager. PID is an SAE J1979 term and is not translated in either language."
+  "fieldEventEngineStarted": "Engine started",
+  "fieldEventHeading": "Field event markers",
+  "fieldEventIgnitionOn": "Ignition on",
+  "fieldEventMemoryOnly": "Recorded in this session, but the automatic save failed — export the transcript now.",
+  "@fieldEventMemoryOnly": {
+    "description": "Must not read as saved. The event exists only in memory, so the remedy is immediate and explicit."
   },
-  "navDtc": "Fault codes",
-  "@navDtc": {
-    "description": "Navigation destination for the fault-code screen. 'Fault codes' is the spelled-out term the README and glossary use; DTC stays available as the acronym elsewhere. It measures inside the 72dp a fifth of a 360dp bar allows, so the long form ships."
+  "fieldEventRecorded": "Recorded and saved: {marker}",
+  "@fieldEventRecorded": {
+    "description": "Both halves are claims: the event is in the session AND it reached storage.",
+    "placeholders": {
+      "marker": {
+        "type": "String"
+      }
+    }
   },
-  "navPerformance": "Timing",
-  "@navPerformance": {
-    "description": "Navigation destination for the acceleration-timing screen, which times 0 to a target speed. NOT 'Performance': measured in the shipped SpaceGrotesk at 12sp it wants 78.8dp against the 72dp a fifth of a 360dp bar allows, so it would render as 'Performanc…' — and a truncated label is worse than a shorter true one. 'Timing' is what the screen does."
-  },
-  "navSettings": "Settings",
-  "@navSettings": {
-    "description": "Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not."
-  },
+  "fieldEventRoadTestStarted": "Road test started",
+  "fieldEventThrottleBlip": "Throttle blip",
+  "fieldEventUnavailable": "There is no live vehicle connection to record against.",
   "gaugeNoData": "No data",
   "@gaugeNoData": {
     "description": "Spoken and shown when a dial has no value at all. Not zero, and not unsupported."
@@ -141,41 +196,36 @@
       }
     }
   },
-  "datumStatusFollowsData": "Status follows the data",
-  "@datumStatusFollowsData": {
-    "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
+  "languageSaveFailed": "Could not save the language. Try again.",
+  "languageSectionTitle": "Language / 語言",
+  "@languageSectionTitle": {
+    "description": "Bilingual label for the language picker. Options use self-names."
   },
-  "datumStatusFormula": "Formula",
-  "datumStatusAssumptions": "Assumptions",
-  "datumStatusClose": "Close",
-  "fieldEventHeading": "Field event markers",
-  "fieldEventBody": "Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.",
-  "@fieldEventBody": {
-    "description": "Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does."
+  "navDashboard": "Dashboard",
+  "@navDashboard": {
+    "description": "Bottom-navigation and rail destination. On screen on every screen, in a five-tab bar; a label that does not fit is ellipsised by the framework, so keep it short enough to render whole at 360dp."
   },
-  "fieldEventRecorded": "Recorded and saved: {marker}",
-  "@fieldEventRecorded": {
-    "description": "Both halves are claims: the event is in the session AND it reached storage.",
-    "placeholders": {
-      "marker": {
-        "type": "String"
-      }
-    }
+  "navDtc": "Fault codes",
+  "@navDtc": {
+    "description": "Navigation destination for the fault-code screen. 'Fault codes' is the spelled-out term the README and glossary use; DTC stays available as the acronym elsewhere. It measures inside the 72dp a fifth of a 360dp bar allows, so the long form ships."
   },
-  "fieldEventMemoryOnly": "Recorded in this session, but the automatic save failed — export the transcript now.",
-  "@fieldEventMemoryOnly": {
-    "description": "Must not read as saved. The event exists only in memory, so the remedy is immediate and explicit."
+  "navPerformance": "Timing",
+  "@navPerformance": {
+    "description": "Navigation destination for the acceleration-timing screen, which times 0 to a target speed. NOT 'Performance': measured in the shipped SpaceGrotesk at 12sp it wants 78.8dp against the 72dp a fifth of a 360dp bar allows, so it would render as 'Performanc…' — and a truncated label is worse than a shorter true one. 'Timing' is what the screen does."
   },
-  "fieldEventUnavailable": "There is no live vehicle connection to record against.",
-  "fieldEventIgnitionOn": "Ignition on",
-  "fieldEventEngineStarted": "Engine started",
-  "fieldEventThrottleBlip": "Throttle blip",
-  "fieldEventRoadTestStarted": "Road test started",
+  "navPid": "PID",
+  "@navPid": {
+    "description": "Navigation destination for the PID manager. PID is an SAE J1979 term and is not translated in either language."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not."
+  },
+  "recommendedPurchaseDisclosure": "This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.",
+  "@recommendedPurchaseDisclosure": {
+    "description": "Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change."
+  },
   "recommendedPurchaseHeading": "Recommended adapter",
-  "recommendedPurchaseStoreShopee": "Shopee",
-  "@recommendedPurchaseStoreShopee": {
-    "description": "The storefront's own name. Shopee publishes as 蝦皮 in Taiwan and Shopee elsewhere, so each language gets the name its reader can read."
-  },
   "recommendedPurchaseModelLine": "Model {model} · NCC {approval}",
   "@recommendedPurchaseModelLine": {
     "description": "{model} and {approval} are printed on the hardware and never translated.",
@@ -188,8 +238,8 @@
       }
     }
   },
-  "recommendedPurchaseViewOnStore": "View on {store}",
-  "@recommendedPurchaseViewOnStore": {
+  "recommendedPurchaseNoAdapterYet": "No adapter yet? See the recommended one on {store}",
+  "@recommendedPurchaseNoAdapterYet": {
     "placeholders": {
       "store": {
         "type": "String"
@@ -205,18 +255,104 @@
       }
     }
   },
-  "recommendedPurchaseNoAdapterYet": "No adapter yet? See the recommended one on {store}",
-  "@recommendedPurchaseNoAdapterYet": {
+  "recommendedPurchaseShortDisclosureAction": "Full disclosure in Settings",
+  "recommendedPurchaseShortDisclosureLead": "This is an affiliate link, not an adapter certification.",
+  "recommendedPurchaseStoreShopee": "Shopee",
+  "@recommendedPurchaseStoreShopee": {
+    "description": "The storefront's own name. Shopee publishes as 蝦皮 in Taiwan and Shopee elsewhere, so each language gets the name its reader can read."
+  },
+  "recommendedPurchaseViewOnStore": "View on {store}",
+  "@recommendedPurchaseViewOnStore": {
     "placeholders": {
       "store": {
         "type": "String"
       }
     }
   },
-  "recommendedPurchaseDisclosure": "This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.",
-  "@recommendedPurchaseDisclosure": {
-    "description": "Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change."
+  "settingsHeadline": "Settings",
+  "startupCannotComplete": "Cannot finish startup checks",
+  "@startupCannotComplete": {
+    "description": "Retryable startup failure title. Distinct from startupChecking (in-progress) and startupRestartRequired (must quit)."
   },
-  "recommendedPurchaseShortDisclosureLead": "This is an affiliate link, not an adapter certification.",
-  "recommendedPurchaseShortDisclosureAction": "Full disclosure in Settings"
+  "startupChecking": "Checking local share cache and telemetry records",
+  "startupRestartHint": "Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.",
+  "startupRestartRequired": "Restart required to continue safely",
+  "startupRetry": "Retry",
+  "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "telemetryBlockedByRecorder": "Stop and save the recording first",
+  "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
+  "telemetryEndedByBackground": "Stopped when Telltale went to the background",
+  "telemetryEndedByConfigurationChanged": "The PID selection changed",
+  "telemetryEndedByDisconnect": "Stopped when the connection dropped",
+  "telemetryEndedByDurationLimit": "Reached the {minutes}-minute limit",
+  "@telemetryEndedByDurationLimit": {
+    "description": "{minutes} comes from telemetryRecorderDurationLimit; never spell the number in the copy.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryEndedByLibrarySizeLimit": "Local recording storage is full",
+  "telemetryEndedByRecoveredAfterInterruption": "Recovered after the last interruption",
+  "telemetryEndedBySessionReplacement": "The connection session was replaced",
+  "telemetryEndedBySessionSizeLimit": "This recording reached its size limit",
+  "telemetryEndedByStorageBackpressure": "Storage could not keep up",
+  "telemetryEndedByStorageFailure": "Saving failed",
+  "telemetryEndedByUser": "Stopped by you",
+  "telemetryPendingOwnerRecovery": "This process still holds the operation. If it stays here, quit Telltale completely and reopen it",
+  "telemetryRestartToRepairSave": "Saving did not finish — restart Telltale to repair the recordings",
+  "telemetryRestartToRepairStartup": "Startup cleanup did not finish — restart Telltale to repair the recordings",
+  "@telemetryRestartToRepairStartup": {
+    "description": "Also the startOutcome for restartRequired; one sentence, one key."
+  },
+  "telemetryStartBusy": "Another recording or file operation has not finished",
+  "telemetryStartCannotCreateFile": "Could not create the recording file",
+  "telemetryStartInvalidConfiguration": "This PID selection cannot be recorded safely — check the definitions",
+  "telemetryStartInvalidatedBackground": "Telltale went to the background — no recording started",
+  "telemetryStartInvalidatedDisconnect": "The connection dropped — no recording started",
+  "telemetryStartInvalidatedSessionReplacement": "The connection session was replaced — no recording started",
+  "telemetryStartLibraryByteLimit": "Not enough local storage for a recording — export or delete some first",
+  "telemetryStartLibraryGroupLimit": "Local recordings reached the limit of {limit} — export or delete some first",
+  "@telemetryStartLibraryGroupLimit": {
+    "description": "{limit} comes from TelemetryQuota.groupLimit.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStartMoving": "Park the vehicle first",
+  "telemetryStartNeedsActivePid": "Enable at least one PID first",
+  "telemetryStartNeedsConnection": "Connect before starting a recording",
+  "telemetryStartNeedsForeground": "Bring Telltale to the foreground before starting a recording",
+  "telemetryStartRecording": "Recording started",
+  "telemetryStartSpeedUnknown": "Cannot confirm the vehicle is stopped — disconnect first",
+  "@telemetryStartSpeedUnknown": {
+    "description": "Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car."
+  },
+  "telemetryStartTooManyPids": "Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first",
+  "@telemetryStartTooManyPids": {
+    "description": "Refers to DerivedEstimates.maxLiveSignals. 'estimated' must never read as 'measured'."
+  },
+  "telemetryStatusBusError": "Bus error",
+  "telemetryStatusFormulaError": "Formula error",
+  "telemetryStatusHeaderMismatch": "Header does not match this bus",
+  "telemetryStatusNoAnswer": "No answer — will retry",
+  "@telemetryStatusNoAnswer": {
+    "description": "Silence, not a refusal. Must never read as unsupported."
+  },
+  "telemetryStatusStale": "Data is stale",
+  "@telemetryStatusStale": {
+    "description": "A live reading that has stopped updating. Not an error and not a fresh value."
+  },
+  "telemetryStatusUnsafeServiceRefusal": "Not a read-only query — nothing was sent",
+  "@telemetryStatusUnsafeServiceRefusal": {
+    "description": "The app refused to transmit. Says what did NOT happen."
+  },
+  "telemetryStatusUnsupported": "The controller answered that it does not support this",
+  "@telemetryStatusUnsupported": {
+    "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
+  }
 }

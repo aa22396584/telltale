@@ -14,13 +14,21 @@
 /// app is broken", which is the one conclusion that helps nobody.
 library;
 
+// The guidance functions take an AppLocalizations since these strings moved
+// into the ARBs. `zh` here is Traditional Chinese, the language every
+// assertion below was written against — the assertions are unchanged; only
+// the calls gained the argument.
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 
 void main() {
+  final zh = lookupAppLocalizations(traditionalChineseLocale);
   test('the empty-scan guidance names the causes rather than the symptom', () {
-    final text = bleEmptyScanGuidance(classicAvailable: true);
+    final text = bleEmptyScanGuidance(zh, classicAvailable: true);
 
     expect(text, isNotEmpty);
 
@@ -45,7 +53,7 @@ void main() {
   });
 
   test('hosts without Classic are not sent to the greyed-out Classic card', () {
-    final text = bleEmptyScanGuidance(classicAvailable: false);
+    final text = bleEmptyScanGuidance(zh, classicAvailable: false);
     expect(text.contains('改用上面的 Bluetooth Classic'), isFalse);
     expect(text.contains('Wi‑Fi') || text.contains('Wi-Fi'), isTrue);
     expect(text.contains('未開放 Bluetooth Classic'), isTrue);
@@ -54,7 +62,7 @@ void main() {
   test('it does not merely restate that the list is empty', () {
     // "找不到裝置" alone is the failure this test exists to prevent: it tells
     // the user something they can already see, and nothing they can act on.
-    final text = bleEmptyScanGuidance(classicAvailable: true);
+    final text = bleEmptyScanGuidance(zh, classicAvailable: true);
     expect(text.length, greaterThan(30),
         reason: 'a one-line restatement of the empty list is not guidance');
   });
