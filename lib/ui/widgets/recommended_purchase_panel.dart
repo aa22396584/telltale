@@ -6,15 +6,35 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/affiliate/recommended_purchases.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'panel.dart';
 
 typedef OpenRecommendedPurchase = Future<bool> Function(Uri uri);
+
+/// The storefront's own name, in a script the reader can read.
+///
+/// The catalog entry carries 蝦皮, which is the right word in Chinese and an
+/// unreadable one in English — Shopee publishes under both names, so both
+/// ship. An entry this function does not recognise falls back to the catalog's
+/// own label rather than inventing a name for a store nobody has localized:
+/// showing a store's real name in the wrong script is a smaller failure than
+/// sending somebody to a store that is not the one named.
+String recommendedStoreLabel(
+  AppLocalizations l10n,
+  RecommendedPurchase purchase,
+) => switch (purchase.storeLabel) {
+  '蝦皮' => l10n.recommendedPurchaseStoreShopee,
+  _ => purchase.storeLabel,
+};
 
 Future<void> _openPurchase(
   BuildContext context, {
   required RecommendedPurchase purchase,
   required OpenRecommendedPurchase? onOpen,
 }) async {
+  // Captured before the launch completes: the failure is reported in the
+  // language the tap happened in, and nothing reads a context after an await.
+  final l10n = AppLocalizations.of(context);
   final opener = onOpen ?? _launchExternal;
   var ok = false;
   try {
@@ -23,8 +43,15 @@ Future<void> _openPurchase(
     ok = false;
   }
   if (ok || !context.mounted) return;
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text('無法開啟${purchase.storeLabel}連結')));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        l10n.recommendedPurchaseOpenFailed(
+          recommendedStoreLabel(l10n, purchase),
+        ),
+      ),
+    ),
+  );
 }
 
 Future<bool> _launchExternal(Uri uri) =>
@@ -39,10 +66,11 @@ class RecommendedPurchasePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeading('推薦轉接器'),
+        SectionHeading(l10n.recommendedPurchaseHeading),
         for (final purchase in RecommendedPurchases.entries) ...[
           Panel(
             child: Column(
@@ -51,12 +79,19 @@ class RecommendedPurchasePanel extends StatelessWidget {
                 Text(purchase.productLabel, style: context.texts.titleSmall),
                 const SizedBox(height: Spacing.xs),
                 Text(
-                  '型號 ${purchase.model} · NCC ${purchase.radioApproval}',
+                  l10n.recommendedPurchaseModelLine(
+                    purchase.model,
+                    purchase.radioApproval,
+                  ),
                   style: context.texts.bodySmall,
                 ),
                 const SizedBox(height: Spacing.md),
+                // Regulated copy. Every qualifier in it is load-bearing:
+                // "may pay", "not an adapter certification", "not a purchase
+                // guarantee", and the instruction to check the model and NCC
+                // number first. A shorter translation is a weaker disclosure.
                 Text(
-                  RecommendedPurchases.disclosure,
+                  l10n.recommendedPurchaseDisclosure,
                   style: context.texts.bodySmall,
                 ),
                 const SizedBox(height: Spacing.lg),
@@ -70,7 +105,11 @@ class RecommendedPurchasePanel extends StatelessWidget {
                       onOpen: onOpen,
                     ),
                     icon: const Icon(Icons.storefront_outlined, size: 18),
-                    label: Text('在${purchase.storeLabel}查看'),
+                    label: Text(
+                      l10n.recommendedPurchaseViewOnStore(
+                        recommendedStoreLabel(l10n, purchase),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -99,6 +138,7 @@ class RecommendedPurchaseLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -107,16 +147,20 @@ class RecommendedPurchaseLink extends StatelessWidget {
             key: Key('recommended_purchase_link_${purchase.id}'),
             onPressed: () =>
                 _openPurchase(context, purchase: purchase, onOpen: onOpen),
-            child: Text('還沒有轉接器？在${purchase.storeLabel}看推薦款'),
+            child: Text(
+              l10n.recommendedPurchaseNoAdapterYet(
+                recommendedStoreLabel(l10n, purchase),
+              ),
+            ),
           ),
         Text(
-          RecommendedPurchases.shortDisclosureLead,
+          l10n.recommendedPurchaseShortDisclosureLead,
           style: context.texts.bodySmall,
         ),
         TextButton(
           key: const Key('recommended_purchase_open_settings'),
           onPressed: onOpenDisclosure,
-          child: const Text(RecommendedPurchases.shortDisclosureAction),
+          child: Text(l10n.recommendedPurchaseShortDisclosureAction),
         ),
       ],
     );
