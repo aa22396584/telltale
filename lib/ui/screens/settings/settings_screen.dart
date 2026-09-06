@@ -30,6 +30,7 @@ import '../../widgets/language_picker.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../connect/connect_screen.dart';
 import 'gauge_skin_copy.dart';
+import 'vehicle_profile_copy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -485,7 +486,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           selected: profile.fuelType == fuel,
                           onSelected: (_) =>
                               update(profile.copyWith(fuelType: fuel)),
-                          label: Text(fuel.label),
+                          label: Text(fuelTypeLabel(l10n, fuel)),
                           showCheckmark: false,
                           selectedColor: palette.accent.withValues(alpha: 0.16),
                           labelStyle: context.texts.labelMedium?.copyWith(
@@ -519,7 +520,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           selected: profile.drivetrain == drivetrain,
                           onSelected: (_) =>
                               update(profile.copyWith(drivetrain: drivetrain)),
-                          label: Text(drivetrain.label),
+                          label: Text(drivetrainLabel(l10n, drivetrain)),
                           showCheckmark: false,
                           selectedColor: palette.accent.withValues(alpha: 0.16),
                           labelStyle: context.texts.labelMedium?.copyWith(

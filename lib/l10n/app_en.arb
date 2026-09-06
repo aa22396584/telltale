@@ -2767,5 +2767,93 @@
   "telemetrySourceFieldApp": "Field app connection",
   "@telemetrySourceFieldApp": {
     "description": "Where a recorded telemetry session came from: an ordinary connection made by the field build to a real adapter."
+  },
+  "fuelTypeGasoline": "Petrol",
+  "@fuelTypeGasoline": {
+    "description": "Fuel type in the vehicle profile. British 'petrol' rather than American 'gas', because 'gas' also means LPG to many readers and this list contains LPG."
+  },
+  "fuelTypeDiesel": "Diesel",
+  "fuelTypeLpg": "LPG",
+  "@fuelTypeLpg": {
+    "description": "Liquefied petroleum gas. The abbreviation is the common name in English; do not expand it."
+  },
+  "fuelTypeEthanolE85": "E85 ethanol",
+  "drivetrainFwd": "Front-wheel drive",
+  "drivetrainRwd": "Rear-wheel drive",
+  "drivetrainAwd": "All-wheel drive",
+  "assumptionFieldMass": "Mass",
+  "@assumptionFieldMass": {
+    "description": "A vehicle parameter an estimate rests on: the vehicle's mass including the driver."
+  },
+  "assumptionFieldDragCoefficient": "Cd",
+  "@assumptionFieldDragCoefficient": {
+    "description": "Drag coefficient. The symbol is the same in every language; do not translate or expand it."
+  },
+  "assumptionFieldFrontalArea": "Frontal area",
+  "assumptionFieldRollingResistance": "Rolling resistance",
+  "assumptionFieldDrivetrainEfficiency": "Drivetrain efficiency",
+  "assumptionFieldFuelType": "Fuel",
+  "assumptionFieldStoichAfr": "AFR",
+  "@assumptionFieldStoichAfr": {
+    "description": "Stoichiometric air-fuel ratio. The abbreviation is standard; do not expand it."
+  },
+  "assumptionFieldFuelDensity": "Density",
+  "assumptionFieldDisplacement": "Displacement",
+  "assumptionFieldVolumetricEfficiency": "VE",
+  "@assumptionFieldVolumetricEfficiency": {
+    "description": "Volumetric efficiency. The abbreviation is standard; do not expand it."
+  },
+  "vehicleFieldOriginGenericDefault": "generic default",
+  "@vehicleFieldOriginGenericDefault": {
+    "description": "Where an assumed parameter came from: nothing about this vehicle, just a value typical of cars. The weakest of the five, and the reader must be able to tell it apart from the others at a glance — it is the difference between an estimate about their car and an estimate about a car."
+  },
+  "vehicleFieldOriginUserEntered": "entered by you",
+  "@vehicleFieldOriginUserEntered": {
+    "description": "Where an assumed parameter came from: the reader typed it in. Not verified by the app, and must not be worded as if it were."
+  },
+  "vehicleFieldOriginOfficialRegistry": "official registry",
+  "@vehicleFieldOriginOfficialRegistry": {
+    "description": "Where an assumed parameter came from: the bundled official vehicle registry data."
+  },
+  "vehicleFieldOriginManufacturerPublication": "manufacturer data",
+  "@vehicleFieldOriginManufacturerPublication": {
+    "description": "Where an assumed parameter came from: a figure the manufacturer published."
+  },
+  "vehicleFieldOriginScientificModel": "model coefficient",
+  "@vehicleFieldOriginScientificModel": {
+    "description": "Where an assumed parameter came from: a coefficient from a physical model rather than from this vehicle. An estimate, and the wording must not suggest a measurement."
+  },
+  "assumptionWithOrigin": "{field} {value} ({origin})",
+  "@assumptionWithOrigin": {
+    "description": "One line of the estimate-assumptions list. The brackets are ASCII here and fullwidth in Chinese; that punctuation is part of the translation, not decoration.",
+    "placeholders": {
+      "field": {"type": "String"},
+      "value": {"type": "String"},
+      "origin": {"type": "String"}
+    }
+  },
+  "assumptionWithoutOrigin": "{field} {value}",
+  "@assumptionWithoutOrigin": {
+    "description": "One line of the estimate-assumptions list, for a parameter that follows from the fuel type and so has no separate origin.",
+    "placeholders": {
+      "field": {"type": "String"},
+      "value": {"type": "String"}
+    }
+  },
+  "assumptionSeparator": "; ",
+  "@assumptionSeparator": {
+    "description": "Joins the assumption lines. English uses a semicolon and a space; Chinese uses the fullwidth semicolon and no space. Using the English one in Chinese, or the reverse, is a defect this project has shipped before."
+  },
+  "datumFormulaHorsepower": "wheelWatts = (m·a + ½ρ·Cd·A·v² + Crr·m·g)·v; engineHp = wheelHp / drivetrainEfficiency",
+  "@datumFormulaHorsepower": {
+    "description": "The power estimate's formula, shown so a reader can check the working. Symbols and operators must not be translated; only the identifier words could be, and are better left as they are."
+  },
+  "datumFormulaFuelRate": "L/h = (MAF g/s) / (AFR × fuel density g/L) × 3600; MAF is either PID 0110 or speed-density (RPM × MAP × displacement × VE / T_K); L/100km = (L/h) / speed_kmh × 100",
+  "@datumFormulaFuelRate": {
+    "description": "The fuel estimate's formula. Only the connecting words are translatable; PID 0110, MAF, MAP, VE and the units are not."
+  },
+  "datumAssumptionsFromRecording": "The estimate uses the vehicle settings as they were when this was recorded.",
+  "@datumAssumptionsFromRecording": {
+    "description": "Shown in the estimate details for a replayed session whose file did not store the parameter list. It must not imply the settings were verified, only that they are the ones in force at record time."
   }
 }

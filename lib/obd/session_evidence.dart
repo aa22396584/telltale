@@ -159,7 +159,7 @@ final class SessionEvidenceMetadata {
         '${_number(profile.displacementL)} L · '
         '${_number(profile.massKg)} kg · '
         'VE ${_number(profile.volumetricEfficiency)}% · '
-        '${profile.fuelType.label} · ${profile.drivetrain.label}',
+        '${profile.fuelType.exportLabel} · ${profile.drivetrain.exportLabel}',
       )
       ..writeln(
         '# 連線開始車輛設定 JSON：'

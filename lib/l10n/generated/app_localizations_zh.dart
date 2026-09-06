@@ -3059,6 +3059,96 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get telemetrySourceFieldApp => '一般 field App 連線';
+
+  @override
+  String get fuelTypeGasoline => '汽油';
+
+  @override
+  String get fuelTypeDiesel => '柴油';
+
+  @override
+  String get fuelTypeLpg => '液化石油氣 (LPG)';
+
+  @override
+  String get fuelTypeEthanolE85 => 'E85 酒精汽油';
+
+  @override
+  String get drivetrainFwd => '前輪驅動';
+
+  @override
+  String get drivetrainRwd => '後輪驅動';
+
+  @override
+  String get drivetrainAwd => '四輪驅動';
+
+  @override
+  String get assumptionFieldMass => '車重';
+
+  @override
+  String get assumptionFieldDragCoefficient => 'Cd';
+
+  @override
+  String get assumptionFieldFrontalArea => '迎風面積';
+
+  @override
+  String get assumptionFieldRollingResistance => '滾動阻力';
+
+  @override
+  String get assumptionFieldDrivetrainEfficiency => '傳動效率';
+
+  @override
+  String get assumptionFieldFuelType => '燃料';
+
+  @override
+  String get assumptionFieldStoichAfr => 'AFR';
+
+  @override
+  String get assumptionFieldFuelDensity => '密度';
+
+  @override
+  String get assumptionFieldDisplacement => '排氣量';
+
+  @override
+  String get assumptionFieldVolumetricEfficiency => 'VE';
+
+  @override
+  String get vehicleFieldOriginGenericDefault => '通用預設';
+
+  @override
+  String get vehicleFieldOriginUserEntered => '手動輸入';
+
+  @override
+  String get vehicleFieldOriginOfficialRegistry => '官方型錄';
+
+  @override
+  String get vehicleFieldOriginManufacturerPublication => '原廠資料';
+
+  @override
+  String get vehicleFieldOriginScientificModel => '模型係數';
+
+  @override
+  String assumptionWithOrigin(String field, String value, String origin) {
+    return '$field $value（$origin）';
+  }
+
+  @override
+  String assumptionWithoutOrigin(String field, String value) {
+    return '$field $value';
+  }
+
+  @override
+  String get assumptionSeparator => '；';
+
+  @override
+  String get datumFormulaHorsepower =>
+      'wheelWatts = (m·a + ½ρ·Cd·A·v² + Crr·m·g)·v; engineHp = wheelHp / drivetrainEfficiency';
+
+  @override
+  String get datumFormulaFuelRate =>
+      'L/h = (MAF g/s) / (AFR × fuel density g/L) × 3600; MAF 可為 PID 0110 或 speed-density（RPM×MAP×排氣量×VE / T_K）; L/100km = (L/h) / speed_kmh × 100';
+
+  @override
+  String get datumAssumptionsFromRecording => '估算使用記錄當下的車輛設定';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6115,4 +6205,94 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get telemetrySourceFieldApp => '一般 field App 連線';
+
+  @override
+  String get fuelTypeGasoline => '汽油';
+
+  @override
+  String get fuelTypeDiesel => '柴油';
+
+  @override
+  String get fuelTypeLpg => '液化石油氣 (LPG)';
+
+  @override
+  String get fuelTypeEthanolE85 => 'E85 酒精汽油';
+
+  @override
+  String get drivetrainFwd => '前輪驅動';
+
+  @override
+  String get drivetrainRwd => '後輪驅動';
+
+  @override
+  String get drivetrainAwd => '四輪驅動';
+
+  @override
+  String get assumptionFieldMass => '車重';
+
+  @override
+  String get assumptionFieldDragCoefficient => 'Cd';
+
+  @override
+  String get assumptionFieldFrontalArea => '迎風面積';
+
+  @override
+  String get assumptionFieldRollingResistance => '滾動阻力';
+
+  @override
+  String get assumptionFieldDrivetrainEfficiency => '傳動效率';
+
+  @override
+  String get assumptionFieldFuelType => '燃料';
+
+  @override
+  String get assumptionFieldStoichAfr => 'AFR';
+
+  @override
+  String get assumptionFieldFuelDensity => '密度';
+
+  @override
+  String get assumptionFieldDisplacement => '排氣量';
+
+  @override
+  String get assumptionFieldVolumetricEfficiency => 'VE';
+
+  @override
+  String get vehicleFieldOriginGenericDefault => '通用預設';
+
+  @override
+  String get vehicleFieldOriginUserEntered => '手動輸入';
+
+  @override
+  String get vehicleFieldOriginOfficialRegistry => '官方型錄';
+
+  @override
+  String get vehicleFieldOriginManufacturerPublication => '原廠資料';
+
+  @override
+  String get vehicleFieldOriginScientificModel => '模型係數';
+
+  @override
+  String assumptionWithOrigin(String field, String value, String origin) {
+    return '$field $value（$origin）';
+  }
+
+  @override
+  String assumptionWithoutOrigin(String field, String value) {
+    return '$field $value';
+  }
+
+  @override
+  String get assumptionSeparator => '；';
+
+  @override
+  String get datumFormulaHorsepower =>
+      'wheelWatts = (m·a + ½ρ·Cd·A·v² + Crr·m·g)·v; engineHp = wheelHp / drivetrainEfficiency';
+
+  @override
+  String get datumFormulaFuelRate =>
+      'L/h = (MAF g/s) / (AFR × fuel density g/L) × 3600; MAF 可為 PID 0110 或 speed-density（RPM×MAP×排氣量×VE / T_K）; L/100km = (L/h) / speed_kmh × 100';
+
+  @override
+  String get datumAssumptionsFromRecording => '估算使用記錄當下的車輛設定';
 }

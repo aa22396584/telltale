@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:torque_obd/core/affiliate/recommended_purchases.dart';
 import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/app_runtime.dart';
 import 'package:torque_obd/state/app_share_coordinator.dart';
@@ -15,6 +15,7 @@ import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 import 'package:torque_obd/ui/widgets/recommended_purchase_panel.dart';
+
 import 'support/localized_app.dart';
 
 class _IdleSession extends ObdSession {
@@ -33,10 +34,33 @@ void main() {
     expect(purchase.radioApproval, 'CCAH22LP5300T8');
     expect(purchase.url, 'https://s.shopee.tw/3LQPiOY7uv');
     expect(purchase.uri.host, 's.shopee.tw');
-    expect(RecommendedPurchases.disclosure, contains('推廣分潤'));
-    expect(RecommendedPurchases.disclosure, contains('不是轉接器認證'));
-    expect(RecommendedPurchases.shortDisclosure, contains('推廣分潤'));
-    expect(RecommendedPurchases.shortDisclosure, contains('完整說明在設定'));
+  });
+
+  test('the disclosure discloses, in both languages', () {
+    // These four claims are the reason the panel is allowed to exist at all:
+    // it names a commission, refuses to read as certification, and says where
+    // the full text is. They are asserted against the shipped ARB copy rather
+    // than a constant, because the constants they used to check had stopped
+    // being rendered and nobody noticed — the guard outlived the thing it
+    // guarded, which is the failure mode this project keeps meeting.
+    //
+    // Literals, not `l10n.recommendedPurchaseDisclosure`, for the usual
+    // reason: reading the same entry the widget reads agrees with itself.
+    final en = lookupAppLocalizations(englishLocale);
+    final zh = lookupAppLocalizations(traditionalChineseLocale);
+
+    expect(en.recommendedPurchaseDisclosure, contains('commission'));
+    expect(
+      en.recommendedPurchaseDisclosure,
+      anyOf(contains('not a certification'), contains('not an adapter certification')),
+    );
+    expect(zh.recommendedPurchaseDisclosure, contains('推廣分潤'));
+    expect(zh.recommendedPurchaseDisclosure, contains('不是轉接器認證'));
+
+    expect(en.recommendedPurchaseShortDisclosureLead, contains('affiliate'));
+    expect(zh.recommendedPurchaseShortDisclosureLead, contains('推廣分潤'));
+    expect(en.recommendedPurchaseShortDisclosureAction, contains('Settings'));
+    expect(zh.recommendedPurchaseShortDisclosureAction, contains('設定'));
   });
 
   testWidgets('panel opens the Shopee URI and shows the disclosure', (

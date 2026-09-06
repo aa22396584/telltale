@@ -64,7 +64,7 @@ abstract final class DerivedEstimates {
         horsepower,
         assumptions: profile == null
             ? null
-            : AvailabilityPolicy.estimateAssumptions(
+            : AvailabilityPolicy.formatAssumptionsForExport(
                 profile,
                 EstimateKind.horsepower,
               ),
@@ -74,7 +74,7 @@ abstract final class DerivedEstimates {
         fuelRate,
         assumptions: profile == null
             ? null
-            : AvailabilityPolicy.estimateAssumptions(
+            : AvailabilityPolicy.formatAssumptionsForExport(
                 profile,
                 EstimateKind.fuel,
               ),

@@ -3453,4 +3453,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get telemetrySourceFieldApp => 'Field app connection';
+
+  @override
+  String get fuelTypeGasoline => 'Petrol';
+
+  @override
+  String get fuelTypeDiesel => 'Diesel';
+
+  @override
+  String get fuelTypeLpg => 'LPG';
+
+  @override
+  String get fuelTypeEthanolE85 => 'E85 ethanol';
+
+  @override
+  String get drivetrainFwd => 'Front-wheel drive';
+
+  @override
+  String get drivetrainRwd => 'Rear-wheel drive';
+
+  @override
+  String get drivetrainAwd => 'All-wheel drive';
+
+  @override
+  String get assumptionFieldMass => 'Mass';
+
+  @override
+  String get assumptionFieldDragCoefficient => 'Cd';
+
+  @override
+  String get assumptionFieldFrontalArea => 'Frontal area';
+
+  @override
+  String get assumptionFieldRollingResistance => 'Rolling resistance';
+
+  @override
+  String get assumptionFieldDrivetrainEfficiency => 'Drivetrain efficiency';
+
+  @override
+  String get assumptionFieldFuelType => 'Fuel';
+
+  @override
+  String get assumptionFieldStoichAfr => 'AFR';
+
+  @override
+  String get assumptionFieldFuelDensity => 'Density';
+
+  @override
+  String get assumptionFieldDisplacement => 'Displacement';
+
+  @override
+  String get assumptionFieldVolumetricEfficiency => 'VE';
+
+  @override
+  String get vehicleFieldOriginGenericDefault => 'generic default';
+
+  @override
+  String get vehicleFieldOriginUserEntered => 'entered by you';
+
+  @override
+  String get vehicleFieldOriginOfficialRegistry => 'official registry';
+
+  @override
+  String get vehicleFieldOriginManufacturerPublication => 'manufacturer data';
+
+  @override
+  String get vehicleFieldOriginScientificModel => 'model coefficient';
+
+  @override
+  String assumptionWithOrigin(String field, String value, String origin) {
+    return '$field $value ($origin)';
+  }
+
+  @override
+  String assumptionWithoutOrigin(String field, String value) {
+    return '$field $value';
+  }
+
+  @override
+  String get assumptionSeparator => '; ';
+
+  @override
+  String get datumFormulaHorsepower =>
+      'wheelWatts = (m·a + ½ρ·Cd·A·v² + Crr·m·g)·v; engineHp = wheelHp / drivetrainEfficiency';
+
+  @override
+  String get datumFormulaFuelRate =>
+      'L/h = (MAF g/s) / (AFR × fuel density g/L) × 3600; MAF is either PID 0110 or speed-density (RPM × MAP × displacement × VE / T_K); L/100km = (L/h) / speed_kmh × 100';
+
+  @override
+  String get datumAssumptionsFromRecording =>
+      'The estimate uses the vehicle settings as they were when this was recorded.';
 }

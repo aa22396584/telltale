@@ -26,15 +26,15 @@ class RecommendedPurchase {
 }
 
 abstract final class RecommendedPurchases {
-  static const disclosure =
-      '這是維護者的推廣分潤連結；符合條件的購買可能產生佣金。'
-      '不是轉接器認證或購買保證。賣場內容與硬體版本可能變更，'
-      '購買前請核對完整型號與 NCC 號碼。你也可以自行搜尋其他通路。';
-
-  /// Connect keeps the catalog off the primary actions; Settings has [disclosure].
-  static const shortDisclosureLead = '這是推廣分潤連結，不是轉接器認證。';
-  static const shortDisclosureAction = '完整說明在設定';
-  static const shortDisclosure = '$shortDisclosureLead$shortDisclosureAction。';
+  // The disclosure used to be four `const` strings here. Nothing has rendered
+  // them since the panel moved onto `recommendedPurchaseDisclosure` and
+  // `recommendedPurchaseShortDisclosureLead` in the ARBs; only a test still
+  // held them up, which made them look load-bearing while the sentences a
+  // reader actually sees went unguarded. A commission disclosure that is dead
+  // code is worse than none: it reads like a promise somebody is keeping.
+  //
+  // The claims they carried are asserted against the shipped copy, in both
+  // languages, in test/recommended_purchases_test.dart.
 
   static const entries = <RecommendedPurchase>[
     RecommendedPurchase(

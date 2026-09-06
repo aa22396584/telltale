@@ -155,6 +155,22 @@ void main() {
       'connectTransportBleTitle',
       'connectTransportClassicTitle',
       'connectTransportWifiTitle',
+      // Engineering symbols in the estimate assumptions. Cd is Cd on every
+      // drag chart ever printed; AFR and VE are the abbreviations a J1979
+      // datasheet uses. Expanding them into Chinese words would make the
+      // details dialog harder to check against the sources it cites, which is
+      // the only reason that dialog exists.
+      'assumptionFieldDragCoefficient',
+      'assumptionFieldStoichAfr',
+      'assumptionFieldVolumetricEfficiency',
+      // Two placeholders and a space. There is nothing here to translate; the
+      // bracketed form, assumptionWithOrigin, is where the punctuation differs
+      // and it is NOT on this list.
+      'assumptionWithoutOrigin',
+      // Arithmetic. The power formula is symbols and identifier names end to
+      // end, with no connecting prose to render — unlike datumFormulaFuelRate,
+      // which has a sentence in the middle and is therefore not listed here.
+      'datumFormulaHorsepower',
     };
     final untranslated = <String>[];
     for (final key in _messageKeys(en)) {

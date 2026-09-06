@@ -6,16 +6,27 @@
 /// places with no widget above them, and a pure-Dart test can then assert both
 /// languages with `lookupAppLocalizations(...)` and no widget pump.
 ///
-/// What deliberately does NOT live here: [DatumStatus.reason],
-/// [DatumStatus.formula] and [DatumStatus.assumptions] keep their Chinese,
+/// What deliberately does NOT live here: the *strings*
+/// [DatumStatus.reason], [DatumStatus.formula] and [DatumStatus.assumptions],
 /// because `AvailabilityPolicy.exportFields` writes them into telemetry
 /// exports. Two people comparing one evidence file cannot do it if its wording
-/// follows a phone setting. [datumReasonText] renders [DatumStatus.reasonCode]
-/// on screen and leaves the exported sentence alone.
+/// follows a phone setting.
+///
+/// That argument is about what gets *stored*, and for a while it was quietly
+/// applied to what gets *shown* as well: `datum_status_badge.dart` rendered the
+/// exported formula and assumptions verbatim, so an English reader who opened
+/// the estimate details dialog got a wall of Chinese. The split
+/// [datumReasonText] already made is now made three times —
+/// [DatumStatus.reasonCode], [DatumStatus.formulaCode] and
+/// [DatumStatus.assumptionFields] are what the screen renders, and the exported
+/// sentences are left alone.
 library;
 
 import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../obd/physics/vehicle_evidence.dart';
+import '../../../obd/physics/vehicle_profile.dart';
+import '../../screens/settings/vehicle_profile_copy.dart';
 import '../telemetry/telemetry_status_copy.dart';
 
 /// One badge word.
@@ -103,3 +114,100 @@ String? datumReasonText(AppLocalizations l10n, DatumStatus status) {
   if (recorded != null) return telemetryStatusLabel(l10n, recorded);
   return status.reason;
 }
+
+/// The formula shown above the assumptions.
+///
+/// Falls back to the exported string when a producer has not been given a code,
+/// on the same reasoning as [datumReasonText]: a formula in the wrong language
+/// is still checkable arithmetic, and showing nothing would be worse.
+String? datumFormulaText(AppLocalizations l10n, DatumStatus status) =>
+    switch (status.formulaCode) {
+      DatumFormula.horsepower => l10n.datumFormulaHorsepower,
+      DatumFormula.fuelRate => l10n.datumFormulaFuelRate,
+      null => status.formula,
+    };
+
+/// What an estimate rests on, one parameter per clause.
+///
+/// Returns null rather than an empty string when there is nothing structured to
+/// show, so the caller can drop the whole section instead of printing a heading
+/// over a blank.
+///
+/// The drivetrain's name is appended to its efficiency here rather than being
+/// baked into [VehicleAssumption.value], because it is a word and words belong
+/// to the reader's language. [profile] is needed for exactly that and for the
+/// fuel's name; everything else in the list is already a number with a unit.
+String? assumptionsText(
+  AppLocalizations l10n,
+  DatumStatus status,
+  VehicleProfile? profile,
+) {
+  if (status.assumptionFields.isEmpty) {
+    // The app speaking for itself, keyed.
+    if (status.assumptionNote == DatumAssumptionNote.recordedVehicleSettings) {
+      return l10n.datumAssumptionsFromRecording;
+    }
+    // Anything left is a sentence a recording stored. It is a quotation from an
+    // evidence file, in whatever language that file was written, and it is
+    // shown as written — translating a record would be inventing one.
+    return status.assumptions;
+  }
+  final parts = status.assumptionFields.map((assumption) {
+    final field = assumptionFieldLabel(l10n, assumption.field);
+    final value = switch (assumption.field) {
+      AssumptionField.fuelType => profile == null
+          ? assumption.value
+          : fuelTypeLabel(l10n, profile.fuelType),
+      AssumptionField.drivetrainEfficiency => profile == null
+          ? assumption.value
+          : '${assumption.value} ${drivetrainLabel(l10n, profile.drivetrain)}',
+      _ => assumption.value,
+    };
+    final origin = assumption.origin;
+    return origin == null
+        ? l10n.assumptionWithoutOrigin(field, value)
+        : l10n.assumptionWithOrigin(
+            field,
+            value,
+            vehicleFieldOriginLabel(l10n, origin),
+          );
+  });
+  return parts.join(l10n.assumptionSeparator);
+}
+
+/// One vehicle parameter's name.
+String assumptionFieldLabel(AppLocalizations l10n, AssumptionField field) =>
+    switch (field) {
+      AssumptionField.mass => l10n.assumptionFieldMass,
+      AssumptionField.dragCoefficient => l10n.assumptionFieldDragCoefficient,
+      AssumptionField.frontalArea => l10n.assumptionFieldFrontalArea,
+      AssumptionField.rollingResistance =>
+        l10n.assumptionFieldRollingResistance,
+      AssumptionField.drivetrainEfficiency =>
+        l10n.assumptionFieldDrivetrainEfficiency,
+      AssumptionField.fuelType => l10n.assumptionFieldFuelType,
+      AssumptionField.stoichAfr => l10n.assumptionFieldStoichAfr,
+      AssumptionField.fuelDensity => l10n.assumptionFieldFuelDensity,
+      AssumptionField.displacement => l10n.assumptionFieldDisplacement,
+      AssumptionField.volumetricEfficiency =>
+        l10n.assumptionFieldVolumetricEfficiency,
+    };
+
+/// Where a parameter's value came from.
+///
+/// These five are not interchangeable and must not be smoothed into each other
+/// in translation. "Generic default" means the app knows nothing about this
+/// vehicle; "official registry" means it matched a record. A reader deciding
+/// whether to trust a power figure is deciding on exactly this word.
+String vehicleFieldOriginLabel(
+  AppLocalizations l10n,
+  VehicleFieldOrigin origin,
+) => switch (origin) {
+  VehicleFieldOrigin.genericDefault => l10n.vehicleFieldOriginGenericDefault,
+  VehicleFieldOrigin.userEntered => l10n.vehicleFieldOriginUserEntered,
+  VehicleFieldOrigin.officialRegistry =>
+    l10n.vehicleFieldOriginOfficialRegistry,
+  VehicleFieldOrigin.manufacturerPublication =>
+    l10n.vehicleFieldOriginManufacturerPublication,
+  VehicleFieldOrigin.scientificModel => l10n.vehicleFieldOriginScientificModel,
+};

@@ -244,7 +244,7 @@ void main() {
     const profile = VehicleProfile(massKg: 1280);
     final hp = freezePidDefinition(
       DerivedEstimates.horsepower,
-      assumptions: AvailabilityPolicy.estimateAssumptions(
+      assumptions: AvailabilityPolicy.formatAssumptionsForExport(
         profile,
         EstimateKind.horsepower,
       ),
@@ -305,7 +305,7 @@ void main() {
     final confirmed = AvailabilityPolicy.forRecordedEvent(
       definition: freezePidDefinition(
         DerivedEstimates.horsepower,
-        assumptions: AvailabilityPolicy.estimateAssumptions(
+        assumptions: AvailabilityPolicy.formatAssumptionsForExport(
           const VehicleProfile(massKg: 1280, isConfirmed: true),
           EstimateKind.horsepower,
         ),
@@ -318,7 +318,7 @@ void main() {
     final unconfirmed = AvailabilityPolicy.forRecordedEvent(
       definition: freezePidDefinition(
         DerivedEstimates.horsepower,
-        assumptions: AvailabilityPolicy.estimateAssumptions(
+        assumptions: AvailabilityPolicy.formatAssumptionsForExport(
           profile,
           EstimateKind.horsepower,
         ),

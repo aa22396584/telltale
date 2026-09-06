@@ -8,6 +8,7 @@ import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../panel.dart';
 import 'datum_status_copy.dart';
+import '../../../obd/physics/vehicle_profile.dart';
 
 class DatumStatusBadge extends StatelessWidget {
   const DatumStatusBadge({required this.status, this.dense = true, super.key});
@@ -40,6 +41,7 @@ Future<void> showDatumStatusDetails(
   required String title,
   required DatumStatus status,
   List<DatumStatus> extra = const [],
+  VehicleProfile? profile,
 }) {
   final items = [status, ...extra];
   final l10n = AppLocalizations.of(context);
@@ -67,21 +69,26 @@ Future<void> showDatumStatusDetails(
                   const SizedBox(height: Spacing.sm),
                   Text(datumReasonText(l10n, items[index])!),
                 ],
-                if (items[index].formula != null) ...[
+                // Rendered from the codes, not from the exported strings.
+                // Showing `formula` and `assumptions` verbatim is what put a
+                // block of Traditional Chinese into the English build: those
+                // two are written for the telemetry file, where the wording is
+                // deliberately frozen so two readers can compare one document.
+                if (datumFormulaText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
                     l10n.datumStatusFormula,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  Text(items[index].formula!),
+                  Text(datumFormulaText(l10n, items[index])!),
                 ],
-                if (items[index].assumptions != null) ...[
+                if (assumptionsText(l10n, items[index], profile) != null) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
                     l10n.datumStatusAssumptions,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  Text(items[index].assumptions!),
+                  Text(assumptionsText(l10n, items[index], profile)!),
                 ],
                 if (items[index].nextStep != null) ...[
                   const SizedBox(height: Spacing.md),
