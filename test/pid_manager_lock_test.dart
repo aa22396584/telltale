@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:torque_obd/state/pid_mutation_lock.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/pids/pid_manager_screen.dart';
+import 'support/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,8 +26,8 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: MediaQuery(
+        child: localizedMaterialApp(
+          home: const MediaQuery(
             data: MediaQueryData(textScaler: TextScaler.linear(2)),
             child: PidManagerScreen(),
           ),
@@ -71,7 +72,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: PidManagerScreen()),
+        child: localizedMaterialApp(home: const PidManagerScreen()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));

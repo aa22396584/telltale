@@ -14,7 +14,6 @@
 /// its real body arms a one-second heartbeat `Timer` that outlives the test.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,6 +27,7 @@ import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
+import 'localized_app.dart';
 
 class _ConnectedSession extends ObdSession {
   @override
@@ -86,7 +86,7 @@ Future<void> pumpDashboard(
         vehicleProfileProvider.overrideWith(() => _FixedProfile(profile)),
         telemetryProvider.overrideWith((ref) => Stream.value(snapshot)),
       ],
-      child: MaterialApp(
+      child: localizedMaterialApp(
         theme: AppTheme.dark(),
         home: const DashboardScreen(),
       ),

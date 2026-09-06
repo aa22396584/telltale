@@ -43,7 +43,7 @@ void main() {
   ) async {
     Uri? opened;
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: RecommendedPurchasePanel(
@@ -72,7 +72,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: RecommendedPurchasePanel(onOpen: (_) async => false),
@@ -89,7 +89,7 @@ void main() {
 
   testWidgets('a throwing opener still shows the snackbar', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: RecommendedPurchasePanel(

@@ -11,6 +11,7 @@ import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_store.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_startup_recovery_notice.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets('startup notice labels damaged data and can be dismissed', (
@@ -59,8 +60,8 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(body: TelemetryStartupRecoveryNotice()),
+        child: localizedMaterialApp(
+          home: const Scaffold(body: TelemetryStartupRecoveryNotice()),
         ),
       ),
     );

@@ -10,7 +10,6 @@
 /// having no snapshot at all.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,6 +21,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
+import 'support/localized_app.dart';
 
 class _FixedScan extends DtcScanNotifier {
   _FixedScan(this.initial);
@@ -82,7 +82,7 @@ Future<void> _pump(WidgetTester tester, List<FreezeFrame> frames) async {
             ))),
         obdSessionProvider.overrideWith(_FixedSession.new),
       ],
-      child: MaterialApp(theme: AppTheme.dark(), home: const DtcScreen()),
+      child: localizedMaterialApp(theme: AppTheme.dark(), home: const DtcScreen()),
     ),
   );
   await tester.pump(const Duration(milliseconds: 50));

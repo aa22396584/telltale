@@ -20,6 +20,7 @@ import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:torque_obd/ui/screens/dashboard/telemetry_workspace.dart';
 import 'package:torque_obd/ui/widgets/telemetry/live_trend_card.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_recorder_panel.dart';
+import 'support/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +48,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: LiveTrendCard(
@@ -87,7 +88,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: LiveTrendCard(
@@ -153,7 +154,7 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const DashboardScreen(),
         ),
@@ -250,7 +251,7 @@ void main() {
               ),
             ),
           ],
-          child: MaterialApp(
+          child: localizedMaterialApp(
             theme: AppTheme.dark(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
@@ -365,7 +366,7 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(

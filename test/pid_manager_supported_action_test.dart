@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
 import 'package:torque_obd/ui/screens/pids/pid_manager_screen.dart';
+import 'support/localized_app.dart';
 
 ObdCapabilitySummary _summary({
   ObdCapabilityDiscoveryPhase phase =
@@ -83,7 +84,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         home: MediaQuery(
           data: const MediaQueryData(textScaler: TextScaler.linear(2)),
           child: Scaffold(

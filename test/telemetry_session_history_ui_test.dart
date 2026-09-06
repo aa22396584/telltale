@@ -11,6 +11,7 @@ import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_export_sheet.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_session_detail_screen.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
+import 'support/localized_app.dart';
 
 TelemetrySessionLibrary _library() => TelemetrySessionLibrary(
   sessions: [
@@ -131,7 +132,7 @@ TelemetryReplayResult _replay() => TelemetryReplayResult.success(
   ),
 );
 
-Widget _scaled(Widget child) => MaterialApp(
+Widget _scaled(Widget child) => localizedMaterialApp(
   home: MediaQuery(
     data: const MediaQueryData(textScaler: TextScaler.linear(2)),
     child: child,

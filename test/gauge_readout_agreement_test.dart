@@ -20,9 +20,10 @@ import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/telemetry.dart';
 import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
+import 'support/localized_app.dart';
 
 Future<String> _spoken(WidgetTester tester, double value) async {
-  await tester.pumpWidget(MaterialApp(
+  await tester.pumpWidget(localizedMaterialApp(
     theme: AppTheme.dark(),
     home: Scaffold(
       body: Center(

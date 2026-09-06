@@ -8,6 +8,7 @@ import 'package:torque_obd/state/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/ui/shell.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_status_copy.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets('recording strip stays above every compact destination', (
@@ -212,7 +213,7 @@ Future<void> _pumpShell(
           () => _FixedProgressNotifier(progress),
         ),
       ],
-      child: MaterialApp.router(
+      child: localizedMaterialAppRouter(
         theme: AppTheme.dark(),
         routerConfig: router,
         builder: (context, child) => MediaQuery(

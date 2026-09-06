@@ -12,6 +12,7 @@ import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/widgets/powertrain_profile_confirm_banner.dart';
 
 import 'support/powertrain_snapshot_fixture.dart';
+import 'support/localized_app.dart';
 
 const _profileId = 'banner-profile';
 
@@ -121,7 +122,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const Scaffold(body: PowertrainProfileConfirmBanner()),
         ),

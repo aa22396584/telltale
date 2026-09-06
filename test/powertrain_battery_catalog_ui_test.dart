@@ -11,6 +11,7 @@ import 'package:torque_obd/state/pid_mutation_lock.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/screens/pids/powertrain_battery_catalog_screen.dart';
+import 'support/localized_app.dart';
 
 const _catalogJson =
     '{"schema_version":3,"profiles":[{"id":"mg-zs-ev","display_name":"MG ZS EV","descriptio'
@@ -150,7 +151,7 @@ Future<ProviderContainer> _pump(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
+      child: localizedMaterialApp(
         theme: AppTheme.dark(),
         home: const PowertrainBatteryCatalogScreen(),
       ),

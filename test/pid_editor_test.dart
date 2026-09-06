@@ -22,6 +22,7 @@ import 'package:torque_obd/state/pid_mutation_lock.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/pids/pid_editor_screen.dart';
 import 'package:torque_obd/ui/screens/pids/pid_manager_screen.dart';
+import 'support/localized_app.dart';
 
 /// A custom PID as an older build stored it: a redline the editor has no field
 /// for, and a header spelled with the spaces the field used to accept.
@@ -72,7 +73,7 @@ Widget _host(ProviderContainer container, String pidId) {
   );
   return UncontrolledProviderScope(
     container: container,
-    child: MaterialApp.router(routerConfig: router),
+    child: localizedMaterialAppRouter(routerConfig: router),
   );
 }
 
@@ -141,7 +142,7 @@ void main() {
     );
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(routerConfig: router),
+      child: localizedMaterialAppRouter(routerConfig: router),
     ));
     // Pumped, not settled: the manager watches the telemetry stream, whose
     // periodic timer never lets `pumpAndSettle` finish.

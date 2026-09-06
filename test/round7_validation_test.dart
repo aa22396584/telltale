@@ -26,6 +26,7 @@ import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/formula_engine.dart';
 import 'package:torque_obd/obd/transport/demo_transport.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
+import 'support/localized_app.dart';
 void main() {
   test('non-finite bounds are refused', () {
     for (final bad in ['NaN', 'Infinity', '-Infinity']) {
@@ -127,7 +128,7 @@ void main() {
     // will be retried — and `excludeSemantics: true` meant a screen reader
     // heard "無資料" for all of them.
     final handle = tester.ensureSemantics();
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(localizedMaterialApp(
       theme: AppTheme.dark(),
       home: const Scaffold(
         body: SizedBox.square(

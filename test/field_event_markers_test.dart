@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/widgets/field_event_markers.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets('a parked passenger can stamp a preset event', (tester) async {
     FieldEventMarker? recorded;
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         home: Scaffold(
           body: FieldEventMarkerPanel(
             enabled: true,
@@ -39,7 +40,7 @@ void main() {
   ) async {
     var calls = 0;
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         home: Scaffold(
           body: FieldEventMarkerPanel(
             enabled: false,
@@ -59,7 +60,7 @@ void main() {
 
   testWidgets('a storage failure is not reported as persisted', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         home: Scaffold(
           body: FieldEventMarkerPanel(
             enabled: true,
