@@ -416,6 +416,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing'**
   String get telemetryArtifactRestartRequired;
+
+  /// Bonded-adapter list. Names Bluetooth: listing a bonded adapter never asks for location, so location can not be the permission that was refused here.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth permission is permanently denied. Turn it on in system settings, then try again.'**
+  String get connectBluetoothPermissionDeniedForever;
+
+  /// No description provided for @connectBluetoothPermissionNeededForPairedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth permission is needed to list paired adapters.'**
+  String get connectBluetoothPermissionNeededForPairedList;
+
+  /// No description provided for @connectBluetoothOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth is off. Turn Bluetooth on in system settings first.'**
+  String get connectBluetoothOff;
+
+  /// No description provided for @connectWifiHostRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the IP address of the adapter.'**
+  String get connectWifiHostRequired;
+
+  /// {port} is WifiTransport.defaultPort. Never spell the number into the sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the port (most adapters use {port}).'**
+  String connectWifiPortRequired(int port);
+
+  /// {value} is what the user typed, echoed back. {min}/{max} come from the range the connect check enforces.
+  ///
+  /// In en, this message translates to:
+  /// **'“{value}” is not a valid port. The range is {min}–{max}.'**
+  String connectWifiPortInvalid(String value, int min, int max);
+
+  /// Says the transcript was kept, not that the connection succeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'The full transcript of this attempt was kept. Bringing that back helps more than a one-line message.'**
+  String get connectTranscriptKept;
+
+  /// No description provided for @connectDemoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulates a 2.0 L turbocharged four-cylinder engine through idle, acceleration, cruise and deceleration cycles, with signals that stay physically related to each other (engine speed drops on a gearshift while road speed keeps rising). Fault codes, VIN reads and fastMode batch queries all work in full.'**
+  String get connectDemoBody;
+
+  /// No description provided for @connectDemoStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the simulator'**
+  String get connectDemoStart;
+
+  /// No description provided for @connectWifiHostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IP address'**
+  String get connectWifiHostLabel;
+
+  /// No description provided for @connectWifiPortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get connectWifiPortLabel;
+
+  /// No description provided for @connectConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectConnect;
+
+  /// No description provided for @connectOpenSystemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open system settings'**
+  String get connectOpenSystemSettings;
+
+  /// No description provided for @connectSearchAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Search again'**
+  String get connectSearchAgain;
+
+  /// No description provided for @connectPairedPill.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired'**
+  String get connectPairedPill;
+
+  /// No description provided for @connectBlePermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth permission is permanently denied. The system will not ask again, so turn it on in app settings.'**
+  String get connectBlePermissionDeniedForever;
+
+  /// No description provided for @connectBlePermissionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth permission is needed to search.'**
+  String get connectBlePermissionNeeded;
+
+  /// A GATT device is not paired the way a Classic one is. This must never tell a user to pair a BLE adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'A BLE adapter does not need to be paired first. Search, then pick your device — common names are OBDII, V-LINK, Vgate or IOS-Vlink.'**
+  String get connectBleBody;
+
+  /// No description provided for @connectOpenAppSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app settings'**
+  String get connectOpenAppSettings;
+
+  /// No description provided for @connectBleScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get connectBleScanning;
+
+  /// No description provided for @connectBleScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for BLE devices'**
+  String get connectBleScan;
+
+  /// No description provided for @connectOpeningConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the connection…'**
+  String get connectOpeningConnection;
+
+  /// No description provided for @connectHandshakeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ELM327 initialisation'**
+  String get connectHandshakeTitle;
+
+  /// Past tense, so a panel full of green rows cannot be read as the current connection.
+  ///
+  /// In en, this message translates to:
+  /// **'ELM327 initialisation (last attempt)'**
+  String get connectHandshakeTitleLastAttempt;
+
+  /// No description provided for @connectCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get connectCancel;
+
+  /// No description provided for @connectLastAdapterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last adapter used'**
+  String get connectLastAdapterTitle;
+
+  /// No description provided for @connectLastAdapterConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect now'**
+  String get connectLastAdapterConnect;
+
+  /// No description provided for @connectLastAdapterForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get connectLastAdapterForget;
+
+  /// Semantics label for the signal meter. {total} comes from the number of bars drawn, not from prose.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal strength {bars}/{total}'**
+  String connectSignalStrength(int bars, int total);
+
+  /// iOS only. A permanent OS limit, not a missing feature.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS does not open Bluetooth SPP to third-party apps'**
+  String get connectClassicUnavailableIos;
+
+  /// Why the Classic card is greyed out on a host with no SPP path. Keep currently: the host list changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Classic (SPP) is currently available on Android, macOS (IOBluetooth RFCOMM), Windows (COM) and Linux (/dev/rfcomm*)'**
+  String get connectClassicUnavailableHost;
+
+  /// No description provided for @connectBleUnavailableHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth LE is not available on this host yet'**
+  String get connectBleUnavailableHost;
+
+  /// No description provided for @connectWifiInstructionsPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the Wi-Fi hotspot the adapter broadcasts on the phone first, then enter its address. If the system asks whether to stay on a Wi-Fi network that cannot reach the internet, choose to stay on it. On Android, Telltale tries to pin its traffic to the Wi-Fi route while connected, so mobile data does not take it away.'**
+  String get connectWifiInstructionsPhone;
+
+  /// No description provided for @connectWifiInstructionsDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this computer to the Wi-Fi hotspot the adapter broadcasts first, then enter its address. If the system warns that the network cannot reach the internet, choose to stay on it. Desktop systems usually treat the hotspot as the default route; the Android Wi-Fi route binding is not needed.'**
+  String get connectWifiInstructionsDesktop;
+
+  /// No description provided for @connectQuestionWifiPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Is there a new network in the Wi-Fi list on the phone (something like V-LINK or WiFi_OBDII)?'**
+  String get connectQuestionWifiPhone;
+
+  /// No description provided for @connectQuestionWifiDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Is there a new network in the Wi-Fi list on the system (something like V-LINK or WiFi_OBDII)?'**
+  String get connectQuestionWifiDesktop;
+
+  /// No description provided for @connectAnswerWifiPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Wi-Fi. Join that network on the phone first, then come back and enter the address.'**
+  String get connectAnswerWifiPhone;
+
+  /// No description provided for @connectAnswerWifiDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Wi-Fi. Connect this device to that network first, then come back and enter the address.'**
+  String get connectAnswerWifiDesktop;
+
+  /// No description provided for @connectQuestionBle.
+  ///
+  /// In en, this message translates to:
+  /// **'Does the box, the shop listing or the device name say BLE, 4.0 or 5.0?'**
+  String get connectQuestionBle;
+
+  /// Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, the 4.0 on the box was only the chip spec — use Bluetooth Classic instead.'**
+  String get connectAnswerBleWithClassic;
+
+  /// Same answer on a host with no Classic path. Must not point at the greyed-out Classic card.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, check that the adapter has power, or try Wi‑Fi instead; this host does not offer Bluetooth Classic.'**
+  String get connectAnswerBleWithoutClassic;
+
+  /// No description provided for @connectQuestionClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Neither — an older one, with 2.0 or 3.0 printed on the box?'**
+  String get connectQuestionClassic;
+
+  /// Classic SPP does need system pairing first. This must never tell a user to skip it.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Bluetooth Classic. Pair it in system settings first; the app cannot pair it for you. The code is usually 1234 or 0000.'**
+  String get connectAnswerClassic;
+
+  /// A Classic adapter can never appear in a BLE scan, so an empty result has to offer that branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Last, check the spec on the box: if it says 2.0 or 3.0 that is Bluetooth Classic, which never appears in this list, so use Bluetooth Classic above instead.'**
+  String get connectBleEmptyScanNextClassic;
+
+  /// No description provided for @connectBleEmptyScanNextWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Last, check the spec on the box: if it says 2.0/3.0, or Wi‑Fi only, try Wi‑Fi instead (this host does not offer Bluetooth Classic).'**
+  String get connectBleEmptyScanNextWifi;
+
+  /// {next} is one whole sentence, either connectBleEmptyScanNextClassic or connectBleEmptyScanNextWifi, chosen by whether this host has Bluetooth Classic.
+  ///
+  /// In en, this message translates to:
+  /// **'The scan finished without finding a BLE adapter. Check in order: is the light on the adapter lit — most OBD sockets are unpowered until the ignition is at ON; then range, so sit in the car before scanning. {next} A BLE adapter does not need, and should not have, pairing in system settings; that route does not work.'**
+  String connectBleEmptyScan(String next);
+
+  /// No description provided for @connectClassicEmptyPaired.
+  ///
+  /// In en, this message translates to:
+  /// **'No paired adapter found. Pair it in the system Bluetooth settings first (the code for most ELM327s is 1234 or 0000).'**
+  String get connectClassicEmptyPaired;
+
+  /// No description provided for @connectClassicEmptyLinuxPort.
+  ///
+  /// In en, this message translates to:
+  /// **'No Bluetooth serial port (/dev/rfcomm*) found. Pair the ELM327 with BlueZ first, then create an RFCOMM TTY with rfcomm bind (or the equivalent) and try again.'**
+  String get connectClassicEmptyLinuxPort;
+
+  /// No description provided for @connectClassicEmptyWindowsPort.
+  ///
+  /// In en, this message translates to:
+  /// **'No Bluetooth serial port (COMx) found. Pair the ELM327 in the Windows Bluetooth settings first, and check that Device Manager shows “Standard Serial over Bluetooth link”.'**
+  String get connectClassicEmptyWindowsPort;
+
+  /// No description provided for @connectClassicListPaired.
+  ///
+  /// In en, this message translates to:
+  /// **'This lists every device paired with the system — headphones and speakers included, with the ones that look like adapters first. If you pick the wrong one, press Cancel rather than waiting for it to fail; you can pick another straight away.'**
+  String get connectClassicListPaired;
+
+  /// An empty port list is a system state, not an app fault. Serial hosts never list headphones.
+  ///
+  /// In en, this message translates to:
+  /// **'This lists the Bluetooth serial ports BlueZ has bound (/dev/rfcomm* or the equivalent). An empty list means the system has not created an RFCOMM node yet, not that the app is broken.'**
+  String get connectClassicListLinuxPort;
+
+  /// No description provided for @connectClassicListWindowsPort.
+  ///
+  /// In en, this message translates to:
+  /// **'This lists the COM ports associated with Bluetooth (“Standard Serial over Bluetooth link”). An empty list means the system has not created a virtual serial port yet, not that the app is broken.'**
+  String get connectClassicListWindowsPort;
+
+  /// Accepts the uncertainty rather than demanding a confident choice. Not Choose your connection type.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure which to pick?'**
+  String get connectWhichTitle;
+
+  /// No description provided for @connectWhichIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Never mind the words SPP and GATT. Go by what your adapter does once it is plugged in:'**
+  String get connectWhichIntro;
+
+  /// No description provided for @connectWhichNoteIos.
+  ///
+  /// In en, this message translates to:
+  /// **'An iPhone can only use Wi-Fi or BLE — an ordinary Bluetooth ELM327 does not work at all on iOS. That is an OS limit, and no other app gets around it.'**
+  String get connectWhichNoteIos;
+
+  /// Permission to fail. The fear of picking wrong is what makes somebody close the app instead of tapping something.
+  ///
+  /// In en, this message translates to:
+  /// **'Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.'**
+  String get connectWhichNoteGuessing;
 }
 
 class _AppLocalizationsDelegate
