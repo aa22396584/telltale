@@ -6,9 +6,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../state/telemetry_sessions.dart';
+import '../../../telemetry/session/telemetry_session_store.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
 import '../../../l10n/generated/app_localizations.dart';
+
+/// The library quota, in the units the two chips render.
+///
+/// Read from [TelemetryQuota] rather than written into the copy: the number a
+/// sentence claims and the number the store enforces have to be the same one.
+const _libraryMiBLimit = TelemetryQuota.libraryByteLimit ~/ (1024 * 1024);
 
 class TelemetrySessionsScreen extends ConsumerWidget {
   const TelemetrySessionsScreen({super.key});
@@ -17,20 +24,21 @@ class TelemetrySessionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final access = ref.watch(telemetryHistoryAccessProvider);
     if (access != TelemetryHistoryAccess.permitted) {
       return Scaffold(
-        appBar: AppBar(title: const Text('本機紀錄')),
-        body: Center(child: Text(access.message(AppLocalizations.of(context))!)),
+        appBar: AppBar(title: Text(l10n.telemetrySessionsTitle)),
+        body: Center(child: Text(access.message(l10n)!)),
       );
     }
     final library = ref.watch(telemetrySessionLibraryProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('本機紀錄'),
+        title: Text(l10n.telemetrySessionsTitle),
         actions: [
           IconButton(
-            tooltip: '重新載入',
+            tooltip: l10n.telemetryReload,
             onPressed: () => ref.invalidate(telemetrySessionLibraryProvider),
             icon: const Icon(Icons.refresh),
           ),
@@ -41,7 +49,7 @@ class TelemetrySessionsScreen extends ConsumerWidget {
         error: (_, _) => Center(
           child: FilledButton(
             onPressed: () => ref.invalidate(telemetrySessionLibraryProvider),
-            child: const Text('無法載入，請重試'),
+            child: Text(l10n.telemetrySessionsLoadFailed),
           ),
         ),
         data: (data) => _LibraryBody(data: data),
@@ -57,31 +65,43 @@ class _LibraryBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final usedMiB = data.recognizedBytes / (1024 * 1024);
+    final used = usedMiB.toStringAsFixed(1);
     if (data.sessions.isEmpty && data.damaged.isEmpty) {
-      return const Center(child: Text('還沒有本機紀錄\n連線後開始錄製'));
+      return Center(child: Text(l10n.telemetrySessionsEmpty));
     }
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
         Semantics(
-          label:
-              '本機儲存 ${data.groupCount} / 20 組，${usedMiB.toStringAsFixed(1)} / 100 MiB',
+          label: l10n.telemetryLibraryQuotaSemantics(
+            data.groupCount,
+            TelemetryQuota.groupLimit,
+            used,
+            _libraryMiBLimit,
+          ),
           child: Panel(
             child: Wrap(
               spacing: Spacing.lg,
               runSpacing: Spacing.sm,
               children: [
-                Text('${data.groupCount}/20 組'),
-                Text('${usedMiB.toStringAsFixed(1)}/100 MiB'),
-                if (data.omittedCount > 0) Text('另有 ${data.omittedCount} 組未顯示'),
+                Text(
+                  l10n.telemetryLibraryGroupCount(
+                    data.groupCount,
+                    TelemetryQuota.groupLimit,
+                  ),
+                ),
+                Text(l10n.telemetryLibraryBytes(used, _libraryMiBLimit)),
+                if (data.omittedCount > 0)
+                  Text(l10n.telemetryLibraryOmitted(data.omittedCount)),
               ],
             ),
           ),
         ),
         if (data.sessions.isNotEmpty) ...[
           const SizedBox(height: Spacing.lg),
-          const SectionHeading('可回放的紀錄'),
+          SectionHeading(l10n.telemetrySessionsReplayable),
           for (final session in data.sessions) ...[
             _SessionTile(session: session),
             const SizedBox(height: Spacing.sm),
@@ -89,7 +109,7 @@ class _LibraryBody extends StatelessWidget {
         ],
         if (data.damaged.isNotEmpty) ...[
           const SizedBox(height: Spacing.lg),
-          const SectionHeading('損壞的紀錄檔'),
+          SectionHeading(l10n.telemetrySessionsDamaged),
           for (final artifact in data.damaged) ...[
             _DamagedTile(artifact: artifact),
             const SizedBox(height: Spacing.sm),
@@ -106,22 +126,27 @@ class _DamagedTile extends ConsumerWidget {
   final DamagedTelemetryProjection artifact;
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    // Read before the dialog and the delete. The outcome belongs to the
+    // language that was on screen when the user asked for it.
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('刪除損壞紀錄？'),
+        title: Text(l10n.telemetryDeleteDamagedTitle),
         content: Text(
-          '將刪除 ${artifact.id}（檔案時間 '
-          '${_localTime(artifact.filesystemModifiedAtUtc)}）。刪除後無法復原。',
+          l10n.telemetryDeleteDamagedBody(
+            artifact.id,
+            _localTime(artifact.filesystemModifiedAtUtc),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.telemetryCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('刪除'),
+            child: Text(l10n.telemetryDelete),
           ),
         ],
       ),
@@ -135,29 +160,35 @@ class _DamagedTile extends ConsumerWidget {
       ref.invalidate(telemetrySessionLibraryProvider);
     } else {
       if (result.failure != TelemetrySessionActionFailure.restartRequired) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('刪除未完成：${result.message(AppLocalizations.of(context))}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.telemetryDeleteFailed(result.message(l10n))),
+          ),
+        );
       }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Panel(
-    child: ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.warning_amber_rounded),
-      title: Text(artifact.id),
-      subtitle: Text(
-        '${artifact.kind == DamagedTelemetryKind.collision ? '同一識別碼同時存在完成與未完成檔，未選擇任何一份' : '紀錄損壞，無法安全讀取'}\n'
-        '檔案時間 ${_localTime(artifact.filesystemModifiedAtUtc)}',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Panel(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.warning_amber_rounded),
+        title: Text(artifact.id),
+        subtitle: Text(
+          '${artifact.kind == DamagedTelemetryKind.collision ? l10n.telemetryDamagedCollision : l10n.telemetryDamagedCorrupt}\n'
+          '${l10n.telemetryDamagedFileTime(_localTime(artifact.filesystemModifiedAtUtc))}',
+        ),
+        trailing: IconButton(
+          tooltip: l10n.telemetryDeleteDamagedTooltip,
+          onPressed: () => _delete(context, ref),
+          icon: const Icon(Icons.delete_outline),
+        ),
       ),
-      trailing: IconButton(
-        tooltip: '刪除損壞紀錄',
-        onPressed: () => _delete(context, ref),
-        icon: const Icon(Icons.delete_outline),
-      ),
-    ),
-  );
+    );
+  }
 }
 
 class _SessionTile extends StatelessWidget {
@@ -166,21 +197,27 @@ class _SessionTile extends StatelessWidget {
   final TelemetrySessionProjection session;
 
   @override
-  Widget build(BuildContext context) => Panel(
-    onTap: () => context.push('${TelemetrySessionsScreen.path}/${session.id}'),
-    child: ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(_localTime(session.startedAtUtc)),
-      subtitle: Text(
-        '${session.sourceLabel} · ${session.transport} · ${session.protocol}\n'
-        '${_durationLabel(session.duration)} · ${session.signalCount} 項訊號\n'
-        '${session.valueCount} 筆有效值 · ${session.statusCount} 個狀態 · '
-        '${session.gapCount} 個缺口\n'
-        '${telemetryTerminalReasonLabel(AppLocalizations.of(context), session.terminalReason)}',
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Panel(
+      onTap: () =>
+          context.push('${TelemetrySessionsScreen.path}/${session.id}'),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(_localTime(session.startedAtUtc)),
+        subtitle: Text(
+          '${session.sourceLabel} · ${session.transport} · ${session.protocol}\n'
+          '${_durationLabel(session.duration)} · '
+          '${l10n.telemetrySignalCount(session.signalCount)}\n'
+          '${l10n.telemetryValueCount(session.valueCount)} · '
+          '${l10n.telemetryStatusCount(session.statusCount)} · '
+          '${l10n.telemetryGapCount(session.gapCount)}\n'
+          '${telemetryTerminalReasonLabel(l10n, session.terminalReason)}',
+        ),
+        trailing: const Icon(Icons.chevron_right),
       ),
-      trailing: const Icon(Icons.chevron_right),
-    ),
-  );
+    );
+  }
 }
 
 String _localTime(DateTime utc) => utc.toLocal().toString().substring(0, 16);

@@ -28,17 +28,28 @@ class TelemetryRecorderStrip extends ConsumerWidget {
     final finalizing = state.phase == TelemetryRecorderPhase.finalizing;
     final l10n = AppLocalizations.of(context);
     final recoveryCopy = telemetryRecorderRecoveryLabel(l10n, state);
+    // The phase titles are the panel's, by key rather than by copy: a strip
+    // that names the phase differently from the panel behind it would let one
+    // of the two be wrong without anybody noticing.
     final title = recording
         ? state.valueCount == 0
-              ? '準備錄製'
-              : '錄製中 ${formatTelemetryDuration(progress.elapsedUs)}'
+              ? l10n.telemetryRecorderPhaseAwaitingValues
+              : l10n.telemetryRecorderStripRecording(
+                  formatTelemetryDuration(progress.elapsedUs),
+                )
         : finalizing
-        ? '正在儲存紀錄'
-        : '正在準備錄製';
+        ? l10n.telemetryRecorderPhaseFinalizing
+        : l10n.telemetryRecorderPhasePreparing;
     final detail =
-        '${state.valueCount} 筆有效值 · '
-        '${state.statusCount} 個狀態 · ${state.gapCount} 個缺口';
-    final semantics = [title, detail, ?recoveryCopy].join('，');
+        '${l10n.telemetryValueCount(state.valueCount)} · '
+        '${l10n.telemetryStatusCount(state.statusCount)} · '
+        '${l10n.telemetryGapCount(state.gapCount)}';
+    // Folded rather than joined on a literal: the separator between phrases is
+    // punctuation, and Chinese does not use the same mark English does.
+    var semantics = title;
+    for (final part in [detail, ?recoveryCopy]) {
+      semantics = l10n.telemetryPhraseJoin(semantics, part);
+    }
 
     return Material(
       color: Color.alphaBlend(
@@ -92,15 +103,15 @@ class TelemetryRecorderStrip extends ConsumerWidget {
                             runSpacing: Spacing.xs,
                             children: [
                               Text(
-                                '${state.valueCount} 筆有效值',
+                                l10n.telemetryValueCount(state.valueCount),
                                 style: context.texts.labelMedium,
                               ),
                               Text(
-                                '${state.statusCount} 個狀態',
+                                l10n.telemetryStatusCount(state.statusCount),
                                 style: context.texts.labelMedium,
                               ),
                               Text(
-                                '${state.gapCount} 個缺口',
+                                l10n.telemetryGapCount(state.gapCount),
                                 style: context.texts.labelMedium,
                               ),
                             ],
@@ -124,7 +135,7 @@ class TelemetryRecorderStrip extends ConsumerWidget {
                     key: const ValueKey('telemetry-return-to-trends'),
                     onPressed: () => context.go(DashboardScreen.trendsPath),
                     style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
-                    child: const Text('返回趨勢'),
+                    child: Text(l10n.telemetryReturnToTrends),
                   ),
                   if (recording)
                     FilledButton.icon(
@@ -137,7 +148,7 @@ class TelemetryRecorderStrip extends ConsumerWidget {
                         foregroundColor: Colors.white,
                       ),
                       icon: const Icon(Icons.stop, size: 18),
-                      label: const Text('停止並儲存'),
+                      label: Text(l10n.telemetryStopAndSave),
                     ),
                 ],
               ),

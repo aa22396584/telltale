@@ -27,6 +27,7 @@ class _TelemetryStartupRecoveryNoticeState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final recovery = ref.watch(telemetryStartupRecoveryProvider);
     if (_dismissed ||
         recovery.phase != TelemetryStartupRecoveryPhase.ready ||
@@ -51,10 +52,15 @@ class _TelemetryStartupRecoveryNoticeState
     final access = ref.watch(telemetryHistoryAccessProvider);
     final mayOpen = hasHistory && access == TelemetryHistoryAccess.permitted;
     final details = <String>[
-      if (installed > 0) '$installed 組中斷紀錄已完成安全封存',
-      if (cleaned > 0) '$cleaned 組沒有有效值的未完成檔已清理',
-      if (damaged > 0) '$damaged 組損壞或衝突檔未自動修改',
+      if (installed > 0) l10n.telemetryRecoveryInstalled(installed),
+      if (cleaned > 0) l10n.telemetryRecoveryCleaned(cleaned),
+      if (damaged > 0) l10n.telemetryRecoveryDamaged(damaged),
     ];
+    // Folded rather than joined on a literal: the sentence separator is
+    // punctuation, and Chinese ends a sentence with 。 rather than a period.
+    final summary = details.isEmpty
+        ? ''
+        : details.reduce(l10n.telemetrySentenceJoin);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -79,13 +85,16 @@ class _TelemetryStartupRecoveryNoticeState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('啟動紀錄檢查已完成', style: context.texts.titleMedium),
+                      Text(
+                        l10n.telemetryRecoveryTitle,
+                        style: context.texts.titleMedium,
+                      ),
                       const SizedBox(height: Spacing.xs),
-                      Text(details.join('。'), style: context.texts.bodySmall),
+                      Text(summary, style: context.texts.bodySmall),
                       if (damaged > 0) ...[
                         const SizedBox(height: Spacing.xs),
                         Text(
-                          '損壞內容不會用於回放或匯出，只能在安全狀態下手動刪除。',
+                          l10n.telemetryRecoveryDamagedNote,
                           style: context.texts.bodySmall,
                         ),
                       ],
@@ -106,19 +115,19 @@ class _TelemetryStartupRecoveryNoticeState
                         ? () => context.push(TelemetrySessionsScreen.path)
                         : null,
                     icon: const Icon(Icons.history, size: 18),
-                    label: const Text('查看本機紀錄'),
+                    label: Text(l10n.telemetryOpenHistory),
                   ),
                 TextButton(
                   key: const ValueKey('telemetry-recovery-dismiss'),
                   onPressed: () => setState(() => _dismissed = true),
-                  child: const Text('關閉提示'),
+                  child: Text(l10n.telemetryDismissNotice),
                 ),
               ],
             ),
             if (hasHistory && !mayOpen) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                access.message(AppLocalizations.of(context))!,
+                access.message(l10n)!,
                 style: context.texts.bodySmall?.copyWith(
                   color: context.palette.warning,
                 ),

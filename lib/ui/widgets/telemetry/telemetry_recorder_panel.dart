@@ -13,6 +13,7 @@ import '../../../state/settings.dart';
 import '../../../state/telemetry_recorder.dart';
 import '../../../state/telemetry_runtime.dart';
 import '../../../state/telemetry_sessions.dart';
+import '../../../state/telemetry_trends.dart';
 import '../../../telemetry/session/derived_estimates.dart';
 import '../../../telemetry/session/telemetry_recorder.dart';
 import '../../widgets/panel.dart';
@@ -99,7 +100,7 @@ class _TelemetryRecorderPanelState
                     const SizedBox(width: Spacing.sm),
                     Flexible(
                       child: Text(
-                        _phaseTitle(progress),
+                        telemetryRecorderPhaseTitle(l10n, progress),
                         style: context.texts.titleMedium,
                       ),
                     ),
@@ -120,6 +121,7 @@ class _TelemetryRecorderPanelState
               phase == TelemetryRecorderPhase.failed) ...[
             const SizedBox(height: Spacing.md),
             _RecorderMetrics(
+              l10n: l10n,
               valueCount: state.valueCount,
               statusCount: state.statusCount,
               gapCount: state.gapCount,
@@ -156,14 +158,14 @@ class _TelemetryRecorderPanelState
                       ? () => context.push('/sessions')
                       : null,
                   icon: const Icon(Icons.history, size: 18),
-                  label: const Text('查看本機紀錄'),
+                  label: Text(l10n.telemetryOpenHistory),
                 ),
                 TextButton(
                   key: const ValueKey('telemetry-dismiss-outcome'),
                   onPressed: () => ref
                       .read(telemetryRecorderControllerProvider)
                       .dismissTerminalOutcome(),
-                  child: const Text('關閉提示'),
+                  child: Text(l10n.telemetryDismissNotice),
                 ),
               ],
             ),
@@ -189,9 +191,10 @@ class _TelemetryRecorderPanelState
               const SizedBox(width: Spacing.sm),
               Expanded(
                 child: Text(
-                  '只紀錄已啟用的 OBD 訊號，不含位置、VIN 或帳號資料。'
-                  '趨勢圖最多顯示 4 項，錄製會保留全部 ${activePids.length} 項已啟用訊號，'
-                  '並自動加上估算馬力與估算油耗（含車輛假設）。',
+                  l10n.telemetryRecorderDisclosure(
+                    maximumTelemetryTrendLanes,
+                    activePids.length,
+                  ),
                   style: context.texts.bodySmall,
                 ),
               ),
@@ -217,7 +220,11 @@ class _TelemetryRecorderPanelState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.fiber_manual_record, size: 18),
-              label: Text(_starting ? '正在開始' : '開始紀錄'),
+              label: Text(
+                _starting
+                    ? l10n.telemetryStarting
+                    : l10n.telemetryStartRecordingButton,
+              ),
             ),
           ] else if (phase == TelemetryRecorderPhase.recording) ...[
             const SizedBox(height: Spacing.md),
@@ -230,7 +237,7 @@ class _TelemetryRecorderPanelState
                 foregroundColor: Colors.white,
               ),
               icon: const Icon(Icons.stop, size: 18),
-              label: const Text('停止並儲存'),
+              label: Text(l10n.telemetryStopAndSave),
             ),
           ],
         ],
@@ -239,6 +246,9 @@ class _TelemetryRecorderPanelState
   }
 
   Future<void> _start() async {
+    // Read before the await. The refusal describes the start the user asked
+    // for, so it belongs to the language that was on screen when they asked.
+    final l10n = AppLocalizations.of(context);
     final evidence = ref.read(currentTelemetryConnectionEvidenceProvider);
     if (evidence == null) return;
     setState(() {
@@ -265,12 +275,7 @@ class _TelemetryRecorderPanelState
     if (result.outcome != TelemetryStartOutcome.recording) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            telemetryStartOutcomeLabel(
-              AppLocalizations.of(context),
-              result.outcome,
-            ),
-          ),
+          content: Text(telemetryStartOutcomeLabel(l10n, result.outcome)),
         ),
       );
     }
@@ -304,19 +309,6 @@ class _TelemetryRecorderPanelState
     return null;
   }
 
-  static String _phaseTitle(TelemetryRecorderProgress progress) {
-    final state = progress.state;
-    return switch (state.phase) {
-      TelemetryRecorderPhase.idle => '前景本機紀錄',
-      TelemetryRecorderPhase.preparing => '正在準備錄製',
-      TelemetryRecorderPhase.recording =>
-        state.valueCount == 0 ? '準備錄製' : '紀錄中',
-      TelemetryRecorderPhase.finalizing => '正在儲存紀錄',
-      TelemetryRecorderPhase.completed => '紀錄已儲存',
-      TelemetryRecorderPhase.failed => '紀錄儲存失敗',
-    };
-  }
-
   static IconData _phaseIcon(TelemetryRecorderPhase phase) => switch (phase) {
     TelemetryRecorderPhase.idle => Icons.fiber_manual_record_outlined,
     TelemetryRecorderPhase.preparing => Icons.hourglass_top,
@@ -333,14 +325,42 @@ class _TelemetryRecorderPanelState
   }
 }
 
+/// The recorder phase, as a sentence.
+///
+/// Top-level and taking an [AppLocalizations] rather than a [BuildContext]:
+/// the shell strip renders the same phases from a different widget, and a
+/// pure-Dart test can walk all six of them in both languages without a pump.
+String telemetryRecorderPhaseTitle(
+  AppLocalizations l10n,
+  TelemetryRecorderProgress progress,
+) {
+  final state = progress.state;
+  return switch (state.phase) {
+    TelemetryRecorderPhase.idle => l10n.telemetryRecorderPhaseIdle,
+    TelemetryRecorderPhase.preparing => l10n.telemetryRecorderPhasePreparing,
+    // Started, but nothing has landed yet. Not the same claim as `recording`,
+    // where values are arriving, and not the same as `preparing`, where the
+    // recorder has not begun.
+    TelemetryRecorderPhase.recording =>
+      state.valueCount == 0
+          ? l10n.telemetryRecorderPhaseAwaitingValues
+          : l10n.telemetryRecorderPhaseRecording,
+    TelemetryRecorderPhase.finalizing => l10n.telemetryRecorderPhaseFinalizing,
+    TelemetryRecorderPhase.completed => l10n.telemetryRecorderPhaseCompleted,
+    TelemetryRecorderPhase.failed => l10n.telemetryRecorderPhaseFailed,
+  };
+}
+
 class _RecorderMetrics extends StatelessWidget {
   const _RecorderMetrics({
+    required this.l10n,
     required this.valueCount,
     required this.statusCount,
     required this.gapCount,
     required this.bytesLabel,
   });
 
+  final AppLocalizations l10n;
   final int valueCount;
   final int statusCount;
   final int gapCount;
@@ -362,7 +382,7 @@ class _RecorderMetrics extends StatelessWidget {
             SizedBox(
               width: width,
               child: _RecorderMetric(
-                label: '$valueCount 筆有效值',
+                label: l10n.telemetryValueCount(valueCount),
                 icon: Icons.data_usage,
                 color: context.palette.accent,
               ),
@@ -370,7 +390,7 @@ class _RecorderMetrics extends StatelessWidget {
             SizedBox(
               width: width,
               child: _RecorderMetric(
-                label: '$statusCount 個狀態',
+                label: l10n.telemetryStatusCount(statusCount),
                 icon: Icons.info_outline,
                 color: context.palette.textSecondary,
               ),
@@ -378,7 +398,7 @@ class _RecorderMetrics extends StatelessWidget {
             SizedBox(
               width: width,
               child: _RecorderMetric(
-                label: '$gapCount 個缺口',
+                label: l10n.telemetryGapCount(gapCount),
                 icon: Icons.link_off,
                 color: gapCount == 0
                     ? context.palette.textSecondary
