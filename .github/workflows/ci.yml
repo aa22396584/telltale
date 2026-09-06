@@ -123,7 +123,8 @@ jobs:
           set -euo pipefail
           python3 -m py_compile \
             tool/update_us_vehicle_catalog.py \
-            tool/update_us_vpic_makes.py
+            tool/update_us_vpic_makes.py \
+            tool/oracle_guard/assert_no_skips.py
           python3 -m unittest discover \
             -s test/tool -p 'test_*.py' -v
 
@@ -493,60 +494,10 @@ jobs:
       # Without this guard the job is decoration. A skipped test prints a
       # summary indistinguishable from a passing one and `flutter test` exits 0
       # either way — so an oracle that never reached the simulator would report
-      # exactly the same green as one that passed.
-      - name: Install the skip guard
-        run: |
-          set -euo pipefail
-          cat > "$RUNNER_TEMP/assert_no_skips.py" <<'PY'
-          import json, sys
-
-          report, expected = sys.argv[1], int(sys.argv[2])
-          passed = skipped = failed = 0
-          failures = []
-          errors_by_id = {}
-          with open(report, encoding="utf-8", errors="replace") as fh:
-              for line in fh:
-                  line = line.strip()
-                  if not line.startswith("{"):
-                      continue
-                  try:
-                      event = json.loads(line)
-                  except ValueError:
-                      continue
-                  etype = event.get("type")
-                  if etype == "error":
-                      tid = event.get("testID")
-                      if tid is not None:
-                          errors_by_id.setdefault(tid, []).append(
-                              event.get("error", event)
-                          )
-                      continue
-                  if etype != "testDone" or event.get("hidden"):
-                      continue
-                  name = event.get("test", {}).get("name") or event.get("testID")
-                  if event.get("skipped"):
-                      skipped += 1
-                  elif event.get("result") == "success":
-                      passed += 1
-                  else:
-                      failed += 1
-                      failures.append((name, errors_by_id.get(event.get("testID"), [])))
-
-          print(f"oracle results: passed={passed} skipped={skipped} failed={failed}")
-          for name, errs in failures:
-              print(f"FAILED: {name}")
-              for err in errs[:3]:
-                  print(f"  {err}")
-          if failed:
-              sys.exit("FAIL: an oracle test failed.")
-          if skipped:
-              sys.exit(f"FAIL: {skipped} oracle test(s) skipped -- the simulator was "
-                       "not reachable or not recognised. A skipped oracle is not a "
-                       "passing oracle.")
-          if passed != expected:
-              sys.exit(f"FAIL: expected {expected} oracle tests, {passed} ran.")
-          print("OK: every oracle test really ran.")
-          PY
+      # exactly the same green as one that passed. The parser lives in-tree so
+      # it can be unit-tested; the Flutter exit code must not be discarded.
+      - name: Check the skip guard is in the tree
+        run: test -f tool/oracle_guard/assert_no_skips.py
 
       - name: Ircama ELM327-emulator
         run: |
@@ -587,9 +538,23 @@ jobs:
             sleep 1
           done
 
+          set +e
           flutter test test/emulator_integration_test.dart --reporter json \
-            > "$RUNNER_TEMP/ircama.json" || true
-          python3 "$RUNNER_TEMP/assert_no_skips.py" "$RUNNER_TEMP/ircama.json" 6
+            > "$RUNNER_TEMP/ircama.json"
+          runner_rc=$?
+          set -e
+          python3 tool/oracle_guard/assert_no_skips.py \
+            "$RUNNER_TEMP/ircama.json" 6 \
+            --runner-exit "$runner_rc" \
+            --evidence-dir "$RUNNER_TEMP/oracle-evidence"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: oracle-ircama-evidence
+          path: ${{ runner.temp }}/oracle-evidence/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Stop the emulator
         if: always()
