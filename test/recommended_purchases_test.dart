@@ -236,4 +236,128 @@ void main() {
       expect(opened, RecommendedPurchases.entries.single.uri);
     },
   );
+
+  testWidgets('connect failed open shows a snackbar on the shipped screen', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          appSharePolicyProvider.overrideWith(
+            (ref) => ref.watch(productionAppSharePolicyProvider),
+          ),
+          obdSessionProvider.overrideWith(_IdleSession.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.dark(),
+          home: ConnectScreen(onOpenRecommendedPurchase: (_) async => false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final cta = find.byKey(
+      const Key('recommended_purchase_link_shopee-cl-obdii-m25b'),
+    );
+    await tester.scrollUntilVisible(
+      cta,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(cta);
+    await tester.pumpAndSettle();
+    await tester.tap(cta);
+    await tester.pump();
+    expect(find.text('無法開啟蝦皮連結'), findsOneWidget);
+  });
+
+  testWidgets('settings failed open shows a snackbar on the shipped screen', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          obdSessionProvider.overrideWith(_IdleSession.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.dark(),
+          home: SettingsScreen(onOpenRecommendedPurchase: (_) async => false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final storeButton = find.widgetWithText(FilledButton, '在蝦皮查看');
+    await tester.scrollUntilVisible(
+      storeButton,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(storeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(storeButton);
+    await tester.pump();
+    expect(find.text('無法開啟蝦皮連結'), findsOneWidget);
+  });
+
+  testWidgets('connect disclosure opens Settings instead of sitting inert', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var openedSettings = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          appSharePolicyProvider.overrideWith(
+            (ref) => ref.watch(productionAppSharePolicyProvider),
+          ),
+          obdSessionProvider.overrideWith(_IdleSession.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.dark(),
+          home: ConnectScreen(
+            onOpenRecommendedPurchaseDisclosure: () => openedSettings = true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final disclosure = find.byKey(
+      const Key('recommended_purchase_open_settings'),
+    );
+    await tester.scrollUntilVisible(
+      disclosure,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(disclosure);
+    await tester.pumpAndSettle();
+    await tester.tap(disclosure);
+    await tester.pump();
+    expect(openedSettings, isTrue);
+  });
 }

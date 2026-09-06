@@ -85,10 +85,17 @@ class RecommendedPurchasePanel extends StatelessWidget {
 
 /// Secondary Connect footer. Must not compete with 直接連線 / 啟動模擬器 / 上次轉接器.
 class RecommendedPurchaseLink extends StatelessWidget {
-  const RecommendedPurchaseLink({this.onOpen, super.key});
+  const RecommendedPurchaseLink({
+    this.onOpen,
+    this.onOpenDisclosure,
+    super.key,
+  });
 
   /// Tests inject this so a tap does not leave the process.
   final OpenRecommendedPurchase? onOpen;
+
+  /// Connect sends this to Settings. Absent, the action is still shown, inert.
+  final VoidCallback? onOpenDisclosure;
 
   @override
   Widget build(BuildContext context) {
@@ -103,8 +110,13 @@ class RecommendedPurchaseLink extends StatelessWidget {
             child: Text('還沒有轉接器？在${purchase.storeLabel}看推薦款'),
           ),
         Text(
-          RecommendedPurchases.shortDisclosure,
+          RecommendedPurchases.shortDisclosureLead,
           style: context.texts.bodySmall,
+        ),
+        TextButton(
+          key: const Key('recommended_purchase_open_settings'),
+          onPressed: onOpenDisclosure,
+          child: const Text(RecommendedPurchases.shortDisclosureAction),
         ),
       ],
     );

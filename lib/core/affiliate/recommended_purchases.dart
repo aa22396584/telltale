@@ -32,7 +32,9 @@ abstract final class RecommendedPurchases {
       '購買前請核對完整型號與 NCC 號碼。你也可以自行搜尋其他通路。';
 
   /// Connect keeps the catalog off the primary actions; Settings has [disclosure].
-  static const shortDisclosure = '這是推廣分潤連結，不是轉接器認證。完整說明在設定。';
+  static const shortDisclosureLead = '這是推廣分潤連結，不是轉接器認證。';
+  static const shortDisclosureAction = '完整說明在設定';
+  static const shortDisclosure = '$shortDisclosureLead$shortDisclosureAction。';
 
   static const entries = <RecommendedPurchase>[
     RecommendedPurchase(

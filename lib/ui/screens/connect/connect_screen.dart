@@ -37,13 +37,21 @@ import '../../widgets/recommended_purchase_panel.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class ConnectScreen extends ConsumerStatefulWidget {
-  const ConnectScreen({this.onOpenRecommendedPurchase, super.key});
+  const ConnectScreen({
+    this.onOpenRecommendedPurchase,
+    this.onOpenRecommendedPurchaseDisclosure,
+    super.key,
+  });
 
   static const String path = '/';
 
   /// Tests inject this so a tap does not leave the process.
   @visibleForTesting
   final OpenRecommendedPurchase? onOpenRecommendedPurchase;
+
+  /// Tests inject this so a tap does not need a GoRouter.
+  @visibleForTesting
+  final VoidCallback? onOpenRecommendedPurchaseDisclosure;
 
   @override
   ConsumerState<ConnectScreen> createState() => _ConnectScreenState();
@@ -438,6 +446,9 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                 ),
                 child: RecommendedPurchaseLink(
                   onOpen: widget.onOpenRecommendedPurchase,
+                  onOpenDisclosure:
+                      widget.onOpenRecommendedPurchaseDisclosure ??
+                      () => context.go('/settings'),
                 ),
               ),
             ),
