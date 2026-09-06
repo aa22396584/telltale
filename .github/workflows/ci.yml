@@ -409,14 +409,21 @@ jobs:
           #    formatting choice in each format, not a missing section.
           LEDE = {'一句話版本', 'In one sentence'}
 
+          # The English half begins at its own <h1>. Split on a pattern rather
+          # than a literal: the heading gained an `id` when the page grew a
+          # language nav, and this check broke on an attribute that changed
+          # nothing it looks at. A consistency check that a formatting edit can
+          # take offline is one somebody deletes rather than fixes.
           def halves(text, split_on, find):
-              zh, en = text.split(split_on, 1)
+              parts = re.split(split_on, text, maxsplit=1, flags=re.M)
+              assert len(parts) == 2, f'split marker not found: {split_on}'
+              zh, en = parts
               return [s for s in find(zh) if s not in LEDE], \
                      [s for s in find(en) if s not in LEDE]
 
-          md_zh, md_en = halves(md, '# Telltale Privacy Policy',
+          md_zh, md_en = halves(md, r'^# Telltale Privacy Policy$',
                                 lambda t: re.findall(r'^## (.+)$', t, re.M))
-          html_zh, html_en = halves(html, '<h1>Telltale Privacy Policy</h1>',
+          html_zh, html_en = halves(html, r'<h1[^>]*>Telltale Privacy Policy</h1>',
                                     lambda t: re.findall(r'<h2>(.+?)</h2>', t))
 
           if md_zh != html_zh:
@@ -455,7 +462,9 @@ jobs:
                   out[parts[i]] = parts[i + 1]
               return out
 
-          html_zh_body, html_en_body = html.split('<h1>Telltale Privacy Policy</h1>', 1)
+          html_zh_body, html_en_body = re.split(
+              r'<h1[^>]*>Telltale Privacy Policy</h1>', html, maxsplit=1)
+          assert html_en_body, 'the English half of docs/privacy.html is empty'
           zh_bodies = sections_with_bodies(html_zh_body)
           en_bodies = sections_with_bodies(html_en_body)
           for zh_name, en_name in zip(html_zh, html_en):
@@ -474,6 +483,56 @@ jobs:
                   print(' - ' + p)
               sys.exit(1)
           print(f'OK: {len(md_zh)} sections, identical across both files and both languages.')
+          PY
+
+      # The site is two files now, one per language, and the pair only works if
+      # each one can reach the other. A visitor who lands on the English page
+      # from a search result and cannot find their way to the Chinese one is
+      # worse off than they were with the single bilingual page.
+      #
+      # The privacy policy deliberately did NOT split: Google Play registers one
+      # URL and fetches it, so narrowing that document to one language would
+      # leave readers of the other with a policy they cannot read. It stays one
+      # bilingual document with an anchor per language, and this checks the
+      # anchors the split pages link into.
+      - name: The two site pages point at each other
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+
+          problems = []
+          pages = {
+              'docs/index.html': ('zh-Hant', 'index.en.html'),
+              'docs/index.en.html': ('en', 'index.html'),
+          }
+          for path, (lang, sibling) in pages.items():
+              f = pathlib.Path(path)
+              if not f.exists():
+                  problems.append(f'{path} is missing')
+                  continue
+              text = f.read_text(encoding='utf-8')
+              declared = re.search(r'<html lang="([^"]+)"', text)
+              found = declared.group(1) if declared else 'nothing'
+              if found != lang:
+                  problems.append(f'{path} declares lang={found}, expected {lang}')
+              if f'href="{sibling}"' not in text:
+                  problems.append(f'{path} does not link {sibling}')
+              if 'privacy.html' not in text:
+                  problems.append(f'{path} does not link the privacy policy')
+
+          policy = pathlib.Path('docs/privacy.html').read_text(encoding='utf-8')
+          for anchor in ['id="zh"', 'id="en"']:
+              if anchor not in policy:
+                  problems.append(f'docs/privacy.html lost {anchor}, so a '
+                                  'language link into it lands at the top')
+
+          if problems:
+              print('The site pages do not line up:')
+              for p in problems:
+                  print(' - ' + p)
+              sys.exit(1)
+          print('OK: both site pages declare their language, link each other, '
+                'and reach the policy.')
           PY
 
   store-assets:

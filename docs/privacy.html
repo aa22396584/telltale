@@ -38,13 +38,21 @@
   a { color: var(--accent); }
   .wrap { overflow-x: auto; }
   hr { border: 0; border-top: 1px solid var(--rule); margin: 3.5rem 0 2.5rem; }
+  .language-nav { display: flex; gap: 1rem; margin: 0 0 2rem; font-size: .95rem; }
+  .language-nav a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--rule); }
+  .language-nav a:hover, .language-nav a:focus { color: var(--fg); border-bottom-color: currentColor; }
   footer { color: var(--muted); font-size: .9rem; }
 </style>
 </head>
 <body>
 <main>
 
-<h1>Telltale 隱私權政策</h1>
+<nav class="language-nav" aria-label="Language / 語言">
+  <a href="#zh">繁體中文</a>
+  <a href="#en" hreflang="en">English</a>
+</nav>
+
+<h1 id="zh">Telltale 隱私權政策</h1>
 <p class="sub">最後更新：2026 年 9 月 6 日</p>
 
 <p class="lede"><strong>Telltale 本身不收集資料，也不會主動上傳資料。</strong>
@@ -128,7 +136,7 @@ Wi-Fi 型 ELM327 轉接器開啟一條 TCP 連線 —— 那是一個區域位�
 
 <hr>
 
-<h1>Telltale Privacy Policy</h1>
+<h1 id="en" lang="en">Telltale Privacy Policy</h1>
 <p class="sub">Last updated: 6 September 2026</p>
 
 <p class="lede"><strong>Telltale itself collects nothing and proactively uploads nothing.</strong>
