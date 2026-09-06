@@ -105,6 +105,38 @@
   "@connectTranscriptKept": {
     "description": "Says the transcript was kept, not that the connection succeeded."
   },
+  "connectTransportBleDescription": "GATT UART — a newer low-energy adapter",
+  "@connectTransportBleDescription": {
+    "description": "Subtitle of the Bluetooth LE tile on the connect screen. GATT and UART are on docs/i18n/do-not-translate.md. Must NOT tell the driver to pair the adapter: a BLE adapter is discovered by scanning inside the app, and pairing it in system settings is the route that does not work (connectAnswerBleWithClassic says so at length)."
+  },
+  "connectTransportBleTitle": "Bluetooth LE",
+  "@connectTransportBleTitle": {
+    "description": "Title of the Bluetooth LE tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
+  "connectTransportClassicDescription": "RFCOMM / SPP — the most common budget ELM327",
+  "@connectTransportClassicDescription": {
+    "description": "Subtitle of the Bluetooth Classic tile on the connect screen. RFCOMM, SPP and ELM327 are on docs/i18n/do-not-translate.md. Must NOT say pairing can be skipped: Classic is the one transport the app cannot pair for the driver (connectAnswerClassic and connectClassicEmptyPaired carry that instruction)."
+  },
+  "connectTransportClassicTitle": "Bluetooth Classic",
+  "@connectTransportClassicTitle": {
+    "description": "Title of the Bluetooth Classic tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
+  "connectTransportDemoDescription": "A built-in simulated ECU — the whole app with no hardware",
+  "@connectTransportDemoDescription": {
+    "description": "Subtitle of the Demo tile on the connect screen. ECU is on docs/i18n/do-not-translate.md. Scoped to the app deliberately: Demo crosses no radio, no socket and no vehicle, so it must not be described as evidence that a car will work (docs/field-guide.zh-TW.md:27-32)."
+  },
+  "connectTransportDemoTitle": "Demo simulator",
+  "@connectTransportDemoTitle": {
+    "description": "Title of the Demo tile on the connect screen. Same English as wearDemoSimulator, which names the same feature on the watch face."
+  },
+  "connectTransportWifiDescription": "A TCP port, usually 192.168.0.10:35000",
+  "@connectTransportWifiDescription": {
+    "description": "Subtitle of the Wi-Fi tile on the connect screen. The address is a literal on docs/i18n/do-not-translate.md and must stay byte-identical in both languages."
+  },
+  "connectTransportWifiTitle": "Wi-Fi",
+  "@connectTransportWifiTitle": {
+    "description": "Title of the Wi-Fi tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
   "connectWhichIntro": "Never mind the words SPP and GATT. Go by what your adapter does once it is plugged in:",
   "connectWhichNoteGuessing": "Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.",
   "@connectWhichNoteGuessing": {
@@ -319,6 +351,70 @@
   },
   "dtcMilOff": "The fault lamp is not lit",
   "dtcMilOn": "The fault lamp is lit",
+  "dtcMonitorBoostPressure": "Boost pressure",
+  "@dtcMonitorBoostPressure": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only."
+  },
+  "dtcMonitorCatalyst": "Catalyst",
+  "@dtcMonitorCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorComponents": "Comprehensive components",
+  "@dtcMonitorComponents": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor; J1979 calls it the comprehensive component monitor."
+  },
+  "dtcMonitorEgr": "EGR / VVT system",
+  "@dtcMonitorEgr": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. EGR and VVT are on docs/i18n/do-not-translate.md; keep both acronyms and the slash."
+  },
+  "dtcMonitorEvaporative": "Evaporative system",
+  "@dtcMonitorEvaporative": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The evaporative emission system, not the exhaust."
+  },
+  "dtcMonitorExhaustSensor": "Exhaust sensor",
+  "@dtcMonitorExhaustSensor": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only."
+  },
+  "dtcMonitorFuelSystem": "Fuel system",
+  "@dtcMonitorFuelSystem": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor."
+  },
+  "dtcMonitorGasolineParticulateFilter": "Gasoline particulate filter (GPF)",
+  "@dtcMonitorGasolineParticulateFilter": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. LOAD-BEARING: many OBD reference tables name bit 4 of byte C an air-conditioning refrigerant monitor. That is wrong — the bit sat Reserved in J1979 for years and was recently defined as the gasoline particulate filter, and no car that sets it has an A/C refrigerant monitor at all. Keep GPF spelled out; never render this as refrigerant or air conditioning (docs/field-guide.zh-TW.md:247-250)."
+  },
+  "dtcMonitorHeatedCatalyst": "Heated catalyst",
+  "@dtcMonitorHeatedCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorMisfire": "Misfire",
+  "@dtcMonitorMisfire": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor."
+  },
+  "dtcMonitorNmhcCatalyst": "NMHC catalyst",
+  "@dtcMonitorNmhcCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NMHC is on docs/i18n/do-not-translate.md."
+  },
+  "dtcMonitorNoxAftertreatment": "NOx / SCR aftertreatment",
+  "@dtcMonitorNoxAftertreatment": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NOx and SCR are on docs/i18n/do-not-translate.md."
+  },
+  "dtcMonitorOxygenSensor": "Oxygen sensor",
+  "@dtcMonitorOxygenSensor": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorOxygenSensorHeater": "Oxygen sensor heater",
+  "@dtcMonitorOxygenSensorHeater": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The heater circuit, which is monitored separately from the sensor itself."
+  },
+  "dtcMonitorParticulateFilter": "Particulate filter",
+  "@dtcMonitorParticulateFilter": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only — the diesel particulate filter. Distinct from dtcMonitorGasolineParticulateFilter, which is the petrol bit."
+  },
+  "dtcMonitorSecondaryAir": "Secondary air system",
+  "@dtcMonitorSecondaryAir": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
   "dtcNoDescriptionForSubsystem": "{subsystem} — this app has no detailed description for this code",
   "@dtcNoDescriptionForSubsystem": {
     "description": "The subsystem the code's own third digit names. Says the app is missing the description rather than pretending to one.",

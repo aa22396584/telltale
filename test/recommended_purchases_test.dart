@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/core/affiliate/recommended_purchases.dart';
 import 'package:torque_obd/core/theme/app_theme.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/app_runtime.dart';
 import 'package:torque_obd/state/app_share_coordinator.dart';
@@ -150,7 +151,9 @@ void main() {
       expect(find.textContaining('CL-OBDII-M25B'), findsNothing);
       expect(find.textContaining('不是轉接器認證或購買保證'), findsNothing);
 
-      final demoCard = find.text(TransportKind.demo.label);
+      final demoCard = find.text(
+        lookupAppLocalizations(testUiLocale).connectTransportDemoTitle,
+      );
       expect(demoCard, findsOneWidget);
 
       final cta = find.text('還沒有轉接器？在蝦皮看推薦款');

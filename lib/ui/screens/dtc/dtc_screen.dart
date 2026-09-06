@@ -18,6 +18,7 @@ import '../../../state/dtc_scan.dart';
 import '../../../state/obd_session.dart';
 import '../../widgets/panel.dart';
 import 'dtc_copy.dart';
+import 'readiness_copy.dart';
 
 class DtcScreen extends ConsumerStatefulWidget {
   const DtcScreen({super.key});
@@ -1119,7 +1120,7 @@ class _ReadinessForSource extends StatelessWidget {
                   // comparing against an inspection report needs, and hiding
                   // it makes a complete list look short.
                   _MonitorChip(
-                    label: entry.key.label,
+                    label: readinessMonitorLabel(l10n, entry.key),
                     state: entry.value,
                     palette: palette,
                   ),

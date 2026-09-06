@@ -183,6 +183,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectTranscriptKept => '這次嘗試的完整往返紀錄留著了。帶回來比一句訊息有用。';
 
   @override
+  String get connectTransportBleDescription => 'GATT UART — 較新的低功耗轉接器';
+
+  @override
+  String get connectTransportBleTitle => 'Bluetooth LE';
+
+  @override
+  String get connectTransportClassicDescription =>
+      'RFCOMM / SPP — 最常見的平價 ELM327';
+
+  @override
+  String get connectTransportClassicTitle => 'Bluetooth Classic';
+
+  @override
+  String get connectTransportDemoDescription => '內建模擬 ECU，無需硬體即可完整體驗';
+
+  @override
+  String get connectTransportDemoTitle => 'Demo 模擬器';
+
+  @override
+  String get connectTransportWifiDescription => 'TCP 通訊埠，多為 192.168.0.10:35000';
+
+  @override
+  String get connectTransportWifiTitle => 'Wi-Fi';
+
+  @override
   String get connectWhichIntro => '不用管 SPP、GATT 這些名詞。看你的轉接器插上去之後怎麼運作就好：';
 
   @override
@@ -400,6 +425,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dtcMilOn => '故障燈亮著';
+
+  @override
+  String get dtcMonitorBoostPressure => '增壓壓力';
+
+  @override
+  String get dtcMonitorCatalyst => '觸媒轉換器';
+
+  @override
+  String get dtcMonitorComponents => '綜合元件監控';
+
+  @override
+  String get dtcMonitorEgr => 'EGR / VVT 系統';
+
+  @override
+  String get dtcMonitorEvaporative => '蒸發排放系統';
+
+  @override
+  String get dtcMonitorExhaustSensor => '排氣感知器';
+
+  @override
+  String get dtcMonitorFuelSystem => '燃油系統監控';
+
+  @override
+  String get dtcMonitorGasolineParticulateFilter => '汽油微粒濾清器（GPF）';
+
+  @override
+  String get dtcMonitorHeatedCatalyst => '觸媒加熱';
+
+  @override
+  String get dtcMonitorMisfire => '失火監控';
+
+  @override
+  String get dtcMonitorNmhcCatalyst => 'NMHC 觸媒';
+
+  @override
+  String get dtcMonitorNoxAftertreatment => 'NOx / SCR 後處理';
+
+  @override
+  String get dtcMonitorOxygenSensor => '含氧感知器';
+
+  @override
+  String get dtcMonitorOxygenSensorHeater => '含氧感知器加熱';
+
+  @override
+  String get dtcMonitorParticulateFilter => '微粒濾清器';
+
+  @override
+  String get dtcMonitorSecondaryAir => '二次空氣噴射';
 
   @override
   String dtcNoDescriptionForSubsystem(Object subsystem) {
@@ -2861,6 +2934,31 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get connectTranscriptKept => '這次嘗試的完整往返紀錄留著了。帶回來比一句訊息有用。';
 
   @override
+  String get connectTransportBleDescription => 'GATT UART — 較新的低功耗轉接器';
+
+  @override
+  String get connectTransportBleTitle => 'Bluetooth LE';
+
+  @override
+  String get connectTransportClassicDescription =>
+      'RFCOMM / SPP — 最常見的平價 ELM327';
+
+  @override
+  String get connectTransportClassicTitle => 'Bluetooth Classic';
+
+  @override
+  String get connectTransportDemoDescription => '內建模擬 ECU，無需硬體即可完整體驗';
+
+  @override
+  String get connectTransportDemoTitle => 'Demo 模擬器';
+
+  @override
+  String get connectTransportWifiDescription => 'TCP 通訊埠，多為 192.168.0.10:35000';
+
+  @override
+  String get connectTransportWifiTitle => 'Wi-Fi';
+
+  @override
   String get connectWhichIntro => '不用管 SPP、GATT 這些名詞。看你的轉接器插上去之後怎麼運作就好：';
 
   @override
@@ -3078,6 +3176,54 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dtcMilOn => '故障燈亮著';
+
+  @override
+  String get dtcMonitorBoostPressure => '增壓壓力';
+
+  @override
+  String get dtcMonitorCatalyst => '觸媒轉換器';
+
+  @override
+  String get dtcMonitorComponents => '綜合元件監控';
+
+  @override
+  String get dtcMonitorEgr => 'EGR / VVT 系統';
+
+  @override
+  String get dtcMonitorEvaporative => '蒸發排放系統';
+
+  @override
+  String get dtcMonitorExhaustSensor => '排氣感知器';
+
+  @override
+  String get dtcMonitorFuelSystem => '燃油系統監控';
+
+  @override
+  String get dtcMonitorGasolineParticulateFilter => '汽油微粒濾清器（GPF）';
+
+  @override
+  String get dtcMonitorHeatedCatalyst => '觸媒加熱';
+
+  @override
+  String get dtcMonitorMisfire => '失火監控';
+
+  @override
+  String get dtcMonitorNmhcCatalyst => 'NMHC 觸媒';
+
+  @override
+  String get dtcMonitorNoxAftertreatment => 'NOx / SCR 後處理';
+
+  @override
+  String get dtcMonitorOxygenSensor => '含氧感知器';
+
+  @override
+  String get dtcMonitorOxygenSensorHeater => '含氧感知器加熱';
+
+  @override
+  String get dtcMonitorParticulateFilter => '微粒濾清器';
+
+  @override
+  String get dtcMonitorSecondaryAir => '二次空氣噴射';
 
   @override
   String dtcNoDescriptionForSubsystem(Object subsystem) {
