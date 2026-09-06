@@ -25,10 +25,15 @@ import '../../widgets/gauges/dial_gauge.dart';
 import '../../widgets/field_event_markers.dart';
 import '../../../core/theme/gauge_skin.dart';
 import '../../widgets/transcript_export.dart';
+import '../../widgets/recommended_purchase_panel.dart';
 import '../connect/connect_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
+
+  /// Tests inject this so a tap does not leave the process.
+  @visibleForTesting
+  final OpenRecommendedPurchase? onOpenRecommendedPurchase;
 
   static const String path = '/settings';
 
@@ -650,6 +655,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const _GaugeSkinPicker(),
 
             const SizedBox(height: Spacing.xl),
+            RecommendedPurchasePanel(onOpen: widget.onOpenRecommendedPurchase),
+            const SizedBox(height: Spacing.lg),
             OutlinedButton.icon(
               key: const Key('open_source_licenses'),
               onPressed: () {

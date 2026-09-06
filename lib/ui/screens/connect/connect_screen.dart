@@ -33,12 +33,17 @@ import '../../widgets/telemetry/telemetry_connect_recorder_status.dart';
 import '../../widgets/telemetry/telemetry_history_entry.dart';
 import '../../widgets/telemetry/telemetry_startup_recovery_notice.dart';
 import '../../widgets/transcript_export.dart';
+import '../../widgets/recommended_purchase_panel.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class ConnectScreen extends ConsumerStatefulWidget {
-  const ConnectScreen({super.key});
+  const ConnectScreen({this.onOpenRecommendedPurchase, super.key});
 
   static const String path = '/';
+
+  /// Tests inject this so a tap does not leave the process.
+  @visibleForTesting
+  final OpenRecommendedPurchase? onOpenRecommendedPurchase;
 
   @override
   ConsumerState<ConnectScreen> createState() => _ConnectScreenState();
@@ -393,7 +398,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                 Spacing.lg,
                 0,
                 Spacing.lg,
-                Spacing.xxl,
+                Spacing.lg,
               ),
               sliver: SliverList.separated(
                 itemCount: TransportKind.values.length,
@@ -421,6 +426,19 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                     child: _bodyFor(kind, palette),
                   );
                 },
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.lg,
+                  Spacing.md,
+                  Spacing.lg,
+                  Spacing.xxl,
+                ),
+                child: RecommendedPurchaseLink(
+                  onOpen: widget.onOpenRecommendedPurchase,
+                ),
               ),
             ),
           ],
