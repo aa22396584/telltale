@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/dtc/dtc.dart';
 import '../../../obd/freeze_frame.dart';
 import '../../../obd/polling_engine.dart';
@@ -43,6 +44,10 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
   // screen — and the next tap sent a second global `04`.
 
   Future<void> _clear() async {
+    // Read before the dialog is awaited, not after. Reading `context` across
+    // the await trips use_build_context_synchronously, and the warning belongs
+    // to the language that was on screen when the button was pressed.
+    final l10n = AppLocalizations.of(context);
     // What the scan could not establish, said at the point of no return.
     //
     // The dialog listed the consequences of clearing and nothing about the
@@ -69,37 +74,52 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
         .map((f) => f.cause.code)
         .toSet()
         .toList(growable: false);
+    // Built as one string rather than nested ternaries so the blank line
+    // between each warning stays in the code and out of the ARB, where a
+    // translator could drop it without the sentence looking wrong.
+    final body = StringBuffer(l10n.dtcClearDialogBody);
+    if (frames.isNotEmpty) {
+      body
+        ..write('\n\n')
+        ..write(
+          l10n.dtcClearDialogFrames(frames.join(l10n.dtcListSeparator)),
+        );
+    }
+    // The frame that may be there and was not read.
+    //
+    // The warning panel higher up says this, and by the time somebody
+    // reaches this button it may have scrolled away. This dialog's own
+    // comment says it exists because the frame is the one thing that
+    // cannot be read again afterwards — and it was silent in exactly the
+    // case where nobody knows whether there is one.
+    if (scan.freezeFrameUnread) {
+      body
+        ..write('\n\n')
+        ..write(l10n.dtcClearDialogFrameUnread);
+    }
+    if (unanswered.isNotEmpty) {
+      body
+        ..write('\n\n')
+        ..write(
+          l10n.dtcClearDialogUnanswered(
+            unanswered.length,
+            unanswered.join(l10n.dtcListSeparator),
+          ),
+        );
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('清除故障碼？'),
-        content: Text(
-          '這會清掉已儲存與待確認的故障碼並熄滅故障燈，同時重置排放就緒狀態 — '
-          '車輛需要重新完成一輪自我診斷才能通過驗車。永久故障碼（Mode 0A）無法清除。'
-          '${frames.isEmpty ? '' : '\n\n連同 ${frames.join('、')} 的凍結幀 —— '
-              '故障發生當下的轉速、水溫、負荷那一整份紀錄 —— 也會一起消失，'
-              '而且故障再次發生前讀不回來。'}'
-          // The frame that may be there and was not read.
-          //
-          // The warning panel higher up says this, and by the time somebody
-          // reaches this button it may have scrolled away. This dialog's own
-          // comment says it exists because the frame is the one thing that
-          // cannot be read again afterwards — and it was silent in exactly the
-          // case where nobody knows whether there is one.
-          '${scan.freezeFrameUnread ? '\n\n這次沒有讀到凍結幀，但不代表車上沒有。'
-              '先重新掃描一次，再決定要不要清除。' : ''}'
-          '${unanswered.isEmpty ? '' : '\n\n這次掃描有 ${unanswered.length} 個類別沒有得到完整回應'
-              '（${unanswered.join('、')}），'
-              '可能還有你沒看到的故障碼。清除後就再也讀不到了。'}',
-        ),
+        title: Text(l10n.dtcClearDialogTitle),
+        content: Text(body.toString()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.dtcClearCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('確定清除'),
+            child: Text(l10n.dtcClearConfirm),
           ),
         ],
       ),
@@ -119,6 +139,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final connected = ref.watch(obdSessionProvider).isConnected;
 
     // Held in a provider rather than in this State, because the shell is an
@@ -130,7 +151,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
     final unansweredLabel = DtcKind.values
         .where((k) => !(results[k]?.answered ?? false))
         .map((k) => k.label)
-        .join('、');
+        .join(l10n.dtcListSeparator);
 
     return Scaffold(
       body: SafeArea(
@@ -152,12 +173,15 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('故障碼', style: context.texts.headlineMedium),
+                          Text(
+                            l10n.dtcHeadline,
+                            style: context.texts.headlineMedium,
+                          ),
                           Text(
                             !scan.hasScanned
-                                ? '尚未掃描'
+                                ? l10n.dtcNotScanned
                                 : scan.totalCodes > 0
-                                    ? '共 ${scan.totalCodes} 筆'
+                                    ? l10n.dtcTotalCodes(scan.totalCodes)
                                     : switch (verdict) {
                                         // The panel below has always said what
                                         // this actually establishes — that the
@@ -169,9 +193,10 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                         // it while the hedge sits in body text
                                         // two paragraphs down.
                                         ScanVerdict.completeClean =>
-                                          '已回應的控制器沒有故障碼',
-                                        ScanVerdict.partialClean => '部分未確認',
-                                        _ => '無法確認',
+                                          l10n.dtcVerdictCompleteClean,
+                                        ScanVerdict.partialClean =>
+                                          l10n.dtcVerdictPartialClean,
+                                        _ => l10n.dtcUnconfirmed,
                                       },
                             style: context.texts.bodySmall,
                           ),
@@ -197,10 +222,10 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                         // the reading that the app has stopped working, on the
                         // screen where that guess is most expensive.
                         label: Text(scan.clearing
-                            ? '清除中…'
+                            ? l10n.dtcClearing
                             : scan.clearRepeatWouldHarm
-                                ? '請先重新掃描'
-                                : '清除'),
+                                ? l10n.dtcRescanFirst
+                                : l10n.dtcClear),
                       ),
                   ],
                 ),
@@ -244,7 +269,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                               .read(dtcScanProvider.notifier)
                               .dismissClearMessage(),
                           icon: const Icon(Icons.close, size: 18),
-                          tooltip: '關閉',
+                          tooltip: l10n.dtcDismiss,
                         ),
                       ],
                     ),
@@ -253,17 +278,18 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
               ),
             SliverFillRemaining(
               child: !connected
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.link_off,
-                      title: '尚未連線',
-                      message: '需要連上 ELM327 轉接器或啟動模擬器才能讀取故障碼。',
+                      title: l10n.dtcNotConnectedTitle,
+                      message: l10n.dtcNotConnectedBody,
                     )
                   : !scan.hasScanned
                       ? EmptyState(
                           icon: scan.error == null ? Icons.search : Icons.error_outline,
-                          title: scan.error == null ? '掃描車輛故障碼' : '讀取失敗',
-                          message: scan.error ??
-                              '讀取 Mode 03 已儲存、Mode 07 待確認與 Mode 0A 永久故障碼。',
+                          title: scan.error == null
+                              ? l10n.dtcScanTitle
+                              : l10n.dtcReadFailed,
+                          message: scan.error ?? l10n.dtcScanBody,
                           action: FilledButton.icon(
                             onPressed: scan.loading ? null : _rescan,
                             icon: scan.loading
@@ -275,8 +301,10 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                 : const Icon(Icons.search, size: 20),
                             label: Text(
                               scan.loading
-                                  ? '掃描中…'
-                                  : (scan.error == null ? '開始掃描' : '重試'),
+                                  ? l10n.dtcScanning
+                                  : (scan.error == null
+                                      ? l10n.dtcStartScan
+                                      : l10n.dtcRetry),
                             ),
                           ),
                         )
@@ -350,10 +378,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                       const SizedBox(width: Spacing.xs),
                                       Expanded(
                                         child: Text(
-                                          '這次沒有讀到凍結幀 —— 不代表車上沒有。'
-                                          '請先重新掃描再決定要不要清除故障碼，'
-                                          '因為清除會永久銷毀故障當下的紀錄。'
-                                          '如果每次掃描都一樣，可能是這台車不提供。',
+                                          l10n.dtcFreezeFrameUnreadPanel,
                                           style: context.texts.bodySmall,
                                         ),
                                       ),
@@ -405,7 +430,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              '已回應的控制器都沒有故障碼。',
+                                              l10n.dtcCompleteCleanTitle,
                                               style: context.texts.titleSmall,
                                             ),
                                             const SizedBox(height: Spacing.xs),
@@ -419,8 +444,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                             // inventory of who should have
                                             // answered.
                                             Text(
-                                              '這代表每個回覆的控制器都回報無故障碼，'
-                                              '不代表車上每個模組都已被問到。',
+                                              l10n.dtcCompleteCleanBody,
                                               style: context.texts.bodySmall,
                                             ),
                                           ],
@@ -447,7 +471,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              '已回應的項目沒有故障碼。',
+                                              l10n.dtcPartialCleanTitle,
                                               style: context.texts.titleSmall,
                                             ),
                                             const SizedBox(height: Spacing.xs),
@@ -468,18 +492,19 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                                             if (unansweredLabel.isEmpty &&
                                                 scan.optionalGaps.isNotEmpty)
                                               Text(
-                                                '三個類別都查詢完成了。'
-                                                '有 ${scan.optionalGaps.length} 個控制器'
-                                                '（${scan.optionalGaps.join('、')}）'
-                                                '沒有實作待確認或永久故障碼 —— '
-                                                '這在很多車上是正常的，'
-                                                '但也因此不能宣告全車都沒有故障碼。',
+                                                l10n.dtcPartialCleanOptionalGaps(
+                                                  scan.optionalGaps.length,
+                                                  scan.optionalGaps.join(
+                                                    l10n.dtcListSeparator,
+                                                  ),
+                                                ),
                                                 style: context.texts.bodySmall,
                                               )
                                             else
                                               Text(
-                                                '$unansweredLabel 沒有回應，'
-                                                '狀態無法確認 — 這不等於車輛沒有問題。',
+                                                l10n.dtcPartialCleanUnanswered(
+                                                  unansweredLabel,
+                                                ),
                                                 style: context.texts.bodySmall,
                                               ),
                                           ],
@@ -516,6 +541,7 @@ class _DtcGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final tone = switch (kind) {
       DtcKind.stored => palette.danger,
       DtcKind.pending => palette.warning,
@@ -536,7 +562,10 @@ class _DtcGroup extends StatelessWidget {
               ),
               const SizedBox(width: Spacing.sm),
               Text(
-                '${kind.label}（Mode ${kind.mode}）· ${codes.length}',
+                // `kind.label` and `kind.description` below still come from
+                // `lib/obd/dtc/dtc.dart`, which the engine wave owns. They
+                // render Chinese in both locales until that lands.
+                l10n.dtcGroupHeader(kind.label, kind.mode, codes.length),
                 style: context.texts.labelSmall?.copyWith(color: tone),
               ),
             ],
@@ -574,17 +603,23 @@ class _DtcGroup extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
+                          // A code with no description shows the raw code and
+                          // says the description is missing. Never an invented
+                          // one.
                           dtc.description ??
                               (dtc.isManufacturerSpecific
-                                  ? '原廠自訂碼 — 需查閱該車系維修手冊'
+                                  ? l10n.dtcManufacturerSpecific
                                   // The subsystem where the code's own third
                                   // digit gives one. 動力系統相關故障 is true
                                   // of every code on this screen and therefore
                                   // tells nobody anything.
                                   : dtc.subsystem != null
-                                      ? '${dtc.subsystem} — 本 App 沒有這一碼的'
-                                          '詳細說明'
-                                      : '${dtc.category.label}相關故障'),
+                                      ? l10n.dtcNoDescriptionForSubsystem(
+                                          dtc.subsystem!,
+                                        )
+                                      : l10n.dtcCategoryFault(
+                                          dtc.category.label,
+                                        )),
                           style: context.texts.bodyMedium?.copyWith(
                             color: palette.textPrimary,
                           ),
@@ -598,7 +633,8 @@ class _DtcGroup extends StatelessWidget {
                           // it all along.
                           dtc.sourceId == null
                               ? dtc.category.label
-                              : '${dtc.category.label} · 控制器 ${dtc.sourceId}',
+                              : '${dtc.category.label} · '
+                                  '${l10n.dtcControllerLabel(dtc.sourceId!)}',
                           style: context.texts.labelSmall,
                         ),
                       ],
@@ -641,7 +677,9 @@ class _UnansweredCategory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final wording = unansweredCategoryWording(
+      l10n: l10n,
       kind: kind,
       result: result,
       storedAnswered: storedAnswered,
@@ -682,8 +720,7 @@ class _UnansweredCategory extends StatelessWidget {
                 if (result.partial.isNotEmpty) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
-                    '這個類別中止前已讀到 ${result.partial.length} 筆故障碼，'
-                    '但涵蓋範圍不完整：',
+                    l10n.dtcPartialCodesRead(result.partial.length),
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.sm),
@@ -726,6 +763,11 @@ class _UnansweredCategory extends StatelessWidget {
 /// it. Three separate facts decide it and they were being conflated: whether
 /// the mandatory class answered, *who* answered this one, and whether anything
 /// was decoded.
+///
+/// It takes an [AppLocalizations] rather than a [BuildContext] for the reason
+/// `telemetry_status_copy.dart` gives: a plain parameter keeps the function
+/// pure, so those transcripts can be replayed in both languages without a
+/// widget pump.
 class UnansweredCategoryWording {
   const UnansweredCategoryWording({
     required this.headline,
@@ -742,6 +784,7 @@ class UnansweredCategoryWording {
 }
 
 UnansweredCategoryWording unansweredCategoryWording({
+  required AppLocalizations l10n,
   required DtcKind kind,
   required DtcCategoryResult result,
   required bool storedAnswered,
@@ -780,8 +823,10 @@ UnansweredCategoryWording unansweredCategoryWording({
   // nothing at all about whether a fault exists. Both claims were being made
   // from it.
   final headline = result.isSilence
-      ? (ordinarySilence ? '這個類別沒有回應' : '無法確認')
-      : '讀取失敗';
+      ? (ordinarySilence
+          ? l10n.dtcSilentCategoryHeadline
+          : l10n.dtcUnconfirmed)
+      : l10n.dtcReadFailed;
 
   final String detail;
   if (ordinarySilence) {
@@ -790,32 +835,29 @@ UnansweredCategoryWording unansweredCategoryWording({
     // *permanent* codes that arrived with the 2010-2012 generation. Telling a
     // driver that their 2004 car is too old for pending codes is simply wrong.
     detail = switch (kind) {
-      DtcKind.permanent =>
-        '永久故障碼（Mode 0A）沒有回應。這個類別在 2010 年前後才隨新一代 OBD-II 導入，'
-            '較舊的車輛不一定支援 —— 但沒有回應也可能只是這次沒讀到，'
-            '兩者無法分辨。已儲存故障碼的結果不受影響。',
-      DtcKind.pending =>
-        '待確認故障碼（Mode 07）沒有回應。可能是這具 ECU 未實作這個服務，'
-            '也可能是這次沒有讀到 —— 沒有回應無法分辨兩者，'
-            '也不能當作「沒有待確認故障」。已儲存故障碼的結果不受影響。',
+      DtcKind.permanent => l10n.dtcSilentPermanentDetail,
+      DtcKind.pending => l10n.dtcSilentPendingDetail,
+      // Unreachable: `ordinarySilence` requires an optional class. Left empty
+      // rather than given a key, because an ARB entry no screen can render is
+      // one a translator has to guess at.
       DtcKind.stored => '',
     };
   } else if (result.isSilence) {
     if (!isOptional) {
-      detail = '車輛沒有回應 Mode ${kind.mode} 查詢，因此無法確認是否有已儲存的故障碼。'
-          '這與「沒有故障碼」不是同一件事。';
+      detail = l10n.dtcStoredSilentDetail(kind.mode);
     } else if (!answeredByNobody) {
       // Some controllers answered and some did not. Saying the vehicle did not
       // respond is false, and so is saying Mode 03 was silent.
-      detail = '這個類別只有部分控制器回應，其餘沒有回覆，因此不能當作全車的結果。'
-          '${result.failure?.message ?? ''}';
+      detail = l10n.dtcPartiallyAnsweredDetail(result.failure?.message ?? '');
     } else {
-      detail = '車輛沒有回應 Mode ${kind.mode} 查詢，而 Mode 03 同樣沒有回應 — '
-          '因此無法判斷這是車輛不支援，還是這次連線沒有讀到。';
+      detail = l10n.dtcBothSilentDetail(kind.mode);
     }
   } else {
-    detail =
-        '${kind.label}（Mode ${kind.mode}）：${result.failure?.message ?? '未知錯誤'}';
+    detail = l10n.dtcReadFailureDetail(
+      kind.label,
+      kind.mode,
+      result.failure?.message ?? l10n.dtcUnknownError,
+    );
   }
 
   return UnansweredCategoryWording(
@@ -867,6 +909,7 @@ class _FreezeFrameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -876,16 +919,18 @@ class _FreezeFrameCard extends StatelessWidget {
               Icon(Icons.ac_unit, size: 18, color: palette.accent),
               const SizedBox(width: Spacing.xs),
               Expanded(
-                child: Text('故障發生當下的車況',
+                child: Text(l10n.dtcFreezeFrameTitle,
                     style: context.texts.titleSmall),
               ),
-              Text('控制器 ${frame.source}', style: context.texts.labelSmall),
+              Text(
+                l10n.dtcControllerLabel(frame.source),
+                style: context.texts.labelSmall,
+              ),
             ],
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            '${frame.cause.code} 被確認的那一刻，這個控制器記下的數值。'
-            '清除故障碼會一併銷毀這份紀錄。',
+            l10n.dtcFreezeFrameBody(frame.cause.code),
             style: context.texts.bodySmall,
           ),
           const SizedBox(height: Spacing.sm),
@@ -896,9 +941,8 @@ class _FreezeFrameCard extends StatelessWidget {
               // it" is a limit of this app. "It would not tell us" is worth
               // another scan.
               frame.contentsUnknown
-                  ? '這個控制器有凍結幀，但沒有回應「裡面有哪些項目」的查詢，'
-                      '所以讀不到內容。可以重新掃描再試一次。'
-                  : '這個控制器有凍結幀，但其中沒有本 App 能解讀的項目。',
+                  ? l10n.dtcFreezeFrameContentsUnknown
+                  : l10n.dtcFreezeFrameNothingDecodable,
               style: context.texts.bodySmall
                   ?.copyWith(color: palette.textSecondary),
             )
@@ -938,8 +982,7 @@ class _FreezeFrameCard extends StatelessWidget {
             // understands looks like the whole frame to somebody comparing it
             // against a scan tool.
             Text(
-              '另有 ${frame.undecodable} 個項目在這份凍結幀裡，本 App 沒有對應的換算公式，'
-              '所以沒有列出。',
+              l10n.dtcFreezeFrameUndecodable(frame.undecodable),
               style: context.texts.labelSmall
                   ?.copyWith(color: palette.textTertiary),
             ),
@@ -952,8 +995,7 @@ class _FreezeFrameCard extends StatelessWidget {
             // under the scan's deadline so this is the one that shows up on a
             // slow adapter.
             Text(
-              '有 ${frame.unread} 個項目這次沒有讀回來（可能是時間不夠或控制器沒回應）。'
-              '重新掃描可能會讀到。',
+              l10n.dtcFreezeFrameUnreadItems(frame.unread),
               style: context.texts.labelSmall
                   ?.copyWith(color: palette.warning),
             ),
@@ -1003,6 +1045,7 @@ class _ReadinessForSource extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final readiness = summary.readiness;
     final incomplete = readiness?.incomplete ?? const [];
     return Panel(
@@ -1019,23 +1062,26 @@ class _ReadinessForSource extends StatelessWidget {
               const SizedBox(width: Spacing.xs),
               Expanded(
                 child: Text(
-                  summary.milOn ? '故障燈亮著' : '故障燈沒有亮',
+                  summary.milOn ? l10n.dtcMilOn : l10n.dtcMilOff,
                   style: context.texts.titleSmall,
                 ),
               ),
-              Text('控制器 $source', style: context.texts.labelSmall),
+              Text(
+                l10n.dtcControllerLabel(source),
+                style: context.texts.labelSmall,
+              ),
             ],
           ),
           const SizedBox(height: Spacing.xs),
           Text(
             summary.confirmedCount > 0
-                ? '這個控制器自報有 ${summary.confirmedCount} 個已確認的故障碼。'
-                : '這個控制器自報沒有已確認的故障碼。',
+                ? l10n.dtcSelfReportedCodes(summary.confirmedCount)
+                : l10n.dtcSelfReportedNoCodes,
             style: context.texts.bodySmall,
           ),
           if (readiness != null) ...[
             const SizedBox(height: Spacing.md),
-            Text('排放就緒狀態', style: context.texts.labelMedium),
+            Text(l10n.dtcReadinessTitle, style: context.texts.labelMedium),
             const SizedBox(height: Spacing.xs),
             Text(
               readiness.saysNothing
@@ -1043,17 +1089,17 @@ class _ReadinessForSource extends StatelessWidget {
                   // emissions monitoring answers with all zeroes, and reading
                   // that as a clean bill of health turns silence into an
                   // answer.
-                  ? '這個控制器沒有回報任何監控項目 —— 它可能不負責排放監控，'
-                      '這不代表已經就緒。'
+                  ? l10n.dtcReadinessSaysNothing
                   // `allSupportedComplete`, not `incomplete.isEmpty`. The
                   // decoder counts monitors this table cannot name so that one
                   // left unfinished still blocks "ready"; asking only about the
                   // named ones threw that away here and told somebody driving
                   // to an inspection that everything was done.
                   : readiness.allSupportedComplete
-                      ? '這個控制器負責的監控項目都已完成。'
-                      : '還有 ${incomplete.length + readiness.unnamedOutstanding} '
-                          '項沒有完成，現在去驗車可能不會過。',
+                      ? l10n.dtcReadinessAllComplete
+                      : l10n.dtcReadinessIncomplete(
+                          incomplete.length + readiness.unnamedOutstanding,
+                        ),
               style: context.texts.bodySmall,
             ),
             const SizedBox(height: Spacing.sm),
@@ -1080,7 +1126,7 @@ class _ReadinessForSource extends StatelessWidget {
                 // report is the whole reason this row exists.
                 for (var i = 0; i < readiness.unnamedOutstanding; i++)
                   _MonitorChip(
-                    label: '未知監控項目',
+                    label: l10n.dtcUnknownMonitor,
                     state: ReadinessState.incomplete,
                     palette: palette,
                   ),
@@ -1088,7 +1134,7 @@ class _ReadinessForSource extends StatelessWidget {
                     i < readiness.unnamedSupported - readiness.unnamedOutstanding;
                     i++)
                   _MonitorChip(
-                    label: '未知監控項目',
+                    label: l10n.dtcUnknownMonitor,
                     state: ReadinessState.complete,
                     palette: palette,
                   ),
