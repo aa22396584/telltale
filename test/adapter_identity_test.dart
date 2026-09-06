@@ -26,16 +26,13 @@ void main() {
     test('v1.5 is named, because Elm Electronics never shipped one', () {
       final concerns = _id('ELM327 v1.5').concerns;
       expect(concerns, hasLength(1));
-      expect(concerns.single.summary, contains('v1.5'));
-      expect(concerns.single.summary, contains('從未發行'),
+      expect(concerns.single.kind, AdapterConcernKind.firmwareNeverReleased);
+      expect(concerns.single.version, '1.5');
+      // The evidence header keeps its Chinese; the screen's words are asserted
+      // in both languages in test/l10n/adapter_concern_l10n_test.dart.
+      expect(concerns.single.exportSummary, contains('v1.5'));
+      expect(concerns.single.exportSummary, contains('從未發行'),
           reason: 'the summary states it as a fact, because it is one');
-      expect(concerns.single.detail, contains('Elm Electronics'),
-          reason: 'and the detail names the authority for that fact rather '
-              'than leaving it as the app\'s opinion');
-      expect(concerns.single.detail, contains('仍然可用'),
-          reason: 'a very large share of working adapters report v1.5; copy '
-              'that reads as a verdict on the hardware would be wrong more '
-              'often than right');
     });
 
     test('and v1.4a, which is the same trick one digit over', () {
@@ -73,7 +70,8 @@ void main() {
       // from something claiming v2.1 is the device disagreeing with itself.
       final concerns = _id('ELM327 v2.1', pps: PpsProbe.refused).concerns;
       expect(concerns, hasLength(1));
-      expect(concerns.single.summary, contains('ATPPS'));
+      expect(concerns.single.kind,
+          AdapterConcernKind.ppsRefusedDespiteVersion);
     });
 
     test('claiming v1.0 and refusing ATPPS is not', () {
@@ -97,7 +95,7 @@ void main() {
   test('an adapter that will not answer AT@1 is below every real release', () {
     final concerns = _id('ELM327 v2.1', identity: '').concerns;
     expect(concerns, hasLength(1));
-    expect(concerns.single.summary, contains('AT@1'));
+    expect(concerns.single.kind, AdapterConcernKind.noIdentityResponse);
   });
 
   test('concerns accumulate rather than shadowing each other', () {
@@ -132,7 +130,12 @@ void main() {
       // check against, and inventing a complaint from an absence is how a
       // check starts crying wolf.
       final concerns = _id('OBDII Bluetooth v3.0 Super').concerns;
-      expect(concerns.where((c) => c.summary.contains('韌體版本')), isEmpty);
+      expect(
+        concerns.where(
+          (c) => c.kind == AdapterConcernKind.firmwareNeverReleased,
+        ),
+        isEmpty,
+      );
     });
 
     test('and the version parser is not fooled by a number elsewhere', () {
@@ -167,7 +170,7 @@ void main() {
     expect(identity.versionNumber, isNotNull,
         reason: 'the demo announces a version, so it is held to it');
     expect(identity.concerns, isEmpty,
-        reason: identity.concerns.map((c) => c.summary).join('; '));
+        reason: identity.concerns.map((c) => c.exportSummary).join('; '));
 
     await client.dispose();
   }, timeout: const Timeout(Duration(seconds: 30)));

@@ -31,6 +31,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../connect/connect_screen.dart';
 import 'gauge_skin_copy.dart';
 import 'vehicle_profile_copy.dart';
+import 'adapter_concern_copy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -1333,8 +1334,14 @@ class _AdapterIdentityPanel extends ConsumerWidget {
               )
             else ...[
               for (final concern in concerns) ...[
-                Text('⚠ ${concern.summary}', style: context.texts.bodyMedium),
-                Text(concern.detail, style: context.texts.bodySmall),
+                Text(
+                  '⚠ ${adapterConcernSummary(l10n, concern)}',
+                  style: context.texts.bodyMedium,
+                ),
+                Text(
+                  adapterConcernDetail(l10n, concern),
+                  style: context.texts.bodySmall,
+                ),
                 const SizedBox(height: Spacing.xs),
               ],
               Text(

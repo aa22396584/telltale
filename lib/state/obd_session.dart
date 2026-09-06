@@ -753,7 +753,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       final identity = c.adapterIdentity;
       buffer.writeln('# 轉接器自述：${escapeEvidenceText(identity.summaryLine)}');
       for (final concern in identity.concerns) {
-        buffer.writeln('#   ⚠ ${escapeEvidenceText(concern.summary)}');
+        buffer.writeln('#   ⚠ ${escapeEvidenceText(concern.exportSummary)}');
       }
     }
     return buffer.toString();

@@ -72,6 +72,16 @@ Play 已消耗 1–11；**下一份上傳 Play 的 `+N` 必須 > 11**。
 gplay status --package com.cbstudio.telltale | python3 -c "import sys,json; \
   print([t for t in json.load(sys.stdin)['tracks']['tracks'] if t['releases']])"
 ```
+
+**這道指令給的是下界，不是最大值。** 它只列出各軌道**現行的 release**，所以已經燒掉
+但不再是現行版本的 versionCode 看不到（實測輸出只有 6 與 11，而 1–5、7–10 都已用過）。
+更要緊的是：**上傳過但從未 release 的 bundle 一樣會佔用它的 versionCode，而這道指令
+完全看不到它**。撞到的代價是上傳被擋（`Version code N has already been used`），不是
+錯誤的發布 —— 但既然這一段的用意就是「用可靠的指令取代會過期的數字」，這個缺口必須
+一起寫下來，否則它只是換了一種方式讓人自信地弄錯。
+
+真正的最大值要到 Play Console → 版本 → App bundle 探索工具去讀，那裡才列出每一個
+上傳過的 bundle，不論它有沒有被發布。
 Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。

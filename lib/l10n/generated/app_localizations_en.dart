@@ -3544,4 +3544,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get datumAssumptionsFromRecording =>
       'The estimate uses the vehicle settings as they were when this was recorded.';
+
+  @override
+  String adapterConcernFirmwareNeverReleasedSummary(String version) {
+    return 'Reports firmware v$version, which was never released';
+  }
+
+  @override
+  String get adapterConcernFirmwareNeverReleasedDetail =>
+      'Elm Electronics never published this version, so the firmware on this adapter is not the one it claims. Many of these still work — but its description of itself cannot be trusted, and it is worth suspecting first when something will not read.';
+
+  @override
+  String adapterConcernPpsRefusedSummary(String version) {
+    return 'Claims v$version, yet does not know ATPPS, which v1.1 had';
+  }
+
+  @override
+  String get adapterConcernPpsRefusedDetail =>
+      'The programmable-parameter summary (ATPPS) has existed since ELM327 v1.1, and even high-end adapters such as OBDLink support it. The version it claims and the commands it actually implements do not line up.';
+
+  @override
+  String get adapterConcernNoIdentitySummary =>
+      'Does not answer AT@1, the device-identity command from the first release';
+
+  @override
+  String get adapterConcernNoIdentityDetail =>
+      'This command has existed since ELM327 v1.0. Not answering it means this chip implements a smaller command set than any official firmware.';
+
+  @override
+  String get telemetryReplaySampled =>
+      'The preview is sampled; the export keeps every recorded event.';
+
+  @override
+  String get telemetryExportDisclosure =>
+      'The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.';
 }

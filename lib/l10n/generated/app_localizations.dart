@@ -5720,6 +5720,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The estimate uses the vehicle settings as they were when this was recorded.'**
   String get datumAssumptionsFromRecording;
+
+  /// Clone-adapter detection. Elm Electronics never shipped this version number, so the firmware is not the one the adapter says it is. Must not be softened into a compatibility note: the point is that the device's account of itself is unreliable.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports firmware v{version}, which was never released'**
+  String adapterConcernFirmwareNeverReleasedSummary(String version);
+
+  /// No description provided for @adapterConcernFirmwareNeverReleasedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Elm Electronics never published this version, so the firmware on this adapter is not the one it claims. Many of these still work — but its description of itself cannot be trusted, and it is worth suspecting first when something will not read.'**
+  String get adapterConcernFirmwareNeverReleasedDetail;
+
+  /// Clone-adapter detection: the claimed version and the implemented command set contradict each other. ATPPS and the version numbers are protocol tokens and are not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims v{version}, yet does not know ATPPS, which v1.1 had'**
+  String adapterConcernPpsRefusedSummary(String version);
+
+  /// No description provided for @adapterConcernPpsRefusedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The programmable-parameter summary (ATPPS) has existed since ELM327 v1.1, and even high-end adapters such as OBDLink support it. The version it claims and the commands it actually implements do not line up.'**
+  String get adapterConcernPpsRefusedDetail;
+
+  /// No description provided for @adapterConcernNoIdentitySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not answer AT@1, the device-identity command from the first release'**
+  String get adapterConcernNoIdentitySummary;
+
+  /// No description provided for @adapterConcernNoIdentityDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'This command has existed since ELM327 v1.0. Not answering it means this chip implements a smaller command set than any official firmware.'**
+  String get adapterConcernNoIdentityDetail;
+
+  /// Shown under a replayed session's chart, always. The chart a reader is looking at is not the whole recording, and this sentence is the only thing that says so — dropping or softening it lets somebody read a sampled curve as a complete one.
+  ///
+  /// In en, this message translates to:
+  /// **'The preview is sampled; the export keeps every recorded event.'**
+  String get telemetryReplaySampled;
+
+  /// Shown on the export sheet. It is where the app tells the reader what leaves the device, and it is what the store listing's 'no personal data collected' rests on. Both halves are load-bearing: the enumeration of what IS included, and the enumeration of what is NOT. Do not shorten either.
+  ///
+  /// In en, this message translates to:
+  /// **'The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.'**
+  String get telemetryExportDisclosure;
 }
 
 class _AppLocalizationsDelegate
