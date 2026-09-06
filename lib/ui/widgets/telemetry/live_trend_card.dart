@@ -30,16 +30,17 @@ class LiveTrendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final pid = lane.pid;
     final accent = context.gaugeColors(GaugeHue.forKey(pid.id)).bright;
     final status = isConnected ? lane.currentStatus : null;
     final value = isConnected ? lane.currentValue : null;
     final valueLabel = value == null ? '--' : _formatValue(value);
     final availability = !isConnected
-        ? '目前未連線'
+        ? l10n.telemetryNotConnected
         : status == null
-        ? '即時資料'
-        : telemetryStatusLabel(AppLocalizations.of(context), status);
+        ? l10n.trendLiveData
+        : telemetryStatusLabel(l10n, status);
     final semantics = [
       _signalName(pid),
       value == null
@@ -48,8 +49,8 @@ class LiveTrendCard extends StatelessWidget {
           ? valueLabel
           : '$valueLabel ${pid.units}',
       recordingLabel,
-      '顯示最近 60 秒趨勢',
-    ].join('，');
+      l10n.trendWindowSemantics(telemetryTrendWindow.inSeconds),
+    ].join(l10n.semanticsFieldSeparator);
 
     return Semantics(
       container: true,
@@ -98,7 +99,7 @@ class LiveTrendCard extends StatelessWidget {
                             ),
                       ),
                       Text(
-                        pid.units.isEmpty ? '無單位' : pid.units,
+                        pid.units.isEmpty ? l10n.trendNoUnits : pid.units,
                         style: context.texts.labelSmall,
                       ),
                     ],
@@ -151,6 +152,7 @@ class _TrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final segments = _segments();
     final allValues = segments
         .expand((segment) => segment)
@@ -216,7 +218,7 @@ class _TrendChart extends StatelessWidget {
               reservedSize: 24,
               interval: 30,
               getTitlesWidget: (value, meta) => Text(
-                value == 0 ? '現在' : '${value.round()}s',
+                value == 0 ? l10n.trendAxisNow : '${value.round()}s',
                 style: context.texts.labelSmall,
               ),
             ),

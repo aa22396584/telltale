@@ -144,6 +144,22 @@
       }
     }
   },
+  "dashboardChoosePids": "Choose PIDs",
+  "dashboardEmptyBody": "Pick the signals you want to watch on the PID page and they will appear here.",
+  "dashboardEmptyTitle": "The dashboard is empty",
+  "dashboardGenericObd": "Generic OBD",
+  "dashboardLocalRecordings": "Local recordings",
+  "dashboardNotConnected": "Not connected",
+  "@dashboardNotConnected": {
+    "description": "Stands in for an adapter name before anything is connected. A real device name is passed through untranslated."
+  },
+  "dashboardSingleRequestMode": "Single request mode",
+  "@dashboardSingleRequestMode": {
+    "description": "The other side of this pill reads the literal 'fastMode', an adapter behaviour name that stays untranslated."
+  },
+  "dashboardVinRead": "VIN read",
+  "dashboardWorkspaceGauges": "Gauges",
+  "dashboardWorkspaceTrends": "Trends",
   "datumStatusAssumptions": "Assumptions",
   "datumStatusClose": "Close",
   "datumStatusFollowsData": "Status follows the data",
@@ -151,6 +167,34 @@
     "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
   },
   "datumStatusFormula": "Formula",
+  "derivedAirflow": "Airflow",
+  "derivedEcuFuelTitle": "ECU fuel data",
+  "@derivedEcuFuelTitle": {
+    "description": "Used when the vehicle reported its own fuel rate. Must never read as estimated."
+  },
+  "derivedEcuReported": "ECU reported",
+  "derivedEngineHorsepower": "Engine power",
+  "@derivedEngineHorsepower": {
+    "description": "Engine (crank) power, not wheel power - PhysicsEngine reports both and this cell shows engineHorsepower. Kept short so the cell does not ellipsise at large text scales."
+  },
+  "derivedEstimatedFuelTitle": "Estimated fuel use",
+  "@derivedEstimatedFuelTitle": {
+    "description": "Used when no ECU fuel rate was reported and the figure came from the vehicle profile. Must never read as measured."
+  },
+  "derivedEstimatesDetailsTitle": "Estimate formulas and assumptions",
+  "derivedEstimatesTitle": "Estimated values",
+  "@derivedEstimatesTitle": {
+    "description": "Heading of the derived panel. These figures are computed from a vehicle profile, never read off the bus, and 'estimated' is the whole reason the panel is separate."
+  },
+  "derivedFuelUse": "Fuel use",
+  "@derivedFuelUse": {
+    "description": "Neutral cell label: the same cell renders an ECU-reported rate and an estimated one, so it must not itself claim either."
+  },
+  "derivedTorque": "Torque",
+  "derivedUnavailableMessage": "Horsepower can only be estimated once vehicle speed and acceleration data arrive",
+  "@derivedUnavailableMessage": {
+    "description": "A distinct state, not a row of zeroes: 'we cannot work this out yet' and 'your engine is producing no power' must not look alike."
+  },
   "dtcBothSilentDetail": "The vehicle did not answer the Mode {mode} query, and Mode 03 did not answer either — so there is no telling whether the vehicle lacks support or this connection simply did not read it.",
   "@dtcBothSilentDetail": {
     "placeholders": {
@@ -459,6 +503,10 @@
         "type": "String"
       }
     }
+  },
+  "gaugeUnsupportedByVehicle": "Not supported by this vehicle",
+  "@gaugeUnsupportedByVehicle": {
+    "description": "PidFault.unsupported only: the controller answered, and the answer said unsupported. Never use it for silence - that is telemetryStatusNoAnswer. It names the vehicle on purpose: the app's own refusal to transmit reads completely differently (telemetryStatusUnsafeServiceRefusal), and this tile must not be read as Telltale declining. It shares a square tile about 122dp wide with the availability badge, so anything longer needs re-measuring against test/l10n/dashboard_l10n_test.dart."
   },
   "languageSaveFailed": "Could not save the language. Try again.",
   "languageSectionTitle": "Language / 語言",
@@ -1198,6 +1246,10 @@
       }
     }
   },
+  "semanticsFieldSeparator": ", ",
+  "@semanticsFieldSeparator": {
+    "description": "Joins the fields of a composed semantics label. Chinese uses the fullwidth comma; English must not, or a screen reader announces a fullwidth character."
+  },
   "settingsAdapterConcernsFooter": "These are places where the adapter's account of itself does not add up, not evidence that it misread the car. The only way to confirm a value is a second independent measurement (see the field guide).",
   "@settingsAdapterConcernsFooter": {
     "description": "Distinguishes a self-description mismatch from a wrong reading."
@@ -1560,6 +1612,10 @@
     }
   },
   "telemetryDeleteSessionTitle": "Delete this local recording?",
+  "telemetryDemoData": "Built-in simulator data",
+  "@telemetryDemoData": {
+    "description": "The figures came from Telltale's own simulator, not from a vehicle. Must stay unmistakable."
+  },
   "telemetryDismissNotice": "Dismiss",
   "telemetryEndedByBackground": "Stopped when Telltale went to the background",
   "telemetryEndedByConfigurationChanged": "The PID selection changed",
@@ -1659,6 +1715,10 @@
         "type": "int"
       }
     }
+  },
+  "telemetryNotConnected": "Not connected",
+  "@telemetryNotConnected": {
+    "description": "No live link right now. Distinct from a controller refusing a PID and from silence on the bus."
   },
   "telemetryOfflineSampledReplay": "Offline sampled replay",
   "@telemetryOfflineSampledReplay": {
@@ -1794,6 +1854,10 @@
     "description": "Also the startOutcome for restartRequired; one sentence, one key."
   },
   "telemetryReturnToTrends": "Back to trends",
+  "telemetryRigData": "Test rig data",
+  "@telemetryRigData": {
+    "description": "The figures came from a verification rig, not from a vehicle."
+  },
   "telemetrySentenceJoin": "{first}. {second}",
   "@telemetrySentenceJoin": {
     "description": "Joins two complete sentences. Chinese uses the ideographic full stop, so the separator cannot be hard-coded.",
@@ -1942,6 +2006,79 @@
     "description": "Below a kilobyte the exact byte count is shown, because a failed handshake is a few hundred bytes and '0 KB' reads as empty.",
     "placeholders": {
       "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "trendAxisNow": "Now",
+  "trendChooseSignals": "Choose signals",
+  "trendLiveData": "Live data",
+  "@trendLiveData": {
+    "description": "The lane is connected and no status is outstanding. Never shown for a stale or unanswered reading."
+  },
+  "trendNoSignalsBody": "Enable the signals you want to watch on the PID page first.",
+  "trendNoSignalsTitle": "No trend signals available",
+  "trendNoUnits": "No units",
+  "trendPickSignalsBody": "Compare up to {limit} signals. This does not change which PIDs are polled.",
+  "@trendPickSignalsBody": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes; never spell the number in the copy.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendPickSignalsTitle": "Choose trend signals",
+  "trendRemoveSignal": "Remove {name}",
+  "@trendRemoveSignal": {
+    "description": "Delete-button tooltip on a signal chip. {name} is a PID name and is not translated here.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "trendSelectionSaveFailed": "Could not save the trend display selection",
+  "@trendSelectionSaveFailed": {
+    "description": "Says what did not happen. The chart still shows the selection for this session."
+  },
+  "trendSheetBody": "Choose at most {limit}. This only changes the chart, not PID polling or a recording in progress.",
+  "@trendSheetBody": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendSheetDone": "Done · {selected}/{limit}",
+  "@trendSheetDone": {
+    "description": "Confirm button. Both numbers come from the code: the current selection and maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendSignalNoLongerActive": "One of those signals is no longer in the PID watch list",
+  "trendSignalsHeading": "Trend signals",
+  "trendTooManySelected": "Choose at most {limit}",
+  "@trendTooManySelected": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendWindowSemantics": "Showing the last {seconds} seconds",
+  "@trendWindowSemantics": {
+    "description": "Screen-reader only. {seconds} comes from telemetryTrendWindow.",
+    "placeholders": {
+      "seconds": {
         "type": "int"
       }
     }

@@ -236,6 +236,37 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardChoosePids => 'Choose PIDs';
+
+  @override
+  String get dashboardEmptyBody =>
+      'Pick the signals you want to watch on the PID page and they will appear here.';
+
+  @override
+  String get dashboardEmptyTitle => 'The dashboard is empty';
+
+  @override
+  String get dashboardGenericObd => 'Generic OBD';
+
+  @override
+  String get dashboardLocalRecordings => 'Local recordings';
+
+  @override
+  String get dashboardNotConnected => 'Not connected';
+
+  @override
+  String get dashboardSingleRequestMode => 'Single request mode';
+
+  @override
+  String get dashboardVinRead => 'VIN read';
+
+  @override
+  String get dashboardWorkspaceGauges => 'Gauges';
+
+  @override
+  String get dashboardWorkspaceTrends => 'Trends';
+
+  @override
   String get datumStatusAssumptions => 'Assumptions';
 
   @override
@@ -246,6 +277,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get datumStatusFormula => 'Formula';
+
+  @override
+  String get derivedAirflow => 'Airflow';
+
+  @override
+  String get derivedEcuFuelTitle => 'ECU fuel data';
+
+  @override
+  String get derivedEcuReported => 'ECU reported';
+
+  @override
+  String get derivedEngineHorsepower => 'Engine power';
+
+  @override
+  String get derivedEstimatedFuelTitle => 'Estimated fuel use';
+
+  @override
+  String get derivedEstimatesDetailsTitle =>
+      'Estimate formulas and assumptions';
+
+  @override
+  String get derivedEstimatesTitle => 'Estimated values';
+
+  @override
+  String get derivedFuelUse => 'Fuel use';
+
+  @override
+  String get derivedTorque => 'Torque';
+
+  @override
+  String get derivedUnavailableMessage =>
+      'Horsepower can only be estimated once vehicle speed and acceleration data arrive';
 
   @override
   String dtcBothSilentDetail(Object mode) {
@@ -579,6 +642,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String gaugeReadingStale(String reading) {
     return '$reading (data is stale)';
   }
+
+  @override
+  String get gaugeUnsupportedByVehicle => 'Not supported by this vehicle';
 
   @override
   String get languageSaveFailed => 'Could not save the language. Try again.';
@@ -1358,6 +1424,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get semanticsFieldSeparator => ', ';
+
+  @override
   String get settingsAdapterConcernsFooter =>
       'These are places where the adapter\'s account of itself does not add up, not evidence that it misread the car. The only way to confirm a value is a second independent measurement (see the field guide).';
 
@@ -1789,6 +1858,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get telemetryDeleteSessionTitle => 'Delete this local recording?';
 
   @override
+  String get telemetryDemoData => 'Built-in simulator data';
+
+  @override
   String get telemetryDismissNotice => 'Dismiss';
 
   @override
@@ -1902,6 +1974,9 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Local storage: $groups of $groupLimit groups, $used of $byteLimit MiB';
   }
+
+  @override
+  String get telemetryNotConnected => 'Not connected';
 
   @override
   String get telemetryOfflineSampledReplay => 'Offline sampled replay';
@@ -2047,6 +2122,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get telemetryReturnToTrends => 'Back to trends';
+
+  @override
+  String get telemetryRigData => 'Test rig data';
 
   @override
   String telemetrySentenceJoin(String first, String second) {
@@ -2249,6 +2327,69 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 byte',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get trendAxisNow => 'Now';
+
+  @override
+  String get trendChooseSignals => 'Choose signals';
+
+  @override
+  String get trendLiveData => 'Live data';
+
+  @override
+  String get trendNoSignalsBody =>
+      'Enable the signals you want to watch on the PID page first.';
+
+  @override
+  String get trendNoSignalsTitle => 'No trend signals available';
+
+  @override
+  String get trendNoUnits => 'No units';
+
+  @override
+  String trendPickSignalsBody(int limit) {
+    return 'Compare up to $limit signals. This does not change which PIDs are polled.';
+  }
+
+  @override
+  String get trendPickSignalsTitle => 'Choose trend signals';
+
+  @override
+  String trendRemoveSignal(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get trendSelectionSaveFailed =>
+      'Could not save the trend display selection';
+
+  @override
+  String trendSheetBody(int limit) {
+    return 'Choose at most $limit. This only changes the chart, not PID polling or a recording in progress.';
+  }
+
+  @override
+  String trendSheetDone(int selected, int limit) {
+    return 'Done · $selected/$limit';
+  }
+
+  @override
+  String get trendSignalNoLongerActive =>
+      'One of those signals is no longer in the PID watch list';
+
+  @override
+  String get trendSignalsHeading => 'Trend signals';
+
+  @override
+  String trendTooManySelected(int limit) {
+    return 'Choose at most $limit';
+  }
+
+  @override
+  String trendWindowSemantics(int seconds) {
+    return 'Showing the last $seconds seconds';
   }
 
   @override

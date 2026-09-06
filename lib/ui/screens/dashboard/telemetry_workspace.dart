@@ -16,6 +16,25 @@ import '../../widgets/telemetry/live_trend_card.dart';
 import '../../widgets/telemetry/telemetry_lane_selector.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
+/// What the recorder is doing, for the trend cards' semantics labels.
+///
+/// Takes an [AppLocalizations] rather than a [BuildContext] so a pure-Dart
+/// test can walk every phase in both languages without a widget pump.
+String telemetryRecorderPhaseLabel(
+  AppLocalizations l10n,
+  TelemetryRecorderPhase phase,
+) => switch (phase) {
+  TelemetryRecorderPhase.preparing => l10n.telemetryRecorderPhasePreparing,
+  TelemetryRecorderPhase.recording => l10n.telemetryRecorderPhaseRecording,
+  TelemetryRecorderPhase.finalizing => l10n.telemetryRecorderPhaseFinalizing,
+  // This label answers "is a recording running", which is what a screen
+  // reader announcing a live trend card needs. Why one failed is the
+  // recorder panel's job to say, at the size that question deserves.
+  TelemetryRecorderPhase.idle ||
+  TelemetryRecorderPhase.completed ||
+  TelemetryRecorderPhase.failed => l10n.telemetryRecorderPhaseIdle,
+};
+
 class TelemetryWorkspace extends ConsumerWidget {
   const TelemetryWorkspace({super.key});
 
@@ -37,12 +56,10 @@ class TelemetryWorkspace extends ConsumerWidget {
       speedKnown: safety.speedKnown,
       speedKmh: safety.speedKmh,
     );
-    final recordingLabel = switch (progress.state.phase) {
-      TelemetryRecorderPhase.preparing => '正在準備錄製',
-      TelemetryRecorderPhase.recording => '正在錄製',
-      TelemetryRecorderPhase.finalizing => '正在儲存紀錄',
-      _ => '未錄製',
-    };
+    final recordingLabel = telemetryRecorderPhaseLabel(
+      l10n,
+      progress.state.phase,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.md),
@@ -50,28 +67,28 @@ class TelemetryWorkspace extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (evidence == null) ...[
-            const StatusPill(
-              label: '目前未連線',
+            StatusPill(
+              label: l10n.telemetryNotConnected,
               icon: Icons.link_off,
               tone: StatusTone.neutral,
             ),
             const SizedBox(height: Spacing.md),
           ] else if (evidence.source == TelemetrySource.demo) ...[
-            const StatusPill(
-              label: '內建模擬資料',
+            StatusPill(
+              label: l10n.telemetryDemoData,
               icon: Icons.science_outlined,
               tone: StatusTone.accent,
             ),
             const SizedBox(height: Spacing.md),
           ] else if (evidence.source == TelemetrySource.simulatedRig) ...[
-            const StatusPill(
-              label: '測試馬具資料',
+            StatusPill(
+              label: l10n.telemetryRigData,
               icon: Icons.developer_board_outlined,
               tone: StatusTone.warn,
             ),
             const SizedBox(height: Spacing.md),
           ],
-          const SectionHeading('趨勢訊號'),
+          SectionHeading(l10n.trendSignalsHeading),
           TelemetryLaneSelector(
             activePids: activePids,
             selectedIds: trends.selectedIds,
@@ -80,21 +97,21 @@ class TelemetryWorkspace extends ConsumerWidget {
           ),
           const SizedBox(height: Spacing.lg),
           if (activePids.isEmpty)
-            const SizedBox(
+            SizedBox(
               height: 300,
               child: EmptyState(
                 icon: Icons.tune,
-                title: '沒有可用的趨勢訊號',
-                message: '先到 PID 頁面啟用想要監看的訊號。',
+                title: l10n.trendNoSignalsTitle,
+                message: l10n.trendNoSignalsBody,
               ),
             )
           else if (trends.selectedIds.isEmpty)
-            const SizedBox(
+            SizedBox(
               height: 300,
               child: EmptyState(
                 icon: Icons.show_chart,
-                title: '選擇趨勢訊號',
-                message: '最多可以比較 4 項訊號，不會改變已啟用的 PID 輪詢。',
+                title: l10n.trendPickSignalsTitle,
+                message: l10n.trendPickSignalsBody(maximumTelemetryTrendLanes),
               ),
             )
           else

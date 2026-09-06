@@ -465,6 +465,66 @@ abstract class AppLocalizations {
   /// **'Enter the port (most adapters use {port}).'**
   String connectWifiPortRequired(int port);
 
+  /// No description provided for @dashboardChoosePids.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose PIDs'**
+  String get dashboardChoosePids;
+
+  /// No description provided for @dashboardEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the signals you want to watch on the PID page and they will appear here.'**
+  String get dashboardEmptyBody;
+
+  /// No description provided for @dashboardEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The dashboard is empty'**
+  String get dashboardEmptyTitle;
+
+  /// No description provided for @dashboardGenericObd.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic OBD'**
+  String get dashboardGenericObd;
+
+  /// No description provided for @dashboardLocalRecordings.
+  ///
+  /// In en, this message translates to:
+  /// **'Local recordings'**
+  String get dashboardLocalRecordings;
+
+  /// Stands in for an adapter name before anything is connected. A real device name is passed through untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get dashboardNotConnected;
+
+  /// The other side of this pill reads the literal 'fastMode', an adapter behaviour name that stays untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Single request mode'**
+  String get dashboardSingleRequestMode;
+
+  /// No description provided for @dashboardVinRead.
+  ///
+  /// In en, this message translates to:
+  /// **'VIN read'**
+  String get dashboardVinRead;
+
+  /// No description provided for @dashboardWorkspaceGauges.
+  ///
+  /// In en, this message translates to:
+  /// **'Gauges'**
+  String get dashboardWorkspaceGauges;
+
+  /// No description provided for @dashboardWorkspaceTrends.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get dashboardWorkspaceTrends;
+
   /// No description provided for @datumStatusAssumptions.
   ///
   /// In en, this message translates to:
@@ -488,6 +548,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Formula'**
   String get datumStatusFormula;
+
+  /// No description provided for @derivedAirflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Airflow'**
+  String get derivedAirflow;
+
+  /// Used when the vehicle reported its own fuel rate. Must never read as estimated.
+  ///
+  /// In en, this message translates to:
+  /// **'ECU fuel data'**
+  String get derivedEcuFuelTitle;
+
+  /// No description provided for @derivedEcuReported.
+  ///
+  /// In en, this message translates to:
+  /// **'ECU reported'**
+  String get derivedEcuReported;
+
+  /// Engine (crank) power, not wheel power - PhysicsEngine reports both and this cell shows engineHorsepower. Kept short so the cell does not ellipsise at large text scales.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine power'**
+  String get derivedEngineHorsepower;
+
+  /// Used when no ECU fuel rate was reported and the figure came from the vehicle profile. Must never read as measured.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated fuel use'**
+  String get derivedEstimatedFuelTitle;
+
+  /// No description provided for @derivedEstimatesDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate formulas and assumptions'**
+  String get derivedEstimatesDetailsTitle;
+
+  /// Heading of the derived panel. These figures are computed from a vehicle profile, never read off the bus, and 'estimated' is the whole reason the panel is separate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated values'**
+  String get derivedEstimatesTitle;
+
+  /// Neutral cell label: the same cell renders an ECU-reported rate and an estimated one, so it must not itself claim either.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel use'**
+  String get derivedFuelUse;
+
+  /// No description provided for @derivedTorque.
+  ///
+  /// In en, this message translates to:
+  /// **'Torque'**
+  String get derivedTorque;
+
+  /// A distinct state, not a row of zeroes: 'we cannot work this out yet' and 'your engine is producing no power' must not look alike.
+  ///
+  /// In en, this message translates to:
+  /// **'Horsepower can only be estimated once vehicle speed and acceleration data arrive'**
+  String get derivedUnavailableMessage;
 
   /// No description provided for @dtcBothSilentDetail.
   ///
@@ -926,6 +1046,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{reading} (data is stale)'**
   String gaugeReadingStale(String reading);
+
+  /// PidFault.unsupported only: the controller answered, and the answer said unsupported. Never use it for silence - that is telemetryStatusNoAnswer. It names the vehicle on purpose: the app's own refusal to transmit reads completely differently (telemetryStatusUnsafeServiceRefusal), and this tile must not be read as Telltale declining. It shares a square tile about 122dp wide with the availability badge, so anything longer needs re-measuring against test/l10n/dashboard_l10n_test.dart.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported by this vehicle'**
+  String get gaugeUnsupportedByVehicle;
 
   /// No description provided for @languageSaveFailed.
   ///
@@ -2187,6 +2313,12 @@ abstract class AppLocalizations {
   /// **'View on {store}'**
   String recommendedPurchaseViewOnStore(String store);
 
+  /// Joins the fields of a composed semantics label. Chinese uses the fullwidth comma; English must not, or a screen reader announces a fullwidth character.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get semanticsFieldSeparator;
+
   /// Distinguishes a self-description mismatch from a wrong reading.
   ///
   /// In en, this message translates to:
@@ -2896,6 +3028,12 @@ abstract class AppLocalizations {
   /// **'Delete this local recording?'**
   String get telemetryDeleteSessionTitle;
 
+  /// The figures came from Telltale's own simulator, not from a vehicle. Must stay unmistakable.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in simulator data'**
+  String get telemetryDemoData;
+
   /// No description provided for @telemetryDismissNotice.
   ///
   /// In en, this message translates to:
@@ -3038,6 +3176,12 @@ abstract class AppLocalizations {
     String used,
     int byteLimit,
   );
+
+  /// No live link right now. Distinct from a controller refusing a PID and from silence on the bus.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get telemetryNotConnected;
 
   /// Sampled, not the full recording. The exported file keeps every event; this preview does not.
   ///
@@ -3218,6 +3362,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to trends'**
   String get telemetryReturnToTrends;
+
+  /// The figures came from a verification rig, not from a vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Test rig data'**
+  String get telemetryRigData;
 
   /// Joins two complete sentences. Chinese uses the ideographic full stop, so the separator cannot be hard-coded.
   ///
@@ -3506,6 +3656,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{bytes, plural, =1{1 byte} other{{bytes} bytes}}'**
   String transcriptSizeBytes(int bytes);
+
+  /// No description provided for @trendAxisNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get trendAxisNow;
+
+  /// No description provided for @trendChooseSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose signals'**
+  String get trendChooseSignals;
+
+  /// The lane is connected and no status is outstanding. Never shown for a stale or unanswered reading.
+  ///
+  /// In en, this message translates to:
+  /// **'Live data'**
+  String get trendLiveData;
+
+  /// No description provided for @trendNoSignalsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the signals you want to watch on the PID page first.'**
+  String get trendNoSignalsBody;
+
+  /// No description provided for @trendNoSignalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No trend signals available'**
+  String get trendNoSignalsTitle;
+
+  /// No description provided for @trendNoUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'No units'**
+  String get trendNoUnits;
+
+  /// {limit} comes from maximumTelemetryTrendLanes; never spell the number in the copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare up to {limit} signals. This does not change which PIDs are polled.'**
+  String trendPickSignalsBody(int limit);
+
+  /// No description provided for @trendPickSignalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose trend signals'**
+  String get trendPickSignalsTitle;
+
+  /// Delete-button tooltip on a signal chip. {name} is a PID name and is not translated here.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String trendRemoveSignal(String name);
+
+  /// Says what did not happen. The chart still shows the selection for this session.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the trend display selection'**
+  String get trendSelectionSaveFailed;
+
+  /// {limit} comes from maximumTelemetryTrendLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at most {limit}. This only changes the chart, not PID polling or a recording in progress.'**
+  String trendSheetBody(int limit);
+
+  /// Confirm button. Both numbers come from the code: the current selection and maximumTelemetryTrendLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Done · {selected}/{limit}'**
+  String trendSheetDone(int selected, int limit);
+
+  /// No description provided for @trendSignalNoLongerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'One of those signals is no longer in the PID watch list'**
+  String get trendSignalNoLongerActive;
+
+  /// No description provided for @trendSignalsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend signals'**
+  String get trendSignalsHeading;
+
+  /// {limit} comes from maximumTelemetryTrendLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at most {limit}'**
+  String trendTooManySelected(int limit);
+
+  /// Screen-reader only. {seconds} comes from telemetryTrendWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the last {seconds} seconds'**
+  String trendWindowSemantics(int seconds);
 
   /// No description provided for @wearBack.
   ///
