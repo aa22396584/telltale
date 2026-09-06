@@ -31,7 +31,7 @@ class DatumStatusBadge extends StatelessWidget {
             ? StatusTone.good
             : StatusTone.neutral,
     };
-    return StatusPill(label: text, tone: tone, dense: dense, softWrap: true);
+    return StatusPill(label: text, tone: tone, dense: dense);
   }
 }
 

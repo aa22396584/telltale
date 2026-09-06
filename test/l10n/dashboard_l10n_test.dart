@@ -670,20 +670,27 @@ void main() {
   // boxes: square gauge tiles, a divided cell row, headers that put a title
   // and a badge on one line.
   //
-  // One configuration already overflowed in Chinese before any of this was
-  // translated, and it is not this group's to fix: at 320dp with 2x text the
-  // estimated panel's airflow pill is a StatusPill (lib/ui/widgets/panel.dart)
-  // whose Row does not shrink, holding an untranslated physics label
-  // (lib/obd/physics/physics_engine.dart). Both languages overflow it by the
-  // same 22 pixels. It is exempted by name, and the Chinese run of that same
-  // case has to keep overflowing or the exemption is stale and fails.
+  // Everything must lay out in both languages, at every width and text scale
+  // below. The set is empty and the machinery stays: an exemption has to prove
+  // it is still earned, so a case listed here MUST still overflow or this test
+  // fails and tells you to delete the entry.
   //
-  // Everything else must lay out in both languages. One test per
-  // configuration on purpose: RenderFlex reports an overflow once per render
-  // object, so pumping a second locale into the same tester reports nothing
-  // and a version of this that looped inside one test passed against a
+  // It held one entry — the estimated panel's airflow pill at 320dp with 2x
+  // text. That was a real overflow in BOTH languages, predating any
+  // translation: StatusPill (lib/ui/widgets/panel.dart) put its label in a
+  // MainAxisSize.min Row where it could not give way. Exempting it was the
+  // wrong call twice over. It hid an accessibility defect that a driver using
+  // large text on a small phone actually meets, and the staleness check then
+  // asserted a 22-pixel overflow that only reproduces with one platform's font
+  // metrics — green on macOS, red on Linux CI, for reasons having nothing to do
+  // with the copy. The label is Flexible now, so it wraps, and there is nothing
+  // left to exempt.
+  //
+  // One test per configuration on purpose: RenderFlex reports an overflow once
+  // per render object, so pumping a second locale into the same tester reports
+  // nothing, and a version of this that looped inside one test passed against a
   // deliberately broken layout.
-  const knownNarrowOverflow = {'estimated values|320.0|2.0'};
+  const knownNarrowOverflow = <String>{};
 
   group('English lays out wherever Chinese does', () {
     final now = DateTime.now();

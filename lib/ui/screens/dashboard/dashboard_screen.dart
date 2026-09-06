@@ -530,7 +530,6 @@ class _StatusStrip extends ConsumerWidget {
                       .map((gap) => datumGapLabel(l10n, gap))
                       .join(' · '),
                   tone: StatusTone.warn,
-                  softWrap: true,
                 ),
               StatusPill(
                 label: '${snapshot.pidsPerSecond.round()} PIDs/s',
