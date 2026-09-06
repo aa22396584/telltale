@@ -20,6 +20,9 @@
 /// valid Dart library name.
 library;
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -273,6 +276,29 @@ void main() {
     });
   });
 
+  test('no English value for this group is still Chinese', () {
+    // A widget pump can only reach the copy the state it was given happens to
+    // produce: no unsupported pill without a vehicle that disclaimed a PID, no
+    // stale units without a reading that stopped arriving, no import summary
+    // without a file. So the pumps below check what they can reach, and this
+    // checks the rest — over the template file rather than over a rendered
+    // string, which is why it is a property and not a restatement of the ARB.
+    final arb =
+        jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+            as Map<String, dynamic>;
+    final keys = arb.keys.where((k) => k.startsWith('pid')).toList();
+    expect(keys, hasLength(greaterThan(60)), reason: 'sanity: keys were found');
+    for (final key in keys) {
+      final value = arb[key];
+      expect(value, isA<String>(), reason: '$key is not a string');
+      expect(
+        _cjk.hasMatch(value as String),
+        isFalse,
+        reason: 'app_en.arb key "$key" was never translated: "$value"',
+      );
+    }
+  });
+
   group('the bulk-add confirmation keeps both of its halves', () {
     test('the unconfirmed-blocks warning appears only when there are some', () {
       for (final locale in {'en': en, 'zh-Hant': zh}.entries) {
@@ -355,6 +381,14 @@ void main() {
     _expectSomethingRendered(tester, 20, 'PID manager');
     _expectNoTearOff(tester, 'PID manager');
     _expectNoChinese(tester, 'PID manager');
+
+    // The custom row, which sorts below twenty-five built-ins: its pill, its
+    // edit tooltip and its switch semantics are only built once it is visible.
+    await tester.enterText(find.byType(TextField).first, 'Boost');
+    await tester.pump();
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget, reason: 'sanity');
+    _expectNoTearOff(tester, 'PID manager custom row');
+    _expectNoChinese(tester, 'PID manager custom row');
 
     // The empty state, which only the search box can reach.
     await tester.enterText(find.byType(TextField).first, 'zzz-no-such-pid');
@@ -471,6 +505,51 @@ void main() {
       tester,
       '自訂',
       'the custom pill disappeared from a custom definition',
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+    await tester.pump();
+  });
+
+  testWidgets('the Chinese preview still says the value was substituted', (
+    tester,
+  ) async {
+    // The only path in this group that formats a number through intl, and the
+    // only one whose sentence separates an estimate from a measurement: the
+    // preview stands a value in for a PID it cannot read, and must keep saying
+    // so rather than presenting the result as a reading.
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final container = await _container({
+      'custom_pids_v1': <String>[_asciiCustom],
+    });
+
+    await tester.pumpWidget(_editorHost(container, null, testUiLocale));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(5), 'A-VAL{0133}');
+    await tester.pumpAndSettle();
+
+    _expectNoTearOff(tester, 'PID editor preview, zh-Hant');
+    _expectSomethingContains(
+      tester,
+      'VAL{0133}',
+      'the Chinese notice dropped the VAL token, which is formula syntax and '
+          'must stay byte-identical',
+    );
+    _expectSomethingContains(
+      tester,
+      '100',
+      'the Chinese notice dropped the stand-in value, so the reader cannot '
+          'tell the result rests on a number the editor invented',
+    );
+    _expectSomethingContains(
+      tester,
+      '代入',
+      'the Chinese notice stopped saying the value was substituted, which '
+          'turns an estimate into a reading',
     );
 
     await tester.pumpWidget(const SizedBox.shrink());
