@@ -31,6 +31,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/main.dart' as app;
+import 'package:torque_obd/obd/field_bt_target.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/telemetry_recorder.dart';
@@ -212,17 +213,20 @@ Future<void> _connectBle(WidgetTester tester) async {
 
   final found = await pumpUntil(
     tester,
-    () => find.text(_adapterName).evaluate().isNotEmpty,
+    () => _targetFinder().evaluate().isNotEmpty,
     timeout: const Duration(seconds: 45),
   );
   if (!found) {
     fail(
-      'no BLE peripheral named "$_adapterName" in 45s.\n'
+      'no BLE peripheral matching '
+      '"${fieldBtFinderLabel(name: _adapterName, address: _adapterAddress)}" '
+      'in 45s.\n'
       'Power the dongle (ignition ON), keep the phone unlocked, and re-run '
-      'tool/field_bt_verify/run.sh. ACL-down is observation, not a field pass.',
+      'tool/field_bt_verify/run.sh. ACL-down is observation, not a field pass. '
+      'When --address is set, the Connect tile id (device.id) must match.',
     );
   }
-  await _tapNamedDevice(tester, _adapterName);
+  await _tapTarget(tester);
 }
 
 Future<void> _connectClassic(WidgetTester tester) async {
@@ -233,40 +237,57 @@ Future<void> _connectClassic(WidgetTester tester) async {
   // Classic lists bonded devices; wait for the bonded name to appear.
   final found = await pumpUntil(
     tester,
-    () => find.text(_adapterName).evaluate().isNotEmpty,
+    () => _targetFinder().evaluate().isNotEmpty,
     timeout: const Duration(seconds: 30),
   );
   if (!found) {
     fail(
-      'no Classic bonded device named "$_adapterName".\n'
-      'Pass --name for the exact bonded label; OBDII is not a silent fallback.\n'
+      'no Classic bonded device matching '
+      '"${fieldBtFinderLabel(name: _adapterName, address: _adapterAddress)}".\n'
+      'Pass --name / --address for the exact tile; OBDII is not a silent fallback.\n'
       'Pair in system Settings first; App cannot pair for you.',
     );
   }
-  await _tapNamedDevice(tester, _adapterName);
+  await _tapTarget(tester);
 }
 
-Future<void> _tapNamedDevice(WidgetTester tester, String name) async {
-  final label = find.text(name);
-  if (label.evaluate().length > 1) {
+Finder _targetFinder() {
+  final label = fieldBtFinderLabel(
+    name: _adapterName,
+    address: _adapterAddress,
+  );
+  return find.byWidgetPredicate(
+    (widget) =>
+        widget is Text &&
+        widget.data != null &&
+        widget.data!.toLowerCase() == label.toLowerCase(),
+  );
+}
+
+Future<void> _tapTarget(WidgetTester tester) async {
+  final label = fieldBtFinderLabel(
+    name: _adapterName,
+    address: _adapterAddress,
+  );
+  final match = _targetFinder();
+  if (_adapterAddress.isEmpty && find.text(_adapterName).evaluate().length > 1) {
     fail(
-      'multiple tiles named "$name"'
-      '${_adapterAddress.isEmpty ? "" : " (address=$_adapterAddress)"}; '
-      'the list is ambiguous — do not tap by name.',
+      'multiple tiles named "$_adapterName"; pass --address <device.id> '
+      'so the journey taps the Connect id, not the first same-name tile.',
     );
   }
   final tile = find
-      .ancestor(of: label, matching: find.byType(InkWell))
+      .ancestor(of: match, matching: find.byType(InkWell))
       .hitTestable();
   final resultsScroll = find
-      .ancestor(of: label, matching: find.byType(Scrollable))
+      .ancestor(of: match, matching: find.byType(Scrollable))
       .first;
   try {
     await tester.scrollUntilVisible(tile, 300, scrollable: resultsScroll);
   } on StateError catch (error) {
-    fail('discovered "$name" was not visible or tappable: $error');
+    fail('discovered "$label" was not visible or tappable: $error');
   }
-  expect(tile, findsOneWidget, reason: '"$name" tile not tappable');
+  expect(tile, findsOneWidget, reason: '"$label" tile not tappable');
   await tester.tap(tile);
   await tester.pump();
 }

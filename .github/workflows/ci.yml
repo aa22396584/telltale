@@ -449,8 +449,10 @@ jobs:
             tool/obd_test_rig/chaos_proxy.py \
             tool/obd_test_rig/test_chaos_proxy.py \
             tool/field_bt_verify/probe_acl.py \
+            tool/field_bt_verify/run_timeout.py \
             tool/field_bt_verify/test_probe_acl.py \
             tool/field_bt_verify/test_runner_contract.py \
+            tool/field_bt_verify/test_run_timeout.py \
             tool/desktop_bt_probe/probe.py \
             tool/desktop_bt_probe/test_probe.py
 
