@@ -122,6 +122,43 @@ void main() {
     );
   });
 
+  test('nothing hides CJK punctuation behind a // inside a string', () {
+    // `_code` cuts at the first `//`, which is not how Dart lexes a line: a
+    // `//` inside a string literal — a URL, a path — would truncate it early
+    // and hide anything after. I argued in `_code`'s doc that this can only
+    // cause a miss, never a false accusation, and that no line in these
+    // directories does it today. The second half of that is a fact about
+    // today's tree, so it is asserted rather than asserted-in-a-comment.
+    //
+    // If this ever fails, `_code` needs to become quote-aware. Deleting the
+    // test instead restores the blind spot.
+    final risky = <String>[];
+    for (final entity in _scanned) {
+      final lines = entity.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (line.trimLeft().startsWith('//')) continue;
+        final at = line.indexOf('//');
+        if (at < 0) continue;
+        final before = line.substring(0, at);
+        final singles = "'".allMatches(before).length -
+            r"\'".allMatches(before).length;
+        final doubles = '"'.allMatches(before).length;
+        if (singles.isOdd || doubles.isOdd) {
+          risky.add('${entity.path}:${i + 1}  ${line.trim()}');
+        }
+      }
+    }
+    expect(
+      risky,
+      isEmpty,
+      reason:
+          'These lines put a `//` inside a string literal, so the scan above '
+          'stops reading them early and would miss CJK punctuation after '
+          'it:\n${risky.join('\n')}',
+    );
+  });
+
   test('every exception is still present AND would still be flagged', () {
     // An allowlist nobody prunes is how a check rots into a rubber stamp — and
     // the previous version only checked half of that. It asserted each line
