@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/physics/physics_engine.dart';
 import '../../../obd/pid/pid.dart';
 import '../../../obd/pid/pid_library.dart';
@@ -25,8 +26,8 @@ import '../../../state/obd_session.dart';
 import '../../../state/pid_registry.dart';
 import '../../../state/settings.dart';
 import '../../../state/telemetry_sessions.dart';
-import '../../../telemetry/session/derived_estimates.dart';
 import '../../../state/vehicle_identity.dart';
+import '../../../telemetry/session/derived_estimates.dart';
 import '../../widgets/gauges/dial_gauge.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/powertrain_profile_confirm_banner.dart';
@@ -34,8 +35,8 @@ import '../../widgets/status/datum_status_badge.dart';
 import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_recorder_panel.dart';
 import '../pids/pid_manager_screen.dart';
+import 'derived_source_copy.dart';
 import 'telemetry_workspace.dart';
-import '../../../l10n/generated/app_localizations.dart';
 
 enum DashboardWorkspaceMode { gauges, trends }
 
@@ -809,8 +810,10 @@ class _DerivedStrip extends ConsumerWidget {
                   if (metrics.airflowSource != AirflowSource.unavailable)
                     StatusPill(
                       label: metrics.fuelSource == FuelSource.measured
-                          ? metrics.airflowSource.label
-                          : '${metrics.airflowSource.label} · ${metrics.fuelSource.label}',
+                          ? airflowSourceLabel(l10n, metrics.airflowSource)
+                          : '${airflowSourceLabel(l10n, metrics.airflowSource)}'
+                                ' · '
+                                '${fuelSourceLabel(l10n, metrics.fuelSource)}',
                       tone: StatusTone.neutral,
                       dense: true,
                     ),

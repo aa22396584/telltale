@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../../telemetry/session/telemetry_session_store.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
-import '../../../l10n/generated/app_localizations.dart';
+import 'telemetry_source_copy.dart';
 
 /// The library quota, in the units the two chips render.
 ///
@@ -206,7 +207,7 @@ class _SessionTile extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
         title: Text(_localTime(session.startedAtUtc)),
         subtitle: Text(
-          '${session.sourceLabel} · ${session.transport} · ${session.protocol}\n'
+          '${telemetrySourceLabel(l10n, session.source)} · ${session.transport} · ${session.protocol}\n'
           '${_durationLabel(session.duration)} · '
           '${l10n.telemetrySignalCount(session.signalCount)}\n'
           '${l10n.telemetryValueCount(session.valueCount)} · '

@@ -900,5 +900,14 @@
   "gaugeSkinClassic": "經典",
   "gaugeSkinClassicDescription": "印刷式面盤、整圈數字、指針像機械錶一樣慢慢定位。",
   "gaugeSkinNight": "夜視",
-  "gaugeSkinNightDescription": "夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。"
+  "gaugeSkinNightDescription": "夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。",
+  "derivedAirflowSourceMaf": "MAF 感測器",
+  "derivedAirflowSourceSpeedDensity": "Speed-Density 推算",
+  "derivedAirflowSourceUnavailable": "進氣量無法取得",
+  "derivedFuelSourceEcu": "ECU 回報",
+  "derivedFuelSourceStoichiometric": "化學計量比推算",
+  "derivedFuelSourceUnavailable": "油耗無法取得",
+  "telemetrySourceDemo": "內建模擬",
+  "telemetrySourceRig": "測試馬具",
+  "telemetrySourceFieldApp": "一般 field App 連線"
 }

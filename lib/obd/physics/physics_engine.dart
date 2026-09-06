@@ -26,12 +26,6 @@ enum AirflowSource {
   /// Neither was available. Not the same as zero air flow, which would mean a
   /// stopped engine.
   unavailable;
-
-  String get label => switch (this) {
-    AirflowSource.measured => 'MAF 感測器',
-    AirflowSource.speedDensity => 'Speed-Density 推算',
-    AirflowSource.unavailable => '無法取得',
-  };
 }
 
 /// Where a fuel figure came from.
@@ -46,12 +40,6 @@ enum FuelSource {
   stoichiometricEstimate,
 
   unavailable;
-
-  String get label => switch (this) {
-    FuelSource.measured => 'ECU 回報',
-    FuelSource.stoichiometricEstimate => '化學計量比推算',
-    FuelSource.unavailable => '無法取得',
-  };
 }
 
 class DerivedMetrics {
@@ -135,7 +123,8 @@ abstract final class PhysicsEngine {
   /// It returned 0 for a non-positive MAP, and `derive` only checked that MAP
   /// was *present*. So a failed sensor answering `41 0B 00` — 0 kPa, which a
   /// running engine cannot produce — came out as a confident **0.0 g/s**
-  /// labelled 「Speed-Density 推算」, beside a fuel rate that showed `--`
+  /// labelled 「Speed-Density 推算」 — [AirflowSource.speedDensity], whose words
+  /// now live in the UI — beside a fuel rate that showed `--`
   /// because its own guard is `maf > 0`. One row contradicting itself, and the
   /// airflow half saying the engine is not breathing while the rev counter says
   /// 3000 rpm.

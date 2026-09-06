@@ -56,9 +56,9 @@ import 'package:torque_obd/ui/widgets/telemetry/telemetry_recorder_strip.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_startup_recovery_notice.dart';
 import 'package:torque_obd/ui/widgets/transcript_export.dart';
 
+import '../support/cjk.dart';
 import '../support/localized_app.dart';
 import '../support/powertrain_snapshot_fixture.dart';
-import '../support/cjk.dart';
 
 // This file discovered the punctuation half first and defined it locally. It
 // now comes from test/support/cjk.dart so there is one definition rather than
@@ -75,7 +75,6 @@ final _cjkPunctuation = cjkPunctuation;
 Set<String> _notOwnedByThisWave() => {
   telemetryReplayDisclaimer,
   telemetryExportDisclosure,
-  for (final source in TelemetrySource.values) telemetrySourceLabel(source),
   for (final access in TelemetryHistoryAccess.values)
     ?access.message(lookupAppLocalizations(englishLocale)),
 };

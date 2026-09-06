@@ -7,13 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../../telemetry/session/telemetry_session.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
 import 'telemetry_export_sheet.dart';
-import '../../../l10n/generated/app_localizations.dart';
+import 'telemetry_source_copy.dart';
 
 class TelemetrySessionDetailScreen extends ConsumerStatefulWidget {
   const TelemetrySessionDetailScreen({required this.sessionId, super.key});
@@ -221,7 +222,7 @@ class _ReplayBody extends StatelessWidget {
             spacing: Spacing.lg,
             runSpacing: Spacing.sm,
             children: [
-              Text(telemetrySourceLabel(replay.source)),
+              Text(telemetrySourceLabel(l10n, replay.source)),
               Text('${replay.transport} · ${replay.protocol}'),
               Text('${replay.startedAtUtc.toLocal()}'),
               Text(l10n.telemetrySignalCount(replay.signalCount)),

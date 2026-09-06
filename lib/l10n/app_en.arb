@@ -2735,5 +2735,41 @@
   "gaugeSkinClassic": "Classic",
   "gaugeSkinClassicDescription": "Printed dial, numbers all the way round, a needle that settles slowly like a mechanical watch.",
   "gaugeSkinNight": "Night",
-  "gaugeSkinNightDescription": "For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible."
+  "gaugeSkinNightDescription": "For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.",
+  "derivedAirflowSourceMaf": "MAF sensor",
+  "@derivedAirflowSourceMaf": {
+    "description": "Provenance pill on the estimated-values panel: the air-mass figure came from the vehicle's own MAF sensor rather than being computed."
+  },
+  "derivedAirflowSourceSpeedDensity": "Speed-density estimate",
+  "@derivedAirflowSourceSpeedDensity": {
+    "description": "Provenance pill: air mass was computed from engine speed, manifold pressure and intake temperature. It is an estimate, and the word must say so."
+  },
+  "derivedAirflowSourceUnavailable": "Air mass unavailable",
+  "@derivedAirflowSourceUnavailable": {
+    "description": "Provenance pill: neither a MAF reading nor the full speed-density input set was available. Not the same as zero air flow, which would mean a stopped engine."
+  },
+  "derivedFuelSourceEcu": "ECU reported",
+  "@derivedFuelSourceEcu": {
+    "description": "Provenance pill: the fuel figure is the ECU's own fuel rate, which accounts for the mixture actually being run. This is the one case that is measured rather than estimated."
+  },
+  "derivedFuelSourceStoichiometric": "Stoichiometric estimate",
+  "@derivedFuelSourceStoichiometric": {
+    "description": "Provenance pill: fuel was derived from air mass assuming a stoichiometric mixture, so it is wrong by roughly the lambda the engine is running. Do not translate this as if it were a measurement."
+  },
+  "derivedFuelSourceUnavailable": "Fuel rate unavailable",
+  "@derivedFuelSourceUnavailable": {
+    "description": "Provenance pill: no fuel figure could be established, measured or estimated."
+  },
+  "telemetrySourceDemo": "Built-in simulator",
+  "@telemetrySourceDemo": {
+    "description": "Where a recorded telemetry session came from: the app's own simulated ECU. A reader must never mistake a simulated session for a drive."
+  },
+  "telemetrySourceRig": "Test rig",
+  "@telemetrySourceRig": {
+    "description": "Where a recorded telemetry session came from: a simulated hardware rig used in testing, not a vehicle."
+  },
+  "telemetrySourceFieldApp": "Field app connection",
+  "@telemetrySourceFieldApp": {
+    "description": "Where a recorded telemetry session came from: an ordinary connection made by the field build to a real adapter."
+  }
 }

@@ -9,6 +9,7 @@ import 'dart:ui' show Rect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../telemetry/session/derived_estimates.dart';
 import '../telemetry/session/telemetry_recorder.dart';
 import '../telemetry/session/telemetry_session.dart';
@@ -23,7 +24,6 @@ import 'driving_interaction_safety.dart';
 import 'obd_session.dart';
 import 'telemetry_recorder.dart';
 import 'telemetry_runtime.dart';
-import '../l10n/generated/app_localizations.dart';
 
 const telemetryReplayDisclaimer = '預覽已抽樣；匯出保留完整已記錄事件';
 const telemetryExportDisclosure =
@@ -72,12 +72,6 @@ TelemetryHistoryAccess telemetryHistoryAccess({
   };
 }
 
-String telemetrySourceLabel(TelemetrySource source) => switch (source) {
-  TelemetrySource.demo => '內建模擬',
-  TelemetrySource.simulatedRig => '測試馬具',
-  TelemetrySource.fieldAppConnection => '一般 field App 連線',
-};
-
 final class TelemetrySessionProjection {
   const TelemetrySessionProjection({
     required this.id,
@@ -115,7 +109,6 @@ final class TelemetrySessionProjection {
 
   Duration get duration =>
       Duration(microseconds: elapsedDurationUs < 0 ? 0 : elapsedDurationUs);
-  String get sourceLabel => telemetrySourceLabel(source);
 }
 
 enum DamagedTelemetryKind { corrupt, collision }

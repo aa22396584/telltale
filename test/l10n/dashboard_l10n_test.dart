@@ -43,11 +43,11 @@ import 'package:torque_obd/telemetry/session/timeline_downsampler.dart';
 import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:torque_obd/ui/screens/dashboard/telemetry_workspace.dart';
 import 'package:torque_obd/ui/widgets/telemetry/live_trend_card.dart';
-import 'package:torque_obd/ui/widgets/telemetry/telemetry_recorder_panel.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_lane_selector.dart';
+import 'package:torque_obd/ui/widgets/telemetry/telemetry_recorder_panel.dart';
 
-import '../support/localized_app.dart';
 import '../support/cjk.dart';
+import '../support/localized_app.dart';
 
 /// Han AND CJK punctuation, from the shared detector in test/support/cjk.dart.
 ///
@@ -69,10 +69,6 @@ final _cjk = chinese;
 /// rather than quietly outliving them.
 const _foreignChinese = <String, String>{
   '推算值': 'lib/diagnostics/availability.dart',
-  'MAF 感測器': 'lib/obd/physics/physics_engine.dart AirflowSource.label',
-  'Speed-Density 推算': 'lib/obd/physics/physics_engine.dart',
-  '化學計量比推算': 'lib/obd/physics/physics_engine.dart FuelSource.label',
-  '無法取得': 'lib/obd/physics/physics_engine.dart',
 };
 
 /// True when [element] sits under a widget of type [T].

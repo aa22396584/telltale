@@ -3035,6 +3035,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get gaugeSkinNightDescription => '夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。';
+
+  @override
+  String get derivedAirflowSourceMaf => 'MAF 感測器';
+
+  @override
+  String get derivedAirflowSourceSpeedDensity => 'Speed-Density 推算';
+
+  @override
+  String get derivedAirflowSourceUnavailable => '進氣量無法取得';
+
+  @override
+  String get derivedFuelSourceEcu => 'ECU 回報';
+
+  @override
+  String get derivedFuelSourceStoichiometric => '化學計量比推算';
+
+  @override
+  String get derivedFuelSourceUnavailable => '油耗無法取得';
+
+  @override
+  String get telemetrySourceDemo => '內建模擬';
+
+  @override
+  String get telemetrySourceRig => '測試馬具';
+
+  @override
+  String get telemetrySourceFieldApp => '一般 field App 連線';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6067,4 +6094,31 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get gaugeSkinNightDescription => '夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。';
+
+  @override
+  String get derivedAirflowSourceMaf => 'MAF 感測器';
+
+  @override
+  String get derivedAirflowSourceSpeedDensity => 'Speed-Density 推算';
+
+  @override
+  String get derivedAirflowSourceUnavailable => '進氣量無法取得';
+
+  @override
+  String get derivedFuelSourceEcu => 'ECU 回報';
+
+  @override
+  String get derivedFuelSourceStoichiometric => '化學計量比推算';
+
+  @override
+  String get derivedFuelSourceUnavailable => '油耗無法取得';
+
+  @override
+  String get telemetrySourceDemo => '內建模擬';
+
+  @override
+  String get telemetrySourceRig => '測試馬具';
+
+  @override
+  String get telemetrySourceFieldApp => '一般 field App 連線';
 }

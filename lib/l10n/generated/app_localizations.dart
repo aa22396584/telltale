@@ -5504,6 +5504,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.'**
   String get gaugeSkinNightDescription;
+
+  /// Provenance pill on the estimated-values panel: the air-mass figure came from the vehicle's own MAF sensor rather than being computed.
+  ///
+  /// In en, this message translates to:
+  /// **'MAF sensor'**
+  String get derivedAirflowSourceMaf;
+
+  /// Provenance pill: air mass was computed from engine speed, manifold pressure and intake temperature. It is an estimate, and the word must say so.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed-density estimate'**
+  String get derivedAirflowSourceSpeedDensity;
+
+  /// Provenance pill: neither a MAF reading nor the full speed-density input set was available. Not the same as zero air flow, which would mean a stopped engine.
+  ///
+  /// In en, this message translates to:
+  /// **'Air mass unavailable'**
+  String get derivedAirflowSourceUnavailable;
+
+  /// Provenance pill: the fuel figure is the ECU's own fuel rate, which accounts for the mixture actually being run. This is the one case that is measured rather than estimated.
+  ///
+  /// In en, this message translates to:
+  /// **'ECU reported'**
+  String get derivedFuelSourceEcu;
+
+  /// Provenance pill: fuel was derived from air mass assuming a stoichiometric mixture, so it is wrong by roughly the lambda the engine is running. Do not translate this as if it were a measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Stoichiometric estimate'**
+  String get derivedFuelSourceStoichiometric;
+
+  /// Provenance pill: no fuel figure could be established, measured or estimated.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel rate unavailable'**
+  String get derivedFuelSourceUnavailable;
+
+  /// Where a recorded telemetry session came from: the app's own simulated ECU. A reader must never mistake a simulated session for a drive.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in simulator'**
+  String get telemetrySourceDemo;
+
+  /// Where a recorded telemetry session came from: a simulated hardware rig used in testing, not a vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Test rig'**
+  String get telemetrySourceRig;
+
+  /// Where a recorded telemetry session came from: an ordinary connection made by the field build to a real adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Field app connection'**
+  String get telemetrySourceFieldApp;
 }
 
 class _AppLocalizationsDelegate

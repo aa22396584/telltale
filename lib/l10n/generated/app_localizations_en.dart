@@ -3428,4 +3428,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gaugeSkinNightDescription =>
       'For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.';
+
+  @override
+  String get derivedAirflowSourceMaf => 'MAF sensor';
+
+  @override
+  String get derivedAirflowSourceSpeedDensity => 'Speed-density estimate';
+
+  @override
+  String get derivedAirflowSourceUnavailable => 'Air mass unavailable';
+
+  @override
+  String get derivedFuelSourceEcu => 'ECU reported';
+
+  @override
+  String get derivedFuelSourceStoichiometric => 'Stoichiometric estimate';
+
+  @override
+  String get derivedFuelSourceUnavailable => 'Fuel rate unavailable';
+
+  @override
+  String get telemetrySourceDemo => 'Built-in simulator';
+
+  @override
+  String get telemetrySourceRig => 'Test rig';
+
+  @override
+  String get telemetrySourceFieldApp => 'Field app connection';
 }
