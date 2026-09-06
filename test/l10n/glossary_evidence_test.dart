@@ -87,6 +87,81 @@ List<_Citation> _citations(String evidence) => _citation
         ))
     .toList();
 
+/// Directories that exist only in the public repository.
+///
+/// `ImL1s/torque` is the source of truth and this repository is derived from it,
+/// but a few paths travel the other way and live only here: the store listing
+/// material, the public CI, and the GitHub Pages shell. torque's CLAUDE.md calls
+/// them publish-only and its mirror excludes them in both directions.
+///
+/// The glossary itself IS mirrored, and five of its rows are store vocabulary
+/// whose only written source is `store/README.md`. In the private checkout that
+/// file is absent, so the source of truth could not run its own test suite --
+/// found on 2026-09-07, the first time the l10n work was mirrored back.
+/// Matched in the shape the mirror actually excludes: `store/`, and the Pages
+/// HTML as `docs/<name>.html`.
+///
+/// Not a `startsWith` list. `'docs/index'` as a prefix also matches
+/// `docs/index_notes.md`, which IS mirrored -- so a citation into it would have
+/// been exempted here while being a perfectly ordinary path over there.
+///
+/// `.github/` is publish-only too and is deliberately absent: the citation
+/// pattern above admits only lib|test|tool|docs|android|ios|integration_test|
+/// store, so no citation can name a path under it, and an entry nothing can
+/// reach reads like coverage that does not exist.
+final _pagesHtml = RegExp(r'^docs/[^/]+\.html$');
+
+bool _isPublishOnly(String path) =>
+    path.startsWith('store/') || _pagesHtml.hasMatch(path);
+
+/// The publish-only artefacts, as a set rather than as one directory.
+///
+/// torque's CLAUDE.md names four of these -- `store/`, `.github/`,
+/// `docs/.nojekyll` and `docs/*.html` -- and the private checkout has none of
+/// them. Asserting on `store/` alone left the marker check with a hole: a public
+/// checkout with `store/` moved away still has the other three, so it read as
+/// private and switched the exemption on with nothing going red.
+///
+/// An OR over the set, so removing any one of them locally does not make a
+/// public tree look private, and the list does not have to be exhaustive to
+/// work -- `docs/index.en.html` is publish-only too and is not named here.
+/// `store/` and `.github/` are the durable two; the HTML filenames could be
+/// renamed.
+const _publishOnlyArtefacts = [
+  'store',
+  '.github',
+  'docs/.nojekyll',
+  'docs/index.html',
+  'docs/privacy.html',
+];
+
+/// The rows whose evidence lives only in the public repository, written down.
+///
+/// A roster, not a rule. `cited.every(_isPublishOnly)` on its own would exempt
+/// any future row that happens to cite only `store/`, silently and with no
+/// review signal -- and it would exempt a typo like `store/READM.md` on exactly
+/// the same terms. Holding the computed set equal to this one means a sixth row
+/// joining it has to be written here, where somebody reads it.
+const _exemptedInPrivate = {
+  '主打圖片（feature graphic）',
+  '性能量測',
+  '應用程式圖示',
+  '手機截圖',
+  '面盤外觀',
+};
+
+/// True in the private source-of-truth checkout, where this package sits under
+/// `app/` beside the reverse-engineering spec that may never be published.
+///
+/// The exemption below keys on *which repository this is*, deliberately not on
+/// whether `store/` happens to be present. Keying it on the absence of the very
+/// thing being checked would make it circular: delete `store/README.md` here and
+/// five rows would quietly stop being verified. As written, that deletion still
+/// fails in this repository, and the rows are only unverifiable in the checkout
+/// that by design does not carry the file.
+final _isPrivateCheckout =
+    File('../torque_architecture_spec.md').existsSync();
+
 /// Whitespace removed, so a term wrapped across a source line still matches. Chinese has no
 /// word spaces, and Markdown hard-wraps prose — 連線世代 is written 連線\n世代 in
 /// README.zh-TW.md.
@@ -253,6 +328,9 @@ void main() {
       }
       final live = cited.where((c) => File(c.path).existsSync()).toList();
       if (live.isEmpty) {
+        if (_isPrivateCheckout && cited.every((c) => _isPublishOnly(c.path))) {
+          continue; // this checkout does not carry those files; see _publishOnly
+        }
         broken.add('$term — none of ${cited.map((c) => c.path).toSet()} exist any more');
         continue;
       }
@@ -264,6 +342,45 @@ void main() {
       }
     }
     expect(broken, isEmpty, reason: broken.join('\n'));
+  });
+
+  test('the publish-only exemption matches its written roster', () {
+    // Computed the same way the exemption is, and in both repositories -- so a
+    // sixth row, or a typo like `store/READM.md`, fails here even in the
+    // checkout where the exemption is what would have let it through.
+    final exemptedRows = terms.where((t) {
+      final cited = _citations(t.evidence);
+      return cited.isNotEmpty && cited.every((c) => _isPublishOnly(c.path));
+    }).toList();
+    expect(exemptedRows.map((t) => t.zh).toSet(), _exemptedInPrivate,
+        reason: 'a row was added to or removed from the set that only the '
+            'public repository can verify. Update _exemptedInPrivate, and say '
+            'in review why the new row has no evidence inside app/.');
+    // Rows, not terms. A Set keyed on the Chinese term cannot see a second row
+    // that reuses one: `| 面盤外觀 | skins | store/READM.md:1 |` leaves the
+    // computed set identical and would ride in on the roster's coat-tails.
+    // Nothing forbids two rows sharing a term -- the duplicate check below only
+    // fires when the English differs.
+    expect(exemptedRows.length, _exemptedInPrivate.length,
+        reason: 'two exempted rows share one Chinese term, so the roster cannot '
+            'see the second one');
+
+    // The marker must agree with the tree. Read as: "if I believe I am the
+    // private checkout, store/ must really be absent." A stray
+    // torque_architecture_spec.md beside a public checkout -- telltale cloned
+    // into torque/, say -- would otherwise switch the exemption on with nothing
+    // anywhere going red.
+    final present = _publishOnlyArtefacts
+        .where((p) =>
+            FileSystemEntity.typeSync(p) != FileSystemEntityType.notFound)
+        .toList();
+    expect(present.isEmpty, _isPrivateCheckout,
+        reason: _isPrivateCheckout
+            ? 'this looks like the private checkout, but publish-only files are '
+                'here: $present. The marker is lying, and the exemption is now '
+                'hiding rows that could be checked.'
+            : 'the public checkout must carry the publish-only files; without '
+                'them the store-vocabulary rows stop being verified anywhere.');
   });
 
   test('the Chinese term is still at the cited line', () {
