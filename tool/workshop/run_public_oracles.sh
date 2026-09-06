@@ -18,8 +18,13 @@ VENV="${ELM_VENV:-${TMPDIR:-/tmp}/telltale-public-oracles-venv}"
 BIND="127.0.0.1"
 
 if [[ ! -x "$FLUTTER" ]]; then
-  echo "Refusing: Flutter not executable at $FLUTTER" >&2
-  exit 1
+  resolved="$(command -v "$FLUTTER" 2>/dev/null || true)"
+  if [[ -n "$resolved" && -x "$resolved" ]]; then
+    FLUTTER="$resolved"
+  else
+    echo "Refusing: Flutter not executable at $FLUTTER" >&2
+    exit 1
+  fi
 fi
 
 listening() {
