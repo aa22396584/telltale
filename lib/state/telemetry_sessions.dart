@@ -23,6 +23,7 @@ import 'driving_interaction_safety.dart';
 import 'obd_session.dart';
 import 'telemetry_recorder.dart';
 import 'telemetry_runtime.dart';
+import '../l10n/generated/app_localizations.dart';
 
 const telemetryReplayDisclaimer = '預覽已抽樣；匯出保留完整已記錄事件';
 const telemetryExportDisclosure =
@@ -37,11 +38,17 @@ enum TelemetryHistoryAccess {
 }
 
 extension TelemetryHistoryAccessMessage on TelemetryHistoryAccess {
-  String? get message => switch (this) {
+  /// Takes the localizations rather than a context: this is an extension on an
+  /// enum in the state layer, where no widget exists to read one from.
+  ///
+  /// `moving` and `speedUnknown` share their keys with the recorder's start
+  /// refusal. The same condition must not be described two ways depending on
+  /// which screen the user happened to be looking at.
+  String? message(AppLocalizations l10n) => switch (this) {
     TelemetryHistoryAccess.permitted => null,
-    TelemetryHistoryAccess.recorderActive => '請先停止並儲存',
-    TelemetryHistoryAccess.moving => '請停車後操作',
-    TelemetryHistoryAccess.speedUnknown => '無法確認車輛已停止；請先中斷連線',
+    TelemetryHistoryAccess.recorderActive => l10n.telemetryBlockedByRecorder,
+    TelemetryHistoryAccess.moving => l10n.telemetryStartMoving,
+    TelemetryHistoryAccess.speedUnknown => l10n.telemetryStartSpeedUnknown,
     TelemetryHistoryAccess.background => '請回到 App 後再操作',
   };
 }
@@ -352,19 +359,24 @@ final class TelemetrySessionActionResult {
   final String? userFacingMessage;
   bool get isSuccess => failure == null;
 
-  String get message =>
-      userFacingMessage ?? telemetrySessionActionFailureLabel(failure!);
+  String message(AppLocalizations l10n) =>
+      userFacingMessage ?? telemetrySessionActionFailureLabel(l10n, failure!);
 }
 
+// Not localized in this wave: unlike the sentences above it exists exactly
+// once, so it carries no drift risk, and it is a const default in three const
+// constructors. Wave L05 (#46) converts it together with those call sites.
 const telemetryArtifactRestartRequiredCopy = '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
 
 String telemetrySessionActionFailureLabel(
+  AppLocalizations l10n,
   TelemetrySessionActionFailure failure,
 ) => switch (failure) {
-  TelemetrySessionActionFailure.confirmationRequired => '請先確認這個刪除操作',
-  TelemetrySessionActionFailure.recorderActive => '請先停止並儲存',
-  TelemetrySessionActionFailure.moving => '請停車後操作',
-  TelemetrySessionActionFailure.speedUnknown => '無法確認車輛已停止；請先中斷連線',
+  TelemetrySessionActionFailure.confirmationRequired =>
+    l10n.telemetryDeleteNeedsConfirmation,
+  TelemetrySessionActionFailure.recorderActive => l10n.telemetryBlockedByRecorder,
+  TelemetrySessionActionFailure.moving => l10n.telemetryStartMoving,
+  TelemetrySessionActionFailure.speedUnknown => l10n.telemetryStartSpeedUnknown,
   TelemetrySessionActionFailure.background => '請回到 App 後再操作',
   TelemetrySessionActionFailure.artifactBusy => '另一個檔案作業尚未完成',
   TelemetrySessionActionFailure.policyChanged => '操作期間行車或連線狀態已改變',

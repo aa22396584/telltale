@@ -34,6 +34,7 @@ import '../../widgets/status/datum_status_badge.dart';
 import '../../widgets/telemetry/telemetry_recorder_panel.dart';
 import '../pids/pid_manager_screen.dart';
 import 'telemetry_workspace.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 enum DashboardWorkspaceMode { gauges, trends }
 
@@ -221,7 +222,7 @@ class _WorkspaceToolbar extends StatelessWidget {
             if (historyAccess != TelemetryHistoryAccess.permitted) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                historyAccess.message!,
+                historyAccess.message(AppLocalizations.of(context))!,
                 key: const ValueKey('telemetry-history-blocked-copy'),
                 style: context.texts.bodySmall,
                 textAlign: stack ? TextAlign.start : TextAlign.end,
@@ -320,13 +321,24 @@ class _GaugeGrid extends StatelessWidget {
   }
 }
 
-String? _gaugeFootnote(PidFault? fault, DatumStatus status) {
+/// The fault line under a gauge.
+///
+/// These five sentences are the same five [TelemetryStatus] renders in the
+/// trend cards, so they share the ARB keys rather than being written twice.
+/// They had already drifted once — this switch said 標頭不符本車匯流排 while
+/// telemetry_status_copy.dart said 標頭不符目前匯流排, one word apart, for the
+/// same condition on the same screen.
+String? _gaugeFootnote(
+  AppLocalizations l10n,
+  PidFault? fault,
+  DatumStatus status,
+) {
   final faultLabel = switch (fault) {
-    PidFault.formulaError => '公式錯誤',
-    PidFault.busError => '匯流排錯誤',
-    PidFault.noAnswer => '無回應，稍後重試',
-    PidFault.headerNotOnThisBus => '標頭不符本車匯流排',
-    PidFault.refusedUnsafeService => '此服務不是唯讀查詢，已停止發送',
+    PidFault.formulaError => l10n.telemetryStatusFormulaError,
+    PidFault.busError => l10n.telemetryStatusBusError,
+    PidFault.noAnswer => l10n.telemetryStatusNoAnswer,
+    PidFault.headerNotOnThisBus => l10n.telemetryStatusHeaderMismatch,
+    PidFault.refusedUnsafeService => l10n.telemetryStatusUnsafeServiceRefusal,
     PidFault.unsupported || null => null,
   };
   final badge = status.badgeText.isEmpty ? null : status.badgeText;
@@ -375,7 +387,11 @@ class _GaugeTile extends StatelessWidget {
                 // A value older than its PID's own refresh target is not live,
                 // however plausible it looks.
                 isStale: isStale,
-                footnote: _gaugeFootnote(fault, status),
+                footnote: _gaugeFootnote(
+                  AppLocalizations.of(context),
+                  fault,
+                  status,
+                ),
               ),
       ),
     );

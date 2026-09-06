@@ -12,6 +12,8 @@ import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_codec.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_store.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'support/localized_app.dart';
 
 Future<void> _writeSession(
   Directory documents,
@@ -275,14 +277,17 @@ void main() {
     final result = await actions.delete(id, confirmed: true);
 
     expect(result.failure, TelemetrySessionActionFailure.restartRequired);
-    expect(result.message, telemetryArtifactRestartRequiredCopy);
+    expect(
+      result.message(lookupAppLocalizations(testUiLocale)),
+      telemetryArtifactRestartRequiredCopy,
+    );
     expect(restartNotices, 1);
     expect(gate.snapshot.isIdle, isFalse);
     expect(gate.snapshot.operation, ArtifactOperation.delete);
 
     final refused = await actions.delete(id, confirmed: true);
     expect(refused.failure, TelemetrySessionActionFailure.restartRequired);
-    expect(refused.message, telemetryArtifactRestartRequiredCopy);
+    expect(refused.message(lookupAppLocalizations(testUiLocale)), telemetryArtifactRestartRequiredCopy);
     expect(restartNotices, 1);
   });
 
@@ -322,7 +327,10 @@ void main() {
       final result = await actions.export(id, TelemetryExportFormat.json);
 
       expect(result.failure, TelemetrySessionActionFailure.restartRequired);
-      expect(result.message, telemetryArtifactRestartRequiredCopy);
+      expect(
+      result.message(lookupAppLocalizations(testUiLocale)),
+      telemetryArtifactRestartRequiredCopy,
+    );
       expect(restartNotices, 1);
       expect(
         (await actions.export(id, TelemetryExportFormat.csv)).failure,

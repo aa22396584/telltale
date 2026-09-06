@@ -14,6 +14,7 @@ import '../../../telemetry/session/telemetry_session.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/live_trend_card.dart';
 import '../../widgets/telemetry/telemetry_lane_selector.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class TelemetryWorkspace extends ConsumerWidget {
   const TelemetryWorkspace({super.key});
@@ -29,7 +30,9 @@ class TelemetryWorkspace extends ConsumerWidget {
     final safety = ref
         .read(liveTelemetryStartEnvironmentProvider)
         .snapshot('trendSelector');
+    final l10n = AppLocalizations.of(context);
     final laneSelectionBlock = _laneSelectionBlock(
+      l10n,
       connected: evidence != null,
       speedKnown: safety.speedKnown,
       speedKmh: safety.speedKmh,
@@ -129,16 +132,17 @@ class TelemetryWorkspace extends ConsumerWidget {
     );
   }
 
-  static String? _laneSelectionBlock({
+  static String? _laneSelectionBlock(
+    AppLocalizations l10n, {
     required bool connected,
     required bool speedKnown,
     required double speedKmh,
   }) {
     if (!connected) return null;
     if (!speedKnown || !speedKmh.isFinite) {
-      return '無法確認車輛已停止；請先中斷連線';
+      return l10n.telemetryStartSpeedUnknown;
     }
-    if (speedKmh > 5) return '請停車後操作';
+    if (speedKmh > 5) return l10n.telemetryStartMoving;
     return null;
   }
 }

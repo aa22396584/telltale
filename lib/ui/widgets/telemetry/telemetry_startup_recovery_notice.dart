@@ -9,6 +9,7 @@ import '../../../state/telemetry_sessions.dart';
 import '../../../telemetry/session/telemetry_session_store.dart';
 import '../../screens/telemetry/telemetry_sessions_screen.dart';
 import '../panel.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// Reports durable startup recovery without implying that damaged data was
 /// repaired or that a physical vehicle was involved.
@@ -117,7 +118,7 @@ class _TelemetryStartupRecoveryNoticeState
             if (hasHistory && !mayOpen) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                access.message!,
+                access.message(AppLocalizations.of(context))!,
                 style: context.texts.bodySmall?.copyWith(
                   color: context.palette.warning,
                 ),

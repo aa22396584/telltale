@@ -17,6 +17,7 @@ import '../../../telemetry/session/derived_estimates.dart';
 import '../../../telemetry/session/telemetry_recorder.dart';
 import '../../widgets/panel.dart';
 import 'telemetry_status_copy.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class TelemetryRecorderPanel extends ConsumerStatefulWidget {
   const TelemetryRecorderPanel({super.key});
@@ -44,7 +45,9 @@ class _TelemetryRecorderPanelState
     final safety = environment.snapshot('recorderPanel');
     final state = progress.state;
     final phase = state.phase;
+    final l10n = AppLocalizations.of(context);
     final recoveryCopy = telemetryRecorderRecoveryLabel(
+      l10n,
       state,
       startNeedsRestart: _startNeedsRestart,
     );
@@ -56,6 +59,7 @@ class _TelemetryRecorderPanelState
     final canOfferStart =
         !isTransition && !state.requiresRestart && !_startNeedsRestart;
     final blockReason = _startBlockReason(
+      l10n,
       evidencePresent: evidence != null,
       foreground: safety.foreground,
       speedKnown: safety.speedKnown,
@@ -125,7 +129,7 @@ class _TelemetryRecorderPanelState
           if (state.terminalReason case final reason?) ...[
             const SizedBox(height: Spacing.md),
             Text(
-              telemetryTerminalReasonLabel(reason),
+              telemetryTerminalReasonLabel(l10n, reason),
               style: context.texts.bodyMedium,
             ),
           ],
@@ -166,7 +170,7 @@ class _TelemetryRecorderPanelState
             if (historyAccess != TelemetryHistoryAccess.permitted) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                historyAccess.message!,
+                historyAccess.message(l10n)!,
                 style: context.texts.bodySmall?.copyWith(
                   color: context.palette.warning,
                 ),
@@ -260,27 +264,42 @@ class _TelemetryRecorderPanelState
     });
     if (result.outcome != TelemetryStartOutcome.recording) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(telemetryStartOutcomeLabel(result.outcome))),
+        SnackBar(
+          content: Text(
+            telemetryStartOutcomeLabel(
+              AppLocalizations.of(context),
+              result.outcome,
+            ),
+          ),
+        ),
       );
     }
   }
 
-  static String? _startBlockReason({
+  /// Why the start button is refused, or null when it is offered.
+  ///
+  /// Four of these sentences are also reached through
+  /// [telemetryStartOutcomeLabel] after the recorder itself refuses. They are
+  /// one ARB key each rather than one literal here and another there, because
+  /// a pre-flight warning that disagrees with the refusal it predicts is worse
+  /// than either sentence alone.
+  static String? _startBlockReason(
+    AppLocalizations l10n, {
     required bool evidencePresent,
     required bool foreground,
     required bool speedKnown,
     required double speedKmh,
     required int activeCount,
   }) {
-    if (!evidencePresent) return '請先連線再開始紀錄';
-    if (!foreground) return '請回到 App 前景再開始紀錄';
+    if (!evidencePresent) return l10n.telemetryStartNeedsConnection;
+    if (!foreground) return l10n.telemetryStartNeedsForeground;
     if (!speedKnown || !speedKmh.isFinite) {
-      return '無法確認車輛已停止；請先中斷連線';
+      return l10n.telemetryStartSpeedUnknown;
     }
-    if (speedKmh > 5) return '請停車後操作';
-    if (activeCount == 0) return '請先啟用至少一項 PID';
+    if (speedKmh > 5) return l10n.telemetryStartMoving;
+    if (activeCount == 0) return l10n.telemetryStartNeedsActivePid;
     if (activeCount > DerivedEstimates.maxLiveSignals) {
-      return '錄製需保留估算馬力與估算油耗欄位，請先停用 PID';
+      return l10n.telemetryStartTooManyPids;
     }
     return null;
   }
