@@ -59,14 +59,13 @@ import 'package:torque_obd/ui/widgets/transcript_export.dart';
 
 import '../support/localized_app.dart';
 import '../support/powertrain_snapshot_fixture.dart';
+import '../support/cjk.dart';
 
-final _han = RegExp(r'[㐀-鿿豈-﫿]');
-
-/// Fullwidth and CJK punctuation: 。，、（）「」—— and the ideographic space.
-///
-/// A Han-only check passes a sentence whose words were translated and whose
-/// punctuation was not, and `details.join('。')` was exactly that shape.
-final _cjkPunctuation = RegExp(r'[　-〿︰-﹏＀-￯]');
+// This file discovered the punctuation half first and defined it locally. It
+// now comes from test/support/cjk.dart so there is one definition rather than
+// nine, which is what let the same defect through elsewhere.
+final _han = han;
+final _cjkPunctuation = cjkPunctuation;
 
 /// Chinese that belongs to another group's file, subtracted by identity.
 ///

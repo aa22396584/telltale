@@ -42,8 +42,15 @@ import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
 
 import '../support/localized_app.dart';
 import '../support/powertrain_snapshot_fixture.dart';
+import '../support/cjk.dart';
 
-final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
+/// Han AND CJK punctuation, from the shared detector in test/support/cjk.dart.
+///
+/// This file used to define a Han-only regex of its own. Eight of the nine wave
+/// test files did, and that gap shipped a defect: an English list joined with
+/// `、` passed every one of them, because every word was translated and only
+/// the separator was not.
+final _cjk = chinese;
 
 /// A 454px round face at 2.0 DPR — the geometry the watch shell ships to.
 const _face = Size(227, 227);

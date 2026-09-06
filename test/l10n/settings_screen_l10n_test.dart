@@ -48,8 +48,15 @@ import 'package:torque_obd/ui/widgets/recommended_purchase_panel.dart';
 import 'package:torque_obd/ui/widgets/transcript_export.dart';
 
 import '../support/localized_app.dart';
+import '../support/cjk.dart';
 
-final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
+/// Han AND CJK punctuation, from the shared detector in test/support/cjk.dart.
+///
+/// This file used to define a Han-only regex of its own. Eight of the nine wave
+/// test files did, and that gap shipped a defect: an English list joined with
+/// `、` passed every one of them, because every word was translated and only
+/// the separator was not.
+final _cjk = chinese;
 
 const _englishLocale = Locale('en');
 const _traditionalChinese = Locale.fromSubtags(

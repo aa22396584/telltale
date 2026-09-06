@@ -320,8 +320,10 @@ class _PowertrainBatteryCatalogScreenState
     PowertrainBatteryProfile profile,
   ) => showDialog<PowertrainBatteryCommand>(
     context: context,
-    builder: (context) => SimpleDialog(
-      title: Text(AppLocalizations.of(context).powertrainChooseCommandTitle),
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return SimpleDialog(
+      title: Text(l10n.powertrainChooseCommandTitle),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -331,7 +333,7 @@ class _PowertrainBatteryCatalogScreenState
             Spacing.sm,
           ),
           child: Text(
-            AppLocalizations.of(context).powertrainChooseCommandNote,
+            l10n.powertrainChooseCommandNote,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -344,11 +346,17 @@ class _PowertrainBatteryCatalogScreenState
             child: Text(
               '${command.modeAndIdentifier} · '
               '${command.requestHeader} → ${command.expectedResponder}\n'
-              '${command.signals.map((signal) => signal.name).join('、')}',
+              // Not a literal '、'. This is the one list on the screen that
+              // was still joining with an ideographic comma, so 18 of the 51
+              // catalogue commands rendered "Battery temperature 1、Battery
+              // temperature 2" to an English reader. The separator key was
+              // already three lines below, in use by another list.
+              '${command.signals.map((signal) => signal.name).join(l10n.powertrainFieldListSeparator)}',
             ),
           ),
       ],
-    ),
+      );
+    },
   );
 
   Future<int?> _confirmExperimentalProbe(

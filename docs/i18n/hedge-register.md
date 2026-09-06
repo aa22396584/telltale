@@ -98,7 +98,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 這次沒有讀到凍結幀 —— 不代表車上沒有。
 
-**English** — NO PROJECT ENGLISH — proposed: This scan did not read a freeze frame — that does not mean the vehicle has none.
+**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.
+
+**Shipped as** `dtcClearDialogFrameUnread`, `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). The same sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3053 '凍結幀沒有讀到 —— 這不代表車上沒有。'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss.
 
@@ -114,7 +116,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 已回應的控制器都沒有故障碼。
 
-**English** — NO PROJECT ENGLISH — proposed: None of the controllers that answered reported a fault code.
+**English** — None of the controllers that answered reported a fault code.
+
+**Shipped as** `dtcCompleteCleanTitle` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:408. Glossed at docs/field-guide.zh-TW.md:206: '有回覆的模組都說沒事。**不代表車上每個模組都被問到了。**' The qualifier 已回應的/'that answered' is the whole hedge — it must never be rendered as 'no fault codes' or 'your car is fine'. Compare lib/state/dtc_scan.dart:593 '可能有控制器不在這次查詢的範圍內。請以車輛儀表為準，並洽維修廠。'
 
@@ -122,7 +126,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 部分未確認 / 無法確認
 
-**English** — NO PROJECT ENGLISH — proposed: partially unconfirmed / cannot confirm
+**English** — Partially unconfirmed
+
+**Shipped as** `dtcVerdictPartialClean` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:173 (ScanVerdict.partialClean => '部分未確認'). docs/field-guide.zh-TW.md:207-208 defines them: 部分未確認 = 'some categories could not be read, the verdict is incomplete'; 無法確認 = '**do not read this as "no problem"**'. These are verdict states, not prose — keep them short, distinct, and never merge into a single 'unknown'.
 
@@ -130,7 +136,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 請先重新掃描
 
-**English** — NO PROJECT ENGLISH — proposed: Rescan first
+**English** — Rescan first
+
+**Shipped as** `dtcRescanFirst` (lib/l10n/app_en.arb). An imperative on a disabled button, not the sentence that explains it — a matcher that went by wording alone paired this with the freeze-frame paragraph, which says something else entirely.
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:202 (the disabled clear-button label), :354, lib/state/dtc_scan.dart:336. docs/field-guide.zh-TW.md:275-278: the button IS the verdict of the last clear. Greyed + '請先重新掃描' means something may already have been cleared, so re-sending a global clear would reset a completed controller's readiness and cost the user another drive cycle. The imperative must stay an imperative.
 
@@ -162,7 +170,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 無法確認車輛已停止；請先中斷連線
 
-**English** — NO PROJECT ENGLISH — proposed: Cannot confirm the vehicle is stopped; disconnect first
+**English** — Cannot confirm the vehicle is stopped — disconnect first
+
+**Shipped as** `telemetryStartSpeedUnknown` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** lib/state/telemetry_sessions.dart:44 (TelemetryHistoryAccess.speedUnknown). A refusal gate, not a warning: unknown speed is treated as moving. Compare lib/state/app_share_coordinator.dart:160 ShareError.policyDenied => '目前的連線或行車狀態不允許匯出。' Translations must keep this as a refusal with a remedy, never as advice.
 
@@ -194,7 +204,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 不確定要選哪一個？
 
-**English** — NO PROJECT ENGLISH — proposed: Not sure which to pick?
+**English** — Not sure which to pick?
+
+**Shipped as** `connectWhichTitle` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** lib/ui/screens/connect/connect_screen.dart:1796; the body at :1808 says '不用管 SPP、GATT 這些名詞。看你的轉接器插上去之後怎麼運作就好：' and the questions come from whichTransportGuidance() (:1814-1817). docs/field-guide.zh-TW.md:63-65: it asks three OBSERVABLE questions rather than requiring the user to know SPP/GATT. The uncertainty is the user's, and the copy is designed to accept it — a confident 'Choose your connection type' would defeat the purpose.
 
@@ -202,7 +214,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 猜錯不會怎麼樣 —— 連不上就退回來換另一個試。
 
-**English** — NO PROJECT ENGLISH — proposed: Guessing wrong costs nothing — if it will not connect, come back and try another.
+**English** — Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.
+
+**Shipped as** `connectWhichNoteGuessing` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** lib/ui/screens/connect/connect_screen.dart:1830 (inside the 「不確定要選哪一個？」 disclosure). The in-code comment at :1826-1829 states the intent: 'the fear of picking wrong is what makes somebody close the app instead of tapping something. Nothing here is destructive and nothing is remembered until a handshake succeeds.' This is a permission-to-fail hedge; flattening it to 'Select a connection type' removes the reassurance it exists to give.
 

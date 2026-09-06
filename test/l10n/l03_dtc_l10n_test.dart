@@ -37,8 +37,15 @@ import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
 
 import '../support/localized_app.dart';
+import '../support/cjk.dart';
 
-final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
+/// Han AND CJK punctuation, from the shared detector in test/support/cjk.dart.
+///
+/// This file used to define a Han-only regex of its own. Eight of the nine wave
+/// test files did, and that gap shipped a defect: an English list joined with
+/// `、` passed every one of them, because every word was translated and only
+/// the separator was not.
+final _cjk = chinese;
 
 final _en = lookupAppLocalizations(englishLocale);
 final _zh = lookupAppLocalizations(traditionalChineseLocale);
@@ -504,6 +511,47 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('the distinctions this screen refuses to blur', () {
+    // Hedge register #11. Added after a review proved the English side was
+    // unguarded: rewriting dtcClearDialogFrameUnread to "The vehicle has no
+    // freeze frame stored. Go ahead and clear." left all 1905 tests green.
+    // The Chinese had a literal guard; English had only en != zh parity and an
+    // assertion that read back the same ARB entry the widget had rendered,
+    // which passes on any translation including a wrong one.
+    //
+    // What it would cost: a driver told the vehicle has no freeze frame presses
+    // Clear, and the record of the moment the fault occurred — the only data in
+    // this app taken while the fault was happening — is destroyed for good,
+    // when in fact the app had simply failed to read it and a rescan would have
+    // worked.
+    test('a freeze frame that was not read is not one that does not exist', () {
+      for (final copy in [
+        _en.dtcFreezeFrameUnreadPanel,
+        _en.dtcClearDialogFrameUnread,
+      ]) {
+        expect(
+          copy.toLowerCase(),
+          contains('did not read'),
+          reason: 'it must say the read failed, not that nothing exists',
+        );
+        expect(
+          copy.toLowerCase(),
+          contains('does not mean the vehicle has none'),
+          reason: 'the absence of a reading is not the absence of a frame',
+        );
+      }
+      expect(
+        _en.dtcFreezeFrameUnreadPanel.toLowerCase(),
+        contains('permanently'),
+        reason: 'clearing destroys the frame for good, and must say so',
+      );
+    });
+
+    test('the destroyed-by-clearing warning survives in English', () {
+      // Also register #11, and unguarded for the same reason: parity only.
+      expect(_en.dtcFreezeFrameBody('P0301').toLowerCase(), contains('destroys'));
+      expect(_en.dtcClearDialogBody.toLowerCase(), contains('cannot be cleared'));
+    });
+
     test('the three code classes stay three things', () {
       for (final l10n in [_en, _zh]) {
         for (final mode in ['Mode 03', 'Mode 07', 'Mode 0A']) {
