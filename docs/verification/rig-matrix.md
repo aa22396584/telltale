@@ -33,7 +33,7 @@ described on a current first-party product page. Commercial rigs marked
 | L2 | `integration_test/ios_field_demo_journey_test.dart` | Local Simulator evidence | Demo → live PIDs → record → durable `.ndjson` on field flavor | Not a radio |
 | L2 | `integration_test/macos_field_share_journey_test.dart` | Local macOS evidence | Capacity → Demo record → staged CSV + `app_share` channel | OS share-sheet target selection is still human |
 | L2 | Public telltale Apple/Linux/Windows **functional smoke** | Required on telltale PRs | Host `flutter build` plus Demo/export/transport-gate tests on each desktop runner | Not field BLE/Classic |
-| L2 | `tool/field_bt_verify/` | ACL unit tests in CI; journey requires a powered dongle | Android bonded-adapter preflight refuses a pass while ACL is down; journey is connect→PID→record | Bonded-but-unpowered is exit 2, never a pass |
+| L2 | `tool/field_bt_verify/` | Probe + runner unit tests in CI; journey needs a matching adapter | Observation vs qualification are separate; ACL down is not unpowered; BR/EDR is not LE | Probe-only never prints a field PASS; no adapter stays not-run |
 | L1 | `tool/desktop_bt_probe/` | Python unit tests in CI | Fail-closed OBD-name scan of macOS/Linux/Windows Bluetooth inventory | Finding a name is not connect→PID |
 | L1 | `test/serial_transport_test.dart`, `test/macos_classic_iobluetooth_contract_test.dart`, `test/which_transport_test.dart` | `flutter test` + telltale smoke | Classic host gates, Windows/Linux serial channel, macOS IOBluetooth contract | Not a physical SPP session |
 

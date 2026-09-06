@@ -1,57 +1,155 @@
 #!/usr/bin/env python3
-"""Parse Android `dumpsys bluetooth_manager` for a bonded OBD adapter.
+"""Parse Android `dumpsys bluetooth_manager` into a fact-layer observation.
 
-Fail-closed: bonded-but-disconnected (ACL BR/EDR:N LE:N) is never a field
-pass. Exit codes:
-  0 — adapter bonded and at least one ACL link is up (LE or BR/EDR)
-  2 — adapter bonded but ACL down (unpowered / out of range)
-  3 — adapter name not found in bonded list
-  1 — usage / dumpsys parse error
+This is not a field pass. ACL down/unknown is not unpowered. BR/EDR up is not
+LE, and the reverse. A second same-name adapter does not satisfy the request.
+Malformed ACL tokens are unknown, not down.
+
+Exit codes:
+  0 — observation produced (including disconnected / not in bond inventory)
+  1 — usage, ambiguous name, or unreadable input
 """
 
 from __future__ import annotations
 
 import argparse
+import enum
 import re
 import sys
 from dataclasses import dataclass
 
 
+class LinkState(str, enum.Enum):
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    UNKNOWN = "unknown"
+
+
+class BondState(str, enum.Enum):
+    BONDED = "bonded"
+    UNBONDED = "unbonded"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True)
 class BondObservation:
     name: str
+    address: str | None
     line: str
-    acl_bredr: bool | None
-    acl_le: bool | None
+    acl_bredr: LinkState
+    acl_le: LinkState
+    bond: BondState
+    parseable: bool
+
+
+@dataclass(frozen=True)
+class ProbeResult:
+    hits: tuple[BondObservation, ...]
+    requested_names: tuple[str, ...]
+    requested_address: str | None
+    transport: str | None
+    adapter_connection_state: str | None
+    ambiguous: bool
+
+    @property
+    def not_in_bond_inventory(self) -> bool:
+        return not self.hits and not self.ambiguous
+
+    @property
+    def transport_link_up(self) -> bool:
+        if not self.hits or self.ambiguous:
+            return False
+        wanted = (self.transport or "").casefold()
+        for hit in self.hits:
+            if wanted in ("ble", "le"):
+                if hit.acl_le is LinkState.CONNECTED:
+                    return True
+            elif wanted in ("classic", "bredr", "br/edr", "spp"):
+                if hit.acl_bredr is LinkState.CONNECTED:
+                    return True
+            else:
+                if (
+                    hit.acl_le is LinkState.CONNECTED
+                    or hit.acl_bredr is LinkState.CONNECTED
+                ):
+                    return True
+        return False
+
+    @property
+    def exit_code(self) -> int:
+        return 1 if self.ambiguous else 0
+
+    @property
+    def summary(self) -> str:
+        state = self.adapter_connection_state or "ConnectionState: <missing>"
+        names = ", ".join(self.requested_names)
+        if self.ambiguous:
+            addrs = ", ".join(
+                sorted({h.address or "?" for h in self.hits}),
+            )
+            return (
+                f"ambiguous name {names}; pass --address to select among {addrs}; "
+                f"{state}"
+            )
+        if not self.hits:
+            return f"{names} not in bond inventory; {state}"
+        parts = []
+        for hit in self.hits:
+            addr = hit.address or "address-unknown"
+            parts.append(
+                f"{hit.name} {addr} BR/EDR={hit.acl_bredr.value} "
+                f"LE={hit.acl_le.value} parseable={hit.parseable}"
+            )
+        prefix = "observation"
+        if self.transport:
+            prefix += (
+                f" transport={self.transport} "
+                f"link_up={str(self.transport_link_up).lower()}"
+            )
+        return f"{prefix} — {'; '.join(parts)}; {state}"
 
 
 _ACL_RE = re.compile(
     r"ACL BR/EDR:(?P<br>[YN])\s+LE:(?P<le>[YN])",
     re.IGNORECASE,
 )
+_MAC_RE = re.compile(r"(?i)((?:[0-9a-f]{2}:){5}[0-9a-f]{2})")
+
+
+def _link(token: str | None) -> LinkState:
+    if token is None:
+        return LinkState.UNKNOWN
+    folded = token.upper()
+    if folded == "Y":
+        return LinkState.CONNECTED
+    if folded == "N":
+        return LinkState.DISCONNECTED
+    return LinkState.UNKNOWN
 
 
 def parse_bond_lines(text: str, names: tuple[str, ...]) -> list[BondObservation]:
-    """Return bonded-device lines whose display name matches any of *names*."""
+    """Return dumpsys lines whose display name matches any of *names*."""
     wanted = {n.casefold() for n in names}
     observations: list[BondObservation] = []
     for raw in text.splitlines():
         line = raw.rstrip("\n")
-        # Bonded inventory lines look like:
-        #   XX:XX:… [ DUAL ] […] [ACL BR/EDR:N LE:N] […] OBDBLE
         if "ACL BR/EDR:" not in line:
             continue
-        # Display name is after the final ']' (earlier brackets are COD / ACL).
         name = line.rsplit("]", 1)[-1].strip()
         if not name or name.casefold() not in wanted:
             continue
         acl = _ACL_RE.search(line)
+        parseable = acl is not None
+        mac = _MAC_RE.search(line)
         observations.append(
             BondObservation(
                 name=name,
+                address=mac.group(1).upper() if mac else None,
                 line=line.strip(),
-                acl_bredr=(acl.group("br").upper() == "Y") if acl else None,
-                acl_le=(acl.group("le").upper() == "Y") if acl else None,
+                acl_bredr=_link(acl.group("br") if acl else None),
+                acl_le=_link(acl.group("le") if acl else None),
+                bond=BondState.BONDED,
+                parseable=parseable,
             )
         )
     return observations
@@ -64,31 +162,29 @@ def connection_state(text: str) -> str | None:
     return None
 
 
-def evaluate(text: str, names: tuple[str, ...]) -> tuple[int, str]:
-    """Return (exit_code, human_summary)."""
+def evaluate(
+    text: str,
+    names: tuple[str, ...],
+    *,
+    address: str | None = None,
+    transport: str | None = None,
+) -> ProbeResult:
+    """Return a fact-layer observation. Never infers unpowered/out-of-range."""
     hits = parse_bond_lines(text, names)
-    state = connection_state(text) or "ConnectionState: <missing>"
-    if not hits:
-        return (
-            3,
-            f"no bonded adapter matching {', '.join(names)}; {state}",
-        )
-    up = [
-        h
-        for h in hits
-        if h.acl_bredr is True or h.acl_le is True
-    ]
-    if up:
-        detail = "; ".join(
-            f"{h.name} BR/EDR={'Y' if h.acl_bredr else 'N'} "
-            f"LE={'Y' if h.acl_le else 'N'}"
-            for h in up
-        )
-        return 0, f"ACL up — {detail}; {state}"
-    detail = "; ".join(h.line for h in hits)
-    return (
-        2,
-        f"bonded but ACL down (unpowered/out of range) — {detail}; {state}",
+    if address:
+        wanted = address.casefold()
+        hits = [h for h in hits if (h.address or "").casefold() == wanted]
+        ambiguous = False
+    else:
+        addrs = {(h.address or "").casefold() for h in hits}
+        ambiguous = len(addrs) > 1
+    return ProbeResult(
+        hits=tuple(hits),
+        requested_names=names,
+        requested_address=address,
+        transport=transport,
+        adapter_connection_state=connection_state(text),
+        ambiguous=ambiguous,
     )
 
 
@@ -104,42 +200,55 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         dest="names",
         default=None,
-        help="bonded display name to accept (repeatable; default OBDBLE, OBDII)",
+        help="display name to match (repeatable; default OBDBLE only)",
+    )
+    parser.add_argument(
+        "--address",
+        default=None,
+        help="required when two adapters share a display name",
+    )
+    parser.add_argument(
+        "--transport",
+        default=None,
+        help="ble or classic — diagnostic only; not a field pass",
     )
     parser.add_argument(
         "--evidence",
-        help="optional path to write a short pass/fail evidence blob",
+        help="optional path to write the observation (never a field PASS)",
     )
     args = parser.parse_args(argv)
-    names = tuple(args.names) if args.names else ("OBDBLE", "OBDII")
+    names = tuple(args.names) if args.names else ("OBDBLE",)
     if args.dumpsys_path:
         with open(args.dumpsys_path, "r", encoding="utf-8", errors="replace") as fh:
             text = fh.read()
     else:
         text = sys.stdin.read()
 
-    code, summary = evaluate(text, names)
-    print(summary)
+    result = evaluate(
+        text,
+        names,
+        address=args.address,
+        transport=args.transport,
+    )
+    print(result.summary)
     if args.evidence:
-        verdict = {
-            0: "PASS — ACL up",
-            2: "FAIL — bonded but ACL down (no fake field pass)",
-            3: "FAIL — adapter not bonded",
-        }.get(code, "FAIL — probe error")
         body = (
             f"field_bt_verify ACL probe\n"
             f"names: {', '.join(names)}\n"
-            f"verdict: {verdict}\n"
-            f"summary: {summary}\n"
-            f"no_fake_field_pass: true\n"
+            f"address: {args.address or ''}\n"
+            f"transport: {args.transport or ''}\n"
+            f"observation: {result.summary}\n"
+            f"qualification: not a field pass\n"
+            f"transport_link_up: {str(result.transport_link_up).lower()}\n"
+            f"not_in_bond_inventory: {str(result.not_in_bond_inventory).lower()}\n"
+            f"ambiguous: {str(result.ambiguous).lower()}\n"
             f"---\n"
         )
-        hits = parse_bond_lines(text, names)
-        for hit in hits:
+        for hit in result.hits:
             body += hit.line + "\n"
         with open(args.evidence, "w", encoding="utf-8") as fh:
             fh.write(body)
-    return code
+    return result.exit_code
 
 
 if __name__ == "__main__":
