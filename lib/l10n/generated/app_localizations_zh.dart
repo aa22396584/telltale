@@ -2212,6 +2212,475 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get telemetryRecorderNotRecording => '未錄製';
+
+  @override
+  String get dtcKindStored => '已儲存';
+
+  @override
+  String get dtcKindPending => '待確認';
+
+  @override
+  String get dtcKindPermanent => '永久';
+
+  @override
+  String get dtcKindStoredExplanation => '已確認的故障，儀表板故障燈通常亮起';
+
+  @override
+  String get dtcKindPendingExplanation => '偵測到一次，尚未達到確認門檻';
+
+  @override
+  String get dtcKindPermanentExplanation => '無法用診斷儀清除，需修復後由 ECU 自行確認';
+
+  @override
+  String get dtcSystemPowertrain => '動力系統';
+
+  @override
+  String get dtcSystemChassis => '底盤';
+
+  @override
+  String get dtcSystemBody => '車身';
+
+  @override
+  String get dtcSystemNetwork => '網路';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions =>
+      '燃油與空氣計量、輔助排放控制';
+
+  @override
+  String get dtcSubsystemFuelAirMetering => '燃油與空氣計量';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringInjectorCircuit => '燃油與空氣計量（噴油嘴迴路）';
+
+  @override
+  String get dtcSubsystemIgnitionOrMisfire => '點火系統或失火';
+
+  @override
+  String get dtcSubsystemAuxiliaryEmissionControls => '輔助排放控制';
+
+  @override
+  String get dtcSubsystemSpeedAndIdleControl => '車速控制與怠速系統';
+
+  @override
+  String get dtcSubsystemComputerOutputCircuit => '電腦輸出迴路';
+
+  @override
+  String get dtcSubsystemTransmission => '變速箱';
+
+  @override
+  String get dtcSubsystemControlModuleSignals => '控制模組輸入／輸出訊號';
+
+  @override
+  String get dtcDescriptionB0001 => '駕駛座安全氣囊裝置故障';
+
+  @override
+  String get dtcDescriptionP0011 => '「A」凸輪軸正時過前或系統效能異常（Bank 1）';
+
+  @override
+  String get dtcDescriptionP0014 => '「B」凸輪軸正時過前或系統效能異常（Bank 1）';
+
+  @override
+  String get dtcDescriptionP0016 => '曲軸與凸輪軸位置訊號不同步（Bank 1 感知器 A）';
+
+  @override
+  String get dtcDescriptionP0087 => '燃油軌／系統壓力過低';
+
+  @override
+  String get dtcDescriptionP0088 => '燃油軌／系統壓力過高';
+
+  @override
+  String get dtcDescriptionP0100 => '空氣流量感知器 (MAF) 電路故障';
+
+  @override
+  String get dtcDescriptionP0101 => '空氣流量感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0102 => '空氣流量感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0103 => '空氣流量感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0105 => '進氣歧管絕對壓力／大氣壓力感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0106 => '進氣歧管絕對壓力感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0107 => '進氣歧管絕對壓力感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0108 => '進氣歧管絕對壓力感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0110 => '進氣溫度感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0111 => '進氣溫度感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0112 => '進氣溫度感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0113 => '進氣溫度感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0115 => '冷卻液溫度感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0116 => '冷卻液溫度感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0117 => '冷卻液溫度感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0118 => '冷卻液溫度感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0120 => '節氣門位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0121 => '節氣門位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0122 => '節氣門位置感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0123 => '節氣門位置感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0125 => '冷卻液溫度不足以進入閉迴路燃油控制';
+
+  @override
+  String get dtcDescriptionP0128 => '冷卻液溫度低於節溫器調節溫度';
+
+  @override
+  String get dtcDescriptionP0130 => '含氧感知器電路故障 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0131 => '含氧感知器電路電壓過低 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0132 => '含氧感知器電路電壓過高 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0133 => '含氧感知器反應過慢 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0134 => '含氧感知器無活性訊號 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0135 => '含氧感知器加熱器電路故障 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0136 => '含氧感知器電路故障 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0137 => '含氧感知器電路電壓過低 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0138 => '含氧感知器電路電壓過高 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0140 => '含氧感知器無活性訊號 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0141 => '含氧感知器加熱器電路故障 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0150 => '含氧感知器電路故障 (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0155 => '含氧感知器加熱器電路故障 (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0156 => '含氧感知器電路故障 (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0161 => '含氧感知器加熱器電路故障 (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0170 => '燃油修正異常 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0171 => '混合比過稀 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0172 => '混合比過濃 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0173 => '燃油修正異常 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0174 => '混合比過稀 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0175 => '混合比過濃 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0190 => '燃油軌壓力感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0201 => '噴油嘴電路故障／開路 — 第 1 缸';
+
+  @override
+  String get dtcDescriptionP0202 => '噴油嘴電路故障／開路 — 第 2 缸';
+
+  @override
+  String get dtcDescriptionP0203 => '噴油嘴電路故障／開路 — 第 3 缸';
+
+  @override
+  String get dtcDescriptionP0204 => '噴油嘴電路故障／開路 — 第 4 缸';
+
+  @override
+  String get dtcDescriptionP0217 => '引擎過熱';
+
+  @override
+  String get dtcDescriptionP0221 => '節氣門／油門踏板位置感知器 B 範圍或效能異常';
+
+  @override
+  String get dtcDescriptionP0222 => '節氣門／油門踏板位置感知器 B 電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0223 => '節氣門／油門踏板位置感知器 B 電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0234 => '渦輪／機械增壓過壓';
+
+  @override
+  String get dtcDescriptionP0299 => '渦輪／機械增壓「A」增壓不足';
+
+  @override
+  String get dtcDescriptionP0300 => '偵測到隨機/多缸失火';
+
+  @override
+  String get dtcDescriptionP0301 => '第 1 缸失火';
+
+  @override
+  String get dtcDescriptionP0302 => '第 2 缸失火';
+
+  @override
+  String get dtcDescriptionP0303 => '第 3 缸失火';
+
+  @override
+  String get dtcDescriptionP0304 => '第 4 缸失火';
+
+  @override
+  String get dtcDescriptionP0305 => '第 5 缸失火';
+
+  @override
+  String get dtcDescriptionP0306 => '第 6 缸失火';
+
+  @override
+  String get dtcDescriptionP0307 => '第 7 缸失火';
+
+  @override
+  String get dtcDescriptionP0308 => '第 8 缸失火';
+
+  @override
+  String get dtcDescriptionP0316 => '起動後隨即偵測到失火';
+
+  @override
+  String get dtcDescriptionP0325 => '爆震感知器電路故障 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0326 => '爆震感知器範圍/效能異常 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0327 => '爆震感知器電路輸入過低 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0328 => '爆震感知器電路輸入過高 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0330 => '爆震感知器電路故障 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0335 => '曲軸位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0336 => '曲軸位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0340 => '凸輪軸位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0341 => '凸輪軸位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0351 => '點火線圈 A 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0352 => '點火線圈 B 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0353 => '點火線圈 C 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0354 => '點火線圈 D 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0355 => '點火線圈 E 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0356 => '點火線圈 F 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0400 => '廢氣再循環 (EGR) 流量故障';
+
+  @override
+  String get dtcDescriptionP0401 => '廢氣再循環 (EGR) 流量不足';
+
+  @override
+  String get dtcDescriptionP0402 => '廢氣再循環 (EGR) 流量過大';
+
+  @override
+  String get dtcDescriptionP0403 => '廢氣再循環 (EGR) 控制電路故障';
+
+  @override
+  String get dtcDescriptionP0404 => '廢氣再循環 (EGR) 控制電路範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0410 => '二次空氣噴射系統故障';
+
+  @override
+  String get dtcDescriptionP0411 => '二次空氣噴射系統流量不正確';
+
+  @override
+  String get dtcDescriptionP0412 => '二次空氣噴射切換閥 A 電路故障';
+
+  @override
+  String get dtcDescriptionP0420 => '觸媒轉換器效率低於門檻 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0430 => '觸媒轉換器效率低於門檻 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0440 => '蒸發排放控制系統故障';
+
+  @override
+  String get dtcDescriptionP0441 => '蒸發排放系統清除流量不正確';
+
+  @override
+  String get dtcDescriptionP0442 => '蒸發排放系統偵測到小漏氣';
+
+  @override
+  String get dtcDescriptionP0443 => '蒸發排放清除閥控制電路故障';
+
+  @override
+  String get dtcDescriptionP0446 => '蒸發排放通風控制電路故障';
+
+  @override
+  String get dtcDescriptionP0447 => '蒸發排放通風控制電路開路';
+
+  @override
+  String get dtcDescriptionP0449 => '蒸發排放通風閥/電磁閥電路故障';
+
+  @override
+  String get dtcDescriptionP0451 => '蒸發排放壓力感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0452 => '蒸發排放壓力感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0453 => '蒸發排放壓力感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0455 => '蒸發排放系統偵測到大漏氣';
+
+  @override
+  String get dtcDescriptionP0456 => '蒸發排放系統偵測到極小漏氣';
+
+  @override
+  String get dtcDescriptionP0480 => '冷卻風扇 1 控制電路故障';
+
+  @override
+  String get dtcDescriptionP0500 => '車速感知器故障';
+
+  @override
+  String get dtcDescriptionP0505 => '怠速控制系統故障';
+
+  @override
+  String get dtcDescriptionP0506 => '怠速轉速低於預期';
+
+  @override
+  String get dtcDescriptionP0507 => '怠速轉速高於預期';
+
+  @override
+  String get dtcDescriptionP0508 => '怠速控制電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0509 => '怠速控制電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0560 => '系統電壓故障';
+
+  @override
+  String get dtcDescriptionP0562 => '系統電壓過低';
+
+  @override
+  String get dtcDescriptionP0563 => '系統電壓過高';
+
+  @override
+  String get dtcDescriptionP0603 => '控制模組內部記憶體（KAM）錯誤';
+
+  @override
+  String get dtcDescriptionP0605 => '控制模組內部唯讀記憶體（ROM）錯誤';
+
+  @override
+  String get dtcDescriptionP0606 => 'ECM/PCM 處理器故障';
+
+  @override
+  String get dtcDescriptionP0700 => '變速箱控制模組要求點亮故障燈 —— 故障碼在變速箱模組裡，請另外讀取';
+
+  @override
+  String get dtcDescriptionP0701 => '變速箱控制系統範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0702 => '變速箱控制系統電氣故障';
+
+  @override
+  String get dtcDescriptionP0705 => '排檔位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0715 => '輸入軸／渦輪轉速感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0720 => '輸出軸轉速感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0730 => '檔位比不正確';
+
+  @override
+  String get dtcDescriptionP0740 => '扭力轉換器離合器電路故障';
+
+  @override
+  String get dtcDescriptionP0741 => '扭力轉換器離合器卡在未鎖定狀態';
+
+  @override
+  String get dtcDescriptionP0750 => '換檔電磁閥 A 故障';
+
+  @override
+  String get dtcDescriptionP0755 => '換檔電磁閥 B 故障';
+
+  @override
+  String get dtcDescriptionP2135 => '節氣門位置感知器 A/B 電壓不一致';
+
+  @override
+  String get dtcDescriptionU0100 => '與 ECM/PCM 失去通訊';
+
+  @override
+  String get dtcDescriptionU0101 => '與變速箱控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0121 => '與 ABS 控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0140 => '與車身控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0155 => '與儀表板控制模組失去通訊';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -4421,4 +4890,473 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get telemetryRecorderNotRecording => '未錄製';
+
+  @override
+  String get dtcKindStored => '已儲存';
+
+  @override
+  String get dtcKindPending => '待確認';
+
+  @override
+  String get dtcKindPermanent => '永久';
+
+  @override
+  String get dtcKindStoredExplanation => '已確認的故障，儀表板故障燈通常亮起';
+
+  @override
+  String get dtcKindPendingExplanation => '偵測到一次，尚未達到確認門檻';
+
+  @override
+  String get dtcKindPermanentExplanation => '無法用診斷儀清除，需修復後由 ECU 自行確認';
+
+  @override
+  String get dtcSystemPowertrain => '動力系統';
+
+  @override
+  String get dtcSystemChassis => '底盤';
+
+  @override
+  String get dtcSystemBody => '車身';
+
+  @override
+  String get dtcSystemNetwork => '網路';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions =>
+      '燃油與空氣計量、輔助排放控制';
+
+  @override
+  String get dtcSubsystemFuelAirMetering => '燃油與空氣計量';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringInjectorCircuit => '燃油與空氣計量（噴油嘴迴路）';
+
+  @override
+  String get dtcSubsystemIgnitionOrMisfire => '點火系統或失火';
+
+  @override
+  String get dtcSubsystemAuxiliaryEmissionControls => '輔助排放控制';
+
+  @override
+  String get dtcSubsystemSpeedAndIdleControl => '車速控制與怠速系統';
+
+  @override
+  String get dtcSubsystemComputerOutputCircuit => '電腦輸出迴路';
+
+  @override
+  String get dtcSubsystemTransmission => '變速箱';
+
+  @override
+  String get dtcSubsystemControlModuleSignals => '控制模組輸入／輸出訊號';
+
+  @override
+  String get dtcDescriptionB0001 => '駕駛座安全氣囊裝置故障';
+
+  @override
+  String get dtcDescriptionP0011 => '「A」凸輪軸正時過前或系統效能異常（Bank 1）';
+
+  @override
+  String get dtcDescriptionP0014 => '「B」凸輪軸正時過前或系統效能異常（Bank 1）';
+
+  @override
+  String get dtcDescriptionP0016 => '曲軸與凸輪軸位置訊號不同步（Bank 1 感知器 A）';
+
+  @override
+  String get dtcDescriptionP0087 => '燃油軌／系統壓力過低';
+
+  @override
+  String get dtcDescriptionP0088 => '燃油軌／系統壓力過高';
+
+  @override
+  String get dtcDescriptionP0100 => '空氣流量感知器 (MAF) 電路故障';
+
+  @override
+  String get dtcDescriptionP0101 => '空氣流量感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0102 => '空氣流量感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0103 => '空氣流量感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0105 => '進氣歧管絕對壓力／大氣壓力感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0106 => '進氣歧管絕對壓力感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0107 => '進氣歧管絕對壓力感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0108 => '進氣歧管絕對壓力感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0110 => '進氣溫度感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0111 => '進氣溫度感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0112 => '進氣溫度感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0113 => '進氣溫度感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0115 => '冷卻液溫度感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0116 => '冷卻液溫度感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0117 => '冷卻液溫度感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0118 => '冷卻液溫度感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0120 => '節氣門位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0121 => '節氣門位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0122 => '節氣門位置感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0123 => '節氣門位置感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0125 => '冷卻液溫度不足以進入閉迴路燃油控制';
+
+  @override
+  String get dtcDescriptionP0128 => '冷卻液溫度低於節溫器調節溫度';
+
+  @override
+  String get dtcDescriptionP0130 => '含氧感知器電路故障 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0131 => '含氧感知器電路電壓過低 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0132 => '含氧感知器電路電壓過高 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0133 => '含氧感知器反應過慢 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0134 => '含氧感知器無活性訊號 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0135 => '含氧感知器加熱器電路故障 (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0136 => '含氧感知器電路故障 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0137 => '含氧感知器電路電壓過低 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0138 => '含氧感知器電路電壓過高 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0140 => '含氧感知器無活性訊號 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0141 => '含氧感知器加熱器電路故障 (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0150 => '含氧感知器電路故障 (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0155 => '含氧感知器加熱器電路故障 (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0156 => '含氧感知器電路故障 (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0161 => '含氧感知器加熱器電路故障 (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0170 => '燃油修正異常 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0171 => '混合比過稀 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0172 => '混合比過濃 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0173 => '燃油修正異常 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0174 => '混合比過稀 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0175 => '混合比過濃 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0190 => '燃油軌壓力感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0201 => '噴油嘴電路故障／開路 — 第 1 缸';
+
+  @override
+  String get dtcDescriptionP0202 => '噴油嘴電路故障／開路 — 第 2 缸';
+
+  @override
+  String get dtcDescriptionP0203 => '噴油嘴電路故障／開路 — 第 3 缸';
+
+  @override
+  String get dtcDescriptionP0204 => '噴油嘴電路故障／開路 — 第 4 缸';
+
+  @override
+  String get dtcDescriptionP0217 => '引擎過熱';
+
+  @override
+  String get dtcDescriptionP0221 => '節氣門／油門踏板位置感知器 B 範圍或效能異常';
+
+  @override
+  String get dtcDescriptionP0222 => '節氣門／油門踏板位置感知器 B 電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0223 => '節氣門／油門踏板位置感知器 B 電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0234 => '渦輪／機械增壓過壓';
+
+  @override
+  String get dtcDescriptionP0299 => '渦輪／機械增壓「A」增壓不足';
+
+  @override
+  String get dtcDescriptionP0300 => '偵測到隨機/多缸失火';
+
+  @override
+  String get dtcDescriptionP0301 => '第 1 缸失火';
+
+  @override
+  String get dtcDescriptionP0302 => '第 2 缸失火';
+
+  @override
+  String get dtcDescriptionP0303 => '第 3 缸失火';
+
+  @override
+  String get dtcDescriptionP0304 => '第 4 缸失火';
+
+  @override
+  String get dtcDescriptionP0305 => '第 5 缸失火';
+
+  @override
+  String get dtcDescriptionP0306 => '第 6 缸失火';
+
+  @override
+  String get dtcDescriptionP0307 => '第 7 缸失火';
+
+  @override
+  String get dtcDescriptionP0308 => '第 8 缸失火';
+
+  @override
+  String get dtcDescriptionP0316 => '起動後隨即偵測到失火';
+
+  @override
+  String get dtcDescriptionP0325 => '爆震感知器電路故障 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0326 => '爆震感知器範圍/效能異常 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0327 => '爆震感知器電路輸入過低 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0328 => '爆震感知器電路輸入過高 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0330 => '爆震感知器電路故障 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0335 => '曲軸位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0336 => '曲軸位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0340 => '凸輪軸位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0341 => '凸輪軸位置感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0351 => '點火線圈 A 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0352 => '點火線圈 B 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0353 => '點火線圈 C 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0354 => '點火線圈 D 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0355 => '點火線圈 E 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0356 => '點火線圈 F 一次/二次電路故障';
+
+  @override
+  String get dtcDescriptionP0400 => '廢氣再循環 (EGR) 流量故障';
+
+  @override
+  String get dtcDescriptionP0401 => '廢氣再循環 (EGR) 流量不足';
+
+  @override
+  String get dtcDescriptionP0402 => '廢氣再循環 (EGR) 流量過大';
+
+  @override
+  String get dtcDescriptionP0403 => '廢氣再循環 (EGR) 控制電路故障';
+
+  @override
+  String get dtcDescriptionP0404 => '廢氣再循環 (EGR) 控制電路範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0410 => '二次空氣噴射系統故障';
+
+  @override
+  String get dtcDescriptionP0411 => '二次空氣噴射系統流量不正確';
+
+  @override
+  String get dtcDescriptionP0412 => '二次空氣噴射切換閥 A 電路故障';
+
+  @override
+  String get dtcDescriptionP0420 => '觸媒轉換器效率低於門檻 (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0430 => '觸媒轉換器效率低於門檻 (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0440 => '蒸發排放控制系統故障';
+
+  @override
+  String get dtcDescriptionP0441 => '蒸發排放系統清除流量不正確';
+
+  @override
+  String get dtcDescriptionP0442 => '蒸發排放系統偵測到小漏氣';
+
+  @override
+  String get dtcDescriptionP0443 => '蒸發排放清除閥控制電路故障';
+
+  @override
+  String get dtcDescriptionP0446 => '蒸發排放通風控制電路故障';
+
+  @override
+  String get dtcDescriptionP0447 => '蒸發排放通風控制電路開路';
+
+  @override
+  String get dtcDescriptionP0449 => '蒸發排放通風閥/電磁閥電路故障';
+
+  @override
+  String get dtcDescriptionP0451 => '蒸發排放壓力感知器範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0452 => '蒸發排放壓力感知器電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0453 => '蒸發排放壓力感知器電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0455 => '蒸發排放系統偵測到大漏氣';
+
+  @override
+  String get dtcDescriptionP0456 => '蒸發排放系統偵測到極小漏氣';
+
+  @override
+  String get dtcDescriptionP0480 => '冷卻風扇 1 控制電路故障';
+
+  @override
+  String get dtcDescriptionP0500 => '車速感知器故障';
+
+  @override
+  String get dtcDescriptionP0505 => '怠速控制系統故障';
+
+  @override
+  String get dtcDescriptionP0506 => '怠速轉速低於預期';
+
+  @override
+  String get dtcDescriptionP0507 => '怠速轉速高於預期';
+
+  @override
+  String get dtcDescriptionP0508 => '怠速控制電路輸入過低';
+
+  @override
+  String get dtcDescriptionP0509 => '怠速控制電路輸入過高';
+
+  @override
+  String get dtcDescriptionP0560 => '系統電壓故障';
+
+  @override
+  String get dtcDescriptionP0562 => '系統電壓過低';
+
+  @override
+  String get dtcDescriptionP0563 => '系統電壓過高';
+
+  @override
+  String get dtcDescriptionP0603 => '控制模組內部記憶體（KAM）錯誤';
+
+  @override
+  String get dtcDescriptionP0605 => '控制模組內部唯讀記憶體（ROM）錯誤';
+
+  @override
+  String get dtcDescriptionP0606 => 'ECM/PCM 處理器故障';
+
+  @override
+  String get dtcDescriptionP0700 => '變速箱控制模組要求點亮故障燈 —— 故障碼在變速箱模組裡，請另外讀取';
+
+  @override
+  String get dtcDescriptionP0701 => '變速箱控制系統範圍/效能異常';
+
+  @override
+  String get dtcDescriptionP0702 => '變速箱控制系統電氣故障';
+
+  @override
+  String get dtcDescriptionP0705 => '排檔位置感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0715 => '輸入軸／渦輪轉速感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0720 => '輸出軸轉速感知器電路故障';
+
+  @override
+  String get dtcDescriptionP0730 => '檔位比不正確';
+
+  @override
+  String get dtcDescriptionP0740 => '扭力轉換器離合器電路故障';
+
+  @override
+  String get dtcDescriptionP0741 => '扭力轉換器離合器卡在未鎖定狀態';
+
+  @override
+  String get dtcDescriptionP0750 => '換檔電磁閥 A 故障';
+
+  @override
+  String get dtcDescriptionP0755 => '換檔電磁閥 B 故障';
+
+  @override
+  String get dtcDescriptionP2135 => '節氣門位置感知器 A/B 電壓不一致';
+
+  @override
+  String get dtcDescriptionU0100 => '與 ECM/PCM 失去通訊';
+
+  @override
+  String get dtcDescriptionU0101 => '與變速箱控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0121 => '與 ABS 控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0140 => '與車身控制模組失去通訊';
+
+  @override
+  String get dtcDescriptionU0155 => '與儀表板控制模組失去通訊';
 }

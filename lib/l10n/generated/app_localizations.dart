@@ -3878,6 +3878,942 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not recording'**
   String get telemetryRecorderNotRecording;
+
+  /// Fault-code class read from Mode 03. One of three classes that must stay three distinguishable things; never merge with pending or permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored'**
+  String get dtcKindStored;
+
+  /// Fault-code class read from Mode 07. A fault seen once that has not yet been confirmed — it is not a confirmed fault and must not read like one.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get dtcKindPending;
+
+  /// Fault-code class read from Mode 0A. Must never read as something the Clear button can remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent'**
+  String get dtcKindPermanent;
+
+  /// Explanation under the Mode 03 group header. Keep "usually": a stored code does not guarantee the lamp is lit.
+  ///
+  /// In en, this message translates to:
+  /// **'A confirmed fault; the dashboard fault lamp is usually lit.'**
+  String get dtcKindStoredExplanation;
+
+  /// Explanation under the Mode 07 group header. "Detected once" and "has not reached the threshold" are both load-bearing — this is not yet a confirmed fault.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected once, and has not yet reached the confirmation threshold.'**
+  String get dtcKindPendingExplanation;
+
+  /// Explanation under the Mode 0A group header. Both halves are load-bearing: a scan tool cannot clear it, and the ECU clears it itself only after it has confirmed the repair. A translation that lets this read as clearable sends somebody to an inspection they cannot pass.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot be cleared with a scan tool. The ECU clears it itself, and only once it has confirmed the repair.'**
+  String get dtcKindPermanentExplanation;
+
+  /// The system a DTC belongs to, read off its letter. P. The letter itself is never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Powertrain'**
+  String get dtcSystemPowertrain;
+
+  /// The system a DTC belongs to, read off its letter. C.
+  ///
+  /// In en, this message translates to:
+  /// **'Chassis'**
+  String get dtcSystemChassis;
+
+  /// The system a DTC belongs to, read off its letter. B.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get dtcSystemBody;
+
+  /// The system a DTC belongs to, read off its letter. U.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get dtcSystemNetwork;
+
+  /// SAE J2012 subsystem for the P00xx block. That block covers both areas, so the label names both rather than picking one.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel and air metering, and auxiliary emission controls'**
+  String get dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions;
+
+  /// No description provided for @dtcSubsystemFuelAirMetering.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel and air metering'**
+  String get dtcSubsystemFuelAirMetering;
+
+  /// No description provided for @dtcSubsystemFuelAirMeteringInjectorCircuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel and air metering (injector circuit)'**
+  String get dtcSubsystemFuelAirMeteringInjectorCircuit;
+
+  /// No description provided for @dtcSubsystemIgnitionOrMisfire.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition system or misfire'**
+  String get dtcSubsystemIgnitionOrMisfire;
+
+  /// No description provided for @dtcSubsystemAuxiliaryEmissionControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Auxiliary emission controls'**
+  String get dtcSubsystemAuxiliaryEmissionControls;
+
+  /// No description provided for @dtcSubsystemSpeedAndIdleControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle speed control and idle control system'**
+  String get dtcSubsystemSpeedAndIdleControl;
+
+  /// No description provided for @dtcSubsystemComputerOutputCircuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Computer output circuit'**
+  String get dtcSubsystemComputerOutputCircuit;
+
+  /// No description provided for @dtcSubsystemTransmission.
+  ///
+  /// In en, this message translates to:
+  /// **'Transmission'**
+  String get dtcSubsystemTransmission;
+
+  /// SAE J2012 subsystem for the P09xx block, published as "control modules, input and output signals". Do not add a transmission clause: an earlier wording invented one.
+  ///
+  /// In en, this message translates to:
+  /// **'Control modules, input and output signals'**
+  String get dtcSubsystemControlModuleSignals;
+
+  /// No description provided for @dtcDescriptionB0001.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver airbag deployment control fault'**
+  String get dtcDescriptionB0001;
+
+  /// No description provided for @dtcDescriptionP0011.
+  ///
+  /// In en, this message translates to:
+  /// **'Camshaft position A — timing over-advanced or system performance (Bank 1)'**
+  String get dtcDescriptionP0011;
+
+  /// No description provided for @dtcDescriptionP0014.
+  ///
+  /// In en, this message translates to:
+  /// **'Camshaft position B — timing over-advanced or system performance (Bank 1)'**
+  String get dtcDescriptionP0014;
+
+  /// No description provided for @dtcDescriptionP0016.
+  ///
+  /// In en, this message translates to:
+  /// **'Crankshaft position – camshaft position correlation (Bank 1 Sensor A)'**
+  String get dtcDescriptionP0016;
+
+  /// No description provided for @dtcDescriptionP0087.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel rail/system pressure too low'**
+  String get dtcDescriptionP0087;
+
+  /// No description provided for @dtcDescriptionP0088.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel rail/system pressure too high'**
+  String get dtcDescriptionP0088;
+
+  /// No description provided for @dtcDescriptionP0100.
+  ///
+  /// In en, this message translates to:
+  /// **'Mass air flow (MAF) sensor circuit malfunction'**
+  String get dtcDescriptionP0100;
+
+  /// No description provided for @dtcDescriptionP0101.
+  ///
+  /// In en, this message translates to:
+  /// **'Mass air flow sensor range/performance problem'**
+  String get dtcDescriptionP0101;
+
+  /// No description provided for @dtcDescriptionP0102.
+  ///
+  /// In en, this message translates to:
+  /// **'Mass air flow sensor circuit low input'**
+  String get dtcDescriptionP0102;
+
+  /// No description provided for @dtcDescriptionP0103.
+  ///
+  /// In en, this message translates to:
+  /// **'Mass air flow sensor circuit high input'**
+  String get dtcDescriptionP0103;
+
+  /// No description provided for @dtcDescriptionP0105.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifold absolute pressure/barometric pressure sensor circuit malfunction'**
+  String get dtcDescriptionP0105;
+
+  /// No description provided for @dtcDescriptionP0106.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifold absolute pressure sensor range/performance problem'**
+  String get dtcDescriptionP0106;
+
+  /// No description provided for @dtcDescriptionP0107.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifold absolute pressure sensor circuit low input'**
+  String get dtcDescriptionP0107;
+
+  /// No description provided for @dtcDescriptionP0108.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifold absolute pressure sensor circuit high input'**
+  String get dtcDescriptionP0108;
+
+  /// No description provided for @dtcDescriptionP0110.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake air temperature sensor circuit malfunction'**
+  String get dtcDescriptionP0110;
+
+  /// No description provided for @dtcDescriptionP0111.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake air temperature sensor range/performance problem'**
+  String get dtcDescriptionP0111;
+
+  /// No description provided for @dtcDescriptionP0112.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake air temperature sensor circuit low input'**
+  String get dtcDescriptionP0112;
+
+  /// No description provided for @dtcDescriptionP0113.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake air temperature sensor circuit high input'**
+  String get dtcDescriptionP0113;
+
+  /// No description provided for @dtcDescriptionP0115.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine coolant temperature sensor circuit malfunction'**
+  String get dtcDescriptionP0115;
+
+  /// No description provided for @dtcDescriptionP0116.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine coolant temperature sensor range/performance problem'**
+  String get dtcDescriptionP0116;
+
+  /// No description provided for @dtcDescriptionP0117.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine coolant temperature sensor circuit low input'**
+  String get dtcDescriptionP0117;
+
+  /// No description provided for @dtcDescriptionP0118.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine coolant temperature sensor circuit high input'**
+  String get dtcDescriptionP0118;
+
+  /// No description provided for @dtcDescriptionP0120.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle position sensor circuit malfunction'**
+  String get dtcDescriptionP0120;
+
+  /// No description provided for @dtcDescriptionP0121.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle position sensor range/performance problem'**
+  String get dtcDescriptionP0121;
+
+  /// No description provided for @dtcDescriptionP0122.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle position sensor circuit low input'**
+  String get dtcDescriptionP0122;
+
+  /// No description provided for @dtcDescriptionP0123.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle position sensor circuit high input'**
+  String get dtcDescriptionP0123;
+
+  /// No description provided for @dtcDescriptionP0125.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient coolant temperature for closed-loop fuel control'**
+  String get dtcDescriptionP0125;
+
+  /// No description provided for @dtcDescriptionP0128.
+  ///
+  /// In en, this message translates to:
+  /// **'Coolant temperature below thermostat regulating temperature'**
+  String get dtcDescriptionP0128;
+
+  /// No description provided for @dtcDescriptionP0130.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit malfunction (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0130;
+
+  /// No description provided for @dtcDescriptionP0131.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit low voltage (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0131;
+
+  /// No description provided for @dtcDescriptionP0132.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit high voltage (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0132;
+
+  /// No description provided for @dtcDescriptionP0133.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit slow response (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0133;
+
+  /// No description provided for @dtcDescriptionP0134.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit no activity detected (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0134;
+
+  /// No description provided for @dtcDescriptionP0135.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor heater circuit malfunction (Bank 1 Sensor 1)'**
+  String get dtcDescriptionP0135;
+
+  /// No description provided for @dtcDescriptionP0136.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit malfunction (Bank 1 Sensor 2)'**
+  String get dtcDescriptionP0136;
+
+  /// No description provided for @dtcDescriptionP0137.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit low voltage (Bank 1 Sensor 2)'**
+  String get dtcDescriptionP0137;
+
+  /// No description provided for @dtcDescriptionP0138.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit high voltage (Bank 1 Sensor 2)'**
+  String get dtcDescriptionP0138;
+
+  /// No description provided for @dtcDescriptionP0140.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit no activity detected (Bank 1 Sensor 2)'**
+  String get dtcDescriptionP0140;
+
+  /// No description provided for @dtcDescriptionP0141.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor heater circuit malfunction (Bank 1 Sensor 2)'**
+  String get dtcDescriptionP0141;
+
+  /// No description provided for @dtcDescriptionP0150.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit malfunction (Bank 2 Sensor 1)'**
+  String get dtcDescriptionP0150;
+
+  /// No description provided for @dtcDescriptionP0155.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor heater circuit malfunction (Bank 2 Sensor 1)'**
+  String get dtcDescriptionP0155;
+
+  /// No description provided for @dtcDescriptionP0156.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor circuit malfunction (Bank 2 Sensor 2)'**
+  String get dtcDescriptionP0156;
+
+  /// No description provided for @dtcDescriptionP0161.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen sensor heater circuit malfunction (Bank 2 Sensor 2)'**
+  String get dtcDescriptionP0161;
+
+  /// No description provided for @dtcDescriptionP0170.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel trim malfunction (Bank 1)'**
+  String get dtcDescriptionP0170;
+
+  /// No description provided for @dtcDescriptionP0171.
+  ///
+  /// In en, this message translates to:
+  /// **'System too lean (Bank 1)'**
+  String get dtcDescriptionP0171;
+
+  /// No description provided for @dtcDescriptionP0172.
+  ///
+  /// In en, this message translates to:
+  /// **'System too rich (Bank 1)'**
+  String get dtcDescriptionP0172;
+
+  /// No description provided for @dtcDescriptionP0173.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel trim malfunction (Bank 2)'**
+  String get dtcDescriptionP0173;
+
+  /// No description provided for @dtcDescriptionP0174.
+  ///
+  /// In en, this message translates to:
+  /// **'System too lean (Bank 2)'**
+  String get dtcDescriptionP0174;
+
+  /// No description provided for @dtcDescriptionP0175.
+  ///
+  /// In en, this message translates to:
+  /// **'System too rich (Bank 2)'**
+  String get dtcDescriptionP0175;
+
+  /// No description provided for @dtcDescriptionP0190.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel rail pressure sensor circuit malfunction'**
+  String get dtcDescriptionP0190;
+
+  /// No description provided for @dtcDescriptionP0201.
+  ///
+  /// In en, this message translates to:
+  /// **'Injector circuit malfunction or open — cylinder 1'**
+  String get dtcDescriptionP0201;
+
+  /// No description provided for @dtcDescriptionP0202.
+  ///
+  /// In en, this message translates to:
+  /// **'Injector circuit malfunction or open — cylinder 2'**
+  String get dtcDescriptionP0202;
+
+  /// No description provided for @dtcDescriptionP0203.
+  ///
+  /// In en, this message translates to:
+  /// **'Injector circuit malfunction or open — cylinder 3'**
+  String get dtcDescriptionP0203;
+
+  /// No description provided for @dtcDescriptionP0204.
+  ///
+  /// In en, this message translates to:
+  /// **'Injector circuit malfunction or open — cylinder 4'**
+  String get dtcDescriptionP0204;
+
+  /// No description provided for @dtcDescriptionP0217.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine over-temperature condition'**
+  String get dtcDescriptionP0217;
+
+  /// No description provided for @dtcDescriptionP0221.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle/pedal position sensor B range/performance problem'**
+  String get dtcDescriptionP0221;
+
+  /// No description provided for @dtcDescriptionP0222.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle/pedal position sensor B circuit low input'**
+  String get dtcDescriptionP0222;
+
+  /// No description provided for @dtcDescriptionP0223.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle/pedal position sensor B circuit high input'**
+  String get dtcDescriptionP0223;
+
+  /// No description provided for @dtcDescriptionP0234.
+  ///
+  /// In en, this message translates to:
+  /// **'Turbocharger/supercharger overboost condition'**
+  String get dtcDescriptionP0234;
+
+  /// No description provided for @dtcDescriptionP0299.
+  ///
+  /// In en, this message translates to:
+  /// **'Turbocharger/supercharger A underboost condition'**
+  String get dtcDescriptionP0299;
+
+  /// No description provided for @dtcDescriptionP0300.
+  ///
+  /// In en, this message translates to:
+  /// **'Random or multiple cylinder misfire detected'**
+  String get dtcDescriptionP0300;
+
+  /// No description provided for @dtcDescriptionP0301.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 1 misfire detected'**
+  String get dtcDescriptionP0301;
+
+  /// No description provided for @dtcDescriptionP0302.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 2 misfire detected'**
+  String get dtcDescriptionP0302;
+
+  /// No description provided for @dtcDescriptionP0303.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 3 misfire detected'**
+  String get dtcDescriptionP0303;
+
+  /// No description provided for @dtcDescriptionP0304.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 4 misfire detected'**
+  String get dtcDescriptionP0304;
+
+  /// No description provided for @dtcDescriptionP0305.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 5 misfire detected'**
+  String get dtcDescriptionP0305;
+
+  /// No description provided for @dtcDescriptionP0306.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 6 misfire detected'**
+  String get dtcDescriptionP0306;
+
+  /// No description provided for @dtcDescriptionP0307.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 7 misfire detected'**
+  String get dtcDescriptionP0307;
+
+  /// No description provided for @dtcDescriptionP0308.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder 8 misfire detected'**
+  String get dtcDescriptionP0308;
+
+  /// No description provided for @dtcDescriptionP0316.
+  ///
+  /// In en, this message translates to:
+  /// **'Misfire detected immediately after startup'**
+  String get dtcDescriptionP0316;
+
+  /// No description provided for @dtcDescriptionP0325.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock sensor circuit malfunction (Bank 1)'**
+  String get dtcDescriptionP0325;
+
+  /// No description provided for @dtcDescriptionP0326.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock sensor range/performance problem (Bank 1)'**
+  String get dtcDescriptionP0326;
+
+  /// No description provided for @dtcDescriptionP0327.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock sensor circuit low input (Bank 1)'**
+  String get dtcDescriptionP0327;
+
+  /// No description provided for @dtcDescriptionP0328.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock sensor circuit high input (Bank 1)'**
+  String get dtcDescriptionP0328;
+
+  /// No description provided for @dtcDescriptionP0330.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock sensor circuit malfunction (Bank 2)'**
+  String get dtcDescriptionP0330;
+
+  /// No description provided for @dtcDescriptionP0335.
+  ///
+  /// In en, this message translates to:
+  /// **'Crankshaft position sensor circuit malfunction'**
+  String get dtcDescriptionP0335;
+
+  /// No description provided for @dtcDescriptionP0336.
+  ///
+  /// In en, this message translates to:
+  /// **'Crankshaft position sensor range/performance problem'**
+  String get dtcDescriptionP0336;
+
+  /// No description provided for @dtcDescriptionP0340.
+  ///
+  /// In en, this message translates to:
+  /// **'Camshaft position sensor circuit malfunction'**
+  String get dtcDescriptionP0340;
+
+  /// No description provided for @dtcDescriptionP0341.
+  ///
+  /// In en, this message translates to:
+  /// **'Camshaft position sensor range/performance problem'**
+  String get dtcDescriptionP0341;
+
+  /// No description provided for @dtcDescriptionP0351.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil A primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0351;
+
+  /// No description provided for @dtcDescriptionP0352.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil B primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0352;
+
+  /// No description provided for @dtcDescriptionP0353.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil C primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0353;
+
+  /// No description provided for @dtcDescriptionP0354.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil D primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0354;
+
+  /// No description provided for @dtcDescriptionP0355.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil E primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0355;
+
+  /// No description provided for @dtcDescriptionP0356.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition coil F primary/secondary circuit malfunction'**
+  String get dtcDescriptionP0356;
+
+  /// No description provided for @dtcDescriptionP0400.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust gas recirculation (EGR) flow malfunction'**
+  String get dtcDescriptionP0400;
+
+  /// No description provided for @dtcDescriptionP0401.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust gas recirculation (EGR) flow insufficient'**
+  String get dtcDescriptionP0401;
+
+  /// No description provided for @dtcDescriptionP0402.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust gas recirculation (EGR) flow excessive'**
+  String get dtcDescriptionP0402;
+
+  /// No description provided for @dtcDescriptionP0403.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust gas recirculation (EGR) control circuit malfunction'**
+  String get dtcDescriptionP0403;
+
+  /// No description provided for @dtcDescriptionP0404.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaust gas recirculation (EGR) control circuit range/performance problem'**
+  String get dtcDescriptionP0404;
+
+  /// No description provided for @dtcDescriptionP0410.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary air injection system malfunction'**
+  String get dtcDescriptionP0410;
+
+  /// Secondary air injection, NOT evaporative emissions. The most-reposted fault-code table on the web has P0411 and P0441 the wrong way round; copying it sends somebody to check a fuel cap while an air pump fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary air injection system incorrect flow detected'**
+  String get dtcDescriptionP0411;
+
+  /// No description provided for @dtcDescriptionP0412.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary air injection system switching valve A circuit malfunction'**
+  String get dtcDescriptionP0412;
+
+  /// No description provided for @dtcDescriptionP0420.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalyst system efficiency below threshold (Bank 1)'**
+  String get dtcDescriptionP0420;
+
+  /// No description provided for @dtcDescriptionP0430.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalyst system efficiency below threshold (Bank 2)'**
+  String get dtcDescriptionP0430;
+
+  /// No description provided for @dtcDescriptionP0440.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission control system malfunction'**
+  String get dtcDescriptionP0440;
+
+  /// Evaporative emissions, NOT secondary air injection. See the note on dtcDescriptionP0411.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system incorrect purge flow'**
+  String get dtcDescriptionP0441;
+
+  /// No description provided for @dtcDescriptionP0442.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system leak detected (small leak)'**
+  String get dtcDescriptionP0442;
+
+  /// No description provided for @dtcDescriptionP0443.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system purge control valve circuit malfunction'**
+  String get dtcDescriptionP0443;
+
+  /// No description provided for @dtcDescriptionP0446.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system vent control circuit malfunction'**
+  String get dtcDescriptionP0446;
+
+  /// No description provided for @dtcDescriptionP0447.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system vent control circuit open'**
+  String get dtcDescriptionP0447;
+
+  /// No description provided for @dtcDescriptionP0449.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system vent valve/solenoid circuit malfunction'**
+  String get dtcDescriptionP0449;
+
+  /// No description provided for @dtcDescriptionP0451.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system pressure sensor range/performance problem'**
+  String get dtcDescriptionP0451;
+
+  /// No description provided for @dtcDescriptionP0452.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system pressure sensor circuit low input'**
+  String get dtcDescriptionP0452;
+
+  /// No description provided for @dtcDescriptionP0453.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system pressure sensor circuit high input'**
+  String get dtcDescriptionP0453;
+
+  /// No description provided for @dtcDescriptionP0455.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system leak detected (large leak)'**
+  String get dtcDescriptionP0455;
+
+  /// No description provided for @dtcDescriptionP0456.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaporative emission system leak detected (very small leak)'**
+  String get dtcDescriptionP0456;
+
+  /// No description provided for @dtcDescriptionP0480.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooling fan 1 control circuit malfunction'**
+  String get dtcDescriptionP0480;
+
+  /// No description provided for @dtcDescriptionP0500.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle speed sensor malfunction'**
+  String get dtcDescriptionP0500;
+
+  /// No description provided for @dtcDescriptionP0505.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle control system malfunction'**
+  String get dtcDescriptionP0505;
+
+  /// No description provided for @dtcDescriptionP0506.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle control system RPM lower than expected'**
+  String get dtcDescriptionP0506;
+
+  /// No description provided for @dtcDescriptionP0507.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle control system RPM higher than expected'**
+  String get dtcDescriptionP0507;
+
+  /// No description provided for @dtcDescriptionP0508.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle control system circuit low'**
+  String get dtcDescriptionP0508;
+
+  /// No description provided for @dtcDescriptionP0509.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle control system circuit high'**
+  String get dtcDescriptionP0509;
+
+  /// No description provided for @dtcDescriptionP0560.
+  ///
+  /// In en, this message translates to:
+  /// **'System voltage malfunction'**
+  String get dtcDescriptionP0560;
+
+  /// No description provided for @dtcDescriptionP0562.
+  ///
+  /// In en, this message translates to:
+  /// **'System voltage low'**
+  String get dtcDescriptionP0562;
+
+  /// No description provided for @dtcDescriptionP0563.
+  ///
+  /// In en, this message translates to:
+  /// **'System voltage high'**
+  String get dtcDescriptionP0563;
+
+  /// No description provided for @dtcDescriptionP0603.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal control module keep-alive memory (KAM) error'**
+  String get dtcDescriptionP0603;
+
+  /// No description provided for @dtcDescriptionP0605.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal control module read-only memory (ROM) error'**
+  String get dtcDescriptionP0605;
+
+  /// No description provided for @dtcDescriptionP0606.
+  ///
+  /// In en, this message translates to:
+  /// **'ECM/PCM processor fault'**
+  String get dtcDescriptionP0606;
+
+  /// The code is a pointer, not a fault in itself: the real fault code lives in the transmission module and needs a separate read. Keep that clause.
+  ///
+  /// In en, this message translates to:
+  /// **'The transmission control module asked for the fault lamp — the fault code itself is in the transmission module and has to be read separately'**
+  String get dtcDescriptionP0700;
+
+  /// No description provided for @dtcDescriptionP0701.
+  ///
+  /// In en, this message translates to:
+  /// **'Transmission control system range/performance problem'**
+  String get dtcDescriptionP0701;
+
+  /// No description provided for @dtcDescriptionP0702.
+  ///
+  /// In en, this message translates to:
+  /// **'Transmission control system electrical fault'**
+  String get dtcDescriptionP0702;
+
+  /// No description provided for @dtcDescriptionP0705.
+  ///
+  /// In en, this message translates to:
+  /// **'Transmission range sensor circuit malfunction'**
+  String get dtcDescriptionP0705;
+
+  /// No description provided for @dtcDescriptionP0715.
+  ///
+  /// In en, this message translates to:
+  /// **'Input/turbine speed sensor circuit malfunction'**
+  String get dtcDescriptionP0715;
+
+  /// No description provided for @dtcDescriptionP0720.
+  ///
+  /// In en, this message translates to:
+  /// **'Output speed sensor circuit malfunction'**
+  String get dtcDescriptionP0720;
+
+  /// No description provided for @dtcDescriptionP0730.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect gear ratio'**
+  String get dtcDescriptionP0730;
+
+  /// No description provided for @dtcDescriptionP0740.
+  ///
+  /// In en, this message translates to:
+  /// **'Torque converter clutch circuit malfunction'**
+  String get dtcDescriptionP0740;
+
+  /// No description provided for @dtcDescriptionP0741.
+  ///
+  /// In en, this message translates to:
+  /// **'Torque converter clutch stuck off'**
+  String get dtcDescriptionP0741;
+
+  /// No description provided for @dtcDescriptionP0750.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift solenoid A malfunction'**
+  String get dtcDescriptionP0750;
+
+  /// No description provided for @dtcDescriptionP0755.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift solenoid B malfunction'**
+  String get dtcDescriptionP0755;
+
+  /// No description provided for @dtcDescriptionP2135.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle position sensor A/B voltage correlation'**
+  String get dtcDescriptionP2135;
+
+  /// No description provided for @dtcDescriptionU0100.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost communication with ECM/PCM'**
+  String get dtcDescriptionU0100;
+
+  /// No description provided for @dtcDescriptionU0101.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost communication with the transmission control module'**
+  String get dtcDescriptionU0101;
+
+  /// No description provided for @dtcDescriptionU0121.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost communication with the ABS control module'**
+  String get dtcDescriptionU0121;
+
+  /// No description provided for @dtcDescriptionU0140.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost communication with the body control module'**
+  String get dtcDescriptionU0140;
+
+  /// No description provided for @dtcDescriptionU0155.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost communication with the instrument panel control module'**
+  String get dtcDescriptionU0155;
 }
 
 class _AppLocalizationsDelegate

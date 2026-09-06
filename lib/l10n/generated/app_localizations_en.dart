@@ -2461,4 +2461,578 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get telemetryRecorderNotRecording => 'Not recording';
+
+  @override
+  String get dtcKindStored => 'Stored';
+
+  @override
+  String get dtcKindPending => 'Pending';
+
+  @override
+  String get dtcKindPermanent => 'Permanent';
+
+  @override
+  String get dtcKindStoredExplanation =>
+      'A confirmed fault; the dashboard fault lamp is usually lit.';
+
+  @override
+  String get dtcKindPendingExplanation =>
+      'Detected once, and has not yet reached the confirmation threshold.';
+
+  @override
+  String get dtcKindPermanentExplanation =>
+      'Cannot be cleared with a scan tool. The ECU clears it itself, and only once it has confirmed the repair.';
+
+  @override
+  String get dtcSystemPowertrain => 'Powertrain';
+
+  @override
+  String get dtcSystemChassis => 'Chassis';
+
+  @override
+  String get dtcSystemBody => 'Body';
+
+  @override
+  String get dtcSystemNetwork => 'Network';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions =>
+      'Fuel and air metering, and auxiliary emission controls';
+
+  @override
+  String get dtcSubsystemFuelAirMetering => 'Fuel and air metering';
+
+  @override
+  String get dtcSubsystemFuelAirMeteringInjectorCircuit =>
+      'Fuel and air metering (injector circuit)';
+
+  @override
+  String get dtcSubsystemIgnitionOrMisfire => 'Ignition system or misfire';
+
+  @override
+  String get dtcSubsystemAuxiliaryEmissionControls =>
+      'Auxiliary emission controls';
+
+  @override
+  String get dtcSubsystemSpeedAndIdleControl =>
+      'Vehicle speed control and idle control system';
+
+  @override
+  String get dtcSubsystemComputerOutputCircuit => 'Computer output circuit';
+
+  @override
+  String get dtcSubsystemTransmission => 'Transmission';
+
+  @override
+  String get dtcSubsystemControlModuleSignals =>
+      'Control modules, input and output signals';
+
+  @override
+  String get dtcDescriptionB0001 => 'Driver airbag deployment control fault';
+
+  @override
+  String get dtcDescriptionP0011 =>
+      'Camshaft position A — timing over-advanced or system performance (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0014 =>
+      'Camshaft position B — timing over-advanced or system performance (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0016 =>
+      'Crankshaft position – camshaft position correlation (Bank 1 Sensor A)';
+
+  @override
+  String get dtcDescriptionP0087 => 'Fuel rail/system pressure too low';
+
+  @override
+  String get dtcDescriptionP0088 => 'Fuel rail/system pressure too high';
+
+  @override
+  String get dtcDescriptionP0100 =>
+      'Mass air flow (MAF) sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0101 =>
+      'Mass air flow sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0102 => 'Mass air flow sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0103 => 'Mass air flow sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0105 =>
+      'Manifold absolute pressure/barometric pressure sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0106 =>
+      'Manifold absolute pressure sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0107 =>
+      'Manifold absolute pressure sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0108 =>
+      'Manifold absolute pressure sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0110 =>
+      'Intake air temperature sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0111 =>
+      'Intake air temperature sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0112 =>
+      'Intake air temperature sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0113 =>
+      'Intake air temperature sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0115 =>
+      'Engine coolant temperature sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0116 =>
+      'Engine coolant temperature sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0117 =>
+      'Engine coolant temperature sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0118 =>
+      'Engine coolant temperature sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0120 =>
+      'Throttle position sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0121 =>
+      'Throttle position sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0122 =>
+      'Throttle position sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0123 =>
+      'Throttle position sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0125 =>
+      'Insufficient coolant temperature for closed-loop fuel control';
+
+  @override
+  String get dtcDescriptionP0128 =>
+      'Coolant temperature below thermostat regulating temperature';
+
+  @override
+  String get dtcDescriptionP0130 =>
+      'Oxygen sensor circuit malfunction (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0131 =>
+      'Oxygen sensor circuit low voltage (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0132 =>
+      'Oxygen sensor circuit high voltage (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0133 =>
+      'Oxygen sensor circuit slow response (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0134 =>
+      'Oxygen sensor circuit no activity detected (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0135 =>
+      'Oxygen sensor heater circuit malfunction (Bank 1 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0136 =>
+      'Oxygen sensor circuit malfunction (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0137 =>
+      'Oxygen sensor circuit low voltage (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0138 =>
+      'Oxygen sensor circuit high voltage (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0140 =>
+      'Oxygen sensor circuit no activity detected (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0141 =>
+      'Oxygen sensor heater circuit malfunction (Bank 1 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0150 =>
+      'Oxygen sensor circuit malfunction (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0155 =>
+      'Oxygen sensor heater circuit malfunction (Bank 2 Sensor 1)';
+
+  @override
+  String get dtcDescriptionP0156 =>
+      'Oxygen sensor circuit malfunction (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0161 =>
+      'Oxygen sensor heater circuit malfunction (Bank 2 Sensor 2)';
+
+  @override
+  String get dtcDescriptionP0170 => 'Fuel trim malfunction (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0171 => 'System too lean (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0172 => 'System too rich (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0173 => 'Fuel trim malfunction (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0174 => 'System too lean (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0175 => 'System too rich (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0190 =>
+      'Fuel rail pressure sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0201 =>
+      'Injector circuit malfunction or open — cylinder 1';
+
+  @override
+  String get dtcDescriptionP0202 =>
+      'Injector circuit malfunction or open — cylinder 2';
+
+  @override
+  String get dtcDescriptionP0203 =>
+      'Injector circuit malfunction or open — cylinder 3';
+
+  @override
+  String get dtcDescriptionP0204 =>
+      'Injector circuit malfunction or open — cylinder 4';
+
+  @override
+  String get dtcDescriptionP0217 => 'Engine over-temperature condition';
+
+  @override
+  String get dtcDescriptionP0221 =>
+      'Throttle/pedal position sensor B range/performance problem';
+
+  @override
+  String get dtcDescriptionP0222 =>
+      'Throttle/pedal position sensor B circuit low input';
+
+  @override
+  String get dtcDescriptionP0223 =>
+      'Throttle/pedal position sensor B circuit high input';
+
+  @override
+  String get dtcDescriptionP0234 =>
+      'Turbocharger/supercharger overboost condition';
+
+  @override
+  String get dtcDescriptionP0299 =>
+      'Turbocharger/supercharger A underboost condition';
+
+  @override
+  String get dtcDescriptionP0300 =>
+      'Random or multiple cylinder misfire detected';
+
+  @override
+  String get dtcDescriptionP0301 => 'Cylinder 1 misfire detected';
+
+  @override
+  String get dtcDescriptionP0302 => 'Cylinder 2 misfire detected';
+
+  @override
+  String get dtcDescriptionP0303 => 'Cylinder 3 misfire detected';
+
+  @override
+  String get dtcDescriptionP0304 => 'Cylinder 4 misfire detected';
+
+  @override
+  String get dtcDescriptionP0305 => 'Cylinder 5 misfire detected';
+
+  @override
+  String get dtcDescriptionP0306 => 'Cylinder 6 misfire detected';
+
+  @override
+  String get dtcDescriptionP0307 => 'Cylinder 7 misfire detected';
+
+  @override
+  String get dtcDescriptionP0308 => 'Cylinder 8 misfire detected';
+
+  @override
+  String get dtcDescriptionP0316 =>
+      'Misfire detected immediately after startup';
+
+  @override
+  String get dtcDescriptionP0325 => 'Knock sensor circuit malfunction (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0326 =>
+      'Knock sensor range/performance problem (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0327 => 'Knock sensor circuit low input (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0328 => 'Knock sensor circuit high input (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0330 => 'Knock sensor circuit malfunction (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0335 =>
+      'Crankshaft position sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0336 =>
+      'Crankshaft position sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0340 =>
+      'Camshaft position sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0341 =>
+      'Camshaft position sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0351 =>
+      'Ignition coil A primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0352 =>
+      'Ignition coil B primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0353 =>
+      'Ignition coil C primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0354 =>
+      'Ignition coil D primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0355 =>
+      'Ignition coil E primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0356 =>
+      'Ignition coil F primary/secondary circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0400 =>
+      'Exhaust gas recirculation (EGR) flow malfunction';
+
+  @override
+  String get dtcDescriptionP0401 =>
+      'Exhaust gas recirculation (EGR) flow insufficient';
+
+  @override
+  String get dtcDescriptionP0402 =>
+      'Exhaust gas recirculation (EGR) flow excessive';
+
+  @override
+  String get dtcDescriptionP0403 =>
+      'Exhaust gas recirculation (EGR) control circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0404 =>
+      'Exhaust gas recirculation (EGR) control circuit range/performance problem';
+
+  @override
+  String get dtcDescriptionP0410 =>
+      'Secondary air injection system malfunction';
+
+  @override
+  String get dtcDescriptionP0411 =>
+      'Secondary air injection system incorrect flow detected';
+
+  @override
+  String get dtcDescriptionP0412 =>
+      'Secondary air injection system switching valve A circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0420 =>
+      'Catalyst system efficiency below threshold (Bank 1)';
+
+  @override
+  String get dtcDescriptionP0430 =>
+      'Catalyst system efficiency below threshold (Bank 2)';
+
+  @override
+  String get dtcDescriptionP0440 =>
+      'Evaporative emission control system malfunction';
+
+  @override
+  String get dtcDescriptionP0441 =>
+      'Evaporative emission system incorrect purge flow';
+
+  @override
+  String get dtcDescriptionP0442 =>
+      'Evaporative emission system leak detected (small leak)';
+
+  @override
+  String get dtcDescriptionP0443 =>
+      'Evaporative emission system purge control valve circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0446 =>
+      'Evaporative emission system vent control circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0447 =>
+      'Evaporative emission system vent control circuit open';
+
+  @override
+  String get dtcDescriptionP0449 =>
+      'Evaporative emission system vent valve/solenoid circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0451 =>
+      'Evaporative emission system pressure sensor range/performance problem';
+
+  @override
+  String get dtcDescriptionP0452 =>
+      'Evaporative emission system pressure sensor circuit low input';
+
+  @override
+  String get dtcDescriptionP0453 =>
+      'Evaporative emission system pressure sensor circuit high input';
+
+  @override
+  String get dtcDescriptionP0455 =>
+      'Evaporative emission system leak detected (large leak)';
+
+  @override
+  String get dtcDescriptionP0456 =>
+      'Evaporative emission system leak detected (very small leak)';
+
+  @override
+  String get dtcDescriptionP0480 => 'Cooling fan 1 control circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0500 => 'Vehicle speed sensor malfunction';
+
+  @override
+  String get dtcDescriptionP0505 => 'Idle control system malfunction';
+
+  @override
+  String get dtcDescriptionP0506 =>
+      'Idle control system RPM lower than expected';
+
+  @override
+  String get dtcDescriptionP0507 =>
+      'Idle control system RPM higher than expected';
+
+  @override
+  String get dtcDescriptionP0508 => 'Idle control system circuit low';
+
+  @override
+  String get dtcDescriptionP0509 => 'Idle control system circuit high';
+
+  @override
+  String get dtcDescriptionP0560 => 'System voltage malfunction';
+
+  @override
+  String get dtcDescriptionP0562 => 'System voltage low';
+
+  @override
+  String get dtcDescriptionP0563 => 'System voltage high';
+
+  @override
+  String get dtcDescriptionP0603 =>
+      'Internal control module keep-alive memory (KAM) error';
+
+  @override
+  String get dtcDescriptionP0605 =>
+      'Internal control module read-only memory (ROM) error';
+
+  @override
+  String get dtcDescriptionP0606 => 'ECM/PCM processor fault';
+
+  @override
+  String get dtcDescriptionP0700 =>
+      'The transmission control module asked for the fault lamp — the fault code itself is in the transmission module and has to be read separately';
+
+  @override
+  String get dtcDescriptionP0701 =>
+      'Transmission control system range/performance problem';
+
+  @override
+  String get dtcDescriptionP0702 =>
+      'Transmission control system electrical fault';
+
+  @override
+  String get dtcDescriptionP0705 =>
+      'Transmission range sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0715 =>
+      'Input/turbine speed sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0720 => 'Output speed sensor circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0730 => 'Incorrect gear ratio';
+
+  @override
+  String get dtcDescriptionP0740 =>
+      'Torque converter clutch circuit malfunction';
+
+  @override
+  String get dtcDescriptionP0741 => 'Torque converter clutch stuck off';
+
+  @override
+  String get dtcDescriptionP0750 => 'Shift solenoid A malfunction';
+
+  @override
+  String get dtcDescriptionP0755 => 'Shift solenoid B malfunction';
+
+  @override
+  String get dtcDescriptionP2135 =>
+      'Throttle position sensor A/B voltage correlation';
+
+  @override
+  String get dtcDescriptionU0100 => 'Lost communication with ECM/PCM';
+
+  @override
+  String get dtcDescriptionU0101 =>
+      'Lost communication with the transmission control module';
+
+  @override
+  String get dtcDescriptionU0121 =>
+      'Lost communication with the ABS control module';
+
+  @override
+  String get dtcDescriptionU0140 =>
+      'Lost communication with the body control module';
+
+  @override
+  String get dtcDescriptionU0155 =>
+      'Lost communication with the instrument panel control module';
 }

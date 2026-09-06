@@ -9,7 +9,10 @@ void main() {
       expect(dtc.code, 'P0301');
       expect(dtc.category, DtcCategory.powertrain);
       expect(dtc.isManufacturerSpecific, isFalse);
-      expect(dtc.description, contains('失火'));
+      // The words are in the ARBs — `test/l10n/l04_dtc_l10n_test.dart` pins
+      // 失火 / "misfire" in both locales. What belongs here is that the engine
+      // says this code has a description at all.
+      expect(dtc.hasGenericDescription, isTrue);
     });
 
     test('P0420 — catalyst efficiency', () {
@@ -43,7 +46,7 @@ void main() {
       expect(dtc.code, 'P1301');
       expect(dtc.isManufacturerSpecific, isTrue);
       // Generic descriptions must not be claimed for OEM ranges.
-      expect(dtc.description, isNull);
+      expect(dtc.hasGenericDescription, isFalse);
     });
 
     test('first digit 3 is also manufacturer-specific', () {
@@ -226,10 +229,15 @@ void main() {
       // Pinned because these two are one digit apart, both emissions, both
       // common — and because a wrong description is the one kind of error this
       // table can make that looks exactly like a right one.
-      expect(DtcDecoder.genericDescriptions['P0411'], contains('二次空氣'));
-      expect(DtcDecoder.genericDescriptions['P0411'], isNot(contains('蒸發')));
-      expect(DtcDecoder.genericDescriptions['P0441'], contains('蒸發'));
-      expect(DtcDecoder.genericDescriptions['P0441'], isNot(contains('二次空氣')));
+      //
+      // The pin itself moved to `test/l10n/l04_dtc_l10n_test.dart` with the
+      // descriptions, and got stronger on the way: it now checks both
+      // languages, so the English cannot acquire the mix-up the Chinese was
+      // guarded against. What stays here is that both codes are described at
+      // all — a table that quietly dropped one of them would make that test
+      // vacuous.
+      expect(DtcDecoder.describedCodes, contains('P0411'));
+      expect(DtcDecoder.describedCodes, contains('P0441'));
     });
 
     test('a manufacturer-specific code is never given a generic description',
@@ -244,7 +252,7 @@ void main() {
       // dead-key failure the test below was written to catch, walking in
       // through the door this test left open. Found by a reviewer mutating the
       // table and watching the suite stay green.
-      for (final code in DtcDecoder.genericDescriptions.keys) {
+      for (final code in DtcDecoder.describedCodes) {
         expect(code[1], isNot(anyOf('1', '3')),
             reason: '$code is in a manufacturer-defined range, where a '
                 'generic description is both wrong and unreachable');
@@ -254,15 +262,16 @@ void main() {
     test('and every description is actually reachable through Dtc', () {
       // The rule the one above protects, asserted end to end rather than by
       // proxy. A key can be well-formed, non-manufacturer, and still never
-      // surface if `description` disagrees about what counts as generic.
-      for (final code in DtcDecoder.genericDescriptions.keys) {
+      // surface if `hasGenericDescription` disagrees about what counts as
+      // generic.
+      for (final code in DtcDecoder.describedCodes) {
         final decoded = Dtc(
           code: code,
           category: DtcCategory.powertrain,
           kind: DtcKind.stored,
           isManufacturerSpecific: code[1] == '1' || code[1] == '3',
         );
-        expect(decoded.description, isNotNull,
+        expect(decoded.hasGenericDescription, isTrue,
             reason: '$code has a description that nothing can ever show');
       }
     });
@@ -271,7 +280,7 @@ void main() {
       // A typo in a key is invisible: the entry simply never matches, and the
       // code falls back to its category label as though nothing were written
       // for it.
-      for (final code in DtcDecoder.genericDescriptions.keys) {
+      for (final code in DtcDecoder.describedCodes) {
         expect(DtcDecoder.encode(code), isNotNull,
             reason: '$code is not a well-formed DTC');
       }

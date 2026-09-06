@@ -110,7 +110,10 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **English** — NO PROJECT ENGLISH — proposed: This controller has stored no freeze frame — the code may have reappeared after a clear, or been reported by a module that does not record freeze frames.
 
-**Why it is load-bearing.** lib/obd/freeze_frame.dart:125-126. The complement of the previous hedge: a CONFIRMED absence, with its two innocent explanations. The two strings must stay distinguishable in translation (docs/field-guide.zh-TW.md:223-228 teaches users to tell them apart).
+**Why it is load-bearing.** lib/obd/freeze_frame.dart:125-126, which as of the
+engine-layer l10n wave is an unused constant — no screen reads it, so this hedge is
+currently a rule about a sentence the app does not ship. Wiring it up means giving it an
+ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with its two innocent explanations. The two strings must stay distinguishable in translation (docs/field-guide.zh-TW.md:223-228 teaches users to tell them apart).
 
 ### 13. 已回應的控制器都沒有故障碼。
 
@@ -243,9 +246,11 @@ reviewer's invention and needs maintainer sign-off before it ships.
 **English** — Permanent codes (Mode 0A) cannot be cleared. The vehicle has to complete a
 fresh round of self-diagnosis before it will pass an inspection.
 
-**Why it is load-bearing.** `lib/obd/dtc/dtc.dart:37` defines the category as
-「無法用診斷儀清除，需修復後由 ECU 自行確認」and `lib/ui/screens/dtc/dtc_screen.dart:78`
-repeats it beside the Clear button. Issue #45 names this specific mistranslation: a
+**Why it is load-bearing.** `dtcKindPermanentExplanation`
+(`lib/l10n/app_en.arb:2172` ↔ `lib/l10n/app_zh_Hant.arb:638`) defines the category as
+「無法用診斷儀清除，需修復後由 ECU 自行確認」— it lived on `DtcKind` in
+`lib/obd/dtc/dtc.dart` until the engine stopped carrying screen copy — and
+`dtcClearDialogBody` repeats it beside the Clear button. Issue #45 names this specific mistranslation: a
 permanent code must never read as something Clear can remove. Somebody who believes it can
 will press Clear, watch the stored and pending codes disappear, conclude the car is fixed,
 and take it for an inspection it cannot pass — having also destroyed the freeze frame that

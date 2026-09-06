@@ -55,7 +55,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 內建模擬器 | built-in simulator | lib/l10n/app_en.arb:52 ↔ lib/l10n/app_zh_Hant.arb:26 (T1 same ARB key) | evidenced | The in-app label is 'Demo 模擬器' (docs/field-guide.zh-TW.md:27); the ARB says 內建模擬器; README says Demo ECU. Pick per surface, do not unify silently. |
 | 公式錯誤 | formula error | lib/diagnostics/availability.dart:315 PidFault.formulaError => '公式錯誤' (T3); lib/ui/screens/dashboard/dashboard_screen.dart:325 | evidenced |  |
 | 凍結幀 | freeze frame | README.md:56 'freeze frames' ↔ README.zh-TW.md:50 '凍結幀' (T1); docs/field-guide.zh-TW.md:213 heading | evidenced |  |
-| 動力系統 | powertrain | lib/obd/dtc/dtc.dart:21 powertrain('P', '動力系統') (T3 — the DTC letter P) | evidenced | Distinct from 大電池 used for 'powertrain battery' at README.md:58 ↔ README.zh-TW.md:52. Same English word, two zh renderings by domain. |
+| 動力系統 | powertrain | lib/l10n/app_en.arb:2176 dtcSystemPowertrain ↔ lib/l10n/app_zh_Hant.arb:639 (T1 same ARB key) | evidenced | Distinct from 大電池 used for 'powertrain battery' at README.md:58 ↔ README.zh-TW.md:52. Same English word, two zh renderings by domain. |
 | 化學計量比推算 | stoichiometric estimate | lib/obd/physics/physics_engine.dart:52 FuelSource.stoichiometricEstimate => '化學計量比推算' (T3) | evidenced |  |
 | 匯流排 | bus | lib/obd/elm327_client.dart:82 Elm327ErrorCode.canError ↔ 'CAN 匯流排錯誤' (T3); :86 busBusy ↔ '匯流排忙碌'; :87 busError ↔ '匯流排錯誤' | evidenced |  |
 | 協定 | protocol | README.md:174 'ELM327 protocol' ↔ README.zh-TW.md:148 'ELM327 協定' (T1); docs/protocol-deviations.zh-TW.md:152 '各種匯流排協定' | evidenced |  |
@@ -65,9 +65,9 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 多幀 | multi-frame | docs/verification/review-log.md:41 '### C2 · 多幀長度行被當成資料' + :43 naming `_parse` ↔ lib/obd/elm327_client.dart:4 'multi-frame reassembly' and :2319 "a multi-frame envelope's total length" (T3, same named function) | inferred | zh at docs/verification/review-log.md:41; en at lib/obd/elm327_client.dart:4. Both are this project's words, never written side by side. |
 | 失火監控 | misfire | lib/obd/readiness.dart:36 misfire('失火監控', continuous: true) (T3) | evidenced |  |
 | 定址 | addressing | docs/protocol-deviations.zh-TW.md:101 '正確定址被丟掉了' ↔ docs/protocol-deviations.zh-TW.md:107 names `lib/obd/addressing.dart` and 'addressing' (T3) | evidenced | 'functional addressing' = 功能定址 (field-guide:211); 'physical header' = 實體標頭 (protocol-deviations:107). |
-| 已儲存 | stored | lib/obd/dtc/dtc.dart:35 stored('已儲存', '03', …) (T3 — enum arm carries label + mode) | evidenced |  |
-| 底盤 | chassis | lib/obd/dtc/dtc.dart:22 chassis('C', '底盤') (T3) | evidenced |  |
-| 待確認 | pending | lib/obd/dtc/dtc.dart:36 pending('待確認', '07', …) (T3) | evidenced |  |
+| 已儲存 | stored | lib/l10n/app_en.arb:2152 dtcKindStored ↔ lib/l10n/app_zh_Hant.arb:633 (T1 same ARB key) | evidenced | Moved out of DtcKind when lib/obd/ stopped carrying screen copy. The enum still holds 已儲存 as `transcriptLabel`, which is export copy and stays Chinese in every locale — do not cite that as the UI translation. |
+| 底盤 | chassis | lib/l10n/app_en.arb:2180 dtcSystemChassis ↔ lib/l10n/app_zh_Hant.arb:640 (T1 same ARB key) | evidenced |  |
+| 待確認 | pending | lib/l10n/app_en.arb:2156 dtcKindPending ↔ lib/l10n/app_zh_Hant.arb:634 (T1 same ARB key) | evidenced | Not 'detected' and not 'confirmed': a Mode 07 code has been seen once and has not reached the confirmation threshold. |
 | 微粒濾清器 | particulate filter | lib/obd/readiness.dart:56 particulateFilter('微粒濾清器') (T3) | evidenced |  |
 | 批次 | batch | README.md:87 'no identifier scan, batch, automatic retry' ↔ README.zh-TW.md:73 '不掃描 identifier、不批次、不自動重試' (T1); docs/protocol-deviations.zh-TW.md:83 'fastMode 批次查詢' | evidenced |  |
 | 排放就緒 | readiness | README.md:56 'readiness' ↔ README.zh-TW.md:50 '排放就緒' (T1); docs/field-guide.zh-TW.md:238 '排放就緒狀態' | evidenced | zh adds 排放 (emissions) that bare English 'readiness' omits; keep it — the field guide relies on the emissions sense. |
@@ -75,19 +75,19 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 控制器 | controller | lib/state/dtc_scan.dart:47 'Controllers that gave this category a terminal answer.' ↔ same file :581 '控制器 … 回報…' (T3 same file); docs/field-guide.zh-TW.md:206 | inferred | zh at lib/state/dtc_scan.dart:581; en at :47 of the same file, 534 lines away — not one place. |
 | 故障碼 | fault code | README.md:56 'fault codes' ↔ README.zh-TW.md:50 '故障碼' (T1) | evidenced | DTC as an acronym stays English (see doNotTranslate); the spelled-out concept is 故障碼. |
 | 標頭 | header | lib/diagnostics/availability.dart:316 PidFault.headerNotOnThisBus ↔ '標頭不符本車匯流排' (T3); docs/protocol-deviations.zh-TW.md:69 '發送標頭' | evidenced |  |
-| 故障燈 | MIL | lib/obd/polling_engine.dart:2849 (T3) | inferred | The app ships 故障燈 in Chinese prose and MIL only inside an English PID name (`Distance Travelled With MIL On`); no place writes both, so the pairing is this glossary's. Spell it out on first mention in English if the audience may not know the acronym |
-| 永久 | permanent | lib/obd/dtc/dtc.dart:37 permanent('永久', '0A', …) (T3) | evidenced | A permanent code is NOT clearable, and English copy must never imply that pressing Clear removes it. lib/obd/dtc/dtc.dart:37 says 無法用診斷儀清除，需修復後由 ECU 自行確認; lib/ui/screens/dtc/dtc_screen.dart:78 repeats it. #45 names this explicitly |
+| 故障燈 | MIL | lib/obd/polling_engine.dart:2853 (T3) | inferred | The app ships 故障燈 in Chinese prose and MIL only inside an English PID name (`Distance Travelled With MIL On`); no place writes both, so the pairing is this glossary's. Spell it out on first mention in English if the audience may not know the acronym |
+| 永久 | permanent | lib/l10n/app_en.arb:2160 dtcKindPermanent ↔ lib/l10n/app_zh_Hant.arb:635 (T1 same ARB key) | evidenced | A permanent code is NOT clearable, and English copy must never imply that pressing Clear removes it. dtcKindPermanentExplanation (lib/l10n/app_en.arb:2172 ↔ lib/l10n/app_zh_Hant.arb:638) carries 無法用診斷儀清除，需修復後由 ECU 自行確認 and its English; dtcClearDialogBody (lib/l10n/app_en.arb:213 ↔ lib/l10n/app_zh_Hant.arb:76) repeats it beside the Clear button. #45 names this explicitly |
 | 汽油微粒濾清器（GPF） | gasoline particulate filter (GPF) | lib/obd/readiness.dart:46 gasolineParticulateFilter('汽油微粒濾清器（GPF）') (T3); docs/field-guide.zh-TW.md:247-250 explains it | evidenced | LOAD-BEARING: field-guide:247-249 says many OBD tables mistranslate this bit as 空調冷媒 (A/C refrigerant) and that is wrong. Keep GPF in the string. |
 | 無回應，稍後重試 | no answer | lib/diagnostics/availability.dart:313 PidFault.noAnswer => '無回應，稍後重試' (T3) | evidenced |  |
 | 燃油系統監控 | fuel system | lib/obd/readiness.dart:37 fuelSystem('燃油系統監控') (T3) | evidenced |  |
 | 監控項目 | readiness monitor | lib/obd/readiness.dart:1 'The emissions readiness monitors' + enum ReadinessMonitor :34 ↔ docs/field-guide.zh-TW.md:240,243-245 '監控項目' (T3 identifier ↔ zh prose) | inferred | zh at docs/field-guide.zh-TW.md:240; en at lib/obd/readiness.dart:1. Assembled from two documents. |
 | 綜合元件監控 | components | lib/obd/readiness.dart:38 components('綜合元件監控') (T3) | evidenced |  |
-| 網路 | network | lib/obd/dtc/dtc.dart:24 network('U', '網路') (T3 — the DTC letter U) | evidenced |  |
+| 網路 | network | lib/l10n/app_en.arb:2188 dtcSystemNetwork ↔ lib/l10n/app_zh_Hant.arb:642 (T1 same ARB key) | evidenced |  |
 | 自訂 PID | custom PID | README.md:56 'custom PIDs' ↔ README.zh-TW.md:50 '自訂 PID' (T1) | evidenced |  |
 | 蒸發排放系統 | evaporative | lib/obd/readiness.dart:44 evaporative('蒸發排放系統') (T3) | evidenced |  |
 | 觸媒轉換器 | catalyst | lib/obd/readiness.dart:42 catalyst('觸媒轉換器') (T3); :43 heatedCatalyst('觸媒加熱') | evidenced |  |
 | 診斷紀錄 | diagnostic transcript | README.md:57 ↔ README.zh-TW.md:51 (T1); also README.md:95 ↔ README.zh-TW.md:79; docs/field-guide.zh-TW.md:122,289 UI path 設定 → 診斷紀錄 | evidenced |  |
-| 車身 | body | lib/obd/dtc/dtc.dart:23 body('B', '車身') (T3) | evidenced |  |
+| 車身 | body | lib/l10n/app_en.arb:2184 dtcSystemBody ↔ lib/l10n/app_zh_Hant.arb:641 (T1 same ARB key) | evidenced |  |
 | 車輛即時遙測 | Live vehicle telemetry | lib/l10n/app_en.arb:3 ↔ lib/l10n/app_zh_Hant.arb:3 (T1 same ARB key) | evidenced | Also the Google Play store name suffix. Use verbatim for appTagline. |
 | 輪詢 | polling | README.md:87 'scheduled polling' ↔ README.zh-TW.md:73 '排程輪詢' (T1); README.md:159 'idle polling' ↔ README.zh-TW.md:134 '閒置輪詢' | evidenced |  |
 | 轉接器 | adapter | README.md:11 'ELM327-compatible adapter' ↔ README.zh-TW.md:10 'ELM327 相容轉接器' (T1); lib/l10n/app_en.arb:13 ↔ lib/l10n/app_zh_Hant.arb:10 | evidenced | Never 適配器/配接器. 轉接器 is used throughout README.zh-TW, field-guide and lib/. |
