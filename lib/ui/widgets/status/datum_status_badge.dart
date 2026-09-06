@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../panel.dart';
 
 class DatumStatusBadge extends StatelessWidget {
@@ -40,6 +41,7 @@ Future<void> showDatumStatusDetails(
   List<DatumStatus> extra = const [],
 }) {
   final items = [status, ...extra];
+  final l10n = AppLocalizations.of(context);
   return showDialog<void>(
     context: context,
     builder: (context) {
@@ -52,9 +54,12 @@ Future<void> showDatumStatusDetails(
             children: [
               for (var index = 0; index < items.length; index++) ...[
                 if (index > 0) const SizedBox(height: Spacing.lg),
+                // Says only that nothing was flagged. Never "valid", "OK" or
+                // "normal" — the datum has not been checked, it merely
+                // carries no badge.
                 Text(
                   items[index].badgeText.isEmpty
-                      ? '狀態隨資料'
+                      ? l10n.datumStatusFollowsData
                       : items[index].badgeText,
                 ),
                 if (items[index].reason != null) ...[
@@ -63,12 +68,18 @@ Future<void> showDatumStatusDetails(
                 ],
                 if (items[index].formula != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text('公式', style: Theme.of(context).textTheme.labelMedium),
+                  Text(
+                    l10n.datumStatusFormula,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                   Text(items[index].formula!),
                 ],
                 if (items[index].assumptions != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text('假設', style: Theme.of(context).textTheme.labelMedium),
+                  Text(
+                    l10n.datumStatusAssumptions,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                   Text(items[index].assumptions!),
                 ],
                 if (items[index].nextStep != null) ...[
@@ -82,7 +93,7 @@ Future<void> showDatumStatusDetails(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('關閉'),
+            child: Text(l10n.datumStatusClose),
           ),
         ],
       );
