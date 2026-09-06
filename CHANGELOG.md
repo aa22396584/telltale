@@ -22,7 +22,8 @@ under `1.0.10` below.
 - The interface reads in English. Connect, dashboard, gauges, fault codes,
   freeze frame, the PID manager and editor, the powertrain battery catalog,
   the telemetry screens, acceleration, settings and the Wear OS shell. The
-  message catalogue went from 53 entries to 907.
+  message catalogue went from 14 entries to 934, counted at the `v1.0.10-beta.1`
+  tag and at this commit.
 - An English Play Store listing. There has never been one; the app has been on
   Play in Traditional Chinese only.
 - Store screenshots in both listing languages, under `store/en-US/` and
@@ -92,10 +93,17 @@ This entry originally read “English UI, with a language control…”. That wa
 wrong, and it is left here rather than rewritten because the build carrying the
 claim is on Google Play production and people read it.
 
-What `1.0.10` actually shipped was the switch and the machinery: 53 translated
-messages against an app whose interface is 907. Choosing English moved the
-startup copy and little else; every screen stayed in Traditional Chinese. The
-English interface arrives in `1.0.11`.
+What `1.0.10` actually shipped was the switch and the machinery: **14**
+translated messages, against an interface that needs 934. Choosing English moved
+the startup copy, the language control itself and little else; every screen
+stayed in Traditional Chinese. The English interface arrives in `1.0.11`.
+
+The first draft of this correction said 53 and 907. Both were wrong — 53 was the
+count on `main` at the moment I measured, months of groundwork after `1.0.10`
+went out, and 907 predated the last change to the key set. A reviewer counted
+`lib/l10n/app_en.arb` at the `v1.0.10-beta.1` tag itself and got 14. Putting an
+unchecked number inside the paragraph that corrects an overclaim is the same
+mistake twice, and it is recorded here for the same reason the overclaim is.
 
 ## 1.0.9 — 2026-09-06
 
