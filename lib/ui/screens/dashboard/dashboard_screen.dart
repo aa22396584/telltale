@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/physics/physics_engine.dart';
 import '../../../obd/pid/pid.dart';
 import '../../../obd/pid/pid_library.dart';
@@ -25,16 +26,17 @@ import '../../../state/obd_session.dart';
 import '../../../state/pid_registry.dart';
 import '../../../state/settings.dart';
 import '../../../state/telemetry_sessions.dart';
-import '../../../telemetry/session/derived_estimates.dart';
 import '../../../state/vehicle_identity.dart';
+import '../../../telemetry/session/derived_estimates.dart';
 import '../../widgets/gauges/dial_gauge.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/powertrain_profile_confirm_banner.dart';
 import '../../widgets/status/datum_status_badge.dart';
+import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_recorder_panel.dart';
 import '../pids/pid_manager_screen.dart';
+import 'derived_source_copy.dart';
 import 'telemetry_workspace.dart';
-import '../../../l10n/generated/app_localizations.dart';
 
 enum DashboardWorkspaceMode { gauges, trends }
 
@@ -80,6 +82,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final telemetry = ref.watch(telemetryProvider);
     final historyAccess = ref.watch(telemetryHistoryAccessProvider);
     final snapshot = telemetry.value ?? const TelemetrySnapshot();
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -127,12 +130,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   height: 320,
                   child: EmptyState(
                     icon: Icons.tune,
-                    title: '儀表板是空的',
-                    message: '到 PID 頁面挑選想要監看的訊號，它們會出現在這裡。',
+                    title: l10n.dashboardEmptyTitle,
+                    message: l10n.dashboardEmptyBody,
                     action: FilledButton.icon(
                       onPressed: () => context.go(PidManagerScreen.path),
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('選擇 PID'),
+                      label: Text(l10n.dashboardChoosePids),
                     ),
                   ),
                 ),
@@ -182,6 +185,7 @@ class _WorkspaceToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
@@ -190,16 +194,16 @@ class _WorkspaceToolbar extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 48),
           child: SegmentedButton<DashboardWorkspaceMode>(
             key: const ValueKey('dashboard-workspace-switch'),
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: DashboardWorkspaceMode.gauges,
-                icon: Icon(Icons.speed, size: 18),
-                label: Text('儀表'),
+                icon: const Icon(Icons.speed, size: 18),
+                label: Text(l10n.dashboardWorkspaceGauges),
               ),
               ButtonSegment(
                 value: DashboardWorkspaceMode.trends,
-                icon: Icon(Icons.show_chart, size: 18),
-                label: Text('趨勢'),
+                icon: const Icon(Icons.show_chart, size: 18),
+                label: Text(l10n.dashboardWorkspaceTrends),
               ),
             ],
             selected: {mode},
@@ -217,12 +221,12 @@ class _WorkspaceToolbar extends StatelessWidget {
               key: const ValueKey('telemetry-history'),
               onPressed: onHistory,
               icon: const Icon(Icons.history, size: 18),
-              label: const Text('本機紀錄'),
+              label: Text(l10n.dashboardLocalRecordings),
             ),
             if (historyAccess != TelemetryHistoryAccess.permitted) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                historyAccess.message(AppLocalizations.of(context))!,
+                historyAccess.message(l10n)!,
                 key: const ValueKey('telemetry-history-blocked-copy'),
                 style: context.texts.bodySmall,
                 textAlign: stack ? TextAlign.start : TextAlign.end,
@@ -341,7 +345,9 @@ String? _gaugeFootnote(
     PidFault.refusedUnsafeService => l10n.telemetryStatusUnsafeServiceRefusal,
     PidFault.unsupported || null => null,
   };
-  final badge = status.badgeText.isEmpty ? null : status.badgeText;
+  final badge = status.badges.isEmpty
+      ? null
+      : datumBadgeText(l10n, status);
   if (faultLabel != null && badge != null) return '$badge · $faultLabel';
   return faultLabel ?? badge;
 }
@@ -407,7 +413,9 @@ class _UnsupportedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final badge = status.badgeText;
+    final l10n = AppLocalizations.of(context);
+    final badge = datumBadgeText(l10n, status);
+    final unsupported = l10n.gaugeUnsupportedByVehicle;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Spacing.sm),
@@ -425,7 +433,7 @@ class _UnsupportedTile extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.xs),
             Text(
-              badge.isEmpty ? '此車輛不支援' : '$badge · 此車輛不支援',
+              badge.isEmpty ? unsupported : '$badge · $unsupported',
               textAlign: TextAlign.center,
               style: context.texts.bodySmall?.copyWith(
                 color: palette.textTertiary,
@@ -460,6 +468,7 @@ class _StatusStrip extends ConsumerWidget {
     // 13.9 V from the handshake and held it indefinitely. `null` renders as
     // "--", which is what not knowing looks like.
     final voltage = snapshot.batteryVoltage;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -481,7 +490,7 @@ class _StatusStrip extends ConsumerWidget {
                   children: [
                     Text(
                       connection.deviceName.isEmpty
-                          ? '未連線'
+                          ? l10n.dashboardNotConnected
                           : connection.deviceName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -505,13 +514,24 @@ class _StatusStrip extends ConsumerWidget {
             runSpacing: Spacing.sm,
             children: [
               StatusPill(
-                label: identity.vin == null ? '通用 OBD' : '已讀 VIN',
+                label: identity.vin == null
+                    ? l10n.dashboardGenericObd
+                    : l10n.dashboardVinRead,
                 tone: identity.vin == null
                     ? StatusTone.neutral
                     : StatusTone.good,
               ),
-              if (sessionStatus.reason != null)
-                StatusPill(label: sessionStatus.reason!, tone: StatusTone.warn),
+              // The chip reads the gap identifiers, not the exported sentence
+              // in `sessionStatus.reason`. Missing identification never blocks
+              // generic OBD, and none of these says the vehicle lacks a VIN —
+              // only that this session did not read one.
+              if (sessionStatus.gaps.isNotEmpty)
+                StatusPill(
+                  label: sessionStatus.gaps
+                      .map((gap) => datumGapLabel(l10n, gap))
+                      .join(' · '),
+                  tone: StatusTone.warn,
+                ),
               StatusPill(
                 label: '${snapshot.pidsPerSecond.round()} PIDs/s',
                 icon: Icons.bolt,
@@ -528,7 +548,9 @@ class _StatusStrip extends ConsumerWidget {
               // first thing on screen.
               if (snapshot.capturedAt != null)
                 StatusPill(
-                  label: snapshot.fastModeEnabled ? 'fastMode' : '單筆模式',
+                  label: snapshot.fastModeEnabled
+                      ? 'fastMode'
+                      : l10n.dashboardSingleRequestMode,
                   icon: snapshot.fastModeEnabled
                       ? Icons.fast_forward
                       : Icons.slow_motion_video,
@@ -640,6 +662,7 @@ class _DerivedStrip extends ConsumerWidget {
     final palette = context.palette;
     final profile = ref.watch(vehicleProfileProvider);
     final demo = ref.watch(obdSessionProvider).kind == TransportKind.demo;
+    final l10n = AppLocalizations.of(context);
 
     final rpm = snapshot.valueOf(PidLibrary.engineRpm);
     final speed = snapshot.valueOf(PidLibrary.vehicleSpeed);
@@ -689,7 +712,7 @@ class _DerivedStrip extends ConsumerWidget {
           kind: EstimateKind.fuel,
         );
         return _MeasuredFuelStrip(
-          title: '估算油耗',
+          title: l10n.derivedEstimatedFuelTitle,
           fuelRateLPerHour: estimatedFuel,
           speedKmh: speed,
           status: fuelStatus,
@@ -740,29 +763,45 @@ class _DerivedStrip extends ConsumerWidget {
         accent: palette.derived,
         onTap: () => showDatumStatusDetails(
           context,
-          title: '估算公式與假設',
+          title: l10n.derivedEstimatesDetailsTitle,
           status: hpStatus,
-          extra: [if (fuelStatus.badgeText.isNotEmpty) fuelStatus],
+          extra: [if (fuelStatus.badges.isNotEmpty) fuelStatus],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            // Reflows instead of squeezing, like the pills below it.
+            //
+            // The badge is a StatusPill, and a StatusPill's own Row does not
+            // shrink: handing it a Flexible slice narrower than its content
+            // overflows it visibly. That already happened in Chinese at 320dp,
+            // and the longer English title widened the gap enough to do it at
+            // 360dp too. Giving the badge its own line when the two do not fit
+            // side by side costs one row of height and hides nothing.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Spacing.sm,
+              runSpacing: Spacing.xs,
               children: [
-                Icon(Icons.functions, size: 15, color: palette.derived),
-                const SizedBox(width: Spacing.sm),
-                Text(
-                  '推算數值',
-                  style: context.texts.labelSmall?.copyWith(
-                    color: palette.derived,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.functions, size: 15, color: palette.derived),
+                    const SizedBox(width: Spacing.sm),
+                    Text(
+                      l10n.derivedEstimatesTitle,
+                      style: context.texts.labelSmall?.copyWith(
+                        color: palette.derived,
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                Flexible(child: DatumStatusBadge(status: hpStatus)),
+                DatumStatusBadge(status: hpStatus),
               ],
             ),
             if (metrics.airflowSource != AirflowSource.unavailable ||
-                fuelStatus.badgeText.isNotEmpty) ...[
+                fuelStatus.badges.isNotEmpty) ...[
               const SizedBox(height: Spacing.xs),
               Wrap(
                 spacing: Spacing.sm,
@@ -771,12 +810,14 @@ class _DerivedStrip extends ConsumerWidget {
                   if (metrics.airflowSource != AirflowSource.unavailable)
                     StatusPill(
                       label: metrics.fuelSource == FuelSource.measured
-                          ? metrics.airflowSource.label
-                          : '${metrics.airflowSource.label} · ${metrics.fuelSource.label}',
+                          ? airflowSourceLabel(l10n, metrics.airflowSource)
+                          : '${airflowSourceLabel(l10n, metrics.airflowSource)}'
+                                ' · '
+                                '${fuelSourceLabel(l10n, metrics.fuelSource)}',
                       tone: StatusTone.neutral,
                       dense: true,
                     ),
-                  if (fuelStatus.badgeText.isNotEmpty)
+                  if (fuelStatus.badges.isNotEmpty)
                     DatumStatusBadge(status: fuelStatus),
                 ],
               ),
@@ -794,25 +835,25 @@ class _DerivedStrip extends ConsumerWidget {
                 final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
                 final cells = [
                   _DerivedCell(
-                    label: '空氣流量',
+                    label: l10n.derivedAirflow,
                     value:
                         metrics.mafGramsPerSecond?.toStringAsFixed(1) ?? '--',
                     units: 'g/s',
                   ),
                   _DerivedCell(
-                    label: '油耗',
+                    label: l10n.derivedFuelUse,
                     value: consumption,
                     units: consumptionUnits,
                   ),
                   _DerivedCell(
-                    label: '引擎馬力',
+                    label: l10n.derivedEngineHorsepower,
                     value: metrics.engineHorsepower.isFinite
                         ? metrics.engineHorsepower.toStringAsFixed(0)
                         : '--',
                     units: 'hp',
                   ),
                   _DerivedCell(
-                    label: '扭力',
+                    label: l10n.derivedTorque,
                     value: rpm != null && metrics.torqueNm.isFinite
                         ? metrics.torqueNm.toStringAsFixed(0)
                         : '--',
@@ -865,17 +906,23 @@ class _MeasuredFuelStrip extends StatelessWidget {
     required this.fuelRateLPerHour,
     required this.speedKmh,
     required this.status,
-    this.title = 'ECU 油耗資料',
+    this.title,
   });
 
   final double fuelRateLPerHour;
   final double? speedKmh;
   final DatumStatus status;
-  final String title;
+
+  /// Null means the ECU reported this rate itself. The estimated variant
+  /// passes its own title, so a profile-derived figure can never inherit the
+  /// heading that says the vehicle measured it.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final heading = title ?? l10n.derivedEcuFuelTitle;
     final moving =
         fuelRateLPerHour > 0 &&
         speedKmh != null &&
@@ -890,26 +937,41 @@ class _MeasuredFuelStrip extends StatelessWidget {
       child: Panel(
         accent: palette.derived,
         onTap: () =>
-            showDatumStatusDetails(context, title: title, status: status),
+            showDatumStatusDetails(context, title: heading, status: status),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            // Same reflow as the estimated strip's header, for the same
+            // reason: 'Estimated fuel use' is wider than 估算油耗, and the
+            // badge beside it does not shrink.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Spacing.sm,
+              runSpacing: Spacing.xs,
               children: [
-                Icon(Icons.local_gas_station, size: 15, color: palette.derived),
-                const SizedBox(width: Spacing.sm),
-                Text(
-                  title,
-                  style: context.texts.labelSmall?.copyWith(
-                    color: palette.derived,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_gas_station,
+                      size: 15,
+                      color: palette.derived,
+                    ),
+                    const SizedBox(width: Spacing.sm),
+                    Text(
+                      heading,
+                      style: context.texts.labelSmall?.copyWith(
+                        color: palette.derived,
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                if (status.badgeText.isNotEmpty)
+                if (status.badges.isNotEmpty)
                   DatumStatusBadge(status: status)
                 else
-                  const StatusPill(
-                    label: 'ECU 回報',
+                  StatusPill(
+                    label: l10n.derivedEcuReported,
                     tone: StatusTone.neutral,
                     dense: true,
                   ),
@@ -919,7 +981,7 @@ class _MeasuredFuelStrip extends StatelessWidget {
             Row(
               children: [
                 _DerivedCell(
-                  label: '油耗',
+                  label: l10n.derivedFuelUse,
                   value: value,
                   units: units,
                   isLast: true,
@@ -1059,11 +1121,10 @@ class _FadeInUpState extends State<_FadeInUp>
 class _DerivedUnavailable extends StatelessWidget {
   const _DerivedUnavailable();
 
-  static const message = '等待車速與加速度資料後才能推算馬力';
-
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final message = AppLocalizations.of(context).derivedUnavailableMessage;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
       child: Panel(

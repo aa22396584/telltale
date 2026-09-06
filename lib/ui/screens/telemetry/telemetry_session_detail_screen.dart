@@ -7,12 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../../telemetry/session/telemetry_session.dart';
 import '../../widgets/panel.dart';
+import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
 import 'telemetry_export_sheet.dart';
-import '../../../l10n/generated/app_localizations.dart';
+import 'telemetry_source_copy.dart';
 
 class TelemetrySessionDetailScreen extends ConsumerStatefulWidget {
   const TelemetrySessionDetailScreen({required this.sessionId, super.key});
@@ -97,24 +99,29 @@ class _TelemetrySessionDetailScreenState
         .export(widget.sessionId, format, sharePositionOrigin: origin);
     if (!result.isSuccess &&
         result.failure != TelemetrySessionActionFailure.restartRequired) {
-      _snack('匯出未完成：${result.message(l10n)}');
+      _snack(l10n.telemetryExportFailed(result.message(l10n)));
     }
   }
 
   Future<void> _delete(TelemetrySessionReplay replay) async {
+    // Read before the dialog. The outcome describes the delete the user asked
+    // for, so it belongs to the language that was on screen when they asked.
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('刪除本機紀錄？'),
-        content: Text('將刪除 ${replay.startedAtUtc.toLocal()} 的紀錄。此操作無法復原。'),
+        title: Text(l10n.telemetryDeleteSessionTitle),
+        content: Text(
+          l10n.telemetryDeleteSessionBody('${replay.startedAtUtc.toLocal()}'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.telemetryCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('刪除'),
+            child: Text(l10n.telemetryDelete),
           ),
         ],
       ),
@@ -129,7 +136,7 @@ class _TelemetrySessionDetailScreenState
       Navigator.pop(context);
     } else {
       if (result.failure != TelemetrySessionActionFailure.restartRequired) {
-        _snack('刪除未完成：${result.message(AppLocalizations.of(context))}');
+        _snack(l10n.telemetryDeleteFailed(result.message(l10n)));
       }
     }
   }
@@ -145,23 +152,24 @@ class _TelemetrySessionDetailScreenState
         _resetPlaybackForDeniedAccess();
       }
     });
+    final l10n = AppLocalizations.of(context);
     final access = ref.watch(telemetryHistoryAccessProvider);
     if (access != TelemetryHistoryAccess.permitted) {
       return Scaffold(
-        appBar: AppBar(title: const Text('紀錄回放')),
-        body: Center(child: Text(access.message(AppLocalizations.of(context))!)),
+        appBar: AppBar(title: Text(l10n.telemetryReplayTitle)),
+        body: Center(child: Text(access.message(l10n)!)),
       );
     }
     final replay = ref.watch(telemetrySessionReplayProvider(widget.sessionId));
     return Scaffold(
-      appBar: AppBar(title: const Text('紀錄回放')),
+      appBar: AppBar(title: Text(l10n.telemetryReplayTitle)),
       body: replay.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const Center(child: Text('無法載入紀錄')),
+        error: (_, _) => Center(child: Text(l10n.telemetryReplayLoadFailed)),
         data: (result) {
           final value = result.replay;
           if (value == null) {
-            return const Center(child: Text('紀錄損壞或無法讀取'));
+            return Center(child: Text(l10n.telemetryReplayUnreadable));
           }
           return _ReplayBody(
             replay: value,
@@ -204,85 +212,84 @@ class _ReplayBody extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(Spacing.lg),
-    children: [
-      Panel(
-        child: Wrap(
-          spacing: Spacing.lg,
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(Spacing.lg),
+      children: [
+        Panel(
+          child: Wrap(
+            spacing: Spacing.lg,
+            runSpacing: Spacing.sm,
+            children: [
+              Text(telemetrySourceLabel(l10n, replay.source)),
+              Text('${replay.transport} · ${replay.protocol}'),
+              Text('${replay.startedAtUtc.toLocal()}'),
+              Text(l10n.telemetrySignalCount(replay.signalCount)),
+              Text(l10n.telemetryValueCount(replay.valueCount)),
+              Text(l10n.telemetryStatusCount(replay.statusCount)),
+              Text(l10n.telemetryGapCount(replay.gapCount)),
+              Text(telemetryTerminalReasonLabel(l10n, replay.terminalReason)),
+              Text(l10n.telemetryOfflineSampledReplay),
+            ],
+          ),
+        ),
+        const SizedBox(height: Spacing.md),
+        const Text(telemetryReplayDisclaimer),
+        const SizedBox(height: Spacing.md),
+        Wrap(
+          spacing: Spacing.sm,
           runSpacing: Spacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(telemetrySourceLabel(replay.source)),
-            Text('${replay.transport} · ${replay.protocol}'),
-            Text('${replay.startedAtUtc.toLocal()}'),
-            Text('${replay.signalCount} 項訊號'),
-            Text('${replay.valueCount} 筆有效值'),
-            Text('${replay.statusCount} 個狀態'),
-            Text('${replay.gapCount} 個缺口'),
-            Text(
-              telemetryTerminalReasonLabel(
-                AppLocalizations.of(context),
-                replay.terminalReason,
-              ),
+            FilledButton.icon(
+              onPressed: onTogglePlay,
+              icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+              label: Text(playing ? l10n.telemetryPause : l10n.telemetryPlay),
             ),
-            const Text('離線抽樣回放'),
+            for (final value in const [1, 4, 16])
+              ChoiceChip(
+                selected: speed == value,
+                onSelected: (_) => onSpeed(value),
+                label: Text('${value}x'),
+              ),
           ],
         ),
-      ),
-      const SizedBox(height: Spacing.md),
-      const Text(telemetryReplayDisclaimer),
-      const SizedBox(height: Spacing.md),
-      Wrap(
-        spacing: Spacing.sm,
-        runSpacing: Spacing.sm,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          FilledButton.icon(
-            onPressed: onTogglePlay,
-            icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-            label: Text(playing ? '暫停' : '播放'),
-          ),
-          for (final value in const [1, 4, 16])
-            ChoiceChip(
-              selected: speed == value,
-              onSelected: (_) => onSpeed(value),
-              label: Text('${value}x'),
-            ),
-        ],
-      ),
-      Slider(
-        value: position,
-        onChanged: onPosition,
-        semanticFormatterCallback: (value) => '回放位置 ${(value * 100).round()}%',
-      ),
-      for (final lane in replay.lanes) ...[
-        _ReplayLanePanel(
-          lane: lane,
-          position: position,
-          durationUs: replay.elapsedDurationUs,
-          source: replay.source,
+        Slider(
+          value: position,
+          onChanged: onPosition,
+          semanticFormatterCallback: (value) =>
+              l10n.telemetryReplayPositionSemantics((value * 100).round()),
         ),
-        const SizedBox(height: Spacing.sm),
-      ],
-      const SizedBox(height: Spacing.md),
-      Wrap(
-        spacing: Spacing.md,
-        runSpacing: Spacing.sm,
-        children: [
-          FilledButton.icon(
-            onPressed: onExport,
-            icon: const Icon(Icons.ios_share),
-            label: const Text('匯出'),
+        for (final lane in replay.lanes) ...[
+          _ReplayLanePanel(
+            lane: lane,
+            position: position,
+            durationUs: replay.elapsedDurationUs,
+            source: replay.source,
           ),
-          OutlinedButton.icon(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('刪除'),
-          ),
+          const SizedBox(height: Spacing.sm),
         ],
-      ),
-    ],
-  );
+        const SizedBox(height: Spacing.md),
+        Wrap(
+          spacing: Spacing.md,
+          runSpacing: Spacing.sm,
+          children: [
+            FilledButton.icon(
+              onPressed: onExport,
+              icon: const Icon(Icons.ios_share),
+              label: Text(l10n.telemetryExport),
+            ),
+            OutlinedButton.icon(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline),
+              label: Text(l10n.telemetryDelete),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _ReplayLanePanel extends StatelessWidget {
@@ -300,6 +307,7 @@ class _ReplayLanePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final gaps = lane.primitives.fold<int>(
       0,
       (count, primitive) =>
@@ -339,13 +347,14 @@ class _ReplayLanePanel extends StatelessWidget {
     final valueLabel = currentValue?.toStringAsFixed(1) ?? '--';
     final title = [
       '${lane.name} · $valueLabel ${lane.unit}',
-      if (status.badgeText.isNotEmpty) status.badgeText,
+      if (status.badges.isNotEmpty) datumBadgeText(l10n, status),
     ].join(' · ');
+    final laneDetail =
+        '${l10n.telemetryReplaySampleCount(lane.primitives.length)} · '
+        '${l10n.telemetryReplayBreakCount(gaps)}';
     return Semantics(
       key: ValueKey('telemetry-replay-lane-${lane.pidId}'),
-      label:
-          '$title，'
-          '${lane.primitives.length} 個抽樣節點，$gaps 個中斷',
+      label: l10n.telemetryPhraseJoin(title, laneDetail),
       child: Panel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +375,7 @@ class _ReplayLanePanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Spacing.sm),
-            Text('${lane.primitives.length} 個抽樣節點 · $gaps 個中斷'),
+            Text(laneDetail),
           ],
         ),
       ),

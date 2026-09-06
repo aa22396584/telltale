@@ -162,7 +162,7 @@ void main() {
       expect(outlier.quality, DatumQuality.outOfReferenceRange);
       expect(outlier.compatibility, Compatibility.candidate);
       expect(outlier.isNumericSuccess, isTrue);
-      expect(outlier.badgeLabels, contains('異常'));
+      expect(outlier.badges, contains(DatumBadge.outOfReferenceRange));
 
       final userStatus = AvailabilityPolicy.forRecordedEvent(
         definition: user.definition,
@@ -207,7 +207,7 @@ void main() {
         ),
       );
       expect(staleStatus.quality, DatumQuality.stale);
-      expect(staleStatus.badgeLabels, contains('過期'));
+      expect(staleStatus.badges, contains(DatumBadge.stale));
 
       final refused = AvailabilityPolicy.forRecordedEvent(
         definition: user.definition,
@@ -219,7 +219,7 @@ void main() {
         ),
       );
       expect(refused.quality, DatumQuality.invalid);
-      expect(refused.badgeLabels, contains('無效'));
+      expect(refused.badges, contains(DatumBadge.invalid));
 
       final demoCustom = AvailabilityPolicy.forRecordedEvent(
         definition: user.definition,
@@ -298,7 +298,7 @@ void main() {
       source: TelemetrySource.demo,
     );
     expect(status.origin, DatumOrigin.calculated);
-    expect(status.badgeLabels, contains('估算'));
+    expect(status.badges, contains(DatumBadge.estimated));
     expect(status.formula, AvailabilityPolicy.horsepowerFormula);
     expect(status.assumptions, contains('1280'));
     expect(status.reason, isNull);

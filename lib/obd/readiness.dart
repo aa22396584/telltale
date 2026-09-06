@@ -31,34 +31,38 @@ enum ReadinessState {
 }
 
 /// The monitors J1979 defines, in the order an inspector reads them.
+///
+/// Names live in the ARBs, not here: this file is pure Dart and must stay
+/// unit-testable without Flutter, so it carries the identity and the UI carries
+/// the words. `readinessMonitorLabel` in
+/// lib/ui/screens/dtc/readiness_copy.dart maps each value to its chip label —
+/// including the one that must never be got wrong,
+/// [gasolineParticulateFilter], see the note on bit 4 below.
 enum ReadinessMonitor {
   // The three continuous monitors, from byte B.
-  misfire('失火監控', continuous: true),
-  fuelSystem('燃油系統監控', continuous: true),
-  components('綜合元件監控', continuous: true),
+  misfire(continuous: true),
+  fuelSystem(continuous: true),
+  components(continuous: true),
 
   // The non-continuous monitors, from bytes C and D. Which set applies
   // depends on the ignition type, also carried in byte B.
-  catalyst('觸媒轉換器'),
-  heatedCatalyst('觸媒加熱'),
-  evaporative('蒸發排放系統'),
-  secondaryAir('二次空氣噴射'),
-  gasolineParticulateFilter('汽油微粒濾清器（GPF）'),
-  oxygenSensor('含氧感知器'),
-  oxygenSensorHeater('含氧感知器加熱'),
-  egr('EGR / VVT 系統'),
+  catalyst,
+  heatedCatalyst,
+  evaporative,
+  secondaryAir,
+  gasolineParticulateFilter,
+  oxygenSensor,
+  oxygenSensorHeater,
+  egr,
 
   // Compression ignition (diesel) uses the same two bytes for a different set.
-  nmhcCatalyst('NMHC 觸媒'),
-  noxAftertreatment('NOx / SCR 後處理'),
-  boostPressure('增壓壓力'),
-  exhaustSensor('排氣感知器'),
-  particulateFilter('微粒濾清器');
+  nmhcCatalyst,
+  noxAftertreatment,
+  boostPressure,
+  exhaustSensor,
+  particulateFilter;
 
-  const ReadinessMonitor(this.label, {this.continuous = false});
-
-  /// What to call it on screen.
-  final String label;
+  const ReadinessMonitor({this.continuous = false});
 
   /// Continuous monitors run whenever the engine does; the rest need a
   /// specific set of conditions — a cold start, a steady cruise — which is why

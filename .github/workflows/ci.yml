@@ -64,6 +64,24 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
 
+      # `lib/l10n/generated/` is committed, and `flutter test` reads the
+      # committed files while the ARB guards read the .arb files. So an edit to
+      # an .arb with no regeneration leaves every test green while the built app
+      # ships the previous string — a suite agreeing with itself about copy the
+      # product does not have, which is the failure mode this repository is
+      # organised against.
+      #
+      # `flutter pub get` above already regenerates, so this only has to notice
+      # that it changed something.
+      - name: Generated localizations match the ARBs
+        run: |
+          if ! git diff --exit-code --stat lib/l10n/generated; then
+            echo
+            echo 'lib/l10n/generated is stale. Run:'
+            echo '  flutter gen-l10n && git add lib/l10n/generated'
+            exit 1
+          fi
+
       # The three simulator-backed oracle files self-skip here because no
       # simulator is listening. The `oracle` job below exercises the public
       # third-party suite and refuses to pass if any expected test skips; the
@@ -456,6 +474,129 @@ jobs:
                   print(' - ' + p)
               sys.exit(1)
           print(f'OK: {len(md_zh)} sections, identical across both files and both languages.')
+          PY
+
+  store-assets:
+    name: each README shows its own language's screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The two READMEs hotlink screenshots through raw.githubusercontent.com,
+      # so nothing local resolves them and nothing local breaks when they rot.
+      # A reader gets a broken image on the repo front page and we hear about it
+      # from them.
+      #
+      # Since 1.0.11 there are two sets of screenshots, one per listing
+      # language, and the interesting failure is not a missing file — it is the
+      # English README showing the Chinese screenshots after a copy-paste. That
+      # would render perfectly and quietly tell every English reader the app has
+      # no English interface, which is the exact claim the screenshots exist to
+      # make. So this checks the locale, not just the path.
+      - name: Resolve every hotlinked asset
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          PREFIX = 'https://raw.githubusercontent.com/ImL1s/telltale/main/'
+          # Which README is allowed to show which locale's assets. Assets with
+          # no text in them (the icon, the video) are shared and listed as None.
+          expected = {'README.md': 'en-US', 'README.zh-TW.md': 'zh-TW'}
+
+          problems = []
+          seen = 0
+
+          for name, locale in expected.items():
+              text = pathlib.Path(name).read_text(encoding='utf-8')
+              for url in re.findall(re.escape(PREFIX) + r'([^\s")\]]+)', text):
+                  seen += 1
+                  path = pathlib.Path(url)
+                  if not path.exists():
+                      problems.append(f'{name}: {url} does not exist in the repo')
+                      continue
+                  if url.startswith('store/'):
+                      parts = url.split('/')
+                      # store/<locale>/<file> for anything with words in it.
+                      if len(parts) == 3 and parts[1] in expected.values():
+                          if parts[1] != locale:
+                              problems.append(
+                                  f'{name} shows {parts[1]} assets; it must show {locale}. '
+                                  'A reader would take the screenshots as proof the app '
+                                  'does not speak their language.')
+                      elif len(parts) != 2:
+                          problems.append(f'{name}: {url} is not store/<locale>/<file> '
+                                          'nor a shared store/<file>')
+
+          # Both locales must actually be complete, or one listing ships short.
+          for locale in expected.values():
+              for shot in ['01-connect', '02-dashboard', '03-dtc-freeze',
+                           '05-performance', '06-skins', 'feature-1024x500']:
+                  f = pathlib.Path(f'store/{locale}/{shot}.png')
+                  if not f.exists():
+                      problems.append(f'{f} is missing; the {locale} listing cannot be built')
+
+          if problems:
+              print('Store assets do not line up:')
+              for p in problems:
+                  print(' - ' + p)
+              sys.exit(1)
+          print(f'OK: {seen} hotlinks resolve, and each README shows its own locale.')
+          PY
+
+      # Play enforces these at upload time, which is the worst moment to learn:
+      # half the locales are already written and the rest are not. The counts
+      # are characters, not bytes — a Chinese description is a third the bytes
+      # of an English one at the same limit, and getting that wrong would either
+      # reject valid copy or wave through copy Play will refuse.
+      - name: Listing copy fits Play's limits
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+
+          LIMITS = {
+              'title.txt': 30,
+              'short_description.txt': 80,
+              'full_description.txt': 4000,
+          }
+          CHANGELOG_LIMIT = 500
+
+          problems = []
+          locales = sorted(p.name for p in pathlib.Path('store/metadata').iterdir() if p.is_dir())
+          if not locales:
+              problems.append('store/metadata has no locales')
+
+          for locale in locales:
+              root = pathlib.Path('store/metadata') / locale
+              for name, limit in LIMITS.items():
+                  f = root / name
+                  if not f.exists():
+                      problems.append(f'{f} is missing')
+                      continue
+                  n = len(f.read_text(encoding='utf-8').rstrip('\n'))
+                  if n > limit:
+                      problems.append(f'{f}: {n} characters, limit {limit}')
+                  if n == 0:
+                      problems.append(f'{f} is empty; Play would reject the listing')
+              for f in sorted((root / 'changelogs').glob('*.txt')):
+                  n = len(f.read_text(encoding='utf-8').rstrip('\n'))
+                  if n > CHANGELOG_LIMIT:
+                      problems.append(f'{f}: {n} characters, limit {CHANGELOG_LIMIT}')
+
+          # Every locale must carry release notes for the same versionCodes, or
+          # one language silently ships last release's notes.
+          notes = {loc: {f.stem for f in (pathlib.Path('store/metadata') / loc / 'changelogs').glob('*.txt')}
+                   for loc in locales}
+          if notes and len(set(map(frozenset, notes.values()))) != 1:
+              problems.append('locales carry release notes for different versionCodes: '
+                              + '; '.join(f'{k}={sorted(v)}' for k, v in notes.items()))
+
+          if problems:
+              print('Listing copy will not upload:')
+              for p in problems:
+                  print(' - ' + p)
+              sys.exit(1)
+          print(f'OK: {len(locales)} locales within every Play limit, matching release notes.')
           PY
 
   rigs:

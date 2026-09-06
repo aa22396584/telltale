@@ -9,9 +9,16 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
+
+/// The wording moved into the ARBs; these transcripts still assert the
+/// Traditional Chinese the screen shipped, so the lookup is pinned here
+/// rather than passed in per test.
+final _zh = lookupAppLocalizations(traditionalChineseLocale);
 
 DtcCategoryResult _failed({
   required Set<String> answeredBy,
@@ -63,6 +70,7 @@ void main() {
               'itself and named the service');
 
       final wording = unansweredCategoryWording(
+        l10n: _zh,
         kind: DtcKind.pending,
         result: class07,
         storedAnswered: true,
@@ -89,6 +97,7 @@ void main() {
 
   test('nobody answered an optional class, and the mandatory one did', () {
     final wording = unansweredCategoryWording(
+      l10n: _zh,
       kind: DtcKind.pending,
       result: _failed(answeredBy: const {}),
       storedAnswered: true,
@@ -109,6 +118,7 @@ void main() {
     // twice: it was provided, and what is unknown is one controller's
     // coverage.
     final wording = unansweredCategoryWording(
+      l10n: _zh,
       kind: DtcKind.pending,
       result: _failed(answeredBy: const {'7E8'}),
       storedAnswered: true,
@@ -131,6 +141,7 @@ void main() {
       isManufacturerSpecific: false,
     );
     final wording = unansweredCategoryWording(
+      l10n: _zh,
       kind: DtcKind.pending,
       result: _failed(answeredBy: const {'7E8'}, partial: const [p0301]),
       storedAnswered: true,
@@ -142,6 +153,7 @@ void main() {
 
   test('the mandatory class is never ordinary silence', () {
     final wording = unansweredCategoryWording(
+      l10n: _zh,
       kind: DtcKind.stored,
       result: _failed(answeredBy: const {}),
       storedAnswered: false,
@@ -152,6 +164,7 @@ void main() {
 
   test('both classes silent says so, and says it is unknown why', () {
     final wording = unansweredCategoryWording(
+      l10n: _zh,
       kind: DtcKind.permanent,
       result: _failed(answeredBy: const {}),
       storedAnswered: false,

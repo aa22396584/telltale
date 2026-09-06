@@ -17,30 +17,72 @@ library;
 
 import '../addressing.dart';
 
+/// The system a code belongs to, read off the two high bits of its first byte.
+///
+/// The letter is the identity — `P`, `C`, `B`, `U` are what the standard, the
+/// service manual and the code itself say, and they are never translated. The
+/// human name for the system ("Powertrain", 動力系統) is screen copy and lives
+/// in the ARBs, mapped by `dtcSystemLabel` in
+/// `lib/ui/screens/dtc/dtc_copy.dart`. It used to be a field on this enum,
+/// which put Traditional Chinese inside a pure-Dart engine file and rendered
+/// it verbatim beside an otherwise English fault-code list.
 enum DtcCategory {
-  powertrain('P', '動力系統'),
-  chassis('C', '底盤'),
-  body('B', '車身'),
-  network('U', '網路');
+  powertrain('P'),
+  chassis('C'),
+  body('B'),
+  network('U');
 
-  const DtcCategory(this.letter, this.label);
+  const DtcCategory(this.letter);
 
   final String letter;
-  final String label;
 }
 
 /// Which J1979 mode a code was read from — they mean materially different
 /// things to a driver and the UI groups by it.
 enum DtcKind {
-  stored('已儲存', '03', '已確認的故障，儀表板故障燈通常亮起'),
-  pending('待確認', '07', '偵測到一次，尚未達到確認門檻'),
-  permanent('永久', '0A', '無法用診斷儀清除，需修復後由 ECU 自行確認');
+  stored('已儲存', '03'),
+  pending('待確認', '07'),
+  permanent('永久', '0A');
 
-  const DtcKind(this.label, this.mode, this.description);
+  const DtcKind(this.transcriptLabel, this.mode);
 
-  final String label;
+  /// The class name as the **session transcript** writes it, and only that.
+  ///
+  /// Not screen copy. `PollingEngine.readDtcs` records
+  /// 「開始讀取<label>故障碼（Mode xx）」 into the transcript, and the transcript
+  /// is an exported artifact — two people compare two of them, weeks apart. A
+  /// line whose language depends on whoever's phone produced it is a line
+  /// nobody can compare, so this stays Traditional Chinese in every locale.
+  ///
+  /// What the fault-code screen shows comes from the ARBs instead:
+  /// `dtcKindLabel` and `dtcKindExplanation` in
+  /// `lib/ui/screens/dtc/dtc_copy.dart`. The explanation that used to sit
+  /// beside this — 「無法用診斷儀清除，需修復後由 ECU 自行確認」 and its two
+  /// siblings — moved there whole; it is read by somebody deciding whether to
+  /// press Clear, and it has to be in a language they read.
+  final String transcriptLabel;
+
+  /// The J1979 mode this class is read from. A protocol number, not a word:
+  /// `03`, `07` and `0A` are the same on every screen in every language.
   final String mode;
-  final String description;
+}
+
+/// The subsystem SAE J2012 assigns to a `P0` code by its third digit.
+///
+/// An identifier, not a label. Blocks 7 and 8 are both the transmission in
+/// J2012, so they share one value rather than two that would have to be
+/// translated identically forever. The words for these live in the ARBs —
+/// `dtcSubsystemLabel` in `lib/ui/screens/dtc/dtc_copy.dart`.
+enum PowertrainSubsystem {
+  fuelAirMeteringAndAuxiliaryEmissions,
+  fuelAirMetering,
+  fuelAirMeteringInjectorCircuit,
+  ignitionOrMisfire,
+  auxiliaryEmissionControls,
+  speedAndIdleControl,
+  computerOutputCircuit,
+  transmission,
+  controlModuleSignals,
 }
 
 class Dtc {
@@ -69,9 +111,16 @@ class Dtc {
     required this.isManufacturerSpecific,
   });
 
-  /// Generic description where the code is SAE-defined, else null.
-  String? get description =>
-      isManufacturerSpecific ? null : DtcDecoder.genericDescriptions[code];
+  /// Whether this app has a generic description for the code.
+  ///
+  /// The description text itself is screen copy and lives in the ARBs —
+  /// `dtcCodeDescription` in `lib/ui/screens/dtc/dtc_copy.dart` returns it, or
+  /// null. This getter is the same rule in the engine, where it can be unit
+  /// tested: false for the manufacturer ranges no matter what the table holds,
+  /// because a `P1xxx` means whatever the manufacturer says it means and a
+  /// generic description there is both wrong and unreachable.
+  bool get hasGenericDescription =>
+      !isManufacturerSpecific && DtcDecoder.describedCodes.contains(code);
 
   /// Which subsystem the code belongs to, read off its third digit.
   ///
@@ -86,7 +135,7 @@ class Dtc {
   /// the same layout at all — `P2004` is intake manifold runner control, not a
   /// fuel-metering fault. Claiming a subsystem there would be inventing one,
   /// which is the thing the description table already refuses to do.
-  String? get subsystem => DtcDecoder.subsystemOf(code);
+  PowertrainSubsystem? get subsystem => DtcDecoder.subsystemOf(code);
 
   /// Identity includes the controller.
   ///
@@ -379,9 +428,58 @@ abstract final class DtcDecoder {
     return ((categoryIndex << 6) | (d1 << 4) | d2, (d3 << 4) | d4);
   }
 
-  /// The SAE-defined codes drivers actually hit. Anything absent falls back to
-  /// the category label rather than an invented description — guessing at a
-  /// fault code is worse than admitting the app does not know it.
+  /// The subsystem SAE J2012 assigns to each `P0` block by its third digit.
+  ///
+  /// `P00xx` covers both fuel/air metering and auxiliary emission controls,
+  /// which is why its entry names both rather than picking one.
+  static const Map<int, PowertrainSubsystem> powertrainSubsystems = {
+    0: PowertrainSubsystem.fuelAirMeteringAndAuxiliaryEmissions,
+    1: PowertrainSubsystem.fuelAirMetering,
+    2: PowertrainSubsystem.fuelAirMeteringInjectorCircuit,
+    3: PowertrainSubsystem.ignitionOrMisfire,
+    4: PowertrainSubsystem.auxiliaryEmissionControls,
+    5: PowertrainSubsystem.speedAndIdleControl,
+    6: PowertrainSubsystem.computerOutputCircuit,
+    // J2012 gives blocks 7 and 8 the same subsystem, so they share one
+    // identifier rather than two that would have to be translated identically
+    // forever.
+    7: PowertrainSubsystem.transmission,
+    8: PowertrainSubsystem.transmission,
+    // Published as "control modules, input and output signals". An earlier
+    // wording here said 變速箱與控制模組訊號 — half of that was invented to make
+    // it read like its neighbours, which is the same liberty the P2270
+    // description was dropped for. The words now live in the ARBs, and the
+    // @-description on `dtcSubsystemControlModuleSignals` carries the warning
+    // with them.
+    9: PowertrainSubsystem.controlModuleSignals,
+  };
+
+  /// The subsystem for a `P0` code, or null for anything else.
+  ///
+  /// Deliberately narrow — see [Dtc.subsystem] for why `P1`, `P2` and `P3` are
+  /// excluded rather than approximated.
+  static PowertrainSubsystem? subsystemOf(String code) {
+    if (code.length != 5) return null;
+    if (code[0] != 'P' || code[1] != '0') return null;
+    final block = int.tryParse(code[2], radix: 16);
+    if (block == null) return null;
+    return powertrainSubsystems[block];
+  }
+
+  /// The SAE-defined codes this app has a description for.
+  ///
+  /// Codes, not prose. The descriptions themselves live in the ARBs as
+  /// `dtcDescription<CODE>` and are read through `dtcCodeDescription` in
+  /// `lib/ui/screens/dtc/dtc_copy.dart`; a code that is absent from this set
+  /// shows the raw code and says so, rather than an invented description —
+  /// guessing at a fault code is worse than admitting the app does not know
+  /// it.
+  ///
+  /// The set is what makes that table enumerable. A `switch` cannot be
+  /// walked, and the tests that check every entry round-trips through the
+  /// decoder, that none of them is in a manufacturer range, and that both
+  /// locales describe exactly these codes and no others, all need something
+  /// they can iterate.
   ///
   /// Written here rather than imported, and that is a decision rather than
   /// laziness. The two large MIT-licensed DTC datasets on GitHub turn out to be
@@ -402,180 +500,148 @@ abstract final class DtcDecoder {
   /// same failure class `Elm327Client._parse`'s whitelist exists to prevent,
   /// arriving through a different door.
   ///
-  /// Manufacturer-specific codes stay `null` deliberately: a P1xxx means
+  /// Manufacturer-specific codes are absent deliberately: a P1xxx means
   /// whatever the manufacturer says it means, and the generic table has no
-  /// standing to guess.
-  /// The subsystem SAE J2012 assigns to each `P0` block by its third digit.
-  ///
-  /// `P00xx` covers both fuel/air metering and auxiliary emission controls,
-  /// which is why its entry names both rather than picking one.
-  static const Map<int, String> powertrainSubsystems = {
-    0: '燃油與空氣計量、輔助排放控制',
-    1: '燃油與空氣計量',
-    2: '燃油與空氣計量（噴油嘴迴路）',
-    3: '點火系統或失火',
-    4: '輔助排放控制',
-    5: '車速控制與怠速系統',
-    6: '電腦輸出迴路',
-    7: '變速箱',
-    8: '變速箱',
-    // Published as "control modules, input and output signals". An earlier
-    // wording here said 變速箱與控制模組訊號 — half of that was invented to make
-    // it read like its neighbours, which is the same liberty the P2270
-    // description was dropped for.
-    9: '控制模組輸入／輸出訊號',
-  };
-
-  /// The subsystem for a `P0` code, or null for anything else.
-  ///
-  /// Deliberately narrow — see [Dtc.subsystem] for why `P1`, `P2` and `P3` are
-  /// excluded rather than approximated.
-  static String? subsystemOf(String code) {
-    if (code.length != 5) return null;
-    if (code[0] != 'P' || code[1] != '0') return null;
-    final block = int.tryParse(code[2], radix: 16);
-    if (block == null) return null;
-    return powertrainSubsystems[block];
-  }
-
-  static const Map<String, String> genericDescriptions = {
-    'B0001': '駕駛座安全氣囊裝置故障',
-    'P0011': '「A」凸輪軸正時過前或系統效能異常（Bank 1）',
-    'P0014': '「B」凸輪軸正時過前或系統效能異常（Bank 1）',
-    'P0016': '曲軸與凸輪軸位置訊號不同步（Bank 1 感知器 A）',
-    'P0087': '燃油軌／系統壓力過低',
-    'P0088': '燃油軌／系統壓力過高',
-    'P0100': '空氣流量感知器 (MAF) 電路故障',
-    'P0101': '空氣流量感知器範圍/效能異常',
-    'P0102': '空氣流量感知器電路輸入過低',
-    'P0103': '空氣流量感知器電路輸入過高',
-    'P0105': '進氣歧管絕對壓力／大氣壓力感知器電路故障',
-    'P0106': '進氣歧管絕對壓力感知器範圍/效能異常',
-    'P0107': '進氣歧管絕對壓力感知器電路輸入過低',
-    'P0108': '進氣歧管絕對壓力感知器電路輸入過高',
-    'P0110': '進氣溫度感知器電路故障',
-    'P0111': '進氣溫度感知器範圍/效能異常',
-    'P0112': '進氣溫度感知器電路輸入過低',
-    'P0113': '進氣溫度感知器電路輸入過高',
-    'P0115': '冷卻液溫度感知器電路故障',
-    'P0116': '冷卻液溫度感知器範圍/效能異常',
-    'P0117': '冷卻液溫度感知器電路輸入過低',
-    'P0118': '冷卻液溫度感知器電路輸入過高',
-    'P0120': '節氣門位置感知器電路故障',
-    'P0121': '節氣門位置感知器範圍/效能異常',
-    'P0122': '節氣門位置感知器電路輸入過低',
-    'P0123': '節氣門位置感知器電路輸入過高',
-    'P0125': '冷卻液溫度不足以進入閉迴路燃油控制',
-    'P0128': '冷卻液溫度低於節溫器調節溫度',
-    'P0130': '含氧感知器電路故障 (Bank 1 Sensor 1)',
-    'P0131': '含氧感知器電路電壓過低 (Bank 1 Sensor 1)',
-    'P0132': '含氧感知器電路電壓過高 (Bank 1 Sensor 1)',
-    'P0133': '含氧感知器反應過慢 (Bank 1 Sensor 1)',
-    'P0134': '含氧感知器無活性訊號 (Bank 1 Sensor 1)',
-    'P0135': '含氧感知器加熱器電路故障 (Bank 1 Sensor 1)',
-    'P0136': '含氧感知器電路故障 (Bank 1 Sensor 2)',
-    'P0137': '含氧感知器電路電壓過低 (Bank 1 Sensor 2)',
-    'P0138': '含氧感知器電路電壓過高 (Bank 1 Sensor 2)',
-    'P0140': '含氧感知器無活性訊號 (Bank 1 Sensor 2)',
-    'P0141': '含氧感知器加熱器電路故障 (Bank 1 Sensor 2)',
-    'P0150': '含氧感知器電路故障 (Bank 2 Sensor 1)',
-    'P0155': '含氧感知器加熱器電路故障 (Bank 2 Sensor 1)',
-    'P0156': '含氧感知器電路故障 (Bank 2 Sensor 2)',
-    'P0161': '含氧感知器加熱器電路故障 (Bank 2 Sensor 2)',
-    'P0170': '燃油修正異常 (Bank 1)',
-    'P0171': '混合比過稀 (Bank 1)',
-    'P0172': '混合比過濃 (Bank 1)',
-    'P0173': '燃油修正異常 (Bank 2)',
-    'P0174': '混合比過稀 (Bank 2)',
-    'P0175': '混合比過濃 (Bank 2)',
-    'P0190': '燃油軌壓力感知器電路故障',
-    'P0201': '噴油嘴電路故障／開路 — 第 1 缸',
-    'P0202': '噴油嘴電路故障／開路 — 第 2 缸',
-    'P0203': '噴油嘴電路故障／開路 — 第 3 缸',
-    'P0204': '噴油嘴電路故障／開路 — 第 4 缸',
-    'P0217': '引擎過熱',
-    'P0221': '節氣門／油門踏板位置感知器 B 範圍或效能異常',
-    'P0222': '節氣門／油門踏板位置感知器 B 電路輸入過低',
-    'P0223': '節氣門／油門踏板位置感知器 B 電路輸入過高',
-    'P0234': '渦輪／機械增壓過壓',
-    'P0299': '渦輪／機械增壓「A」增壓不足',
-    'P0300': '偵測到隨機/多缸失火',
-    'P0301': '第 1 缸失火',
-    'P0302': '第 2 缸失火',
-    'P0303': '第 3 缸失火',
-    'P0304': '第 4 缸失火',
-    'P0305': '第 5 缸失火',
-    'P0306': '第 6 缸失火',
-    'P0307': '第 7 缸失火',
-    'P0308': '第 8 缸失火',
-    'P0316': '起動後隨即偵測到失火',
-    'P0325': '爆震感知器電路故障 (Bank 1)',
-    'P0326': '爆震感知器範圍/效能異常 (Bank 1)',
-    'P0327': '爆震感知器電路輸入過低 (Bank 1)',
-    'P0328': '爆震感知器電路輸入過高 (Bank 1)',
-    'P0330': '爆震感知器電路故障 (Bank 2)',
-    'P0335': '曲軸位置感知器電路故障',
-    'P0336': '曲軸位置感知器範圍/效能異常',
-    'P0340': '凸輪軸位置感知器電路故障',
-    'P0341': '凸輪軸位置感知器範圍/效能異常',
-    'P0351': '點火線圈 A 一次/二次電路故障',
-    'P0352': '點火線圈 B 一次/二次電路故障',
-    'P0353': '點火線圈 C 一次/二次電路故障',
-    'P0354': '點火線圈 D 一次/二次電路故障',
-    'P0355': '點火線圈 E 一次/二次電路故障',
-    'P0356': '點火線圈 F 一次/二次電路故障',
-    'P0400': '廢氣再循環 (EGR) 流量故障',
-    'P0401': '廢氣再循環 (EGR) 流量不足',
-    'P0402': '廢氣再循環 (EGR) 流量過大',
-    'P0403': '廢氣再循環 (EGR) 控制電路故障',
-    'P0404': '廢氣再循環 (EGR) 控制電路範圍/效能異常',
-    'P0410': '二次空氣噴射系統故障',
-    'P0411': '二次空氣噴射系統流量不正確',
-    'P0412': '二次空氣噴射切換閥 A 電路故障',
-    'P0420': '觸媒轉換器效率低於門檻 (Bank 1)',
-    'P0430': '觸媒轉換器效率低於門檻 (Bank 2)',
-    'P0440': '蒸發排放控制系統故障',
-    'P0441': '蒸發排放系統清除流量不正確',
-    'P0442': '蒸發排放系統偵測到小漏氣',
-    'P0443': '蒸發排放清除閥控制電路故障',
-    'P0446': '蒸發排放通風控制電路故障',
-    'P0447': '蒸發排放通風控制電路開路',
-    'P0449': '蒸發排放通風閥/電磁閥電路故障',
-    'P0451': '蒸發排放壓力感知器範圍/效能異常',
-    'P0452': '蒸發排放壓力感知器電路輸入過低',
-    'P0453': '蒸發排放壓力感知器電路輸入過高',
-    'P0455': '蒸發排放系統偵測到大漏氣',
-    'P0456': '蒸發排放系統偵測到極小漏氣',
-    'P0480': '冷卻風扇 1 控制電路故障',
-    'P0500': '車速感知器故障',
-    'P0505': '怠速控制系統故障',
-    'P0506': '怠速轉速低於預期',
-    'P0507': '怠速轉速高於預期',
-    'P0508': '怠速控制電路輸入過低',
-    'P0509': '怠速控制電路輸入過高',
-    'P0560': '系統電壓故障',
-    'P0562': '系統電壓過低',
-    'P0563': '系統電壓過高',
-    'P0603': '控制模組內部記憶體（KAM）錯誤',
-    'P0605': '控制模組內部唯讀記憶體（ROM）錯誤',
-    'P0606': 'ECM/PCM 處理器故障',
-    'P0700': '變速箱控制模組要求點亮故障燈 —— 故障碼在變速箱模組裡，請另外讀取',
-    'P0701': '變速箱控制系統範圍/效能異常',
-    'P0702': '變速箱控制系統電氣故障',
-    'P0705': '排檔位置感知器電路故障',
-    'P0715': '輸入軸／渦輪轉速感知器電路故障',
-    'P0720': '輸出軸轉速感知器電路故障',
-    'P0730': '檔位比不正確',
-    'P0740': '扭力轉換器離合器電路故障',
-    'P0741': '扭力轉換器離合器卡在未鎖定狀態',
-    'P0750': '換檔電磁閥 A 故障',
-    'P0755': '換檔電磁閥 B 故障',
-    'P2135': '節氣門位置感知器 A/B 電壓不一致',
-    'U0100': '與 ECM/PCM 失去通訊',
-    'U0101': '與變速箱控制模組失去通訊',
-    'U0121': '與 ABS 控制模組失去通訊',
-    'U0140': '與車身控制模組失去通訊',
-    'U0155': '與儀表板控制模組失去通訊',
+  /// standing to guess. [Dtc.hasGenericDescription] enforces that even if one
+  /// ever gets in.
+  static const Set<String> describedCodes = {
+    'B0001',
+    'P0011',
+    'P0014',
+    'P0016',
+    'P0087',
+    'P0088',
+    'P0100',
+    'P0101',
+    'P0102',
+    'P0103',
+    'P0105',
+    'P0106',
+    'P0107',
+    'P0108',
+    'P0110',
+    'P0111',
+    'P0112',
+    'P0113',
+    'P0115',
+    'P0116',
+    'P0117',
+    'P0118',
+    'P0120',
+    'P0121',
+    'P0122',
+    'P0123',
+    'P0125',
+    'P0128',
+    'P0130',
+    'P0131',
+    'P0132',
+    'P0133',
+    'P0134',
+    'P0135',
+    'P0136',
+    'P0137',
+    'P0138',
+    'P0140',
+    'P0141',
+    'P0150',
+    'P0155',
+    'P0156',
+    'P0161',
+    'P0170',
+    'P0171',
+    'P0172',
+    'P0173',
+    'P0174',
+    'P0175',
+    'P0190',
+    'P0201',
+    'P0202',
+    'P0203',
+    'P0204',
+    'P0217',
+    'P0221',
+    'P0222',
+    'P0223',
+    'P0234',
+    'P0299',
+    'P0300',
+    'P0301',
+    'P0302',
+    'P0303',
+    'P0304',
+    'P0305',
+    'P0306',
+    'P0307',
+    'P0308',
+    'P0316',
+    'P0325',
+    'P0326',
+    'P0327',
+    'P0328',
+    'P0330',
+    'P0335',
+    'P0336',
+    'P0340',
+    'P0341',
+    'P0351',
+    'P0352',
+    'P0353',
+    'P0354',
+    'P0355',
+    'P0356',
+    'P0400',
+    'P0401',
+    'P0402',
+    'P0403',
+    'P0404',
+    'P0410',
+    'P0411',
+    'P0412',
+    'P0420',
+    'P0430',
+    'P0440',
+    'P0441',
+    'P0442',
+    'P0443',
+    'P0446',
+    'P0447',
+    'P0449',
+    'P0451',
+    'P0452',
+    'P0453',
+    'P0455',
+    'P0456',
+    'P0480',
+    'P0500',
+    'P0505',
+    'P0506',
+    'P0507',
+    'P0508',
+    'P0509',
+    'P0560',
+    'P0562',
+    'P0563',
+    'P0603',
+    'P0605',
+    'P0606',
+    'P0700',
+    'P0701',
+    'P0702',
+    'P0705',
+    'P0715',
+    'P0720',
+    'P0730',
+    'P0740',
+    'P0741',
+    'P0750',
+    'P0755',
+    'P2135',
+    'U0100',
+    'U0101',
+    'U0121',
+    'U0140',
+    'U0155',
   };
 }
 

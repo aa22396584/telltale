@@ -28,10 +28,12 @@ import '../../../obd/transport/serial_transport.dart';
 import '../../../obd/transport/wifi_transport.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/obd_session.dart';
+import 'transport_kind_copy.dart';
 import '../../../state/settings.dart';
 import '../../widgets/language_picker.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_connect_recorder_status.dart';
+import 'handshake_copy.dart';
 import '../../widgets/telemetry/telemetry_history_entry.dart';
 import '../../widgets/telemetry/telemetry_startup_recovery_notice.dart';
 import '../../widgets/transcript_export.dart';
@@ -73,6 +75,13 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// keyboard for it is the numeric one, in a moving vehicle.
   static const _kWifiHostKey = 'wifi_host';
   static const _kWifiPortKey = 'wifi_port';
+
+  /// The range the connect check enforces, and the only source for the range
+  /// the error message quotes. Spelling "1–65535" into the sentence would
+  /// create a second copy of a bound that is free to drift from the one the
+  /// code actually tests.
+  static const _kMinPort = 1;
+  static const _kMaxPort = 65535;
 
   late final TextEditingController _hostController;
   late final TextEditingController _portController;
@@ -158,12 +167,10 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// only maps the outcome onto this screen's recovery affordances.
   Future<bool> _ensurePermissions({required bool forScanning}) async {
     _permissionPermanentlyDenied = false;
-    _deniedPermissionLabel = null;
     final result = await ensureBluetoothPermissions(forScanning: forScanning);
     if (result.granted) return true;
     _permissionPermanentlyDenied =
         result.outcome == BlePermissionOutcome.permanentlyDenied;
-    _deniedPermissionLabel = result.deniedLabel;
     return false;
   }
 
@@ -172,10 +179,18 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// without offering it, the wizard is a dead end.
   bool _permissionPermanentlyDenied = false;
 
-  /// Which permission was actually refused, so the message names it.
-  String? _deniedPermissionLabel;
+  // `BlePermissionResult.deniedLabel` is deliberately not read here. It
+  // carries a fixed Chinese word chosen in the permission layer, which cannot
+  // be localized from this screen, and it would name nothing new: the only
+  // caller that shows it lists bonded adapters with `forScanning: false`, and
+  // that path never requests location — the refusal is always the Bluetooth
+  // one. The messages below say so outright instead of interpolating it.
 
   Future<void> _loadPairedDevices() async {
+    // Read before the first await. Every await below can outlive the screen,
+    // and the message belongs to the language that was on screen when the
+    // user asked for the list.
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _scanning = true;
       _scanError = null;
@@ -196,17 +211,16 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
       // Listing bonded devices is not a scan, and must not ask as if it were.
       if (!await _ensurePermissions(forScanning: false)) {
         if (!mounted) return;
-        final what = _deniedPermissionLabel ?? '藍牙';
         setState(
           () => _scanError = _permissionPermanentlyDenied
-              ? '$what權限已被永久拒絕，請到系統設定開啟後再試。'
-              : '需要$what權限才能列出已配對的轉接器。',
+              ? l10n.connectBluetoothPermissionDeniedForever
+              : l10n.connectBluetoothPermissionNeededForPairedList,
         );
         return;
       }
       if (!await ClassicTransport.isAdapterEnabled()) {
         if (!mounted) return;
-        setState(() => _scanError = '藍牙未開啟，請先在系統設定開啟藍牙。');
+        setState(() => _scanError = l10n.connectBluetoothOff);
         return;
       }
       final devices = await ClassicTransport.pairedDevices();
@@ -266,17 +280,19 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// and a failed connection sent the user looking at their adapter instead of
   /// at the box they had just cleared.
   Future<void> _connectWifi() async {
+    // Before the awaits below, for the same reason as `_loadPairedDevices`.
+    final l10n = AppLocalizations.of(context);
     final host = _hostController.text.trim();
     final portText = _portController.text.trim();
     final port = int.tryParse(portText);
 
     String? error;
     if (host.isEmpty) {
-      error = '請輸入轉接器的 IP 位址。';
+      error = l10n.connectWifiHostRequired;
     } else if (portText.isEmpty) {
-      error = '請輸入通訊埠（多數轉接器為 ${WifiTransport.defaultPort}）。';
-    } else if (port == null || port < 1 || port > 65535) {
-      error = '「$portText」不是有效的通訊埠，範圍是 1–65535。';
+      error = l10n.connectWifiPortRequired(WifiTransport.defaultPort);
+    } else if (port == null || port < _kMinPort || port > _kMaxPort) {
+      error = l10n.connectWifiPortInvalid(portText, _kMinPort, _kMaxPort);
     }
 
     setState(() => _wifiError = error);
@@ -317,7 +333,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final connection = ref.watch(obdSessionProvider);
 
     return Scaffold(
@@ -388,13 +404,20 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _ErrorBanner(message: connection.error!),
+                      _ErrorBanner(
+                        message:
+                            connectionIssueText(
+                              AppLocalizations.of(context),
+                              connection,
+                            ) ??
+                            connection.error!,
+                      ),
                       const SizedBox(height: Spacing.md),
                       // Where the failure is, not two screens away behind a
                       // connection that does not exist. This is the moment the
                       // recording was made for.
                       Text(
-                        '這次嘗試的完整往返紀錄留著了。帶回來比一句訊息有用。',
+                        AppLocalizations.of(context).connectTranscriptKept,
                         style: context.texts.bodySmall,
                       ),
                       const SizedBox(height: Spacing.sm),
@@ -422,9 +445,9 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                   };
                   final disabledReason = switch (kind) {
                     TransportKind.bluetoothClassic when unavailable =>
-                      classicUnavailableReason,
+                      classicUnavailableReason(l10n),
                     TransportKind.bluetoothLe when unavailable =>
-                      bleUnavailableReason,
+                      bleUnavailableReason(l10n),
                     _ => null,
                   };
                   return _TransportCard(
@@ -433,7 +456,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                     isDisabled: unavailable || connection.isBusy,
                     disabledReason: disabledReason,
                     onTap: () => _select(kind),
-                    child: _bodyFor(kind, palette),
+                    child: _bodyFor(kind, l10n),
                   );
                 },
               ),
@@ -460,7 +483,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
     );
   }
 
-  Widget _bodyFor(TransportKind kind, AppPalette palette) {
+  Widget _bodyFor(TransportKind kind, AppLocalizations l10n) {
     return switch (kind) {
       TransportKind.demo => _DemoBody(
         onConnect: () =>
@@ -477,13 +500,17 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
         scanning: _scanning,
         error: _scanError,
         emptyHint: classicDeviceListEmptyHint(
+          l10n,
           serialHost: sppSerialHostSupported,
         ),
         // Bonded-device hosts (Android/macOS): cancel-early copy matters
         // because a wrong headphone row burns connection cascade time.
         // SPP serial hosts (Windows/Linux): the list is COM/rfcomm nodes —
         // never claim headphones appear here.
-        listHint: classicDeviceListHint(serialHost: sppSerialHostSupported),
+        listHint: classicDeviceListHint(
+          l10n,
+          serialHost: sppSerialHostSupported,
+        ),
         showSettingsAction: _permissionPermanentlyDenied,
         onRefresh: _loadPairedDevices,
         onSelect: (device) => _connect(() {
@@ -673,10 +700,17 @@ class _TransportCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(kind.label, style: context.texts.titleMedium),
+                        Text(
+                          transportKindTitle(AppLocalizations.of(context), kind),
+                          style: context.texts.titleMedium,
+                        ),
                         const SizedBox(height: 2),
                         Text(
-                          disabledReason ?? kind.description,
+                          disabledReason ??
+                              transportKindDescription(
+                                AppLocalizations.of(context),
+                                kind,
+                              ),
                           style: context.texts.bodySmall,
                         ),
                       ],
@@ -728,16 +762,14 @@ class _DemoBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '模擬一具 2.0L 渦輪四缸引擎，含怠速、加速、巡航與減速循環，'
-          '訊號彼此物理相關（換檔時轉速下降但車速續增）。'
-          '故障碼、VIN 讀取與 fastMode 批次查詢皆可完整操作。',
+          AppLocalizations.of(context).connectDemoBody,
           style: context.texts.bodyMedium,
         ),
         const SizedBox(height: Spacing.lg),
         FilledButton.icon(
           onPressed: onConnect,
           icon: const Icon(Icons.play_arrow, size: 20),
-          label: const Text('啟動模擬器'),
+          label: Text(AppLocalizations.of(context).connectDemoStart),
         ),
       ],
     );
@@ -762,10 +794,11 @@ class _WifiBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(wifiConnectInstructions(), style: context.texts.bodyMedium),
+        Text(wifiConnectInstructions(l10n), style: context.texts.bodyMedium),
         const SizedBox(height: Spacing.lg),
         Row(
           children: [
@@ -773,7 +806,9 @@ class _WifiBody extends StatelessWidget {
               child: TextField(
                 controller: hostController,
                 keyboardType: TextInputType.url,
-                decoration: const InputDecoration(labelText: 'IP 位址'),
+                decoration: InputDecoration(
+                  labelText: l10n.connectWifiHostLabel,
+                ),
               ),
             ),
             const SizedBox(width: Spacing.md),
@@ -789,7 +824,9 @@ class _WifiBody extends StatelessWidget {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(5),
                 ],
-                decoration: const InputDecoration(labelText: '埠'),
+                decoration: InputDecoration(
+                  labelText: l10n.connectWifiPortLabel,
+                ),
               ),
             ),
           ],
@@ -807,7 +844,7 @@ class _WifiBody extends StatelessWidget {
         FilledButton.icon(
           onPressed: onConnect,
           icon: const Icon(Icons.link, size: 20),
-          label: const Text('連線'),
+          label: Text(l10n.connectConnect),
         ),
       ],
     );
@@ -866,7 +903,7 @@ class _DeviceListBody extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: openAppSettings,
                 icon: const Icon(Icons.settings_outlined, size: 18),
-                label: const Text('開啟系統設定'),
+                label: Text(AppLocalizations.of(context).connectOpenSystemSettings),
               ),
             ),
         ],
@@ -889,7 +926,7 @@ class _DeviceListBody extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('重新搜尋'),
+          label: Text(AppLocalizations.of(context).connectSearchAgain),
         ),
       ],
     );
@@ -945,8 +982,8 @@ class _DeviceTile extends StatelessWidget {
                 const SizedBox(width: Spacing.sm),
               ],
               if (device.isPaired)
-                const StatusPill(
-                  label: '已配對',
+                StatusPill(
+                  label: AppLocalizations.of(context).connectPairedPill,
                   tone: StatusTone.good,
                   dense: true,
                 ),
@@ -997,13 +1034,17 @@ class _BleBodyState extends State<_BleBody> {
   }
 
   Future<void> _startScan() async {
+    // Before the permission await: that dialog sits in front of the app for as
+    // long as the user ignores it, and the refusal has to be phrased in the
+    // language that was on screen when they tapped search.
+    final l10n = AppLocalizations.of(context);
     if (!await widget.ensurePermissions()) {
       if (!mounted) return;
       setState(() {
         _permanentlyDenied = widget.isPermanentlyDenied();
         _error = _permanentlyDenied
-            ? '藍牙權限已被永久拒絕。系統不會再顯示授權對話框，請到應用程式設定開啟。'
-            : '需要藍牙權限才能搜尋。';
+            ? l10n.connectBlePermissionDeniedForever
+            : l10n.connectBlePermissionNeeded;
       });
       return;
     }
@@ -1057,14 +1098,11 @@ class _BleBodyState extends State<_BleBody> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'BLE 轉接器不需事先配對。搜尋後選擇你的裝置即可，'
-          '常見名稱為 OBDII、V-LINK、Vgate 或 IOS-Vlink。',
-          style: context.texts.bodyMedium,
-        ),
+        Text(l10n.connectBleBody, style: context.texts.bodyMedium),
         if (_error != null) ...[
           const SizedBox(height: Spacing.md),
           Text(
@@ -1076,14 +1114,17 @@ class _BleBodyState extends State<_BleBody> {
             OutlinedButton.icon(
               onPressed: openAppSettings,
               icon: const Icon(Icons.settings_outlined, size: 18),
-              label: const Text('開啟應用程式設定'),
+              label: Text(l10n.connectOpenAppSettings),
             ),
           ],
         ],
         if (_scanned && !_scanning && _found.isEmpty) ...[
           const SizedBox(height: Spacing.md),
           Text(
-            bleEmptyScanGuidance(classicAvailable: classicTransportAvailable),
+            bleEmptyScanGuidance(
+              l10n,
+              classicAvailable: classicTransportAvailable,
+            ),
             style: context.texts.bodyMedium,
           ),
         ],
@@ -1114,7 +1155,9 @@ class _BleBodyState extends State<_BleBody> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.search, size: 20),
-          label: Text(_scanning ? '搜尋中…' : '搜尋 BLE 裝置'),
+          label: Text(
+            _scanning ? l10n.connectBleScanning : l10n.connectBleScan,
+          ),
         ),
       ],
     );
@@ -1159,6 +1202,7 @@ class _HandshakePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final steps = connection.initSteps;
     final done = steps.where((s) => s.status != InitStatus.running).length;
     final total = steps.isEmpty
@@ -1189,11 +1233,11 @@ class _HandshakePanel extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(switch (connection.phase) {
-                  ConnectionPhase.connecting => '建立連線中…',
-                  ConnectionPhase.handshaking => 'ELM327 初始化',
-                  ConnectionPhase.connected => 'ELM327 初始化',
+                  ConnectionPhase.connecting => l10n.connectOpeningConnection,
+                  ConnectionPhase.handshaking => l10n.connectHandshakeTitle,
+                  ConnectionPhase.connected => l10n.connectHandshakeTitle,
                   // Past tense, so a green row cannot be read as "fine now".
-                  _ => 'ELM327 初始化（上次嘗試）',
+                  _ => l10n.connectHandshakeTitleLastAttempt,
                 }, style: context.texts.titleMedium),
               ),
               Text(
@@ -1220,9 +1264,12 @@ class _HandshakePanel extends ConsumerWidget {
           // bar at zero for all of it. Up to thirty-six seconds of that in a
           // windscreen mount reads as a frozen app, and a frozen app gets
           // force-quit rather than waited out.
-          if (connection.isBusy && connection.detail.isNotEmpty) ...[
+          if (connection.isBusy && _busyLine(context, connection) != null) ...[
             const SizedBox(height: Spacing.sm),
-            Text(connection.detail, style: context.texts.bodySmall),
+            Text(
+              _busyLine(context, connection)!,
+              style: context.texts.bodySmall,
+            ),
           ],
           if (steps.isNotEmpty) ...[
             const SizedBox(height: Spacing.md),
@@ -1244,7 +1291,7 @@ class _HandshakePanel extends ConsumerWidget {
                 onPressed: () =>
                     ref.read(obdSessionProvider.notifier).disconnect(),
                 icon: const Icon(Icons.close, size: 18),
-                label: const Text('取消'),
+                label: Text(l10n.connectCancel),
               ),
             ),
           ],
@@ -1252,6 +1299,20 @@ class _HandshakePanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The busy line, translated where this app authored it.
+///
+/// `ObdConnectionState.detail` also carries text a transport wrote — the
+/// Bluetooth Classic tier notices — which is passed through as it arrived and
+/// is still Chinese.
+String? _busyLine(BuildContext context, ObdConnectionState connection) {
+  final activity = connectionActivityText(
+    AppLocalizations.of(context),
+    connection,
+  );
+  if (activity != null) return activity;
+  return connection.detail.isEmpty ? null : connection.detail;
 }
 
 class _StepRow extends StatelessWidget {
@@ -1290,9 +1351,7 @@ class _StepRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              progress.detail?.isNotEmpty == true
-                  ? progress.detail!
-                  : progress.step.purpose,
+              initProgressLine(AppLocalizations.of(context), progress),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.texts.bodySmall,
@@ -1351,6 +1410,7 @@ class _LastAdapterCard extends ConsumerWidget {
     final last = ref.watch(lastAdapterProvider);
     if (last == null) return const SizedBox.shrink();
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -1362,7 +1422,7 @@ class _LastAdapterCard extends ConsumerWidget {
               children: [
                 Icon(Icons.history, size: 18, color: palette.accent),
                 const SizedBox(width: Spacing.xs),
-                Text('上次用的轉接器', style: context.texts.titleSmall),
+                Text(l10n.connectLastAdapterTitle, style: context.texts.titleSmall),
               ],
             ),
             const SizedBox(height: Spacing.xs),
@@ -1371,9 +1431,12 @@ class _LastAdapterCard extends ConsumerWidget {
               style: context.texts.bodyMedium,
             ),
             Text(
+              // The transport name is localized; the address is not. An IP
+              // and a MAC are things somebody retypes or searches for, so they
+              // stay verbatim on both sides of the separator.
               last.port == null
-                  ? '${last.kind.label} · ${last.id}'
-                  : '${last.kind.label} · ${last.id}:${last.port}',
+                  ? '${transportKindTitle(l10n, last.kind)} · ${last.id}'
+                  : '${transportKindTitle(l10n, last.kind)} · ${last.id}:${last.port}',
               style: context.texts.labelSmall,
             ),
             const SizedBox(height: Spacing.sm),
@@ -1385,14 +1448,14 @@ class _LastAdapterCard extends ConsumerWidget {
                         ? () => _reconnect(context, ref, last)
                         : null,
                     icon: const Icon(Icons.link, size: 18),
-                    label: const Text('直接連線'),
+                    label: Text(l10n.connectLastAdapterConnect),
                   ),
                 ),
                 const SizedBox(width: Spacing.sm),
                 TextButton(
                   onPressed: () =>
                       ref.read(lastAdapterProvider.notifier).forget(),
-                  child: const Text('忘記'),
+                  child: Text(l10n.connectLastAdapterForget),
                 ),
               ],
             ),
@@ -1400,8 +1463,8 @@ class _LastAdapterCard extends ConsumerWidget {
               const SizedBox(height: Spacing.xs),
               Text(
                 last.kind == TransportKind.bluetoothClassic
-                    ? classicUnavailableReason
-                    : bleUnavailableReason,
+                    ? classicUnavailableReason(l10n)
+                    : bleUnavailableReason(l10n),
                 style: context.texts.labelSmall,
               ),
             ],
@@ -1486,18 +1549,22 @@ class _LastAdapterCard extends ConsumerWidget {
 class _SignalBars extends StatelessWidget {
   const _SignalBars({required this.bars, required this.palette});
 
+  /// How many bars are drawn, lit or not. The label quotes this rather than
+  /// spelling a 4 into the sentence, so the two cannot disagree.
+  static const int barCount = 4;
+
   final int bars;
   final AppPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '訊號強度 $bars/4',
+      label: AppLocalizations.of(context).connectSignalStrength(bars, barCount),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (var i = 1; i <= 4; i++) ...[
+          for (var i = 1; i <= barCount; i++) ...[
             Container(
               width: 3,
               height: 4.0 + i * 2.5,
@@ -1508,7 +1575,7 @@ class _SignalBars extends StatelessWidget {
                     : palette.textTertiary.withValues(alpha: 0.28),
               ),
             ),
-            if (i < 4) const SizedBox(width: 2),
+            if (i < barCount) const SizedBox(width: 2),
           ],
         ],
       ),
@@ -1608,12 +1675,15 @@ bool get classicTransportAvailable =>
 /// The old copy always said "iOS", which was true for iPhone and false for
 /// every other platform that already builds this app. Desktop and iOS share
 /// the same gate (`classicTransportAvailable`) but not the same reason.
-String get classicUnavailableReason {
+///
+/// Takes an [AppLocalizations] rather than a [BuildContext] because it is a
+/// top-level function with no widget above it, and because a pure-Dart test
+/// can then walk both languages without pumping anything.
+String classicUnavailableReason(AppLocalizations l10n) {
   if (Platform.isIOS) {
-    return 'iOS 不開放第三方 App 使用藍牙 SPP';
+    return l10n.connectClassicUnavailableIos;
   }
-  return 'Bluetooth Classic（SPP）目前在 Android、macOS（IOBluetooth RFCOMM）、'
-      'Windows（COM）與 Linux（/dev/rfcomm*）可用';
+  return l10n.connectClassicUnavailableHost;
 }
 
 /// Whether Bluetooth LE scanning/connect is usable on this host.
@@ -1628,26 +1698,25 @@ bool get bleTransportAvailable => true;
 
 /// Why the BLE transport card is greyed out when [bleTransportAvailable] is
 /// false. Kept for UI wiring; every current host returns true above.
-String get bleUnavailableReason => 'Bluetooth LE 在此主機尚不可用';
+String bleUnavailableReason(AppLocalizations l10n) =>
+    l10n.connectBleUnavailableHost;
 
 /// Wi-Fi body copy. Phone hosts keep cellular-handoff guidance; desktop hosts
 /// talk about the computer joining the adapter AP without inventing a binder.
-String wifiConnectInstructions({@visibleForTesting bool? isPhone}) {
+String wifiConnectInstructions(
+  AppLocalizations l10n, {
+  @visibleForTesting bool? isPhone,
+}) {
   final phone = isPhone ?? _phoneFormFactor;
-  if (phone) {
-    return '請先將手機連上轉接器發出的 Wi-Fi 熱點，再輸入其位址。'
-        '系統若問「此 Wi-Fi 無法連上網際網路，是否繼續使用」，選繼續使用。'
-        '在 Android 上，App 連線時會嘗試把流量固定在 Wi-Fi 路由，'
-        '避免被行動數據搶走。';
-  }
-  return '請先將這台電腦連上轉接器發出的 Wi-Fi 熱點，再輸入其位址。'
-      '系統若提示此網路無法連上網際網路，請選擇繼續使用。'
-      '桌面系統通常會把熱點當預設路由；不需要 Android 那套 Wi-Fi 路由綁定。';
+  return phone
+      ? l10n.connectWifiInstructionsPhone
+      : l10n.connectWifiInstructionsDesktop;
 }
 
 bool get _phoneFormFactor => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-List<TransportQuestion> whichTransportGuidance({
+List<TransportQuestion> whichTransportGuidance(
+  AppLocalizations l10n, {
   required bool classicAvailable,
   bool bleAvailable = true,
   @visibleForTesting bool? phoneCentricCopy,
@@ -1657,16 +1726,16 @@ List<TransportQuestion> whichTransportGuidance({
     (
       transport: TransportKind.wifi,
       question: phone
-          ? '手機的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？'
-          : '系統的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？',
+          ? l10n.connectQuestionWifiPhone
+          : l10n.connectQuestionWifiDesktop,
       answer: phone
-          ? '選 Wi-Fi。先把手機連上那個網路，再回來輸入位址。'
-          : '選 Wi-Fi。先把這台裝置連上那個網路，再回來輸入位址。',
+          ? l10n.connectAnswerWifiPhone
+          : l10n.connectAnswerWifiDesktop,
     ),
     if (bleAvailable)
       (
         transport: TransportKind.bluetoothLe,
-        question: '盒子、賣場標題或裝置名稱上有 BLE、4.0、5.0 這些字？',
+        question: l10n.connectQuestionBle,
         // The fallback is in the answer rather than only in the note at the
         // bottom, because the cheap clones lie: a box marked "Bluetooth 4.0"
         // is sometimes an SPP-only adapter with a dual-mode chip it does not
@@ -1674,21 +1743,17 @@ List<TransportQuestion> whichTransportGuidance({
         // step attached to the answer that failed them, not four lines below
         // it. Only offer Classic when this host actually enables it.
         answer: classicAvailable
-            ? '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
-                  '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
-                  '如果掃描不到，那盒子上的 4.0 只是晶片規格，改用 Bluetooth Classic。'
-            : '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
-                  '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
-                  '如果掃描不到，先確認轉接器有通電，或改試 Wi‑Fi；'
-                  '此主機未開放 Bluetooth Classic。',
+            ? l10n.connectAnswerBleWithClassic
+            : l10n.connectAnswerBleWithoutClassic,
       ),
     if (classicAvailable)
       (
         transport: TransportKind.bluetoothClassic,
-        question: '都不是 —— 比較舊、盒子上寫 2.0 或 3.0？',
-        answer:
-            '選 Bluetooth Classic。先在系統設定裡配對完成，'
-            'App 不能代替你配對。配對碼多半是 1234 或 0000。',
+        question: l10n.connectQuestionClassic,
+        // Classic SPP genuinely does have to be paired in system settings
+        // first, which is the opposite of the BLE answer above. Neither may
+        // drift toward the other.
+        answer: l10n.connectAnswerClassic,
       ),
   ];
 }
@@ -1704,17 +1769,15 @@ List<TransportQuestion> whichTransportGuidance({
 /// Ordered by how often each one is the answer, not by how interesting it is.
 /// When Classic is unavailable on this host, never point at the greyed-out
 /// Classic card — offer power/range checks and Wi‑Fi instead.
-String bleEmptyScanGuidance({bool? classicAvailable}) {
+String bleEmptyScanGuidance(AppLocalizations l10n, {bool? classicAvailable}) {
   final classic = classicAvailable ?? classicTransportAvailable;
+  // A whole sentence, not a clause: the third check reads differently on a
+  // host with no Classic path, and a fragment assembled from words would not
+  // survive translation into a language that orders them differently.
   final classicOrWifi = classic
-      ? '最後看盒子上的規格，如果寫的是 2.0 或 3.0，那是 Bluetooth Classic，'
-            '不會出現在這份清單裡，請改用上面的 Bluetooth Classic。'
-      : '最後看盒子上的規格：若寫的是 2.0／3.0 或只有 Wi‑Fi，'
-            '請改試 Wi‑Fi（此主機未開放 Bluetooth Classic）。';
-  return '搜尋結束，沒有找到 BLE 轉接器。依序確認：轉接器的燈有沒有亮 —— '
-      '多數 OBD 插座要電門轉到 ON 才供電；再來是距離，先坐進車裡再搜尋；'
-      '$classicOrWifi'
-      'BLE 轉接器不需要、也不應該在系統設定裡配對，那條路走不通。';
+      ? l10n.connectBleEmptyScanNextClassic
+      : l10n.connectBleEmptyScanNextWifi;
+  return l10n.connectBleEmptyScan(classicOrWifi);
 }
 
 /// Empty-state copy for the Classic device list.
@@ -1722,21 +1785,18 @@ String bleEmptyScanGuidance({bool? classicAvailable}) {
 /// Bonded-device hosts (Android / macOS) talk about system pairing. SPP serial
 /// hosts (Windows / Linux) talk about COM / rfcomm nodes — headphones never
 /// appear in that enumeration, so the bonded-device paragraph must not.
-String classicDeviceListEmptyHint({
+String classicDeviceListEmptyHint(
+  AppLocalizations l10n, {
   required bool serialHost,
   @visibleForTesting bool? linuxHost,
 }) {
   if (!serialHost) {
-    return '找不到已配對的轉接器。請先到系統藍牙設定完成配對'
-        '（多數 ELM327 的配對碼為 1234 或 0000）。';
+    return l10n.connectClassicEmptyPaired;
   }
   final linux = linuxHost ?? Platform.isLinux;
-  if (linux) {
-    return '找不到藍牙序列埠（/dev/rfcomm*）。請先以 BlueZ 配對 ELM327，'
-        '再用 rfcomm bind（或等效）建立 RFCOMM TTY 後重試。';
-  }
-  return '找不到藍牙序列埠（COMx）。請先在 Windows 藍牙設定配對 ELM327，'
-      '確認裝置管理員出現「Standard Serial over Bluetooth link」。';
+  return linux
+      ? l10n.connectClassicEmptyLinuxPort
+      : l10n.connectClassicEmptyWindowsPort;
 }
 
 /// Non-empty list explanation for Classic.
@@ -1744,23 +1804,18 @@ String classicDeviceListEmptyHint({
 /// The cancel-early sentence on bonded hosts exists because a wrong headphone
 /// row used to burn ~30s of cascade before failing. Serial hosts do not list
 /// headphones; inventing that warning there would make COM/rfcomm look broken.
-String classicDeviceListHint({
+String classicDeviceListHint(
+  AppLocalizations l10n, {
   required bool serialHost,
   @visibleForTesting bool? linuxHost,
 }) {
   if (!serialHost) {
-    return '這裡列出系統上所有已配對的裝置 — 耳機、喇叭也會在內，'
-        '看起來像轉接器的排在前面。選錯了就按「取消」，'
-        '不必等它自己失敗，取消後可以馬上改選別的。';
+    return l10n.connectClassicListPaired;
   }
   final linux = linuxHost ?? Platform.isLinux;
-  if (linux) {
-    return '這裡列出 BlueZ 已綁定的藍牙序列埠（/dev/rfcomm* 或等效）。'
-        '空清單代表系統尚未建立 RFCOMM 節點，不是 App 壞掉。';
-  }
-  return '這裡列出與藍牙關聯的 COM 埠'
-      '（「Standard Serial over Bluetooth link」）。'
-      '空清單代表系統尚未建立虛擬序列埠，不是 App 壞掉。';
+  return linux
+      ? l10n.connectClassicListLinuxPort
+      : l10n.connectClassicListWindowsPort;
 }
 
 class _WhichTransportCard extends ConsumerStatefulWidget {
@@ -1779,6 +1834,7 @@ class _WhichTransportCardState extends ConsumerState<_WhichTransportCard> {
     // Nothing to explain once the app knows which one worked.
     if (ref.watch(lastAdapterProvider) != null) return const SizedBox.shrink();
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -1793,7 +1849,10 @@ class _WhichTransportCardState extends ConsumerState<_WhichTransportCard> {
                   Icon(Icons.help_outline, size: 18, color: palette.accent),
                   const SizedBox(width: Spacing.xs),
                   Expanded(
-                    child: Text('不確定要選哪一個？', style: context.texts.titleSmall),
+                    child: Text(
+                      l10n.connectWhichTitle,
+                      style: context.texts.titleSmall,
+                    ),
                   ),
                   Icon(
                     _open ? Icons.expand_less : Icons.expand_more,
@@ -1805,12 +1864,10 @@ class _WhichTransportCardState extends ConsumerState<_WhichTransportCard> {
             ),
             if (_open) ...[
               const SizedBox(height: Spacing.sm),
-              Text(
-                '不用管 SPP、GATT 這些名詞。看你的轉接器插上去之後怎麼運作就好：',
-                style: context.texts.bodySmall,
-              ),
+              Text(l10n.connectWhichIntro, style: context.texts.bodySmall),
               const SizedBox(height: Spacing.sm),
               for (final row in whichTransportGuidance(
+                l10n,
                 classicAvailable: classicTransportAvailable,
                 bleAvailable: bleTransportAvailable,
               ))
@@ -1821,14 +1878,12 @@ class _WhichTransportCardState extends ConsumerState<_WhichTransportCard> {
                     // The constraint that has no workaround in any app, so it
                     // is worth saying before somebody spends an afternoon on
                     // it rather than after.
-                    ? 'iPhone 只能用 Wi-Fi 或 BLE —— 一般的藍牙 ELM327 在 iOS 上'
-                          '完全不能用，這是系統限制，換 App 也一樣。'
+                    ? l10n.connectWhichNoteIos
                     // Said out loud because the fear of picking wrong is what
                     // makes somebody close the app instead of tapping
                     // something. Nothing here is destructive and nothing is
                     // remembered until a handshake succeeds.
-                    : '猜錯不會怎麼樣 —— 連不上就退回來換另一個試。真的卡住，'
-                          '先用最下面的「Demo 模擬器」確認 App 本身正常。',
+                    : l10n.connectWhichNoteGuessing,
                 style: context.texts.bodySmall,
               ),
             ],

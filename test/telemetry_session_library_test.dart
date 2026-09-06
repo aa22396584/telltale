@@ -3,16 +3,19 @@ import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/core/share/app_share_platform_bridge.dart';
-import 'package:torque_obd/state/app_share_coordinator.dart';
-import 'package:torque_obd/state/artifact_operation_gate.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
+import 'package:torque_obd/state/app_share_coordinator.dart';
+import 'package:torque_obd/state/artifact_operation_gate.dart';
 import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_codec.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_store.dart';
-import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/ui/screens/telemetry/telemetry_source_copy.dart';
+
 import 'support/localized_app.dart';
 
 Future<void> _writeSession(
@@ -79,7 +82,7 @@ void main() {
       ).load();
 
       expect(library.sessions.single.id, validId);
-      expect(library.sessions.single.sourceLabel, '內建模擬');
+      expect(library.sessions.single.source, TelemetrySource.demo);
       expect(library.sessions.single.valueCount, 1);
       expect(library.damaged.single.id, damagedId);
       expect(library.damaged.single.kind, DamagedTelemetryKind.corrupt);
@@ -171,12 +174,39 @@ void main() {
   });
 
   test('source labels never turn field-app provenance into real-car proof', () {
-    expect(telemetrySourceLabel(TelemetrySource.demo), '內建模擬');
-    expect(telemetrySourceLabel(TelemetrySource.simulatedRig), '測試馬具');
+    // Literals in both languages, not `l10n.telemetrySourceDemo` — a test that
+    // reads the same ARB entry the app reads agrees with itself, and would
+    // agree just as happily if 內建模擬 were retranslated as "vehicle".
+    //
+    // The claim is the distinction, not the wording: a session recorded off
+    // the built-in simulator must never be readable as one recorded off a car,
+    // in either language. Softening any of these six strings is the failure
+    // this project is organised around — a plausible reading that is not real.
+    final en = lookupAppLocalizations(englishLocale);
+    final zh = lookupAppLocalizations(traditionalChineseLocale);
+
+    expect(telemetrySourceLabel(en, TelemetrySource.demo), 'Built-in simulator');
+    expect(telemetrySourceLabel(en, TelemetrySource.simulatedRig), 'Test rig');
     expect(
-      telemetrySourceLabel(TelemetrySource.fieldAppConnection),
+      telemetrySourceLabel(en, TelemetrySource.fieldAppConnection),
+      'Field app connection',
+    );
+
+    expect(telemetrySourceLabel(zh, TelemetrySource.demo), '內建模擬');
+    expect(telemetrySourceLabel(zh, TelemetrySource.simulatedRig), '測試馬具');
+    expect(
+      telemetrySourceLabel(zh, TelemetrySource.fieldAppConnection),
       '一般 field App 連線',
     );
+
+    // Three sources, three distinct words, in both languages. A translation
+    // that collapsed two of them would still pass every line above.
+    for (final l10n in [en, zh]) {
+      final labels = TelemetrySource.values
+          .map((source) => telemetrySourceLabel(l10n, source))
+          .toSet();
+      expect(labels, hasLength(TelemetrySource.values.length));
+    }
   });
 
   test(

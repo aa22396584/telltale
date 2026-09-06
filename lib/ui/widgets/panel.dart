@@ -142,11 +142,18 @@ class StatusPill extends StatelessWidget {
             Icon(icon, size: dense ? 12 : 14, color: colour),
             const SizedBox(width: Spacing.xs + 1),
           ],
-          Text(
-            label,
-            style:
-                (dense ? context.texts.labelSmall : context.texts.labelMedium)
-                    ?.copyWith(color: colour, letterSpacing: 0.2),
+          // Flexible, not a bare Text: the Row is MainAxisSize.min, so without
+          // this the label cannot give way and a narrow screen at large text
+          // overflows instead of wrapping. It wraps rather than ellipsising
+          // because these pills state a reason — "estimated", "unverified",
+          // "stale" — and half a reason is worse than a taller pill.
+          Flexible(
+            child: Text(
+              label,
+              style:
+                  (dense ? context.texts.labelSmall : context.texts.labelMedium)
+                      ?.copyWith(color: colour, letterSpacing: 0.2),
+            ),
           ),
         ],
       ),

@@ -40,6 +40,70 @@ enum OperationRisk { display, boundedRead, clear, stateChange, program }
 
 enum EstimateKind { horsepower, fuel }
 
+/// The words that appear under a value, as identifiers rather than prose.
+///
+/// This is the most safety-loaded vocabulary in the app, so the engine keeps
+/// the distinctions and the UI keeps the wording: `estimated` is not measured,
+/// `unverified` is neither invalid nor verified, `partial` is not all clear,
+/// `stale` is not live, `outOfReferenceRange` says a check was run and failed
+/// rather than that a number looked odd, and `demo` has to be unmistakable
+/// because a simulated reading that passes for a live one is the worst thing
+/// this app can do.
+enum DatumBadge {
+  estimated,
+  userSupplied,
+  demo,
+  fieldVerified,
+  communityDecode,
+  unverifiedOnThisVehicle,
+  experimental,
+  unverified,
+  outOfReferenceRange,
+  stale,
+  partial,
+  tentativeDecode,
+  invalid,
+  justUpdated,
+}
+
+/// What is missing from vehicle identification, for the session chip.
+///
+/// None of these blocks generic OBD; they say which of the optional things is
+/// absent. `vinNotRead` is a read outcome, never a claim that the vehicle has
+/// no VIN.
+enum DatumGap { vinNotRead, modelYearUnknown, noCatalogMatch }
+
+/// Why a datum is in the state it is in, as an identifier.
+///
+/// [DatumStatus.reason] keeps the Chinese sentence because it is written into
+/// telemetry exports, which are compared between readers and across weeks. The
+/// screen renders this code instead.
+enum DatumReason {
+  malformedPacket,
+  nonFiniteValue,
+  outOfReferenceRangeKept,
+  unsafeServiceStopped,
+  unsafeService,
+  pidUnsupported,
+  noAnswer,
+  busError,
+  formulaError,
+  headerNotOnThisBus,
+  noReadingYet,
+  horsepowerEstimateMissingInputs,
+  fuelEstimateMissingInputs,
+  assumptionsUnconfirmed,
+}
+
+/// What the reader can do next. Never written to a file, so it carries no
+/// prose at all.
+enum DatumNextStep {
+  genericObdContinues,
+  rawOnlyNeverANumber,
+  otherReadingsUnaffected,
+  estimateOnlyOtherReadingsUnaffected,
+}
+
 /// One status object for live UI, recorder, replay, and export.
 class DatumStatus {
   const DatumStatus({
@@ -50,10 +114,13 @@ class DatumStatus {
     required this.quality,
     required this.operationRisk,
     this.reason,
+    this.reasonCode,
+    this.statusReason,
+    this.gaps = const [],
     this.nextStep,
     this.formula,
     this.assumptions,
-    this.freshnessLabel,
+    this.justUpdated = false,
   });
 
   final FeatureAvailability availability;
@@ -62,11 +129,28 @@ class DatumStatus {
   final Compatibility compatibility;
   final DatumQuality quality;
   final OperationRisk operationRisk;
+
+  /// The exported sentence. Written into telemetry JSON by [exportFields], so
+  /// it stays in one language on purpose — an evidence file whose wording
+  /// depends on a phone setting is one nobody can compare. Issue #46 owns it.
   final String? reason;
-  final String? nextStep;
+
+  /// The same fact as [reason], as an identifier the UI can translate.
+  final DatumReason? reasonCode;
+
+  /// Set instead of [reasonCode] when the reason *is* a recorded telemetry
+  /// status, so the screen can reuse the table that already names those.
+  final TelemetryStatus? statusReason;
+
+  /// Which parts of vehicle identification are missing. Screen-only.
+  final List<DatumGap> gaps;
+
+  final DatumNextStep? nextStep;
   final String? formula;
   final String? assumptions;
-  final String? freshnessLabel;
+
+  /// Whether this value arrived on the most recent poll. Screen-only.
+  final bool justUpdated;
 
   /// Whether this status may be shown as a normal numeric success.
   bool get isNumericSuccess =>
@@ -80,56 +164,59 @@ class DatumStatus {
 
   bool get isFieldVerified => evidence == EvidenceKind.fieldVerified;
 
-  List<String> get badgeLabels {
-    final labels = <String>[];
+  /// The badges this datum earns, in reading order.
+  ///
+  /// Identifiers, not words: `lib/diagnostics` and `lib/obd` must stay free of
+  /// `AppLocalizations`, so the mapping to shipped copy lives in
+  /// `lib/ui/widgets/status/datum_status_copy.dart`.
+  List<DatumBadge> get badges {
+    final badges = <DatumBadge>[];
     switch (origin) {
       case DatumOrigin.calculated:
-        labels.add('估算');
+        badges.add(DatumBadge.estimated);
       case DatumOrigin.userEntered:
-        labels.add('使用者提供');
+        badges.add(DatumBadge.userSupplied);
       case DatumOrigin.demo:
-        labels.add('示範');
+        badges.add(DatumBadge.demo);
       case DatumOrigin.ecuReported:
         break;
     }
     switch (evidence) {
       case EvidenceKind.fieldVerified:
-        labels.add('已驗證');
+        badges.add(DatumBadge.fieldVerified);
       case EvidenceKind.community:
-        labels.add('社群解碼');
-        labels.add('本車未驗證');
+        badges.add(DatumBadge.communityDecode);
+        badges.add(DatumBadge.unverifiedOnThisVehicle);
       case EvidenceKind.experimental:
-        labels.add('實驗');
-        labels.add('本車未驗證');
+        badges.add(DatumBadge.experimental);
+        badges.add(DatumBadge.unverifiedOnThisVehicle);
       case EvidenceKind.userSupplied:
-        if (!labels.contains('使用者提供')) labels.add('使用者提供');
+        if (!badges.contains(DatumBadge.userSupplied)) {
+          badges.add(DatumBadge.userSupplied);
+        }
       case EvidenceKind.notTested:
       case EvidenceKind.unknown:
-        if (origin != DatumOrigin.demo) labels.add('未驗證');
+        if (origin != DatumOrigin.demo) badges.add(DatumBadge.unverified);
     }
     switch (quality) {
       case DatumQuality.outOfReferenceRange:
-        labels.add('異常');
+        badges.add(DatumBadge.outOfReferenceRange);
       case DatumQuality.stale:
-        labels.add('過期');
+        badges.add(DatumBadge.stale);
       case DatumQuality.partial:
-        labels.add('部分');
+        badges.add(DatumBadge.partial);
       case DatumQuality.tentativeDecode:
-        labels.add('暫定解碼');
+        badges.add(DatumBadge.tentativeDecode);
       case DatumQuality.invalid:
-        labels.add('無效');
+        badges.add(DatumBadge.invalid);
       case DatumQuality.valid:
         break;
     }
-    if (freshnessLabel != null &&
-        freshnessLabel!.isNotEmpty &&
-        !labels.contains(freshnessLabel)) {
-      labels.add(freshnessLabel!);
+    if (justUpdated && !badges.contains(DatumBadge.justUpdated)) {
+      badges.add(DatumBadge.justUpdated);
     }
-    return labels;
+    return badges;
   }
-
-  String get badgeText => badgeLabels.join(' · ');
 
   Map<String, String> get exportFields => {
     'availability': availability.name,
@@ -186,10 +273,10 @@ abstract final class AvailabilityPolicy {
     bool fieldVerified = false,
   }) {
     final missingVin = identity.vin == null;
-    final gaps = <String>[
-      if (missingVin) 'VIN 未讀到',
-      if (modelYear == null && catalogMatched != null) '年式未知',
-      if (catalogMatched == false) '型錄無匹配',
+    final gaps = <DatumGap>[
+      if (missingVin) DatumGap.vinNotRead,
+      if (modelYear == null && catalogMatched != null) DatumGap.modelYearUnknown,
+      if (catalogMatched == false) DatumGap.noCatalogMatch,
     ];
     return DatumStatus(
       availability: FeatureAvailability.usableWithNotice,
@@ -202,8 +289,9 @@ abstract final class AvailabilityPolicy {
           : Compatibility.unknown,
       quality: DatumQuality.valid,
       operationRisk: OperationRisk.boundedRead,
-      reason: gaps.isEmpty ? null : gaps.join(' · '),
-      nextStep: '可繼續通用 OBD，或手動選車、補參數',
+      reason: gaps.isEmpty ? null : gaps.map(_gapText).join(' · '),
+      gaps: gaps,
+      nextStep: DatumNextStep.genericObdContinues,
     );
   }
 
@@ -218,7 +306,7 @@ abstract final class AvailabilityPolicy {
     Compatibility compatibility = Compatibility.unknown,
     OperationRisk operationRisk = OperationRisk.boundedRead,
     bool isStale = false,
-    String? freshnessLabel,
+    bool justUpdated = false,
   }) {
     if (!structurallyValid) {
       return DatumStatus(
@@ -229,7 +317,8 @@ abstract final class AvailabilityPolicy {
         quality: DatumQuality.invalid,
         operationRisk: operationRisk,
         reason: '壞封包，只可查看原文',
-        nextStep: '可看 raw / error，不可當成正常數值',
+        reasonCode: DatumReason.malformedPacket,
+        nextStep: DatumNextStep.rawOnlyNeverANumber,
       );
     }
     if (value == null || !value.isFinite) {
@@ -241,7 +330,8 @@ abstract final class AvailabilityPolicy {
         quality: DatumQuality.invalid,
         operationRisk: operationRisk,
         reason: '非有限數值',
-        nextStep: '可看 raw / error，不可當成正常數值',
+        reasonCode: DatumReason.nonFiniteValue,
+        nextStep: DatumNextStep.rawOnlyNeverANumber,
       );
     }
     final outOfRange =
@@ -258,7 +348,8 @@ abstract final class AvailabilityPolicy {
           : DatumQuality.valid,
       operationRisk: operationRisk,
       reason: outOfRange ? '超出一般參考範圍，已保留' : null,
-      freshnessLabel: freshnessLabel,
+      reasonCode: outOfRange ? DatumReason.outOfReferenceRangeKept : null,
+      justUpdated: justUpdated,
     );
   }
 
@@ -298,6 +389,7 @@ abstract final class AvailabilityPolicy {
         quality: DatumQuality.invalid,
         operationRisk: riskFor(pid.modeAndPid),
         reason: '此服務不是唯讀查詢，已停止發送',
+        reasonCode: DatumReason.unsafeServiceStopped,
       );
     }
     if (reading == null) {
@@ -317,7 +409,18 @@ abstract final class AvailabilityPolicy {
           PidFault.refusedUnsafeService => '此服務不是唯讀查詢',
           null => '尚無讀值',
         },
-        nextStep: '失敗只影響此項，其他讀值照用',
+        // Silence is not a controller saying it lacks a PID, so these stay
+        // seven separate codes rather than one "unavailable".
+        reasonCode: switch (fault) {
+          PidFault.unsupported => DatumReason.pidUnsupported,
+          PidFault.noAnswer => DatumReason.noAnswer,
+          PidFault.busError => DatumReason.busError,
+          PidFault.formulaError => DatumReason.formulaError,
+          PidFault.headerNotOnThisBus => DatumReason.headerNotOnThisBus,
+          PidFault.refusedUnsafeService => DatumReason.unsafeService,
+          null => DatumReason.noReadingYet,
+        },
+        nextStep: DatumNextStep.otherReadingsUnaffected,
       );
     }
 
@@ -329,7 +432,7 @@ abstract final class AvailabilityPolicy {
       origin: origin,
       evidence: evidence,
       isStale: isStale,
-      freshnessLabel: isStale ? null : '剛更新',
+      justUpdated: !isStale,
     );
   }
 
@@ -350,7 +453,12 @@ abstract final class AvailabilityPolicy {
         quality: DatumQuality.partial,
         operationRisk: OperationRisk.display,
         reason: '$quantity缺少必要輸入',
-        nextStep: '只影響此估算，其他讀值照用',
+        reasonCode: switch (kind) {
+          EstimateKind.horsepower =>
+            DatumReason.horsepowerEstimateMissingInputs,
+          EstimateKind.fuel => DatumReason.fuelEstimateMissingInputs,
+        },
+        nextStep: DatumNextStep.estimateOnlyOtherReadingsUnaffected,
         formula: formula,
         assumptions: assumptions,
       );
@@ -372,7 +480,10 @@ abstract final class AvailabilityPolicy {
       formula: formula,
       assumptions: assumptions,
       reason: profile.isConfirmed ? null : '假設尚未確認，仍可估算',
-      freshnessLabel: '剛更新',
+      reasonCode: profile.isConfirmed
+          ? null
+          : DatumReason.assumptionsUnconfirmed,
+      justUpdated: true,
     );
   }
 
@@ -519,6 +630,14 @@ abstract final class AvailabilityPolicy {
     null => null,
   };
 
+  static DatumReason? _recordedEstimateReasonCode(
+    TelemetrySignalDefinition definition,
+  ) => switch (definition.assumptionsConfirmed) {
+    true => null,
+    false => DatumReason.assumptionsUnconfirmed,
+    null => null,
+  };
+
   /// Provenance for a frozen definition when no sample is under the playhead.
   static DatumStatus forRecordedDefinition({
     required TelemetrySignalDefinition definition,
@@ -535,6 +654,7 @@ abstract final class AvailabilityPolicy {
           ? OperationRisk.display
           : riskFor(definition.request),
       reason: derived ? _recordedEstimateReason(definition) : null,
+      reasonCode: derived ? _recordedEstimateReasonCode(definition) : null,
       formula: derived ? definition.equation : null,
       assumptions: derived
           ? definition.assumptions != null && definition.assumptions!.isNotEmpty
@@ -567,8 +687,12 @@ abstract final class AvailabilityPolicy {
         operationRisk: derived
             ? OperationRisk.display
             : riskFor(definition.request),
+        // The wire name is what the exported file carries; the screen reads
+        // [statusReason] instead so a recorded `noAnswer` never renders to a
+        // driver as an untranslated identifier.
         reason: event.status?.wireName,
-        nextStep: '失敗只影響此項，其他讀值照用',
+        statusReason: event.status,
+        nextStep: DatumNextStep.otherReadingsUnaffected,
       );
     }
     final status =
@@ -583,7 +707,6 @@ abstract final class AvailabilityPolicy {
           operationRisk: derived
               ? OperationRisk.display
               : OperationRisk.boundedRead,
-          freshnessLabel: null,
         ).letQuality(
           event.quality == TelemetryQuality.outOfReferenceRange
               ? DatumQuality.outOfReferenceRange
@@ -600,13 +723,16 @@ abstract final class AvailabilityPolicy {
       quality: status.quality,
       operationRisk: status.operationRisk,
       reason: status.reason ?? _recordedEstimateReason(definition),
+      reasonCode:
+          status.reasonCode ?? _recordedEstimateReasonCode(definition),
+      statusReason: status.statusReason,
       nextStep: status.nextStep,
       formula: definition.equation,
       assumptions:
           definition.assumptions != null && definition.assumptions!.isNotEmpty
           ? definition.assumptions
           : '估算使用記錄當下的車輛設定',
-      freshnessLabel: status.freshnessLabel,
+      justUpdated: status.justUpdated,
     );
   }
 
@@ -617,6 +743,13 @@ abstract final class AvailabilityPolicy {
     }
     return null;
   }
+
+  /// The exported wording for a gap. Screens read [DatumStatus.gaps].
+  static String _gapText(DatumGap gap) => switch (gap) {
+    DatumGap.vinNotRead => 'VIN 未讀到',
+    DatumGap.modelYearUnknown => '年式未知',
+    DatumGap.noCatalogMatch => '型錄無匹配',
+  };
 
   static String _originLabel(VehicleFieldOrigin origin) => switch (origin) {
     VehicleFieldOrigin.genericDefault => '通用預設',
@@ -640,10 +773,15 @@ extension on DatumStatus {
       reason: quality == DatumQuality.outOfReferenceRange
           ? '超出一般參考範圍，已保留'
           : reason,
+      reasonCode: quality == DatumQuality.outOfReferenceRange
+          ? DatumReason.outOfReferenceRangeKept
+          : reasonCode,
+      statusReason: statusReason,
+      gaps: gaps,
       nextStep: nextStep,
       formula: formula,
       assumptions: assumptions,
-      freshnessLabel: freshnessLabel,
+      justUpdated: justUpdated,
     );
   }
 }

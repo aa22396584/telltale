@@ -78,6 +78,52 @@ void main() {
     }
   });
 
+  test('sentences that exist to contradict each other still do', () {
+    // Cheaper than one assertion per sentence, and harder to defeat: for a
+    // binary readout, an inverted translation is only visible as a collision
+    // with its opposite. A reviewer inverted `dtcMilOff` to 'The fault lamp is
+    // lit' and the whole suite stayed green — both branches of
+    // `dtc_screen.dart:1072` would have said the same thing about a warning
+    // lamp, in an app whose reason for existing is that a plausible wrong
+    // statement is worse than none.
+    //
+    // Each pair is chosen at a site where the code picks one or the other, so
+    // collapsing them is always a defect and never a style choice.
+    const mustDiffer = <List<String>>[
+      // dtc_screen.dart:1072 — `summary.milOn ? … : …`, a physical lamp.
+      ['dtcMilOn', 'dtcMilOff'],
+      // Two different handshake outcomes: the adapter refused the command, or
+      // the vehicle never answered it. Different faults, different next steps.
+      ['handshakeNoteEcuSilent', 'handshakeNoteNotAcknowledged'],
+      // "only the estimate is affected" is not "only this item is affected".
+      ['datumNextStepEstimateOnly', 'datumNextStepOtherReadings'],
+      // A datum you may not read as a value, versus one you may.
+      ['datumNextStepRawOnly', 'datumNextStepOtherReadings'],
+      // Emissions readiness: complete-and-clean is not partially-clean.
+      ['dtcCompleteCleanTitle', 'dtcVerdictPartialClean'],
+    ];
+    final collapsed = <String>[];
+    for (final locale in [en, zh]) {
+      for (final pair in mustDiffer) {
+        final a = locale[pair[0]];
+        final b = locale[pair[1]];
+        if (a == null || b == null) {
+          collapsed.add('${pair.join(' / ')} — a key is missing');
+          continue;
+        }
+        if (a == b) collapsed.add('${pair.join(' / ')} both say "$a"');
+      }
+    }
+    expect(
+      collapsed,
+      isEmpty,
+      reason:
+          'These pairs are chosen from one another at a call site, so a reader '
+          'who sees the wrong one is told the opposite of the truth:\n'
+          '${collapsed.join('\n')}',
+    );
+  });
+
   test('no message is left as its English source in Chinese', () {
     // The failure gen-l10n cannot report. It does not fail on a missing
     // translation — it falls back to the template — so a forgotten entry ships
@@ -93,6 +139,22 @@ void main() {
       // The language control names both languages in both languages, so a
       // reader who cannot read the current one can still find their way out.
       'languageSectionTitle',
+      // An SAE J1979 term, on docs/i18n/do-not-translate.md. Somebody who has
+      // met PIDs knows the acronym, and somebody who has not is not helped by a
+      // translation of it that no other tool or datasheet uses.
+      'navPid',
+      // Placeholders and a unit. Units are not a language: MiB is MiB in both,
+      // and translating it would make two exports incomparable.
+      'telemetryLibraryBytes',
+      // The three transport product names, all on
+      // docs/i18n/do-not-translate.md. They are ARB entries rather than
+      // literals so that the rule is enforced here — a future translation of
+      // "Wi-Fi" fails this test instead of shipping — and the fourth tile,
+      // connectTransportDemoTitle, is deliberately NOT on this list because
+      // 'Demo 模擬器' is copy and does get translated.
+      'connectTransportBleTitle',
+      'connectTransportClassicTitle',
+      'connectTransportWifiTitle',
     };
     final untranslated = <String>[];
     for (final key in _messageKeys(en)) {

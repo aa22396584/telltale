@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/obd/telemetry.dart';
 import 'package:torque_obd/obd/transport/ble_transport.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/app_runtime.dart';
 import 'package:torque_obd/state/app_share_coordinator.dart';
@@ -127,7 +128,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // Expand Demo without depending on scroll hit-testing for the start button.
-    final demoCard = find.text(TransportKind.demo.label);
+    // The tile title comes from the ARBs now, not from `TransportKind.label`
+    // (which is the frozen identity an exported evidence file carries). Look
+    // it up the way the screen does, so this finder cannot drift into
+    // asserting the export string.
+    final demoCard = find.text(
+      lookupAppLocalizations(testUiLocale).connectTransportDemoTitle,
+    );
     await tester.scrollUntilVisible(
       demoCard,
       200,

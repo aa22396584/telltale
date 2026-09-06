@@ -29,6 +29,7 @@ import '../../widgets/recommended_purchase_panel.dart';
 import '../../widgets/language_picker.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../connect/connect_screen.dart';
+import 'gauge_skin_copy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -77,6 +78,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _sendManual() async {
+    // Read before the await. The result is written into the panel after the
+    // adapter answers, and it belongs to the language that was on screen when
+    // the command was sent.
+    final l10n = AppLocalizations.of(context);
     final text = _commandController.text;
     if (text.trim().isEmpty) return;
     setState(() {
@@ -88,7 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       result = await ref
           .read(obdSessionProvider.notifier)
           .sendManualCommand(text);
-      if (result.trim().isEmpty) result = '（沒有回應內容）';
+      if (result.trim().isEmpty) result = l10n.settingsManualCommandNoContent;
     } on Object catch (e) {
       // Shown rather than thrown. This screen exists for the case where things
       // are already going wrong; an exception escaping it would be the one
@@ -116,6 +121,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _selectOfficialVehicle() async {
     if (_loadingVehicleCatalog) return;
+    // Both refusals below are shown after the catalog load has awaited.
+    final l10n = AppLocalizations.of(context);
     setState(() => _loadingVehicleCatalog = true);
     UsVehicleCatalog catalog;
     try {
@@ -125,9 +132,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _vehicleCatalogFuture = null;
       if (!mounted) return;
       setState(() => _loadingVehicleCatalog = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('官方離線目錄損壞或無法載入，沒有套用任何資料。')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.settingsCatalogCorrupt)));
       return;
     } on Object catch (error, stack) {
       _vehicleCatalogFuture = null;
@@ -159,7 +165,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
     if (application.verifiedFieldKeys.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('這筆官方配置沒有可安全套用到目前公式的欄位，原設定保持不變。')),
+        SnackBar(content: Text(l10n.settingsCatalogNothingApplicable)),
       );
       return;
     }
@@ -167,6 +173,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _setExperimentalBatteryAccess(bool enabled) async {
+    // Every string below is chosen after an await, and the consent dialog runs
+    // under its own builder context. Reading the localizations once, here,
+    // keeps the whole gate in the language that was on screen when the switch
+    // was tapped.
+    final l10n = AppLocalizations.of(context);
     if (!enabled) {
       ref
           .read(powertrainExperimentalProbeConsentsProvider.notifier)
@@ -178,12 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       } on Object {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '本次執行已關閉大電池實驗功能，但無法儲存設定；'
-              '下次啟動可能再顯示實驗入口，每條查詢仍需重新確認。',
-            ),
-          ),
+          SnackBar(content: Text(l10n.settingsBatteryLabDisableNotSaved)),
         );
       }
       return;
@@ -196,23 +202,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         var wireAcknowledged = false;
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: const Text('開啟大電池證據實驗室'),
+            title: Text(l10n.settingsBatteryLabDialogTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '這些是逆向工程來源的候選資料，不是原廠文件，也不是 Telltale 實車支援。'
-                    '即使是唯讀查詢也可能喚醒控制器；解碼後的數字可能看似合理但其實不適用。',
-                  ),
+                  Text(l10n.settingsBatteryLabDialogBody),
                   const SizedBox(height: Spacing.md),
                   CheckboxListTile(
                     key: const Key('experimental_evidence_ack'),
                     value: evidenceAcknowledged,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('我知道來源資料與合成測試不能證明我的實車適用'),
+                    title: Text(l10n.settingsBatteryLabEvidenceAck),
                     onChanged: (value) => setDialogState(
                       () => evidenceAcknowledged = value ?? false,
                     ),
@@ -222,10 +225,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     value: wireAcknowledged,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text(
-                      '我知道只會解鎖目錄內固定 Mode 21/22 的單次查詢；'
-                      '不會解鎖掃描、診斷 session、安全存取、寫入或控制',
-                    ),
+                    title: Text(l10n.settingsBatteryLabWireAck),
                     onChanged: (value) =>
                         setDialogState(() => wireAcknowledged = value ?? false),
                   ),
@@ -235,14 +235,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('取消'),
+                child: Text(l10n.settingsCancel),
               ),
               FilledButton(
                 key: const Key('enable_experimental_battery_access'),
                 onPressed: evidenceAcknowledged && wireAcknowledged
                     ? () => Navigator.pop(context, true)
                     : null,
-                child: const Text('只解鎖單次唯讀查詢'),
+                child: Text(l10n.settingsBatteryLabUnlockReadOnly),
               ),
             ],
           ),
@@ -256,13 +256,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .setEnabled(true);
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('無法儲存大電池實驗功能設定，功能維持關閉。')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.settingsBatteryLabEnableNotSaved)),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final profile = ref.watch(vehicleProfileProvider);
     final themeMode = ref.watch(themeModeProvider);
@@ -287,13 +289,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Spacing.xxl,
           ),
           children: [
-            Text(
-              AppLocalizations.of(context).settingsHeadline,
-              style: context.texts.headlineMedium,
-            ),
+            Text(l10n.settingsHeadline, style: context.texts.headlineMedium),
             const SizedBox(height: Spacing.xl),
 
-            const SectionHeading('連線'),
+            SectionHeading(l10n.settingsConnectionSection),
             Panel(
               child: Column(
                 children: [
@@ -314,7 +313,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Text(
                               connection.isConnected
                                   ? connection.deviceName
-                                  : '未連線',
+                                  : l10n.settingsNotConnected,
                               style: context.texts.titleSmall,
                             ),
                             if (connection.protocol.isNotEmpty)
@@ -341,12 +340,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               }
                             },
                             icon: const Icon(Icons.link_off, size: 18),
-                            label: const Text('中斷連線'),
+                            label: Text(l10n.settingsDisconnect),
                           )
                         : FilledButton.icon(
                             onPressed: () => context.go(ConnectScreen.path),
                             icon: const Icon(Icons.link, size: 18),
-                            label: const Text('前往連線'),
+                            label: Text(l10n.settingsGoToConnect),
                           ),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -362,18 +361,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             const SizedBox(height: Spacing.xl),
-            const SectionHeading('車輛設定檔'),
+            SectionHeading(l10n.settingsVehicleProfileSection),
             Panel(
               child: Column(
                 children: [
                   Text(
-                    '馬力、扭力與油耗都是由這些參數推算出來的，填得越接近實車，'
-                    '推算值才越有意義。',
+                    l10n.settingsProfileEstimatesIntro,
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '品牌名稱或 VIN 本身都不能證明重量、風阻、VE 與傳動效率。',
+                    l10n.settingsProfileNameProvesNothing,
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.sm),
@@ -387,14 +385,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           : _selectOfficialVehicle,
                       icon: const Icon(Icons.directions_car_outlined, size: 18),
                       label: Text(
-                        _loadingVehicleCatalog ? '驗證離線目錄中…' : '從官方目錄選擇',
+                        _loadingVehicleCatalog
+                            ? l10n.settingsCatalogVerifying
+                            : l10n.settingsCatalogChoose,
                       ),
                     ),
                   ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '目前內建美國 EPA Find-a-Car 官方快照；只代表該市場與快照內的配置，'
-                    '不是全球所有品牌或年式。',
+                    l10n.settingsCatalogScope,
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.md),
@@ -404,7 +403,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: Spacing.lg),
                   _SliderRow(
-                    label: '排氣量',
+                    label: l10n.settingsFieldDisplacement,
                     value: profile.displacementL,
                     min: VehicleProfile.minDisplacementL,
                     max: VehicleProfile.maxDisplacementL,
@@ -414,7 +413,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         update(profile.copyWith(displacementL: v)),
                   ),
                   _SliderRow(
-                    label: '車重（含駕駛）',
+                    label: l10n.settingsFieldMassWithDriver,
                     value: profile.massKg,
                     min: VehicleProfile.minMassKg,
                     max: VehicleProfile.maxMassKg,
@@ -423,7 +422,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onChanged: (v) => update(profile.copyWith(massKg: v)),
                   ),
                   _SliderRow(
-                    label: '容積效率 VE',
+                    label: l10n.settingsFieldVolumetricEfficiency,
                     value: profile.volumetricEfficiency,
                     min: VehicleProfile.minVolumetricEfficiency,
                     max: VehicleProfile.maxVolumetricEfficiency,
@@ -433,7 +432,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         update(profile.copyWith(volumetricEfficiency: v)),
                   ),
                   _SliderRow(
-                    label: '風阻係數 Cd',
+                    label: l10n.settingsFieldDragCoefficient,
                     value: profile.dragCoefficient,
                     min: VehicleProfile.minDragCoefficient,
                     max: VehicleProfile.maxDragCoefficient,
@@ -443,7 +442,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         update(profile.copyWith(dragCoefficient: v)),
                   ),
                   _SliderRow(
-                    label: '正面投影面積',
+                    label: l10n.settingsFieldFrontalArea,
                     value: profile.frontalAreaM2,
                     min: VehicleProfile.minFrontalAreaM2,
                     max: VehicleProfile.maxFrontalAreaM2,
@@ -453,7 +452,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         update(profile.copyWith(frontalAreaM2: v)),
                   ),
                   _SliderRow(
-                    label: '滾動阻力係數 Crr',
+                    label: l10n.settingsFieldRollingResistance,
                     value: profile.rollingResistance,
                     min: VehicleProfile.minRollingResistance,
                     max: VehicleProfile.maxRollingResistance,
@@ -467,12 +466,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             const SizedBox(height: Spacing.lg),
-            const SectionHeading('燃料與驅動'),
+            SectionHeading(l10n.settingsFuelAndDrivetrainSection),
             Panel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('燃料種類', style: context.texts.labelSmall),
+                  Text(
+                    l10n.settingsFuelTypeLabel,
+                    style: context.texts.labelSmall,
+                  ),
                   const SizedBox(height: Spacing.sm),
                   Wrap(
                     spacing: Spacing.sm,
@@ -496,11 +498,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '空燃比 ${profile.stoichAfr} · 密度 ${profile.fuelDensityGPerL.round()} g/L',
+                    l10n.settingsFuelAfrAndDensity(
+                      profile.stoichAfr,
+                      profile.fuelDensityGPerL.round(),
+                    ),
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.lg),
-                  Text('驅動方式', style: context.texts.labelSmall),
+                  Text(
+                    l10n.settingsFieldDrivetrain,
+                    style: context.texts.labelSmall,
+                  ),
                   const SizedBox(height: Spacing.sm),
                   Wrap(
                     spacing: Spacing.sm,
@@ -524,7 +532,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '傳動效率 ${(profile.drivetrainEfficiency * 100).round()} %',
+                    l10n.settingsDrivetrainEfficiency(
+                      (profile.drivetrainEfficiency * 100).round(),
+                    ),
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.lg),
@@ -547,10 +557,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       label: Text(
                         profile.isConfirmed
-                            ? '本次連線資料已確認'
+                            ? l10n.settingsProfileConfirmedButton
                             : connected
-                            ? '確認本次連線車輛資料'
-                            : '連線後確認此車資料',
+                            ? l10n.settingsProfileConfirmButton
+                            : l10n.settingsProfileConfirmAfterConnect,
                       ),
                     ),
                   ),
@@ -559,7 +569,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             const SizedBox(height: Spacing.lg),
-            const SectionHeading('診斷紀錄'),
+            SectionHeading(l10n.settingsDiagnosticsSection),
             const RecoveredTranscriptPanel(),
             const _AdapterIdentityPanel(),
             FieldEventMarkerPanel(
@@ -573,11 +583,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('手動指令', style: context.texts.titleSmall),
+                  Text(
+                    l10n.settingsManualCommandTitle,
+                    style: context.texts.titleSmall,
+                  ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '直接送一條指令給轉接器，例如 ATI、ATDPN、0100。'
-                    '會排在一般輪詢的同一條佇列上，不會插隊。',
+                    l10n.settingsManualCommandBody,
                     style: context.texts.bodySmall,
                   ),
                   const SizedBox(height: Spacing.sm),
@@ -590,8 +602,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           autocorrect: false,
                           enableSuggestions: false,
                           textCapitalization: TextCapitalization.characters,
-                          decoration: const InputDecoration(
-                            labelText: '指令',
+                          decoration: InputDecoration(
+                            labelText: l10n.settingsManualCommandFieldLabel,
+                            // A wire command, not copy: ATI in both languages.
                             hintText: 'ATI',
                           ),
                           onSubmitted: (_) => _sendManual(),
@@ -600,7 +613,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: Spacing.sm),
                       FilledButton(
                         onPressed: connected && !_sending ? _sendManual : null,
-                        child: const Text('送出'),
+                        child: Text(l10n.settingsManualCommandSend),
                       ),
                     ],
                   ),
@@ -626,33 +639,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             const SizedBox(height: Spacing.lg),
-            const SectionHeading('實驗功能'),
+            SectionHeading(l10n.settingsExperimentalSection),
             Panel(
               child: SwitchListTile(
                 key: const Key('experimental_battery_access_switch'),
                 contentPadding: EdgeInsets.zero,
                 value: experimentalBatteryAccess,
                 onChanged: _setExperimentalBatteryAccess,
-                title: const Text('大電池證據實驗室（實驗）'),
-                subtitle: const Text(
-                  '只顯示來源完整、受雜湊約束的單次唯讀查詢。'
-                  '不會自動安裝 PID、輪詢、加入儀表或把研究資料當成支援。',
-                ),
+                title: Text(l10n.settingsBatteryLabSwitchTitle),
+                subtitle: Text(l10n.settingsBatteryLabSwitchSubtitle),
               ),
             ),
 
             const SizedBox(height: Spacing.lg),
-            SectionHeading(AppLocalizations.of(context).languageSectionTitle),
+            SectionHeading(l10n.languageSectionTitle),
             const Panel(child: LanguagePicker(showHeading: false)),
 
             const SizedBox(height: Spacing.lg),
-            SectionHeading(AppLocalizations.of(context).appearanceSectionTitle),
+            SectionHeading(l10n.appearanceSectionTitle),
             Panel(
               child: SegmentedButton<ThemeMode>(
-                segments: const [
-                  ButtonSegment(value: ThemeMode.dark, label: Text('深色')),
-                  ButtonSegment(value: ThemeMode.light, label: Text('淺色')),
-                  ButtonSegment(value: ThemeMode.system, label: Text('跟隨系統')),
+                segments: [
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text(l10n.settingsThemeDark),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text(l10n.settingsThemeLight),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text(l10n.settingsThemeSystem),
+                  ),
                 ],
                 selected: {themeMode},
                 onSelectionChanged: (s) =>
@@ -672,21 +691,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 registerPowertrainBatteryLicenses();
                 showLicensePage(
                   context: context,
+                  // The product name, not copy.
                   applicationName: 'Telltale',
-                  applicationLegalese: 'Powertrain battery sources, transformations, and reuse terms are bundled with this app.',
+                  applicationLegalese: l10n.settingsLicenseLegalese,
                 );
               },
               icon: const Icon(Icons.description_outlined),
-              label: const Text('開放原始碼與資料授權'),
+              label: Text(l10n.settingsOpenSourceLicenses),
             ),
             const SizedBox(height: Spacing.md),
-            Text(
-              '本 App 的 OBD2 實作依據 SAE J1979 與 ELM327 datasheet 等公開標準；'
-              '每一條影響硬體行為的公式與 AT 指令都經過交叉驗證，'
-              '結果記錄於 docs/protocol-deviations.zh-TW.md。'
-              '本 App 與 Torque / Torque Pro 無關聯。',
-              style: context.texts.bodySmall,
-            ),
+            Text(l10n.settingsStandardsFooter, style: context.texts.bodySmall),
           ],
         ),
       ),
@@ -711,6 +725,7 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final years = widget.catalog.years.reversed.toList(growable: false);
     final makes = _year == null
         ? const <String>[]
@@ -741,26 +756,31 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
                 children: [
                   Expanded(
                     child: Text(
-                      '美國 EPA 官方車型目錄',
+                      l10n.settingsEpaPickerTitle,
                       style: context.texts.titleLarge,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
-                    tooltip: '關閉',
+                    tooltip: l10n.settingsClose,
                   ),
                 ],
               ),
               Text(
-                '僅限美國市場 1984–${widget.catalog.years.last} 的快照配置。'
-                '選到同名車系仍要以年式、變速箱、燃料與 EPA ID 消歧。',
+                // Both bounds come from the snapshot that was actually loaded.
+                // Spelling 1984 into the sentence made a second copy of a
+                // bound the catalog already carries.
+                l10n.settingsEpaPickerScope(
+                  widget.catalog.years.first,
+                  widget.catalog.years.last,
+                ),
                 style: context.texts.bodySmall,
               ),
               const SizedBox(height: Spacing.md),
               _CatalogDropdown<int>(
                 dropdownKey: const Key('us_epa_year'),
-                label: '年式',
+                label: l10n.settingsEpaYear,
                 value: _year,
                 values: years,
                 display: (value) => '$value',
@@ -774,7 +794,7 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
               const SizedBox(height: Spacing.sm),
               _CatalogDropdown<String>(
                 dropdownKey: const Key('us_epa_make'),
-                label: '廠牌（EPA make）',
+                label: l10n.settingsEpaMake,
                 value: _make,
                 values: makes,
                 display: (value) => value,
@@ -789,7 +809,7 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
               const SizedBox(height: Spacing.sm),
               _CatalogDropdown<String>(
                 dropdownKey: const Key('us_epa_model'),
-                label: '車型',
+                label: l10n.settingsEpaModel,
                 value: _model,
                 values: models,
                 display: (value) => value,
@@ -805,7 +825,9 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
                 child: configurations.isEmpty
                     ? Center(
                         child: Text(
-                          _model == null ? '依序選擇年式、品牌與車型' : '這個車型沒有可用配置',
+                          _model == null
+                              ? l10n.settingsEpaPickInOrder
+                              : l10n.settingsEpaNoConfigurations,
                           style: context.texts.bodySmall,
                         ),
                       )
@@ -825,11 +847,11 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
                                   ? Icons.check_circle
                                   : Icons.radio_button_unchecked,
                             ),
-                            title: Text(_configurationTitle(item)),
+                            title: Text(_configurationTitle(l10n, item)),
                             subtitle: Text(
                               '${item.alternativeVehicleType.isEmpty ? '' : '${item.alternativeVehicleType} · '}'
-                              '${item.fuelType.isEmpty ? '燃料未知' : item.fuelType} · '
-                              '${item.drive.isEmpty ? '驅動未知' : item.drive} · '
+                              '${item.fuelType.isEmpty ? l10n.settingsEpaFuelUnknown : item.fuelType} · '
+                              '${item.drive.isEmpty ? l10n.settingsEpaDriveUnknown : item.drive} · '
                               'EPA ID ${item.epaId}',
                             ),
                           );
@@ -840,9 +862,13 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
               if (application != null)
                 Text(
                   application.verifiedFieldKeys.isEmpty
-                      ? '此配置沒有能安全套用到目前公式的欄位；不會猜測。'
-                      : '只會套用：${_verifiedFieldLabels(application.verifiedFieldKeys)}。'
-                            '車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。',
+                      ? l10n.settingsEpaNoSafeFields
+                      : l10n.settingsEpaWillApplyOnly(
+                          _verifiedFieldLabels(
+                            l10n,
+                            application.verifiedFieldKeys,
+                          ),
+                        ),
                   style: context.texts.bodySmall,
                 ),
               const SizedBox(height: Spacing.sm),
@@ -856,10 +882,12 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
                       : () => Navigator.pop(context, _configuration),
                   child: Text(
                     application == null
-                        ? '選擇一個精確配置'
+                        ? l10n.settingsEpaChooseExact
                         : application.verifiedFieldKeys.isEmpty
-                        ? '關閉（沒有可套用欄位）'
-                        : '套用 ${application.verifiedFieldKeys.length} 個官方欄位',
+                        ? l10n.settingsEpaCloseNoFields
+                        : l10n.settingsEpaApplyFields(
+                            application.verifiedFieldKeys.length,
+                          ),
                   ),
                 ),
               ),
@@ -870,19 +898,28 @@ class _UsEpaVehiclePickerState extends State<_UsEpaVehiclePicker> {
     );
   }
 
-  static String _configurationTitle(UsEpaVehicleConfiguration item) {
+  /// Takes the localizations rather than a `BuildContext`: it is static, and
+  /// a context parameter would exist only so this could reach for one.
+  static String _configurationTitle(
+    AppLocalizations l10n,
+    UsEpaVehicleConfiguration item,
+  ) {
     final parts = <String>[
+      // Litres, the transmission code and the EPA id are data and units.
       if (item.displacementL != null) '${item.displacementL} L',
-      if (item.cylinders != null) '${item.cylinders} 缸',
+      if (item.cylinders != null) l10n.settingsEpaCylinders(item.cylinders!),
       if (item.transmission.isNotEmpty) item.transmission,
     ];
-    return parts.isEmpty ? 'EPA 配置 ${item.epaId}' : parts.join(' · ');
+    return parts.isEmpty
+        ? l10n.settingsEpaConfiguration(item.epaId)
+        : parts.join(' · ');
   }
 
-  static String _verifiedFieldLabels(Set<String> keys) => [
-    if (keys.contains('displacementL')) '排氣量',
-    if (keys.contains('fuelType')) '燃料種類',
-  ].join('、');
+  static String _verifiedFieldLabels(AppLocalizations l10n, Set<String> keys) =>
+      [
+        if (keys.contains('displacementL')) l10n.settingsFieldDisplacement,
+        if (keys.contains('fuelType')) l10n.settingsFuelTypeLabel,
+      ].join(l10n.settingsListSeparator);
 }
 
 class _CatalogDropdown<T> extends StatelessWidget {
@@ -925,19 +962,38 @@ class _ProfileProvenanceSummary extends StatelessWidget {
 
   final VehicleProfile profile;
 
-  static const _labels = <String, String>{
-    'displacementL': '排氣量',
-    'massKg': '車重',
+  /// `VE`, `Cd` and `Crr` are symbols, not words. They are printed identically
+  /// in both languages — on the sliders above, in the physics literature and
+  /// in the session evidence file — so they are held here as literals rather
+  /// than routed through the ARBs, where somebody would eventually translate
+  /// one and make it unfindable.
+  static const _symbolFieldLabels = <String, String>{
     'volumetricEfficiency': 'VE',
-    'fuelType': '燃料',
-    'drivetrain': '驅動方式',
     'dragCoefficient': 'Cd',
-    'frontalAreaM2': '正面投影面積',
     'rollingResistance': 'Crr',
   };
 
+  /// Throws on an unknown key, exactly as the `!` on the map lookup it
+  /// replaces did: a new profile field must be given a label rather than
+  /// silently rendering as its Dart identifier.
+  static String _fieldLabel(AppLocalizations l10n, String key) =>
+      _symbolFieldLabels[key] ??
+      switch (key) {
+        'displacementL' => l10n.settingsFieldDisplacement,
+        'massKg' => l10n.settingsFieldMass,
+        'fuelType' => l10n.settingsFieldFuel,
+        'drivetrain' => l10n.settingsFieldDrivetrain,
+        'frontalAreaM2' => l10n.settingsFieldFrontalArea,
+        _ => throw ArgumentError.value(
+          key,
+          'key',
+          'vehicle profile field has no label',
+        ),
+      };
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final fields = profile.inputFieldMap;
     final exact = fields.entries
         .where((entry) => entry.value.isVerifiedExact)
@@ -963,7 +1019,9 @@ class _ProfileProvenanceSummary extends StatelessWidget {
     final publishers =
         exact.map((entry) => entry.value.evidence!.publisher).toSet().toList()
           ..sort();
-    final exactLabels = exact.map((entry) => _labels[entry.key]!).join('、');
+    final exactLabels = exact
+        .map((entry) => _fieldLabel(l10n, entry.key))
+        .join(l10n.settingsListSeparator);
     final exactEvidence = exact.isEmpty ? null : exact.first.value.evidence;
 
     return Container(
@@ -977,31 +1035,43 @@ class _ProfileProvenanceSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '解析：官方精確 ${exact.length} / ${fields.length} 欄 · '
-            '本次確認 ${resolutionCount(EvidenceResolution.userConfirmedSession)} / ${fields.length} 欄 · '
-            '未解析 ${resolutionCount(EvidenceResolution.unknown)} / ${fields.length} 欄 · '
-            '歧義 ${resolutionCount(EvidenceResolution.ambiguous)} / ${fields.length} 欄 · '
-            '衝突 ${resolutionCount(EvidenceResolution.conflict)} / ${fields.length} 欄',
+            l10n.settingsProvenanceResolution(
+              exact.length,
+              resolutionCount(EvidenceResolution.userConfirmedSession),
+              resolutionCount(EvidenceResolution.unknown),
+              resolutionCount(EvidenceResolution.ambiguous),
+              resolutionCount(EvidenceResolution.conflict),
+              fields.length,
+            ),
             style: context.texts.labelSmall,
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            '來源：官方／原廠 $officialSourceCount / ${fields.length} 欄 · '
-            '手動 $userSourceCount / ${fields.length} 欄 · '
-            '通用 $genericSourceCount / ${fields.length} 欄 · '
-            '科學模型 $scientificSourceCount / ${fields.length} 欄',
+            l10n.settingsProvenanceOrigins(
+              officialSourceCount,
+              userSourceCount,
+              genericSourceCount,
+              scientificSourceCount,
+              fields.length,
+            ),
             style: context.texts.labelSmall,
           ),
           const SizedBox(height: Spacing.xs),
           Text(
             exact.isEmpty
-                ? '目前沒有欄位已精確解析到這次車輛；通用值、手動值或舊來源值仍須確認。'
-                : '目前只有$exactLabels有官方精確來源；其他欄位仍須逐項確認。',
+                ? l10n.settingsProvenanceNoneExact
+                : l10n.settingsProvenanceOnlyExact(exactLabels),
             style: context.texts.bodySmall,
           ),
           if (publishers.isNotEmpty) ...[
             const SizedBox(height: Spacing.xs),
-            Text('來源：${publishers.join('、')}', style: context.texts.bodySmall),
+            Text(
+              // Publisher names are data; only the label around them is copy.
+              l10n.settingsProvenancePublishers(
+                publishers.join(l10n.settingsListSeparator),
+              ),
+              style: context.texts.bodySmall,
+            ),
           ],
           if (exactEvidence != null) ...[
             const SizedBox(height: Spacing.xs),
@@ -1034,6 +1104,7 @@ class _VehicleIdentityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final (
       IconData icon,
@@ -1044,31 +1115,30 @@ class _VehicleIdentityPanel extends StatelessWidget {
       VehicleIdentityStatus.notRead => (
         Icons.badge_outlined,
         palette.textSecondary,
-        'VIN 尚未讀取',
+        l10n.settingsVinNotRead,
         connected
-            ? '可向目前車輛讀取 Mode 09 VIN；身分狀態只保留在這次連線中。'
-                  '原始診斷紀錄仍可能包含 VIN。'
-            : '連線後可讀取目前車輛自報的 VIN；身分狀態不會帶到下一次連線。'
-                  '原始診斷紀錄仍可能包含 VIN。',
+            ? l10n.settingsVinNotReadConnectedDetail
+            : l10n.settingsVinNotReadDisconnectedDetail,
       ),
       VehicleIdentityStatus.vehicleReported => (
         Icons.directions_car_outlined,
         palette.info,
-        simulated ? '模擬器回報 VIN' : '車輛回報 VIN',
-        'VIN 是車輛自報身分，不代表車型規格已驗證。'
-            '身分狀態不跨連線；診斷紀錄仍可能包含 VIN。',
+        simulated
+            ? l10n.settingsVinSimulatorReported
+            : l10n.settingsVinVehicleReported,
+        l10n.settingsVinReportedDetail,
       ),
       VehicleIdentityStatus.unavailable => (
         Icons.help_outline,
         palette.warning,
-        'VIN 無法取得',
-        '可能是車輛未提供、回覆不完整或這次連線沒有讀到；不會猜測或補字。',
+        l10n.settingsVinUnavailable,
+        l10n.settingsVinUnavailableDetail,
       ),
       VehicleIdentityStatus.conflict => (
         Icons.warning_amber_outlined,
         palette.danger,
-        'VIN 衝突',
-        '不同控制器回報不同 VIN，無法確認車輛身分；所有候選都已丟棄。',
+        l10n.settingsVinConflict,
+        l10n.settingsVinConflictDetail,
       ),
     };
 
@@ -1090,7 +1160,9 @@ class _VehicleIdentityPanel extends StatelessWidget {
               Expanded(child: Text(title, style: context.texts.titleSmall)),
               OutlinedButton(
                 onPressed: connected && !reading ? onRefresh : null,
-                child: Text(reading ? '讀取中…' : '讀取 VIN'),
+                child: Text(
+                  reading ? l10n.settingsVinReading : l10n.settingsVinRead,
+                ),
               ),
             ],
           ),
@@ -1120,6 +1192,7 @@ class _ProfileConfirmationStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final confirmed = profile.isConfirmed;
     final color = confirmed ? palette.success : palette.warning;
@@ -1143,12 +1216,10 @@ class _ProfileConfirmationStatus extends StatelessWidget {
           Expanded(
             child: Text(
               confirmed
-                  ? '已確認本次連線的設定。修改任一項或重新連線後都要再確認。'
+                  ? l10n.settingsProfileConfirmedDetail
                   : connected
-                  ? '本次連線尚未確認。仍可讀取 OBD 實測資料，'
-                        '但不顯示依車重、VE 與風阻推算的數值。'
-                  : '先連上目前這台車再確認。每次重新連線都會自動失效，'
-                        '避免把上一台車的設定套到下一台。',
+                  ? l10n.settingsProfileUnconfirmedConnectedDetail
+                  : l10n.settingsProfileUnconfirmedDisconnectedDetail,
               style: context.texts.bodySmall?.copyWith(color: color),
             ),
           ),
@@ -1223,6 +1294,7 @@ class _AdapterIdentityPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final session = ref.watch(obdSessionProvider);
     if (!session.isConnected) return const SizedBox.shrink();
     final identity = ref
@@ -1239,10 +1311,15 @@ class _AdapterIdentityPanel extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('轉接器自述', style: context.texts.titleSmall),
+            Text(
+              l10n.settingsAdapterSelfReportTitle,
+              style: context.texts.titleSmall,
+            ),
             const SizedBox(height: Spacing.xs),
             SelectableText(
-              identity.version.isEmpty ? '（未回報版本）' : identity.version,
+              identity.version.isEmpty
+                  ? l10n.settingsAdapterNoVersion
+                  : identity.version,
               style: context.texts.bodyMedium,
             ),
             if (identity.identity.isNotEmpty)
@@ -1250,9 +1327,7 @@ class _AdapterIdentityPanel extends ConsumerWidget {
             const SizedBox(height: Spacing.xs),
             if (concerns.isEmpty)
               Text(
-                '沒有發現自述矛盾。這只表示它對自己的描述前後一致 —— '
-                '既不代表它是原廠晶片，也不代表它回報的數值正確。'
-                '版本號在仿製品上就是一段可以任意填的文字。',
+                l10n.settingsAdapterNoContradictions,
                 style: context.texts.bodySmall,
               )
             else ...[
@@ -1262,8 +1337,7 @@ class _AdapterIdentityPanel extends ConsumerWidget {
                 const SizedBox(height: Spacing.xs),
               ],
               Text(
-                '這些是轉接器對自己的描述對不起來，不是它讀錯了車。'
-                '要確認數值，只能拿第二個獨立量測去對（見速查表）。',
+                l10n.settingsAdapterConcernsFooter,
                 style: context.texts.bodySmall,
               ),
             ],
@@ -1286,18 +1360,15 @@ class _GaugeSkinPicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final current = ref.watch(gaugeSkinProvider);
     return Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('儀表樣式', style: context.texts.titleSmall),
+          Text(l10n.settingsGaugeSkinTitle, style: context.texts.titleSmall),
           const SizedBox(height: Spacing.xs),
-          Text(
-            '不只是換顏色 —— 每一種的刻度盤形狀、指針、動態都不一樣。'
-            '深色與淺色底下都可以用。',
-            style: context.texts.bodySmall,
-          ),
+          Text(l10n.settingsGaugeSkinBody, style: context.texts.bodySmall),
           const SizedBox(height: Spacing.md),
           SizedBox(
             height: 168,
@@ -1317,7 +1388,10 @@ class _GaugeSkinPicker extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: Spacing.sm),
-          Text(current.description, style: context.texts.bodySmall),
+          Text(
+            gaugeSkinDescription(l10n, current),
+            style: context.texts.bodySmall,
+          ),
         ],
       ),
     );
@@ -1372,7 +1446,7 @@ class _SkinChoice extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.xs),
             Text(
-              skin.name,
+              gaugeSkinName(AppLocalizations.of(context), skin),
               style: context.texts.labelMedium?.copyWith(
                 color: selected ? palette.accent : palette.textSecondary,
               ),

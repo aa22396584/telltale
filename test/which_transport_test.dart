@@ -7,12 +7,20 @@
 /// believe the app told them the right answer.
 library;
 
+// The guidance functions take an AppLocalizations since these strings moved
+// into the ARBs. `zh` here is Traditional Chinese, the language every
+// assertion below was written against — the assertions are unchanged; only
+// the calls gained the argument.
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 
 void main() {
+  final zh = lookupAppLocalizations(traditionalChineseLocale);
   test('it does not route on whether the adapter appears in the pairing list',
       () {
     // The first version asked exactly this, and sent everybody who said yes to
@@ -24,7 +32,7 @@ void main() {
     // people who needed it.
     for (final classicAvailable in [true, false]) {
       final questions =
-          whichTransportGuidance(classicAvailable: classicAvailable)
+          whichTransportGuidance(zh, classicAvailable: classicAvailable)
               .map((q) => q.question);
       for (final q in questions) {
         expect(q.contains('配對清單') || q.contains('配對新裝置'), isFalse,
@@ -39,7 +47,7 @@ void main() {
     // Half the fix. Not asking about the pairing list stops the misroute; the
     // adapter still shows up there, and somebody who pairs it anyway is back
     // in the same dead end by a different door.
-    final ble = whichTransportGuidance(classicAvailable: true)
+    final ble = whichTransportGuidance(zh, classicAvailable: true)
         .firstWhere((q) => q.transport == TransportKind.bluetoothLe);
     expect(ble.answer, contains('不要去配對'));
   });
@@ -48,14 +56,14 @@ void main() {
     // The cheap clones are marked "Bluetooth 4.0" for a dual-mode chip they
     // only use in SPP. Somebody who answered honestly and found nothing needs
     // the next step attached to the answer that failed them.
-    final ble = whichTransportGuidance(classicAvailable: true)
+    final ble = whichTransportGuidance(zh, classicAvailable: true)
         .firstWhere((q) => q.transport == TransportKind.bluetoothLe);
     expect(ble.answer, contains('掃描不到'));
     expect(ble.answer, contains('Bluetooth Classic'));
   });
 
   test('desktop BLE guidance never points at disabled Classic', () {
-    final ble = whichTransportGuidance(classicAvailable: false)
+    final ble = whichTransportGuidance(zh, classicAvailable: false)
         .firstWhere((q) => q.transport == TransportKind.bluetoothLe);
     expect(ble.answer, contains('掃描不到'));
     expect(ble.answer, isNot(contains('改用 Bluetooth Classic')));
@@ -72,7 +80,7 @@ void main() {
     // Asked of `transport`, not of the prose: the BLE answer legitimately
     // mentions Classic as a fallback, and a substring check called that a
     // second route.
-    final ios = whichTransportGuidance(classicAvailable: false);
+    final ios = whichTransportGuidance(zh, classicAvailable: false);
     expect(ios.map((q) => q.transport),
         isNot(contains(TransportKind.bluetoothClassic)));
     expect(ios, hasLength(2));
@@ -84,6 +92,7 @@ void main() {
     // bleTransportAvailable == true (Linux uses Dart BlueZ, not a Flutter
     // plugin registrant).
     final noBle = whichTransportGuidance(
+      zh,
       classicAvailable: false,
       bleAvailable: false,
     );
@@ -99,7 +108,7 @@ void main() {
     // four lines above it a question told you to pick it. One screen, two
     // answers, in the platform nobody checked.
     expect(
-      whichTransportGuidance(classicAvailable: classicTransportAvailable)
+      whichTransportGuidance(zh, classicAvailable: classicTransportAvailable)
           .any((q) => q.transport == TransportKind.bluetoothClassic),
       classicTransportAvailable,
       reason: 'offering Classic and being able to use it are the same '
@@ -107,6 +116,7 @@ void main() {
     );
     expect(
       whichTransportGuidance(
+        zh,
         classicAvailable: classicTransportAvailable,
         bleAvailable: bleTransportAvailable,
       ).any((q) => q.transport == TransportKind.bluetoothLe),
@@ -118,14 +128,14 @@ void main() {
   test('classic unavailable copy names the host constraint, not always iOS', () {
     // The card used to hard-code an iOS sentence for every non-Android host.
     // macOS/Windows/Linux already build this app; blaming iOS there is a lie.
-    expect(classicUnavailableReason, isNot(isEmpty));
+    expect(classicUnavailableReason(zh), isNot(isEmpty));
     if (!classicTransportAvailable) {
       expect(
-        classicUnavailableReason.contains('iOS') ||
-            classicUnavailableReason.contains('Android') ||
-            classicUnavailableReason.contains('macOS') ||
-            classicUnavailableReason.contains('Linux') ||
-            classicUnavailableReason.contains('Windows'),
+        classicUnavailableReason(zh).contains('iOS') ||
+            classicUnavailableReason(zh).contains('Android') ||
+            classicUnavailableReason(zh).contains('macOS') ||
+            classicUnavailableReason(zh).contains('Linux') ||
+            classicUnavailableReason(zh).contains('Windows'),
         isTrue,
       );
     }
@@ -135,25 +145,26 @@ void main() {
     // Linux uses universal_ble's Dart BlueZ backend; absence from
     // generated_plugins.cmake is expected and must not grey out the card.
     expect(bleTransportAvailable, isTrue);
-    expect(bleUnavailableReason, isNot(isEmpty));
+    expect(bleUnavailableReason(zh), isNot(isEmpty));
   });
 
   test('desktop Wi-Fi guidance does not pretend the host is a phone', () {
     final desktop = whichTransportGuidance(
+      zh,
       classicAvailable: false,
       phoneCentricCopy: false,
     ).firstWhere((q) => q.transport == TransportKind.wifi);
     expect(desktop.question, contains('系統'));
     expect(desktop.question, isNot(contains('手機')));
     expect(desktop.answer, contains('這台裝置'));
-    expect(wifiConnectInstructions(isPhone: false), contains('這台電腦'));
-    expect(wifiConnectInstructions(isPhone: true), contains('手機'));
+    expect(wifiConnectInstructions(zh, isPhone: false), contains('這台電腦'));
+    expect(wifiConnectInstructions(zh, isPhone: true), contains('手機'));
   });
 
   test('each transport is the destination of exactly one question', () {
     // Two questions leading to the same place means one of them is not
     // separating anything, which is how the pairing-list version went wrong.
-    final android = whichTransportGuidance(classicAvailable: true);
+    final android = whichTransportGuidance(zh, classicAvailable: true);
     expect(android, hasLength(3));
     for (final kind in [
       TransportKind.wifi,
@@ -172,6 +183,7 @@ void main() {
     for (final classicAvailable in [true, false]) {
       for (final bleAvailable in [true, false]) {
         for (final q in whichTransportGuidance(
+          zh,
           classicAvailable: classicAvailable,
           bleAvailable: bleAvailable,
         )) {
@@ -183,14 +195,16 @@ void main() {
 
   test('Classic SPP hosts do not claim headphones appear in the port list', () {
     final windowsEmpty = classicDeviceListEmptyHint(
+      zh,
       serialHost: true,
       linuxHost: false,
     );
     final linuxEmpty = classicDeviceListEmptyHint(
+      zh,
       serialHost: true,
       linuxHost: true,
     );
-    final bondedEmpty = classicDeviceListEmptyHint(serialHost: false);
+    final bondedEmpty = classicDeviceListEmptyHint(zh, serialHost: false);
     expect(windowsEmpty, contains('COMx'));
     expect(linuxEmpty, contains('rfcomm'));
     expect(bondedEmpty, contains('配對'));
@@ -198,11 +212,12 @@ void main() {
     expect(linuxEmpty, isNot(contains('耳機')));
 
     final windowsHint = classicDeviceListHint(
+      zh,
       serialHost: true,
       linuxHost: false,
     );
-    final linuxHint = classicDeviceListHint(serialHost: true, linuxHost: true);
-    final bondedHint = classicDeviceListHint(serialHost: false);
+    final linuxHint = classicDeviceListHint(zh, serialHost: true, linuxHost: true);
+    final bondedHint = classicDeviceListHint(zh, serialHost: false);
     expect(windowsHint, contains('COM'));
     expect(linuxHint, contains('rfcomm'));
     expect(bondedHint, contains('耳機'));

@@ -5,6 +5,8 @@ library;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 
 import 'package:torque_obd/core/serial/spp_serial_platform.dart';
 import 'package:torque_obd/obd/transport/classic_transport.dart';
@@ -12,6 +14,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 
 void main() {
+  final zh = lookupAppLocalizations(traditionalChineseLocale);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const methods = MethodChannel('flutter_classic_bluetooth/methods');
@@ -33,7 +36,7 @@ void main() {
     expect(classicIoBluetoothHostSupported, isTrue);
     expect(sppSerialHostSupported, isFalse);
     expect(classicTransportAvailable, isTrue);
-    expect(classicUnavailableReason, isNot(contains('暫不開放')));
+    expect(classicUnavailableReason(zh), isNot(contains('暫不開放')));
   });
 
   test('macOS cascade is a single IOBluetooth UUID open', () {

@@ -26,12 +26,6 @@ enum AirflowSource {
   /// Neither was available. Not the same as zero air flow, which would mean a
   /// stopped engine.
   unavailable;
-
-  String get label => switch (this) {
-    AirflowSource.measured => 'MAF 感測器',
-    AirflowSource.speedDensity => 'Speed-Density 推算',
-    AirflowSource.unavailable => '無法取得',
-  };
 }
 
 /// Where a fuel figure came from.
@@ -46,12 +40,6 @@ enum FuelSource {
   stoichiometricEstimate,
 
   unavailable;
-
-  String get label => switch (this) {
-    FuelSource.measured => 'ECU 回報',
-    FuelSource.stoichiometricEstimate => '化學計量比推算',
-    FuelSource.unavailable => '無法取得',
-  };
 }
 
 class DerivedMetrics {
@@ -139,6 +127,10 @@ abstract final class PhysicsEngine {
   /// because its own guard is `maf > 0`. One row contradicting itself, and the
   /// airflow half saying the engine is not breathing while the rev counter says
   /// 3000 rpm.
+  ///
+  /// That label is [AirflowSource.speedDensity]; its words live in
+  /// `lib/ui/screens/dashboard/derived_source_copy.dart` now, and the quotation
+  /// above is what the screen actually said at the time.
   ///
   /// [mafGramsPerSecond]'s own doc comment records this exact failure as
   /// already fixed — "substituting MAP = 0 produced a confident 0.0 g/s on the

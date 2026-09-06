@@ -3,29 +3,99 @@
 這裡的檔案是 Play Console listing 上傳過的原件。**這一份是來源，Play Console 上的是副本** ——
 要換圖先換這裡，再上傳。
 
-## 檔案
+## 目錄
+
+素材依 Play 的 listing 語系分開，因為 App 從 `1.0.11` 起是雙語的，而**截圖裡的字就是
+listing 的一部分**。一份英文 listing 配一組中文截圖，等於在告訴讀者這個 App 沒有英文介面。
+
+```
+store/
+├── en-US/          英文 listing 的素材
+├── zh-TW/          繁體中文 listing 的素材
+├── icon-512.png    兩邊共用：圖示沒有文字
+└── preview-gt86-vin-redacted.mp4
+```
+
+`icon-512.png` 與預覽影片沒有進到語系目錄，因為它們裡面沒有任何一個字需要翻譯。
+**不要為了目錄整齊而複製它們** —— 兩份會各自漂移，然後沒有人知道哪一份是真的。
 
 | 檔案 | 尺寸 | 格式 | 用途 |
 |---|---|---|---|
 | `icon-512.png` | 512×512 | 32-bit PNG **含 alpha** | 應用程式圖示。Play 要求含 alpha，**不要**把它扁平化 |
-| `feature-1024x500.png` | 1024×500 | 24-bit PNG | 主打圖片（feature graphic） |
-| `01-connect.png` | 1080×2340 | 24-bit PNG | 手機截圖：選擇連線方式 |
-| `02-dashboard.png` | 1080×2340 | 24-bit PNG | 手機截圖：儀表板 |
-| `03-dtc-freeze.png` | 1080×2340 | 24-bit PNG | 手機截圖：故障碼與凍結幀 |
-| `05-performance.png` | 1080×2340 | 24-bit PNG | 手機截圖：性能量測 |
-| `06-skins.png` | 1080×2340 | 24-bit PNG | 手機截圖：面盤外觀 |
+| `<locale>/feature-1024x500.png` | 1024×500 | 24-bit PNG | 主打圖片（feature graphic） |
+| `<locale>/01-connect.png` | 1080×2340 | 24-bit PNG | 手機截圖：選擇連線方式 |
+| `<locale>/02-dashboard.png` | 1080×2340 | 24-bit PNG | 手機截圖：儀表板 |
+| `<locale>/03-dtc-freeze.png` | 1080×2340 | 24-bit PNG | 手機截圖：故障碼與凍結幀 |
+| `<locale>/05-performance.png` | 1080×2340 | 24-bit PNG | 手機截圖：性能量測 |
+| `<locale>/06-skins.png` | 1080×2340 | 24-bit PNG | 手機截圖：語言與面盤外觀 |
 | `preview-gt86-vin-redacted.mp4` | 1920×1080 | H.264 MP4 | Google Play YouTube 預覽影片來源；GT86 實車 VIN 已遮蔽 |
+
+兩組截圖**畫面編號相同、內容刻意不同**。`en-US/06-skins.png` 取的是語言選單連同外觀設定，
+因為對英文讀者來說「這個 App 有英文」本身就是新消息；`zh-TW/06-skins.png` 只取外觀。
+
+## 怎麼重拍
+
+英文那組是在 Pixel 9 模擬器（1080×2340，`wm size` 覆寫）上用 `field` debug build 拍的，
+中文那組來自實機 Galaxy S24 Ultra。兩者尺寸相同，狀態列不同，這沒有關係 —— Play 不比對
+兩個語系之間的一致性。
+
+```bash
+adb -s <serial> exec-out screencap -p > shot.png
+```
+
+`screencap` 出來是 32-bit RGBA，而 Play 的截圖規則要 24-bit 無 alpha。扁平化**只有在
+alpha 全部是 255 時才是無損的**，所以要先驗再轉，不要直接轉：
+
+```python
+from PIL import Image
+im = Image.open(src)
+lo, hi = im.getchannel('A').getextrema()
+assert (lo, hi) == (255, 255)          # 有真透明就停下來，不要壓黑底
+im.convert('RGB').save(dst, 'PNG', optimize=True)
+```
+
+**不要用 `sips --setProperty hasAlpha false`。** 2026-09-06 實測：它對這五個檔沒有寫出
+任何東西，而且 exit 0，`ls` 才看得出來檔案根本不存在。
 
 ## 隱私檢查
 
 - `03-dtc-freeze.png` 顯示的是內建 Demo ECU 的固定測試 VIN
-  `1D4GP00R55B123456`，不是實車或使用者資料。Play 商店目前可只使用其餘四張截圖；
-  若要重新加入這張，應在素材文案中清楚標示為 Demo 資料。
+  `1D4GP00R55B123456`，不是實車或使用者資料。**2026-09-06 查證：Play 上的 zh-TW
+  listing 五張截圖全部在線，包含這一張。**（先前這裡寫著「可只使用其餘四張」，讀起來
+  像是描述現況，其實只是一個選項 —— `gplay images list` 才是現況。）
 - 原始 GT86 實車錄影曾短暫顯示真實 VIN，因此**不得直接上傳**。
   `preview-gt86-vin-redacted.mp4` 已裁掉 Android 狀態列與手勢列，將 VIN 欄位遮蔽，
   並以模糊背景輸出為 16:9 標準影片，避免被 YouTube 歸類為 Shorts。
   Play Console 的影片欄位只接受 YouTube 網址，應把這個遮蔽版上傳為公開或不公開影片，
   關閉廣告、允許嵌入且不設年齡限制。
+
+## 文案：`metadata/`
+
+Listing 的文字以前只存在於 Play Console，改不留痕跡、看不出誰改了什麼。現在它在這裡：
+
+```
+store/metadata/<locale>/
+├── title.txt              ≤ 30 字元
+├── short_description.txt  ≤ 80 字元
+├── full_description.txt   ≤ 4000 字元
+├── video.txt              YouTube 網址
+└── changelogs/<versionCode>.txt   ≤ 500 字元
+```
+
+`store/upload.sh` 把這些文字與 `store/<locale>/` 的圖片組成 Play CLI 要的 FastLane
+樹（在暫存目錄裡，不進版控），然後上傳。**預設是 dry run**：
+
+```bash
+store/upload.sh                # 只列出會改什麼
+store/upload.sh --apply        # 真的寫入並 commit edit
+store/upload.sh --apply en-US  # 只做一個語系
+```
+
+它只碰 listing 與圖片，不碰任何發布軌道。兩者分開的理由很實際：改一行文案不應該有
+任何機會順手把一個 build 推上 production。
+
+字數上限由 CI 的 `store-assets` job 檢查。Play 是在上傳時才拒絕的，那時候要嘛已經改了
+一半、要嘛在等 API 回應 —— 在本機就知道便宜得多。
 
 ## 為什麼沒有 `04-`
 

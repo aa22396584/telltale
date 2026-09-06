@@ -309,7 +309,6 @@ class ObdResponse {
 /// Progress of the AT handshake, surfaced live in the connection wizard.
 class InitStep {
   final String command;
-  final String purpose;
   final bool isCritical;
 
   /// Proof beyond "the adapter did not print an error string".
@@ -321,20 +320,46 @@ class InitStep {
   /// whole sequence and the app declares a live vehicle with no ECU behind it.
   ///
   /// Returns null when the reply is acceptable, or the reason it is not.
-  final String? Function(ObdResponse response)? validate;
+  final InitNote? Function(ObdResponse response)? validate;
 
-  const InitStep(
-    this.command,
-    this.purpose, {
-    this.isCritical = false,
-    this.validate,
-  });
+  const InitStep(this.command, {this.isCritical = false, this.validate});
 }
 
+/// Why a handshake step ended the way it did, when the reason is the app's
+/// own judgement rather than an adapter error code.
+///
+/// Identifiers, not sentences: `lib/obd` stays free of `AppLocalizations`, and
+/// the connection wizard maps these through
+/// `lib/ui/screens/connect/handshake_copy.dart`. [InitProgress.detail] still
+/// carries the original wording, because the session's transcript and its
+/// handshake-failure sentence read it.
+enum InitNote {
+  aborted,
+  notAcknowledged,
+  ecuSilent,
+  ecuRefusedSupportQuery,
+  supportMaskTooShort,
+  notModeOnePositiveReply,
+  pidEchoMismatch,
+  timedOut,
+}
+
+/// The wording [InitNote] replaced, kept for [InitProgress.detail].
+String initNoteText(InitNote note) => switch (note) {
+  InitNote.aborted => '已中止',
+  InitNote.notAcknowledged => '轉接器未確認此指令',
+  InitNote.ecuSilent => 'ECU 沒有回應',
+  InitNote.ecuRefusedSupportQuery => 'ECU 拒絕了支援度查詢（negative response）',
+  InitNote.supportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）',
+  InitNote.notModeOnePositiveReply => '回應不是 Mode 01 的正向回覆',
+  InitNote.pidEchoMismatch => '回應的 PID 與查詢不符',
+  InitNote.timedOut => '逾時',
+};
+
 /// Requires the literal `OK` acknowledgement a state-changing AT command owes.
-String? _requireOk(ObdResponse response) {
+InitNote? _requireOk(ObdResponse response) {
   final said = response.rawLines.any((l) => l.trim().toUpperCase() == 'OK');
-  return said ? null : '轉接器未確認此指令';
+  return said ? null : InitNote.notAcknowledged;
 }
 
 /// Requires a well-formed positive answer to the Mode 01 support probe.
@@ -342,17 +367,17 @@ String? _requireOk(ObdResponse response) {
 /// This is the only step that proves a *vehicle* is on the bus: every AT
 /// command answers happily with the ignition off, and `0100` does not. Reading
 /// it loosely gives that proof away.
-String? _requireSupportMask(ObdResponse response) {
+InitNote? _requireSupportMask(ObdResponse response) {
   final bytes = response.bytes;
-  if (bytes.isEmpty) return 'ECU 沒有回應';
-  if (bytes.first == 0x7F) return 'ECU 拒絕了支援度查詢（negative response）';
+  if (bytes.isEmpty) return InitNote.ecuSilent;
+  if (bytes.first == 0x7F) return InitNote.ecuRefusedSupportQuery;
   // Positive response to service 01 is 0x41, echoing the requested PID 0x00,
   // followed by the four mask bytes. Anything shorter is not a usable answer,
   // and treating it as one builds the supported-PID set out of bytes the ECU
   // never sent.
-  if (bytes.length < 6) return '支援度回應過短（需要 41 00 加四個位元組）';
-  if (bytes[0] != 0x41) return '回應不是 Mode 01 的正向回覆';
-  if (bytes[1] != 0x00) return '回應的 PID 與查詢不符';
+  if (bytes.length < 6) return InitNote.supportMaskTooShort;
+  if (bytes[0] != 0x41) return InitNote.notModeOnePositiveReply;
+  if (bytes[1] != 0x00) return InitNote.pidEchoMismatch;
   return null;
 }
 
@@ -363,15 +388,43 @@ class InitProgress {
   final int index;
   final int total;
   final InitStatus status;
+
+  /// What the step produced, as text.
+  ///
+  /// Two different things travel here on purpose. When [note] or [errorCode]
+  /// is set this is their original Chinese wording, which the session's
+  /// transcript and its handshake-failure sentence still read. Otherwise it is
+  /// *data* — the adapter's version string, its battery voltage, the protocol
+  /// it settled on — which is not copy and is shown as it arrived.
   final String? detail;
 
-  const InitProgress({
+  /// The app's own judgement about the reply, when it had one.
+  final InitNote? note;
+
+  /// The adapter's own error code, when the step failed with one.
+  ///
+  /// Kept beside [detail] rather than replacing it: a handshake that failed on
+  /// `CAN ERROR` or `UNABLE TO CONNECT` must not come out the other end as
+  /// "no response", and something has to carry which of them it was.
+  final Elm327ErrorCode? errorCode;
+
+  /// [detail] defaults to the wording [note] or [errorCode] replaced.
+  ///
+  /// Derived here rather than at the call site so it cannot be forgotten: the
+  /// session composes 初始化在 X 失敗（`detail`）with `無回應` as its fallback,
+  /// and a failure that arrived as a `CAN ERROR` must never come out of that
+  /// sentence as "no response".
+  InitProgress({
     required this.step,
     required this.index,
     required this.total,
     required this.status,
-    this.detail,
-  });
+    String? detail,
+    this.note,
+    this.errorCode,
+  }) : detail =
+           detail ??
+           (note != null ? initNoteText(note) : errorCode?.description);
 }
 
 class Elm327Client {
@@ -415,8 +468,8 @@ class Elm327Client {
   ///  * `ATDPN` is **kept** — the numeric protocol ID is worth showing the user
   ///    alongside the text description.
   static const List<InitStep> initSequence = [
-    InitStep('ATZ', '軟體重置轉接器', isCritical: true),
-    InitStep('ATE0', '關閉指令回音', isCritical: true, validate: _requireOk),
+    InitStep('ATZ', isCritical: true),
+    InitStep('ATE0', isCritical: true, validate: _requireOk),
     // Not critical, and not `OK`-gated.
     //
     // Linefeeds are a *rendering* preference: the parser trims whitespace and
@@ -429,9 +482,9 @@ class Elm327Client {
     // `ATE0` and `ATSP0` stay critical for reasons that are not cosmetic: a
     // command echo is valid hex that prepends bytes to a reading, and nothing
     // downstream works without a protocol.
-    InitStep('ATL0', '關閉換行字元'),
-    InitStep('ATM0', '關閉記憶體寫入'),
-    InitStep('ATS0', '關閉空白字元，減少 33% 傳輸量'),
+    InitStep('ATL0'),
+    InitStep('ATM0'),
+    InitStep('ATS0'),
     // `ATAT1` rather than the spec's `ATAT2`.
     //
     // Both enable adaptive timing; AT2 is the more aggressive variant, which
@@ -439,12 +492,12 @@ class Elm327Client {
     // the default and the recommended setting. Combined with treating a single
     // `NO DATA` as proof that a PID is unsupported, AT2 meant one missed window
     // could retire a working gauge for the rest of the session.
-    InitStep('ATAT1', '啟用自適應計時（datasheet 建議值）'),
-    InitStep('ATST66', '設定回應逾時 ~408ms'),
-    InitStep('ATSP0', '自動偵測匯流排協定', isCritical: true, validate: _requireOk),
-    InitStep('ATI', '讀取轉接器版本'),
-    InitStep('AT@1', '讀取裝置識別字串'),
-    InitStep('ATRV', '讀取電瓶電壓'),
+    InitStep('ATAT1'),
+    InitStep('ATST66'),
+    InitStep('ATSP0', isCritical: true, validate: _requireOk),
+    InitStep('ATI'),
+    InitStep('AT@1'),
+    InitStep('ATRV'),
     // The probe, and the reason the protocol reads sit after it.
     //
     // `ATSP0` only *arms* automatic search; the adapter does not actually try
@@ -457,14 +510,9 @@ class Elm327Client {
     //
     // It is also the only step that proves a *vehicle* is there. Every AT
     // command answers happily with the ignition off; `0100` does not.
-    InitStep(
-      '0100',
-      '查詢 ECU 支援的 PID（確認車輛已回應）',
-      isCritical: true,
-      validate: _requireSupportMask,
-    ),
-    InitStep('ATDP', '讀取協定描述'),
-    InitStep('ATDPN', '讀取協定編號'),
+    InitStep('0100', isCritical: true, validate: _requireSupportMask),
+    InitStep('ATDP'),
+    InitStep('ATDPN'),
     // `ATSH 7E0` used to be sent here, unconditionally, and it is the reason a
     // legacy or 29-bit vehicle could pair and then answer nothing.
     //
@@ -1867,7 +1915,7 @@ class Elm327Client {
       // all fifteen means a minute of dead waiting before the app admits it.
       // Once a critical step has failed the outcome is already decided.
       if (!allCriticalPassed) {
-        _emitProgress(step, i, InitStatus.skipped, '已中止');
+        _emitProgress(step, i, InitStatus.skipped, note: InitNote.aborted);
         continue;
       }
 
@@ -1884,7 +1932,12 @@ class Elm327Client {
         // implement that command" — not a failure worth aborting for.
         final softFail = response.errorCode == Elm327ErrorCode.unknownCommand;
         if (softFail && !step.isCritical) {
-          _emitProgress(step, i, InitStatus.skipped, '轉接器不支援此指令');
+          _emitProgress(
+            step,
+            i,
+            InitStatus.skipped,
+            errorCode: Elm327ErrorCode.unknownCommand,
+          );
           continue;
         }
         if (!response.isSuccess && step.isCritical) {
@@ -1900,7 +1953,7 @@ class Elm327Client {
             step,
             i,
             InitStatus.failed,
-            response.errorCode.description,
+            errorCode: response.errorCode,
           );
           continue;
         }
@@ -1915,19 +1968,23 @@ class Elm327Client {
             step,
             i,
             step.isCritical ? InitStatus.failed : InitStatus.skipped,
-            failure,
+            note: failure,
           );
           continue;
         }
 
-        _emitProgress(step, i, InitStatus.ok, _detailFor(step.command));
+        _emitProgress(step, i, InitStatus.ok, detail: _detailFor(step.command));
       } on Object catch (e) {
         if (step.isCritical) allCriticalPassed = false;
+        // A timeout is a state this app has a word for; anything else is an
+        // exception whose own text is the only thing that identifies it, and
+        // it is shown as it was thrown rather than flattened into "failed".
         _emitProgress(
           step,
           i,
           step.isCritical ? InitStatus.failed : InitStatus.skipped,
-          e is TimeoutException ? '逾時' : '$e',
+          detail: e is TimeoutException ? null : '$e',
+          note: e is TimeoutException ? InitNote.timedOut : null,
         );
       }
     }
@@ -2063,9 +2120,11 @@ class Elm327Client {
   void _emitProgress(
     InitStep step,
     int index,
-    InitStatus status, [
+    InitStatus status, {
     String? detail,
-  ]) {
+    InitNote? note,
+    Elm327ErrorCode? errorCode,
+  }) {
     if (_initProgress.isClosed) return;
     _initProgress.add(
       InitProgress(
@@ -2074,6 +2133,8 @@ class Elm327Client {
         total: initSequence.length,
         status: status,
         detail: detail,
+        note: note,
+        errorCode: errorCode,
       ),
     );
   }

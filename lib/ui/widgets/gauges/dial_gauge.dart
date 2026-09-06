@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/gauge_skin.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// A 270° sweep opening at the bottom — the layout every car instrument uses,
 /// because it keeps the resting needle clear of the readout.
@@ -143,6 +144,7 @@ class _DialGaugeState extends State<DialGauge>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final skin = context.gaugeSkin;
     final colors = context.gaugeColors(widget.hue);
@@ -177,13 +179,7 @@ class _DialGaugeState extends State<DialGauge>
           // A stale reading keeps both: the number is real and its age is the
           // qualification. A gauge with no value at all leads with the reason,
           // because that is the whole of what there is to say.
-          value: widget.value == null
-              ? (widget.footnote?.isNotEmpty ?? false
-                  ? '無資料 — ${widget.footnote}'
-                  : '無資料')
-              : '${_semanticValue(widget.value!)}${widget.units.isEmpty ? '' : ' ${widget.units}'}'
-                  '${widget.isStale ? '（資料已過期）' : ''}'
-                  '${(widget.footnote?.isNotEmpty ?? false) ? ' — ${widget.footnote}' : ''}',
+          value: _semanticsValue(l10n),
           child: SizedBox.square(
             dimension: size,
             child: Stack(
@@ -256,8 +252,11 @@ class _DialGaugeState extends State<DialGauge>
                   // With the numbers no longer dimmed, the words carry the
                   // signal — and they carry it for people the fading dial
                   // does not reach either.
+                  // Same key the status table uses. One sentence, one entry:
+                  // a dial and a status row that disagree about what stale
+                  // means is the drift this app cannot afford.
                   footnote: widget.isStale && widget.footnote == null
-                      ? '資料已過期'
+                      ? l10n.telemetryStatusStale
                       : widget.footnote,
                   diameter: size,
                   inRedline: inRedline,
@@ -269,6 +268,36 @@ class _DialGaugeState extends State<DialGauge>
         );
       },
     );
+  }
+
+  /// What a screen reader says for this dial.
+  ///
+  /// Takes the localizations rather than reading a context, so the assembly
+  /// order — reading, then the stale qualification, then the reason — is one
+  /// pure function a test can walk in both languages.
+  ///
+  /// The stale marker is a placeholder message rather than a suffix glued on
+  /// here, because the punctuation belongs to the language: Chinese wraps the
+  /// phrase in full-width parentheses and needs no space, English needs the
+  /// space and half-width ones. A suffix key would have had to carry one of
+  /// those two spacings and be wrong in the other.
+  String _semanticsValue(AppLocalizations l10n) {
+    final footnote = widget.footnote;
+    final hasFootnote = footnote != null && footnote.isNotEmpty;
+    final value = widget.value;
+    // No value at all leads with the reason, because that is the whole of what
+    // there is to say. A formula error, a bus fault and a sensor that will be
+    // retried must not all be announced as "no data".
+    if (value == null) {
+      return hasFootnote ? l10n.gaugeNoDataBecause(footnote) : l10n.gaugeNoData;
+    }
+    final reading = widget.units.isEmpty
+        ? _semanticValue(value)
+        : '${_semanticValue(value)} ${widget.units}';
+    // A stale reading keeps both: the number is real and its age is the
+    // qualification.
+    final qualified = widget.isStale ? l10n.gaugeReadingStale(reading) : reading;
+    return hasFootnote ? '$qualified — $footnote' : qualified;
   }
 
   /// How far the painted layers fade when the value is stale or absent.

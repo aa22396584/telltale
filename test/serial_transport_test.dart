@@ -6,6 +6,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 
 import 'package:torque_obd/core/serial/spp_serial_platform.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -56,6 +58,7 @@ class _FakeSppSession implements SppSerialSession {
 }
 
 void main() {
+  final zh = lookupAppLocalizations(traditionalChineseLocale);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   tearDown(() {
@@ -73,7 +76,7 @@ void main() {
       } else {
         expect(classicTransportAvailable, isFalse);
       }
-      expect(classicUnavailableReason, isNot(contains('僅在 Android 驗證過')));
+      expect(classicUnavailableReason(zh), isNot(contains('僅在 Android 驗證過')));
     });
 
     test('opens when desktop SPP serial host is asserted', () {
@@ -88,22 +91,22 @@ void main() {
       expect(classicIoBluetoothHostSupported, isTrue);
       expect(sppSerialHostSupported, isFalse);
       expect(classicTransportAvailable, isTrue);
-      expect(classicUnavailableReason, isNot(contains('尚未場測')));
-      expect(classicUnavailableReason, isNot(contains('暫不開放')));
+      expect(classicUnavailableReason(zh), isNot(contains('尚未場測')));
+      expect(classicUnavailableReason(zh), isNot(contains('暫不開放')));
     });
 
     test('unavailable copy names host constraint without blaming Linux Classic',
         () {
       sppSerialHostOverride = false;
       expect(
-        classicUnavailableReason.contains('iOS') ||
-            classicUnavailableReason.contains('macOS') ||
-            classicUnavailableReason.contains('Android') ||
-            classicUnavailableReason.contains('Windows') ||
-            classicUnavailableReason.contains('Linux'),
+        classicUnavailableReason(zh).contains('iOS') ||
+            classicUnavailableReason(zh).contains('macOS') ||
+            classicUnavailableReason(zh).contains('Android') ||
+            classicUnavailableReason(zh).contains('Windows') ||
+            classicUnavailableReason(zh).contains('Linux'),
         isTrue,
       );
-      expect(classicUnavailableReason, isNot(contains('Linux Classic')));
+      expect(classicUnavailableReason(zh), isNot(contains('Linux Classic')));
     });
   });
 

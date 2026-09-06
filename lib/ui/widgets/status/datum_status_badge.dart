@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../panel.dart';
+import 'datum_status_copy.dart';
 
 class DatumStatusBadge extends StatelessWidget {
   const DatumStatusBadge({required this.status, this.dense = true, super.key});
@@ -15,8 +17,8 @@ class DatumStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = status.badgeText;
-    if (text.isEmpty) return const SizedBox.shrink();
+    if (status.badges.isEmpty) return const SizedBox.shrink();
+    final text = datumBadgeText(AppLocalizations.of(context), status);
     final tone = switch (status.quality) {
       DatumQuality.invalid => StatusTone.bad,
       DatumQuality.outOfReferenceRange => StatusTone.warn,
@@ -40,6 +42,7 @@ Future<void> showDatumStatusDetails(
   List<DatumStatus> extra = const [],
 }) {
   final items = [status, ...extra];
+  final l10n = AppLocalizations.of(context);
   return showDialog<void>(
     context: context,
     builder: (context) {
@@ -52,28 +55,37 @@ Future<void> showDatumStatusDetails(
             children: [
               for (var index = 0; index < items.length; index++) ...[
                 if (index > 0) const SizedBox(height: Spacing.lg),
+                // Says only that nothing was flagged. Never "valid", "OK" or
+                // "normal" — the datum has not been checked, it merely
+                // carries no badge.
                 Text(
-                  items[index].badgeText.isEmpty
-                      ? '狀態隨資料'
-                      : items[index].badgeText,
+                  items[index].badges.isEmpty
+                      ? l10n.datumStatusFollowsData
+                      : datumBadgeText(l10n, items[index]),
                 ),
-                if (items[index].reason != null) ...[
+                if (datumReasonText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.sm),
-                  Text(items[index].reason!),
+                  Text(datumReasonText(l10n, items[index])!),
                 ],
                 if (items[index].formula != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text('公式', style: Theme.of(context).textTheme.labelMedium),
+                  Text(
+                    l10n.datumStatusFormula,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                   Text(items[index].formula!),
                 ],
                 if (items[index].assumptions != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text('假設', style: Theme.of(context).textTheme.labelMedium),
+                  Text(
+                    l10n.datumStatusAssumptions,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                   Text(items[index].assumptions!),
                 ],
                 if (items[index].nextStep != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text(items[index].nextStep!),
+                  Text(datumNextStepLabel(l10n, items[index].nextStep!)),
                 ],
               ],
             ],
@@ -82,7 +94,7 @@ Future<void> showDatumStatusDetails(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('關閉'),
+            child: Text(l10n.datumStatusClose),
           ),
         ],
       );

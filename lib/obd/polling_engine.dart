@@ -1204,7 +1204,11 @@ class PollingEngine {
   /// to reach the code that decides to send again, so it is passed in rather
   /// than wrapped around.
   Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async {
-    client.transcript.recordNote('開始讀取${kind.label}故障碼（Mode ${kind.mode}）');
+    // `transcriptLabel`, not screen copy. The transcript is an exported
+    // artifact that two people compare weeks apart, so its language must not
+    // depend on whose phone produced it.
+    client.transcript
+        .recordNote('開始讀取${kind.transcriptLabel}故障碼（Mode ${kind.mode}）');
     // Captured, not sampled. Re-checked before every attempt, so a retry that
     // slept across an interruption does not resume on the other side of it.
     final owner = lifecycleEpoch?.call();
@@ -1298,10 +1302,10 @@ class PollingEngine {
                 ? '有 ${silent.length} 個控制器完全沒有回應這次查詢'
                       '（${silent.join('、')}）。'
                       '已回應的部分沒有問題，但這不能當作全車結果。'
-                : '有 ${silent.length} 個控制器沒有回應${kind.label}故障碼查詢'
+                : '有 ${silent.length} 個控制器沒有回應${kind.transcriptLabel}故障碼查詢'
                       '（${silent.join('、')}）。'
                       '這個類別是選配的，沉默可能只代表它沒有實作 —— '
-                      '但也因此無法當作全車都沒有${kind.label}故障碼。',
+                      '但也因此無法當作全車都沒有${kind.transcriptLabel}故障碼。',
             kind: DtcReadFailure.noAnswer,
             partial: result,
             terminalSources: Set.unmodifiable(heard),

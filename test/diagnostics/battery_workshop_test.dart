@@ -44,7 +44,13 @@ void main() {
           catalogStatus: profile.status,
         );
         expect(status.evidence, EvidenceKind.experimental);
-        expect(status.badgeLabels, anyOf(contains('未驗證'), contains('本車未驗證')));
+        expect(
+          status.badges,
+          anyOf(
+            contains(DatumBadge.unverified),
+            contains(DatumBadge.unverifiedOnThisVehicle),
+          ),
+        );
       }
     },
   );

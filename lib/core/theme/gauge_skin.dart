@@ -67,8 +67,6 @@ enum GaugeFace {
 class GaugeSkin extends ThemeExtension<GaugeSkin> {
   const GaugeSkin({
     required this.id,
-    required this.name,
-    required this.description,
     required this.startAngle,
     required this.sweepAngle,
     required this.trackFraction,
@@ -82,14 +80,10 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
     required this.usesMonospaceReadout,
   });
 
-  /// Stable across releases: this is what gets persisted.
+  /// Stable across releases: this is what gets persisted — and, since the
+  /// words moved out of this class, the key the picker's copy is chosen by.
+  /// See `lib/ui/screens/settings/gauge_skin_copy.dart`.
   final String id;
-
-  /// Shown in the picker.
-  final String name;
-
-  /// One line saying what it is *for*, not what it looks like.
-  final String description;
 
   /// Where the scale begins, in radians, measured the way `Canvas.drawArc`
   /// does — zero at three o'clock, increasing clockwise.
@@ -132,8 +126,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   @override
   GaugeSkin copyWith({
     String? id,
-    String? name,
-    String? description,
     double? startAngle,
     double? sweepAngle,
     double? trackFraction,
@@ -148,8 +140,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   }) =>
       GaugeSkin(
         id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
         startAngle: startAngle ?? this.startAngle,
         sweepAngle: sweepAngle ?? this.sweepAngle,
         trackFraction: trackFraction ?? this.trackFraction,
@@ -182,8 +172,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   /// 270° dial with a needle, recessed face and graduated ticks.
   static const cluster = GaugeSkin(
     id: 'cluster',
-    name: '儀表艙',
-    description: '車廠儀表板的樣子。指針、270 度刻度盤、凹陷的面盤。',
     startAngle: math.pi * 0.75,
     sweepAngle: math.pi * 1.5,
     trackFraction: 0.13,
@@ -201,8 +189,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   /// number rather than watching a movement.
   static const minimal = GaugeSkin(
     id: 'minimal',
-    name: '極簡',
-    description: '半圓弧、沒有指針、沒有刻度。要看的是數字，不是動作。',
     startAngle: math.pi,
     sweepAngle: math.pi,
     trackFraction: 0.09,
@@ -220,8 +206,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   /// easing at all.
   static const track = GaugeSkin(
     id: 'track',
-    name: '賽道',
-    description: '分段燈條、無平滑動畫。數值到哪就是哪，不做過渡。',
     startAngle: math.pi * 0.85,
     sweepAngle: math.pi * 1.3,
     trackFraction: 0.17,
@@ -241,8 +225,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   /// settles the way a mechanical one does.
   static const classic = GaugeSkin(
     id: 'classic',
-    name: '經典',
-    description: '印刷式面盤、整圈數字、指針像機械錶一樣慢慢定位。',
     startAngle: math.pi * 0.7,
     sweepAngle: math.pi * 1.6,
     trackFraction: 0.06,
@@ -261,8 +243,6 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
   /// large bright surfaces, and no animation to catch the eye.
   static const night = GaugeSkin(
     id: 'night',
-    name: '夜視',
-    description: '夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。',
     startAngle: math.pi * 1.1,
     sweepAngle: math.pi * 0.8,
     trackFraction: 0.07,

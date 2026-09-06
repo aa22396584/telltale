@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_profile.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_catalog.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_probe.dart';
@@ -66,19 +67,24 @@ class _PowertrainBatteryCatalogScreenState
     PowertrainBatteryCatalogSnapshot snapshot,
     PowertrainBatteryProfile profile,
   ) async {
+    // Captured before the first await. Every message below belongs to the
+    // language that was on screen when the driver tapped, and reading the
+    // context again after an await is what `use_build_context_synchronously`
+    // exists to stop.
+    final l10n = AppLocalizations.of(context);
     if (!ref.read(powertrainBatteryExperimentalAccessProvider)) {
-      _snack('請先到設定開啟「大電池證據實驗室」。');
+      _snack(l10n.powertrainEnableLabInSettings);
       return;
     }
     if (!ref.read(obdSessionProvider).isConnected) {
-      _snack('請先連線；實驗授權不會跨連線保留。');
+      _snack(l10n.powertrainConnectFirst);
       return;
     }
     final quarantine = ref
         .read(powertrainExperimentalProbeConsentsProvider.notifier)
         .quarantineReason(profile.id);
     if (quarantine != null) {
-      _snack('本次連線已隔離：$quarantine');
+      _snack(l10n.powertrainQuarantinedSnack(quarantine));
       return;
     }
 
@@ -98,7 +104,7 @@ class _PowertrainBatteryCatalogScreenState
           connectionGeneration: session.connectionGeneration,
         );
     if (!decision.accepted) {
-      _snack('未授權：${decision.reason}');
+      _snack(l10n.powertrainNotAuthorized(decision.reason));
       return;
     }
 
@@ -120,7 +126,7 @@ class _PowertrainBatteryCatalogScreenState
           context: ErrorDescription('while running a one-shot probe'),
         ),
       );
-      if (mounted) _snack('單次查詢沒有完成；沒有發布或保留數值。');
+      if (mounted) _snack(l10n.powertrainProbeDidNotFinish);
     } finally {
       if (mounted) setState(() => _probingCommandKey = null);
     }
@@ -135,6 +141,7 @@ class _PowertrainBatteryCatalogScreenState
     // vehicle on the wire *now* — if the connection changes while the
     // dialog sits open, the acceptance must not authorize whatever
     // connected next; the dashboard banner will ask for it instead.
+    final l10n = AppLocalizations.of(context);
     final session = ref.read(obdSessionProvider.notifier);
     final wasConnected = ref.read(obdSessionProvider).isConnected;
     final generationAtPrompt = session.connectionGeneration;
@@ -151,11 +158,11 @@ class _PowertrainBatteryCatalogScreenState
     try {
       await ref.read(installedPowertrainProfilesRestoreProvider.future);
     } on PowertrainBatteryCatalogAssetException {
-      _snack('目錄尚未通過驗證，無法安裝。');
+      _snack(l10n.powertrainCatalogNotVerified);
       return;
     } on Object {
       ref.invalidate(installedPowertrainProfilesRestoreProvider);
-      _snack('還原先前安裝時發生儲存錯誤，已重新排程，請再試一次。');
+      _snack(l10n.powertrainRestoreStorageErrorRetry);
       return;
     }
     if (!mounted) return;
@@ -169,7 +176,7 @@ class _PowertrainBatteryCatalogScreenState
         return;
       }
     } on PowertrainProfileInstallException catch (error) {
-      _snack('無法安裝：${error.message}');
+      _snack(l10n.powertrainInstallFailed(error.message));
       return;
     }
 
@@ -191,11 +198,12 @@ class _PowertrainBatteryCatalogScreenState
       0,
       (total, command) => total + command.signals.length,
     );
-    _snack('已安裝 $signals 個訊號。到 PID 頁面加入儀表板；每次連線需確認車輛。');
+    _snack(l10n.powertrainInstalledSignalsSnack(signals));
     setState(() {});
   }
 
   Future<void> _uninstallProfile(PowertrainBatteryProfile profile) async {
+    final l10n = AppLocalizations.of(context);
     final outcome = await ref
         .read(pidRegistryProvider.notifier)
         .uninstallPowertrainProfile(profile.id);
@@ -206,28 +214,15 @@ class _PowertrainBatteryCatalogScreenState
     ref
         .read(powertrainProfileAuthorizationsProvider.notifier)
         .revoke(profile.id);
-    _snack('已移除 ${profile.displayName} 的已安裝訊號。');
+    _snack(l10n.powertrainUninstalledSignalsSnack(profile.displayName));
     setState(() {});
-  }
-
-  static String _installDisclosure(PowertrainBatteryProfile profile) {
-    const prefix =
-        '安裝只是把唯讀電池 PID 加進 PID 管理。開始讀取前，'
-        '每次連線都要在儀表板確認「這台車就是這個車型」。';
-    return switch (profile.status) {
-      PowertrainProfileStatus.community =>
-        '$prefix資料來自社群來源並經獨立比對，仍非原廠保證。',
-      PowertrainProfileStatus.experimental =>
-        '$prefix這是實驗解碼，沒有獨立佐證要求，本車未驗證，仍非原廠保證。',
-      PowertrainProfileStatus.ready => '$prefix來源資料較完整，仍非原廠保證。',
-      PowertrainProfileStatus.researchOnly => '$prefix此列僅供研究，不應安裝。',
-    };
   }
 
   Future<int?> _confirmInstall(PowertrainBatteryProfile profile) =>
       showDialog<int>(
         context: context,
         builder: (context) {
+          final l10n = AppLocalizations.of(context);
           var year = profile.yearFrom;
           var identityAcknowledged = false;
           final years = [
@@ -236,7 +231,7 @@ class _PowertrainBatteryCatalogScreenState
           ];
           return StatefulBuilder(
             builder: (context, setDialogState) => AlertDialog(
-              title: const Text('安裝車型電池訊號'),
+              title: Text(l10n.powertrainInstallDialogTitle),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -248,17 +243,23 @@ class _PowertrainBatteryCatalogScreenState
                     ),
                     const SizedBox(height: Spacing.sm),
                     Text(
-                      '主要來源：${profile.source.name}（${profile.source.license}）',
+                      l10n.powertrainPrimarySource(
+                        profile.source.name,
+                        profile.source.license,
+                      ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     for (final source in profile.secondarySources)
                       Text(
-                        '獨立佐證：${source.name}（${source.license}）',
+                        l10n.powertrainSecondarySource(
+                          source.name,
+                          source.license,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     const SizedBox(height: Spacing.sm),
                     Text(
-                      _installDisclosure(profile),
+                      powertrainInstallDisclosure(l10n, profile.status),
                       key: const Key('powertrain_install_disclosure'),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -267,7 +268,9 @@ class _PowertrainBatteryCatalogScreenState
                       DropdownButtonFormField<int>(
                         key: const Key('powertrain_install_year'),
                         initialValue: year,
-                        decoration: const InputDecoration(labelText: '車輛年式'),
+                        decoration: InputDecoration(
+                          labelText: l10n.powertrainVehicleYearLabel,
+                        ),
                         items: [
                           for (final value in years)
                             DropdownMenuItem(
@@ -280,14 +283,14 @@ class _PowertrainBatteryCatalogScreenState
                         },
                       )
                     else
-                      Text('車輛年式：$year'),
+                      Text(l10n.powertrainVehicleYearFixed(year)),
                     const SizedBox(height: Spacing.sm),
                     CheckboxListTile(
                       key: const Key('powertrain_install_identity_ack'),
                       value: identityAcknowledged,
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
-                      title: const Text('我的車輛符合上述市場、車型與年式'),
+                      title: Text(l10n.powertrainInstallIdentityAck),
                       onChanged: (value) => setDialogState(
                         () => identityAcknowledged = value ?? false,
                       ),
@@ -298,14 +301,14 @@ class _PowertrainBatteryCatalogScreenState
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('取消'),
+                  child: Text(l10n.powertrainCancel),
                 ),
                 FilledButton(
                   key: const Key('powertrain_confirm_install'),
                   onPressed: identityAcknowledged
                       ? () => Navigator.pop(context, year)
                       : null,
-                  child: const Text('安裝'),
+                  child: Text(l10n.powertrainInstallConfirm),
                 ),
               ],
             ),
@@ -317,8 +320,10 @@ class _PowertrainBatteryCatalogScreenState
     PowertrainBatteryProfile profile,
   ) => showDialog<PowertrainBatteryCommand>(
     context: context,
-    builder: (context) => SimpleDialog(
-      title: const Text('選擇一條固定唯讀查詢'),
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return SimpleDialog(
+      title: Text(l10n.powertrainChooseCommandTitle),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -328,7 +333,7 @@ class _PowertrainBatteryCatalogScreenState
             Spacing.sm,
           ),
           child: Text(
-            '每次只送一條，不掃描、不批次、不自動重試。',
+            l10n.powertrainChooseCommandNote,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -341,11 +346,17 @@ class _PowertrainBatteryCatalogScreenState
             child: Text(
               '${command.modeAndIdentifier} · '
               '${command.requestHeader} → ${command.expectedResponder}\n'
-              '${command.signals.map((signal) => signal.name).join('、')}',
+              // Not a literal '、'. This is the one list on the screen that
+              // was still joining with an ideographic comma, so 18 of the 51
+              // catalogue commands rendered "Battery temperature 1、Battery
+              // temperature 2" to an English reader. The separator key was
+              // already three lines below, in use by another list.
+              '${command.signals.map((signal) => signal.name).join(l10n.powertrainFieldListSeparator)}',
             ),
           ),
       ],
-    ),
+      );
+    },
   );
 
   Future<int?> _confirmExperimentalProbe(
@@ -354,6 +365,7 @@ class _PowertrainBatteryCatalogScreenState
   ) => showDialog<int>(
     context: context,
     builder: (context) {
+      final l10n = AppLocalizations.of(context);
       var year = profile.yearFrom;
       var identityAcknowledged = false;
       var parkedAcknowledged = false;
@@ -363,7 +375,7 @@ class _PowertrainBatteryCatalogScreenState
       ];
       return StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('單次實驗唯讀確認'),
+          title: Text(l10n.powertrainExperimentalDialogTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -376,27 +388,28 @@ class _PowertrainBatteryCatalogScreenState
                 const SizedBox(height: Spacing.sm),
                 Text(
                   'TX ${command.requestHeader} ${command.modeAndIdentifier}\n'
-                  '只接受 RX ${command.expectedResponder}，'
-                  '資料長度 ${command.payloadLength} bytes',
+                  '${l10n.powertrainExperimentalWireLine(command.expectedResponder, command.payloadLength)}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: Spacing.sm),
                 Text(
-                  '來源檔 SHA-256：${profile.source.artifactSha256.substring(0, 12)}…',
+                  l10n.powertrainSourceSha256(
+                    profile.source.artifactSha256.substring(0, 12),
+                  ),
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
                 const SizedBox(height: Spacing.sm),
                 Text(
-                  _identityEvidenceSummary(profile.identityEvidence),
+                  powertrainIdentityEvidenceSummary(
+                    l10n,
+                    profile.identityEvidence,
+                  ),
                   key: const Key('powertrain_experimental_identity_evidence'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: Spacing.sm),
                 Text(
-                  '這是來源作者標示的候選讀取，不是原廠或跨車款安全保證；'
-                  'ELM327 只負責轉送命令。原始指令與回覆會留在本機診斷紀錄，'
-                  '不會由此功能自動上傳；解碼值不會安裝成 PID 或加入儀表。'
-                  '取消不影響一般 OBD 功能。',
+                  l10n.powertrainExperimentalDataDisclosure,
                   key: const Key('powertrain_experimental_data_disclosure'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -404,7 +417,9 @@ class _PowertrainBatteryCatalogScreenState
                 DropdownButtonFormField<int>(
                   key: const Key('powertrain_experimental_year'),
                   initialValue: year,
-                  decoration: const InputDecoration(labelText: '車輛年式'),
+                  decoration: InputDecoration(
+                    labelText: l10n.powertrainVehicleYearLabel,
+                  ),
                   items: [
                     for (final value in years)
                       DropdownMenuItem(value: value, child: Text('$value')),
@@ -419,7 +434,7 @@ class _PowertrainBatteryCatalogScreenState
                   value: identityAcknowledged,
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text('我已核對來源已知的市場、車型與年式，並接受未證實欄位'),
+                  title: Text(l10n.powertrainExperimentalIdentityAck),
                   onChanged: (value) => setDialogState(
                     () => identityAcknowledged = value ?? false,
                   ),
@@ -429,7 +444,7 @@ class _PowertrainBatteryCatalogScreenState
                   value: parkedAcknowledged,
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text('車輛已安全停妥；我知道這只讀一次，數字仍可能不適用'),
+                  title: Text(l10n.powertrainExperimentalParkedAck),
                   onChanged: (value) =>
                       setDialogState(() => parkedAcknowledged = value ?? false),
                 ),
@@ -439,14 +454,14 @@ class _PowertrainBatteryCatalogScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(l10n.powertrainCancel),
             ),
             FilledButton(
               key: const Key('powertrain_confirm_experimental_probe'),
               onPressed: identityAcknowledged && parkedAcknowledged
                   ? () => Navigator.pop(context, year)
                   : null,
-              child: const Text('只讀這一次'),
+              child: Text(l10n.powertrainProbeOnceButton),
             ),
           ],
         ),
@@ -459,7 +474,11 @@ class _PowertrainBatteryCatalogScreenState
   ) => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(result.passed ? '單次查詢通過' : '單次查詢已拒絕'),
+      title: Text(
+        result.passed
+            ? AppLocalizations.of(context).powertrainProbePassedTitle
+            : AppLocalizations.of(context).powertrainProbeRefusedTitle,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -480,7 +499,7 @@ class _PowertrainBatteryCatalogScreenState
               ),
             if (result.passed) ...[
               const SizedBox(height: Spacing.sm),
-              const Text('已通過 responder、echo、exact length、公式與範圍檢查。'),
+              Text(AppLocalizations.of(context).powertrainProbeChecksPassed),
               for (final reading in result.readings)
                 Text(
                   '${reading.signal.name}: ${reading.value} '
@@ -489,7 +508,9 @@ class _PowertrainBatteryCatalogScreenState
             ] else ...[
               const SizedBox(height: Spacing.sm),
               Text('${result.failure?.name}: ${result.detail}'),
-              const Text('沒有發布數值；結構或解碼錯誤會隔離到重新連線。'),
+              Text(
+                AppLocalizations.of(context).powertrainProbeNoValuePublished,
+              ),
             ],
           ],
         ),
@@ -497,7 +518,7 @@ class _PowertrainBatteryCatalogScreenState
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('關閉'),
+          child: Text(AppLocalizations.of(context).powertrainClose),
         ),
       ],
     ),
@@ -507,34 +528,6 @@ class _PowertrainBatteryCatalogScreenState
       .map((byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
       .join(' ');
 
-  static String _identityEvidenceSummary(
-    PowertrainBatteryIdentityEvidence? evidence,
-  ) {
-    if (evidence == null) {
-      return '來源身分證據：市場 未知 · 年式 未知 · 車型 未知 · 版本 未知\n'
-          '未證實欄位：市場、年式、車型、版本';
-    }
-    final fields = <(String, PowertrainIdentityEvidenceLevel)>[
-      ('市場', evidence.market),
-      ('年式', evidence.year),
-      ('車型', evidence.model),
-      ('版本', evidence.variant),
-    ];
-    final unknown = [
-      for (final field in fields)
-        if (field.$2 == PowertrainIdentityEvidenceLevel.unknown) field.$1,
-    ];
-    return '來源身分證據：${fields.map((field) => '${field.$1} ${_identityEvidenceLabel(field.$2)}').join(' · ')}\n'
-        '未證實欄位：${unknown.isEmpty ? '無' : unknown.join('、')}';
-  }
-
-  static String _identityEvidenceLabel(PowertrainIdentityEvidenceLevel level) =>
-      switch (level) {
-        PowertrainIdentityEvidenceLevel.exact => '直接證據',
-        PowertrainIdentityEvidenceLevel.sourcePartial => '部分證據',
-        PowertrainIdentityEvidenceLevel.unknown => '未知',
-      };
-
   void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -543,8 +536,9 @@ class _PowertrainBatteryCatalogScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('大電池車型目錄')),
+      appBar: AppBar(title: Text(l10n.powertrainCatalogTitle)),
       body: FutureBuilder<PowertrainBatteryCatalogSnapshot>(
         future: _catalog,
         builder: (context, snapshot) {
@@ -554,11 +548,11 @@ class _PowertrainBatteryCatalogScreenState
           if (snapshot.hasError || snapshot.data == null) {
             return EmptyState(
               icon: Icons.inventory_2_outlined,
-              title: '離線目錄無法載入',
-              message: '完整性驗證沒有通過，因此沒有顯示或安裝任何車型資料。',
+              title: l10n.powertrainCatalogLoadFailedTitle,
+              message: l10n.powertrainCatalogLoadFailedBody,
               action: OutlinedButton(
                 onPressed: _retry,
-                child: const Text('重新驗證'),
+                child: Text(l10n.powertrainCatalogRevalidate),
               ),
             );
           }
@@ -569,6 +563,7 @@ class _PowertrainBatteryCatalogScreenState
   }
 
   Widget _catalogBody(PowertrainBatteryCatalogSnapshot snapshot) {
+    final l10n = AppLocalizations.of(context);
     final catalog = snapshot.catalog;
     ref.watch(powertrainExperimentalProbeConsentsProvider);
     final connected = ref.watch(obdSessionProvider).isConnected;
@@ -621,23 +616,31 @@ class _PowertrainBatteryCatalogScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${catalog.profiles.length} 個車型 · '
-                  '${catalog.profiles.where((p) => const PowertrainBatteryProfileCatalogValidator().validateProfile(p).canProbe).length} 個實驗單次唯讀',
+                  l10n.powertrainCatalogCounts(
+                    catalog.profiles.length,
+                    catalog.profiles
+                        .where(
+                          (p) =>
+                              const PowertrainBatteryProfileCatalogValidator()
+                                  .validateProfile(p)
+                                  .canProbe,
+                        )
+                        .length,
+                  ),
                   style: context.texts.titleMedium,
                 ),
                 const SizedBox(height: Spacing.xs),
                 Text(
-                  '目錄很廣，但「找到資料」不等於「已支援」。'
-                  '僅研究項目永遠沒有指令；實驗項目也只能逐次確認後讀一條。',
+                  l10n.powertrainCatalogScopeNote,
                   style: context.texts.bodySmall,
                 ),
                 const SizedBox(height: Spacing.md),
                 TextField(
                   key: const Key('powertrain_profile_search'),
                   onChanged: (value) => setState(() => _query = value),
-                  decoration: const InputDecoration(
-                    hintText: '搜尋品牌、車型、版本或市場…',
-                    prefixIcon: Icon(Icons.search),
+                  decoration: InputDecoration(
+                    hintText: l10n.powertrainCatalogSearchHint,
+                    prefixIcon: const Icon(Icons.search),
                   ),
                 ),
                 const SizedBox(height: Spacing.sm),
@@ -650,7 +653,9 @@ class _PowertrainBatteryCatalogScreenState
                           key: Key('powertrain_filter_$filter'),
                           selected: _powertrain == filter,
                           showCheckmark: false,
-                          label: Text(filter == 'all' ? '全部' : filter),
+                          label: Text(
+                            filter == 'all' ? l10n.powertrainFilterAll : filter,
+                          ),
                           onSelected: (_) =>
                               setState(() => _powertrain = filter),
                         ),
@@ -664,10 +669,10 @@ class _PowertrainBatteryCatalogScreenState
           ),
           Expanded(
             child: visible.isEmpty
-                ? const EmptyState(
+                ? EmptyState(
                     icon: Icons.search_off,
-                    title: '沒有符合的車型',
-                    message: '改用品牌、車型名稱，或切換其他動力型式。',
+                    title: l10n.powertrainNoMatchTitle,
+                    message: l10n.powertrainNoMatchBody,
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(
@@ -740,6 +745,7 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final validation = const PowertrainBatteryProfileCatalogValidator()
         .validateProfile(profile);
     final probeable = validation.canProbe;
@@ -747,19 +753,18 @@ class _ProfileCard extends StatelessWidget {
     final years = profile.yearFrom == profile.yearTo
         ? '${profile.yearFrom}'
         : '${profile.yearFrom}–${profile.yearTo}';
-    final status = switch (profile.status) {
-      PowertrainProfileStatus.ready => ('來源較完整', StatusTone.good),
-      PowertrainProfileStatus.community => ('社群資料 · 未驗證', StatusTone.accent),
-      PowertrainProfileStatus.experimental => installable
-          ? ('實驗 · 未驗證', StatusTone.warn)
-          : ('實驗單次唯讀', StatusTone.warn),
-      PowertrainProfileStatus.researchOnly => ('僅研究', StatusTone.neutral),
+    final statusLabel = powertrainProfileStatusLabel(
+      l10n,
+      profile.status,
+      installable: installable,
+    );
+    final statusTone = switch (profile.status) {
+      PowertrainProfileStatus.ready => StatusTone.good,
+      PowertrainProfileStatus.community => StatusTone.accent,
+      PowertrainProfileStatus.experimental => StatusTone.warn,
+      PowertrainProfileStatus.researchOnly => StatusTone.neutral,
     };
-    final evidence = switch (profile.evidence) {
-      PowertrainProfileEvidence.sourceBacked => '來源資料',
-      PowertrainProfileEvidence.syntheticRig => '合成測試台',
-      PowertrainProfileEvidence.physicalVehicle => '專案實車',
-    };
+    final evidence = powertrainProfileEvidenceLabel(l10n, profile.evidence);
     final signalCount = profile.commands.fold<int>(
       0,
       (total, command) => total + command.signals.length,
@@ -779,7 +784,7 @@ class _ProfileCard extends StatelessWidget {
                   style: context.texts.titleMedium,
                 ),
               ),
-              StatusPill(label: status.$1, tone: status.$2, dense: true),
+              StatusPill(label: statusLabel, tone: statusTone, dense: true),
             ],
           ),
           const SizedBox(height: Spacing.xs),
@@ -794,8 +799,8 @@ class _ProfileCard extends StatelessWidget {
               ),
               StatusPill(label: evidence, dense: true),
               if (quarantined)
-                const StatusPill(
-                  label: '本次連線已隔離',
+                StatusPill(
+                  label: l10n.powertrainQuarantinedPill,
                   tone: StatusTone.warn,
                   dense: true,
                 ),
@@ -815,7 +820,7 @@ class _ProfileCard extends StatelessWidget {
           Text(
             '${profile.source.name} · ${profile.source.license} · '
             '${profile.source.revision.substring(0, 8)} · '
-            '$signalCount 個訊號',
+            '${l10n.powertrainSignalCount(signalCount)}',
             style: context.texts.labelSmall,
           ),
           const SizedBox(height: Spacing.sm),
@@ -827,12 +832,12 @@ class _ProfileCard extends StatelessWidget {
                       ? OutlinedButton(
                           key: Key('powertrain_uninstall_${profile.id}'),
                           onPressed: onUninstall,
-                          child: const Text('已安裝 · 移除訊號'),
+                          child: Text(l10n.powertrainInstalledRemoveButton),
                         )
                       : FilledButton(
                           key: Key('powertrain_install_${profile.id}'),
                           onPressed: onInstall,
-                          child: const Text('安裝電池訊號'),
+                          child: Text(l10n.powertrainInstallButton),
                         ),
                 ),
               ],
@@ -852,12 +857,12 @@ class _ProfileCard extends StatelessWidget {
                             : null,
                         child: Text(
                           quarantined
-                              ? '重新連線後再試'
+                              ? l10n.powertrainProbeReconnectFirst
                               : !connected
-                              ? '連線後可先單次試讀'
+                              ? l10n.powertrainProbeConnectToTryOnce
                               : probing
-                              ? '單次查詢中…'
-                              : '先試讀一次',
+                              ? l10n.powertrainProbeInProgress
+                              : l10n.powertrainProbeTryOnceFirst,
                         ),
                       ),
                     ),
@@ -881,18 +886,18 @@ class _ProfileCard extends StatelessWidget {
                     child: Text(
                       probeable
                           ? quarantined
-                                ? '重新連線後再試'
+                                ? l10n.powertrainProbeReconnectFirst
                                 : !experimentalAccess
-                                ? '先在設定開啟實驗室'
+                                ? l10n.powertrainProbeEnableLabFirst
                                 : !connected
-                                ? '連線後單次唯讀'
+                                ? l10n.powertrainProbeConnectForOneShot
                                 : probing
-                                ? '單次查詢中…'
-                                : '選一條，唯讀一次'
+                                ? l10n.powertrainProbeInProgress
+                                : l10n.powertrainProbePickOneRead
                           : profile.status ==
                                 PowertrainProfileStatus.researchOnly
-                          ? '僅研究，不會查詢'
-                          : '此版本不可安裝',
+                          ? l10n.powertrainResearchOnlyNeverQueries
+                          : l10n.powertrainNotInstallableInThisRelease,
                     ),
                   ),
                 ),
@@ -902,4 +907,108 @@ class _ProfileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Provenance and installability copy, keyed off the catalog enums.
+///
+/// These take an [AppLocalizations] rather than a [BuildContext] because none
+/// of them is chosen inside a widget that owns one, and because a pure-Dart
+/// test can then walk every enum arm in both languages without a pump. The
+/// screen's whole purpose is keeping "we found a candidate" apart from "this
+/// works on your car", and that distinction lives in these four functions.
+
+/// The install dialog's disclosure, one whole sentence per status.
+///
+/// Deliberately NOT a shared const prefix plus a status-specific tail. The
+/// Chinese happens to concatenate cleanly; English does not, and gluing
+/// fragments would force every future translation into Chinese clause order.
+/// [PowertrainProfileStatus.researchOnly] must never read as installable.
+String powertrainInstallDisclosure(
+  AppLocalizations l10n,
+  PowertrainProfileStatus status,
+) => switch (status) {
+  PowertrainProfileStatus.ready => l10n.powertrainInstallDisclosureReady,
+  PowertrainProfileStatus.community => l10n.powertrainInstallDisclosureCommunity,
+  PowertrainProfileStatus.experimental =>
+    l10n.powertrainInstallDisclosureExperimental,
+  PowertrainProfileStatus.researchOnly =>
+    l10n.powertrainInstallDisclosureResearchOnly,
+};
+
+/// The card's status pill label.
+///
+/// `experimental` reads differently depending on whether the profile also
+/// passes the install gate: one is an installable-but-unverified tier, the
+/// other can only ever be read once. Collapsing them would tell a driver a
+/// probe-only entry is installable.
+String powertrainProfileStatusLabel(
+  AppLocalizations l10n,
+  PowertrainProfileStatus status, {
+  required bool installable,
+}) => switch (status) {
+  PowertrainProfileStatus.ready => l10n.powertrainStatusReady,
+  PowertrainProfileStatus.community => l10n.powertrainStatusCommunity,
+  PowertrainProfileStatus.experimental => installable
+      ? l10n.powertrainStatusExperimental
+      : l10n.powertrainStatusExperimentalProbeOnly,
+  PowertrainProfileStatus.researchOnly => l10n.powertrainStatusResearchOnly,
+};
+
+/// Where this entry's evidence came from — never what it proves about a car.
+String powertrainProfileEvidenceLabel(
+  AppLocalizations l10n,
+  PowertrainProfileEvidence evidence,
+) => switch (evidence) {
+  PowertrainProfileEvidence.sourceBacked => l10n.powertrainEvidenceSourceBacked,
+  PowertrainProfileEvidence.syntheticRig => l10n.powertrainEvidenceSyntheticRig,
+  PowertrainProfileEvidence.physicalVehicle =>
+    l10n.powertrainEvidencePhysicalVehicle,
+};
+
+/// How strongly the *source* pins one identity field. Not a match with the car
+/// in front of the driver, which is what the acknowledgement asks for.
+String powertrainIdentityEvidenceLabel(
+  AppLocalizations l10n,
+  PowertrainIdentityEvidenceLevel level,
+) => switch (level) {
+  PowertrainIdentityEvidenceLevel.exact => l10n.powertrainIdentityEvidenceExact,
+  PowertrainIdentityEvidenceLevel.sourcePartial =>
+    l10n.powertrainIdentityEvidenceSourcePartial,
+  PowertrainIdentityEvidenceLevel.unknown =>
+    l10n.powertrainIdentityEvidenceUnknown,
+};
+
+/// The four identity fields with their evidence level, plus the ones the
+/// source could not establish.
+///
+/// A profile carrying no identity evidence at all is rendered as four
+/// `unknown` fields rather than through a separate hand-written sentence:
+/// absent evidence and evidence that says "unknown" mean the same thing to a
+/// driver, and one code path cannot drift from the other.
+String powertrainIdentityEvidenceSummary(
+  AppLocalizations l10n,
+  PowertrainBatteryIdentityEvidence? evidence,
+) {
+  const absent = PowertrainIdentityEvidenceLevel.unknown;
+  final fields = <(String, PowertrainIdentityEvidenceLevel)>[
+    (l10n.powertrainFieldMarket, evidence?.market ?? absent),
+    (l10n.powertrainFieldModelYear, evidence?.year ?? absent),
+    (l10n.powertrainFieldModel, evidence?.model ?? absent),
+    (l10n.powertrainFieldVariant, evidence?.variant ?? absent),
+  ];
+  final unknown = [
+    for (final field in fields)
+      if (field.$2 == PowertrainIdentityEvidenceLevel.unknown) field.$1,
+  ];
+  return l10n.powertrainIdentityEvidenceSummary(
+    fields
+        .map(
+          (field) =>
+              '${field.$1} ${powertrainIdentityEvidenceLabel(l10n, field.$2)}',
+        )
+        .join(' · '),
+    unknown.isEmpty
+        ? l10n.powertrainIdentityEvidenceNone
+        : unknown.join(l10n.powertrainFieldListSeparator),
+  );
 }

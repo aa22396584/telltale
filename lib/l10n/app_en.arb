@@ -1,51 +1,1998 @@
 {
   "@@locale": "en",
+  "adapterErrorActivityAlert": "Bus activity alert.",
+  "adapterErrorBufferFull": "The adapter's buffer overflowed.",
+  "adapterErrorBus": "Bus error; the wiring may be the cause.",
+  "adapterErrorBusBusy": "The bus is busy.",
+  "adapterErrorBusInit": "Bus initialisation failed.",
+  "adapterErrorCan": "CAN bus error.",
+  "@adapterErrorCan": {
+    "description": "The adapter answered CAN ERROR. The literal stays untranslated wherever the reply itself is quoted; this is the sentence written for a driver."
+  },
+  "adapterErrorData": "The data that arrived is not correct.",
+  "adapterErrorFeedback": "Signal feedback error.",
+  "adapterErrorInternal": "Adapter internal error.",
+  "adapterErrorLowPowerAlert": "The adapter is about to enter low-power mode.",
+  "adapterErrorLowVoltageReset": "Low voltage reset the adapter.",
+  "adapterErrorNoData": "No reply arrived — it may be temporary silence, or the vehicle may not support this.",
+  "@adapterErrorNoData": {
+    "description": "Elm327ErrorCode.noData. Deliberately NOT 'the vehicle does not support this': NO DATA is the adapter reporting that nothing arrived before its own timeout, and a busy ECU, a receive filter or one aggressive timing window produces it exactly as an absent sensor does. Both possibilities must survive translation."
+  },
+  "adapterErrorStopped": "The transfer was interrupted.",
+  "adapterErrorUnableToConnect": "Cannot reach the ECU. Check that the ignition is on.",
+  "@adapterErrorUnableToConnect": {
+    "description": "Elm327ErrorCode.unableToConnect. The remedy is half the message: most OBD sockets are unpowered until the ignition is on."
+  },
+  "adapterErrorUnknownCommand": "The adapter does not support this command.",
+  "@adapterErrorUnknownCommand": {
+    "description": "Elm327ErrorCode.unknownCommand. A statement about the ADAPTER, never about the vehicle."
+  },
+  "appTagline": "Live vehicle telemetry",
   "appTitle": "Telltale",
   "@appTitle": {
     "description": "App name shown in window titles and the connect header."
   },
-  "appTagline": "Live vehicle telemetry",
+  "appearanceSectionTitle": "Appearance",
+  "connectActivityAbortingPreviousConnection": "Stopping the previous connection, one moment…",
+  "@connectActivityAbortingPreviousConnection": {
+    "description": "ObdConnectionActivity.abortingPreviousConnection. Says the tap registered and what is being waited for; the wizard showed nothing at all here before."
+  },
+  "connectAnswerBleWithClassic": "Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, the 4.0 on the box was only the chip spec — use Bluetooth Classic instead.",
+  "@connectAnswerBleWithClassic": {
+    "description": "Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec."
+  },
+  "connectAnswerBleWithoutClassic": "Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, check that the adapter has power, or try Wi‑Fi instead; this host does not offer Bluetooth Classic.",
+  "@connectAnswerBleWithoutClassic": {
+    "description": "Same answer on a host with no Classic path. Must not point at the greyed-out Classic card."
+  },
+  "connectAnswerClassic": "Choose Bluetooth Classic. Pair it in system settings first; the app cannot pair it for you. The code is usually 1234 or 0000.",
+  "@connectAnswerClassic": {
+    "description": "Classic SPP does need system pairing first. This must never tell a user to skip it."
+  },
+  "connectAnswerWifiDesktop": "Choose Wi-Fi. Connect this device to that network first, then come back and enter the address.",
+  "connectAnswerWifiPhone": "Choose Wi-Fi. Join that network on the phone first, then come back and enter the address.",
+  "connectBleBody": "A BLE adapter does not need to be paired first. Search, then pick your device — common names are OBDII, V-LINK, Vgate or IOS-Vlink.",
+  "@connectBleBody": {
+    "description": "A GATT device is not paired the way a Classic one is. This must never tell a user to pair a BLE adapter."
+  },
+  "connectBleEmptyScan": "The scan finished without finding a BLE adapter. Check in order: is the light on the adapter lit — most OBD sockets are unpowered until the ignition is at ON; then range, so sit in the car before scanning. {next} A BLE adapter does not need, and should not have, pairing in system settings; that route does not work.",
+  "@connectBleEmptyScan": {
+    "description": "{next} is one whole sentence, either connectBleEmptyScanNextClassic or connectBleEmptyScanNextWifi, chosen by whether this host has Bluetooth Classic.",
+    "placeholders": {
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "connectBleEmptyScanNextClassic": "Last, check the spec on the box: if it says 2.0 or 3.0 that is Bluetooth Classic, which never appears in this list, so use Bluetooth Classic above instead.",
+  "@connectBleEmptyScanNextClassic": {
+    "description": "A Classic adapter can never appear in a BLE scan, so an empty result has to offer that branch."
+  },
+  "connectBleEmptyScanNextWifi": "Last, check the spec on the box: if it says 2.0/3.0, or Wi‑Fi only, try Wi‑Fi instead (this host does not offer Bluetooth Classic).",
+  "connectBlePermissionDeniedForever": "Bluetooth permission is permanently denied. The system will not ask again, so turn it on in app settings.",
+  "connectBlePermissionNeeded": "Bluetooth permission is needed to search.",
+  "connectBleScan": "Search for BLE devices",
+  "connectBleScanning": "Searching…",
+  "connectBleUnavailableHost": "Bluetooth LE is not available on this host yet",
+  "connectBluetoothOff": "Bluetooth is off. Turn Bluetooth on in system settings first.",
+  "connectBluetoothPermissionDeniedForever": "Bluetooth permission is permanently denied. Turn it on in system settings, then try again.",
+  "@connectBluetoothPermissionDeniedForever": {
+    "description": "Bonded-adapter list. Names Bluetooth: listing a bonded adapter never asks for location, so location can not be the permission that was refused here."
+  },
+  "connectBluetoothPermissionNeededForPairedList": "Bluetooth permission is needed to list paired adapters.",
+  "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
+  "connectCancel": "Cancel",
+  "connectClassicEmptyLinuxPort": "No Bluetooth serial port (/dev/rfcomm*) found. Pair the ELM327 with BlueZ first, then create an RFCOMM TTY with rfcomm bind (or the equivalent) and try again.",
+  "connectClassicEmptyPaired": "No paired adapter found. Pair it in the system Bluetooth settings first (the code for most ELM327s is 1234 or 0000).",
+  "connectClassicEmptyWindowsPort": "No Bluetooth serial port (COMx) found. Pair the ELM327 in the Windows Bluetooth settings first, and check that Device Manager shows “Standard Serial over Bluetooth link”.",
+  "connectClassicListLinuxPort": "This lists the Bluetooth serial ports BlueZ has bound (/dev/rfcomm* or the equivalent). An empty list means the system has not created an RFCOMM node yet, not that the app is broken.",
+  "@connectClassicListLinuxPort": {
+    "description": "An empty port list is a system state, not an app fault. Serial hosts never list headphones."
+  },
+  "connectClassicListPaired": "This lists every device paired with the system — headphones and speakers included, with the ones that look like adapters first. If you pick the wrong one, press Cancel rather than waiting for it to fail; you can pick another straight away.",
+  "connectClassicListWindowsPort": "This lists the COM ports associated with Bluetooth (“Standard Serial over Bluetooth link”). An empty list means the system has not created a virtual serial port yet, not that the app is broken.",
+  "connectClassicUnavailableHost": "Bluetooth Classic (SPP) is currently available on Android, macOS (IOBluetooth RFCOMM), Windows (COM) and Linux (/dev/rfcomm*)",
+  "@connectClassicUnavailableHost": {
+    "description": "Why the Classic card is greyed out on a host with no SPP path. Keep currently: the host list changes."
+  },
+  "connectClassicUnavailableIos": "iOS does not open Bluetooth SPP to third-party apps",
+  "@connectClassicUnavailableIos": {
+    "description": "iOS only. A permanent OS limit, not a missing feature."
+  },
+  "connectConnect": "Connect",
+  "connectDemoBody": "Simulates a 2.0 L turbocharged four-cylinder engine through idle, acceleration, cruise and deceleration cycles, with signals that stay physically related to each other (engine speed drops on a gearshift while road speed keeps rising). Fault codes, VIN reads and fastMode batch queries all work in full.",
+  "connectDemoStart": "Start the simulator",
+  "connectHandshakeTitle": "ELM327 initialisation",
+  "connectHandshakeTitleLastAttempt": "ELM327 initialisation (last attempt)",
+  "@connectHandshakeTitleLastAttempt": {
+    "description": "Past tense, so a panel full of green rows cannot be read as the current connection."
+  },
+  "connectHeadline": "Choose a connection",
+  "connectIssueAdapterAcceptedThenSilent": "The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.",
+  "@connectIssueAdapterAcceptedThenSilent": {
+    "description": "ObdConnectionIssue.adapterAcceptedThenSilent. Both causes are load-bearing: an unpowered socket and a second app holding the adapter look identical from here, and naming only one sends half the readers looking in the wrong place."
+  },
+  "connectIssueAdapterSilentOnReset": "The adapter did not answer the reset command ({command}). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.",
+  "@connectIssueAdapterSilentOnReset": {
+    "description": "ObdConnectionIssue.adapterSilentOnReset. Failing on the very first command is a different diagnosis from failing later, and the command is named rather than described. {command} is an AT command and is never translated.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "connectIssueAdapterStoppedResponding": "The adapter stopped responding and the connection has been dropped.",
+  "@connectIssueAdapterStoppedResponding": {
+    "description": "ObdConnectionIssue.adapterStoppedResponding. States what already happened, not a warning about what might."
+  },
+  "connectIssueConnectionSetupFailed": "The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.",
+  "@connectIssueConnectionSetupFailed": {
+    "description": "ObdConnectionIssue.connectionSetupFailed. The raw exception text is deliberately not shown here; it is written to the transcript, which is where somebody can act on it."
+  },
+  "connectIssueHandshakeIncomplete": "Initialisation did not pass. The adapter may not be compatible.",
+  "@connectIssueHandshakeIncomplete": {
+    "description": "ObdConnectionIssue.handshakeIncomplete. No step reported a failure, so this is the least specific thing that is still true. It must stay a possibility, never a verdict on the adapter."
+  },
+  "connectIssueHandshakeStepFailed": "Initialisation failed at {command} ({reason}). Check that the adapter is seated properly and the vehicle's ignition is on.",
+  "@connectIssueHandshakeStepFailed": {
+    "description": "ObdConnectionIssue.handshakeStepFailed. Which command died is the whole value of this message: it separates 'this is not an ELM327' from 'the adapter is fine but the ignition is off'. {command} is an AT command or a mode/PID and is never translated; {reason} is the step's own outcome.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "connectIssuePreviousConnectionStillAborting": "The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.",
+  "@connectIssuePreviousConnectionStillAborting": {
+    "description": "ObdConnectionIssue.previousConnectionStillAborting. A refusal that says what happened and what to do about it; a silent false here was the defect this replaced."
+  },
+  "connectLastAdapterConnect": "Connect now",
+  "connectLastAdapterForget": "Forget",
+  "connectLastAdapterTitle": "Last adapter used",
+  "connectOpenAppSettings": "Open app settings",
+  "connectOpenSystemSettings": "Open system settings",
+  "connectOpeningConnection": "Opening the connection…",
+  "connectPairedPill": "Paired",
+  "connectQuestionBle": "Does the box, the shop listing or the device name say BLE, 4.0 or 5.0?",
+  "connectQuestionClassic": "Neither — an older one, with 2.0 or 3.0 printed on the box?",
+  "connectQuestionWifiDesktop": "Is there a new network in the Wi-Fi list on the system (something like V-LINK or WiFi_OBDII)?",
+  "connectQuestionWifiPhone": "Is there a new network in the Wi-Fi list on the phone (something like V-LINK or WiFi_OBDII)?",
+  "connectSearchAgain": "Search again",
+  "connectSignalStrength": "Signal strength {bars}/{total}",
+  "@connectSignalStrength": {
+    "description": "Semantics label for the signal meter. {total} comes from the number of bars drawn, not from prose.",
+    "placeholders": {
+      "bars": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "connectTranscriptKept": "The full transcript of this attempt was kept. Bringing that back helps more than a one-line message.",
+  "@connectTranscriptKept": {
+    "description": "Says the transcript was kept, not that the connection succeeded."
+  },
+  "connectTransportBleDescription": "GATT UART — a newer low-energy adapter",
+  "@connectTransportBleDescription": {
+    "description": "Subtitle of the Bluetooth LE tile on the connect screen. GATT and UART are on docs/i18n/do-not-translate.md. Must NOT tell the driver to pair the adapter: a BLE adapter is discovered by scanning inside the app, and pairing it in system settings is the route that does not work (connectAnswerBleWithClassic says so at length)."
+  },
+  "connectTransportBleTitle": "Bluetooth LE",
+  "@connectTransportBleTitle": {
+    "description": "Title of the Bluetooth LE tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
+  "connectTransportClassicDescription": "RFCOMM / SPP — the most common budget ELM327",
+  "@connectTransportClassicDescription": {
+    "description": "Subtitle of the Bluetooth Classic tile on the connect screen. RFCOMM, SPP and ELM327 are on docs/i18n/do-not-translate.md. Must NOT say pairing can be skipped: Classic is the one transport the app cannot pair for the driver (connectAnswerClassic and connectClassicEmptyPaired carry that instruction)."
+  },
+  "connectTransportClassicTitle": "Bluetooth Classic",
+  "@connectTransportClassicTitle": {
+    "description": "Title of the Bluetooth Classic tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
+  "connectTransportDemoDescription": "A built-in simulated ECU — the whole app with no hardware",
+  "@connectTransportDemoDescription": {
+    "description": "Subtitle of the Demo tile on the connect screen. ECU is on docs/i18n/do-not-translate.md. Scoped to the app deliberately: Demo crosses no radio, no socket and no vehicle, so it must not be described as evidence that a car will work (docs/field-guide.zh-TW.md:27-32)."
+  },
+  "connectTransportDemoTitle": "Demo simulator",
+  "@connectTransportDemoTitle": {
+    "description": "Title of the Demo tile on the connect screen. Same English as wearDemoSimulator, which names the same feature on the watch face."
+  },
+  "connectTransportWifiDescription": "A TCP port, usually 192.168.0.10:35000",
+  "@connectTransportWifiDescription": {
+    "description": "Subtitle of the Wi-Fi tile on the connect screen. The address is a literal on docs/i18n/do-not-translate.md and must stay byte-identical in both languages."
+  },
+  "connectTransportWifiTitle": "Wi-Fi",
+  "@connectTransportWifiTitle": {
+    "description": "Title of the Wi-Fi tile on the connect screen, and the transport name on the “last adapter used” line. A product name — byte-identical in both languages, per docs/i18n/do-not-translate.md."
+  },
+  "connectWhichIntro": "Never mind the words SPP and GATT. Go by what your adapter does once it is plugged in:",
+  "connectWhichNoteGuessing": "Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.",
+  "@connectWhichNoteGuessing": {
+    "description": "Permission to fail. The fear of picking wrong is what makes somebody close the app instead of tapping something."
+  },
+  "connectWhichNoteIos": "An iPhone can only use Wi-Fi or BLE — an ordinary Bluetooth ELM327 does not work at all on iOS. That is an OS limit, and no other app gets around it.",
+  "connectWhichTitle": "Not sure which to pick?",
+  "@connectWhichTitle": {
+    "description": "Accepts the uncertainty rather than demanding a confident choice. Not Choose your connection type."
+  },
+  "connectWifiHostLabel": "IP address",
+  "connectWifiHostRequired": "Enter the IP address of the adapter.",
+  "connectWifiInstructionsDesktop": "Connect this computer to the Wi-Fi hotspot the adapter broadcasts first, then enter its address. If the system warns that the network cannot reach the internet, choose to stay on it. Desktop systems usually treat the hotspot as the default route; the Android Wi-Fi route binding is not needed.",
+  "connectWifiInstructionsPhone": "Join the Wi-Fi hotspot the adapter broadcasts on the phone first, then enter its address. If the system asks whether to stay on a Wi-Fi network that cannot reach the internet, choose to stay on it. On Android, Telltale tries to pin its traffic to the Wi-Fi route while connected, so mobile data does not take it away.",
+  "connectWifiPortInvalid": "“{value}” is not a valid port. The range is {min}–{max}.",
+  "@connectWifiPortInvalid": {
+    "description": "{value} is what the user typed, echoed back. {min}/{max} come from the range the connect check enforces.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "connectWifiPortLabel": "Port",
+  "connectWifiPortRequired": "Enter the port (most adapters use {port}).",
+  "@connectWifiPortRequired": {
+    "description": "{port} is WifiTransport.defaultPort. Never spell the number into the sentence.",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardChoosePids": "Choose PIDs",
+  "dashboardEmptyBody": "Pick the signals you want to watch on the PID page and they will appear here.",
+  "dashboardEmptyTitle": "The dashboard is empty",
+  "dashboardGenericObd": "Generic OBD",
+  "dashboardLocalRecordings": "Local recordings",
+  "dashboardNotConnected": "Not connected",
+  "@dashboardNotConnected": {
+    "description": "Stands in for an adapter name before anything is connected. A real device name is passed through untranslated."
+  },
+  "dashboardSingleRequestMode": "Single request mode",
+  "@dashboardSingleRequestMode": {
+    "description": "The other side of this pill reads the literal 'fastMode', an adapter behaviour name that stays untranslated."
+  },
+  "dashboardVinRead": "VIN read",
+  "dashboardWorkspaceGauges": "Gauges",
+  "dashboardWorkspaceTrends": "Trends",
+  "datumBadgeCommunityDecode": "Community decode",
+  "@datumBadgeCommunityDecode": {
+    "description": "EvidenceKind.community. A claim about the SOURCE of the decode, never about this car; it is always shown together with datumBadgeUnverifiedOnThisVehicle."
+  },
+  "datumBadgeDemo": "Simulated",
+  "@datumBadgeDemo": {
+    "description": "DatumOrigin.demo. The number came from Telltale's own simulator, not from a vehicle. This has to be unmistakable: a simulated reading that passes for a live one is the worst thing this app can do."
+  },
+  "datumBadgeEstimated": "Estimated",
+  "@datumBadgeEstimated": {
+    "description": "DatumOrigin.calculated. Computed from a vehicle profile, never read off the bus. Estimated is not measured, and the two must stay two different words."
+  },
+  "datumBadgeExperimental": "Experimental",
+  "@datumBadgeExperimental": {
+    "description": "EvidenceKind.experimental. Always shown with datumBadgeUnverifiedOnThisVehicle."
+  },
+  "datumBadgeFieldVerified": "Field-verified",
+  "@datumBadgeFieldVerified": {
+    "description": "EvidenceKind.fieldVerified. Verified on a real vehicle, which is why the English says field rather than just verified — a catalog entry passing validation is not this."
+  },
+  "datumBadgeInvalid": "Invalid",
+  "@datumBadgeInvalid": {
+    "description": "DatumQuality.invalid. The datum failed a structural check and may not be read as a value at all. Distinct from datumBadgeUnverified, which says nothing about the value."
+  },
+  "datumBadgeJustUpdated": "Just updated",
+  "@datumBadgeJustUpdated": {
+    "description": "The value arrived on the most recent poll. The opposite pole of datumBadgeStale; never render either as the other."
+  },
+  "datumBadgeOutOfReferenceRange": "Out of range",
+  "@datumBadgeOutOfReferenceRange": {
+    "description": "DatumQuality.outOfReferenceRange. A check was run against the definition's own minimum and maximum and the value fell outside it. Not merely 'unusual' — a check failed, and the reading is kept rather than hidden."
+  },
+  "datumBadgePartial": "Partial",
+  "@datumBadgePartial": {
+    "description": "DatumQuality.partial. Something was not read. Partial is not all clear and must never read as a completed or fault-free result."
+  },
+  "datumBadgeStale": "Stale",
+  "@datumBadgeStale": {
+    "description": "DatumQuality.stale. The reading stopped updating. Stale is not live; a reading that stopped updating must never render as a current one."
+  },
+  "datumBadgeTentativeDecode": "Tentative decode",
+  "@datumBadgeTentativeDecode": {
+    "description": "DatumQuality.tentativeDecode. The bytes were decoded with a formula that is not confirmed for this vehicle."
+  },
+  "datumBadgeUnverified": "Unverified",
+  "@datumBadgeUnverified": {
+    "description": "EvidenceKind.notTested and EvidenceKind.unknown. Nobody has checked this against a real vehicle. Unverified is not invalid and it is not verified; it is a statement about evidence, not about the number."
+  },
+  "datumBadgeUnverifiedOnThisVehicle": "Unverified on this vehicle",
+  "@datumBadgeUnverifiedOnThisVehicle": {
+    "description": "The second half of the community and experimental pairs. The source may be corroborated elsewhere; nobody has driven it on THIS car. Never shorten to 'unverified' — the scope is the whole point."
+  },
+  "datumBadgeUserSupplied": "User-supplied",
+  "@datumBadgeUserSupplied": {
+    "description": "DatumOrigin.userEntered and EvidenceKind.userSupplied. The definition came from the person holding the phone, so the app makes no claim about it."
+  },
+  "datumGapModelYearUnknown": "Model year unknown",
+  "@datumGapModelYearUnknown": {
+    "description": "DatumGap.modelYearUnknown. One of the optional identification gaps listed on the dashboard session chip. None of them blocks generic OBD."
+  },
+  "datumGapNoCatalogMatch": "No catalog match",
+  "@datumGapNoCatalogMatch": {
+    "description": "DatumGap.noCatalogMatch. The catalog holds no entry for this vehicle. Not a fault, and not a reason to stop reading generic OBD."
+  },
+  "datumGapVinNotRead": "VIN not read",
+  "@datumGapVinNotRead": {
+    "description": "DatumGap.vinNotRead. A read outcome, never a claim that the vehicle has no VIN. VIN is on docs/i18n/do-not-translate.md."
+  },
+  "datumNextStepEstimateOnly": "This affects only the estimate; the other readings still apply.",
+  "@datumNextStepEstimateOnly": {
+    "description": "DatumNextStep.estimateOnlyOtherReadingsUnaffected. Scopes a failed estimate so nobody reads it as the session going wrong."
+  },
+  "datumNextStepGenericObd": "You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.",
+  "@datumNextStepGenericObd": {
+    "description": "DatumNextStep.genericObdContinues. Missing identification never blocks generic OBD, and this sentence is what says so."
+  },
+  "datumNextStepOtherReadings": "The failure affects only this item; the other readings still apply.",
+  "@datumNextStepOtherReadings": {
+    "description": "DatumNextStep.otherReadingsUnaffected. One PID failing is not the session failing."
+  },
+  "datumNextStepRawOnly": "The raw reply and the error can be inspected; neither may be read as a normal value.",
+  "@datumNextStepRawOnly": {
+    "description": "DatumNextStep.rawOnlyNeverANumber. The raw bytes stay available for diagnosis, and the sentence exists to stop somebody reading them as a measurement."
+  },
+  "datumReasonAssumptionsUnconfirmed": "The assumptions are unconfirmed; an estimate is still shown.",
+  "@datumReasonAssumptionsUnconfirmed": {
+    "description": "DatumReason.assumptionsUnconfirmed. docs/i18n/hedge-register.md entry 18: both halves are required. 'Unconfirmed' alone reads as an error and 'an estimate is shown' alone reads as a validated number."
+  },
+  "datumReasonBusError": "Bus error.",
+  "@datumReasonBusError": {
+    "description": "PidFault.busError. A fault on the link, not a statement about the vehicle's capabilities."
+  },
+  "datumReasonFormulaError": "Formula error.",
+  "@datumReasonFormulaError": {
+    "description": "PidFault.formulaError. The definition's own equation failed, so the fault is in the app or the imported PID, not in the car."
+  },
+  "datumReasonFuelEstimateMissingInputs": "The fuel-use estimate is missing a required input.",
+  "@datumReasonFuelEstimateMissingInputs": {
+    "description": "DatumReason.fuelEstimateMissingInputs. Says the estimate could not be made, never that the vehicle uses no fuel."
+  },
+  "datumReasonHeaderNotOnThisBus": "The header does not match the bus this vehicle uses.",
+  "@datumReasonHeaderNotOnThisBus": {
+    "description": "PidFault.headerNotOnThisBus. A statement about the PID DEFINITION, deliberately kept apart from datumReasonPidUnsupported, which is a statement about the car. Merging them sends somebody looking at their vehicle for a problem that is in a field they can edit."
+  },
+  "datumReasonHorsepowerEstimateMissingInputs": "The horsepower estimate is missing a required input.",
+  "@datumReasonHorsepowerEstimateMissingInputs": {
+    "description": "DatumReason.horsepowerEstimateMissingInputs. Says the estimate could not be made, never that the engine produced no power."
+  },
+  "datumReasonMalformedPacket": "Malformed packet; only the raw reply can be inspected.",
+  "@datumReasonMalformedPacket": {
+    "description": "The response did not parse. Nothing here may be shown as a number."
+  },
+  "datumReasonNoAnswer": "No answer — the app retries in about a minute.",
+  "@datumReasonNoAnswer": {
+    "description": "Shown in a datum's details dialog when a PID went unanswered. The app does retry, on the 60-second backoff in PollingEngine.noAnswerBackoff, so this must not tell the reader to act. It previously read 'try again shortly', which contradicted telemetryStatusNoAnswer — the same Chinese sentence, rendered one tap away on the tile itself, saying the app would retry."
+  },
+  "datumReasonNoReadingYet": "No reading yet.",
+  "@datumReasonNoReadingYet": {
+    "description": "docs/i18n/hedge-register.md entry 25. Explicitly not zero and not unsupported — the app's baseline refusal to print a number it does not have."
+  },
+  "datumReasonNonFiniteValue": "Not a finite number.",
+  "@datumReasonNonFiniteValue": {
+    "description": "The formula produced NaN or an infinity, so there is no value to show."
+  },
+  "datumReasonOutOfReferenceRangeKept": "Outside the usual reference range; kept as it was read.",
+  "@datumReasonOutOfReferenceRangeKept": {
+    "description": "DatumQuality.outOfReferenceRange. Both halves matter: a check failed, AND the reading was not silently discarded or clamped."
+  },
+  "datumReasonPidUnsupported": "This vehicle does not support this PID.",
+  "@datumReasonPidUnsupported": {
+    "description": "PidFault.unsupported, the only state that justifies an assertion about the CAR. docs/i18n/hedge-register.md entry 16: it must stay distinguishable from datumReasonNoAnswer, which is temporary."
+  },
+  "datumReasonUnsafeService": "This service is not a read-only query.",
+  "@datumReasonUnsafeService": {
+    "description": "PidFault.refusedUnsafeService as a reason on a datum."
+  },
+  "datumReasonUnsafeServiceStopped": "This service is not a read-only query, so it was not sent.",
+  "@datumReasonUnsafeServiceStopped": {
+    "description": "The same fact plus the action taken. The app refused to transmit; nothing was written to the vehicle."
+  },
+  "datumStatusAssumptions": "Assumptions",
+  "datumStatusClose": "Close",
+  "datumStatusFollowsData": "Status follows the data",
+  "@datumStatusFollowsData": {
+    "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
+  },
+  "datumStatusFormula": "Formula",
+  "derivedAirflow": "Airflow",
+  "derivedEcuFuelTitle": "ECU fuel data",
+  "@derivedEcuFuelTitle": {
+    "description": "Used when the vehicle reported its own fuel rate. Must never read as estimated."
+  },
+  "derivedEcuReported": "ECU reported",
+  "derivedEngineHorsepower": "Engine power",
+  "@derivedEngineHorsepower": {
+    "description": "Engine (crank) power, not wheel power - PhysicsEngine reports both and this cell shows engineHorsepower. Kept short so the cell does not ellipsise at large text scales."
+  },
+  "derivedEstimatedFuelTitle": "Estimated fuel use",
+  "@derivedEstimatedFuelTitle": {
+    "description": "Used when no ECU fuel rate was reported and the figure came from the vehicle profile. Must never read as measured."
+  },
+  "derivedEstimatesDetailsTitle": "Estimate formulas and assumptions",
+  "derivedEstimatesTitle": "Estimated values",
+  "@derivedEstimatesTitle": {
+    "description": "Heading of the derived panel. These figures are computed from a vehicle profile, never read off the bus, and 'estimated' is the whole reason the panel is separate."
+  },
+  "derivedFuelUse": "Fuel use",
+  "@derivedFuelUse": {
+    "description": "Neutral cell label: the same cell renders an ECU-reported rate and an estimated one, so it must not itself claim either."
+  },
+  "derivedTorque": "Torque",
+  "derivedUnavailableMessage": "Horsepower can only be estimated once vehicle speed and acceleration data arrive",
+  "@derivedUnavailableMessage": {
+    "description": "A distinct state, not a row of zeroes: 'we cannot work this out yet' and 'your engine is producing no power' must not look alike."
+  },
+  "dtcBothSilentDetail": "The vehicle did not answer the Mode {mode} query, and Mode 03 did not answer either — so there is no telling whether the vehicle lacks support or this connection simply did not read it.",
+  "@dtcBothSilentDetail": {
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "dtcCategoryFault": "A fault related to {category}",
+  "@dtcCategoryFault": {
+    "placeholders": {
+      "category": {}
+    }
+  },
+  "dtcClear": "Clear",
+  "dtcClearCancel": "Cancel",
+  "dtcClearConfirm": "Clear them",
+  "dtcClearDialogBody": "This erases stored and pending fault codes and turns the fault lamp off, and it also resets emissions readiness — the vehicle has to complete a full round of self-diagnosis again before it can pass an inspection. Permanent fault codes (Mode 0A) cannot be cleared.",
+  "@dtcClearDialogBody": {
+    "description": "The point of no return. Mode 0A permanent codes must never read as something this clear can remove."
+  },
+  "dtcClearDialogFrameUnread": "This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.",
+  "@dtcClearDialogFrameUnread": {
+    "description": "A read failure, not an absent frame. Collapsing the two causes irreversible evidence loss."
+  },
+  "dtcClearDialogFrames": "The freeze frame for {codes} goes with it — the whole record of engine speed, coolant temperature and load at the moment the fault happened — and it cannot be read back until the fault happens again.",
+  "@dtcClearDialogFrames": {
+    "description": "Fault codes come back if the fault recurs; the snapshot of the moment it first happened does not.",
+    "placeholders": {
+      "codes": {}
+    }
+  },
+  "dtcClearDialogTitle": "Clear fault codes?",
+  "dtcClearDialogUnanswered": "{count, plural, =1{One category in this scan did not answer completely} other{{count} categories in this scan did not answer completely}} ({categories}), so there may be fault codes you have not seen. After a clear they can never be read again.",
+  "@dtcClearDialogUnanswered": {
+    "description": "What the scan could not establish, said at the point of no return.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "categories": {}
+    }
+  },
+  "dtcClearing": "Clearing…",
+  "dtcCompleteCleanBody": "That means every controller that replied reported no fault code. It does not mean every module on the vehicle was asked.",
+  "@dtcCompleteCleanBody": {
+    "description": "A controller whose reply is lost outright leaves nothing to count as missing, and the app has no inventory of who should have answered."
+  },
+  "dtcCompleteCleanTitle": "None of the controllers that answered reported a fault code.",
+  "@dtcCompleteCleanTitle": {
+    "description": "'that answered' is the whole hedge. Never render this as 'no fault codes' or 'your car is fine'."
+  },
+  "dtcControllerLabel": "Controller {controller}",
+  "@dtcControllerLabel": {
+    "description": "Attribution for a reply that carried a header. Two modules reporting one code is two of them seeing the fault.",
+    "placeholders": {
+      "controller": {}
+    }
+  },
+  "dtcDismiss": "Dismiss",
+  "@dtcDismiss": {
+    "description": "Tooltip that closes the clear-outcome panel. Closing a message is not learning what happened; only a rescan is."
+  },
+  "dtcFreezeFrameBody": "The values this controller recorded at the instant {code} was confirmed. Clearing fault codes destroys this record with them.",
+  "@dtcFreezeFrameBody": {
+    "description": "Names the code in the card itself: a car with three stored codes has a frame belonging to exactly one of them.",
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "dtcFreezeFrameContentsUnknown": "This controller has a freeze frame, but it did not answer the query asking which items are in it, so the contents could not be read. A rescan may work.",
+  "@dtcFreezeFrameContentsUnknown": {
+    "description": "'It would not tell us' — worth another scan. Distinct from dtcFreezeFrameNothingDecodable, which is a limit of this app."
+  },
+  "dtcFreezeFrameNothingDecodable": "This controller has a freeze frame, but none of the items in it are ones this app can decode.",
+  "dtcFreezeFrameTitle": "The vehicle at the moment of the fault",
+  "@dtcFreezeFrameTitle": {
+    "description": "The only view of the car while the fault was actually happening, and the one thing a clear destroys for good."
+  },
+  "dtcFreezeFrameUndecodable": "{count, plural, =1{A further item in this freeze frame has no conversion formula in this app, so it is not listed.} other{{count} further items in this freeze frame have no conversion formula in this app, so they are not listed.}}",
+  "@dtcFreezeFrameUndecodable": {
+    "description": "An app limitation that rescanning will not change. Must stay distinct from dtcFreezeFrameUnreadItems, which rescanning usually fixes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcFreezeFrameUnreadItems": "{count, plural, =1{One item did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read it.} other{{count} items did not come back this time (there may not have been enough time, or the controller did not answer). A rescan may read them.}}",
+  "@dtcFreezeFrameUnreadItems": {
+    "description": "A read failure, not an app limitation. Rescanning usually fixes it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcFreezeFrameUnreadPanel": "This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear the fault codes, because clearing destroys the record of the moment of the fault permanently. If every scan looks the same, this vehicle may not provide one.",
+  "@dtcFreezeFrameUnreadPanel": {
+    "description": "A controller with no stored frame shows nothing, which is exactly what a failed read shows. Saying so is the only thing standing between a Mode 02 timeout and a clear."
+  },
+  "dtcGroupHeader": "{label} (Mode {mode}) · {count}",
+  "@dtcGroupHeader": {
+    "description": "Heading for one class of codes. {label} still comes from lib/obd/dtc/dtc.dart and is Chinese in both locales until the engine wave lands.",
+    "placeholders": {
+      "label": {},
+      "mode": {},
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcHeadline": "Fault codes",
+  "@dtcHeadline": {
+    "description": "Fault-code screen title."
+  },
+  "dtcListSeparator": ", ",
+  "@dtcListSeparator": {
+    "description": "Joins fault codes, categories or controller ids in a sentence. Chinese uses the enumeration comma; English uses a comma and a space."
+  },
+  "dtcManufacturerSpecific": "Manufacturer-specific code — check the service manual for this vehicle",
+  "@dtcManufacturerSpecific": {
+    "description": "Shown instead of a description this app does not have. Never invent one."
+  },
+  "dtcMilOff": "The fault lamp is not lit",
+  "dtcMilOn": "The fault lamp is lit",
+  "dtcMonitorBoostPressure": "Boost pressure",
+  "@dtcMonitorBoostPressure": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only."
+  },
+  "dtcMonitorCatalyst": "Catalyst",
+  "@dtcMonitorCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorComponents": "Comprehensive components",
+  "@dtcMonitorComponents": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor; J1979 calls it the comprehensive component monitor."
+  },
+  "dtcMonitorEgr": "EGR / VVT system",
+  "@dtcMonitorEgr": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. EGR and VVT are on docs/i18n/do-not-translate.md; keep both acronyms and the slash."
+  },
+  "dtcMonitorEvaporative": "Evaporative system",
+  "@dtcMonitorEvaporative": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The evaporative emission system, not the exhaust."
+  },
+  "dtcMonitorExhaustSensor": "Exhaust sensor",
+  "@dtcMonitorExhaustSensor": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only."
+  },
+  "dtcMonitorFuelSystem": "Fuel system",
+  "@dtcMonitorFuelSystem": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor."
+  },
+  "dtcMonitorGasolineParticulateFilter": "Gasoline particulate filter (GPF)",
+  "@dtcMonitorGasolineParticulateFilter": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. LOAD-BEARING: many OBD reference tables name bit 4 of byte C an air-conditioning refrigerant monitor. That is wrong — the bit sat Reserved in J1979 for years and was recently defined as the gasoline particulate filter, and no car that sets it has an A/C refrigerant monitor at all. Keep GPF spelled out; never render this as refrigerant or air conditioning (docs/field-guide.zh-TW.md:247-250)."
+  },
+  "dtcMonitorHeatedCatalyst": "Heated catalyst",
+  "@dtcMonitorHeatedCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorMisfire": "Misfire",
+  "@dtcMonitorMisfire": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. A continuous monitor."
+  },
+  "dtcMonitorNmhcCatalyst": "NMHC catalyst",
+  "@dtcMonitorNmhcCatalyst": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NMHC is on docs/i18n/do-not-translate.md."
+  },
+  "dtcMonitorNoxAftertreatment": "NOx / SCR aftertreatment",
+  "@dtcMonitorNoxAftertreatment": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only. NOx and SCR are on docs/i18n/do-not-translate.md."
+  },
+  "dtcMonitorOxygenSensor": "Oxygen sensor",
+  "@dtcMonitorOxygenSensor": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcMonitorOxygenSensorHeater": "Oxygen sensor heater",
+  "@dtcMonitorOxygenSensorHeater": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol). The heater circuit, which is monitored separately from the sensor itself."
+  },
+  "dtcMonitorParticulateFilter": "Particulate filter",
+  "@dtcMonitorParticulateFilter": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Compression ignition (diesel) only — the diesel particulate filter. Distinct from dtcMonitorGasolineParticulateFilter, which is the petrol bit."
+  },
+  "dtcMonitorSecondaryAir": "Secondary air system",
+  "@dtcMonitorSecondaryAir": {
+    "description": "One of the SAE J1979 emissions readiness monitors, drawn as a chip under dtcReadinessTitle. Spark ignition (petrol)."
+  },
+  "dtcNoDescriptionForSubsystem": "{subsystem} — this app has no detailed description for this code",
+  "@dtcNoDescriptionForSubsystem": {
+    "description": "The subsystem the code's own third digit names. Says the app is missing the description rather than pretending to one.",
+    "placeholders": {
+      "subsystem": {}
+    }
+  },
+  "dtcNotConnectedBody": "Reading fault codes needs a connected ELM327 adapter, or the simulator running.",
+  "dtcNotConnectedTitle": "Not connected",
+  "dtcNotScanned": "Not scanned yet",
+  "dtcPartialCleanOptionalGaps": "All three categories were queried to completion. {count, plural, =1{One controller} other{{count} controllers}} ({controllers}) implement neither pending nor permanent fault codes — normal on many vehicles, and also why this cannot be declared a fault-free vehicle.",
+  "@dtcPartialCleanOptionalGaps": {
+    "description": "Modes 07 and 0A are optional in SAE J1979. A vehicle that implements neither is compliant and fine; that is a different situation from a class nobody answered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "controllers": {}
+    }
+  },
+  "dtcPartialCleanTitle": "The categories that answered reported no fault codes.",
+  "dtcPartialCleanUnanswered": "{categories} did not answer, so their state cannot be confirmed — that is not the same as the vehicle having no problem.",
+  "@dtcPartialCleanUnanswered": {
+    "placeholders": {
+      "categories": {}
+    }
+  },
+  "dtcPartialCodesRead": "{count, plural, =1{One fault code was read} other{{count} fault codes were read}} before this category stopped, but the coverage is incomplete:",
+  "@dtcPartialCodesRead": {
+    "description": "Incomplete coverage is a reason to qualify a finding, never to hide it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcPartiallyAnsweredDetail": "Only some controllers in this category answered and the rest did not reply, so this cannot stand as a result for the whole vehicle. {message}",
+  "@dtcPartiallyAnsweredDetail": {
+    "description": "{message} is the engine's own failure text and is still Chinese in both locales.",
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "dtcReadFailed": "Read failed",
+  "@dtcReadFailed": {
+    "description": "Two call sites, one sentence: the empty-state title after a failed scan, and the headline of a category whose read errored rather than went silent."
+  },
+  "dtcReadFailureDetail": "{label} (Mode {mode}): {message}",
+  "@dtcReadFailureDetail": {
+    "placeholders": {
+      "label": {},
+      "mode": {},
+      "message": {}
+    }
+  },
+  "dtcReadinessAllComplete": "Every readiness monitor this controller is responsible for is complete.",
+  "dtcReadinessIncomplete": "{count, plural, =1{1 monitor is still unfinished} other{{count} monitors are still unfinished}} — an inspection now may not pass.",
+  "@dtcReadinessIncomplete": {
+    "description": "Counts monitors this app cannot name as well, so one left unfinished still blocks 'ready'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcReadinessSaysNothing": "This controller reported no readiness monitors at all — it may not be responsible for emissions monitoring, and that does not mean it is ready.",
+  "@dtcReadinessSaysNothing": {
+    "description": "A module outside emissions monitoring answers with all zeroes. Reading that as a clean bill of health turns silence into an answer."
+  },
+  "dtcReadinessTitle": "Emissions readiness",
+  "dtcRescanFirst": "Rescan first",
+  "@dtcRescanFirst": {
+    "description": "Label of the disabled clear button. The button IS the verdict of the last clear: something may already have been erased, so a second global Mode 04 would reset a completed controller's readiness. Keep it an imperative."
+  },
+  "dtcRetry": "Retry",
+  "@dtcRetry": {
+    "description": "Retries the fault-code scan. Deliberately not shared with startupRetry: the two screens are free to reword independently."
+  },
+  "dtcScanBody": "Reads Mode 03 stored, Mode 07 pending and Mode 0A permanent fault codes.",
+  "@dtcScanBody": {
+    "description": "The three classes are three different things and must stay distinguishable."
+  },
+  "dtcScanTitle": "Scan the vehicle for fault codes",
+  "dtcScanning": "Scanning…",
+  "dtcSelfReportedCodes": "{count, plural, =1{This controller self-reports 1 confirmed fault code.} other{This controller self-reports {count} confirmed fault codes.}}",
+  "@dtcSelfReportedCodes": {
+    "description": "The controller's own claim, which can contradict what Mode 03 returned. Keep it attributed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcSelfReportedNoCodes": "This controller self-reports no confirmed fault codes.",
+  "dtcSilentCategoryHeadline": "This category did not answer",
+  "@dtcSilentCategoryHeadline": {
+    "description": "Not 'this vehicle does not provide the category'. NO DATA cannot tell an unimplemented service from a lost, filtered or late reply."
+  },
+  "dtcSilentPendingDetail": "Pending fault codes (Mode 07) did not answer. This ECU may not implement the service, or it may simply not have been read this time — no answer cannot tell the two apart, and must not be taken to mean there are no pending faults. The stored fault-code result is unaffected.",
+  "@dtcSilentPendingDetail": {
+    "description": "Distinct from dtcSilentPermanentDetail on purpose. Telling a driver their 2004 car is too old for pending codes is simply wrong."
+  },
+  "dtcSilentPermanentDetail": "Permanent fault codes (Mode 0A) did not answer. This category arrived with the OBD-II generation around 2010, so older vehicles do not always support it — but no answer can equally mean it simply was not read this time, and the two cannot be told apart. The stored fault-code result is unaffected.",
+  "@dtcSilentPermanentDetail": {
+    "description": "Mode 07 and Mode 0A are not the same feature and must not share a sentence: pending codes date from 1996, permanent codes from around 2010."
+  },
+  "dtcStartScan": "Start scan",
+  "dtcStoredSilentDetail": "The vehicle did not answer the Mode {mode} query, so whether it has stored fault codes cannot be confirmed. That is not the same thing as having no fault codes.",
+  "@dtcStoredSilentDetail": {
+    "description": "Mode 03 is mandatory, so silence here is never ordinary.",
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "dtcTotalCodes": "{count, plural, =1{1 code} other{{count} codes}}",
+  "@dtcTotalCodes": {
+    "description": "Count of observed codes, including partial reads.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dtcUnconfirmed": "Cannot confirm",
+  "@dtcUnconfirmed": {
+    "description": "Two call sites, one sentence: the header subtitle for any other verdict, and the headline of a category that failed to answer. Must never be read as 'no problem'."
+  },
+  "dtcUnknownError": "Unknown error",
+  "dtcUnknownMonitor": "Unknown monitor",
+  "@dtcUnknownMonitor": {
+    "description": "A readiness monitor the vehicle reported and this app has no name for. It is still counted as unfinished — not being able to name it is not permission to discount it. Never 'N/A' or 'other'."
+  },
+  "dtcVerdictCompleteClean": "No fault codes from the controllers that answered",
+  "@dtcVerdictCompleteClean": {
+    "description": "Header subtitle for ScanVerdict.completeClean. The qualifier 'that answered' is the whole hedge: this is the line a glance lands on, and it must never read as 'this vehicle has no faults'."
+  },
+  "dtcVerdictPartialClean": "Partially unconfirmed",
+  "@dtcVerdictPartialClean": {
+    "description": "ScanVerdict.partialClean. Some categories could not be read, so the verdict is incomplete. Keep it short and distinct from dtcUnconfirmed; never merge the two into one 'unknown'."
+  },
+  "fieldEventBody": "Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.",
+  "@fieldEventBody": {
+    "description": "Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does."
+  },
+  "fieldEventEngineStarted": "Engine started",
+  "fieldEventHeading": "Field event markers",
+  "fieldEventIgnitionOn": "Ignition on",
+  "fieldEventMemoryOnly": "Recorded in this session, but the automatic save failed — export the transcript now.",
+  "@fieldEventMemoryOnly": {
+    "description": "Must not read as saved. The event exists only in memory, so the remedy is immediate and explicit."
+  },
+  "fieldEventRecorded": "Recorded and saved: {marker}",
+  "@fieldEventRecorded": {
+    "description": "Both halves are claims: the event is in the session AND it reached storage.",
+    "placeholders": {
+      "marker": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldEventRoadTestStarted": "Road test started",
+  "fieldEventThrottleBlip": "Throttle blip",
+  "fieldEventUnavailable": "There is no live vehicle connection to record against.",
+  "gaugeNoData": "No data",
+  "@gaugeNoData": {
+    "description": "Spoken and shown when a dial has no value at all. Not zero, and not unsupported."
+  },
+  "gaugeNoDataBecause": "No data — {reason}",
+  "@gaugeNoDataBecause": {
+    "description": "A dial with no value leads with the reason, because that is the whole of what there is to say. {reason} is the footnote already on screen (formula error, bus error, no answer) and each stays distinct.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "gaugeReadingStale": "{reading} (data is stale)",
+  "@gaugeReadingStale": {
+    "description": "Screen-reader value for a dial whose number is real and whose age is the qualification. The number stays; the parenthetical says it stopped arriving.",
+    "placeholders": {
+      "reading": {
+        "type": "String"
+      }
+    }
+  },
+  "gaugeUnsupportedByVehicle": "Not supported by this vehicle",
+  "@gaugeUnsupportedByVehicle": {
+    "description": "PidFault.unsupported only: the controller answered, and the answer said unsupported. Never use it for silence - that is telemetryStatusNoAnswer. It names the vehicle on purpose: the app's own refusal to transmit reads completely differently (telemetryStatusUnsafeServiceRefusal), and this tile must not be read as Telltale declining. It shares a square tile about 122dp wide with the availability badge, so anything longer needs re-measuring against test/l10n/dashboard_l10n_test.dart."
+  },
+  "handshakeNoteAborted": "Stopped after an earlier step failed.",
+  "@handshakeNoteAborted": {
+    "description": "InitNote.aborted. The remaining steps were not attempted, which is not the same as their having failed."
+  },
+  "handshakeNoteEcuRefusedSupportQuery": "The ECU refused the support query (negative response).",
+  "@handshakeNoteEcuRefusedSupportQuery": {
+    "description": "InitNote.ecuRefusedSupportQuery. A refusal is an answer: something is on the bus. Distinct from handshakeNoteEcuSilent."
+  },
+  "handshakeNoteEcuSilent": "The ECU did not answer.",
+  "@handshakeNoteEcuSilent": {
+    "description": "InitNote.ecuSilent. 0100 is the only step that proves a vehicle is on the bus; every AT command answers happily with the ignition off."
+  },
+  "handshakeNoteNotAcknowledged": "The adapter did not acknowledge this command.",
+  "@handshakeNoteNotAcknowledged": {
+    "description": "InitNote.notAcknowledged. The reply printed no error but never said OK either, and 'printed no error' is a much weaker claim than 'answered correctly'."
+  },
+  "handshakeNoteNotModeOnePositiveReply": "The reply is not a Mode 01 positive response.",
+  "@handshakeNoteNotModeOnePositiveReply": {
+    "description": "InitNote.notModeOnePositiveReply. Mode 01 is on docs/i18n/do-not-translate.md."
+  },
+  "handshakeNotePidEchoMismatch": "The reply echoes a different PID from the one that was asked for.",
+  "@handshakeNotePidEchoMismatch": {
+    "description": "InitNote.pidEchoMismatch. Accepting it would build the supported-PID set out of bytes that answer a different question."
+  },
+  "handshakeNoteSupportMaskTooShort": "The support reply is too short; 41 00 and four more bytes are required.",
+  "@handshakeNoteSupportMaskTooShort": {
+    "description": "InitNote.supportMaskTooShort. The hex bytes are wire values and are never translated."
+  },
+  "handshakeNoteTimedOut": "Timed out.",
+  "@handshakeNoteTimedOut": {
+    "description": "InitNote.timedOut. Silence within the window, not a refusal and not a capability claim."
+  },
+  "handshakeStepAdapterVersion": "Read the adapter version",
+  "handshakeStepAdaptiveTiming": "Enable adaptive timing, the setting the datasheet recommends",
+  "@handshakeStepAdaptiveTiming": {
+    "description": "ATAT1. The app sends AT1 rather than the more aggressive AT2, which shortens the window an ECU has to answer; see docs/protocol-deviations.zh-TW.md."
+  },
+  "handshakeStepBatteryVoltage": "Read the battery voltage",
+  "handshakeStepDeviceIdentity": "Read the device identifier string",
+  "handshakeStepEchoOff": "Turn off command echo",
+  "@handshakeStepEchoOff": {
+    "description": "ATE0. An echoed command is valid hex that prepends bytes to a reading, which is why this step is critical."
+  },
+  "handshakeStepLinefeedsOff": "Turn off linefeeds",
+  "handshakeStepMemoryOff": "Turn off memory writes",
+  "handshakeStepNoReason": "no response",
+  "@handshakeStepNoReason": {
+    "description": "Stands in when a failed step reported nothing at all about why. Not a claim that the vehicle lacks something — only that this step said nothing."
+  },
+  "handshakeStepProtocolAuto": "Detect the bus protocol automatically",
+  "@handshakeStepProtocolAuto": {
+    "description": "ATSP0. Nothing downstream works without a protocol, which is why this step is critical."
+  },
+  "handshakeStepProtocolDescription": "Read the protocol description",
+  "handshakeStepProtocolNumber": "Read the protocol number",
+  "handshakeStepReset": "Software-reset the adapter",
+  "handshakeStepResponseTimeout": "Set the response timeout to about 408 ms",
+  "@handshakeStepResponseTimeout": {
+    "description": "ATST66. The figure is what the command means (0x66 timer units of 4 ms), not a constant the code enforces elsewhere."
+  },
+  "handshakeStepSpacesOff": "Turn off spaces, cutting a third of the traffic",
+  "handshakeStepSupportProbe": "Ask which PIDs the ECU supports, proving a vehicle answered",
+  "@handshakeStepSupportProbe": {
+    "description": "0100. The only step that proves a VEHICLE is there: every AT command answers with the ignition off and this one does not. Both halves of the sentence are load-bearing."
+  },
+  "languageSaveFailed": "Could not save the language. Try again.",
   "languageSectionTitle": "Language / 語言",
   "@languageSectionTitle": {
     "description": "Bilingual label for the language picker. Options use self-names."
   },
-  "connectHeadline": "Choose a connection",
-  "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
+  "navDashboard": "Dashboard",
+  "@navDashboard": {
+    "description": "Bottom-navigation and rail destination. On screen on every screen, in a five-tab bar; a label that does not fit is ellipsised by the framework, so keep it short enough to render whole at 360dp."
+  },
+  "navDtc": "Fault codes",
+  "@navDtc": {
+    "description": "Navigation destination for the fault-code screen. 'Fault codes' is the spelled-out term the README and glossary use; DTC stays available as the acronym elsewhere. It measures inside the 72dp a fifth of a 360dp bar allows, so the long form ships."
+  },
+  "navPerformance": "Timing",
+  "@navPerformance": {
+    "description": "Navigation destination for the acceleration-timing screen, which times 0 to a target speed. NOT 'Performance': measured in the shipped SpaceGrotesk at 12sp it wants 78.8dp against the 72dp a fifth of a 360dp bar allows, so it would render as 'Performanc…' — and a truncated label is worse than a shorter true one. 'Timing' is what the screen does."
+  },
+  "navPid": "PID",
+  "@navPid": {
+    "description": "Navigation destination for the PID manager. PID is an SAE J1979 term and is not translated in either language."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not."
+  },
+  "performanceArm": "Arm the timer",
+  "performanceDisclaimer": "Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.",
+  "@performanceDisclaimer": {
+    "description": "Load-bearing hedge. Both halves must survive translation: indicative only, AND not equivalent to professional test equipment. The ranges describe vehicles and adapters, not a constant this app enforces, so they stay in the prose."
+  },
+  "performanceHeadline": "Acceleration test",
+  "@performanceHeadline": {
+    "description": "Performance screen title. The screen times a run; it never states a vehicle's rated performance."
+  },
+  "performanceNoSpeedSignal": "There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.",
+  "@performanceNoSpeedSignal": {
+    "description": "PID 010D is an adapter-facing token and stays byte-identical in every language."
+  },
+  "performanceNotConnectedBody": "The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.",
+  "performanceNotConnectedTitle": "Not connected",
+  "performancePeakSpeed": "Peak speed",
+  "performanceReset": "Reset",
+  "performanceSecondsUnit": "seconds",
+  "performanceSpeedGaugeLabel": "Speed",
+  "performanceSpeedTraceHeading": "Speed trace",
+  "performanceSplitsHeading": "Splits",
+  "performanceStateAborted": "The speed signal stopped — this run was not completed; below is what was recorded before it went",
+  "@performanceStateAborted": {
+    "description": "An incomplete run whose partial evidence is kept. Must never read as a finished time."
+  },
+  "performanceStateAwaitingSpeedSignal": "Waiting for a speed signal",
+  "@performanceStateAwaitingSpeedSignal": {
+    "description": "No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet."
+  },
+  "performanceStateAwaitingStandstill": "Come to a complete stop first — now {speed} km/h",
+  "@performanceStateAwaitingStandstill": {
+    "description": "{speed} is the live road speed, already formatted by the caller. Units never change with language.",
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "performanceStateFinished": "Finished 0 → {target} km/h",
+  "@performanceStateFinished": {
+    "description": "{target} is the selected target speed from the screen's own list, never spelled into the sentence.",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "performanceStateIdle": "Pick a target speed, then start",
+  "performanceStateRunning": "Timing",
+  "performanceStateStaged": "Ready — the clock starts when you move off",
+  "performanceSubhead": "A timed run from a standing start to a target speed",
+  "@performanceSubhead": {
+    "description": "Says what the number is: one timed run beginning at rest. Not a manufacturer figure, not a rating."
+  },
+  "performanceTargetSpeedHeading": "Target speed",
+  "pidActionCancel": "Cancel",
+  "pidActionDelete": "Delete",
+  "pidArrangeBody": "Drag to reorder. The dashboard fills left to right and top to bottom, so whatever is first is seen first.",
+  "pidArrangeEmptyMessage": "Enable a few in the list first, then come back to order them.",
+  "pidArrangeEmptyTitle": "No PID is enabled yet",
+  "pidBulkActionAddConfirmed": "Add the {count} confirmed",
+  "@pidBulkActionAddConfirmed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidBulkActionAllActive": "All already enabled",
+  "pidBulkActionIncomplete": "Scan data is incomplete",
+  "pidBulkActionLocked": "Cannot change while recording",
+  "pidBulkActionPending": "Waiting for scan results",
+  "pidBulkActionZero": "No confirmed supported PIDs",
+  "@pidBulkActionZero": {
+    "description": "Nothing was confirmed. Not a claim that the vehicle supports nothing."
+  },
+  "pidBulkAddCount": "Add {count}",
+  "@pidBulkAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidBulkAddDialogTitle": "Add {count} confirmed supported PIDs?",
+  "@pidBulkAddDialogTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidBulkAdded": "Added {count} confirmed supported PIDs.",
+  "@pidBulkAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidBulkUnconfirmedBlocks": "{count} support blocks are still unconfirmed — this adds only the items with positive evidence.",
+  "@pidBulkUnconfirmedBlocks": {
+    "description": "Both halves are load-bearing: still unconfirmed, AND only positively evidenced items are added.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidBulkWillAdd": "Will add {count}. The more PIDs are enabled, the less often each one may refresh.",
+  "@pidBulkWillAdd": {
+    "description": "'may refresh less often' is a hedge; the scheduler makes no promise about a rate.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidCapabilityConfirmedCount": "{confirmed} confirmed",
+  "@pidCapabilityConfirmedCount": {
+    "placeholders": {
+      "confirmed": {
+        "type": "int"
+      }
+    }
+  },
+  "pidCapabilityCoverageNone": "No contiguous coverage established yet",
+  "pidCapabilityCoverageThroughEnd": "Contiguous coverage 01–{through} (reached the end)",
+  "@pidCapabilityCoverageThroughEnd": {
+    "description": "{through} is a hex PID number and is never localized.",
+    "placeholders": {
+      "through": {
+        "type": "String"
+      }
+    }
+  },
+  "pidCapabilityCoverageThroughUnknown": "Contiguous coverage 01–{through} (unknown beyond)",
+  "@pidCapabilityCoverageThroughUnknown": {
+    "description": "Unknown beyond that point, not absent beyond it.",
+    "placeholders": {
+      "through": {
+        "type": "String"
+      }
+    }
+  },
+  "pidCapabilityPhaseAttemptFinished": "This support scan finished",
+  "@pidCapabilityPhaseAttemptFinished": {
+    "description": "Scoped to this attempt. Never 'scan complete', which would read as full coverage."
+  },
+  "pidCapabilityPhaseInterrupted": "The support scan was interrupted",
+  "pidCapabilityPhaseNotStarted": "Scan not started",
+  "pidCapabilityPhaseRunning": "Confirming what this vehicle supports",
+  "pidCapabilitySemantics": "Vehicle-supported PIDs. {phase}. {confirmed} confirmed. {unknown} unknown blocks.",
+  "@pidCapabilitySemantics": {
+    "description": "Screen-reader summary of the capability panel. {phase} is one of the pidCapabilityPhase* strings.",
+    "placeholders": {
+      "phase": {
+        "type": "String"
+      },
+      "confirmed": {
+        "type": "int"
+      },
+      "unknown": {
+        "type": "int"
+      }
+    }
+  },
+  "pidCapabilityTitle": "Vehicle-supported PIDs",
+  "pidCapabilityUnknownBlocks": "{unknown} unknown blocks",
+  "@pidCapabilityUnknownBlocks": {
+    "description": "Unknown, never unsupported: these blocks were not read at all.",
+    "placeholders": {
+      "unknown": {
+        "type": "int"
+      }
+    }
+  },
+  "pidEditorCollision": "A custom PID already uses this combination ({name}). Use a different mode + PID, header, or name suffix.",
+  "@pidEditorCollision": {
+    "description": "A refusal that names the reason and the remedy. A generic 'invalid' would be a regression.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pidEditorDeleteBody": "The definition for “{name}” is removed, its gauge disappears from the dashboard, and this cannot be undone.",
+  "@pidEditorDeleteBody": {
+    "description": "{name} is the user's own PID name and passes through untranslated.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pidEditorDeleteTitle": "Delete this PID?",
+  "pidEditorDiscard": "Discard",
+  "pidEditorDiscardBody": "The changes to this PID have not been saved, and leaving loses them.",
+  "pidEditorDiscardTitle": "Discard unsaved changes?",
+  "pidEditorEquationHelper": "A..N map to the response bytes; SIGNED(), ABS(), LOG10(), {valSyntax} and BARO are available",
+  "@pidEditorEquationHelper": {
+    "description": "{valSyntax} carries the literal VAL{PID} token, which cannot be written inline because ARB reads braces as a placeholder.",
+    "placeholders": {
+      "valSyntax": {
+        "type": "String"
+      }
+    }
+  },
+  "pidEditorFieldEquation": "Expression",
+  "pidEditorFieldHeader": "CAN header",
+  "pidEditorFieldMax": "Maximum",
+  "pidEditorFieldMin": "Minimum",
+  "pidEditorFieldModeAndPid": "Mode + PID",
+  "pidEditorFieldName": "Name",
+  "pidEditorFieldSample": "Test response bytes",
+  "pidEditorFieldShortName": "Short name (shown on the gauge)",
+  "pidEditorFieldUnits": "Units",
+  "pidEditorHeaderHelper": "7E0 = engine",
+  "@pidEditorHeaderHelper": {
+    "description": "7E0 is a CAN id and stays byte-identical."
+  },
+  "pidEditorKeepEditing": "Keep editing",
+  "pidEditorModeAndPidHelper": "For example 010C or 221101",
+  "@pidEditorModeAndPidHelper": {
+    "description": "Mode and PID numbers are never localized."
+  },
+  "pidEditorSampleHelper": "Enter hex to preview the result as you type",
+  "pidEditorSave": "Save",
+  "pidEditorSectionFormula": "Formula",
+  "pidEditorSectionIdentity": "Identity",
+  "pidEditorSectionQuery": "Query",
+  "pidEditorSectionRangeAndPriority": "Gauge range and priority",
+  "pidEditorTitleEdit": "Edit PID",
+  "pidEditorTitleNew": "New custom PID",
+  "pidExportFailed": "Export failed: {error}",
+  "@pidExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pidExportNoCustomPids": "There are no custom PIDs to export.",
+  "pidImportNothingToImport": "No definitions to import.",
+  "pidImportPickerFailed": "Could not open the file picker: {error}",
+  "@pidImportPickerFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportReadFailed": "Could not read the file: {error}",
+  "@pidImportReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pidListSeparator": ", ",
+  "@pidListSeparator": {
+    "description": "Separator for an inline list of machine tokens. English uses a comma and a space; Chinese uses the enumeration comma."
+  },
+  "pidManagerActiveOnly": "Enabled only",
+  "@pidManagerActiveOnly": {
+    "description": "Filter chip label; must stay short enough for a chip."
+  },
+  "pidManagerAdd": "New",
+  "pidManagerArrangeDashboard": "Arrange dashboard",
+  "pidManagerCounts": "{active} enabled · {total} available",
+  "@pidManagerCounts": {
+    "description": "Counts come from the active list and the registry; never spell a number into the sentence.",
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pidManagerExportCsv": "Export custom PIDs",
+  "pidManagerHeadline": "PID manager",
+  "@pidManagerHeadline": {
+    "description": "Screen title of the PID manager."
+  },
+  "pidManagerImportCsv": "Import CSV",
+  "@pidManagerImportCsv": {
+    "description": "The CSV column headers themselves are a machine format and are never localized."
+  },
+  "pidManagerMoreActions": "More",
+  "@pidManagerMoreActions": {
+    "description": "Tooltip on the overflow menu."
+  },
+  "pidManagerNoMatchMessage": "Try another keyword, or create a custom PID.",
+  "pidManagerNoMatchTitle": "No matching PID",
+  "pidManagerPowertrainBatteryCatalog": "Powertrain-battery catalog",
+  "pidManagerSearchHint": "Search by name or PID code…",
+  "pidPickCsvDialogTitle": "Choose a PID definition CSV",
+  "pidPillCustom": "Custom",
+  "pidPillUnsupported": "Unsupported",
+  "@pidPillUnsupported": {
+    "description": "Only for a PID the vehicle positively disclaimed. Silence is never this."
+  },
+  "pidPreviewCannotEvaluate": "Cannot evaluate",
+  "pidPreviewResultLabel": "Result",
+  "pidPreviewSubstituted": "The preview substitutes {value} for {dependencies}; the real value comes from that PID once connected.",
+  "@pidPreviewSubstituted": {
+    "description": "{value} comes from the editor's own stand-in constant; never spell the number into the sentence. An estimate stands in for a measurement here, and the sentence must keep saying so.",
+    "placeholders": {
+      "value": {
+        "type": "double",
+        "format": "decimalPattern"
+      },
+      "dependencies": {
+        "type": "String"
+      }
+    }
+  },
+  "pidPreviewTitle": "Live preview",
+  "pidPriorityHigh": "High",
+  "pidPriorityLow": "Low",
+  "pidPriorityMedium": "Medium",
+  "pidPriorityVeryLow": "Very Low",
+  "pidRowEdit": "Edit",
+  "pidRowShowOnDashboard": "Show {name} on the dashboard",
+  "@pidRowShowOnDashboard": {
+    "description": "Semantics label for the row switch. {name} is user-authored data and passes through untouched.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRowStaleUnits": "{units} · stale",
+  "@pidRowStaleUnits": {
+    "description": "Stale, not live. {units} is the definition's own unit text and is never translated.",
+    "placeholders": {
+      "units": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainAuthorizationGranted": "Battery signals for {profile} are on for this connection",
+  "@powertrainAuthorizationGranted": {
+    "description": "The per-connection scope is part of the sentence, not a footnote.",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainAuthorizationRefused": "Could not enable: {reason}",
+  "@powertrainAuthorizationRefused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainCancel": "Cancel",
+  "powertrainCatalogCounts": "Profiles: {profiles} · Experimental one-shot reads: {probeable}",
+  "@powertrainCatalogCounts": {
+    "description": "Both counts are derived from the verified catalog; never spell a number into the copy. English uses a label form because neither count has a fixed plurality.",
+    "placeholders": {
+      "profiles": {
+        "type": "int"
+      },
+      "probeable": {
+        "type": "int"
+      }
+    }
+  },
+  "powertrainCatalogLoadFailedBody": "Integrity verification did not pass, so no vehicle data is shown or installed.",
+  "@powertrainCatalogLoadFailedBody": {
+    "description": "Fail-closed: says what did NOT happen. Never soften to 'try again later'."
+  },
+  "powertrainCatalogLoadFailedTitle": "Offline catalog could not load",
+  "powertrainCatalogNotVerified": "The catalog has not passed verification, so nothing can be installed.",
+  "powertrainCatalogRevalidate": "Verify again",
+  "powertrainCatalogScopeNote": "The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.",
+  "@powertrainCatalogScopeNote": {
+    "description": "Load-bearing: separates 'a candidate exists' from 'this works on your car'. Never drop either half."
+  },
+  "powertrainCatalogSearchHint": "Search make, model, variant or market…",
+  "powertrainCatalogTitle": "Powertrain battery catalog",
+  "@powertrainCatalogTitle": {
+    "description": "App bar of the vehicle-specific traction-battery catalog."
+  },
+  "powertrainChooseCommandNote": "One command per attempt: no scan, no batch, no automatic retry.",
+  "@powertrainChooseCommandNote": {
+    "description": "Mirrors README.md: 'no identifier scan, batch, automatic retry'. The three negations are the promise."
+  },
+  "powertrainChooseCommandTitle": "Choose one pinned read-only query",
+  "powertrainClose": "Close",
+  "powertrainConfirmAccept": "This is the car",
+  "powertrainConfirmBody": "Installed profile signals are read only after you confirm this car is that model, and the confirmation lasts for this connection alone.",
+  "@powertrainConfirmBody": {
+    "description": "Installing makes definitions available; it does not say the car on the wire is that vehicle. The per-connection scope is the point — plugging into a different car must never inherit the grant."
+  },
+  "powertrainConfirmButton": "Confirm vehicle",
+  "powertrainConfirmDialogBody": "Once confirmed, this profile's read-only battery queries are polled for the rest of this connection. The wrong profile can produce numbers that look plausible and are wrong — cancel if you are not sure.",
+  "@powertrainConfirmDialogBody": {
+    "description": "Carries this project's organising principle into product copy: a plausible wrong number is worse than no number. Never soften 'look plausible and are wrong'."
+  },
+  "powertrainConfirmDialogTitle": "Confirm the connected vehicle",
+  "powertrainConfirmTitle": "Vehicle battery signals await confirmation",
+  "powertrainConnectFirst": "Connect first; experimental authorization is never kept across connections.",
+  "powertrainConnectionChanged": "The connection changed — confirm the vehicle again for the new connection.",
+  "@powertrainConnectionChanged": {
+    "description": "The acceptance was a statement about the vehicle on the wire at prompt time; it cannot carry over."
+  },
+  "powertrainEnableLabInSettings": "Turn on the experimental battery laboratory in Settings first.",
+  "powertrainEvidencePhysicalVehicle": "Project vehicle",
+  "@powertrainEvidencePhysicalVehicle": {
+    "description": "PowertrainProfileEvidence.physicalVehicle: a retained run this project performed. Still bounded to the recorded market, variant, adapter and conditions."
+  },
+  "powertrainEvidenceSourceBacked": "Source data",
+  "@powertrainEvidenceSourceBacked": {
+    "description": "PowertrainProfileEvidence.sourceBacked: an external source supports the mapping. NOT evidence produced by Telltale on a vehicle."
+  },
+  "powertrainEvidenceSyntheticRig": "Synthetic rig",
+  "@powertrainEvidenceSyntheticRig": {
+    "description": "PowertrainProfileEvidence.syntheticRig: a deterministic simulator exercised the path. Establishes nothing about a real ECU."
+  },
+  "powertrainExperimentalDataDisclosure": "This is a candidate read labelled by the source's authors, not a manufacturer or cross-model safety guarantee; ELM327 only forwards the command. The raw command and reply stay in the local diagnostic transcript and are not uploaded automatically by this feature; decoded values are never installed as a PID or added to a gauge. Cancelling does not affect ordinary OBD functions.",
+  "@powertrainExperimentalDataDisclosure": {
+    "description": "Four load-bearing claims: candidate not guarantee; the transcript keeps it locally; nothing is auto-uploaded; nothing is installed or shown on a gauge. Cancelling is safe. Dropping any clause changes what the driver is consenting to."
+  },
+  "powertrainExperimentalDialogTitle": "One-shot experimental read-only confirmation",
+  "powertrainExperimentalIdentityAck": "I have checked the market, model and model year the source knows, and I accept the unconfirmed fields",
+  "@powertrainExperimentalIdentityAck": {
+    "description": "'the source knows' is the hedge: the source's identity evidence, not a confirmed match."
+  },
+  "powertrainExperimentalParkedAck": "The vehicle is safely parked; I understand this reads once and the number may still not apply",
+  "@powertrainExperimentalParkedAck": {
+    "description": "Safety-critical. Keep both halves: parked, and the value may not apply."
+  },
+  "powertrainExperimentalWireLine": "Accepts RX {responder} only, payload length {bytes} bytes",
+  "@powertrainExperimentalWireLine": {
+    "description": "RX, the CAN responder id and the unit 'bytes' are never translated.",
+    "placeholders": {
+      "responder": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "powertrainFieldListSeparator": ", ",
+  "@powertrainFieldListSeparator": {
+    "description": "Joins the unconfirmed-field names. Chinese uses the enumeration comma U+3001, English a comma and a space; this is why it is a message and not a constant."
+  },
+  "powertrainFieldMarket": "Market",
+  "powertrainFieldModel": "Model",
+  "powertrainFieldModelYear": "Model year",
+  "powertrainFieldVariant": "Variant",
+  "powertrainFilterAll": "All",
+  "@powertrainFilterAll": {
+    "description": "The 'no powertrain filter' chip. The other chips are the acronyms PHEV, HEV, BEV, MHEV, REEV, FCEV and are never translated."
+  },
+  "powertrainIdentityEvidenceExact": "direct evidence",
+  "@powertrainIdentityEvidenceExact": {
+    "description": "PowertrainIdentityEvidenceLevel.exact. Evidence about the SOURCE record, not a match with the car in front of the driver."
+  },
+  "powertrainIdentityEvidenceNone": "none",
+  "@powertrainIdentityEvidenceNone": {
+    "description": "Fills 'Unconfirmed fields:' when every field has evidence. It says the LIST is empty, not that a field is unknown."
+  },
+  "powertrainIdentityEvidenceSourcePartial": "partial evidence",
+  "@powertrainIdentityEvidenceSourcePartial": {
+    "description": "PowertrainIdentityEvidenceLevel.sourcePartial. Partial is not confirmed; it must stay distinct from both exact and unknown."
+  },
+  "powertrainIdentityEvidenceSummary": "Source identity evidence: {fields}\nUnconfirmed fields: {unconfirmed}",
+  "@powertrainIdentityEvidenceSummary": {
+    "description": "{fields} is a middle-dot list of 'field level' pairs; {unconfirmed} lists the fields the source could not establish, joined by powertrainFieldListSeparator.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      },
+      "unconfirmed": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainIdentityEvidenceUnknown": "unknown",
+  "@powertrainIdentityEvidenceUnknown": {
+    "description": "PowertrainIdentityEvidenceLevel.unknown. The source said nothing about this field. Never render as 'not applicable' or 'none'."
+  },
+  "powertrainInstallButton": "Install battery signals",
+  "powertrainInstallConfirm": "Install",
+  "powertrainInstallDialogTitle": "Install this model's battery signals",
+  "powertrainInstallDisclosureCommunity": "Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The data comes from community sources and has been independently corroborated; it is still not a manufacturer guarantee.",
+  "@powertrainInstallDisclosureCommunity": {
+    "description": "PowertrainProfileStatus.community. 'Independently corroborated' is a claim about sources agreeing, never about this vehicle."
+  },
+  "powertrainInstallDisclosureExperimental": "Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This is an experimental decode with no independent-corroboration requirement, unverified on this vehicle, and still not a manufacturer guarantee.",
+  "@powertrainInstallDisclosureExperimental": {
+    "description": "PowertrainProfileStatus.experimental. Three separate hedges: experimental, no corroboration requirement, unverified on this vehicle. Dropping any one of them overstates the tier."
+  },
+  "powertrainInstallDisclosureReady": "Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The source data is fuller; it is still not a manufacturer guarantee.",
+  "@powertrainInstallDisclosureReady": {
+    "description": "PowertrainProfileStatus.ready. Whole sentence, not a shared prefix plus a fragment: English word order will not survive concatenation. The closing 'still not a manufacturer guarantee' is load-bearing in all four variants."
+  },
+  "powertrainInstallDisclosureResearchOnly": "Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This entry is for research only and should not be installed.",
+  "@powertrainInstallDisclosureResearchOnly": {
+    "description": "PowertrainProfileStatus.researchOnly. Must never read as installable or supported."
+  },
+  "powertrainInstallFailed": "Cannot install: {reason}",
+  "@powertrainInstallFailed": {
+    "description": "{reason} is a technical message raised by the installer, not copy this screen owns.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainInstallIdentityAck": "My vehicle matches the market, model and model year above",
+  "powertrainInstalledRemoveButton": "Installed · remove signals",
+  "powertrainInstalledSignalsSnack": "{count, plural, =1{Installed 1 signal. Add it to the dashboard from the PID page; every connection needs a vehicle confirmation.} other{Installed {count} signals. Add them to the dashboard from the PID page; every connection needs a vehicle confirmation.}}",
+  "@powertrainInstalledSignalsSnack": {
+    "description": "Installing is not authorizing: the per-connection vehicle confirmation is still required, and the sentence must keep saying so.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "powertrainNoMatchBody": "Try a make or model name, or switch to another powertrain type.",
+  "powertrainNoMatchTitle": "No matching vehicle",
+  "powertrainNotAuthorized": "Not authorized: {reason}",
+  "@powertrainNotAuthorized": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainNotInstallableInThisRelease": "Not installable in this release",
+  "powertrainPrimarySource": "Primary source: {name} ({license})",
+  "@powertrainPrimarySource": {
+    "description": "Source names and licence identifiers are identifiers and are never translated.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "license": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainProbeChecksPassed": "Passed the responder, echo, exact length, formula and range checks.",
+  "@powertrainProbeChecksPassed": {
+    "description": "Names exactly the checks that ran. It is not a statement that the value is correct for this vehicle."
+  },
+  "powertrainProbeConnectForOneShot": "Connect for a one-shot read-only query",
+  "powertrainProbeConnectToTryOnce": "Connect to try one read first",
+  "powertrainProbeDidNotFinish": "The one-shot query did not finish; no value was published or kept.",
+  "@powertrainProbeDidNotFinish": {
+    "description": "Says what did NOT happen. An unfinished probe must never read as a failed vehicle."
+  },
+  "powertrainProbeEnableLabFirst": "Turn on the laboratory in Settings first",
+  "powertrainProbeInProgress": "Reading once…",
+  "powertrainProbeNoValuePublished": "No value was published; a structural or decode error is quarantined until you reconnect.",
+  "powertrainProbeOnceButton": "Read once only",
+  "powertrainProbePassedTitle": "One-shot query passed",
+  "powertrainProbePickOneRead": "Pick one command, read once",
+  "powertrainProbeReconnectFirst": "Reconnect, then try again",
+  "@powertrainProbeReconnectFirst": {
+    "description": "Disabled probe button after a structural-mismatch quarantine."
+  },
+  "powertrainProbeRefusedTitle": "One-shot query refused",
+  "powertrainProbeTryOnceFirst": "Try one read first",
+  "powertrainProfileNotVerified": "The profile is not in the verified catalog",
+  "powertrainQuarantinedPill": "Quarantined · reconnect",
+  "@powertrainQuarantinedPill": {
+    "description": "Scoped to this connection, not permanent, and reconnecting is what lifts it. Kept to the pill width at 360dp: 'Quarantined for this connection' overflowed the card header row."
+  },
+  "powertrainQuarantinedSnack": "Quarantined for this connection: {reason}",
+  "@powertrainQuarantinedSnack": {
+    "description": "{reason} is produced by the consent notifier, not by this screen.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainResearchOnlyNeverQueries": "Research only — never queries",
+  "@powertrainResearchOnlyNeverQueries": {
+    "description": "The permanently disabled button on a researchOnly row. It states a refusal, not a temporary unavailability."
+  },
+  "powertrainRestoreStorageErrorRetry": "A storage error happened while restoring earlier installs. It has been rescheduled — try again.",
+  "@powertrainRestoreStorageErrorRetry": {
+    "description": "Retryable, and says so. Distinct from powertrainCatalogNotVerified, which is not retryable."
+  },
+  "powertrainSecondarySource": "Independent corroboration: {name} ({license})",
+  "@powertrainSecondarySource": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "license": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainSignalCount": "Signals: {count}",
+  "@powertrainSignalCount": {
+    "description": "Rendered inside a middle-dot separated provenance line. Label form in English so it is correct at any count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "powertrainSourceSha256": "Source file SHA-256: {hash}…",
+  "@powertrainSourceSha256": {
+    "description": "A truncated identifier the reader may paste into a search. Never translated, never reformatted.",
+    "placeholders": {
+      "hash": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainStatusCommunity": "Community · unverified",
+  "@powertrainStatusCommunity": {
+    "description": "PowertrainProfileStatus.community. Cross-corroborated by independent sources, still never driven by this project. Both halves are required. Shortened from 'Community data · unverified', which overflowed the card header at 360dp — a shorter true phrase, not an ellipsis that hides the tier."
+  },
+  "powertrainStatusExperimental": "Experimental · unverified",
+  "@powertrainStatusExperimental": {
+    "description": "PowertrainProfileStatus.experimental on a profile that can also be installed."
+  },
+  "powertrainStatusExperimentalProbeOnly": "Experimental · read once",
+  "@powertrainStatusExperimentalProbeOnly": {
+    "description": "PowertrainProfileStatus.experimental on a profile that can only be read once, never installed. Kept short because the pill shares the card header row with the profile name at 360dp; 'Experimental · one-shot read-only' overflowed it. A shorter true phrase, never an ellipsis."
+  },
+  "powertrainStatusReady": "Fuller source data",
+  "@powertrainStatusReady": {
+    "description": "PowertrainProfileStatus.ready. A claim about the SOURCE, not about the vehicle: it must never read as 'verified on your car'."
+  },
+  "powertrainStatusResearchOnly": "Research only",
+  "@powertrainStatusResearchOnly": {
+    "description": "PowertrainProfileStatus.researchOnly. Metadata index with no commands. Must never read as installable or supported."
+  },
+  "powertrainUninstalledSignalsSnack": "Removed the installed signals for {name}.",
+  "@powertrainUninstalledSignalsSnack": {
+    "description": "{name} is the profile display name from the catalog; it is data and is not translated.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "powertrainVehicleYearFixed": "Model year: {year}",
+  "@powertrainVehicleYearFixed": {
+    "description": "Shown when the profile covers exactly one year, so there is nothing to choose.",
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "powertrainVehicleYearLabel": "Model year",
+  "recommendedPurchaseDisclosure": "This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.",
+  "@recommendedPurchaseDisclosure": {
+    "description": "Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change."
+  },
+  "recommendedPurchaseHeading": "Recommended adapter",
+  "recommendedPurchaseModelLine": "Model {model} · NCC {approval}",
+  "@recommendedPurchaseModelLine": {
+    "description": "{model} and {approval} are printed on the hardware and never translated.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "approval": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseNoAdapterYet": "No adapter yet? See the recommended one on {store}",
+  "@recommendedPurchaseNoAdapterYet": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseOpenFailed": "Could not open the {store} link",
+  "@recommendedPurchaseOpenFailed": {
+    "description": "The panel never pretends a failed launch succeeded.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseShortDisclosureAction": "Full disclosure in Settings",
+  "recommendedPurchaseShortDisclosureLead": "This is an affiliate link, not an adapter certification.",
+  "recommendedPurchaseStoreShopee": "Shopee",
+  "@recommendedPurchaseStoreShopee": {
+    "description": "The storefront's own name. Shopee publishes as 蝦皮 in Taiwan and Shopee elsewhere, so each language gets the name its reader can read."
+  },
+  "recommendedPurchaseViewOnStore": "View on {store}",
+  "@recommendedPurchaseViewOnStore": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "semanticsFieldSeparator": ", ",
+  "@semanticsFieldSeparator": {
+    "description": "Joins the fields of a composed semantics label. Chinese uses the fullwidth comma; English must not, or a screen reader announces a fullwidth character."
+  },
+  "settingsAdapterConcernsFooter": "These are places where the adapter's account of itself does not add up, not evidence that it misread the car. The only way to confirm a value is a second independent measurement (see the field guide).",
+  "@settingsAdapterConcernsFooter": {
+    "description": "Distinguishes a self-description mismatch from a wrong reading."
+  },
+  "settingsAdapterNoContradictions": "No self-description contradictions found. That only means it is consistent about itself — it is not evidence that the chip is genuine, and not evidence that the numbers it reports are correct. On a clone, the version string is just text somebody chose.",
+  "@settingsAdapterNoContradictions": {
+    "description": "Consistency is not a clean bill of health. Both negations are load-bearing."
+  },
+  "settingsAdapterNoVersion": "(no version reported)",
+  "settingsAdapterSelfReportTitle": "What the adapter says about itself",
+  "settingsBatteryLabDialogBody": "These are reverse-engineered candidate sources, not manufacturer documentation, and not Telltale support for your vehicle. Even a read-only query can wake a controller; a decoded number may look plausible and still not apply.",
+  "@settingsBatteryLabDialogBody": {
+    "description": "A safety boundary. Three claims must survive translation: reverse-engineered candidates rather than manufacturer documentation; a read-only query can still wake a controller; a decoded number can look plausible and not apply."
+  },
+  "settingsBatteryLabDialogTitle": "Turn on the battery laboratory",
+  "settingsBatteryLabDisableNotSaved": "The battery laboratory is off for this run, but the setting could not be saved; the next launch may show the laboratory again, and every query still needs its own confirmation.",
+  "@settingsBatteryLabDisableNotSaved": {
+    "description": "Off now, possibly back next launch, and per-query consent is unaffected. All three halves are load-bearing."
+  },
+  "settingsBatteryLabEnableNotSaved": "Could not save the battery laboratory setting; it stays off.",
+  "settingsBatteryLabEvidenceAck": "I understand that the source data and the synthetic tests do not prove this applies to my own vehicle",
+  "settingsBatteryLabSwitchSubtitle": "Only reveals one-shot read-only queries whose sources are complete and hash-bound. It does not install PIDs, poll, add gauges, or treat research data as support.",
+  "@settingsBatteryLabSwitchSubtitle": {
+    "description": "The switch reveals the laboratory; it never trusts a vehicle. 'Only reveals' is load-bearing."
+  },
+  "settingsBatteryLabSwitchTitle": "Battery laboratory (experimental)",
+  "settingsBatteryLabUnlockReadOnly": "Unlock one-shot read-only queries only",
+  "settingsBatteryLabWireAck": "I understand this unlocks only one-shot queries at fixed Mode 21/22 addresses from the catalog — not scanning, not a diagnostic session, not security access, not writing, not control",
+  "@settingsBatteryLabWireAck": {
+    "description": "States exactly what consent does and does not unlock. Mode 21/22 stay byte-identical. The five refusals are enumerated on purpose."
+  },
+  "settingsCancel": "Cancel",
+  "settingsCatalogChoose": "Choose from the official catalog",
+  "settingsCatalogCorrupt": "The official offline catalog is damaged or could not be loaded; nothing was applied.",
+  "@settingsCatalogCorrupt": {
+    "description": "Says what did NOT happen: no partial application."
+  },
+  "settingsCatalogNothingApplicable": "This official configuration has no field that can be applied safely to the current formulas; the existing profile is unchanged.",
+  "settingsCatalogScope": "The bundled snapshot is the official U.S. EPA Find-a-Car data; it covers only that market and the configurations inside the snapshot, not every brand or model year worldwide.",
+  "@settingsCatalogScope": {
+    "description": "Scopes the catalog. Must not read as global coverage."
+  },
+  "settingsCatalogVerifying": "Verifying the offline catalog…",
+  "settingsClose": "Close",
+  "settingsConnectionSection": "Connection",
+  "@settingsConnectionSection": {
+    "description": "Settings section heading above the current-connection panel."
+  },
+  "settingsDiagnosticsSection": "Diagnostic transcript",
+  "settingsDisconnect": "Disconnect",
+  "settingsDrivetrainEfficiency": "Transmission efficiency {percent} %",
+  "@settingsDrivetrainEfficiency": {
+    "description": "{percent} comes from Drivetrain.efficiency; never spell it into the sentence.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaApplyFields": "Apply {count} official fields",
+  "@settingsEpaApplyFields": {
+    "description": "{count} is the number of fields that survived verification.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaChooseExact": "Choose an exact configuration",
+  "settingsEpaCloseNoFields": "Close (no fields to apply)",
+  "settingsEpaConfiguration": "EPA configuration {epaId}",
+  "@settingsEpaConfiguration": {
+    "description": "Fallback title when a configuration lists no displacement, cylinder count or transmission. The EPA ID is data.",
+    "placeholders": {
+      "epaId": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaCylinders": "{count} cyl",
+  "@settingsEpaCylinders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaDriveUnknown": "Drive unknown",
+  "settingsEpaFuelUnknown": "Fuel unknown",
+  "settingsEpaMake": "EPA make",
+  "@settingsEpaMake": {
+    "description": "EPA 'make' is a manufacturer division, not a brand; both languages keep the EPA qualifier."
+  },
+  "settingsEpaModel": "Model",
+  "settingsEpaNoConfigurations": "No configurations available for this model",
+  "settingsEpaNoSafeFields": "This configuration has no field that can be applied safely to the current formulas; nothing is guessed.",
+  "settingsEpaPickInOrder": "Choose model year, make and model in order",
+  "settingsEpaPickerScope": "U.S.-market snapshot configurations for {firstYear}–{lastYear} only. Models that share a name still need the model year, transmission, fuel and EPA ID to tell them apart.",
+  "@settingsEpaPickerScope": {
+    "description": "Both years come from the loaded catalog, never from the prose.",
+    "placeholders": {
+      "firstYear": {
+        "type": "int"
+      },
+      "lastYear": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsEpaPickerTitle": "Official U.S. EPA vehicle catalog",
+  "settingsEpaWillApplyOnly": "Only {fields} will be applied. Mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.",
+  "@settingsEpaWillApplyOnly": {
+    "description": "Names what is NOT applied. VE, Cd and Crr stay as symbols.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsEpaYear": "Model year",
+  "settingsExperimentalSection": "Experimental",
+  "settingsFieldDisplacement": "Displacement",
+  "settingsFieldDragCoefficient": "Drag coefficient Cd",
+  "@settingsFieldDragCoefficient": {
+    "description": "Cd is a symbol, not a word; it stays Cd in both languages."
+  },
+  "settingsFieldDrivetrain": "Drivetrain",
+  "settingsFieldFrontalArea": "Frontal area",
+  "settingsFieldFuel": "Fuel",
+  "settingsFieldMass": "Mass",
+  "settingsFieldMassWithDriver": "Mass (with driver)",
+  "settingsFieldRollingResistance": "Rolling resistance Crr",
+  "@settingsFieldRollingResistance": {
+    "description": "Crr is a symbol, not a word; it stays Crr in both languages."
+  },
+  "settingsFieldVolumetricEfficiency": "Volumetric efficiency VE",
+  "@settingsFieldVolumetricEfficiency": {
+    "description": "VE is a symbol, not a word; it stays VE in both languages."
+  },
+  "settingsFuelAfrAndDensity": "Air-fuel ratio {afr} · density {density} g/L",
+  "@settingsFuelAfrAndDensity": {
+    "description": "Both values come from the selected FuelType. Units never change with language.",
+    "placeholders": {
+      "afr": {
+        "type": "double"
+      },
+      "density": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsFuelAndDrivetrainSection": "Fuel and drivetrain",
+  "settingsFuelTypeLabel": "Fuel type",
+  "settingsGaugeSkinBody": "Not just a colour change — each one has a different dial face, needle and motion. All of them work on dark and light backgrounds.",
+  "settingsGaugeSkinTitle": "Gauge style",
+  "settingsGoToConnect": "Go to Connect",
+  "@settingsGoToConnect": {
+    "description": "Button that leaves Settings for the Connect screen."
+  },
   "settingsHeadline": "Settings",
-  "startupChecking": "Checking local share cache and telemetry records",
+  "settingsLicenseLegalese": "Powertrain battery sources, transformations, and reuse terms are bundled with this app.",
+  "@settingsLicenseLegalese": {
+    "description": "applicationLegalese on the bundled licence page."
+  },
+  "settingsListSeparator": ", ",
+  "@settingsListSeparator": {
+    "description": "Joins the label lists this screen builds at runtime. Chinese uses the enumeration comma; English uses a comma and a space."
+  },
+  "settingsManualCommandBody": "Send one command straight to the adapter — for example ATI, ATDPN, 0100. It joins the same queue as normal polling and does not jump ahead.",
+  "@settingsManualCommandBody": {
+    "description": "ATI, ATDPN and 0100 are wire commands and must stay byte-identical."
+  },
+  "settingsManualCommandFieldLabel": "Command",
+  "settingsManualCommandNoContent": "(no response content)",
+  "@settingsManualCommandNoContent": {
+    "description": "The adapter answered, and the answer was empty. Not an error, and not a reading."
+  },
+  "settingsManualCommandSend": "Send",
+  "settingsManualCommandTitle": "Manual command",
+  "settingsNotConnected": "Not connected",
+  "settingsOpenSourceLicenses": "Open source and data licences",
+  "settingsProfileConfirmAfterConnect": "Connect to confirm this vehicle",
+  "settingsProfileConfirmButton": "Confirm this vehicle for this connection",
+  "settingsProfileConfirmedButton": "Confirmed for this connection",
+  "settingsProfileConfirmedDetail": "The profile is confirmed for this connection. Changing any value, or reconnecting, means confirming again.",
+  "settingsProfileEstimatesIntro": "Horsepower, torque and fuel use are estimated from these parameters; the closer they are to the actual vehicle, the more the estimates mean.",
+  "@settingsProfileEstimatesIntro": {
+    "description": "'estimated' is load-bearing: these numbers are never measured."
+  },
+  "settingsProfileNameProvesNothing": "A brand name or a VIN alone does not establish mass, drag, VE or transmission efficiency.",
+  "@settingsProfileNameProvesNothing": {
+    "description": "VE stays VE in both languages."
+  },
+  "settingsProfileUnconfirmedConnectedDetail": "Not confirmed on this connection. Measured OBD readings are still shown, but values estimated from mass, VE and drag are not.",
+  "@settingsProfileUnconfirmedConnectedDetail": {
+    "description": "Measured and estimated are two different things and must stay two different words."
+  },
+  "settingsProfileUnconfirmedDisconnectedDetail": "Connect to this vehicle before confirming. Confirmation expires on every reconnect, so one car's profile is never applied to the next.",
+  "settingsProvenanceNoneExact": "No field has been resolved exactly to this vehicle; generic, hand-entered and older source values all still need confirming.",
+  "settingsProvenanceOnlyExact": "Fields with an exact official source: {fields}. Every other field still needs confirming one by one.",
+  "@settingsProvenanceOnlyExact": {
+    "description": "The enumeration is the claim: only these fields are exact.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsProvenanceOrigins": "Provenance: official or manufacturer {official} / {total} fields · user entered {user} / {total} · generic default {generic} / {total} · scientific model {scientific} / {total}",
+  "@settingsProvenanceOrigins": {
+    "description": "Counts by VehicleFieldOrigin. A generic default is not a measurement.",
+    "placeholders": {
+      "official": {
+        "type": "int"
+      },
+      "user": {
+        "type": "int"
+      },
+      "generic": {
+        "type": "int"
+      },
+      "scientific": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsProvenancePublishers": "Sources: {publishers}",
+  "@settingsProvenancePublishers": {
+    "description": "Publisher names are data and pass through untranslated.",
+    "placeholders": {
+      "publishers": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsProvenanceResolution": "Resolution: official exact {exact} / {total} fields · confirmed this session {sessionConfirmed} / {total} · unresolved {unresolved} / {total} · ambiguous {ambiguous} / {total} · conflicting {conflict} / {total}",
+  "@settingsProvenanceResolution": {
+    "description": "Every count is derived from the profile's own field map. The five states are distinct and must not be merged.",
+    "placeholders": {
+      "exact": {
+        "type": "int"
+      },
+      "sessionConfirmed": {
+        "type": "int"
+      },
+      "unresolved": {
+        "type": "int"
+      },
+      "ambiguous": {
+        "type": "int"
+      },
+      "conflict": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsStandardsFooter": "This app's OBD2 implementation follows public standards including SAE J1979 and the ELM327 datasheet; every formula and AT command that affects hardware behaviour is cross-verified, and the results are recorded in docs/protocol-deviations.zh-TW.md. This app is not affiliated with Torque or Torque Pro.",
+  "@settingsStandardsFooter": {
+    "description": "SAE J1979, ELM327, the file name and the Torque product names stay byte-identical."
+  },
+  "settingsThemeDark": "Dark",
+  "settingsThemeLight": "Light",
+  "settingsThemeSystem": "Follow system",
+  "settingsVehicleProfileSection": "Vehicle profile",
+  "settingsVinConflict": "VIN conflict",
+  "settingsVinConflictDetail": "Controllers reported different VINs, so the vehicle identity cannot be confirmed; every candidate was discarded.",
+  "@settingsVinConflictDetail": {
+    "description": "Discarded, not 'one was picked'."
+  },
+  "settingsVinNotRead": "VIN not read yet",
+  "@settingsVinNotRead": {
+    "description": "Not read is not unavailable. Must stay distinct from settingsVinUnavailable."
+  },
+  "settingsVinNotReadConnectedDetail": "Mode 09 VIN can be read from the vehicle now; the identity is kept only for this connection. The raw diagnostic transcript may still contain the VIN.",
+  "@settingsVinNotReadConnectedDetail": {
+    "description": "The privacy half — the transcript may still hold the VIN — must survive."
+  },
+  "settingsVinNotReadDisconnectedDetail": "Once connected, the VIN the vehicle reports about itself can be read; the identity does not carry into the next connection. The raw diagnostic transcript may still contain the VIN.",
+  "settingsVinRead": "Read VIN",
+  "settingsVinReading": "Reading…",
+  "settingsVinReportedDetail": "A VIN is what the vehicle reports about itself; it does not verify the model's specifications. The identity does not cross connections; the diagnostic transcript may still contain the VIN.",
+  "@settingsVinReportedDetail": {
+    "description": "Self-reported is not verified. Never let this read as a confirmed profile."
+  },
+  "settingsVinSimulatorReported": "Simulator-reported VIN",
+  "@settingsVinSimulatorReported": {
+    "description": "Must not read as a vehicle-reported VIN."
+  },
+  "settingsVinUnavailable": "VIN unavailable",
+  "settingsVinUnavailableDetail": "The vehicle may not offer one, the reply may have been incomplete, or it was not read on this connection; nothing is guessed and no characters are filled in.",
+  "@settingsVinUnavailableDetail": {
+    "description": "Three innocent explanations plus the refusal to guess. Do not compress."
+  },
+  "settingsVinVehicleReported": "Vehicle-reported VIN",
   "startupCannotComplete": "Cannot finish startup checks",
   "@startupCannotComplete": {
     "description": "Retryable startup failure title. Distinct from startupChecking (in-progress) and startupRestartRequired (must quit)."
   },
-  "startupRetry": "Retry",
-  "startupRestartRequired": "Restart required to continue safely",
-  "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
+  "startupChecking": "Checking local share cache and telemetry records",
   "startupRestartHint": "Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.",
-  "languageSaveFailed": "Could not save the language. Try again.",
-  "appearanceSectionTitle": "Appearance",
-  "telemetryStatusStale": "Data is stale",
-  "@telemetryStatusStale": {
-    "description": "A live reading that has stopped updating. Not an error and not a fresh value."
+  "startupRestartRequired": "Restart required to continue safely",
+  "startupRetry": "Retry",
+  "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "telemetryBlockedByRecorder": "Stop and save the recording first",
+  "telemetryCancel": "Cancel",
+  "telemetryDamagedCollision": "A finished and an unfinished file share this id — neither was chosen",
+  "@telemetryDamagedCollision": {
+    "description": "The app refuses to guess which file is the real one. 'neither was chosen' must survive translation: picking one silently is the failure this reports."
   },
-  "telemetryStatusUnsupported": "The controller answered that it does not support this",
-  "@telemetryStatusUnsupported": {
-    "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
+  "telemetryDamagedCorrupt": "The recording is damaged and cannot be read safely",
+  "@telemetryDamagedCorrupt": {
+    "description": "Damaged, not empty. It is never replayed or exported."
   },
-  "telemetryStatusNoAnswer": "No answer — will retry",
-  "@telemetryStatusNoAnswer": {
-    "description": "Silence, not a refusal. Must never read as unsupported."
+  "telemetryDamagedFileTime": "File time {time}",
+  "@telemetryDamagedFileTime": {
+    "description": "Filesystem modification time, not a recording timestamp — the file is unreadable, so it has none.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
-  "telemetryStatusFormulaError": "Formula error",
-  "telemetryStatusBusError": "Bus error",
-  "telemetryStatusHeaderMismatch": "Header does not match this bus",
-  "telemetryStatusUnsafeServiceRefusal": "Not a read-only query — nothing was sent",
-  "@telemetryStatusUnsafeServiceRefusal": {
-    "description": "The app refused to transmit. Says what did NOT happen."
+  "telemetryDelete": "Delete",
+  "telemetryDeleteDamagedBody": "This deletes {id} (file time {time}). It cannot be undone.",
+  "@telemetryDeleteDamagedBody": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   },
-  "telemetryEndedByUser": "Stopped by you",
-  "telemetryEndedByDisconnect": "Stopped when the connection dropped",
-  "telemetryEndedBySessionReplacement": "The connection session was replaced",
+  "telemetryDeleteDamagedTitle": "Delete this damaged recording?",
+  "telemetryDeleteDamagedTooltip": "Delete damaged recording",
+  "telemetryDeleteFailed": "Delete did not finish: {reason}",
+  "@telemetryDeleteFailed": {
+    "description": "Says the delete did not complete, never that it failed harmlessly.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
+  "telemetryDeleteSessionBody": "This deletes the recording from {time}. It cannot be undone.",
+  "@telemetryDeleteSessionBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryDeleteSessionTitle": "Delete this local recording?",
+  "telemetryDemoData": "Built-in simulator data",
+  "@telemetryDemoData": {
+    "description": "The figures came from Telltale's own simulator, not from a vehicle. Must stay unmistakable."
+  },
+  "telemetryDismissNotice": "Dismiss",
   "telemetryEndedByBackground": "Stopped when Telltale went to the background",
+  "telemetryEndedByConfigurationChanged": "The PID selection changed",
+  "telemetryEndedByDisconnect": "Stopped when the connection dropped",
   "telemetryEndedByDurationLimit": "Reached the {minutes}-minute limit",
   "@telemetryEndedByDurationLimit": {
     "description": "{minutes} comes from telemetryRecorderDurationLimit; never spell the number in the copy.",
@@ -55,23 +2002,271 @@
       }
     }
   },
-  "telemetryEndedBySessionSizeLimit": "This recording reached its size limit",
   "telemetryEndedByLibrarySizeLimit": "Local recording storage is full",
-  "telemetryEndedByStorageBackpressure": "Storage could not keep up",
-  "telemetryEndedByConfigurationChanged": "The PID selection changed",
-  "telemetryEndedByStorageFailure": "Saving failed",
   "telemetryEndedByRecoveredAfterInterruption": "Recovered after the last interruption",
-  "telemetryStartRecording": "Recording started",
-  "telemetryStartNeedsConnection": "Connect before starting a recording",
-  "telemetryStartNeedsForeground": "Bring Telltale to the foreground before starting a recording",
-  "telemetryStartSpeedUnknown": "Cannot confirm the vehicle is stopped — disconnect first",
-  "@telemetryStartSpeedUnknown": {
-    "description": "Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car."
+  "telemetryEndedBySessionReplacement": "The connection session was replaced",
+  "telemetryEndedBySessionSizeLimit": "This recording reached its size limit",
+  "telemetryEndedByStorageBackpressure": "Storage could not keep up",
+  "telemetryEndedByStorageFailure": "Saving failed",
+  "telemetryEndedByUser": "Stopped by you",
+  "telemetryExport": "Export",
+  "telemetryExportCsv": "Export CSV",
+  "telemetryExportFailed": "Export did not finish: {reason}",
+  "@telemetryExportFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
-  "telemetryStartMoving": "Park the vehicle first",
+  "telemetryExportJson": "Export JSON",
+  "telemetryExportSheetTitle": "Export a local recording",
+  "telemetryGapCount": "{count, plural, =1{1 gap} other{{count} gaps}}",
+  "@telemetryGapCount": {
+    "description": "Breaks in the recorded stream. A gap is missing data, never a zero reading.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryHistoryEntrySubtitle": "{count, plural, =1{1 saved group — replay and export offline} other{{count} saved groups — replay and export offline}}",
+  "@telemetryHistoryEntrySubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryBytes": "{used}/{limit} MiB",
+  "@telemetryLibraryBytes": {
+    "description": "{limit} is TelemetryQuota.libraryByteLimit in MiB. MiB is a unit and is not translated.",
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryGroupCount": "{groups}/{limit} groups",
+  "@telemetryLibraryGroupCount": {
+    "description": "{limit} is TelemetryQuota.groupLimit.",
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryOmitted": "{count, plural, =1{1 more group not shown} other{{count} more groups not shown}}",
+  "@telemetryLibraryOmitted": {
+    "description": "Groups the index found but did not list. Not a claim that they are unreadable.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryLibraryQuotaSemantics": "Local storage: {groups} of {groupLimit} groups, {used} of {byteLimit} MiB",
+  "@telemetryLibraryQuotaSemantics": {
+    "description": "Screen-reader form of the two quota chips. Both limits come from TelemetryQuota, never from the prose.",
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "groupLimit": {
+        "type": "int"
+      },
+      "used": {
+        "type": "String"
+      },
+      "byteLimit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryNotConnected": "Not connected",
+  "@telemetryNotConnected": {
+    "description": "No live link right now. Distinct from a controller refusing a PID and from silence on the bus."
+  },
+  "telemetryOfflineSampledReplay": "Offline sampled replay",
+  "@telemetryOfflineSampledReplay": {
+    "description": "Sampled, not the full recording. The exported file keeps every event; this preview does not."
+  },
+  "telemetryOpenHistory": "Open local recordings",
+  "telemetryPause": "Pause",
+  "telemetryPendingOwnerRecovery": "This process still holds the operation. If it stays here, quit Telltale completely and reopen it",
+  "telemetryPhraseJoin": "{first}. {second}",
+  "@telemetryPhraseJoin": {
+    "description": "Joins two phrases inside one screen-reader label. The separator is punctuation and differs by language; folding the list through this keeps it out of the Dart.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryPlay": "Play",
+  "telemetryRecorderDisclosure": "Records only the OBD signals you have enabled — no location, VIN, or account data. Trends show at most {laneLimit} signals; a recording keeps all {activeCount} enabled signals and adds estimated horsepower and estimated fuel rate, which rest on the vehicle assumptions.",
+  "@telemetryRecorderDisclosure": {
+    "description": "{laneLimit} is maximumTelemetryTrendLanes, {activeCount} the enabled PID count. 'estimated' must never read as 'measured': these two columns are computed from vehicle assumptions the app cannot verify.",
+    "placeholders": {
+      "laneLimit": {
+        "type": "int"
+      },
+      "activeCount": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecorderPhaseAwaitingValues": "Recording — no values yet",
+  "@telemetryRecorderPhaseAwaitingValues": {
+    "description": "The recorder is running and nothing has arrived. Distinct from preparing (not started) and from recording (values are landing)."
+  },
+  "telemetryRecorderPhaseCompleted": "Recording saved",
+  "telemetryRecorderPhaseFailed": "Saving the recording failed",
+  "telemetryRecorderPhaseFinalizing": "Saving the recording",
+  "@telemetryRecorderPhaseFinalizing": {
+    "description": "Shared by the recorder panel and the shell strip."
+  },
+  "telemetryRecorderPhaseIdle": "Foreground local recording",
+  "@telemetryRecorderPhaseIdle": {
+    "description": "Idle title. Foreground-only is a property of the recorder, not a suggestion."
+  },
+  "telemetryRecorderPhasePreparing": "Preparing to record",
+  "@telemetryRecorderPhasePreparing": {
+    "description": "Shared by the recorder panel and the shell strip — one key, so the two surfaces cannot disagree about the phase."
+  },
+  "telemetryRecorderPhaseRecording": "Recording",
+  "telemetryRecorderStripRecording": "Recording {duration}",
+  "@telemetryRecorderStripRecording": {
+    "description": "{duration} is the elapsed clock, already formatted.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetryRecoveryCleaned": "{count, plural, =1{1 unfinished file with no valid values was cleaned up} other{{count} unfinished files with no valid values were cleaned up}}",
+  "@telemetryRecoveryCleaned": {
+    "description": "Only files that held no valid value were removed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryDamaged": "{count, plural, =1{1 damaged or conflicting file was left unchanged} other{{count} damaged or conflicting files were left unchanged}}",
+  "@telemetryRecoveryDamaged": {
+    "description": "Left unchanged, not repaired and not deleted. The app never edits a file it cannot read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryDamagedNote": "Damaged content is never used for replay or export, and can only be deleted by hand while it is safe to do so.",
+  "@telemetryRecoveryDamagedNote": {
+    "description": "Both halves are load-bearing: never used, and deletable only under the safety gate."
+  },
+  "telemetryRecoveryInstalled": "{count, plural, =1{1 interrupted recording was safely sealed} other{{count} interrupted recordings were safely sealed}}",
+  "@telemetryRecoveryInstalled": {
+    "description": "Sealed as they were found. Nothing was reconstructed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryRecoveryTitle": "Startup check of the recordings finished",
+  "@telemetryRecoveryTitle": {
+    "description": "The check finished. It does not claim damaged data was repaired."
+  },
+  "telemetryReload": "Reload",
+  "telemetryReplayBreakCount": "{count, plural, =1{1 break} other{{count} breaks}}",
+  "@telemetryReplayBreakCount": {
+    "description": "Discontinuities in this lane. The line is not drawn across them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryReplayLoadFailed": "Could not load the recording",
+  "telemetryReplayPositionSemantics": "Replay position {percent}%",
+  "@telemetryReplayPositionSemantics": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryReplaySampleCount": "{count, plural, =1{1 sampled point} other{{count} sampled points}}",
+  "@telemetryReplaySampleCount": {
+    "description": "Points kept by the downsampler for this lane's preview, not values recorded.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryReplayTitle": "Recording replay",
+  "telemetryReplayUnreadable": "The recording is damaged or cannot be read",
+  "@telemetryReplayUnreadable": {
+    "description": "Two possibilities, both stated. Not 'empty'."
+  },
+  "telemetryRestartToRepairSave": "Saving did not finish — restart Telltale to repair the recordings",
+  "telemetryRestartToRepairStartup": "Startup cleanup did not finish — restart Telltale to repair the recordings",
+  "@telemetryRestartToRepairStartup": {
+    "description": "Also the startOutcome for restartRequired; one sentence, one key."
+  },
+  "telemetryReturnToTrends": "Back to trends",
+  "telemetryRigData": "Test rig data",
+  "@telemetryRigData": {
+    "description": "The figures came from a verification rig, not from a vehicle."
+  },
+  "telemetrySentenceJoin": "{first}. {second}",
+  "@telemetrySentenceJoin": {
+    "description": "Joins two complete sentences. Chinese uses the ideographic full stop, so the separator cannot be hard-coded.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "telemetrySessionsDamaged": "Damaged recording files",
+  "telemetrySessionsEmpty": "No local recordings yet\nConnect, then start recording",
+  "telemetrySessionsLoadFailed": "Could not load — retry",
+  "telemetrySessionsReplayable": "Recordings you can replay",
+  "telemetrySessionsTitle": "Local recordings",
+  "@telemetrySessionsTitle": {
+    "description": "Title of the saved-recordings screen and of the entry that opens it."
+  },
+  "telemetrySignalCount": "{count, plural, =1{1 signal} other{{count} signals}}",
+  "@telemetrySignalCount": {
+    "description": "Number of recorded signals in one session.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStartBusy": "Another recording or file operation has not finished",
+  "telemetryStartCannotCreateFile": "Could not create the recording file",
+  "telemetryStartInvalidConfiguration": "This PID selection cannot be recorded safely — check the definitions",
   "telemetryStartInvalidatedBackground": "Telltale went to the background — no recording started",
   "telemetryStartInvalidatedDisconnect": "The connection dropped — no recording started",
   "telemetryStartInvalidatedSessionReplacement": "The connection session was replaced — no recording started",
+  "telemetryStartLibraryByteLimit": "Not enough local storage for a recording — export or delete some first",
   "telemetryStartLibraryGroupLimit": "Local recordings reached the limit of {limit} — export or delete some first",
   "@telemetryStartLibraryGroupLimit": {
     "description": "{limit} comes from TelemetryQuota.groupLimit.",
@@ -81,22 +2276,496 @@
       }
     }
   },
-  "telemetryStartLibraryByteLimit": "Not enough local storage for a recording — export or delete some first",
-  "telemetryStartInvalidConfiguration": "This PID selection cannot be recorded safely — check the definitions",
-  "telemetryStartCannotCreateFile": "Could not create the recording file",
-  "telemetryStartBusy": "Another recording or file operation has not finished",
-  "telemetryRestartToRepairStartup": "Startup cleanup did not finish — restart Telltale to repair the recordings",
-  "@telemetryRestartToRepairStartup": {
-    "description": "Also the startOutcome for restartRequired; one sentence, one key."
-  },
-  "telemetryRestartToRepairSave": "Saving did not finish — restart Telltale to repair the recordings",
-  "telemetryPendingOwnerRecovery": "This process still holds the operation. If it stays here, quit Telltale completely and reopen it",
+  "telemetryStartMoving": "Park the vehicle first",
   "telemetryStartNeedsActivePid": "Enable at least one PID first",
+  "telemetryStartNeedsConnection": "Connect before starting a recording",
+  "telemetryStartNeedsForeground": "Bring Telltale to the foreground before starting a recording",
+  "telemetryStartRecording": "Recording started",
+  "telemetryStartRecordingButton": "Start recording",
+  "telemetryStartSpeedUnknown": "Cannot confirm the vehicle is stopped — disconnect first",
+  "@telemetryStartSpeedUnknown": {
+    "description": "Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car."
+  },
   "telemetryStartTooManyPids": "Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first",
   "@telemetryStartTooManyPids": {
     "description": "Refers to DerivedEstimates.maxLiveSignals. 'estimated' must never read as 'measured'."
   },
-  "telemetryBlockedByRecorder": "Stop and save the recording first",
-  "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
+  "telemetryStarting": "Starting",
+  "telemetryStatusBusError": "Bus error",
+  "telemetryStatusCount": "{count, plural, =1{1 status} other{{count} statuses}}",
+  "@telemetryStatusCount": {
+    "description": "Status events (no answer, unsupported, bus error) stored beside the values.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStatusFormulaError": "Formula error",
+  "telemetryStatusHeaderMismatch": "Header does not match this bus",
+  "telemetryStatusNoAnswer": "No answer — will retry",
+  "@telemetryStatusNoAnswer": {
+    "description": "Silence, not a refusal. Must never read as unsupported."
+  },
+  "telemetryStatusStale": "Data is stale",
+  "@telemetryStatusStale": {
+    "description": "A live reading that has stopped updating. Not an error and not a fresh value."
+  },
+  "telemetryStatusUnsafeServiceRefusal": "Not a read-only query — nothing was sent",
+  "@telemetryStatusUnsafeServiceRefusal": {
+    "description": "The app refused to transmit. Says what did NOT happen."
+  },
+  "telemetryStatusUnsupported": "The controller answered that it does not support this",
+  "@telemetryStatusUnsupported": {
+    "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
+  },
+  "telemetryStopAndSave": "Stop and save",
+  "@telemetryStopAndSave": {
+    "description": "The button. Distinct from telemetryBlockedByRecorder, which is the refusal that names this action."
+  },
+  "telemetryValueCount": "{count, plural, =1{1 valid value} other{{count} valid values}}",
+  "@telemetryValueCount": {
+    "description": "Values the recorder actually wrote. Not the number of samples attempted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "transcriptDelete": "Delete",
+  "transcriptDeleteBusy": "Another file operation has not finished.",
+  "transcriptDeleteFailed": "Could not delete the previous connection's transcript.",
+  "transcriptDeleteRefusedBySafety": "The current speed or connection state does not allow deleting the transcript.",
+  "@transcriptDeleteRefusedBySafety": {
+    "description": "A refusal, not advice."
+  },
+  "transcriptExport": "Export",
+  "transcriptExportButton": "Export transcript",
+  "transcriptExportExplanation": "This connection keeps the opening handshake and the most recent raw traffic; if a long connection drops the middle, the file says so. When something will not read on the car, exporting the transcript and bringing it back is worth far more than one message on screen.",
+  "@transcriptExportExplanation": {
+    "description": "The middle-omitted disclosure is load-bearing: a truncated transcript must announce its truncation."
+  },
+  "transcriptExportFailed": "Export failed: {error}",
+  "@transcriptExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptExportWithHex": "With hex",
+  "transcriptNothingToExport": "There is no transcript to export.",
+  "transcriptRecoveredBody": "Left at {timestamp}, {size}. It survived the system killing Telltale or the phone losing power.",
+  "@transcriptRecoveredBody": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptRecoveredChanged": "The previous connection's transcript has changed — check it again.",
+  "@transcriptRecoveredChanged": {
+    "description": "Refuses to export or delete bytes that are no longer the ones on screen."
+  },
+  "transcriptRecoveredTitle": "Transcript from the previous connection",
+  "@transcriptRecoveredTitle": {
+    "description": "Previous connection, not this one. Somebody looking at a working car must not mistake it for the log they are about to make."
+  },
+  "transcriptSizeBytes": "{bytes, plural, =1{1 byte} other{{bytes} bytes}}",
+  "@transcriptSizeBytes": {
+    "description": "Below a kilobyte the exact byte count is shown, because a failed handshake is a few hundred bytes and '0 KB' reads as empty.",
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "trendAxisNow": "Now",
+  "trendChooseSignals": "Choose signals",
+  "trendLiveData": "Live data",
+  "@trendLiveData": {
+    "description": "The lane is connected and no status is outstanding. Never shown for a stale or unanswered reading."
+  },
+  "trendNoSignalsBody": "Enable the signals you want to watch on the PID page first.",
+  "trendNoSignalsTitle": "No trend signals available",
+  "trendNoUnits": "No units",
+  "trendPickSignalsBody": "Compare up to {limit} signals. This does not change which PIDs are polled.",
+  "@trendPickSignalsBody": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes; never spell the number in the copy.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendPickSignalsTitle": "Choose trend signals",
+  "trendRemoveSignal": "Remove {name}",
+  "@trendRemoveSignal": {
+    "description": "Delete-button tooltip on a signal chip. {name} is a PID name and is not translated here.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "trendSelectionSaveFailed": "Could not save the trend display selection",
+  "@trendSelectionSaveFailed": {
+    "description": "Says what did not happen. The chart still shows the selection for this session."
+  },
+  "trendSheetBody": "Choose at most {limit}. This only changes the chart, not PID polling or a recording in progress.",
+  "@trendSheetBody": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendSheetDone": "Done · {selected}/{limit}",
+  "@trendSheetDone": {
+    "description": "Confirm button. Both numbers come from the code: the current selection and maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendSignalNoLongerActive": "One of those signals is no longer in the PID watch list",
+  "trendSignalsHeading": "Trend signals",
+  "trendTooManySelected": "Choose at most {limit}",
+  "@trendTooManySelected": {
+    "description": "{limit} comes from maximumTelemetryTrendLanes.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "trendWindowSemantics": "Showing the last {seconds} seconds",
+  "@trendWindowSemantics": {
+    "description": "Screen-reader only. {seconds} comes from telemetryTrendWindow.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "wearBack": "Back",
+  "wearBatteryVoltageLabel": "Battery",
+  "@wearBatteryVoltageLabel": {
+    "description": "The 12V battery reading on the watch numbers grid. Not the powertrain battery, which has its own page."
+  },
+  "wearBleAdapters": "BLE adapters",
+  "wearCancel": "Cancel",
+  "wearConfirmVehicle": "Confirm vehicle",
+  "wearConfirmVehicleAccept": "Yes, this car",
+  "@wearConfirmVehicleAccept": {
+    "description": "Affirms the identity shown above it. Must stay short enough for a watch dialog action."
+  },
+  "wearConfirmVehicleBody": "Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.",
+  "@wearConfirmVehicleBody": {
+    "description": "Load-bearing: read-only, and the plausible-but-wrong-number warning. Neither may be dropped for length."
+  },
+  "wearConnectFailed": "Could not connect: {adapter}",
+  "@wearConnectFailed": {
+    "description": "{adapter} is the device name the adapter advertised, or its id when the name is empty. Passed through, never translated.",
+    "placeholders": {
+      "adapter": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnecting": "Connecting…",
+  "wearDemoSimulator": "Demo simulator",
+  "@wearDemoSimulator": {
+    "description": "Wear connect button for the built-in simulator. Kept short for a 454px round face."
+  },
+  "wearDisconnect": "Disconnect",
+  "wearDisconnectQuestion": "Disconnect?",
+  "wearNoDevicesFound": "No devices found",
+  "@wearNoDevicesFound": {
+    "description": "Nothing answered the scan. Not a claim that no adapter exists."
+  },
+  "wearPermissionBluetooth": "Bluetooth",
+  "wearPermissionLocation": "Location",
+  "wearScanAgain": "Rescan",
+  "@wearScanAgain": {
+    "description": "Shares a row with wearBack on a 227dp-wide watch face; keep it to one short word."
+  },
+  "wearScanFailed": "Scan failed — try again",
+  "wearScanPermissionNeeded": "Scanning needs {permission} permission",
+  "@wearScanPermissionNeeded": {
+    "description": "{permission} is wearPermissionBluetooth or wearPermissionLocation.",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "wearScanPermissionPermanentlyDenied": "{permission} permission is permanently denied — turn it on in system settings, then try again",
+  "@wearScanPermissionPermanentlyDenied": {
+    "description": "A refusal the app cannot re-ask for. States the only remedy.",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "wearScanning": "Scanning…",
+  "telemetryRecorderNotRecording": "Not recording",
+  "@telemetryRecorderNotRecording": {
+    "description": "Screen-reader state for the trend card: answers whether a recording is running, and therefore also covers completed and failed. Distinct from telemetryRecorderPhaseIdle, which is the recorder panel's section title and names what the recorder is rather than what it is doing."
+  },
+  "dtcKindStored": "Stored",
+  "@dtcKindStored": {
+    "description": "Fault-code class read from Mode 03. One of three classes that must stay three distinguishable things; never merge with pending or permanent."
+  },
+  "dtcKindPending": "Pending",
+  "@dtcKindPending": {
+    "description": "Fault-code class read from Mode 07. A fault seen once that has not yet been confirmed — it is not a confirmed fault and must not read like one."
+  },
+  "dtcKindPermanent": "Permanent",
+  "@dtcKindPermanent": {
+    "description": "Fault-code class read from Mode 0A. Must never read as something the Clear button can remove."
+  },
+  "dtcKindStoredExplanation": "A confirmed fault; the dashboard fault lamp is usually lit.",
+  "@dtcKindStoredExplanation": {
+    "description": "Explanation under the Mode 03 group header. Keep \"usually\": a stored code does not guarantee the lamp is lit."
+  },
+  "dtcKindPendingExplanation": "Detected once, and has not yet reached the confirmation threshold.",
+  "@dtcKindPendingExplanation": {
+    "description": "Explanation under the Mode 07 group header. \"Detected once\" and \"has not reached the threshold\" are both load-bearing — this is not yet a confirmed fault."
+  },
+  "dtcKindPermanentExplanation": "Cannot be cleared with a scan tool. The ECU clears it itself, and only once it has confirmed the repair.",
+  "@dtcKindPermanentExplanation": {
+    "description": "Explanation under the Mode 0A group header. Both halves are load-bearing: a scan tool cannot clear it, and the ECU clears it itself only after it has confirmed the repair. A translation that lets this read as clearable sends somebody to an inspection they cannot pass."
+  },
+  "dtcSystemPowertrain": "Powertrain",
+  "@dtcSystemPowertrain": {
+    "description": "The system a DTC belongs to, read off its letter. P. The letter itself is never translated."
+  },
+  "dtcSystemChassis": "Chassis",
+  "@dtcSystemChassis": {
+    "description": "The system a DTC belongs to, read off its letter. C."
+  },
+  "dtcSystemBody": "Body",
+  "@dtcSystemBody": {
+    "description": "The system a DTC belongs to, read off its letter. B."
+  },
+  "dtcSystemNetwork": "Network",
+  "@dtcSystemNetwork": {
+    "description": "The system a DTC belongs to, read off its letter. U."
+  },
+  "dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions": "Fuel and air metering, and auxiliary emission controls",
+  "@dtcSubsystemFuelAirMeteringAndAuxiliaryEmissions": {
+    "description": "SAE J2012 subsystem for the P00xx block. That block covers both areas, so the label names both rather than picking one."
+  },
+  "dtcSubsystemFuelAirMetering": "Fuel and air metering",
+  "dtcSubsystemFuelAirMeteringInjectorCircuit": "Fuel and air metering (injector circuit)",
+  "dtcSubsystemIgnitionOrMisfire": "Ignition system or misfire",
+  "dtcSubsystemAuxiliaryEmissionControls": "Auxiliary emission controls",
+  "dtcSubsystemSpeedAndIdleControl": "Vehicle speed control and idle control system",
+  "dtcSubsystemComputerOutputCircuit": "Computer output circuit",
+  "dtcSubsystemTransmission": "Transmission",
+  "dtcSubsystemControlModuleSignals": "Control modules, input and output signals",
+  "@dtcSubsystemControlModuleSignals": {
+    "description": "SAE J2012 subsystem for the P09xx block, published as \"control modules, input and output signals\". Do not add a transmission clause: an earlier wording invented one."
+  },
+  "dtcDescriptionB0001": "Driver airbag deployment control fault",
+  "dtcDescriptionP0011": "Camshaft position A — timing over-advanced or system performance (Bank 1)",
+  "dtcDescriptionP0014": "Camshaft position B — timing over-advanced or system performance (Bank 1)",
+  "dtcDescriptionP0016": "Crankshaft position – camshaft position correlation (Bank 1 Sensor A)",
+  "dtcDescriptionP0087": "Fuel rail/system pressure too low",
+  "dtcDescriptionP0088": "Fuel rail/system pressure too high",
+  "dtcDescriptionP0100": "Mass air flow (MAF) sensor circuit malfunction",
+  "dtcDescriptionP0101": "Mass air flow sensor range/performance problem",
+  "dtcDescriptionP0102": "Mass air flow sensor circuit low input",
+  "dtcDescriptionP0103": "Mass air flow sensor circuit high input",
+  "dtcDescriptionP0105": "Manifold absolute pressure/barometric pressure sensor circuit malfunction",
+  "dtcDescriptionP0106": "Manifold absolute pressure sensor range/performance problem",
+  "dtcDescriptionP0107": "Manifold absolute pressure sensor circuit low input",
+  "dtcDescriptionP0108": "Manifold absolute pressure sensor circuit high input",
+  "dtcDescriptionP0110": "Intake air temperature sensor circuit malfunction",
+  "dtcDescriptionP0111": "Intake air temperature sensor range/performance problem",
+  "dtcDescriptionP0112": "Intake air temperature sensor circuit low input",
+  "dtcDescriptionP0113": "Intake air temperature sensor circuit high input",
+  "dtcDescriptionP0115": "Engine coolant temperature sensor circuit malfunction",
+  "dtcDescriptionP0116": "Engine coolant temperature sensor range/performance problem",
+  "dtcDescriptionP0117": "Engine coolant temperature sensor circuit low input",
+  "dtcDescriptionP0118": "Engine coolant temperature sensor circuit high input",
+  "dtcDescriptionP0120": "Throttle position sensor circuit malfunction",
+  "dtcDescriptionP0121": "Throttle position sensor range/performance problem",
+  "dtcDescriptionP0122": "Throttle position sensor circuit low input",
+  "dtcDescriptionP0123": "Throttle position sensor circuit high input",
+  "dtcDescriptionP0125": "Insufficient coolant temperature for closed-loop fuel control",
+  "dtcDescriptionP0128": "Coolant temperature below thermostat regulating temperature",
+  "dtcDescriptionP0130": "Oxygen sensor circuit malfunction (Bank 1 Sensor 1)",
+  "dtcDescriptionP0131": "Oxygen sensor circuit low voltage (Bank 1 Sensor 1)",
+  "dtcDescriptionP0132": "Oxygen sensor circuit high voltage (Bank 1 Sensor 1)",
+  "dtcDescriptionP0133": "Oxygen sensor circuit slow response (Bank 1 Sensor 1)",
+  "dtcDescriptionP0134": "Oxygen sensor circuit no activity detected (Bank 1 Sensor 1)",
+  "dtcDescriptionP0135": "Oxygen sensor heater circuit malfunction (Bank 1 Sensor 1)",
+  "dtcDescriptionP0136": "Oxygen sensor circuit malfunction (Bank 1 Sensor 2)",
+  "dtcDescriptionP0137": "Oxygen sensor circuit low voltage (Bank 1 Sensor 2)",
+  "dtcDescriptionP0138": "Oxygen sensor circuit high voltage (Bank 1 Sensor 2)",
+  "dtcDescriptionP0140": "Oxygen sensor circuit no activity detected (Bank 1 Sensor 2)",
+  "dtcDescriptionP0141": "Oxygen sensor heater circuit malfunction (Bank 1 Sensor 2)",
+  "dtcDescriptionP0150": "Oxygen sensor circuit malfunction (Bank 2 Sensor 1)",
+  "dtcDescriptionP0155": "Oxygen sensor heater circuit malfunction (Bank 2 Sensor 1)",
+  "dtcDescriptionP0156": "Oxygen sensor circuit malfunction (Bank 2 Sensor 2)",
+  "dtcDescriptionP0161": "Oxygen sensor heater circuit malfunction (Bank 2 Sensor 2)",
+  "dtcDescriptionP0170": "Fuel trim malfunction (Bank 1)",
+  "dtcDescriptionP0171": "System too lean (Bank 1)",
+  "dtcDescriptionP0172": "System too rich (Bank 1)",
+  "dtcDescriptionP0173": "Fuel trim malfunction (Bank 2)",
+  "dtcDescriptionP0174": "System too lean (Bank 2)",
+  "dtcDescriptionP0175": "System too rich (Bank 2)",
+  "dtcDescriptionP0190": "Fuel rail pressure sensor circuit malfunction",
+  "dtcDescriptionP0201": "Injector circuit malfunction or open — cylinder 1",
+  "dtcDescriptionP0202": "Injector circuit malfunction or open — cylinder 2",
+  "dtcDescriptionP0203": "Injector circuit malfunction or open — cylinder 3",
+  "dtcDescriptionP0204": "Injector circuit malfunction or open — cylinder 4",
+  "dtcDescriptionP0217": "Engine over-temperature condition",
+  "dtcDescriptionP0221": "Throttle/pedal position sensor B range/performance problem",
+  "dtcDescriptionP0222": "Throttle/pedal position sensor B circuit low input",
+  "dtcDescriptionP0223": "Throttle/pedal position sensor B circuit high input",
+  "dtcDescriptionP0234": "Turbocharger/supercharger overboost condition",
+  "dtcDescriptionP0299": "Turbocharger/supercharger A underboost condition",
+  "dtcDescriptionP0300": "Random or multiple cylinder misfire detected",
+  "dtcDescriptionP0301": "Cylinder 1 misfire detected",
+  "dtcDescriptionP0302": "Cylinder 2 misfire detected",
+  "dtcDescriptionP0303": "Cylinder 3 misfire detected",
+  "dtcDescriptionP0304": "Cylinder 4 misfire detected",
+  "dtcDescriptionP0305": "Cylinder 5 misfire detected",
+  "dtcDescriptionP0306": "Cylinder 6 misfire detected",
+  "dtcDescriptionP0307": "Cylinder 7 misfire detected",
+  "dtcDescriptionP0308": "Cylinder 8 misfire detected",
+  "dtcDescriptionP0316": "Misfire detected immediately after startup",
+  "dtcDescriptionP0325": "Knock sensor circuit malfunction (Bank 1)",
+  "dtcDescriptionP0326": "Knock sensor range/performance problem (Bank 1)",
+  "dtcDescriptionP0327": "Knock sensor circuit low input (Bank 1)",
+  "dtcDescriptionP0328": "Knock sensor circuit high input (Bank 1)",
+  "dtcDescriptionP0330": "Knock sensor circuit malfunction (Bank 2)",
+  "dtcDescriptionP0335": "Crankshaft position sensor circuit malfunction",
+  "dtcDescriptionP0336": "Crankshaft position sensor range/performance problem",
+  "dtcDescriptionP0340": "Camshaft position sensor circuit malfunction",
+  "dtcDescriptionP0341": "Camshaft position sensor range/performance problem",
+  "dtcDescriptionP0351": "Ignition coil A primary/secondary circuit malfunction",
+  "dtcDescriptionP0352": "Ignition coil B primary/secondary circuit malfunction",
+  "dtcDescriptionP0353": "Ignition coil C primary/secondary circuit malfunction",
+  "dtcDescriptionP0354": "Ignition coil D primary/secondary circuit malfunction",
+  "dtcDescriptionP0355": "Ignition coil E primary/secondary circuit malfunction",
+  "dtcDescriptionP0356": "Ignition coil F primary/secondary circuit malfunction",
+  "dtcDescriptionP0400": "Exhaust gas recirculation (EGR) flow malfunction",
+  "dtcDescriptionP0401": "Exhaust gas recirculation (EGR) flow insufficient",
+  "dtcDescriptionP0402": "Exhaust gas recirculation (EGR) flow excessive",
+  "dtcDescriptionP0403": "Exhaust gas recirculation (EGR) control circuit malfunction",
+  "dtcDescriptionP0404": "Exhaust gas recirculation (EGR) control circuit range/performance problem",
+  "dtcDescriptionP0410": "Secondary air injection system malfunction",
+  "dtcDescriptionP0411": "Secondary air injection system incorrect flow detected",
+  "@dtcDescriptionP0411": {
+    "description": "Secondary air injection, NOT evaporative emissions. The most-reposted fault-code table on the web has P0411 and P0441 the wrong way round; copying it sends somebody to check a fuel cap while an air pump fails."
+  },
+  "dtcDescriptionP0412": "Secondary air injection system switching valve A circuit malfunction",
+  "dtcDescriptionP0420": "Catalyst system efficiency below threshold (Bank 1)",
+  "dtcDescriptionP0430": "Catalyst system efficiency below threshold (Bank 2)",
+  "dtcDescriptionP0440": "Evaporative emission control system malfunction",
+  "dtcDescriptionP0441": "Evaporative emission system incorrect purge flow",
+  "@dtcDescriptionP0441": {
+    "description": "Evaporative emissions, NOT secondary air injection. See the note on dtcDescriptionP0411."
+  },
+  "dtcDescriptionP0442": "Evaporative emission system leak detected (small leak)",
+  "dtcDescriptionP0443": "Evaporative emission system purge control valve circuit malfunction",
+  "dtcDescriptionP0446": "Evaporative emission system vent control circuit malfunction",
+  "dtcDescriptionP0447": "Evaporative emission system vent control circuit open",
+  "dtcDescriptionP0449": "Evaporative emission system vent valve/solenoid circuit malfunction",
+  "dtcDescriptionP0451": "Evaporative emission system pressure sensor range/performance problem",
+  "dtcDescriptionP0452": "Evaporative emission system pressure sensor circuit low input",
+  "dtcDescriptionP0453": "Evaporative emission system pressure sensor circuit high input",
+  "dtcDescriptionP0455": "Evaporative emission system leak detected (large leak)",
+  "dtcDescriptionP0456": "Evaporative emission system leak detected (very small leak)",
+  "dtcDescriptionP0480": "Cooling fan 1 control circuit malfunction",
+  "dtcDescriptionP0500": "Vehicle speed sensor malfunction",
+  "dtcDescriptionP0505": "Idle control system malfunction",
+  "dtcDescriptionP0506": "Idle control system RPM lower than expected",
+  "dtcDescriptionP0507": "Idle control system RPM higher than expected",
+  "dtcDescriptionP0508": "Idle control system circuit low",
+  "dtcDescriptionP0509": "Idle control system circuit high",
+  "dtcDescriptionP0560": "System voltage malfunction",
+  "dtcDescriptionP0562": "System voltage low",
+  "dtcDescriptionP0563": "System voltage high",
+  "dtcDescriptionP0603": "Internal control module keep-alive memory (KAM) error",
+  "dtcDescriptionP0605": "Internal control module read-only memory (ROM) error",
+  "dtcDescriptionP0606": "ECM/PCM processor fault",
+  "dtcDescriptionP0700": "The transmission control module asked for the fault lamp — the fault code itself is in the transmission module and has to be read separately",
+  "@dtcDescriptionP0700": {
+    "description": "The code is a pointer, not a fault in itself: the real fault code lives in the transmission module and needs a separate read. Keep that clause."
+  },
+  "dtcDescriptionP0701": "Transmission control system range/performance problem",
+  "dtcDescriptionP0702": "Transmission control system electrical fault",
+  "dtcDescriptionP0705": "Transmission range sensor circuit malfunction",
+  "dtcDescriptionP0715": "Input/turbine speed sensor circuit malfunction",
+  "dtcDescriptionP0720": "Output speed sensor circuit malfunction",
+  "dtcDescriptionP0730": "Incorrect gear ratio",
+  "dtcDescriptionP0740": "Torque converter clutch circuit malfunction",
+  "dtcDescriptionP0741": "Torque converter clutch stuck off",
+  "dtcDescriptionP0750": "Shift solenoid A malfunction",
+  "dtcDescriptionP0755": "Shift solenoid B malfunction",
+  "dtcDescriptionP2135": "Throttle position sensor A/B voltage correlation",
+  "dtcDescriptionU0100": "Lost communication with ECM/PCM",
+  "dtcDescriptionU0101": "Lost communication with the transmission control module",
+  "dtcDescriptionU0121": "Lost communication with the ABS control module",
+  "dtcDescriptionU0140": "Lost communication with the body control module",
+  "dtcDescriptionU0155": "Lost communication with the instrument panel control module",
+  "gaugeSkinCluster": "Cluster",
+  "gaugeSkinClusterDescription": "Looks like a factory instrument cluster. Needle, 270-degree dial, recessed face.",
+  "gaugeSkinMinimal": "Minimal",
+  "gaugeSkinMinimalDescription": "Half an arc, no needle, no ticks. The number is what you read, not the movement.",
+  "gaugeSkinTrack": "Track",
+  "gaugeSkinTrackDescription": "Segmented bar, no smoothing. The value lands where it lands, with nothing in between.",
+  "@gaugeSkinTrackDescription": {
+    "description": "\"No smoothing\" is the point: a track readout must not interpolate a value the ECU never sent."
+  },
+  "gaugeSkinClassic": "Classic",
+  "gaugeSkinClassicDescription": "Printed dial, numbers all the way round, a needle that settles slowly like a mechanical watch.",
+  "gaugeSkinNight": "Night",
+  "gaugeSkinNightDescription": "For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.",
+  "derivedAirflowSourceMaf": "MAF sensor",
+  "@derivedAirflowSourceMaf": {
+    "description": "Provenance pill on the estimated-values panel: the air-mass figure came from the vehicle's own MAF sensor rather than being computed."
+  },
+  "derivedAirflowSourceSpeedDensity": "Speed-density estimate",
+  "@derivedAirflowSourceSpeedDensity": {
+    "description": "Provenance pill: air mass was computed from engine speed, manifold pressure and intake temperature. It is an estimate, and the word must say so."
+  },
+  "derivedAirflowSourceUnavailable": "Air mass unavailable",
+  "@derivedAirflowSourceUnavailable": {
+    "description": "Provenance pill: neither a MAF reading nor the full speed-density input set was available. Not the same as zero air flow, which would mean a stopped engine."
+  },
+  "derivedFuelSourceStoichiometric": "Stoichiometric estimate",
+  "@derivedFuelSourceStoichiometric": {
+    "description": "Provenance pill: fuel was derived from air mass assuming a stoichiometric mixture, so it is wrong by roughly the lambda the engine is running. Do not translate this as if it were a measurement."
+  },
+  "derivedFuelSourceUnavailable": "Fuel rate unavailable",
+  "@derivedFuelSourceUnavailable": {
+    "description": "Provenance pill: no fuel figure could be established, measured or estimated."
+  },
+  "telemetrySourceDemo": "Built-in simulator",
+  "@telemetrySourceDemo": {
+    "description": "Where a recorded telemetry session came from: the app's own simulated ECU. A reader must never mistake a simulated session for a drive."
+  },
+  "telemetrySourceRig": "Test rig",
+  "@telemetrySourceRig": {
+    "description": "Where a recorded telemetry session came from: a simulated hardware rig used in testing, not a vehicle."
+  },
+  "telemetrySourceFieldApp": "Field app connection",
+  "@telemetrySourceFieldApp": {
+    "description": "Where a recorded telemetry session came from: an ordinary connection made by the field build to a real adapter."
+  }
 }

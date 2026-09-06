@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/app_wakelock.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../state/obd_session.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/dtc/dtc_screen.dart';
@@ -21,32 +22,43 @@ import 'screens/pids/pid_manager_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'widgets/telemetry/telemetry_recorder_strip.dart';
 
-class _Destination {
-  const _Destination(this.path, this.label, this.icon, this.selectedIcon);
+/// The five bottom-navigation destinations.
+///
+/// This used to be a top-level `const` list carrying its own label strings,
+/// which is exactly the shape that cannot read a `BuildContext`. It is an enum
+/// now rather than a list built at build time, because the label has to come
+/// from somewhere and only one of those two shapes makes the compiler check
+/// that a new destination got one: [label]'s switch is exhaustive over the
+/// enum, so adding a sixth arm here without a sixth ARB key does not compile.
+/// The paths and icons stay const, and the widget tree is unchanged.
+enum _Destination {
+  dashboard(DashboardScreen.path, Icons.speed_outlined, Icons.speed),
+  pid(PidManagerScreen.path, Icons.tune_outlined, Icons.tune),
+  dtc(DtcScreen.path, Icons.warning_amber_outlined, Icons.warning_amber),
+  performance(PerformanceScreen.path, Icons.timer_outlined, Icons.timer),
+  settings(SettingsScreen.path, Icons.settings_outlined, Icons.settings);
+
+  const _Destination(this.path, this.icon, this.selectedIcon);
 
   final String path;
-  final String label;
   final IconData icon;
   final IconData selectedIcon;
-}
 
-const _destinations = [
-  _Destination(DashboardScreen.path, '儀表板', Icons.speed_outlined, Icons.speed),
-  _Destination(PidManagerScreen.path, 'PID', Icons.tune_outlined, Icons.tune),
-  _Destination(
-    DtcScreen.path,
-    '故障碼',
-    Icons.warning_amber_outlined,
-    Icons.warning_amber,
-  ),
-  _Destination(PerformanceScreen.path, '性能', Icons.timer_outlined, Icons.timer),
-  _Destination(
-    SettingsScreen.path,
-    '設定',
-    Icons.settings_outlined,
-    Icons.settings,
-  ),
-];
+  /// Takes the localizations rather than a context: an enum member has no
+  /// element in the tree, and the callers below all have one to pass.
+  ///
+  /// This is a method, not a getter — interpolating it (`'${d.label}'`) would
+  /// print a closure, and `flutter analyze` does not catch that. Both call
+  /// sites pass it straight to a `label:`/`Text`, where a closure will not
+  /// compile.
+  String label(AppLocalizations l10n) => switch (this) {
+    _Destination.dashboard => l10n.navDashboard,
+    _Destination.pid => l10n.navPid,
+    _Destination.dtc => l10n.navDtc,
+    _Destination.performance => l10n.navPerformance,
+    _Destination.settings => l10n.navSettings,
+  };
+}
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, super.key});
@@ -80,12 +92,15 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   int _indexFor(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final index = _destinations.indexWhere((d) => location.startsWith(d.path));
+    final index = _Destination.values.indexWhere(
+      (d) => location.startsWith(d.path),
+    );
     return index < 0 ? 0 : index;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final index = _indexFor(context);
     final useRail = MediaQuery.sizeOf(context).width >= 720;
     final child = widget.child;
@@ -131,13 +146,14 @@ class _AppShellState extends ConsumerState<AppShell> {
           const TelemetryRecorderStrip(),
           NavigationBar(
             selectedIndex: index,
-            onDestinationSelected: (i) => context.go(_destinations[i].path),
+            onDestinationSelected: (i) =>
+                context.go(_Destination.values[i].path),
             destinations: [
-              for (final destination in _destinations)
+              for (final destination in _Destination.values)
                 NavigationDestination(
                   icon: Icon(destination.icon),
                   selectedIcon: Icon(destination.selectedIcon),
-                  label: destination.label,
+                  label: destination.label(l10n),
                 ),
             ],
           ),
@@ -154,6 +170,7 @@ class _Rail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     // The native rail scrolls only its destination group, retaining its own
     // layout, SafeArea and semantics at short landscape heights. Wrapping the
@@ -161,7 +178,7 @@ class _Rail extends StatelessWidget {
     // behavior and makes the accessibility layout needlessly expensive.
     return NavigationRail(
       selectedIndex: index,
-      onDestinationSelected: (i) => context.go(_destinations[i].path),
+      onDestinationSelected: (i) => context.go(_Destination.values[i].path),
       scrollable: true,
       backgroundColor: palette.surface,
       labelType: NavigationRailLabelType.all,
@@ -175,11 +192,11 @@ class _Rail extends StatelessWidget {
         color: palette.textTertiary,
       ),
       destinations: [
-        for (final destination in _destinations)
+        for (final destination in _Destination.values)
           NavigationRailDestination(
             icon: Icon(destination.icon),
             selectedIcon: Icon(destination.selectedIcon),
-            label: Text(destination.label),
+            label: Text(destination.label(l10n)),
           ),
       ],
     );

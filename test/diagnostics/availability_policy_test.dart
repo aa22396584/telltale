@@ -20,7 +20,9 @@ void main() {
       expect(status.availability, FeatureAvailability.usableWithNotice);
       expect(status.isNumericSuccess, isTrue);
       expect(status.evidence, isNot(EvidenceKind.fieldVerified));
-      expect(status.nextStep, contains('通用 OBD'));
+      expect(status.nextStep, DatumNextStep.genericObdContinues);
+      expect(status.gaps, contains(DatumGap.vinNotRead));
+      expect(status.gaps, isNot(contains(DatumGap.noCatalogMatch)));
       expect(status.reason, contains('VIN'));
       expect(status.reason, isNot(contains('型錄無匹配')));
       expect(status.reason, isNot(contains('年式未知')));
@@ -29,6 +31,7 @@ void main() {
         catalogMatched: false,
       );
       expect(miss.reason, contains('型錄無匹配'));
+      expect(miss.gaps, contains(DatumGap.noCatalogMatch));
     });
 
     test('community and experimental bounded-read profiles may install', () {
@@ -80,7 +83,7 @@ void main() {
       expect(status.isNumericSuccess, isTrue);
       expect(status.origin, DatumOrigin.userEntered);
       expect(status.evidence, EvidenceKind.userSupplied);
-      expect(status.badgeLabels, contains('使用者提供'));
+      expect(status.badges, contains(DatumBadge.userSupplied));
     });
 
     test('one PID fault does not veto sibling readings', () {
@@ -109,7 +112,7 @@ void main() {
       expect(rpmStatus.isNumericSuccess, isTrue);
       expect(snapshot.valueOf(rpm), 2000);
       expect(speedStatus.quality, DatumQuality.partial);
-      expect(speedStatus.nextStep, contains('只影響此項'));
+      expect(speedStatus.nextStep, DatumNextStep.otherReadingsUnaffected);
     });
 
     test('estimates are shown as 估算, never 實測', () {
@@ -122,8 +125,8 @@ void main() {
       );
       expect(status.isNumericSuccess, isTrue);
       expect(status.origin, DatumOrigin.calculated);
-      expect(status.badgeLabels, contains('估算'));
-      expect(status.badgeLabels, isNot(contains('已驗證')));
+      expect(status.badges, contains(DatumBadge.estimated));
+      expect(status.badges, isNot(contains(DatumBadge.fieldVerified)));
       expect(status.formula, AvailabilityPolicy.horsepowerFormula);
       expect(status.assumptions, anyOf(contains('手動輸入'), contains('通用預設')));
       expect(status.assumptions, contains('1280'));
@@ -154,7 +157,7 @@ void main() {
         kind: EstimateKind.fuel,
       );
       expect(fuelOutlier.quality, DatumQuality.outOfReferenceRange);
-      expect(fuelOutlier.badgeLabels, contains('異常'));
+      expect(fuelOutlier.badges, contains(DatumBadge.outOfReferenceRange));
       final hpInRange = AvailabilityPolicy.forEstimate(
         profile: profile,
         value: 1500,
@@ -181,7 +184,7 @@ void main() {
       );
       expect(status.isNumericSuccess, isTrue);
       expect(status.quality, DatumQuality.outOfReferenceRange);
-      expect(status.badgeLabels, contains('異常'));
+      expect(status.badges, contains(DatumBadge.outOfReferenceRange));
     });
 
     test('stale badges are not doubled', () {
@@ -196,7 +199,7 @@ void main() {
         ),
         isStale: true,
       );
-      expect(status.badgeLabels.where((label) => label == '過期').length, 1);
+      expect(status.badges.where((b) => b == DatumBadge.stale).length, 1);
     });
 
     test('installed community PID is labelled 社群解碼', () {
@@ -220,7 +223,7 @@ void main() {
         ),
       );
       expect(status.evidence, EvidenceKind.community);
-      expect(status.badgeLabels, contains('社群解碼'));
+      expect(status.badges, contains(DatumBadge.communityDecode));
     });
 
     test('a missing reading is waiting, not 無效', () {
@@ -229,7 +232,7 @@ void main() {
       expect(status.isNumericSuccess, isFalse);
       expect(status.quality, DatumQuality.partial);
       expect(status.reason, '尚無讀值');
-      expect(status.badgeLabels, isNot(contains('無效')));
+      expect(status.badges, isNot(contains(DatumBadge.invalid)));
     });
 
     test('research-only metadata has no fake numeric reading', () {
