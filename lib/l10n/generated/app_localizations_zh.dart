@@ -175,6 +175,112 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get navDashboard => '儀表板';
+
+  @override
+  String get navPid => 'PID';
+
+  @override
+  String get navDtc => '故障碼';
+
+  @override
+  String get navPerformance => '性能';
+
+  @override
+  String get navSettings => '設定';
+
+  @override
+  String get gaugeNoData => '無資料';
+
+  @override
+  String gaugeNoDataBecause(String reason) {
+    return '無資料 — $reason';
+  }
+
+  @override
+  String gaugeReadingStale(String reading) {
+    return '$reading（資料已過期）';
+  }
+
+  @override
+  String get datumStatusFollowsData => '狀態隨資料';
+
+  @override
+  String get datumStatusFormula => '公式';
+
+  @override
+  String get datumStatusAssumptions => '假設';
+
+  @override
+  String get datumStatusClose => '關閉';
+
+  @override
+  String get fieldEventHeading => '實車事件標記';
+
+  @override
+  String get fieldEventBody =>
+      '只在車輛完全停妥時，由乘客或停車中的操作人員按下。事件會與 OBD 原始資料使用同一條時間軸並嘗試立即保存。';
+
+  @override
+  String fieldEventRecorded(String marker) {
+    return '已記錄並保存：$marker';
+  }
+
+  @override
+  String get fieldEventMemoryOnly => '已記在目前工作階段，但自動保存失敗；請立刻匯出紀錄。';
+
+  @override
+  String get fieldEventUnavailable => '目前沒有可記錄的實車連線。';
+
+  @override
+  String get fieldEventIgnitionOn => '電門 ON';
+
+  @override
+  String get fieldEventEngineStarted => '引擎發動';
+
+  @override
+  String get fieldEventThrottleBlip => '輕踩油門';
+
+  @override
+  String get fieldEventRoadTestStarted => '道路測試開始';
+
+  @override
+  String get recommendedPurchaseHeading => '推薦轉接器';
+
+  @override
+  String get recommendedPurchaseStoreShopee => '蝦皮';
+
+  @override
+  String recommendedPurchaseModelLine(String model, String approval) {
+    return '型號 $model · NCC $approval';
+  }
+
+  @override
+  String recommendedPurchaseViewOnStore(String store) {
+    return '在$store查看';
+  }
+
+  @override
+  String recommendedPurchaseOpenFailed(String store) {
+    return '無法開啟$store連結';
+  }
+
+  @override
+  String recommendedPurchaseNoAdapterYet(String store) {
+    return '還沒有轉接器？在$store看推薦款';
+  }
+
+  @override
+  String get recommendedPurchaseDisclosure =>
+      '這是維護者的推廣分潤連結；符合條件的購買可能產生佣金。不是轉接器認證或購買保證。賣場內容與硬體版本可能變更，購買前請核對完整型號與 NCC 號碼。你也可以自行搜尋其他通路。';
+
+  @override
+  String get recommendedPurchaseShortDisclosureLead => '這是推廣分潤連結，不是轉接器認證。';
+
+  @override
+  String get recommendedPurchaseShortDisclosureAction => '完整說明在設定';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -347,4 +453,110 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get navDashboard => '儀表板';
+
+  @override
+  String get navPid => 'PID';
+
+  @override
+  String get navDtc => '故障碼';
+
+  @override
+  String get navPerformance => '性能';
+
+  @override
+  String get navSettings => '設定';
+
+  @override
+  String get gaugeNoData => '無資料';
+
+  @override
+  String gaugeNoDataBecause(String reason) {
+    return '無資料 — $reason';
+  }
+
+  @override
+  String gaugeReadingStale(String reading) {
+    return '$reading（資料已過期）';
+  }
+
+  @override
+  String get datumStatusFollowsData => '狀態隨資料';
+
+  @override
+  String get datumStatusFormula => '公式';
+
+  @override
+  String get datumStatusAssumptions => '假設';
+
+  @override
+  String get datumStatusClose => '關閉';
+
+  @override
+  String get fieldEventHeading => '實車事件標記';
+
+  @override
+  String get fieldEventBody =>
+      '只在車輛完全停妥時，由乘客或停車中的操作人員按下。事件會與 OBD 原始資料使用同一條時間軸並嘗試立即保存。';
+
+  @override
+  String fieldEventRecorded(String marker) {
+    return '已記錄並保存：$marker';
+  }
+
+  @override
+  String get fieldEventMemoryOnly => '已記在目前工作階段，但自動保存失敗；請立刻匯出紀錄。';
+
+  @override
+  String get fieldEventUnavailable => '目前沒有可記錄的實車連線。';
+
+  @override
+  String get fieldEventIgnitionOn => '電門 ON';
+
+  @override
+  String get fieldEventEngineStarted => '引擎發動';
+
+  @override
+  String get fieldEventThrottleBlip => '輕踩油門';
+
+  @override
+  String get fieldEventRoadTestStarted => '道路測試開始';
+
+  @override
+  String get recommendedPurchaseHeading => '推薦轉接器';
+
+  @override
+  String get recommendedPurchaseStoreShopee => '蝦皮';
+
+  @override
+  String recommendedPurchaseModelLine(String model, String approval) {
+    return '型號 $model · NCC $approval';
+  }
+
+  @override
+  String recommendedPurchaseViewOnStore(String store) {
+    return '在$store查看';
+  }
+
+  @override
+  String recommendedPurchaseOpenFailed(String store) {
+    return '無法開啟$store連結';
+  }
+
+  @override
+  String recommendedPurchaseNoAdapterYet(String store) {
+    return '還沒有轉接器？在$store看推薦款';
+  }
+
+  @override
+  String get recommendedPurchaseDisclosure =>
+      '這是維護者的推廣分潤連結；符合條件的購買可能產生佣金。不是轉接器認證或購買保證。賣場內容與硬體版本可能變更，購買前請核對完整型號與 NCC 號碼。你也可以自行搜尋其他通路。';
+
+  @override
+  String get recommendedPurchaseShortDisclosureLead => '這是推廣分潤連結，不是轉接器認證。';
+
+  @override
+  String get recommendedPurchaseShortDisclosureAction => '完整說明在設定';
 }

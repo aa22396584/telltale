@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../state/obd_session.dart';
 import 'panel.dart';
 
 typedef FieldEventRecorder = Future<FieldEventRecordResult> Function(
   FieldEventMarker marker,
 );
+
+/// The button caption for a marker.
+///
+/// Takes the localizations rather than a context because the enum lives in
+/// `state/` and has no element in the tree. [FieldEventMarker.label] is
+/// deliberately left alone: it is what `ObdSession` writes into the diagnostic
+/// transcript, and an evidence file whose contents depend on the phone's UI
+/// language is an evidence file two readers cannot compare.
+String fieldEventMarkerLabel(AppLocalizations l10n, FieldEventMarker marker) =>
+    switch (marker) {
+      FieldEventMarker.ignitionOn => l10n.fieldEventIgnitionOn,
+      FieldEventMarker.engineStarted => l10n.fieldEventEngineStarted,
+      FieldEventMarker.throttleBlip => l10n.fieldEventThrottleBlip,
+      FieldEventMarker.roadTestStarted => l10n.fieldEventRoadTestStarted,
+    };
 
 /// Four large, low-ambiguity markers for a passenger during a field session.
 class FieldEventMarkerPanel extends StatefulWidget {
@@ -28,6 +44,11 @@ class _FieldEventMarkerPanelState extends State<FieldEventMarkerPanel> {
 
   Future<void> _record(FieldEventMarker marker) async {
     if (!widget.enabled || _saving) return;
+    // Read before the await, not after: the outcome belongs to the language
+    // that was on screen when the passenger pressed the button, and reading a
+    // context across an await is what `use_build_context_synchronously` is
+    // about.
+    final l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     final result = await widget.onRecord(marker);
     if (!mounted) return;
@@ -35,10 +56,13 @@ class _FieldEventMarkerPanelState extends State<FieldEventMarkerPanel> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(switch (result) {
-          FieldEventRecordResult.persisted => '已記錄並保存：${marker.label}',
-          FieldEventRecordResult.memoryOnly =>
-            '已記在目前工作階段，但自動保存失敗；請立刻匯出紀錄。',
-          FieldEventRecordResult.unavailable => '目前沒有可記錄的實車連線。',
+          FieldEventRecordResult.persisted => l10n.fieldEventRecorded(
+            fieldEventMarkerLabel(l10n, marker),
+          ),
+          // Two different failures, two different sentences. "In memory only"
+          // is not "saved", and the remedy is immediate.
+          FieldEventRecordResult.memoryOnly => l10n.fieldEventMemoryOnly,
+          FieldEventRecordResult.unavailable => l10n.fieldEventUnavailable,
         }),
       ),
     );
@@ -46,18 +70,15 @@ class _FieldEventMarkerPanelState extends State<FieldEventMarkerPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final enabled = widget.enabled && !_saving;
     return Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('實車事件標記', style: context.texts.titleSmall),
+          Text(l10n.fieldEventHeading, style: context.texts.titleSmall),
           const SizedBox(height: Spacing.xs),
-          Text(
-            '只在車輛完全停妥時，由乘客或停車中的操作人員按下。'
-            '事件會與 OBD 原始資料使用同一條時間軸並嘗試立即保存。',
-            style: context.texts.bodySmall,
-          ),
+          Text(l10n.fieldEventBody, style: context.texts.bodySmall),
           const SizedBox(height: Spacing.sm),
           Wrap(
             spacing: Spacing.sm,
@@ -66,7 +87,7 @@ class _FieldEventMarkerPanelState extends State<FieldEventMarkerPanel> {
               for (final marker in FieldEventMarker.values)
                 FilledButton.tonal(
                   onPressed: enabled ? () => _record(marker) : null,
-                  child: Text(marker.label),
+                  child: Text(fieldEventMarkerLabel(l10n, marker)),
                 ),
             ],
           ),
