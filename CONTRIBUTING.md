@@ -45,22 +45,27 @@ is zero.
 
 ## The tests that skip, and why the number matters
 
-`flutter test` reports around **13 skipped**. That is not slack — it is exactly
-the externally driven oracle files, which skip unless their required emulator
-or fault proxy is running and explicitly enabled:
+`flutter test` reports around **14 skipped** without a simulator. That is not
+slack — it is exactly the externally driven oracle files, which skip unless
+their required emulator or fault proxy is running and explicitly enabled:
 
 | suite | tests | simulator |
 |---|---|---|
-| `test/emulator_integration_test.dart` | 5 | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
+| `test/emulator_integration_test.dart` | 6 | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
 | `test/freeze_frame_oracle_test.dart` | 7 | a second simulator, not in this repository — see below |
 | `test/chaos_oracle_test.dart` | 1 | Ircama through `tool/obd_test_rig/chaos_proxy.py` |
 
+The Ircama row used to say **5**. The file has six visible `test()` cases;
+public CI's oracle job asserts `6`. Do not "fix" a skip by lowering that
+number. The extracted guard is `tool/oracle_guard/assert_no_skips.py`.
+
 **A skipped test and a passing test print the same summary and both exit 0.**
-That is why the number is worth knowing: `~13` is the expected default and `~8`
+That is why the number is worth knowing: `~14` is the expected default and `~8`
 means Ircama alone is running; other counts deserve inspection. CI does not
-rely on reading the number — it parses each oracle's JSON report and fails the
-job if a test was skipped rather than run. The chaos job also verifies the
-exact commands that reached the proxy before each injected fault.
+rely on reading the number — it parses each oracle's JSON report, keeps the
+Flutter process exit code, and fails the job if a test was skipped rather than
+run. The chaos job also verifies the exact commands that reached the proxy
+before each injected fault.
 
 To run the first suite yourself:
 
