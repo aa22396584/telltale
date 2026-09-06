@@ -387,7 +387,7 @@ class _DeadTransport extends BaseObdTransport {
 
   @override
   Future<void> connect() async =>
-      throw const TransportException('無法連線到 10.255.255.1:35000。');
+      throw const TransportException('無法連線到 10.255.255.1:35000。', issue: null);
 
   @override
   Future<void> disconnect() async => setConnected(false);

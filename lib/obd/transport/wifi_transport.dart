@@ -14,8 +14,11 @@ import 'obd_transport.dart';
 ///
 /// Injected by tests to observe the timeout budget the transport hands down;
 /// production always uses [Socket.connect].
-typedef WifiSocketConnector =
-    Future<Socket> Function(String host, int port, Duration timeout);
+typedef WifiSocketConnector = Future<Socket> Function(
+  String host,
+  int port,
+  Duration timeout,
+);
 
 /// Picks the OS network route the adapter socket must use.
 ///
@@ -58,11 +61,37 @@ final class NoopWifiRouteLease implements WifiRouteLease {
   Future<void> release() async {}
 }
 
+/// Which route failure this was.
+///
+/// The four are not interchangeable and the remedy differs: "connect to the
+/// adapter's hotspot first" is right for [noNetwork] and actively misleading
+/// for [ambiguous], where the phone is on Wi-Fi already and the problem is that
+/// it is on more than one plausible network.
+enum WifiRouteFailure { noNetwork, ambiguous, refused, timedOut, unclassified }
+
+/// The transport's mapping from a route failure to the screen's identifier.
+///
+/// Named and public so a test can drive the real one. It used to be a switch
+/// inline in the throw, and the test that was supposed to hold it kept a second
+/// copy -- so swapping two arms here left the test green while telling a phone
+/// on no Wi-Fi that it was on too many. Review found that by swapping them.
+TransportIssue transportIssueForRouteFailure(WifiRouteFailure failure) =>
+    switch (failure) {
+      WifiRouteFailure.noNetwork => TransportIssue.wifiRouteNoNetwork,
+      WifiRouteFailure.ambiguous => TransportIssue.wifiRouteAmbiguous,
+      WifiRouteFailure.refused => TransportIssue.wifiRouteRefused,
+      WifiRouteFailure.timedOut => TransportIssue.wifiRouteTimeout,
+      WifiRouteFailure.unclassified => TransportIssue.wifiRouteUnclassified,
+    };
+
 /// A route could not be selected or restored.
 final class WifiRouteException implements Exception {
-  const WifiRouteException(this.message);
+  const WifiRouteException(this.message, this.failure);
 
   final String message;
+
+  /// What the screen renders. [message] is the transcript's copy.
+  final WifiRouteFailure failure;
 
   @override
   String toString() => 'WifiRouteException: $message';
@@ -128,10 +157,14 @@ class WifiTransport extends BaseObdTransport {
       // The binder's own message names which of the distinct failures this
       // was — no Wi-Fi network, a refused bind, a stalled platform thread —
       // because「請先連上熱點」is the right remedy for only the first one.
+      // The sentence above tells everyone to connect to the hotspot, which is
+      // right for only one of these. The identifier keeps them apart so the
+      // screen can stop saying it to the other three.
       throw TransportException(
         'Wi-Fi 路由設定失敗：${e.message}。無法連往 $host:$port。'
         '若手機尚未連上轉接器的 Wi-Fi 熱點，請先連上再重試。',
-        e,
+        cause: e,
+        issue: transportIssueForRouteFailure(e.failure),
       );
     }
 
@@ -150,14 +183,19 @@ class WifiTransport extends BaseObdTransport {
         '無法連線到 $host:$port。請確認手機已連上轉接器的 Wi-Fi 熱點；'
         '第一次連上時系統若問「無法連上網際網路，是否繼續使用」，要選繼續使用。'
         '仍然失敗就關閉行動數據再試一次。',
-        e,
+        cause: e,
+        issue: TransportIssue.wifiHostUnreachable,
       );
     } on TimeoutException catch (e) {
       // Socket.connect reports its own timeout as a SocketException, but a
       // TimeoutException can still arrive from an outer await — or from the
       // budget check above.
       await _releaseQuietly(lease);
-      throw TransportException('連線 $host:$port 逾時。', e);
+      throw TransportException(
+        '連線 $host:$port 逾時。',
+        cause: e,
+        issue: TransportIssue.wifiConnectTimeout,
+      );
     } on Object {
       // Socket.connect throws nothing beyond the two shapes above, but the
       // connector is injectable and the process-wide route binding must not
@@ -176,7 +214,8 @@ class WifiTransport extends BaseObdTransport {
       throw TransportException(
         '連線已建立，但無法恢復系統網路路由，已中斷 $host:$port 的連線。'
         '請重新開啟 App 後再試一次。',
-        e,
+        cause: e,
+        issue: TransportIssue.wifiRouteRestoreFailed,
       );
     }
 

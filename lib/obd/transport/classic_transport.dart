@@ -86,7 +86,8 @@ class ClassicTransport extends BaseObdTransport {
     bool secure,
     Duration? timeout,
     int? channel,
-  })? openTierForTest;
+  })?
+  openTierForTest;
 
   @override
   TransportKind get kind => TransportKind.bluetoothClassic;
@@ -96,10 +97,10 @@ class ClassicTransport extends BaseObdTransport {
 
   @override
   Map<String, Object> get diagnosticMetadata => Map.unmodifiable({
-        'deviceIdentifier': address,
-        'deviceName': name,
-        'paired': true,
-      });
+    'deviceIdentifier': address,
+    'deviceName': name,
+    'paired': true,
+  });
 
   /// Bonded devices. An ELM327 must be paired in system settings before it will
   /// accept an RFCOMM connection, so these are the only ones worth offering.
@@ -184,7 +185,12 @@ class ClassicTransport extends BaseObdTransport {
       // tiers — up to 36 seconds during which the next tap did nothing at all,
       // with no error and no explanation. Stopping here caps the abandoned
       // attempt at the tier already in flight.
-      if (_aborted) throw const TransportException('連線已取消。');
+      if (_aborted) {
+        throw const TransportException(
+          '連線已取消。',
+          issue: TransportIssue.cancelled,
+        );
+      }
       onAttempt?.call(_describeAttempt(attempt));
       try {
         final opened = await (openTierForTest ?? _btc.connect)(
@@ -209,7 +215,10 @@ class ClassicTransport extends BaseObdTransport {
           } on Object {
             // Already gone; the throw below is the outcome that matters.
           }
-          throw const TransportException('連線已取消。');
+          throw const TransportException(
+            '連線已取消。',
+            issue: TransportIssue.cancelled,
+          );
         }
         return opened;
       } on BtcTimeoutException catch (e) {
@@ -250,17 +259,18 @@ class ClassicTransport extends BaseObdTransport {
     throw TransportException(
       '無法連線到 $displayName。請先在系統藍牙設定完成配對，'
       '並確認轉接器已插上 OBD 埠且電門已開啟。$detail',
-      firstFailure,
+      cause: firstFailure,
+      issue: TransportIssue.classicAllTiersRefused,
     );
   }
 
   /// What this tier is trying, in the words a person would use.
   static String _describeAttempt(({bool secure, int? channel}) attempt) =>
       attempt.channel != null
-          ? '直接連通道 ${attempt.channel}（最後一種方式，最多 12 秒）'
-          : attempt.secure
-              ? '加密 SPP 連線（最多 12 秒）'
-              : '未加密 SPP 連線（最多 12 秒）';
+      ? '直接連通道 ${attempt.channel}（最後一種方式，最多 12 秒）'
+      : attempt.secure
+      ? '加密 SPP 連線（最多 12 秒）'
+      : '未加密 SPP 連線（最多 12 秒）';
 
   /// One tier's outcome, short enough to sit inside a connection error.
   static String _describeTier(
@@ -270,8 +280,8 @@ class ClassicTransport extends BaseObdTransport {
     final what = attempt.channel != null
         ? '直接連通道 ${attempt.channel}'
         : attempt.secure
-            ? '加密 SPP'
-            : '未加密 SPP';
+        ? '加密 SPP'
+        : '未加密 SPP';
     final why = error is BtcException ? error.message : error.toString();
     return '$what：$why';
   }
@@ -285,7 +295,8 @@ class ClassicTransport extends BaseObdTransport {
       TransportException(
         '連線到 $displayName 逾時。轉接器可能仍在回應中 — '
         '請等幾秒再試一次，不要立刻重試。$detail',
-        cause,
+        cause: cause,
+        issue: TransportIssue.classicConnectTimeout,
       );
 
   /// The cascade, in order. `channel` null means "look the service up by UUID".
@@ -318,9 +329,9 @@ class ClassicTransport extends BaseObdTransport {
       (Platform.isAndroid
           ? androidAttempts
           : Platform.isMacOS
-              ? macOsAttempts
-              // Should be unreachable: Windows/Linux Classic uses SerialTransport.
-              : androidAttempts);
+          ? macOsAttempts
+          // Should be unreachable: Windows/Linux Classic uses SerialTransport.
+          : androidAttempts);
 
   /// Long enough for a slow SDP lookup, short enough that a wedged stack does
   /// not look like a frozen app.

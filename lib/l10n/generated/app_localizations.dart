@@ -5768,6 +5768,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.'**
   String get telemetryExportDisclosure;
+
+  /// TransportIssue.cancelled. Not a failure of the adapter or the link, and it must not read like one: the user backed out, or a newer attempt replaced this one.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection attempt was stopped before it finished.'**
+  String get connectTransportCancelled;
+
+  /// TransportIssue.wifiRouteNoNetwork. The only one of the route failures where "connect to the hotspot" is the right remedy — the transport used to say it for all of them.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone is not on any Wi-Fi network, so there is no route to the adapter. Connect to the adapter\'s Wi-Fi hotspot, then try again.'**
+  String get connectTransportWifiRouteNoNetwork;
+
+  /// TransportIssue.wifiRouteAmbiguous. Plural: the platform reports how many networks were equally plausible and it can exceed two. Says why nothing was picked rather than guessing — picking one at random is how a connection goes to the wrong network and blames the adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone is on more than one Wi-Fi network and none of them is clearly the adapter\'s, so none was chosen. Disconnect the ones that are not the adapter\'s, then try again.'**
+  String get connectTransportWifiRouteAmbiguous;
+
+  /// TransportIssue.wifiRouteRefused. Distinct from having no network, and the distinction is the whole message: telling someone to join a hotspot they are already on wastes the one thing they can act on.
+  ///
+  /// In en, this message translates to:
+  /// **'The system refused to send this connection over Wi-Fi. The phone is on Wi-Fi; it was not allowed to be used for this.'**
+  String get connectTransportWifiRouteRefused;
+
+  /// TransportIssue.wifiRouteTimeout. States what did not happen, not what is wrong; the platform call may still complete afterwards, which is why the app releases the route regardless.
+  ///
+  /// In en, this message translates to:
+  /// **'The system did not answer the request to send this connection over Wi-Fi. Wait a few seconds and try again.'**
+  String get connectTransportWifiRouteTimeout;
+
+  /// TransportIssue.wifiRouteUnclassified. An unrecognised platform code must never borrow another failure's remedy, so this one deliberately offers none.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection could not be sent over Wi-Fi, for a reason the system did not name. The full error is kept in the log below.'**
+  String get connectTransportWifiRouteUnclassified;
+
+  /// TransportIssue.wifiHostUnreachable. The "stay connected without internet" prompt is the most common cause and is invisible afterwards, so it is named rather than described.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered at that address. Check the phone is on the adapter\'s Wi-Fi hotspot — if the system asked whether to stay connected without internet, choose to stay. Turning mobile data off can also help.'**
+  String get connectTransportWifiHostUnreachable;
+
+  /// TransportIssue.wifiConnectTimeout. Says nothing answered, not that an adapter is there: a timeout establishes silence, and someone who typed the wrong address would otherwise read a verdict on hardware they never reached. The address is in the log below.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered at that address in time.'**
+  String get connectTransportWifiConnectTimeout;
+
+  /// TransportIssue.wifiRouteRestoreFailed. The connection is dropped on purpose: leaving the phone's routing altered by an app that could not undo it is worse than losing the session.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection worked, but the phone\'s network routing could not be put back, so the connection was dropped rather than left changed. Restart the app and try again.'**
+  String get connectTransportWifiRouteRestoreFailed;
+
+  /// TransportIssue.bleLinkFailed. The link never came up, so nothing is known about what the device is.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to the adapter. Check that it has power and is within range.'**
+  String get connectTransportBleLinkFailed;
+
+  /// TransportIssue.bleNoSerialCharacteristic. What was not found, stated as what was not found. Some adapters expose the pair only after a delay, so "may not be" is the strongest claim available.
+  ///
+  /// In en, this message translates to:
+  /// **'The device connected, but no serial port was found on it, so it may not be an ELM327 adapter.'**
+  String get connectTransportBleNoSerialCharacteristic;
+
+  /// TransportIssue.classicAllTiersRefused. Every Bluetooth Classic tier was refused; unpaired is the most common cause by a wide margin, which is why the copy names it while the identifier does not.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to the adapter. Pair it in the system Bluetooth settings first, and check that it is plugged into the OBD socket with the ignition on.'**
+  String get connectTransportClassicAllTiersRefused;
+
+  /// TransportIssue.classicConnectTimeout. Retrying immediately tends to make this worse, which is why the wait is stated rather than implied.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to the adapter timed out. It may still be answering — wait a few seconds rather than retrying straight away.'**
+  String get connectTransportClassicConnectTimeout;
+
+  /// TransportIssue.serialPortOpenFailed. Desktop only. The port is created by the operating system, not by this app, so the remedy is outside it.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the serial port. Check that the system has created one for this adapter (COMx on Windows, /dev/rfcomm* on Linux) and that the ignition is on.'**
+  String get connectTransportSerialPortOpenFailed;
+
+  /// TransportIssue.serialDroppedOnOpen. Distinct from failing to open: something answered, then went away.
+  ///
+  /// In en, this message translates to:
+  /// **'The serial port opened and closed again immediately.'**
+  String get connectTransportSerialDroppedOnOpen;
 }
 
 class _AppLocalizationsDelegate

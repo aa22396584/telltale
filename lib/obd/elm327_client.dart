@@ -705,7 +705,7 @@ class Elm327Client {
       isInitialized = false;
       _watchdog?.cancel();
       _watchdog = null;
-      _failPending(const TransportException('連線已中斷。'));
+      _failPending(const TransportException('連線已中斷。', issue: null));
       // During the handshake, failing the pending command lets connect() and
       // its caller publish the precise failed-attempt state. Only a session
       // that had already completed initialization needs the asynchronous
@@ -820,7 +820,7 @@ class Elm327Client {
     _watchdog?.cancel();
     _watchdog = null;
     _pendingTimeout?.cancel();
-    _failPending(const TransportException('連線已中斷。'));
+    _failPending(const TransportException('連線已中斷。', issue: null));
     await _rxSub?.cancel();
     _rxSub = null;
     await _connectionSub?.cancel();
@@ -1147,7 +1147,7 @@ class Elm327Client {
     // watchdog count silence against a request that was never made, and tear
     // the link down for it five seconds later.
     if (!transport.isConnected) {
-      throw const TransportException('連線尚未建立。');
+      throw const TransportException('連線尚未建立。', issue: null);
     }
     // Refused before a transaction starts, never in the middle of one.
     //
@@ -1408,7 +1408,7 @@ class Elm327Client {
       _watchdog?.cancel();
       _watchdog = null;
       scheduleMicrotask(() => onConnectionLost?.call());
-      throw const TransportException('轉接器沒有回應同步請求，連線已中斷。請重新連線。');
+      throw const TransportException('轉接器沒有回應同步請求，連線已中斷。請重新連線。', issue: null);
     }
     _outOfSync = false;
   }
@@ -1476,7 +1476,7 @@ class Elm327Client {
               ack.isSuccess &&
               ack.rawLines.any((l) => l.trim().toUpperCase() == 'OK');
           if (!acknowledged) {
-            throw TransportException('轉接器拒絕切換標頭 $header');
+            throw TransportException('轉接器拒絕切換標頭 $header', issue: null);
           }
           _currentHeader = header;
           committed = true;
@@ -1635,6 +1635,7 @@ class Elm327Client {
               '這輛車使用的舊式匯流排沒有標準的廣播位址，而轉接器目前指定在控制器 '
               '$installed。掃描只會涵蓋該控制器，不能當作全車結果，因此已中止。'
               '請重新連線後再掃描一次。',
+              issue: null,
             );
           }
           // Headers on here too, for the same reason they go on for CAN: a
@@ -1750,7 +1751,7 @@ class Elm327Client {
             deadline: deadline,
           );
           if (!_saidOk(ack)) {
-            throw TransportException('轉接器拒絕切換為功能定址 $functional');
+            throw TransportException('轉接器拒絕切換為功能定址 $functional', issue: null);
           }
           _currentHeader = functional;
 
@@ -2232,7 +2233,7 @@ class Elm327Client {
       isInitialized = false;
       _watchdog?.cancel();
       _watchdog = null;
-      _failPending(const TransportException('連線停止回應。'));
+      _failPending(const TransportException('連線停止回應。', issue: null));
       onConnectionLost?.call();
     });
   }

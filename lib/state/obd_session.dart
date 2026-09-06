@@ -130,6 +130,13 @@ class ObdConnectionState {
   /// The step [ObdConnectionIssue.handshakeStepFailed] is about.
   final InitProgress? issueStep;
 
+  /// The same fact as [error] when the sentence came from a transport.
+  ///
+  /// [issue] covers what this file diagnoses; this covers what the four
+  /// transports diagnose. They are never both set: a given failure is authored
+  /// in one place or the other, and the screen asks for them in that order.
+  final TransportIssue? transportIssue;
+
   /// The same fact as [detail], as an identifier.
   final ObdConnectionActivity? activity;
 
@@ -146,6 +153,7 @@ class ObdConnectionState {
     this.error,
     this.issue,
     this.issueStep,
+    this.transportIssue,
     this.activity,
     this.initSteps = const [],
   });
@@ -165,6 +173,7 @@ class ObdConnectionState {
     String? error,
     ObdConnectionIssue? issue,
     InitProgress? issueStep,
+    TransportIssue? transportIssue,
     ObdConnectionActivity? activity,
     bool clearError = false,
     List<InitProgress>? initSteps,
@@ -182,6 +191,9 @@ class ObdConnectionState {
       // for a failure that is no longer being reported.
       issue: clearError ? null : (issue ?? this.issue),
       issueStep: clearError ? null : (issueStep ?? this.issueStep),
+      transportIssue: clearError
+          ? null
+          : (transportIssue ?? this.transportIssue),
       // Likewise for the busy line: a caller that sets `detail` and not
       // `activity` is replacing the line, not annotating the old one. Without
       // this, a Bluetooth Classic tier notice inherited "aborting the previous
@@ -768,11 +780,11 @@ class ObdSession extends Notifier<ObdConnectionState> {
   /// one screen meant for diagnosing it.
   Future<String> sendManualCommand(String command) async {
     final c = _client;
-    if (c == null) throw const TransportException('尚未連線');
+    if (c == null) throw const TransportException('尚未連線', issue: null);
     final trimmed = command.trim();
-    if (trimmed.isEmpty) throw const TransportException('沒有輸入指令');
+    if (trimmed.isEmpty) throw const TransportException('沒有輸入指令', issue: null);
     final refusal = manualCommandRefusal(trimmed);
-    if (refusal != null) throw TransportException(refusal);
+    if (refusal != null) throw TransportException(refusal, issue: null);
     c.transcript.recordNote('手動送出：$trimmed');
     final response = await c.send(trimmed);
     return response.rawLines.join('\n');
@@ -1232,6 +1244,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     String? detail,
     ObdConnectionIssue? issue,
     InitProgress? issueStep,
+    TransportIssue? transportIssue,
   }) async {
     _completeEvidence(client, outcome: 'failed');
     // Before the teardown reads it. The sentence on screen is what the user
@@ -1249,6 +1262,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       error: why,
       issue: issue,
       issueStep: issueStep,
+      transportIssue: transportIssue,
     );
     await _teardown();
     return false;
@@ -1371,7 +1385,15 @@ class ObdSession extends Notifier<ObdConnectionState> {
         );
       }
     } on TransportException catch (e) {
-      return _failAttempt(generation, client, e.message);
+      // The sentence still goes to the transcript; the identifier is what the
+      // screen renders, so a Wi-Fi route refusal stops being told to connect to
+      // a hotspot it is already on.
+      return _failAttempt(
+        generation,
+        client,
+        e.message,
+        transportIssue: e.issue,
+      );
     } on Object catch (e) {
       // The sentence and the evidence go to different readers: the driver gets
       // something to act on, the transcript keeps the exception verbatim.
@@ -1595,7 +1617,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
   }) async {
     final client = _client;
     if (client == null || !state.isConnected || !_foreground) {
-      throw const TransportException('尚未連線，無法執行實驗唯讀查詢');
+      throw const TransportException('尚未連線，無法執行實驗唯讀查詢', issue: null);
     }
     final generation = _generation;
     final pauseEpoch = _pauseEpoch;
@@ -1616,7 +1638,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       connectionGeneration: generation,
     );
     if (lease == null) {
-      throw const TransportException('單次授權不存在、已過期、冷卻中或已被隔離');
+      throw const TransportException('單次授權不存在、已過期、冷卻中或已被隔離', issue: null);
     }
 
     PowertrainBatteryProbeResult? result;
@@ -1635,7 +1657,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
           !_foreground ||
           !ref.read(powertrainBatteryExperimentalAccessProvider) ||
           !identical(_client, client)) {
-        throw const TransportException('連線或前景狀態已改變，已丟棄實驗結果');
+        throw const TransportException('連線或前景狀態已改變，已丟棄實驗結果', issue: null);
       }
       return result;
     } finally {

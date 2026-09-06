@@ -3578,4 +3578,64 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get telemetryExportDisclosure =>
       'The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.';
+
+  @override
+  String get connectTransportCancelled =>
+      'The connection attempt was stopped before it finished.';
+
+  @override
+  String get connectTransportWifiRouteNoNetwork =>
+      'The phone is not on any Wi-Fi network, so there is no route to the adapter. Connect to the adapter\'s Wi-Fi hotspot, then try again.';
+
+  @override
+  String get connectTransportWifiRouteAmbiguous =>
+      'The phone is on more than one Wi-Fi network and none of them is clearly the adapter\'s, so none was chosen. Disconnect the ones that are not the adapter\'s, then try again.';
+
+  @override
+  String get connectTransportWifiRouteRefused =>
+      'The system refused to send this connection over Wi-Fi. The phone is on Wi-Fi; it was not allowed to be used for this.';
+
+  @override
+  String get connectTransportWifiRouteTimeout =>
+      'The system did not answer the request to send this connection over Wi-Fi. Wait a few seconds and try again.';
+
+  @override
+  String get connectTransportWifiRouteUnclassified =>
+      'The connection could not be sent over Wi-Fi, for a reason the system did not name. The full error is kept in the log below.';
+
+  @override
+  String get connectTransportWifiHostUnreachable =>
+      'Nothing answered at that address. Check the phone is on the adapter\'s Wi-Fi hotspot — if the system asked whether to stay connected without internet, choose to stay. Turning mobile data off can also help.';
+
+  @override
+  String get connectTransportWifiConnectTimeout =>
+      'Nothing answered at that address in time.';
+
+  @override
+  String get connectTransportWifiRouteRestoreFailed =>
+      'The connection worked, but the phone\'s network routing could not be put back, so the connection was dropped rather than left changed. Restart the app and try again.';
+
+  @override
+  String get connectTransportBleLinkFailed =>
+      'Could not connect to the adapter. Check that it has power and is within range.';
+
+  @override
+  String get connectTransportBleNoSerialCharacteristic =>
+      'The device connected, but no serial port was found on it, so it may not be an ELM327 adapter.';
+
+  @override
+  String get connectTransportClassicAllTiersRefused =>
+      'Could not connect to the adapter. Pair it in the system Bluetooth settings first, and check that it is plugged into the OBD socket with the ignition on.';
+
+  @override
+  String get connectTransportClassicConnectTimeout =>
+      'Connecting to the adapter timed out. It may still be answering — wait a few seconds rather than retrying straight away.';
+
+  @override
+  String get connectTransportSerialPortOpenFailed =>
+      'Could not open the serial port. Check that the system has created one for this adapter (COMx on Windows, /dev/rfcomm* on Linux) and that the ignition is on.';
+
+  @override
+  String get connectTransportSerialDroppedOnOpen =>
+      'The serial port opened and closed again immediately.';
 }

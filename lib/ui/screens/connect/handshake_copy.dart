@@ -14,6 +14,7 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/elm327_client.dart';
+import '../../../obd/transport/obd_transport.dart';
 import '../../../state/obd_session.dart';
 
 /// What a handshake command is for.
@@ -118,12 +119,30 @@ String _failureReason(AppLocalizations l10n, InitProgress? step) {
 
 /// Why the wizard is showing a failure banner.
 ///
-/// Returns null when the sentence came from a transport rather than from
-/// `obd_session` — those are still Chinese, and the caller falls back to
-/// [ObdConnectionState.error] so nothing is dropped on the floor.
+/// Returns null only when neither identifier is set. Both are asked for: the
+/// handshake's own diagnosis first, then the transport's. A failure is authored
+/// in one place or the other and never both, so the order is a formality rather
+/// than a precedence rule -- but it is written down so it stays one.
+///
+/// When both are null the caller still falls back to [ObdConnectionState.error],
+/// which is Traditional Chinese.
+///
+/// That fallback is kept, but do not read it as a licence. An earlier version of
+/// this comment claimed it was live because `elm327_client` and `obd_session`
+/// still throw `TransportException` without an identifier. Review traced it: all
+/// eight `elm327_client` throws are reachable only inside `send()`, whose three
+/// callers each catch `on Object`, so none escapes `connect()`; the six in
+/// `obd_session` are on the raw-terminal and experimental-probe paths, not this
+/// screen. `connectExceptionIssue` is non-nullable, so the generic catch always
+/// supplies one. On the connect screen the fallback is now effectively dead.
+///
+/// Which is why the guard exists: the next identifier-less throw on this path
+/// would land here silently, and a comment saying "the fallback handles it" is
+/// how that stops being noticed. See `test/l10n/transport_issue_guard_test.dart`
+/// and ImL1s/telltale#45 for the fourteen throws still to be given identifiers.
 String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
   final issue = state.issue;
-  if (issue == null) return null;
+  if (issue == null) return _transportIssueText(l10n, state.transportIssue);
   final step = state.issueStep;
   return switch (issue) {
     ObdConnectionIssue.handshakeIncomplete => l10n.connectIssueHandshakeIncomplete,
@@ -145,6 +164,43 @@ String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
       l10n.connectIssueAdapterStoppedResponding,
   };
 }
+
+/// The transports' half of [connectionIssueText].
+///
+/// `writeFailed` is deliberately absent from the mapping: it is not a connect
+/// failure and never reaches this screen, so giving it a string here would add
+/// copy that nothing can ever render and no test could hold to anything.
+String? _transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
+    switch (issue) {
+      null => null,
+      TransportIssue.cancelled => l10n.connectTransportCancelled,
+      TransportIssue.wifiRouteNoNetwork =>
+        l10n.connectTransportWifiRouteNoNetwork,
+      TransportIssue.wifiRouteAmbiguous =>
+        l10n.connectTransportWifiRouteAmbiguous,
+      TransportIssue.wifiRouteRefused => l10n.connectTransportWifiRouteRefused,
+      TransportIssue.wifiRouteTimeout => l10n.connectTransportWifiRouteTimeout,
+      TransportIssue.wifiRouteUnclassified =>
+        l10n.connectTransportWifiRouteUnclassified,
+      TransportIssue.wifiHostUnreachable =>
+        l10n.connectTransportWifiHostUnreachable,
+      TransportIssue.wifiConnectTimeout =>
+        l10n.connectTransportWifiConnectTimeout,
+      TransportIssue.wifiRouteRestoreFailed =>
+        l10n.connectTransportWifiRouteRestoreFailed,
+      TransportIssue.bleLinkFailed => l10n.connectTransportBleLinkFailed,
+      TransportIssue.bleNoSerialCharacteristic =>
+        l10n.connectTransportBleNoSerialCharacteristic,
+      TransportIssue.classicAllTiersRefused =>
+        l10n.connectTransportClassicAllTiersRefused,
+      TransportIssue.classicConnectTimeout =>
+        l10n.connectTransportClassicConnectTimeout,
+      TransportIssue.serialPortOpenFailed =>
+        l10n.connectTransportSerialPortOpenFailed,
+      TransportIssue.serialDroppedOnOpen =>
+        l10n.connectTransportSerialDroppedOnOpen,
+      TransportIssue.writeFailed => null,
+    };
 
 /// The line under a busy spinner, or null when there is nothing to say.
 String? connectionActivityText(AppLocalizations l10n, ObdConnectionState state) =>

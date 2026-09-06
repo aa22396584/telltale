@@ -117,7 +117,10 @@ void main() {
         },
       );
 
-      await expectLater(transport.connect(), throwsA(isA<TransportException>()));
+      await expectLater(
+        transport.connect(),
+        throwsA(isA<TransportException>()),
+      );
 
       expect(events, const ['bind', 'connect', 'release']);
       expect(transport.isConnected, isFalse);
@@ -127,7 +130,7 @@ void main() {
       var connected = false;
       final transport = WifiTransport(
         host: '192.168.0.10',
-        routeBinder: _UnavailableBinder(),
+        routeBinder: const _UnavailableBinder(),
         socketConnector: (host, port, timeout) async {
           connected = true;
           throw StateError('must not connect');
@@ -138,7 +141,11 @@ void main() {
         transport.connect(),
         throwsA(
           isA<TransportException>()
-              .having((error) => error.cause, 'cause', isA<WifiRouteException>())
+              .having(
+                (error) => error.cause,
+                'cause',
+                isA<WifiRouteException>(),
+              )
               .having(
                 (error) => error.message,
                 'message',
@@ -148,6 +155,61 @@ void main() {
       );
       expect(connected, isFalse);
     });
+
+    // Written out, not computed. The first two attempts at this test both
+    // asked the code under test what to expect -- one kept a second copy of the
+    // switch inside the test file, the other called the real function for the
+    // expected value -- and under both, swapping two arms left everything green
+    // while telling a phone on no Wi-Fi that it was on too many. That is the
+    // exact defect these identifiers exist to prevent. Review found the first;
+    // the second was mine, one commit later.
+    //
+    // Exhaustive by construction: a new WifiRouteFailure has no entry here and
+    // the loop below fails on the missing key rather than skipping it.
+    const expected = <WifiRouteFailure, TransportIssue>{
+      WifiRouteFailure.noNetwork: TransportIssue.wifiRouteNoNetwork,
+      WifiRouteFailure.ambiguous: TransportIssue.wifiRouteAmbiguous,
+      WifiRouteFailure.refused: TransportIssue.wifiRouteRefused,
+      WifiRouteFailure.timedOut: TransportIssue.wifiRouteTimeout,
+      WifiRouteFailure.unclassified: TransportIssue.wifiRouteUnclassified,
+    };
+
+    test('every route failure has a written expectation', () {
+      expect(
+        expected.keys.toSet(),
+        WifiRouteFailure.values.toSet(),
+        reason:
+            'a route failure was added or removed; decide here what the '
+            'screen should say about it',
+      );
+      expect(
+        expected.values.toSet(),
+        hasLength(expected.length),
+        reason: 'two route failures were given one identifier: $expected',
+      );
+    });
+
+    for (final failure in WifiRouteFailure.values) {
+      test('$failure reaches the screen as its own identifier', () async {
+        final transport = WifiTransport(
+          host: '192.168.0.10',
+          routeBinder: _UnavailableBinder(failure),
+          socketConnector: (host, port, timeout) async =>
+              throw StateError('must not connect'),
+        );
+
+        await expectLater(
+          transport.connect(),
+          throwsA(
+            isA<TransportException>().having(
+              (error) => error.issue,
+              'issue',
+              expected[failure],
+            ),
+          ),
+        );
+      });
+    }
 
     test('binding time is deducted from the one connect budget', () async {
       Duration? socketBudget;
@@ -161,7 +223,10 @@ void main() {
         },
       );
 
-      await expectLater(transport.connect(), throwsA(isA<TransportException>()));
+      await expectLater(
+        transport.connect(),
+        throwsA(isA<TransportException>()),
+      );
 
       expect(socketBudget, isNotNull);
       expect(socketBudget!, lessThan(const Duration(milliseconds: 160)));
@@ -381,7 +446,11 @@ void main() {
 }
 
 final class _RecordingBinder implements WifiRouteBinder {
-  _RecordingBinder(this.events, {this.delay = Duration.zero, this.beforeRelease});
+  _RecordingBinder(
+    this.events, {
+    this.delay = Duration.zero,
+    this.beforeRelease,
+  });
 
   final List<String> events;
   final Duration delay;
@@ -409,9 +478,13 @@ final class _RecordingLease implements WifiRouteLease {
 }
 
 final class _UnavailableBinder implements WifiRouteBinder {
+  const _UnavailableBinder([this.failure = WifiRouteFailure.noNetwork]);
+
+  final WifiRouteFailure failure;
+
   @override
   Future<WifiRouteLease> bindForHost(String host) {
-    throw const WifiRouteException('no matching Wi-Fi route');
+    throw WifiRouteException('no matching Wi-Fi route', failure);
   }
 }
 
@@ -437,6 +510,6 @@ final class _RestoreFailureBinder implements WifiRouteBinder {
 final class _RestoreFailureLease implements WifiRouteLease {
   @override
   Future<void> release() {
-    throw const WifiRouteException('restore failed');
+    throw const WifiRouteException('restore failed', WifiRouteFailure.refused);
   }
 }

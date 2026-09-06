@@ -944,5 +944,20 @@
   "adapterConcernNoIdentitySummary": "不回應 AT@1（第一版就有的裝置識別指令）",
   "adapterConcernNoIdentityDetail": "這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比任何一版官方韌體都少。",
   "telemetryReplaySampled": "預覽已抽樣；匯出保留完整已記錄事件",
-  "telemetryExportDisclosure": "匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。"
+  "telemetryExportDisclosure": "匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。",
+  "connectTransportCancelled": "連線嘗試在完成前被停止了。",
+  "connectTransportWifiRouteNoNetwork": "手機沒有連上任何 Wi-Fi 網路，沒有通往轉接器的路由。請先連上轉接器的 Wi-Fi 熱點再試一次。",
+  "connectTransportWifiRouteAmbiguous": "手機同時連著多個 Wi-Fi，無法判斷哪一個通往轉接器，所以沒有選任何一個。請先關閉不是轉接器的那些連線再試一次。",
+  "connectTransportWifiRouteRefused": "系統拒絕讓這個連線走 Wi-Fi。手機是連著 Wi-Fi 的，只是不被允許用於這個連線。",
+  "connectTransportWifiRouteTimeout": "系統沒有回應「讓這個連線走 Wi-Fi」的請求。請等幾秒再試一次。",
+  "connectTransportWifiRouteUnclassified": "這個連線無法走 Wi-Fi，而系統沒有說明原因。完整的錯誤留在下方的紀錄裡。",
+  "connectTransportWifiHostUnreachable": "那個位址沒有回應。請確認手機已連上轉接器的 Wi-Fi 熱點 —— 若系統問過「無法連上網際網路，是否繼續使用」，要選繼續使用。關閉行動數據也可能有幫助。",
+  "connectTransportWifiConnectTimeout": "那個位址在時限內沒有任何回應。",
+  "connectTransportWifiRouteRestoreFailed": "連線本身成功了，但手機的網路路由無法恢復，所以連線被中斷，而不是把它改過的狀態留著。請重新開啟 App 再試一次。",
+  "connectTransportBleLinkFailed": "無法連線到轉接器。請確認它已通電且在範圍內。",
+  "connectTransportBleNoSerialCharacteristic": "裝置連上了，但在它身上沒有找到序列埠，可能不是 ELM327 轉接器。",
+  "connectTransportClassicAllTiersRefused": "無法連線到轉接器。請先在系統藍牙設定完成配對，並確認它已插上 OBD 埠且電門已開啟。",
+  "connectTransportClassicConnectTimeout": "連線到轉接器逾時。它可能仍在回應中 —— 請等幾秒再試，不要立刻重試。",
+  "connectTransportSerialPortOpenFailed": "無法開啟序列埠。請確認系統已為這個轉接器建立序列埠（Windows COMx / Linux /dev/rfcomm*），且電門已開啟。",
+  "connectTransportSerialDroppedOnOpen": "序列埠開啟後立刻又關閉了。"
 }

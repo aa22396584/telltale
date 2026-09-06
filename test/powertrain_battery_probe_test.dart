@@ -291,7 +291,7 @@ void main() {
     );
     for (final error in <Object>[
       TimeoutException('private timeout detail'),
-      const TransportException('private transport detail'),
+      const TransportException('private transport detail', issue: null),
     ]) {
       final client = _KnownTransportFailureClient(error);
       final diagnostics = <_CapturedDiagnostic>[];

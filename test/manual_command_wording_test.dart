@@ -31,9 +31,12 @@ void main() {
     for (final command in ['04', 'ATZ', 'ZZ', '03\r04', '08', '']) {
       final why = ObdSession.manualCommandRefusal(command);
       expect(why, isNotNull, reason: command);
-      final shown = _shown(TransportException(why!));
-      expect(shown, why,
-          reason: 'the sentence the refusal was written as, and nothing else');
+      final shown = _shown(TransportException(why!, issue: null));
+      expect(
+        shown,
+        why,
+        reason: 'the sentence the refusal was written as, and nothing else',
+      );
       expect(shown, isNot(contains('Exception')), reason: command);
     }
   });
@@ -41,19 +44,21 @@ void main() {
   test('the not-connected refusal reads as a sentence too', () {
     // The path the box takes when nothing is connected, which is how somebody
     // first meets it.
-    expect(_shown(const TransportException('尚未連線')), '尚未連線');
+    expect(_shown(const TransportException('尚未連線', issue: null)), '尚未連線');
   });
 
-  test('an unexpected type keeps its identifier, which is the useful part',
-      () {
+  test('an unexpected type keeps its identifier, which is the useful part', () {
     // The over-correction guard. Stripping every type name would hide the one
     // case where the class *is* the diagnosis: something the app never
     // anticipated reaching this screen, on the screen that exists for when
     // things have already gone wrong.
     final shown = _shown(StateError('boom'));
     expect(shown, contains('boom'));
-    expect(shown, contains('Bad state'),
-        reason: 'an unrecognised failure is exactly when the identifier helps');
+    expect(
+      shown,
+      contains('Bad state'),
+      reason: 'an unrecognised failure is exactly when the identifier helps',
+    );
   });
 
   test('a fault-code failure was already safe, for a different reason', () {
@@ -65,9 +70,13 @@ void main() {
     // trusting.
     const e = DtcReadException('掃描時有回應無法判斷是哪個控制器送出的');
     expect(_shown(e), isNot(contains('Exception')));
-    expect('$e', e.message,
-        reason: 'if this ever stops being true, this box needs the same '
-            'treatment TransportException got');
+    expect(
+      '$e',
+      e.message,
+      reason:
+          'if this ever stops being true, this box needs the same '
+          'treatment TransportException got',
+    );
   });
 
   test('the refusal text carries no type name of its own', () {

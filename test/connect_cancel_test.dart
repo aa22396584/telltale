@@ -40,7 +40,10 @@ Future<ProviderContainer> _container() async {
 /// when somebody outside it says so, and that it then reports a failure —
 /// late, after the user has moved on.
 class _HangingTransport extends BaseObdTransport {
-  _HangingTransport({this.unwind = Duration.zero, this.teardown = Duration.zero});
+  _HangingTransport({
+    this.unwind = Duration.zero,
+    this.teardown = Duration.zero,
+  });
 
   /// How long `disconnect()` takes, which is what a teardown awaits.
   final Duration teardown;
@@ -68,7 +71,7 @@ class _HangingTransport extends BaseObdTransport {
     if (unwind > Duration.zero) await Future<void>.delayed(unwind);
     // The late failure. Before this round it repainted a screen the user had
     // already left.
-    throw const TransportException('連線到 掛住的轉接器 逾時。');
+    throw const TransportException('連線到 掛住的轉接器 逾時。', issue: null);
   }
 
   @override
@@ -96,61 +99,84 @@ class _HangingTransport extends BaseObdTransport {
 Future<void> _settle() => Future<void>.delayed(Duration.zero);
 
 void main() {
-  test('cancelling leaves the screen disconnected, not showing a stale failure',
-      () async {
-    final container = await _container();
-    final session = container.read(obdSessionProvider.notifier);
-    // Deliberately slow to give up. The failure has to arrive *after* the
-    // cancel has already repainted the screen — with a transport that fails
-    // the instant it is aborted, the two land in an order that happens to be
-    // harmless, and the test would pass without the guard that makes it so.
-    final transport =
-        _HangingTransport(unwind: const Duration(milliseconds: 120));
+  test(
+    'cancelling leaves the screen disconnected, not showing a stale failure',
+    () async {
+      final container = await _container();
+      final session = container.read(obdSessionProvider.notifier);
+      // Deliberately slow to give up. The failure has to arrive *after* the
+      // cancel has already repainted the screen — with a transport that fails
+      // the instant it is aborted, the two land in an order that happens to be
+      // harmless, and the test would pass without the guard that makes it so.
+      final transport = _HangingTransport(
+        unwind: const Duration(milliseconds: 120),
+      );
 
-    final attempt = session.connectForTest(transport, TransportKind.wifi);
-    await _settle();
-    expect(container.read(obdSessionProvider).isBusy, isTrue,
-        reason: 'the fixture must actually be mid-connect');
+      final attempt = session.connectForTest(transport, TransportKind.wifi);
+      await _settle();
+      expect(
+        container.read(obdSessionProvider).isBusy,
+        isTrue,
+        reason: 'the fixture must actually be mid-connect',
+      );
 
-    await session.disconnect();
-    expect(container.read(obdSessionProvider).phase,
+      await session.disconnect();
+      expect(
+        container.read(obdSessionProvider).phase,
         ConnectionPhase.disconnected,
-        reason: 'cancel returns the screen to idle immediately');
+        reason: 'cancel returns the screen to idle immediately',
+      );
 
-    // Only now does the abandoned attempt notice and report its own failure.
-    expect(await attempt, isFalse);
-    await _settle();
+      // Only now does the abandoned attempt notice and report its own failure.
+      expect(await attempt, isFalse);
+      await _settle();
 
-    final state = container.read(obdSessionProvider);
-    expect(state.phase, ConnectionPhase.disconnected,
-        reason: 'the user cancelled; an error about the connection they '
+      final state = container.read(obdSessionProvider);
+      expect(
+        state.phase,
+        ConnectionPhase.disconnected,
+        reason:
+            'the user cancelled; an error about the connection they '
             'walked away from is indistinguishable from a failure of '
-            'whatever they did next');
-    expect(state.error, anyOf(isNull, isEmpty));
-    expect(transport.aborted, isTrue,
-        reason: 'cancel has to reach the transport, or the adapter stays held');
-    container.dispose();
-  });
+            'whatever they did next',
+      );
+      expect(state.error, anyOf(isNull, isEmpty));
+      expect(
+        transport.aborted,
+        isTrue,
+        reason: 'cancel has to reach the transport, or the adapter stays held',
+      );
+      container.dispose();
+    },
+  );
 
-  test('connecting again right after cancel works, and is never silent',
-      () async {
-    // The whole point. Tap headphones, cancel, tap the adapter.
-    final container = await _container();
-    final session = container.read(obdSessionProvider.notifier);
-    final wrongDevice = _HangingTransport();
+  test(
+    'connecting again right after cancel works, and is never silent',
+    () async {
+      // The whole point. Tap headphones, cancel, tap the adapter.
+      final container = await _container();
+      final session = container.read(obdSessionProvider.notifier);
+      final wrongDevice = _HangingTransport();
 
-    final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
-    await _settle();
-    await session.disconnect();
-    expect(await abandoned, isFalse);
+      final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
+      await _settle();
+      await session.disconnect();
+      expect(await abandoned, isFalse);
 
-    final adapter = DemoTransport();
-    expect(await session.connectForTest(adapter, TransportKind.demo), isTrue,
-        reason: 'the second tap is the whole reason the first was cancelled');
-    expect(container.read(obdSessionProvider).phase, ConnectionPhase.connected);
-    await session.disconnect();
-    container.dispose();
-  });
+      final adapter = DemoTransport();
+      expect(
+        await session.connectForTest(adapter, TransportKind.demo),
+        isTrue,
+        reason: 'the second tap is the whole reason the first was cancelled',
+      );
+      expect(
+        container.read(obdSessionProvider).phase,
+        ConnectionPhase.connected,
+      );
+      await session.disconnect();
+      container.dispose();
+    },
+  );
 
   test('a second tap during an attempt cancels it and connects, not returns '
       'false', () async {
@@ -168,8 +194,11 @@ void main() {
     final adapter = DemoTransport();
     final second = session.connectForTest(adapter, TransportKind.demo);
 
-    expect(await second, isTrue,
-        reason: 'the tap that supersedes an attempt has to be able to connect');
+    expect(
+      await second,
+      isTrue,
+      reason: 'the tap that supersedes an attempt has to be able to connect',
+    );
     expect(await abandoned, isFalse);
     expect(wrongDevice.aborted, isTrue);
     expect(container.read(obdSessionProvider).phase, ConnectionPhase.connected);
@@ -188,13 +217,16 @@ void main() {
 
     // Slow to give up, so the second tap genuinely lands during the handover
     // rather than after it.
-    final wrongDevice =
-        _HangingTransport(unwind: const Duration(milliseconds: 200));
+    final wrongDevice = _HangingTransport(
+      unwind: const Duration(milliseconds: 200),
+    );
     final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
     await _settle();
     await session.disconnect();
-    expect(container.read(obdSessionProvider).phase,
-        ConnectionPhase.disconnected);
+    expect(
+      container.read(obdSessionProvider).phase,
+      ConnectionPhase.disconnected,
+    );
 
     // The second tap, while the first is still unwinding.
     final adapter = DemoTransport();
@@ -203,10 +235,16 @@ void main() {
 
     final waiting = container.read(obdSessionProvider);
     expect(waiting.isBusy, isTrue, reason: 'the tap registered');
-    expect(waiting.deviceName, adapter.displayName,
-        reason: 'and it registered for the device they actually chose');
-    expect(waiting.detail, contains('中止'),
-        reason: 'and it says what it is waiting on, rather than nothing');
+    expect(
+      waiting.deviceName,
+      adapter.displayName,
+      reason: 'and it registered for the device they actually chose',
+    );
+    expect(
+      waiting.detail,
+      contains('中止'),
+      reason: 'and it says what it is waiting on, rather than nothing',
+    );
 
     expect(await second, isTrue);
     expect(await abandoned, isFalse);
@@ -214,8 +252,7 @@ void main() {
     container.dispose();
   });
 
-  test('R30-codex 07B: a slow teardown is spent from the handover budget',
-      () async {
+  test('R30-codex 07B: a slow teardown is spent from the handover budget', () async {
     // Codex round 30, an unpinned rule. `f228a67` says one budget covers the
     // whole handover — the teardown *and* the wait — because a teardown has no
     // deadline of its own: stream cancellations, `engine.dispose`, and a
@@ -243,20 +280,25 @@ void main() {
     final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
     await _settle();
 
-    expect(await session.connectForTest(DemoTransport(), TransportKind.demo),
-        isFalse,
-        reason: 'the teardown alone spent the whole budget; the refusal is '
-            'the honest answer and it is what the user is told');
-    expect(container.read(obdSessionProvider).error, contains('中止中'),
-        reason: 'and never silently');
+    expect(
+      await session.connectForTest(DemoTransport(), TransportKind.demo),
+      isFalse,
+      reason:
+          'the teardown alone spent the whole budget; the refusal is '
+          'the honest answer and it is what the user is told',
+    );
+    expect(
+      container.read(obdSessionProvider).error,
+      contains('中止中'),
+      reason: 'and never silently',
+    );
 
     await abandoned;
     await session.disconnect();
     container.dispose();
   });
 
-  test('R29-agy 02: three quick taps connect the last one, not the middle one',
-      () async {
+  test('R29-agy 02: three quick taps connect the last one, not the middle one', () async {
     // agy, round 29. The wizard's cards are disabled while an attempt runs, so
     // this is not reachable by tapping today — but the rule it breaks is the
     // one the whole cancel-and-wait design rests on, and a device list that
@@ -279,44 +321,61 @@ void main() {
     final c = session.connectForTest(adapter, TransportKind.demo);
 
     expect(await a, isFalse);
-    expect(await b, isFalse,
-        reason: 'the user changed their mind about this one before it started');
+    expect(
+      await b,
+      isFalse,
+      reason: 'the user changed their mind about this one before it started',
+    );
     expect(await c, isTrue, reason: 'the last tap is the one they meant');
 
-    expect(session.client?.transport, same(adapter),
-        reason: 'and it is the last-tapped device that is actually connected — '
-            'connecting to a rejected one is worse than connecting to none');
+    expect(
+      session.client?.transport,
+      same(adapter),
+      reason:
+          'and it is the last-tapped device that is actually connected — '
+          'connecting to a rejected one is worse than connecting to none',
+    );
     await session.disconnect();
     container.dispose();
   });
 
-  test('a superseded attempt cannot repaint the connection that replaced it',
-      () async {
-    // The ordering that makes the guard necessary: the abandoned transport
-    // takes a moment to fail, so its `TransportException` arrives *after* the
-    // new session is live. Publishing it would turn a working connection into
-    // 連線失敗 on screen while the engine underneath keeps polling.
-    final container = await _container();
-    final session = container.read(obdSessionProvider.notifier);
-    final wrongDevice =
-        _HangingTransport(unwind: const Duration(milliseconds: 120));
+  test(
+    'a superseded attempt cannot repaint the connection that replaced it',
+    () async {
+      // The ordering that makes the guard necessary: the abandoned transport
+      // takes a moment to fail, so its `TransportException` arrives *after* the
+      // new session is live. Publishing it would turn a working connection into
+      // 連線失敗 on screen while the engine underneath keeps polling.
+      final container = await _container();
+      final session = container.read(obdSessionProvider.notifier);
+      final wrongDevice = _HangingTransport(
+        unwind: const Duration(milliseconds: 120),
+      );
 
-    final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
-    await _settle();
-    await session.disconnect();
+      final abandoned = session.connectForTest(wrongDevice, TransportKind.wifi);
+      await _settle();
+      await session.disconnect();
 
-    final adapter = DemoTransport();
-    expect(await session.connectForTest(adapter, TransportKind.demo), isTrue);
-    expect(container.read(obdSessionProvider).phase, ConnectionPhase.connected);
+      final adapter = DemoTransport();
+      expect(await session.connectForTest(adapter, TransportKind.demo), isTrue);
+      expect(
+        container.read(obdSessionProvider).phase,
+        ConnectionPhase.connected,
+      );
 
-    // Now let the abandoned attempt finish failing.
-    expect(await abandoned, isFalse);
-    await _settle();
+      // Now let the abandoned attempt finish failing.
+      expect(await abandoned, isFalse);
+      await _settle();
 
-    expect(container.read(obdSessionProvider).phase, ConnectionPhase.connected,
-        reason: 'the live session belongs to the adapter the user chose; the '
-            'other attempt lost the right to speak when it was superseded');
-    await session.disconnect();
-    container.dispose();
-  });
+      expect(
+        container.read(obdSessionProvider).phase,
+        ConnectionPhase.connected,
+        reason:
+            'the live session belongs to the adapter the user chose; the '
+            'other attempt lost the right to speak when it was superseded',
+      );
+      await session.disconnect();
+      container.dispose();
+    },
+  );
 }

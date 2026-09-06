@@ -35,8 +35,7 @@ enum TransportKind {
 
   /// Bluetooth Classic SPP: Android RFCOMM cascade, or Windows Bluetooth COM.
   /// iOS has no third-party SPP; macOS/Linux remain product-gated.
-  bool get isClassicHostLimited =>
-      this == TransportKind.bluetoothClassic;
+  bool get isClassicHostLimited => this == TransportKind.bluetoothClassic;
 }
 
 /// A link the user can pick in the connection wizard.
@@ -89,13 +88,122 @@ class DiscoveredDevice {
   int get hashCode => Object.hash(id, kind);
 }
 
-/// Raised for link-level failures. The connection wizard shows [message]
-/// verbatim, so it is written for a driver rather than a developer.
+/// Why a link-level attempt failed, as an identifier the screen can translate.
+///
+/// [TransportException.message] stays Traditional Chinese and keeps going into
+/// the attempt transcript, for the same reason `ObdConnectionIssue` leaves
+/// `ObdConnectionState.error` alone: a record whose language follows a phone
+/// setting is one nobody can compare with anybody else's. This says the same
+/// thing without the words, so the screen can say it in the reader's language.
+///
+/// Those two names are written as text rather than as doc links on purpose:
+/// they live in `lib/state/`, and this file is engine code that must not import
+/// it. A link here would be the first step of the dependency going the wrong
+/// way.
+///
+/// Nothing here is a verdict. `bleNoSerialCharacteristic` says what was not
+/// found, not that the device is the wrong kind; `classicAllTiersRefused` says
+/// what is missing, not that the adapter is broken.
+enum TransportIssue {
+  /// The attempt was abandoned before it finished -- the user backed out, or a
+  /// newer attempt superseded it. Not a failure of the adapter or the link.
+  cancelled,
+
+  /// Android could not bind the socket to Wi-Fi because the phone is on no
+  /// Wi-Fi network at all. The only one of the route failures for which
+  /// "connect to the adapter's hotspot first" is the right remedy.
+  wifiRouteNoNetwork,
+
+  /// More than one Wi-Fi network is equally plausible, so none was chosen
+  /// rather than guessing which one reaches the adapter.
+  wifiRouteAmbiguous,
+
+  /// The system refused to bind the route. Distinct from having no network:
+  /// there is one, and it was not allowed.
+  wifiRouteRefused,
+
+  /// The platform channel did not answer in time. The bind may still land
+  /// afterwards, which is why the transport releases it regardless.
+  wifiRouteTimeout,
+
+  /// The bind failed for a reason the binder could not classify. Kept separate
+  /// so an unrecognised platform code never borrows another one's remedy.
+  wifiRouteUnclassified,
+
+  /// The socket was refused or unreachable at that address and port.
+  wifiHostUnreachable,
+
+  /// The socket neither connected nor refused within the budget.
+  wifiConnectTimeout,
+
+  /// The link came up, but the process-wide route could not be put back, so
+  /// the connection was dropped rather than left with the phone's networking
+  /// in a state this app changed and could not undo.
+  wifiRouteRestoreFailed,
+
+  /// The BLE link itself never came up.
+  bleLinkFailed,
+
+  /// The link is up, but no notify/write characteristic pair was found. The
+  /// device may not be an ELM327 at all.
+  bleNoSerialCharacteristic,
+
+  /// Every Bluetooth Classic tier was refused.
+  ///
+  /// Named for what was established, not for the likeliest cause. It was
+  /// `classicPairingRequired`, which is the diagnosis rather than the
+  /// observation -- and this enum's own doc says nothing here is a verdict.
+  /// Unpaired is by far the most common reason, and the copy says so; the
+  /// identifier does not.
+  classicAllTiersRefused,
+
+  /// A Bluetooth Classic tier timed out. The adapter may still be answering,
+  /// so retrying immediately tends to make it worse.
+  classicConnectTimeout,
+
+  /// The serial port could not be opened. On desktop this usually means the
+  /// system has not created one for the adapter yet.
+  serialPortOpenFailed,
+
+  /// The serial port opened and dropped straight away.
+  serialDroppedOnOpen,
+
+  /// A write failed on an already-open link. Not a connect failure -- it
+  /// reaches the screen by a different path -- but it is a `TransportException`
+  /// like the rest, and leaving one construction without an identifier is how
+  /// the guard below stops meaning anything.
+  writeFailed,
+}
+
+/// Raised for link-level failures.
+///
+/// [message] is Traditional Chinese and goes to the transcript verbatim.
+/// [issue] is what the screen renders, through
+/// `lib/ui/screens/connect/handshake_copy.dart`. Both describe the same
+/// failure; the guard in `test/l10n/transport_issue_guard_test.dart` is what
+/// keeps a new throw from carrying only one of them.
 class TransportException implements Exception {
   final String message;
   final Object? cause;
 
-  const TransportException(this.message, [this.cause]);
+  /// Null only where the failure cannot reach a screen. The guard names the
+  /// files where it may not be null.
+  final TransportIssue? issue;
+
+  /// Both named, and [issue] required.
+  ///
+  /// It was `[this.cause, this.issue]`. `cause` is `Object?`, so putting the
+  /// identifier in the cause slot -- `TransportException('...',
+  /// TransportIssue.cancelled)` -- was legal Dart: it analysed clean, the guard
+  /// passed, `issue` came out null, the screen fell back to the Chinese
+  /// sentence, and `toString()` prints only `message`, so nothing anywhere
+  /// showed that the identifier had gone into the wrong slot. Found by review,
+  /// by doing it.
+  ///
+  /// Required rather than defaulted because the fourteen throws in
+  /// `elm327_client.dart` and `obd_session.dart` that have no identifier yet
+  /// should have to write `issue: null` and mean it. See ImL1s/telltale#45.
+  const TransportException(this.message, {this.cause, required this.issue});
 
   @override
   String toString() => 'TransportException: $message';
@@ -122,7 +230,9 @@ class TransportException implements Exception {
 /// conservative direction: an unknown failure must read as possibly-sent. This
 /// only subtracts the cases where the transport itself says otherwise.
 class WriteRefusedException extends TransportException {
-  const WriteRefusedException(super.message);
+  /// No identifier: this never reaches the connect screen. It is read by the
+  /// clear-DTC audit, which cares that nothing was transmitted, not about copy.
+  const WriteRefusedException(super.message) : super(issue: null);
 }
 
 /// The request cannot be addressed on this bus, and retrying will not help.
@@ -140,14 +250,17 @@ class WriteRefusedException extends TransportException {
 /// mark a PID faulty or a scan broken should recognise it as "the app stopped
 /// asking", which is what it is.
 class OperationRetiredException extends TransportException {
-  const OperationRetiredException(super.message);
+  /// No identifier: "the app stopped asking" is not a failure to report.
+  const OperationRetiredException(super.message) : super(issue: null);
 
   @override
   String toString() => 'OperationRetiredException: $message';
 }
 
 class UnaddressableRequestException extends TransportException {
-  const UnaddressableRequestException(super.message);
+  /// No identifier: the polling loop handles this one structurally, and it is
+  /// surfaced by the gauge rather than by the connect screen.
+  const UnaddressableRequestException(super.message) : super(issue: null);
 
   @override
   String toString() => 'UnaddressableRequestException: $message';

@@ -59,14 +59,28 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
       // These messages reach the screen inside the transport's sentence, so
       // the known refusals get a sentence a person can act on; the raw
       // native detail still rides along for the transcript via `toString`.
-      throw WifiRouteException(switch (e.code) {
-        'no_wifi_network' => '手機目前沒有連上任何 Wi-Fi 網路',
-        'ambiguous_wifi_network' =>
+      // Sentence and identifier come out of one switch on one code, so the
+      // transcript and the screen cannot end up describing different failures.
+      final (message, failure) = switch (e.code) {
+        'no_wifi_network' => (
+          '手機目前沒有連上任何 Wi-Fi 網路',
+          WifiRouteFailure.noNetwork,
+        ),
+        'ambiguous_wifi_network' => (
           '手機同時連著多個同樣可能的 Wi-Fi，無法判斷哪一個通往轉接器；'
               '請先關閉另一個 Wi-Fi 連線（${e.message}）',
-        'bind_refused' => '系統拒絕綁定 Wi-Fi 網路路由（${e.message}）',
-        _ => e.message ?? '無法綁定 Wi-Fi 網路路由（${e.code}）',
-      });
+          WifiRouteFailure.ambiguous,
+        ),
+        'bind_refused' => (
+          '系統拒絕綁定 Wi-Fi 網路路由（${e.message}）',
+          WifiRouteFailure.refused,
+        ),
+        _ => (
+          e.message ?? '無法綁定 Wi-Fi 網路路由（${e.code}）',
+          WifiRouteFailure.unclassified,
+        ),
+      };
+      throw WifiRouteException(message, failure);
     } on TimeoutException {
       // `Future.timeout` abandons the reply but cannot cancel the queued
       // native call: a platform thread stalled past the timeout will still
@@ -81,7 +95,10 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
           onError: (Object _) {},
         ),
       );
-      throw const WifiRouteException('綁定 Wi-Fi 網路路由逾時（系統暫時沒有回應）');
+      throw const WifiRouteException(
+        '綁定 Wi-Fi 網路路由逾時（系統暫時沒有回應）',
+        WifiRouteFailure.timedOut,
+      );
     }
     return _AndroidWifiRouteLease(channel, callTimeout);
   }
@@ -117,8 +134,14 @@ final class _AndroidWifiRouteLease implements WifiRouteLease {
       // bind succeeded over this same channel, so the handler exists; if it
       // vanished mid-session the process is being torn down anyway.
     } on PlatformException catch (e) {
+      // `unclassified`, not `refused`: this is the release path and the code is
+      // not inspected, so calling it a refusal invents a cause. Harmless while
+      // the transport hardcodes `wifiRouteRestoreFailed` and discards this --
+      // and wrong the moment somebody threads it through, which is when a
+      // restore failure would start reading "the system refused Wi-Fi".
       throw WifiRouteException(
         e.message ?? '無法恢復系統網路路由（${e.code}）',
+        WifiRouteFailure.unclassified,
       );
     } on TimeoutException {
       // Unlike an abandoned bind, an abandoned release needs no compensation:
@@ -126,7 +149,10 @@ final class _AndroidWifiRouteLease implements WifiRouteLease {
       // transport still refuses this connection and asks for an app restart,
       // because nothing here can know when — or whether — that recovery
       // happens, and "eventually correct" is not a state to hand a session.
-      throw const WifiRouteException('恢復系統網路路由逾時');
+      throw const WifiRouteException(
+        '恢復系統網路路由逾時',
+        WifiRouteFailure.timedOut,
+      );
     }
   }
 }

@@ -22,9 +22,7 @@ class SerialTransport extends BaseObdTransport {
     this.baudRate = defaultBaudRate,
     SppSerialSession? session,
     SppSerialSessionFactory? sessionFactory,
-  }) : _session =
-           session ??
-           (sessionFactory ?? _defaultSessionFactory)();
+  }) : _session = session ?? (sessionFactory ?? _defaultSessionFactory)();
 
   /// Conventional ELM327 UART / Bluetooth SPP bitrate.
   static const int defaultBaudRate = 38400;
@@ -56,20 +54,19 @@ class SerialTransport extends BaseObdTransport {
 
   @override
   Map<String, Object> get diagnosticMetadata => Map.unmodifiable({
-        'deviceIdentifier': portName,
-        'deviceName': displayName,
-        'baudRate': baudRate,
-        'link': 'spp_serial',
-      });
+    'deviceIdentifier': portName,
+    'deviceName': displayName,
+    'baudRate': baudRate,
+    'link': 'spp_serial',
+  });
 
   /// Lists Bluetooth-associated serial nodes for the Classic wizard
   /// (Windows COM / Linux RFCOMM).
   static Future<List<DiscoveredDevice>> bluetoothSppDevices({
     SppSerialSession? session,
   }) async {
-    final ports =
-        await (session ?? MethodChannelSppSerialSession())
-            .listBluetoothSppPorts();
+    final ports = await (session ?? MethodChannelSppSerialSession())
+        .listBluetoothSppPorts();
     return ports
         .map(
           (p) => DiscoveredDevice(
@@ -84,7 +81,9 @@ class SerialTransport extends BaseObdTransport {
 
   @override
   Future<void> connect() async {
-    if (_aborted) throw const TransportException('連線已取消。');
+    if (_aborted) {
+      throw const TransportException('連線已取消。', issue: TransportIssue.cancelled);
+    }
     // Listen before open so a native disconnect/error that races the open
     // await is not dropped on the broadcast inbound controller.
     var sawTerminalDuringOpen = false;
@@ -109,7 +108,8 @@ class SerialTransport extends BaseObdTransport {
         '無法開啟 $displayName（$portName）。'
         '請確認系統已為該藍牙轉接器建立序列埠'
         '（Windows COMx / Linux /dev/rfcomm*），且電門已開啟。',
-        e,
+        cause: e,
+        issue: TransportIssue.serialPortOpenFailed,
       );
     }
     if (_aborted || sawTerminalDuringOpen) {
@@ -118,6 +118,9 @@ class SerialTransport extends BaseObdTransport {
       await _session.close();
       throw TransportException(
         sawTerminalDuringOpen ? '序列埠在開啟後立即中斷。' : '連線已取消。',
+        issue: sawTerminalDuringOpen
+            ? TransportIssue.serialDroppedOnOpen
+            : TransportIssue.cancelled,
       );
     }
     setConnected(true);
@@ -144,7 +147,11 @@ class SerialTransport extends BaseObdTransport {
     try {
       await _session.write(data);
     } on Object catch (e) {
-      throw TransportException('寫入 $displayName 失敗。', e);
+      throw TransportException(
+        '寫入 $displayName 失敗。',
+        cause: e,
+        issue: TransportIssue.writeFailed,
+      );
     }
   }
 }

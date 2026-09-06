@@ -220,21 +220,24 @@ class BleTransport extends BaseObdTransport {
           throw BleRadioUnavailableException(current);
         }
 
-        resultsSub = UniversalBle.scanStream.listen((device) {
-          if (cancelled || controller.isClosed) return;
-          controller.add((
-            device.deviceId,
-            _displayNameFor(device),
-            device.rssi,
-          ));
-        }, onError: (Object error, StackTrace stack) {
-          if (!cancelled && !controller.isClosed) {
-            controller.addError(
-              BleRadioUnavailableException.fromScanError(error),
-              stack,
-            );
-          }
-        });
+        resultsSub = UniversalBle.scanStream.listen(
+          (device) {
+            if (cancelled || controller.isClosed) return;
+            controller.add((
+              device.deviceId,
+              _displayNameFor(device),
+              device.rssi,
+            ));
+          },
+          onError: (Object error, StackTrace stack) {
+            if (!cancelled && !controller.isClosed) {
+              controller.addError(
+                BleRadioUnavailableException.fromScanError(error),
+                stack,
+              );
+            }
+          },
+        );
 
         if (cancelled || controller.isClosed) {
           await resultsSub?.cancel();
@@ -279,7 +282,11 @@ class BleTransport extends BaseObdTransport {
     try {
       await device.connect(timeout: const Duration(seconds: 15));
     } on UniversalBleException catch (e) {
-      throw TransportException('無法連線到 $displayName。請確認轉接器已通電且在範圍內。', e);
+      throw TransportException(
+        '無法連線到 $displayName。請確認轉接器已通電且在範圍內。',
+        cause: e,
+        issue: TransportIssue.bleLinkFailed,
+      );
     }
 
     // Everything past this point owns a live BLE link, and setup can fail at
@@ -316,7 +323,10 @@ class BleTransport extends BaseObdTransport {
       final services = await device.discoverServices();
       final pair = _findUartPair(services);
       if (pair == null) {
-        throw TransportException('$displayName 沒有可用的序列埠特徵值，可能不是 ELM327 轉接器。');
+        throw TransportException(
+          '$displayName 沒有可用的序列埠特徵值，可能不是 ELM327 轉接器。',
+          issue: TransportIssue.bleNoSerialCharacteristic,
+        );
       }
       _write = pair.$1;
       _notify = pair.$2;
@@ -474,15 +484,12 @@ final class BleRadioUnavailableException implements Exception {
 
   static String _messageFor(AvailabilityState state) {
     return switch (state) {
-      AvailabilityState.poweredOff =>
-        '藍牙未開啟。請先在系統設定開啟藍牙後再搜尋。',
-      AvailabilityState.unauthorized =>
-        '需要藍牙權限才能搜尋。請到系統設定允許此 App 使用藍牙。',
+      AvailabilityState.poweredOff => '藍牙未開啟。請先在系統設定開啟藍牙後再搜尋。',
+      AvailabilityState.unauthorized => '需要藍牙權限才能搜尋。請到系統設定允許此 App 使用藍牙。',
       AvailabilityState.unsupported => '這台主機不支援藍牙 LE。',
       AvailabilityState.unknown ||
       AvailabilityState.resetting ||
-      AvailabilityState.poweredOn =>
-        '藍牙目前無法使用（$state）。請稍後再試。',
+      AvailabilityState.poweredOn => '藍牙目前無法使用（$state）。請稍後再試。',
     };
   }
 

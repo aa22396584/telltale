@@ -540,7 +540,7 @@ class FakeElm327 extends BaseObdTransport {
       // the adapter received them and is answering, and `flush` then throws.
       // Indistinguishable from "never sent" by exception type alone.
       _acceptAndAnswer(raw);
-      throw const TransportException('connection reset by peer');
+      throw const TransportException('connection reset by peer', issue: null);
     }
     if (stallWriteCompletion) {
       // The shape a real TCP write actually has, and the one the stall knob
