@@ -50,6 +50,9 @@ const String _transport = String.fromEnvironment(
   'FIELD_BT_TRANSPORT',
   defaultValue: 'ble',
 );
+const String _adapterAddress = String.fromEnvironment(
+  'FIELD_BT_ADAPTER_ADDRESS',
+);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +73,10 @@ void main() {
       expect(kDebugMode, isTrue);
 
       await _startCleanFieldApp(tester);
-      debugPrint('FIELD_BT phase=app-ready adapter=$_adapterName transport=$_transport');
+      debugPrint(
+        'FIELD_BT phase=app-ready adapter=$_adapterName '
+        'address=$_adapterAddress transport=$_transport',
+      );
 
       final kind = await _connectAdapter(tester);
       debugPrint('FIELD_BT phase=connected kind=${kind.name}');
@@ -213,7 +219,7 @@ Future<void> _connectBle(WidgetTester tester) async {
     fail(
       'no BLE peripheral named "$_adapterName" in 45s.\n'
       'Power the dongle (ignition ON), keep the phone unlocked, and re-run '
-      'tool/field_bt_verify/run.sh. Bonded-but-ACL-down is not a pass.',
+      'tool/field_bt_verify/run.sh. ACL-down is observation, not a field pass.',
     );
   }
   await _tapNamedDevice(tester, _adapterName);
@@ -231,26 +237,24 @@ Future<void> _connectClassic(WidgetTester tester) async {
     timeout: const Duration(seconds: 30),
   );
   if (!found) {
-    // OBDII is the alternate bond name Samsung sometimes shows.
-    final alt = await pumpUntil(
-      tester,
-      () => find.text('OBDII').evaluate().isNotEmpty,
-      timeout: const Duration(seconds: 5),
+    fail(
+      'no Classic bonded device named "$_adapterName".\n'
+      'Pass --name for the exact bonded label; OBDII is not a silent fallback.\n'
+      'Pair in system Settings first; App cannot pair for you.',
     );
-    if (!alt) {
-      fail(
-        'no Classic bonded device named "$_adapterName" (or OBDII).\n'
-        'Pair in system Settings first; App cannot pair for you.',
-      );
-    }
-    await _tapNamedDevice(tester, 'OBDII');
-    return;
   }
   await _tapNamedDevice(tester, _adapterName);
 }
 
 Future<void> _tapNamedDevice(WidgetTester tester, String name) async {
   final label = find.text(name);
+  if (label.evaluate().length > 1) {
+    fail(
+      'multiple tiles named "$name"'
+      '${_adapterAddress.isEmpty ? "" : " (address=$_adapterAddress)"}; '
+      'the list is ambiguous — do not tap by name.',
+    );
+  }
   final tile = find
       .ancestor(of: label, matching: find.byType(InkWell))
       .hitTestable();

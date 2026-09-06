@@ -1,24 +1,21 @@
 #!/usr/bin/env bash
-# One-command field Bluetooth verification against a bonded physical adapter.
+# Field Bluetooth verification against a physical adapter.
 #
-# Preflight parses `dumpsys bluetooth_manager` for OBDBLE/OBDII. Bonded but
-# ACL-down is a hard fail — never a fake journey pass. When ACL is up (dongle
-# powered, phone in range), builds/installs the field debug APK (unless skipped),
-# grants BT permissions, and drives:
-#   Connect → BLE/Classic → live PIDs → record → durable session file
+# Preflight checks tools, device state, and radio. ACL down / not-in-bond is
+# an observation, not “unpowered”, and does not block a bounded scan/connect
+# journey. --probe-only never prints a field PASS.
 #
 # Usage (from app/):
 #   tool/field_bt_verify/run.sh
 #   ANDROID_SERIAL=R5CX10VFFBA tool/field_bt_verify/run.sh
 #   tool/field_bt_verify/run.sh --probe-only
 #   FIELD_BT_TRANSPORT=classic tool/field_bt_verify/run.sh
-#   FIELD_BT_SKIP_INSTALL=1 tool/field_bt_verify/run.sh   # reuse installed field debug
+#   FIELD_BT_SKIP_INSTALL=1 tool/field_bt_verify/run.sh
 #
 # Exit codes:
-#   0 — journey PASS (or probe-only with ACL up)
-#   2 — ACL down / adapter unpowered (evidence written; no fake pass)
-#   3 — adapter not bonded
-#   1 — tooling / install / journey failure
+#   0 — journey PASS (fresh GATT/RFCOMM→ELM→PID→record), or probe-only
+#       observation success (not a field pass)
+#   1 — tooling / install / journey failure / timeout / ambiguous target
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -26,9 +23,11 @@ FLUTTER="${FLUTTER:-$HOME/fvm/versions/3.47.0/bin/flutter}"
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 SERIAL="${ANDROID_SERIAL:-R5CX10VFFBA}"
 ADAPTER_NAME="${FIELD_BT_ADAPTER_NAME:-OBDBLE}"
+ADAPTER_ADDRESS="${FIELD_BT_ADAPTER_ADDRESS:-}"
 TRANSPORT="${FIELD_BT_TRANSPORT:-ble}"
 PACKAGE="${FIELD_BT_PACKAGE:-com.cbstudio.telltale}"
 EVIDENCE_DIR="${FIELD_BT_EVIDENCE_DIR:-$ROOT/docs/verification}"
+JOURNEY_TIMEOUT="${FIELD_BT_JOURNEY_TIMEOUT:-300}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 PROBE_ONLY=0
 FORCE_JOURNEY=0
@@ -42,8 +41,9 @@ while [[ $# -gt 0 ]]; do
     --serial) SERIAL="${2:?}"; shift 2 ;;
     --transport) TRANSPORT="${2:?}"; shift 2 ;;
     --name) ADAPTER_NAME="${2:?}"; shift 2 ;;
+    --address) ADAPTER_ADDRESS="${2:?}"; shift 2 ;;
     -h|--help)
-      sed -n '2,25p' "$0"
+      sed -n '2,22p' "$0"
       exit 0
       ;;
     *)
@@ -80,7 +80,6 @@ if ! "$ADB" -s "$SERIAL" get-state 2>/dev/null | grep -qx device; then
   exit 1
 fi
 
-# Wake + brief BT settings open so the radio is not fully idle before dumpsys.
 "$ADB" -s "$SERIAL" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" shell cmd bluetooth_manager enable >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" shell am start -a android.settings.BLUETOOTH_SETTINGS >/dev/null 2>&1 || true
@@ -91,48 +90,48 @@ sleep 2
   exit 1
 }
 
+PROBE_ARGS=(tool/field_bt_verify/probe_acl.py "$DUMP" --name "$ADAPTER_NAME" --transport "$TRANSPORT" --evidence "$EVIDENCE")
+if [[ -n "$ADAPTER_ADDRESS" ]]; then
+  PROBE_ARGS+=(--address "$ADAPTER_ADDRESS")
+fi
+
 set +e
-python3 tool/field_bt_verify/probe_acl.py "$DUMP" \
-  --name "$ADAPTER_NAME" --name OBDII \
-  --evidence "$EVIDENCE"
+python3 "${PROBE_ARGS[@]}"
 PROBE_RC=$?
 set -e
 
-# Keep docs/verification evidence small: bond lines + ConnectionState only.
 {
   echo "timestamp_utc: $STAMP"
   echo "device: $SERIAL"
   echo "dumpsys_host_path: $DUMP"
+  echo "qualification: not a field pass (probe is observation only)"
   echo "--- bond excerpt ---"
-  strings "$DUMP" | rg -i 'OBDBLE|OBDII|ConnectionState:' | head -20 || true
+  strings "$DUMP" | rg -i "$ADAPTER_NAME|ConnectionState:" | head -20 || true
 } >>"$EVIDENCE"
 
 echo "ACL probe exit=$PROBE_RC evidence=$EVIDENCE"
 
 if [[ "$PROBE_ONLY" -eq 1 ]]; then
-  if [[ "$PROBE_RC" -eq 0 ]]; then
-    echo "probe-only: ACL up — ready for journey (re-run without --probe-only)"
-    exit 0
+  if [[ "$PROBE_RC" -ne 0 ]]; then
+    echo "probe-only: observation failed (rc=$PROBE_RC) — not a field pass" >&2
+    exit "$PROBE_RC"
   fi
-  echo "probe-only: not a field pass (rc=$PROBE_RC)"
-  exit "$PROBE_RC"
+  echo "probe-only: observation only — not a field pass"
+  exit 0
 fi
 
 if [[ "$PROBE_RC" -ne 0 && "$FORCE_JOURNEY" -ne 1 ]]; then
   echo >&2
-  echo "Refusing journey: ACL probe did not pass (rc=$PROBE_RC)." >&2
-  echo "Power the dongle / ignition, then re-run. Use --force-journey only to" >&2
-  echo "capture a deliberate scan-failure log — it still will not fake a pass." >&2
+  echo "Refusing journey: probe observation failed (rc=$PROBE_RC)." >&2
+  echo "If two adapters share this name, pass --address <MAC>." >&2
   echo "Evidence: $EVIDENCE" >&2
   exit "$PROBE_RC"
 fi
 
 grant_bt_permissions() {
   local pkg="$1"
-  # Android 12+
   "$ADB" -s "$SERIAL" shell pm grant "$pkg" android.permission.BLUETOOTH_SCAN 2>/dev/null || true
   "$ADB" -s "$SERIAL" shell pm grant "$pkg" android.permission.BLUETOOTH_CONNECT 2>/dev/null || true
-  # Older / location-tied scan
   "$ADB" -s "$SERIAL" shell pm grant "$pkg" android.permission.ACCESS_FINE_LOCATION 2>/dev/null || true
   "$ADB" -s "$SERIAL" shell pm grant "$pkg" android.permission.ACCESS_COARSE_LOCATION 2>/dev/null || true
 }
@@ -152,16 +151,55 @@ fi
 grant_bt_permissions "$PACKAGE"
 
 echo "Driving field BT journey → $JOURNEY_LOG"
+export ANDROID_SERIAL="$SERIAL"
+JOURNEY_CMD=(
+  "$FLUTTER" test
+  integration_test/field_bt_journey_test.dart
+  -d "$SERIAL"
+  --flavor field
+  --dart-define=FIELD_BT_REQUIRED=true
+  --dart-define=FIELD_BT_ADAPTER_NAME="$ADAPTER_NAME"
+  --dart-define=FIELD_BT_TRANSPORT="$TRANSPORT"
+)
+if [[ -n "$ADAPTER_ADDRESS" ]]; then
+  JOURNEY_CMD+=(--dart-define=FIELD_BT_ADAPTER_ADDRESS="$ADAPTER_ADDRESS")
+fi
 set +e
-ANDROID_SERIAL="$SERIAL" "$FLUTTER" test \
-  integration_test/field_bt_journey_test.dart \
-  -d "$SERIAL" \
-  --flavor field \
-  --dart-define=FIELD_BT_REQUIRED=true \
-  --dart-define=FIELD_BT_ADAPTER_NAME="$ADAPTER_NAME" \
-  --dart-define=FIELD_BT_TRANSPORT="$TRANSPORT" \
-  2>&1 | tee "$JOURNEY_LOG"
-JOURNEY_RC=${PIPESTATUS[0]}
+python3 - "$JOURNEY_TIMEOUT" "$JOURNEY_LOG" "${JOURNEY_CMD[@]}" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+
+limit = float(sys.argv[1])
+log_path = sys.argv[2]
+cmd = sys.argv[3:]
+with open(log_path, "w", encoding="utf-8") as log:
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+    )
+    assert proc.stdout is not None
+    try:
+        out, _ = proc.communicate(timeout=limit)
+        log.write(out or "")
+        sys.stdout.write(out or "")
+        sys.exit(proc.returncode or 0)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            proc.kill()
+        out, _ = proc.communicate()
+        log.write(out or "")
+        sys.stdout.write(out or "")
+        print("not-run: journey timed out", file=sys.stderr)
+        sys.exit(124)
+PY
+JOURNEY_RC=$?
 set -e
 
 {
@@ -170,9 +208,11 @@ set -e
   echo "journey_rc: $JOURNEY_RC"
   echo "log: $JOURNEY_LOG"
   if [[ "$JOURNEY_RC" -eq 0 ]]; then
-    echo "verdict: PASS — connect → live PIDs → record"
+    echo "qualification: PASS — connect → live PIDs → record"
+  elif [[ "$JOURNEY_RC" -eq 124 ]]; then
+    echo "qualification: not-run — journey timed out"
   else
-    echo "verdict: FAIL — journey did not complete (no fake pass)"
+    echo "qualification: FAIL — journey did not complete (no fake pass)"
   fi
 } >>"$EVIDENCE"
 
@@ -182,6 +222,10 @@ if [[ "$JOURNEY_RC" -eq 0 ]]; then
   exit 0
 fi
 
-echo "field_bt_verify: FAIL (journey_rc=$JOURNEY_RC)" >&2
+if [[ "$JOURNEY_RC" -eq 124 ]]; then
+  echo "field_bt_verify: not-run (timeout)" >&2
+else
+  echo "field_bt_verify: FAIL (journey_rc=$JOURNEY_RC)" >&2
+fi
 echo "evidence: $EVIDENCE" >&2
 exit 1
