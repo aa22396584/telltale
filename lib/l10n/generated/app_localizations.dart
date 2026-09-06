@@ -5444,6 +5444,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lost communication with the instrument panel control module'**
   String get dtcDescriptionU0155;
+
+  /// No description provided for @gaugeSkinCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster'**
+  String get gaugeSkinCluster;
+
+  /// No description provided for @gaugeSkinClusterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like a factory instrument cluster. Needle, 270-degree dial, recessed face.'**
+  String get gaugeSkinClusterDescription;
+
+  /// No description provided for @gaugeSkinMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get gaugeSkinMinimal;
+
+  /// No description provided for @gaugeSkinMinimalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Half an arc, no needle, no ticks. The number is what you read, not the movement.'**
+  String get gaugeSkinMinimalDescription;
+
+  /// No description provided for @gaugeSkinTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get gaugeSkinTrack;
+
+  /// "No smoothing" is the point: a track readout must not interpolate a value the ECU never sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Segmented bar, no smoothing. The value lands where it lands, with nothing in between.'**
+  String get gaugeSkinTrackDescription;
+
+  /// No description provided for @gaugeSkinClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get gaugeSkinClassic;
+
+  /// No description provided for @gaugeSkinClassicDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed dial, numbers all the way round, a needle that settles slowly like a mechanical watch.'**
+  String get gaugeSkinClassicDescription;
+
+  /// No description provided for @gaugeSkinNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get gaugeSkinNight;
+
+  /// No description provided for @gaugeSkinNightDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.'**
+  String get gaugeSkinNightDescription;
 }
 
 class _AppLocalizationsDelegate

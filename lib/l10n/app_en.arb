@@ -2722,5 +2722,18 @@
   "dtcDescriptionU0101": "Lost communication with the transmission control module",
   "dtcDescriptionU0121": "Lost communication with the ABS control module",
   "dtcDescriptionU0140": "Lost communication with the body control module",
-  "dtcDescriptionU0155": "Lost communication with the instrument panel control module"
+  "dtcDescriptionU0155": "Lost communication with the instrument panel control module",
+  "gaugeSkinCluster": "Cluster",
+  "gaugeSkinClusterDescription": "Looks like a factory instrument cluster. Needle, 270-degree dial, recessed face.",
+  "gaugeSkinMinimal": "Minimal",
+  "gaugeSkinMinimalDescription": "Half an arc, no needle, no ticks. The number is what you read, not the movement.",
+  "gaugeSkinTrack": "Track",
+  "gaugeSkinTrackDescription": "Segmented bar, no smoothing. The value lands where it lands, with nothing in between.",
+  "@gaugeSkinTrackDescription": {
+    "description": "\"No smoothing\" is the point: a track readout must not interpolate a value the ECU never sent."
+  },
+  "gaugeSkinClassic": "Classic",
+  "gaugeSkinClassicDescription": "Printed dial, numbers all the way round, a needle that settles slowly like a mechanical watch.",
+  "gaugeSkinNight": "Night",
+  "gaugeSkinNightDescription": "For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible."
 }

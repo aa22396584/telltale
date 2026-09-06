@@ -3005,6 +3005,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dtcDescriptionU0155 => '與儀表板控制模組失去通訊';
+
+  @override
+  String get gaugeSkinCluster => '儀表艙';
+
+  @override
+  String get gaugeSkinClusterDescription => '車廠儀表板的樣子。指針、270 度刻度盤、凹陷的面盤。';
+
+  @override
+  String get gaugeSkinMinimal => '極簡';
+
+  @override
+  String get gaugeSkinMinimalDescription => '半圓弧、沒有指針、沒有刻度。要看的是數字，不是動作。';
+
+  @override
+  String get gaugeSkinTrack => '賽道';
+
+  @override
+  String get gaugeSkinTrackDescription => '分段燈條、無平滑動畫。數值到哪就是哪，不做過渡。';
+
+  @override
+  String get gaugeSkinClassic => '經典';
+
+  @override
+  String get gaugeSkinClassicDescription => '印刷式面盤、整圈數字、指針像機械錶一樣慢慢定位。';
+
+  @override
+  String get gaugeSkinNight => '夜視';
+
+  @override
+  String get gaugeSkinNightDescription => '夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6007,4 +6037,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dtcDescriptionU0155 => '與儀表板控制模組失去通訊';
+
+  @override
+  String get gaugeSkinCluster => '儀表艙';
+
+  @override
+  String get gaugeSkinClusterDescription => '車廠儀表板的樣子。指針、270 度刻度盤、凹陷的面盤。';
+
+  @override
+  String get gaugeSkinMinimal => '極簡';
+
+  @override
+  String get gaugeSkinMinimalDescription => '半圓弧、沒有指針、沒有刻度。要看的是數字，不是動作。';
+
+  @override
+  String get gaugeSkinTrack => '賽道';
+
+  @override
+  String get gaugeSkinTrackDescription => '分段燈條、無平滑動畫。數值到哪就是哪，不做過渡。';
+
+  @override
+  String get gaugeSkinClassic => '經典';
+
+  @override
+  String get gaugeSkinClassicDescription => '印刷式面盤、整圈數字、指針像機械錶一樣慢慢定位。';
+
+  @override
+  String get gaugeSkinNight => '夜視';
+
+  @override
+  String get gaugeSkinNightDescription => '夜間駕駛用。低亮度、淺弧、不做動畫，盡量不搶走注意力。';
 }

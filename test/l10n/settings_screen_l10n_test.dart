@@ -32,7 +32,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:torque_obd/core/theme/gauge_skin.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/obd/physics/vehicle_profile.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -186,7 +185,9 @@ Set<Element> _foreignElements() {
 /// currently on screen — so it is allowed by name rather than by widening the
 /// regex, which would also stop catching real regressions.
 final _notThisGroupsStrings = <String>{
-  for (final skin in GaugeSkin.all) ...[skin.name, skin.description],
+  // The gauge skin names used to be here. They are ARB entries now, and
+  // GaugeSkin carries only geometry, so the compiler removed this line for us
+  // — the allowance is meant to shrink.
   for (final fuel in FuelType.values) fuel.label,
   for (final drivetrain in Drivetrain.values) drivetrain.label,
   for (final form in [

@@ -29,6 +29,7 @@ import '../../widgets/recommended_purchase_panel.dart';
 import '../../widgets/language_picker.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../connect/connect_screen.dart';
+import 'gauge_skin_copy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -1387,7 +1388,10 @@ class _GaugeSkinPicker extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: Spacing.sm),
-          Text(current.description, style: context.texts.bodySmall),
+          Text(
+            gaugeSkinDescription(l10n, current),
+            style: context.texts.bodySmall,
+          ),
         ],
       ),
     );
@@ -1442,7 +1446,7 @@ class _SkinChoice extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.xs),
             Text(
-              skin.name,
+              gaugeSkinName(AppLocalizations.of(context), skin),
               style: context.texts.labelMedium?.copyWith(
                 color: selected ? palette.accent : palette.textSecondary,
               ),

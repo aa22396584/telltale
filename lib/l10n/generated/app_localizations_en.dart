@@ -3393,4 +3393,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dtcDescriptionU0155 =>
       'Lost communication with the instrument panel control module';
+
+  @override
+  String get gaugeSkinCluster => 'Cluster';
+
+  @override
+  String get gaugeSkinClusterDescription =>
+      'Looks like a factory instrument cluster. Needle, 270-degree dial, recessed face.';
+
+  @override
+  String get gaugeSkinMinimal => 'Minimal';
+
+  @override
+  String get gaugeSkinMinimalDescription =>
+      'Half an arc, no needle, no ticks. The number is what you read, not the movement.';
+
+  @override
+  String get gaugeSkinTrack => 'Track';
+
+  @override
+  String get gaugeSkinTrackDescription =>
+      'Segmented bar, no smoothing. The value lands where it lands, with nothing in between.';
+
+  @override
+  String get gaugeSkinClassic => 'Classic';
+
+  @override
+  String get gaugeSkinClassicDescription =>
+      'Printed dial, numbers all the way round, a needle that settles slowly like a mechanical watch.';
+
+  @override
+  String get gaugeSkinNight => 'Night';
+
+  @override
+  String get gaugeSkinNightDescription =>
+      'For driving after dark. Low brightness, a shallow arc, no animation — as little of your attention as possible.';
 }
