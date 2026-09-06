@@ -14,6 +14,27 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 49 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
+**Why exact, and not something cleverer.** Three guards were written for the
+sentences below before this file was used for them, and each was defeated in a
+way the previous one had not anticipated:
+
+1. *Does the sentence contain the words?* — defeated by a translation that keeps
+   every word and reverses the claim: "The export **contains** the VIN, GPS, an
+   account and the adapter address. It does not contain signal names…".
+2. *Do the words fall on the right side of the negation?* — defeated by
+   qualification rather than reversal: "It **usually** does not contain…", which
+   is what an otherwise reasonable translator adds.
+3. *Are `preview`, `sampled` and `export` in that order?* — defeated by one
+   word: 「預覽**未**抽樣」 and "the preview is **not** sampled" move no position
+   at all.
+
+Order, split-points and word lists are heuristics, and heuristics against
+translation are an arms race that the translation wins, because there are more
+ways to say a thing than to check it. Recording the sentence and comparing it
+character for character ends the game: every edit fails, including the correct
+ones, and updating this file is the moment a person is looking at the sentence
+anyway. That cost is the feature.
+
 The comparison is **exact** by default. An entry may write `**English (clause)**` to record
 only the load-bearing fragment of a longer shipped sentence, and the guard then checks that
 the fragment survives and that the shipped string has not grown by more than one sentence
