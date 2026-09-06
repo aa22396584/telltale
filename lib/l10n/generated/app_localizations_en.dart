@@ -914,6 +914,299 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get powertrainCancel => 'Cancel';
+
+  @override
+  String powertrainCatalogCounts(int profiles, int probeable) {
+    return 'Profiles: $profiles · Experimental one-shot reads: $probeable';
+  }
+
+  @override
+  String get powertrainCatalogLoadFailedBody =>
+      'Integrity verification did not pass, so no vehicle data is shown or installed.';
+
+  @override
+  String get powertrainCatalogLoadFailedTitle =>
+      'Offline catalog could not load';
+
+  @override
+  String get powertrainCatalogNotVerified =>
+      'The catalog has not passed verification, so nothing can be installed.';
+
+  @override
+  String get powertrainCatalogRevalidate => 'Verify again';
+
+  @override
+  String get powertrainCatalogScopeNote =>
+      'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.';
+
+  @override
+  String get powertrainCatalogSearchHint =>
+      'Search make, model, variant or market…';
+
+  @override
+  String get powertrainCatalogTitle => 'Powertrain battery catalog';
+
+  @override
+  String get powertrainChooseCommandNote =>
+      'One command per attempt: no scan, no batch, no automatic retry.';
+
+  @override
+  String get powertrainChooseCommandTitle =>
+      'Choose one pinned read-only query';
+
+  @override
+  String get powertrainClose => 'Close';
+
+  @override
+  String get powertrainConnectFirst =>
+      'Connect first; experimental authorization is never kept across connections.';
+
+  @override
+  String get powertrainEnableLabInSettings =>
+      'Turn on the experimental battery laboratory in Settings first.';
+
+  @override
+  String get powertrainEvidencePhysicalVehicle => 'Project vehicle';
+
+  @override
+  String get powertrainEvidenceSourceBacked => 'Source data';
+
+  @override
+  String get powertrainEvidenceSyntheticRig => 'Synthetic rig';
+
+  @override
+  String get powertrainExperimentalDataDisclosure =>
+      'This is a candidate read labelled by the source\'s authors, not a manufacturer or cross-model safety guarantee; ELM327 only forwards the command. The raw command and reply stay in the local diagnostic transcript and are not uploaded automatically by this feature; decoded values are never installed as a PID or added to a gauge. Cancelling does not affect ordinary OBD functions.';
+
+  @override
+  String get powertrainExperimentalDialogTitle =>
+      'One-shot experimental read-only confirmation';
+
+  @override
+  String get powertrainExperimentalIdentityAck =>
+      'I have checked the market, model and model year the source knows, and I accept the unconfirmed fields';
+
+  @override
+  String get powertrainExperimentalParkedAck =>
+      'The vehicle is safely parked; I understand this reads once and the number may still not apply';
+
+  @override
+  String powertrainExperimentalWireLine(String responder, int bytes) {
+    return 'Accepts RX $responder only, payload length $bytes bytes';
+  }
+
+  @override
+  String get powertrainFieldListSeparator => ', ';
+
+  @override
+  String get powertrainFieldMarket => 'Market';
+
+  @override
+  String get powertrainFieldModel => 'Model';
+
+  @override
+  String get powertrainFieldModelYear => 'Model year';
+
+  @override
+  String get powertrainFieldVariant => 'Variant';
+
+  @override
+  String get powertrainFilterAll => 'All';
+
+  @override
+  String get powertrainIdentityEvidenceExact => 'direct evidence';
+
+  @override
+  String get powertrainIdentityEvidenceNone => 'none';
+
+  @override
+  String get powertrainIdentityEvidenceSourcePartial => 'partial evidence';
+
+  @override
+  String powertrainIdentityEvidenceSummary(String fields, String unconfirmed) {
+    return 'Source identity evidence: $fields\nUnconfirmed fields: $unconfirmed';
+  }
+
+  @override
+  String get powertrainIdentityEvidenceUnknown => 'unknown';
+
+  @override
+  String get powertrainInstallButton => 'Install battery signals';
+
+  @override
+  String get powertrainInstallConfirm => 'Install';
+
+  @override
+  String get powertrainInstallDialogTitle =>
+      'Install this model\'s battery signals';
+
+  @override
+  String get powertrainInstallDisclosureCommunity =>
+      'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The data comes from community sources and has been independently corroborated; it is still not a manufacturer guarantee.';
+
+  @override
+  String get powertrainInstallDisclosureExperimental =>
+      'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This is an experimental decode with no independent-corroboration requirement, unverified on this vehicle, and still not a manufacturer guarantee.';
+
+  @override
+  String get powertrainInstallDisclosureReady =>
+      'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The source data is fuller; it is still not a manufacturer guarantee.';
+
+  @override
+  String get powertrainInstallDisclosureResearchOnly =>
+      'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This entry is for research only and should not be installed.';
+
+  @override
+  String powertrainInstallFailed(String reason) {
+    return 'Cannot install: $reason';
+  }
+
+  @override
+  String get powertrainInstallIdentityAck =>
+      'My vehicle matches the market, model and model year above';
+
+  @override
+  String get powertrainInstalledRemoveButton => 'Installed · remove signals';
+
+  @override
+  String powertrainInstalledSignalsSnack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Installed $count signals. Add them to the dashboard from the PID page; every connection needs a vehicle confirmation.',
+      one: 'Installed 1 signal. Add it to the dashboard from the PID page; every connection needs a vehicle confirmation.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get powertrainNoMatchBody =>
+      'Try a make or model name, or switch to another powertrain type.';
+
+  @override
+  String get powertrainNoMatchTitle => 'No matching vehicle';
+
+  @override
+  String powertrainNotAuthorized(String reason) {
+    return 'Not authorized: $reason';
+  }
+
+  @override
+  String get powertrainNotInstallableInThisRelease =>
+      'Not installable in this release';
+
+  @override
+  String powertrainPrimarySource(String name, String license) {
+    return 'Primary source: $name ($license)';
+  }
+
+  @override
+  String get powertrainProbeChecksPassed =>
+      'Passed the responder, echo, exact length, formula and range checks.';
+
+  @override
+  String get powertrainProbeConnectForOneShot =>
+      'Connect for a one-shot read-only query';
+
+  @override
+  String get powertrainProbeConnectToTryOnce => 'Connect to try one read first';
+
+  @override
+  String get powertrainProbeDidNotFinish =>
+      'The one-shot query did not finish; no value was published or kept.';
+
+  @override
+  String get powertrainProbeEnableLabFirst =>
+      'Turn on the laboratory in Settings first';
+
+  @override
+  String get powertrainProbeInProgress => 'Reading once…';
+
+  @override
+  String get powertrainProbeNoValuePublished =>
+      'No value was published; a structural or decode error is quarantined until you reconnect.';
+
+  @override
+  String get powertrainProbeOnceButton => 'Read once only';
+
+  @override
+  String get powertrainProbePassedTitle => 'One-shot query passed';
+
+  @override
+  String get powertrainProbePickOneRead => 'Pick one command, read once';
+
+  @override
+  String get powertrainProbeReconnectFirst => 'Reconnect, then try again';
+
+  @override
+  String get powertrainProbeRefusedTitle => 'One-shot query refused';
+
+  @override
+  String get powertrainProbeTryOnceFirst => 'Try one read first';
+
+  @override
+  String get powertrainQuarantinedPill => 'Quarantined · reconnect';
+
+  @override
+  String powertrainQuarantinedSnack(String reason) {
+    return 'Quarantined for this connection: $reason';
+  }
+
+  @override
+  String get powertrainResearchOnlyNeverQueries =>
+      'Research only — never queries';
+
+  @override
+  String get powertrainRestoreStorageErrorRetry =>
+      'A storage error happened while restoring earlier installs. It has been rescheduled — try again.';
+
+  @override
+  String powertrainSecondarySource(String name, String license) {
+    return 'Independent corroboration: $name ($license)';
+  }
+
+  @override
+  String powertrainSignalCount(int count) {
+    return 'Signals: $count';
+  }
+
+  @override
+  String powertrainSourceSha256(String hash) {
+    return 'Source file SHA-256: $hash…';
+  }
+
+  @override
+  String get powertrainStatusCommunity => 'Community · unverified';
+
+  @override
+  String get powertrainStatusExperimental => 'Experimental · unverified';
+
+  @override
+  String get powertrainStatusExperimentalProbeOnly =>
+      'Experimental · read once';
+
+  @override
+  String get powertrainStatusReady => 'Fuller source data';
+
+  @override
+  String get powertrainStatusResearchOnly => 'Research only';
+
+  @override
+  String powertrainUninstalledSignalsSnack(String name) {
+    return 'Removed the installed signals for $name.';
+  }
+
+  @override
+  String powertrainVehicleYearFixed(int year) {
+    return 'Model year: $year';
+  }
+
+  @override
+  String get powertrainVehicleYearLabel => 'Model year';
+
+  @override
   String get recommendedPurchaseDisclosure =>
       'This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.';
 

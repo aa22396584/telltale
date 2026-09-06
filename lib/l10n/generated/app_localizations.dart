@@ -1485,6 +1485,468 @@ abstract class AppLocalizations {
   /// **'{units} · stale'**
   String pidRowStaleUnits(String units);
 
+  /// No description provided for @powertrainCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get powertrainCancel;
+
+  /// Both counts are derived from the verified catalog; never spell a number into the copy. English uses a label form because neither count has a fixed plurality.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles: {profiles} · Experimental one-shot reads: {probeable}'**
+  String powertrainCatalogCounts(int profiles, int probeable);
+
+  /// Fail-closed: says what did NOT happen. Never soften to 'try again later'.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity verification did not pass, so no vehicle data is shown or installed.'**
+  String get powertrainCatalogLoadFailedBody;
+
+  /// No description provided for @powertrainCatalogLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline catalog could not load'**
+  String get powertrainCatalogLoadFailedTitle;
+
+  /// No description provided for @powertrainCatalogNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalog has not passed verification, so nothing can be installed.'**
+  String get powertrainCatalogNotVerified;
+
+  /// No description provided for @powertrainCatalogRevalidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify again'**
+  String get powertrainCatalogRevalidate;
+
+  /// Load-bearing: separates 'a candidate exists' from 'this works on your car'. Never drop either half.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.'**
+  String get powertrainCatalogScopeNote;
+
+  /// No description provided for @powertrainCatalogSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search make, model, variant or market…'**
+  String get powertrainCatalogSearchHint;
+
+  /// App bar of the vehicle-specific traction-battery catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Powertrain battery catalog'**
+  String get powertrainCatalogTitle;
+
+  /// Mirrors README.md: 'no identifier scan, batch, automatic retry'. The three negations are the promise.
+  ///
+  /// In en, this message translates to:
+  /// **'One command per attempt: no scan, no batch, no automatic retry.'**
+  String get powertrainChooseCommandNote;
+
+  /// No description provided for @powertrainChooseCommandTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one pinned read-only query'**
+  String get powertrainChooseCommandTitle;
+
+  /// No description provided for @powertrainClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get powertrainClose;
+
+  /// No description provided for @powertrainConnectFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect first; experimental authorization is never kept across connections.'**
+  String get powertrainConnectFirst;
+
+  /// No description provided for @powertrainEnableLabInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the experimental battery laboratory in Settings first.'**
+  String get powertrainEnableLabInSettings;
+
+  /// PowertrainProfileEvidence.physicalVehicle: a retained run this project performed. Still bounded to the recorded market, variant, adapter and conditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Project vehicle'**
+  String get powertrainEvidencePhysicalVehicle;
+
+  /// PowertrainProfileEvidence.sourceBacked: an external source supports the mapping. NOT evidence produced by Telltale on a vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source data'**
+  String get powertrainEvidenceSourceBacked;
+
+  /// PowertrainProfileEvidence.syntheticRig: a deterministic simulator exercised the path. Establishes nothing about a real ECU.
+  ///
+  /// In en, this message translates to:
+  /// **'Synthetic rig'**
+  String get powertrainEvidenceSyntheticRig;
+
+  /// Four load-bearing claims: candidate not guarantee; the transcript keeps it locally; nothing is auto-uploaded; nothing is installed or shown on a gauge. Cancelling is safe. Dropping any clause changes what the driver is consenting to.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a candidate read labelled by the source\'s authors, not a manufacturer or cross-model safety guarantee; ELM327 only forwards the command. The raw command and reply stay in the local diagnostic transcript and are not uploaded automatically by this feature; decoded values are never installed as a PID or added to a gauge. Cancelling does not affect ordinary OBD functions.'**
+  String get powertrainExperimentalDataDisclosure;
+
+  /// No description provided for @powertrainExperimentalDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-shot experimental read-only confirmation'**
+  String get powertrainExperimentalDialogTitle;
+
+  /// 'the source knows' is the hedge: the source's identity evidence, not a confirmed match.
+  ///
+  /// In en, this message translates to:
+  /// **'I have checked the market, model and model year the source knows, and I accept the unconfirmed fields'**
+  String get powertrainExperimentalIdentityAck;
+
+  /// Safety-critical. Keep both halves: parked, and the value may not apply.
+  ///
+  /// In en, this message translates to:
+  /// **'The vehicle is safely parked; I understand this reads once and the number may still not apply'**
+  String get powertrainExperimentalParkedAck;
+
+  /// RX, the CAN responder id and the unit 'bytes' are never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepts RX {responder} only, payload length {bytes} bytes'**
+  String powertrainExperimentalWireLine(String responder, int bytes);
+
+  /// Joins the unconfirmed-field names. Chinese uses the enumeration comma U+3001, English a comma and a space; this is why it is a message and not a constant.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get powertrainFieldListSeparator;
+
+  /// No description provided for @powertrainFieldMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Market'**
+  String get powertrainFieldMarket;
+
+  /// No description provided for @powertrainFieldModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get powertrainFieldModel;
+
+  /// No description provided for @powertrainFieldModelYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Model year'**
+  String get powertrainFieldModelYear;
+
+  /// No description provided for @powertrainFieldVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Variant'**
+  String get powertrainFieldVariant;
+
+  /// The 'no powertrain filter' chip. The other chips are the acronyms PHEV, HEV, BEV, MHEV, REEV, FCEV and are never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get powertrainFilterAll;
+
+  /// PowertrainIdentityEvidenceLevel.exact. Evidence about the SOURCE record, not a match with the car in front of the driver.
+  ///
+  /// In en, this message translates to:
+  /// **'direct evidence'**
+  String get powertrainIdentityEvidenceExact;
+
+  /// Fills 'Unconfirmed fields:' when every field has evidence. It says the LIST is empty, not that a field is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get powertrainIdentityEvidenceNone;
+
+  /// PowertrainIdentityEvidenceLevel.sourcePartial. Partial is not confirmed; it must stay distinct from both exact and unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'partial evidence'**
+  String get powertrainIdentityEvidenceSourcePartial;
+
+  /// {fields} is a middle-dot list of 'field level' pairs; {unconfirmed} lists the fields the source could not establish, joined by powertrainFieldListSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'Source identity evidence: {fields}\nUnconfirmed fields: {unconfirmed}'**
+  String powertrainIdentityEvidenceSummary(String fields, String unconfirmed);
+
+  /// PowertrainIdentityEvidenceLevel.unknown. The source said nothing about this field. Never render as 'not applicable' or 'none'.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get powertrainIdentityEvidenceUnknown;
+
+  /// No description provided for @powertrainInstallButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Install battery signals'**
+  String get powertrainInstallButton;
+
+  /// No description provided for @powertrainInstallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get powertrainInstallConfirm;
+
+  /// No description provided for @powertrainInstallDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install this model\'s battery signals'**
+  String get powertrainInstallDialogTitle;
+
+  /// PowertrainProfileStatus.community. 'Independently corroborated' is a claim about sources agreeing, never about this vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The data comes from community sources and has been independently corroborated; it is still not a manufacturer guarantee.'**
+  String get powertrainInstallDisclosureCommunity;
+
+  /// PowertrainProfileStatus.experimental. Three separate hedges: experimental, no corroboration requirement, unverified on this vehicle. Dropping any one of them overstates the tier.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This is an experimental decode with no independent-corroboration requirement, unverified on this vehicle, and still not a manufacturer guarantee.'**
+  String get powertrainInstallDisclosureExperimental;
+
+  /// PowertrainProfileStatus.ready. Whole sentence, not a shared prefix plus a fragment: English word order will not survive concatenation. The closing 'still not a manufacturer guarantee' is load-bearing in all four variants.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. The source data is fuller; it is still not a manufacturer guarantee.'**
+  String get powertrainInstallDisclosureReady;
+
+  /// PowertrainProfileStatus.researchOnly. Must never read as installable or supported.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This entry is for research only and should not be installed.'**
+  String get powertrainInstallDisclosureResearchOnly;
+
+  /// {reason} is a technical message raised by the installer, not copy this screen owns.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot install: {reason}'**
+  String powertrainInstallFailed(String reason);
+
+  /// No description provided for @powertrainInstallIdentityAck.
+  ///
+  /// In en, this message translates to:
+  /// **'My vehicle matches the market, model and model year above'**
+  String get powertrainInstallIdentityAck;
+
+  /// No description provided for @powertrainInstalledRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed · remove signals'**
+  String get powertrainInstalledRemoveButton;
+
+  /// Installing is not authorizing: the per-connection vehicle confirmation is still required, and the sentence must keep saying so.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Installed 1 signal. Add it to the dashboard from the PID page; every connection needs a vehicle confirmation.} other{Installed {count} signals. Add them to the dashboard from the PID page; every connection needs a vehicle confirmation.}}'**
+  String powertrainInstalledSignalsSnack(int count);
+
+  /// No description provided for @powertrainNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a make or model name, or switch to another powertrain type.'**
+  String get powertrainNoMatchBody;
+
+  /// No description provided for @powertrainNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching vehicle'**
+  String get powertrainNoMatchTitle;
+
+  /// No description provided for @powertrainNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized: {reason}'**
+  String powertrainNotAuthorized(String reason);
+
+  /// No description provided for @powertrainNotInstallableInThisRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installable in this release'**
+  String get powertrainNotInstallableInThisRelease;
+
+  /// Source names and licence identifiers are identifiers and are never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary source: {name} ({license})'**
+  String powertrainPrimarySource(String name, String license);
+
+  /// Names exactly the checks that ran. It is not a statement that the value is correct for this vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passed the responder, echo, exact length, formula and range checks.'**
+  String get powertrainProbeChecksPassed;
+
+  /// No description provided for @powertrainProbeConnectForOneShot.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect for a one-shot read-only query'**
+  String get powertrainProbeConnectForOneShot;
+
+  /// No description provided for @powertrainProbeConnectToTryOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to try one read first'**
+  String get powertrainProbeConnectToTryOnce;
+
+  /// Says what did NOT happen. An unfinished probe must never read as a failed vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'The one-shot query did not finish; no value was published or kept.'**
+  String get powertrainProbeDidNotFinish;
+
+  /// No description provided for @powertrainProbeEnableLabFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the laboratory in Settings first'**
+  String get powertrainProbeEnableLabFirst;
+
+  /// No description provided for @powertrainProbeInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading once…'**
+  String get powertrainProbeInProgress;
+
+  /// No description provided for @powertrainProbeNoValuePublished.
+  ///
+  /// In en, this message translates to:
+  /// **'No value was published; a structural or decode error is quarantined until you reconnect.'**
+  String get powertrainProbeNoValuePublished;
+
+  /// No description provided for @powertrainProbeOnceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Read once only'**
+  String get powertrainProbeOnceButton;
+
+  /// No description provided for @powertrainProbePassedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-shot query passed'**
+  String get powertrainProbePassedTitle;
+
+  /// No description provided for @powertrainProbePickOneRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one command, read once'**
+  String get powertrainProbePickOneRead;
+
+  /// Disabled probe button after a structural-mismatch quarantine.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect, then try again'**
+  String get powertrainProbeReconnectFirst;
+
+  /// No description provided for @powertrainProbeRefusedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-shot query refused'**
+  String get powertrainProbeRefusedTitle;
+
+  /// No description provided for @powertrainProbeTryOnceFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Try one read first'**
+  String get powertrainProbeTryOnceFirst;
+
+  /// Scoped to this connection, not permanent, and reconnecting is what lifts it. Kept to the pill width at 360dp: 'Quarantined for this connection' overflowed the card header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarantined · reconnect'**
+  String get powertrainQuarantinedPill;
+
+  /// {reason} is produced by the consent notifier, not by this screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarantined for this connection: {reason}'**
+  String powertrainQuarantinedSnack(String reason);
+
+  /// The permanently disabled button on a researchOnly row. It states a refusal, not a temporary unavailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Research only — never queries'**
+  String get powertrainResearchOnlyNeverQueries;
+
+  /// Retryable, and says so. Distinct from powertrainCatalogNotVerified, which is not retryable.
+  ///
+  /// In en, this message translates to:
+  /// **'A storage error happened while restoring earlier installs. It has been rescheduled — try again.'**
+  String get powertrainRestoreStorageErrorRetry;
+
+  /// No description provided for @powertrainSecondarySource.
+  ///
+  /// In en, this message translates to:
+  /// **'Independent corroboration: {name} ({license})'**
+  String powertrainSecondarySource(String name, String license);
+
+  /// Rendered inside a middle-dot separated provenance line. Label form in English so it is correct at any count.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals: {count}'**
+  String powertrainSignalCount(int count);
+
+  /// A truncated identifier the reader may paste into a search. Never translated, never reformatted.
+  ///
+  /// In en, this message translates to:
+  /// **'Source file SHA-256: {hash}…'**
+  String powertrainSourceSha256(String hash);
+
+  /// PowertrainProfileStatus.community. Cross-corroborated by independent sources, still never driven by this project. Both halves are required. Shortened from 'Community data · unverified', which overflowed the card header at 360dp — a shorter true phrase, not an ellipsis that hides the tier.
+  ///
+  /// In en, this message translates to:
+  /// **'Community · unverified'**
+  String get powertrainStatusCommunity;
+
+  /// PowertrainProfileStatus.experimental on a profile that can also be installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental · unverified'**
+  String get powertrainStatusExperimental;
+
+  /// PowertrainProfileStatus.experimental on a profile that can only be read once, never installed. Kept short because the pill shares the card header row with the profile name at 360dp; 'Experimental · one-shot read-only' overflowed it. A shorter true phrase, never an ellipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental · read once'**
+  String get powertrainStatusExperimentalProbeOnly;
+
+  /// PowertrainProfileStatus.ready. A claim about the SOURCE, not about the vehicle: it must never read as 'verified on your car'.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuller source data'**
+  String get powertrainStatusReady;
+
+  /// PowertrainProfileStatus.researchOnly. Metadata index with no commands. Must never read as installable or supported.
+  ///
+  /// In en, this message translates to:
+  /// **'Research only'**
+  String get powertrainStatusResearchOnly;
+
+  /// {name} is the profile display name from the catalog; it is data and is not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed the installed signals for {name}.'**
+  String powertrainUninstalledSignalsSnack(String name);
+
+  /// Shown when the profile covers exactly one year, so there is nothing to choose.
+  ///
+  /// In en, this message translates to:
+  /// **'Model year: {year}'**
+  String powertrainVehicleYearFixed(int year);
+
+  /// No description provided for @powertrainVehicleYearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model year'**
+  String get powertrainVehicleYearLabel;
+
   /// Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change.
   ///
   /// In en, this message translates to:
