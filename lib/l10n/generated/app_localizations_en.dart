@@ -602,6 +602,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSettings => 'Settings';
 
   @override
+  String get performanceArm => 'Arm the timer';
+
+  @override
+  String get performanceDisclaimer =>
+      'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.';
+
+  @override
+  String get performanceHeadline => 'Acceleration test';
+
+  @override
+  String get performanceNoSpeedSignal =>
+      'There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.';
+
+  @override
+  String get performanceNotConnectedBody =>
+      'The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.';
+
+  @override
+  String get performanceNotConnectedTitle => 'Not connected';
+
+  @override
+  String get performancePeakSpeed => 'Peak speed';
+
+  @override
+  String get performanceReset => 'Reset';
+
+  @override
+  String get performanceSecondsUnit => 'seconds';
+
+  @override
+  String get performanceSpeedGaugeLabel => 'Speed';
+
+  @override
+  String get performanceSpeedTraceHeading => 'Speed trace';
+
+  @override
+  String get performanceSplitsHeading => 'Splits';
+
+  @override
+  String get performanceStateAborted =>
+      'The speed signal stopped — this run was not completed; below is what was recorded before it went';
+
+  @override
+  String get performanceStateAwaitingSpeedSignal =>
+      'Waiting for a speed signal';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return 'Come to a complete stop first — now $speed km/h';
+  }
+
+  @override
+  String performanceStateFinished(int target) {
+    return 'Finished 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateIdle => 'Pick a target speed, then start';
+
+  @override
+  String get performanceStateRunning => 'Timing';
+
+  @override
+  String get performanceStateStaged =>
+      'Ready — the clock starts when you move off';
+
+  @override
+  String get performanceSubhead =>
+      'A timed run from a standing start to a target speed';
+
+  @override
+  String get performanceTargetSpeedHeading => 'Target speed';
+
+  @override
   String get pidActionCancel => 'Cancel';
 
   @override
@@ -1766,4 +1840,71 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get telemetryStatusUnsupported =>
       'The controller answered that it does not support this';
+
+  @override
+  String get wearBack => 'Back';
+
+  @override
+  String get wearBatteryVoltageLabel => 'Battery';
+
+  @override
+  String get wearBleAdapters => 'BLE adapters';
+
+  @override
+  String get wearCancel => 'Cancel';
+
+  @override
+  String get wearConfirmVehicle => 'Confirm vehicle';
+
+  @override
+  String get wearConfirmVehicleAccept => 'Yes, this car';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      'Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return 'Could not connect: $adapter';
+  }
+
+  @override
+  String get wearConnecting => 'Connecting…';
+
+  @override
+  String get wearDemoSimulator => 'Demo simulator';
+
+  @override
+  String get wearDisconnect => 'Disconnect';
+
+  @override
+  String get wearDisconnectQuestion => 'Disconnect?';
+
+  @override
+  String get wearNoDevicesFound => 'No devices found';
+
+  @override
+  String get wearPermissionBluetooth => 'Bluetooth';
+
+  @override
+  String get wearPermissionLocation => 'Location';
+
+  @override
+  String get wearScanAgain => 'Rescan';
+
+  @override
+  String get wearScanFailed => 'Scan failed — try again';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return 'Scanning needs $permission permission';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission permission is permanently denied — turn it on in system settings, then try again';
+  }
+
+  @override
+  String get wearScanning => 'Scanning…';
 }

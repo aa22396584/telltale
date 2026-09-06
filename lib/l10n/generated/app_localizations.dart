@@ -969,6 +969,132 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navSettings;
 
+  /// No description provided for @performanceArm.
+  ///
+  /// In en, this message translates to:
+  /// **'Arm the timer'**
+  String get performanceArm;
+
+  /// Load-bearing hedge. Both halves must survive translation: indicative only, AND not equivalent to professional test equipment. The ranges describe vehicles and adapters, not a constant this app enforces, so they stay in the prose.
+  ///
+  /// In en, this message translates to:
+  /// **'Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.'**
+  String get performanceDisclaimer;
+
+  /// Performance screen title. The screen times a run; it never states a vehicle's rated performance.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration test'**
+  String get performanceHeadline;
+
+  /// PID 010D is an adapter-facing token and stays byte-identical in every language.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.'**
+  String get performanceNoSpeedSignal;
+
+  /// No description provided for @performanceNotConnectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.'**
+  String get performanceNotConnectedBody;
+
+  /// No description provided for @performanceNotConnectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get performanceNotConnectedTitle;
+
+  /// No description provided for @performancePeakSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak speed'**
+  String get performancePeakSpeed;
+
+  /// No description provided for @performanceReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get performanceReset;
+
+  /// No description provided for @performanceSecondsUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get performanceSecondsUnit;
+
+  /// No description provided for @performanceSpeedGaugeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get performanceSpeedGaugeLabel;
+
+  /// No description provided for @performanceSpeedTraceHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed trace'**
+  String get performanceSpeedTraceHeading;
+
+  /// No description provided for @performanceSplitsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Splits'**
+  String get performanceSplitsHeading;
+
+  /// An incomplete run whose partial evidence is kept. Must never read as a finished time.
+  ///
+  /// In en, this message translates to:
+  /// **'The speed signal stopped — this run was not completed; below is what was recorded before it went'**
+  String get performanceStateAborted;
+
+  /// No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a speed signal'**
+  String get performanceStateAwaitingSpeedSignal;
+
+  /// {speed} is the live road speed, already formatted by the caller. Units never change with language.
+  ///
+  /// In en, this message translates to:
+  /// **'Come to a complete stop first — now {speed} km/h'**
+  String performanceStateAwaitingStandstill(String speed);
+
+  /// {target} is the selected target speed from the screen's own list, never spelled into the sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished 0 → {target} km/h'**
+  String performanceStateFinished(int target);
+
+  /// No description provided for @performanceStateIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a target speed, then start'**
+  String get performanceStateIdle;
+
+  /// No description provided for @performanceStateRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing'**
+  String get performanceStateRunning;
+
+  /// No description provided for @performanceStateStaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready — the clock starts when you move off'**
+  String get performanceStateStaged;
+
+  /// Says what the number is: one timed run beginning at rest. Not a manufacturer figure, not a rating.
+  ///
+  /// In en, this message translates to:
+  /// **'A timed run from a standing start to a target speed'**
+  String get performanceSubhead;
+
+  /// No description provided for @performanceTargetSpeedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Target speed'**
+  String get performanceTargetSpeedHeading;
+
   /// No description provided for @pidActionCancel.
   ///
   /// In en, this message translates to:
@@ -2859,6 +2985,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The controller answered that it does not support this'**
   String get telemetryStatusUnsupported;
+
+  /// No description provided for @wearBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get wearBack;
+
+  /// The 12V battery reading on the watch numbers grid. Not the powertrain battery, which has its own page.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get wearBatteryVoltageLabel;
+
+  /// No description provided for @wearBleAdapters.
+  ///
+  /// In en, this message translates to:
+  /// **'BLE adapters'**
+  String get wearBleAdapters;
+
+  /// No description provided for @wearCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get wearCancel;
+
+  /// No description provided for @wearConfirmVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm vehicle'**
+  String get wearConfirmVehicle;
+
+  /// Affirms the identity shown above it. Must stay short enough for a watch dialog action.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, this car'**
+  String get wearConfirmVehicleAccept;
+
+  /// Load-bearing: read-only, and the plausible-but-wrong-number warning. Neither may be dropped for length.
+  ///
+  /// In en, this message translates to:
+  /// **'Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.'**
+  String get wearConfirmVehicleBody;
+
+  /// {adapter} is the device name the adapter advertised, or its id when the name is empty. Passed through, never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect: {adapter}'**
+  String wearConnectFailed(String adapter);
+
+  /// No description provided for @wearConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get wearConnecting;
+
+  /// Wear connect button for the built-in simulator. Kept short for a 454px round face.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo simulator'**
+  String get wearDemoSimulator;
+
+  /// No description provided for @wearDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get wearDisconnect;
+
+  /// No description provided for @wearDisconnectQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect?'**
+  String get wearDisconnectQuestion;
+
+  /// Nothing answered the scan. Not a claim that no adapter exists.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices found'**
+  String get wearNoDevicesFound;
+
+  /// No description provided for @wearPermissionBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth'**
+  String get wearPermissionBluetooth;
+
+  /// No description provided for @wearPermissionLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get wearPermissionLocation;
+
+  /// Shares a row with wearBack on a 227dp-wide watch face; keep it to one short word.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get wearScanAgain;
+
+  /// No description provided for @wearScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan failed — try again'**
+  String get wearScanFailed;
+
+  /// {permission} is wearPermissionBluetooth or wearPermissionLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning needs {permission} permission'**
+  String wearScanPermissionNeeded(String permission);
+
+  /// A refusal the app cannot re-ask for. States the only remedy.
+  ///
+  /// In en, this message translates to:
+  /// **'{permission} permission is permanently denied — turn it on in system settings, then try again'**
+  String wearScanPermissionPermanentlyDenied(String permission);
+
+  /// No description provided for @wearScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning…'**
+  String get wearScanning;
 }
 
 class _AppLocalizationsDelegate

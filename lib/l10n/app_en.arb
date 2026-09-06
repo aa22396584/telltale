@@ -485,6 +485,61 @@
   "@navSettings": {
     "description": "Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not."
   },
+  "performanceArm": "Arm the timer",
+  "performanceDisclaimer": "Times come from the OBD road-speed signal. Most vehicles read 1–3 km/h high on their own speedometer, and the signal updates only about 10–20 times a second, so a result here is indicative only — not equivalent to professional test equipment.",
+  "@performanceDisclaimer": {
+    "description": "Load-bearing hedge. Both halves must survive translation: indicative only, AND not equivalent to professional test equipment. The ranges describe vehicles and adapters, not a constant this app enforces, so they stay in the prose."
+  },
+  "performanceHeadline": "Acceleration test",
+  "@performanceHeadline": {
+    "description": "Performance screen title. The screen times a run; it never states a vehicle's rated performance."
+  },
+  "performanceNoSpeedSignal": "There is no valid road-speed signal right now (PID 010D). The acceleration test cannot time a run without it.",
+  "@performanceNoSpeedSignal": {
+    "description": "PID 010D is an adapter-facing token and stays byte-identical in every language."
+  },
+  "performanceNotConnectedBody": "The acceleration test needs live road speed. Connect an adapter, or start the built-in simulator.",
+  "performanceNotConnectedTitle": "Not connected",
+  "performancePeakSpeed": "Peak speed",
+  "performanceReset": "Reset",
+  "performanceSecondsUnit": "seconds",
+  "performanceSpeedGaugeLabel": "Speed",
+  "performanceSpeedTraceHeading": "Speed trace",
+  "performanceSplitsHeading": "Splits",
+  "performanceStateAborted": "The speed signal stopped — this run was not completed; below is what was recorded before it went",
+  "@performanceStateAborted": {
+    "description": "An incomplete run whose partial evidence is kept. Must never read as a finished time."
+  },
+  "performanceStateAwaitingSpeedSignal": "Waiting for a speed signal",
+  "@performanceStateAwaitingSpeedSignal": {
+    "description": "No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet."
+  },
+  "performanceStateAwaitingStandstill": "Come to a complete stop first — now {speed} km/h",
+  "@performanceStateAwaitingStandstill": {
+    "description": "{speed} is the live road speed, already formatted by the caller. Units never change with language.",
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "performanceStateFinished": "Finished 0 → {target} km/h",
+  "@performanceStateFinished": {
+    "description": "{target} is the selected target speed from the screen's own list, never spelled into the sentence.",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "performanceStateIdle": "Pick a target speed, then start",
+  "performanceStateRunning": "Timing",
+  "performanceStateStaged": "Ready — the clock starts when you move off",
+  "performanceSubhead": "A timed run from a standing start to a target speed",
+  "@performanceSubhead": {
+    "description": "Says what the number is: one timed run beginning at rest. Not a manufacturer figure, not a rating."
+  },
+  "performanceTargetSpeedHeading": "Target speed",
   "pidActionCancel": "Cancel",
   "pidActionDelete": "Delete",
   "pidArrangeBody": "Drag to reorder. The dashboard fills left to right and top to bottom, so whatever is first is seen first.",
@@ -1493,5 +1548,67 @@
   "telemetryStatusUnsupported": "The controller answered that it does not support this",
   "@telemetryStatusUnsupported": {
     "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
-  }
+  },
+  "wearBack": "Back",
+  "wearBatteryVoltageLabel": "Battery",
+  "@wearBatteryVoltageLabel": {
+    "description": "The 12V battery reading on the watch numbers grid. Not the powertrain battery, which has its own page."
+  },
+  "wearBleAdapters": "BLE adapters",
+  "wearCancel": "Cancel",
+  "wearConfirmVehicle": "Confirm vehicle",
+  "wearConfirmVehicleAccept": "Yes, this car",
+  "@wearConfirmVehicleAccept": {
+    "description": "Affirms the identity shown above it. Must stay short enough for a watch dialog action."
+  },
+  "wearConfirmVehicleBody": "Once confirmed, the read-only battery queries for this model are polled for the rest of this connection. The wrong model can return a plausible but wrong number — cancel if you are not sure.",
+  "@wearConfirmVehicleBody": {
+    "description": "Load-bearing: read-only, and the plausible-but-wrong-number warning. Neither may be dropped for length."
+  },
+  "wearConnectFailed": "Could not connect: {adapter}",
+  "@wearConnectFailed": {
+    "description": "{adapter} is the device name the adapter advertised, or its id when the name is empty. Passed through, never translated.",
+    "placeholders": {
+      "adapter": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnecting": "Connecting…",
+  "wearDemoSimulator": "Demo simulator",
+  "@wearDemoSimulator": {
+    "description": "Wear connect button for the built-in simulator. Kept short for a 454px round face."
+  },
+  "wearDisconnect": "Disconnect",
+  "wearDisconnectQuestion": "Disconnect?",
+  "wearNoDevicesFound": "No devices found",
+  "@wearNoDevicesFound": {
+    "description": "Nothing answered the scan. Not a claim that no adapter exists."
+  },
+  "wearPermissionBluetooth": "Bluetooth",
+  "wearPermissionLocation": "Location",
+  "wearScanAgain": "Rescan",
+  "@wearScanAgain": {
+    "description": "Shares a row with wearBack on a 227dp-wide watch face; keep it to one short word."
+  },
+  "wearScanFailed": "Scan failed — try again",
+  "wearScanPermissionNeeded": "Scanning needs {permission} permission",
+  "@wearScanPermissionNeeded": {
+    "description": "{permission} is wearPermissionBluetooth or wearPermissionLocation.",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "wearScanPermissionPermanentlyDenied": "{permission} permission is permanently denied — turn it on in system settings, then try again",
+  "@wearScanPermissionPermanentlyDenied": {
+    "description": "A refusal the app cannot re-ask for. States the only remedy.",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "wearScanning": "Scanning…"
 }

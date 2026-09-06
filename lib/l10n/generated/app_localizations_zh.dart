@@ -528,6 +528,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navSettings => '設定';
 
   @override
+  String get performanceArm => '準備計時';
+
+  @override
+  String get performanceDisclaimer =>
+      '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
+
+  @override
+  String get performanceHeadline => '加速測試';
+
+  @override
+  String get performanceNoSpeedSignal => '目前沒有有效的車速訊號（PID 010D）。加速測試需要它才能計時。';
+
+  @override
+  String get performanceNotConnectedBody => '加速測試需要即時車速資料，請先連線或啟動模擬器。';
+
+  @override
+  String get performanceNotConnectedTitle => '尚未連線';
+
+  @override
+  String get performancePeakSpeed => '最高車速';
+
+  @override
+  String get performanceReset => '重置';
+
+  @override
+  String get performanceSecondsUnit => '秒';
+
+  @override
+  String get performanceSpeedGaugeLabel => '車速';
+
+  @override
+  String get performanceSpeedTraceHeading => '速度軌跡';
+
+  @override
+  String get performanceSplitsHeading => '分段成績';
+
+  @override
+  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+
+  @override
+  String get performanceStateAwaitingSpeedSignal => '等待車速訊號';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return '請先完全停車 — 目前 $speed km/h';
+  }
+
+  @override
+  String performanceStateFinished(int target) {
+    return '完成 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateIdle => '選擇目標車速後開始';
+
+  @override
+  String get performanceStateRunning => '計時中';
+
+  @override
+  String get performanceStateStaged => '已就緒 — 起步即開始計時';
+
+  @override
+  String get performanceSubhead => '由靜止起步計時至目標車速';
+
+  @override
+  String get performanceTargetSpeedHeading => '目標車速';
+
+  @override
   String get pidActionCancel => '取消';
 
   @override
@@ -1615,6 +1683,73 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get telemetryStatusUnsupported => '目前引擎控制器已確認不支援';
+
+  @override
+  String get wearBack => '返回';
+
+  @override
+  String get wearBatteryVoltageLabel => '電瓶';
+
+  @override
+  String get wearBleAdapters => 'BLE 轉接器';
+
+  @override
+  String get wearCancel => '取消';
+
+  @override
+  String get wearConfirmVehicle => '確認車輛';
+
+  @override
+  String get wearConfirmVehicleAccept => '就是這台車';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。接錯車型可能得到看似合理但錯誤的數字——不確定就取消。';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return '連線失敗：$adapter';
+  }
+
+  @override
+  String get wearConnecting => '連線中…';
+
+  @override
+  String get wearDemoSimulator => 'Demo 模擬器';
+
+  @override
+  String get wearDisconnect => '中斷';
+
+  @override
+  String get wearDisconnectQuestion => '中斷連線？';
+
+  @override
+  String get wearNoDevicesFound => '沒有找到裝置';
+
+  @override
+  String get wearPermissionBluetooth => '藍牙';
+
+  @override
+  String get wearPermissionLocation => '位置';
+
+  @override
+  String get wearScanAgain => '重新掃描';
+
+  @override
+  String get wearScanFailed => '掃描失敗，請再試一次';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return '需要$permission權限才能掃描';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission權限已被永久拒絕，請到系統設定開啟後再試';
+  }
+
+  @override
+  String get wearScanning => '掃描中…';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2140,6 +2275,74 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get navSettings => '設定';
 
   @override
+  String get performanceArm => '準備計時';
+
+  @override
+  String get performanceDisclaimer =>
+      '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。';
+
+  @override
+  String get performanceHeadline => '加速測試';
+
+  @override
+  String get performanceNoSpeedSignal => '目前沒有有效的車速訊號（PID 010D）。加速測試需要它才能計時。';
+
+  @override
+  String get performanceNotConnectedBody => '加速測試需要即時車速資料，請先連線或啟動模擬器。';
+
+  @override
+  String get performanceNotConnectedTitle => '尚未連線';
+
+  @override
+  String get performancePeakSpeed => '最高車速';
+
+  @override
+  String get performanceReset => '重置';
+
+  @override
+  String get performanceSecondsUnit => '秒';
+
+  @override
+  String get performanceSpeedGaugeLabel => '車速';
+
+  @override
+  String get performanceSpeedTraceHeading => '速度軌跡';
+
+  @override
+  String get performanceSplitsHeading => '分段成績';
+
+  @override
+  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+
+  @override
+  String get performanceStateAwaitingSpeedSignal => '等待車速訊號';
+
+  @override
+  String performanceStateAwaitingStandstill(String speed) {
+    return '請先完全停車 — 目前 $speed km/h';
+  }
+
+  @override
+  String performanceStateFinished(int target) {
+    return '完成 0 → $target km/h';
+  }
+
+  @override
+  String get performanceStateIdle => '選擇目標車速後開始';
+
+  @override
+  String get performanceStateRunning => '計時中';
+
+  @override
+  String get performanceStateStaged => '已就緒 — 起步即開始計時';
+
+  @override
+  String get performanceSubhead => '由靜止起步計時至目標車速';
+
+  @override
+  String get performanceTargetSpeedHeading => '目標車速';
+
+  @override
   String get pidActionCancel => '取消';
 
   @override
@@ -3227,4 +3430,71 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get telemetryStatusUnsupported => '目前引擎控制器已確認不支援';
+
+  @override
+  String get wearBack => '返回';
+
+  @override
+  String get wearBatteryVoltageLabel => '電瓶';
+
+  @override
+  String get wearBleAdapters => 'BLE 轉接器';
+
+  @override
+  String get wearCancel => '取消';
+
+  @override
+  String get wearConfirmVehicle => '確認車輛';
+
+  @override
+  String get wearConfirmVehicleAccept => '就是這台車';
+
+  @override
+  String get wearConfirmVehicleBody =>
+      '確認後，這個車型的唯讀電池查詢會在本次連線內定期輪詢。接錯車型可能得到看似合理但錯誤的數字——不確定就取消。';
+
+  @override
+  String wearConnectFailed(String adapter) {
+    return '連線失敗：$adapter';
+  }
+
+  @override
+  String get wearConnecting => '連線中…';
+
+  @override
+  String get wearDemoSimulator => 'Demo 模擬器';
+
+  @override
+  String get wearDisconnect => '中斷';
+
+  @override
+  String get wearDisconnectQuestion => '中斷連線？';
+
+  @override
+  String get wearNoDevicesFound => '沒有找到裝置';
+
+  @override
+  String get wearPermissionBluetooth => '藍牙';
+
+  @override
+  String get wearPermissionLocation => '位置';
+
+  @override
+  String get wearScanAgain => '重新掃描';
+
+  @override
+  String get wearScanFailed => '掃描失敗，請再試一次';
+
+  @override
+  String wearScanPermissionNeeded(String permission) {
+    return '需要$permission權限才能掃描';
+  }
+
+  @override
+  String wearScanPermissionPermanentlyDenied(String permission) {
+    return '$permission權限已被永久拒絕，請到系統設定開啟後再試';
+  }
+
+  @override
+  String get wearScanning => '掃描中…';
 }

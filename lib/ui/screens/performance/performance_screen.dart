@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/pid/pid_library.dart';
 import '../../../obd/telemetry.dart';
 import '../../../state/obd_session.dart';
@@ -95,7 +96,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
     // The heartbeat source, not the raw engine stream. Subscribing directly
     // meant that when snapshots simply stopped — no teardown, no event — this
     // screen received no clock tick with which to notice, and a run could stay
-    // "計時中" indefinitely against a signal that had gone.
+    // in `RunState.running` indefinitely against a signal that had gone.
     _sub = ref.listenManual(telemetryProvider, (_, next) {
       final snapshot = next.value;
       if (snapshot != null) _onSample(snapshot);
@@ -240,6 +241,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final connected = ref.watch(obdSessionProvider).isConnected;
     final snapshot = ref.watch(telemetryProvider).value ?? const TelemetrySnapshot();
@@ -251,12 +253,12 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
     final hasSpeed = speed != null;
 
     if (!connected) {
-      return const Scaffold(
+      return Scaffold(
         body: SafeArea(
           child: EmptyState(
             icon: Icons.link_off,
-            title: '尚未連線',
-            message: '加速測試需要即時車速資料，請先連線或啟動模擬器。',
+            title: l10n.performanceNotConnectedTitle,
+            message: l10n.performanceNotConnectedBody,
           ),
         ),
       );
@@ -273,8 +275,10 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
             Spacing.xxl,
           ),
           children: [
-            Text('加速測試', style: context.texts.headlineMedium),
-            Text('由靜止起步計時至目標車速', style: context.texts.bodySmall),
+            Text(l10n.performanceHeadline, style: context.texts.headlineMedium),
+            // Says what the number is before the number appears: one timed run
+            // that begins at rest. Nothing on this screen is a rated figure.
+            Text(l10n.performanceSubhead, style: context.texts.bodySmall),
             const SizedBox(height: Spacing.xl),
 
             Center(
@@ -287,7 +291,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                   // The needle pins at the top of the scale while the readout
                   // keeps climbing unless the scale can hold the whole run.
                   maxValue: math.max(_target.toDouble() * 1.3, 260),
-                  label: '車速',
+                  label: l10n.performanceSpeedGaugeLabel,
                   units: 'km/h',
                   hue: GaugeHue.blue,
                   isStale: !hasSpeed,
@@ -308,15 +312,22 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                 children: [
                   Text(
                     switch (_state) {
-                      RunState.idle => '選擇目標車速後開始',
+                      RunState.idle => l10n.performanceStateIdle,
+                      // Two different sentences on purpose. A speed that reads
+                      // above standstill is an observation; no speed at all is
+                      // the app admitting it cannot tell, and a driver must be
+                      // able to tell those apart from the panel alone.
                       RunState.awaitingStandstill => hasSpeed
-                          ? '請先完全停車 — 目前 ${speed.toStringAsFixed(0)} km/h'
-                          : '等待車速訊號',
-                      RunState.staged => '已就緒 — 起步即開始計時',
-                      RunState.running => '計時中',
-                      RunState.finished => '完成 0 → $_target km/h',
-                      RunState.aborted => '車速訊號中斷 — 這次計時未完成，'
-                          '以下為中斷前的紀錄',
+                          ? l10n.performanceStateAwaitingStandstill(
+                              speed.toStringAsFixed(0),
+                            )
+                          : l10n.performanceStateAwaitingSpeedSignal,
+                      RunState.staged => l10n.performanceStateStaged,
+                      RunState.running => l10n.performanceStateRunning,
+                      RunState.finished => l10n.performanceStateFinished(
+                        _target,
+                      ),
+                      RunState.aborted => l10n.performanceStateAborted,
                     },
                     style: context.texts.labelSmall,
                   ),
@@ -332,13 +343,16 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                       },
                     ),
                   ),
-                  Text('秒', style: context.texts.labelMedium),
+                  Text(
+                    l10n.performanceSecondsUnit,
+                    style: context.texts.labelMedium,
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: Spacing.lg),
 
-            const SectionHeading('目標車速'),
+            SectionHeading(l10n.performanceTargetSpeedHeading),
             SegmentedButton<int>(
               segments: [
                 for (final target in _targets)
@@ -353,7 +367,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
             const SizedBox(height: Spacing.lg),
 
             if (_trace.length > 1) ...[
-              const SectionHeading('速度軌跡'),
+              SectionHeading(l10n.performanceSpeedTraceHeading),
               Panel(
                 child: SizedBox(
                   height: 170,
@@ -364,7 +378,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
             ],
 
             if (_splits.isNotEmpty) ...[
-              const SectionHeading('分段成績'),
+              SectionHeading(l10n.performanceSplitsHeading),
               Panel(
                 child: Column(
                   children: [
@@ -388,7 +402,10 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                       padding: const EdgeInsets.only(top: Spacing.sm),
                       child: Row(
                         children: [
-                          Text('最高車速', style: context.texts.bodyMedium),
+                          Text(
+                            l10n.performancePeakSpeed,
+                            style: context.texts.bodyMedium,
+                          ),
                           const Spacer(),
                           Text(
                             '${_peakSpeed.toStringAsFixed(0)} km/h',
@@ -409,12 +426,12 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                 // starts, or one that starts on whichever number arrives first.
                 onPressed: hasSpeed ? _arm : null,
                 icon: const Icon(Icons.play_arrow, size: 20),
-                label: const Text('準備計時'),
+                label: Text(l10n.performanceArm),
               ),
               if (!hasSpeed) ...[
                 const SizedBox(height: Spacing.md),
                 Text(
-                  '目前沒有有效的車速訊號（PID 010D）。加速測試需要它才能計時。',
+                  l10n.performanceNoSpeedSignal,
                   textAlign: TextAlign.center,
                   style: context.texts.bodySmall,
                 ),
@@ -424,15 +441,13 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
               OutlinedButton.icon(
                 onPressed: _reset,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('重置'),
+                label: Text(l10n.performanceReset),
               ),
 
             const SizedBox(height: Spacing.lg),
-            Text(
-              '成績以 OBD 車速訊號為準。多數車輛的車速表本身有 1–3 km/h 的正偏差，'
-              '且訊號更新率約每秒 10–20 次，因此結果僅供參考，不等同於專業測試設備。',
-              style: context.texts.bodySmall,
-            ),
+            // The hedge, not a footnote: this is a timed observation off one
+            // speed signal, not a measurement of what the car can do.
+            Text(l10n.performanceDisclaimer, style: context.texts.bodySmall),
           ],
         ),
       ),
