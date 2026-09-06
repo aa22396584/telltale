@@ -30,6 +30,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
+import 'support/localized_app.dart';
 
 class _FixedScan extends DtcScanNotifier {
   _FixedScan(this.initial);
@@ -68,7 +69,7 @@ Future<void> _pumpReadiness(WidgetTester tester, Readiness readiness) async {
             ))),
         obdSessionProvider.overrideWith(_FixedSession.new),
       ],
-      child: MaterialApp(theme: AppTheme.dark(), home: const DtcScreen()),
+      child: localizedMaterialApp(theme: AppTheme.dark(), home: const DtcScreen()),
     ),
   );
   await tester.pump(const Duration(milliseconds: 50));

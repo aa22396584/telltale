@@ -16,6 +16,7 @@ import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/core/theme/app_colors.dart';
 import 'package:torque_obd/core/theme/gauge_skin.dart';
 import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
+import 'support/localized_app.dart';
 
 void main() {
   group('the five differ in more than colour', () {
@@ -90,7 +91,7 @@ void main() {
       // `context.gaugeSkin` falls back rather than throwing, so a preview or a
       // test pumping a bare MaterialApp renders a dial instead of nothing.
       late GaugeSkin seen;
-      await tester.pumpWidget(MaterialApp(
+      await tester.pumpWidget(localizedMaterialApp(
         home: Builder(builder: (context) {
           seen = context.gaugeSkin;
           return const SizedBox.shrink();

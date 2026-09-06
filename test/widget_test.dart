@@ -6,13 +6,14 @@ import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
 import 'package:torque_obd/ui/widgets/gauges/linear_gauge.dart';
 import 'package:torque_obd/ui/widgets/panel.dart';
+import 'support/localized_app.dart';
 
 Widget _host(
   Widget child, {
   ThemeData? theme,
   Size size = const Size(300, 300),
 }) {
-  return MaterialApp(
+  return localizedMaterialApp(
     theme: theme ?? AppTheme.dark(),
     home: Scaffold(
       body: Center(
@@ -230,7 +231,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(
+        localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const MediaQuery(
             data: MediaQueryData(textScaler: TextScaler.linear(2)),

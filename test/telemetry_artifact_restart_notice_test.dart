@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/core/theme/app_theme.dart';
 import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_artifact_restart_notice.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets('restart-owned artifact warning is exact and not dismissible', (
@@ -15,7 +16,7 @@ void main() {
         child: Builder(
           builder: (context) {
             container = ProviderScope.containerOf(context, listen: false);
-            return MaterialApp(
+            return localizedMaterialApp(
               theme: AppTheme.dark(),
               home: const Scaffold(body: TelemetryArtifactRestartNotice()),
             );

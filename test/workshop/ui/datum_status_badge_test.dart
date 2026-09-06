@@ -8,6 +8,7 @@ import 'package:torque_obd/diagnostics/availability.dart';
 import 'package:torque_obd/obd/physics/vehicle_profile.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_badge.dart';
+import '../../support/localized_app.dart';
 
 void main() {
   testWidgets('estimate badge shows 估算 and opens formula details', (
@@ -20,7 +21,7 @@ void main() {
       quantity: '馬力',
     );
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
           body: Builder(
@@ -56,7 +57,7 @@ void main() {
       max: pid.maxValue,
     );
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(body: DatumStatusBadge(status: status)),
       ),

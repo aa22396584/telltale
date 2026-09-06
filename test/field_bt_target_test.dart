@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/field_bt_target.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
+import 'support/localized_app.dart';
 
 DiscoveredDevice _dev(String id, {String name = 'OBDBLE'}) {
   return DiscoveredDevice(
@@ -75,7 +76,7 @@ void main() {
     String? tapped;
     final devices = [_dev(left), _dev(right)];
     await tester.pumpWidget(
-      MaterialApp(
+      localizedMaterialApp(
         home: Scaffold(
           body: Column(
             children: [

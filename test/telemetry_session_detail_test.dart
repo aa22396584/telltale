@@ -6,6 +6,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_session_detail_screen.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets('detail exposes labels speeds scrubber and sampled disclaimer', (
@@ -21,7 +22,7 @@ void main() {
             (ref, id) async => _replay,
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const TelemetrySessionDetailScreen(
             sessionId: '00000000000000000000000000000001',
@@ -82,7 +83,7 @@ void main() {
             (ref, id) async => _replay,
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const TelemetrySessionDetailScreen(
             sessionId: '00000000000000000000000000000001',
@@ -125,7 +126,7 @@ void main() {
             (ref, id) async => _provenanceReplay,
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const TelemetrySessionDetailScreen(
             sessionId: '00000000000000000000000000000003',
@@ -159,7 +160,7 @@ void main() {
             (ref, id) async => _gapStatusReplay,
           ),
         ],
-        child: MaterialApp(
+        child: localizedMaterialApp(
           theme: AppTheme.dark(),
           home: const TelemetrySessionDetailScreen(
             sessionId: '00000000000000000000000000000004',

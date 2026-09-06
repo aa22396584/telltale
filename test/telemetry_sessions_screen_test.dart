@@ -6,6 +6,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
+import 'support/localized_app.dart';
 
 void main() {
   testWidgets(
@@ -21,7 +22,7 @@ void main() {
               (ref) async => _library,
             ),
           ],
-          child: MaterialApp(
+          child: localizedMaterialApp(
             theme: AppTheme.dark(),
             home: const TelemetrySessionsScreen(),
           ),

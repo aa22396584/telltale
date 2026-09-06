@@ -22,6 +22,7 @@ import 'package:torque_obd/ui/wear/wear_shell.dart';
 import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
 
 import 'support/powertrain_snapshot_fixture.dart';
+import 'support/localized_app.dart';
 
 final class _FixedSession extends ObdSession {
   _FixedSession(this.fixed);
@@ -141,7 +142,7 @@ Future<ProviderContainer> _pumpWear(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(theme: AppTheme.dark(), home: const WearShell()),
+      child: localizedMaterialApp(theme: AppTheme.dark(), home: const WearShell()),
     ),
   );
   await tester.pump(const Duration(milliseconds: 400));
@@ -325,7 +326,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(theme: AppTheme.dark(), home: const WearShell()),
+        child: localizedMaterialApp(theme: AppTheme.dark(), home: const WearShell()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
@@ -409,7 +410,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(theme: AppTheme.dark(), home: const WearShell()),
+          child: localizedMaterialApp(theme: AppTheme.dark(), home: const WearShell()),
         ),
       );
       await tester.pump(const Duration(milliseconds: 400));
@@ -460,7 +461,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(theme: AppTheme.dark(), home: const WearShell()),
+        child: localizedMaterialApp(theme: AppTheme.dark(), home: const WearShell()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
@@ -512,7 +513,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(theme: AppTheme.dark(), home: const WearShell()),
+          child: localizedMaterialApp(theme: AppTheme.dark(), home: const WearShell()),
         ),
       );
       await tester.pump(const Duration(milliseconds: 400));

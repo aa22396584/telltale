@@ -18,6 +18,7 @@ import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_session_detail_screen.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_history_entry.dart';
+import 'support/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -215,7 +216,7 @@ const _emptyLibrary = TelemetrySessionLibrary(
   workerDebugName: 'unused-provider-spy',
 );
 
-Widget _app(Widget home) => MaterialApp(theme: AppTheme.dark(), home: home);
+Widget _app(Widget home) => localizedMaterialApp(theme: AppTheme.dark(), home: home);
 
 class _FixedActivePids extends ActivePids {
   _FixedActivePids(this.value);
