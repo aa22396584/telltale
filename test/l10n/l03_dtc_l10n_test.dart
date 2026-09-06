@@ -288,13 +288,18 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
 /// Keeping the list computed from the enums rather than typed out means a new
 /// engine label cannot quietly widen the hole.
 List<String> _engineOwnedStrings() => [
-      // The fault-code vocabulary used to be listed here — the three class
-      // labels and their explanations, the four system names, the nine J2012
-      // subsystems and every code description. It is not any more: it moved
-      // into the ARBs, so this screen renders it in the reader's language and
-      // the no-Chinese assertion below has nothing to subtract. What is left
-      // is what other lanes still own.
-      for (final monitor in ReadinessMonitor.values) monitor.label,
+      // This list is shrinking, which is the point of computing it from the
+      // engine rather than typing it out.
+      //
+      // The fault-code vocabulary was here — three class labels and their
+      // explanations, four system names, nine J2012 subsystems, every code
+      // description — and so were the readiness monitor names. Both moved into
+      // the ARBs, so the screen renders them in the reader's language and this
+      // has nothing left to subtract for either. `ReadinessMonitor.label` no
+      // longer exists at all, which is how the compiler told us the allowance
+      // was stale.
+      //
+      // What remains is what other lanes still own.
       PidLibrary.engineRpm.name,
       PidLibrary.coolantTemp.name,
       _engineFailureMessage,
