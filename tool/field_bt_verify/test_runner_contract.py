@@ -31,6 +31,11 @@ def _write_exec(path: Path, body: str) -> None:
 
 
 class RunnerContractTest(unittest.TestCase):
+    def test_run_sh_uses_bounded_timeout_reaper(self) -> None:
+        text = RUNNER.read_text()
+        self.assertIn("run_timeout.py", text)
+        self.assertNotIn("proc.communicate()", text)
+
     def _harness(self, dumpsys: str = _ACL_DOWN) -> dict[str, Path]:
         tmp = Path(tempfile.mkdtemp(prefix="field-bt-runner-"))
         bin_dir = tmp / "bin"

@@ -98,9 +98,11 @@ ADB=~/Library/Android/sdk/platform-tools/adb
 $ADB -s R5CX10VFFBA shell dumpsys bluetooth_manager | strings | rg -i 'OBD|ELM|ACL BR/EDR'
 ```
 
-The harness writes pass/fail evidence under `docs/verification/field-bt-probe-*.txt`
-and refuses to claim a journey pass while ACL is down. Details:
-[`tool/field_bt_verify/README.md`](../tool/field_bt_verify/README.md).
+The harness writes observation vs qualification under
+`docs/verification/field-bt-probe-*.txt`. ACL-down is **disconnected**, not a
+field PASS and not “unpowered / out of range”. A field PASS still requires a
+fresh connect → PID → record in that run; `--probe-only` never prints it.
+Details: [`tool/field_bt_verify/README.md`](../tool/field_bt_verify/README.md).
 
 Historical Android field transcript on this workstation (adapter presently
 unpowered): `/sdcard/Download/torque-obd-20260827-133618-recovered.txt` —
@@ -159,8 +161,9 @@ unpowered): `/sdcard/Download/torque-obd-20260827-133618-recovered.txt` —
   adapter historically proven over BLE on 2026-08-27 (see recovered transcript
   above). Re-check `field-bt-probe-20260831T235526Z` via
   `tool/field_bt_verify/run.sh --probe-only`: phone BT **ON**, ACL BR/EDR and
-  LE both still **N** (`ConnectionState` disconnected). Treat as **bonded but
-  unpowered / out of range** — no fresh connect→PID→record this session. Prior
+  LE both still **N** (`ConnectionState` disconnected). Treat as **observation:
+  disconnected** — not unpowered, and not a field PASS. No fresh
+  connect→PID→record that session. Prior
   same-day checks `20260831T232922Z` / `20260831T223755Z` /
   `20260831T222101Z` / `20260831T212448Z` reached the same verdict.
 - macOS paired set is phones/keyboards/earbuds/gamepads only (no ELM327).

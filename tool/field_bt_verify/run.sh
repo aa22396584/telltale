@@ -165,40 +165,8 @@ if [[ -n "$ADAPTER_ADDRESS" ]]; then
   JOURNEY_CMD+=(--dart-define=FIELD_BT_ADAPTER_ADDRESS="$ADAPTER_ADDRESS")
 fi
 set +e
-python3 - "$JOURNEY_TIMEOUT" "$JOURNEY_LOG" "${JOURNEY_CMD[@]}" <<'PY'
-import os
-import signal
-import subprocess
-import sys
-
-limit = float(sys.argv[1])
-log_path = sys.argv[2]
-cmd = sys.argv[3:]
-with open(log_path, "w", encoding="utf-8") as log:
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        start_new_session=True,
-    )
-    assert proc.stdout is not None
-    try:
-        out, _ = proc.communicate(timeout=limit)
-        log.write(out or "")
-        sys.stdout.write(out or "")
-        sys.exit(proc.returncode or 0)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            proc.kill()
-        out, _ = proc.communicate()
-        log.write(out or "")
-        sys.stdout.write(out or "")
-        print("not-run: journey timed out", file=sys.stderr)
-        sys.exit(124)
-PY
+python3 tool/field_bt_verify/run_timeout.py \
+  "$JOURNEY_TIMEOUT" "$JOURNEY_LOG" "${JOURNEY_CMD[@]}"
 JOURNEY_RC=$?
 set -e
 

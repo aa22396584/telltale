@@ -34,8 +34,11 @@ tool/field_bt_verify/run.sh --probe-only
 # Classic SPP instead of BLE
 FIELD_BT_TRANSPORT=classic tool/field_bt_verify/run.sh
 
-# Two adapters share a display name
+# Two adapters share a display name — address is the Connect tile device.id
 tool/field_bt_verify/run.sh --address AA:BB:CC:00:00:01
+
+# Bound a hung Flutter journey (default 300s)
+FIELD_BT_JOURNEY_TIMEOUT=120 tool/field_bt_verify/run.sh
 
 # Reuse an already-installed field debug build
 FIELD_BT_SKIP_INSTALL=1 tool/field_bt_verify/run.sh
