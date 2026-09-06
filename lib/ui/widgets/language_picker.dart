@@ -8,6 +8,19 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/locale_resolution.dart';
 import '../../state/locale_settings.dart';
 
+/// The three options, each written in its own script.
+///
+/// These deliberately do NOT go through [AppLocalizations], and this is the one
+/// place in the app where a hard-coded language name is correct. Somebody
+/// reaching this screen is usually here because the app is in a language they
+/// cannot read; a picker that renders "英文 / 繁體中文" to them, or
+/// "English / Traditional Chinese" to a reader of Chinese, hides the very row
+/// they came to find. A self-name is legible to the person who needs it no
+/// matter which language is currently on screen, which is why the system
+/// option is bilingual rather than translated.
+///
+/// So this function takes no [AppLocalizations]: an unused parameter would
+/// imply the strings are a translation gap somebody should close.
 String localePreferenceLabel(LocalePreference preference) {
   return switch (preference) {
     LocalePreference.english => 'English',
