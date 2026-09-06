@@ -264,7 +264,7 @@ void main() {
     expect(find.text('1 個狀態'), findsOneWidget);
     expect(find.text('1 個缺口'), findsOneWidget);
     expect(find.text('已手動停止'), findsOneWidget);
-    expect(find.text(telemetryReplayDisclaimer), findsOneWidget);
+    expect(find.text('預覽已抽樣；匯出保留完整已記錄事件'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('播放'),
       160,
@@ -341,7 +341,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '匯出'));
     await tester.pumpAndSettle();
     expect(find.text('匯出本機紀錄'), findsOneWidget);
-    expect(find.text(telemetryExportDisclosure), findsOneWidget);
+    expect(find.textContaining('匯出內容不含 VIN'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tapAt(const Offset(8, 8));
     await tester.pumpAndSettle();
@@ -399,7 +399,7 @@ void main() {
       _scaled(const Scaffold(body: TelemetryExportSheet())),
     );
 
-    expect(find.text(telemetryExportDisclosure), findsOneWidget);
+    expect(find.textContaining('匯出內容不含 VIN'), findsOneWidget);
     expect(find.text('匯出 CSV'), findsOneWidget);
     expect(find.text('匯出 JSON'), findsOneWidget);
   });

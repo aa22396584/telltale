@@ -765,6 +765,9 @@ class Elm327Client {
   /// How the `ATPPS` probe ended, for [adapterIdentity].
   PpsProbe ppsProbe = PpsProbe.unavailable;
 
+  /// How the `AT@1` probe ended, for [adapterIdentity].
+  IdentityProbe identityProbe = IdentityProbe.unavailable;
+
   /// What this adapter says about itself, and where that fails to add up.
   ///
   /// Built from replies the handshake already collected — no extra command is
@@ -775,6 +778,7 @@ class Elm327Client {
     version: deviceVersion,
     identity: deviceIdentity,
     pps: ppsProbe,
+    identityProbe: identityProbe,
   );
 
   /// Turns the byte spaces back on when the identifier width is ambiguous.
@@ -2072,7 +2076,22 @@ class Elm327Client {
         final line = _identityLine(command, response);
         if (line.isNotEmpty) deviceVersion = line;
       case 'AT@1':
-        if (response.isSuccess) deviceIdentity = response.firstLine;
+        // Three states, matching `ppsProbe` sixty lines up and for the same
+        // reason: only an explicit refusal is evidence about the device. A
+        // timeout, a DATA ERROR or a dropped Bluetooth packet all used to
+        // leave `deviceIdentity` empty and indistinguishable from a refusal,
+        // and the empty string was enough to put a ⚠ against an honest
+        // adapter for the life of the connection.
+        if (response.isSuccess) {
+          deviceIdentity = response.firstLine;
+          identityProbe = deviceIdentity.isEmpty
+              ? IdentityProbe.unavailable
+              : IdentityProbe.read;
+        } else if (response.errorCode == Elm327ErrorCode.unknownCommand) {
+          identityProbe = IdentityProbe.refused;
+        } else {
+          identityProbe = IdentityProbe.unavailable;
+        }
       case 'ATRV':
         // Including the null case: this command exists to answer the question,
         // so its failure to answer is the answer.

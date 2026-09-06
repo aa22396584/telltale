@@ -49,15 +49,74 @@ enum PpsProbe {
   unavailable,
 }
 
+/// How the `AT@1` device-identity probe ended.
+///
+/// The same three states as [PpsProbe], and for the same reason: only
+/// [refused] is evidence about the device, [unavailable] is evidence about the
+/// moment. It was a bare `String deviceIdentity` that stayed empty on a refusal,
+/// a timeout, a `DATA ERROR` and a dropped Bluetooth packet alike — so a single
+/// unlucky handshake put a permanent ⚠ and "this chip implements a smaller
+/// command set than any official firmware" against an honest adapter.
+///
+/// A reviewer found that the asymmetry ran the wrong way. The best-evidenced
+/// doubt — a firmware version Elm Electronics never published, a static fact
+/// from the datasheet's revision history — carried a hedge. The worst-evidenced
+/// one, the absence of one reply, carried the word "means".
+enum IdentityProbe {
+  /// The adapter answered with an identity string.
+  read,
+
+  /// The adapter answered `?`: it does not implement AT@1.
+  refused,
+
+  /// Timed out, was unreadable, or errored. Says nothing either way.
+  unavailable,
+}
+
+/// Which doubt this is.
+///
+/// The words live in `lib/ui/screens/settings/adapter_concern_copy.dart`. They
+/// were `String summary` and `String detail` on the class below, in Traditional
+/// Chinese, and `settings_screen.dart` rendered them directly — so the English
+/// build showed a ⚠ followed by a paragraph its reader could not read. That is
+/// the clone-detection result: the feature the store listing's "when it is
+/// unsure, it says so" is about, and the one r/CarHacking corroborates.
+enum AdapterConcernKind {
+  /// Elm Electronics never shipped the firmware version this adapter claims.
+  firmwareNeverReleased,
+
+  /// It claims a version that has ATPPS, and does not answer ATPPS.
+  ppsRefusedDespiteVersion,
+
+  /// It does not answer AT@1, which has existed since v1.0.
+  noIdentityResponse,
+}
+
 /// A single doubt about the adapter's self-description.
 class AdapterConcern {
-  const AdapterConcern(this.summary, this.detail);
+  const AdapterConcern(this.kind, {this.version});
 
-  /// One line, for a list.
-  final String summary;
+  final AdapterConcernKind kind;
 
-  /// What was observed and why it means anything.
-  final String detail;
+  /// The version the adapter claimed, for the two doubts that quote it back.
+  /// Null for [AdapterConcernKind.noIdentityResponse], which is about silence.
+  final String? version;
+
+  /// One line for the **evidence header**, and nowhere else.
+  ///
+  /// `ObdSession` writes this into the transcript's header, which stays in
+  /// Traditional Chinese on purpose: an evidence file whose wording follows a
+  /// phone setting is one two readers cannot compare. The screen reads
+  /// `adapterConcernSummary` from `lib/ui/screens/settings/` instead, and
+  /// `export_labels_stay_off_screen_test.dart` keeps it that way.
+  String get exportSummary => switch (kind) {
+    AdapterConcernKind.firmwareNeverReleased =>
+      '回報的韌體版本 v$version 官方從未發行',
+    AdapterConcernKind.ppsRefusedDespiteVersion =>
+      '自稱 v$version，卻不認得 v1.1 就有的 ATPPS 指令',
+    AdapterConcernKind.noIdentityResponse =>
+      '不回應 AT@1（第一版就有的裝置識別指令）',
+  };
 }
 
 /// The adapter's own account of itself, and where it fails to add up.
@@ -66,15 +125,21 @@ class AdapterIdentity {
     required this.version,
     required this.identity,
     required this.pps,
+    this.identityProbe = IdentityProbe.unavailable,
   });
 
   /// The `ATI` banner, verbatim.
   final String version;
 
-  /// The `AT@1` device identifier, verbatim. Empty if it refused.
+  /// The `AT@1` device identifier, verbatim. Empty unless [identityProbe] is
+  /// [IdentityProbe.read].
   final String identity;
 
   final PpsProbe pps;
+
+  /// How the `AT@1` probe ended. An empty [identity] alone cannot tell a
+  /// refusal from a dropped reply, and only the refusal is evidence.
+  final IdentityProbe identityProbe;
 
   /// Firmware versions Elm Electronics never released.
   ///
@@ -112,28 +177,26 @@ class AdapterIdentity {
 
     if (number != null && neverReleased.contains(number)) {
       found.add(AdapterConcern(
-        '回報的韌體版本 v$number 官方從未發行',
-        'ELM327 的原廠 Elm Electronics 沒有出過這個版本 —— 這台轉接器上的'
-            '韌體不是它自稱的那一份。很多這種轉接器仍然可用，'
-            '但它對自己的描述已經不可靠，遇到讀不到的狀況時值得先懷疑它。',
+        AdapterConcernKind.firmwareNeverReleased,
+        version: number,
       ));
     }
 
     final value = versionValue;
     if (pps == PpsProbe.refused && value != null && value >= 1.1) {
       found.add(AdapterConcern(
-        '自稱 v$number，卻不認得 v1.1 就有的 ATPPS 指令',
-        '可程式參數摘要（ATPPS）從 ELM327 v1.1 起就存在，連 OBDLink 這類'
-            '高階轉接器也支援。自稱的版本與實際實作的指令對不起來。',
+        AdapterConcernKind.ppsRefusedDespiteVersion,
+        version: number,
       ));
     }
 
-    if (identity.isEmpty) {
-      found.add(const AdapterConcern(
-        '不回應 AT@1（第一版就有的裝置識別指令）',
-        '這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比'
-            '任何一版官方韌體都少。',
-      ));
+    // `refused` only. Silence is a fact about the link, not about the chip,
+    // and this concern is rendered next to a ⚠ on a screen whose whole job is
+    // to be right about the adapter.
+    if (identityProbe == IdentityProbe.refused) {
+      found.add(
+        const AdapterConcern(AdapterConcernKind.noIdentityResponse),
+      );
     }
 
     return found;

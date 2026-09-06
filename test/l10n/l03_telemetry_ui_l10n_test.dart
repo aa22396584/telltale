@@ -73,8 +73,6 @@ final _cjkPunctuation = cjkPunctuation;
 /// checked whole — instead of a hard-coded allowlist quietly excusing copy that
 /// has since been fixed.
 Set<String> _notOwnedByThisWave() => {
-  telemetryReplayDisclaimer,
-  telemetryExportDisclosure,
   for (final access in TelemetryHistoryAccess.values)
     ?access.message(lookupAppLocalizations(englishLocale)),
 };
@@ -611,6 +609,19 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
+        // `scrollUntilVisible` stops when the finder matches, which can leave
+        // the widget flush against the viewport edge — the tap then lands at
+        // exactly y=600 in this 800x600 harness and hit-tests nothing.
+        //
+        // It started failing when the sampling notice above it was keyed: the
+        // English sentence is roughly three times the length of 「預覽已抽樣；
+        // 匯出保留完整已記錄事件」 and pushes this button down by a line. Real
+        // screens are 2340px tall and scroll, so this is the harness rather
+        // than the product — but the underlying fact is real and is the reason
+        // the runbook's device gate exists: English copy is longer, and longer
+        // copy moves things.
+        await tester.ensureVisible(find.text(en.telemetryDelete));
+        await tester.pumpAndSettle();
         await tester.tap(find.text(en.telemetryDelete));
         await tester.pumpAndSettle();
         _expectEnglishScreen(tester, 'delete confirmation dialog');

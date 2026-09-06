@@ -12,8 +12,29 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-45 entries. Every entry that names a **Shipped as** key is checked against the shipped
+49 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
+**Why exact, and not something cleverer.** Three guards were written for the
+sentences below before this file was used for them, and each was defeated in a
+way the previous one had not anticipated:
+
+1. *Does the sentence contain the words?* — defeated by a translation that keeps
+   every word and reverses the claim: "The export **contains** the VIN, GPS, an
+   account and the adapter address. It does not contain signal names…".
+2. *Do the words fall on the right side of the negation?* — defeated by
+   qualification rather than reversal: "It **usually** does not contain…", which
+   is what an otherwise reasonable translator adds.
+3. *Are `preview`, `sampled` and `export` in that order?* — defeated by one
+   word: 「預覽**未**抽樣」 and "the preview is **not** sampled" move no position
+   at all.
+
+Order, split-points and word lists are heuristics, and heuristics against
+translation are an arms race that the translation wins, because there are more
+ways to say a thing than to check it. Recording the sentence and comparing it
+character for character ends the game: every edit fails, including the correct
+ones, and updating this file is the moment a person is looking at the sentence
+anyway. That cost is the feature.
+
 The comparison is **exact** by default. An entry may write `**English (clause)**` to record
 only the load-bearing fragment of a longer shipped sentence, and the guard then checks that
 the fragment survives and that the shipped string has not grown by more than one sentence
@@ -103,7 +124,7 @@ entry needs the clause form today.
 
 ### 11. 這次沒有讀到凍結幀 —— 不代表車上沒有。
 
-**繁體中文** — 這次沒有讀到凍結幀 —— 不代表車上沒有。
+**繁體中文** — 這次沒有讀到凍結幀，但不代表車上沒有。先重新掃描一次，再決定要不要清除。
 
 **English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.
 
@@ -134,7 +155,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 ### 14. 部分未確認 / 無法確認
 
-**繁體中文** — 部分未確認 / 無法確認
+**繁體中文** — 部分未確認
 
 **English** — Partially unconfirmed
 
@@ -222,7 +243,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 ### 24. 猜錯不會怎麼樣 —— 連不上就退回來換另一個試。
 
-**繁體中文** — 猜錯不會怎麼樣 —— 連不上就退回來換另一個試。
+**繁體中文** — 猜錯不會怎麼樣 —— 連不上就退回來換另一個試。真的卡住，先用最下面的「Demo 模擬器」確認 App 本身正常。
 
 **English** — Guessing wrong costs nothing — if it will not connect, come back and try another. If you are really stuck, use the Demo simulator at the bottom to confirm the app itself is working.
 
@@ -407,7 +428,7 @@ maintainer.
 
 ### 42. 故障燈已亮
 
-**繁體中文** — 故障燈已亮
+**繁體中文** — 故障燈亮著
 
 **English** — The fault lamp is lit
 
@@ -444,3 +465,43 @@ maintainer.
 **Shipped as** `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). Entry 11 is the shorter form the clear dialog uses.
 
 **Why it is load-bearing.** Entry 11's reasoning, plus two clauses the dialog has no room for: that clearing destroys the record permanently, and that a vehicle which never produces a frame is a possibility rather than a fault. It shared entry 11's `**English**` line as a clause, which meant the guard could only check that its first two sentences survived — a translation was free to append 'On most vehicles this is safe, so clearing now is fine', and a reviewer proved that passed everything. Recording the whole sentence is what makes the check a fence rather than a floor.
+
+### 46. 預覽已抽樣；匯出保留完整已記錄事件
+
+**繁體中文** — 預覽已抽樣；匯出保留完整已記錄事件
+
+**English** — The preview is sampled; the export keeps every recorded event.
+
+**Shipped as** `telemetryReplaySampled` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** The only sentence telling a reader that the chart in front of them is not the whole recording. A structural test guarded it first — preview before export, 'sampled' between them — and a reviewer defeated it with one word: 「預覽**未**抽樣」 and 'the preview is **not** sampled' leave all three positions unchanged. Recording the sentence verbatim here is what makes any edit, in any direction, fail.
+
+### 47. 匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。
+
+**繁體中文** — 匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。
+
+**English** — The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.
+
+**Shipped as** `telemetryExportDisclosure` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** Where the app says what leaves the device, and what the en-US listing's 'no ads, no tracking, no personal data collected' rests on. Both halves are load-bearing and neither may be qualified: a reviewer got 'It **usually** does not contain the VIN, GPS, an account or the adapter address' past a test that checked which side of the negation each token fell on. Qualification is what an otherwise reasonable translation introduces.
+
+### 48. ELM327 的原廠 Elm Electronics 沒有出過這個版本 —— 這台轉接器上的韌體不是它自稱的那一份。很多這種轉接器仍然可用，但它對自己的描述已經不可靠，遇到讀不到的狀況時值得先懷疑它。
+
+**繁體中文** — ELM327 的原廠 Elm Electronics 沒有出過這個版本 —— 這台轉接器上的韌體不是它自稱的那一份。很多這種轉接器仍然可用，但它對自己的描述已經不可靠，遇到讀不到的狀況時值得先懷疑它。
+
+**English** — Elm Electronics never published this version, so the firmware on this adapter is not the one it claims. Many of these still work — but its description of itself cannot be trusted, and it is worth suspecting first when something will not read.
+
+**Shipped as** `adapterConcernFirmwareNeverReleasedDetail` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** A very large share of *working* adapters report v1.5, so this must read as a statement of fact and not a verdict on the hardware. 「很多這種轉接器仍然可用」 / 'Many of these still work' is the half that keeps it honest, and 'its description of itself cannot be trusted' is the half that makes it useful. Dropping either turns a caution into either an accusation or nothing.
+
+### 49. 這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比任何一版官方韌體都少。
+
+**繁體中文** — 這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比任何一版官方韌體都少。
+
+**English** — This command has existed since ELM327 v1.0. Not answering it means this chip implements a smaller command set than any official firmware.
+
+**Shipped as** `adapterConcernNoIdentityDetail` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** This one is a verdict, and it is allowed to be one only because `IdentityProbe.refused` now gates it — a refusal is the device speaking about itself, where an absence was the link speaking about the moment. If the trigger is ever loosened back to an absence, this wording becomes a clone accusation assembled out of a dropped packet, so the two have to move together.

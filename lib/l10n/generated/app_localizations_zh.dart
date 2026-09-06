@@ -3149,6 +3149,38 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get datumAssumptionsFromRecording => '估算使用記錄當下的車輛設定';
+
+  @override
+  String adapterConcernFirmwareNeverReleasedSummary(String version) {
+    return '回報的韌體版本 v$version 官方從未發行';
+  }
+
+  @override
+  String get adapterConcernFirmwareNeverReleasedDetail =>
+      'ELM327 的原廠 Elm Electronics 沒有出過這個版本 —— 這台轉接器上的韌體不是它自稱的那一份。很多這種轉接器仍然可用，但它對自己的描述已經不可靠，遇到讀不到的狀況時值得先懷疑它。';
+
+  @override
+  String adapterConcernPpsRefusedSummary(String version) {
+    return '自稱 v$version，卻不認得 v1.1 就有的 ATPPS 指令';
+  }
+
+  @override
+  String get adapterConcernPpsRefusedDetail =>
+      '可程式參數摘要（ATPPS）從 ELM327 v1.1 起就存在，連 OBDLink 這類高階轉接器也支援。自稱的版本與實際實作的指令對不起來。';
+
+  @override
+  String get adapterConcernNoIdentitySummary => '不回應 AT@1（第一版就有的裝置識別指令）';
+
+  @override
+  String get adapterConcernNoIdentityDetail =>
+      '這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比任何一版官方韌體都少。';
+
+  @override
+  String get telemetryReplaySampled => '預覽已抽樣；匯出保留完整已記錄事件';
+
+  @override
+  String get telemetryExportDisclosure =>
+      '匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6295,4 +6327,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get datumAssumptionsFromRecording => '估算使用記錄當下的車輛設定';
+
+  @override
+  String adapterConcernFirmwareNeverReleasedSummary(String version) {
+    return '回報的韌體版本 v$version 官方從未發行';
+  }
+
+  @override
+  String get adapterConcernFirmwareNeverReleasedDetail =>
+      'ELM327 的原廠 Elm Electronics 沒有出過這個版本 —— 這台轉接器上的韌體不是它自稱的那一份。很多這種轉接器仍然可用，但它對自己的描述已經不可靠，遇到讀不到的狀況時值得先懷疑它。';
+
+  @override
+  String adapterConcernPpsRefusedSummary(String version) {
+    return '自稱 v$version，卻不認得 v1.1 就有的 ATPPS 指令';
+  }
+
+  @override
+  String get adapterConcernPpsRefusedDetail =>
+      '可程式參數摘要（ATPPS）從 ELM327 v1.1 起就存在，連 OBDLink 這類高階轉接器也支援。自稱的版本與實際實作的指令對不起來。';
+
+  @override
+  String get adapterConcernNoIdentitySummary => '不回應 AT@1（第一版就有的裝置識別指令）';
+
+  @override
+  String get adapterConcernNoIdentityDetail =>
+      '這條指令從 ELM327 v1.0 就存在。不回應代表這顆晶片的指令集比任何一版官方韌體都少。';
+
+  @override
+  String get telemetryReplaySampled => '預覽已抽樣；匯出保留完整已記錄事件';
+
+  @override
+  String get telemetryExportDisclosure =>
+      '匯出內容包含訊號名稱、數值、觀測與來源時間、傳輸類型、通訊協定、凍結的 PID 標籤／單位／公式，以及估算假設（車重、空氣阻力、排氣量、燃料等參數）。JSON 可能包含使用者自訂標籤、單位、公式與完整凍結定義。匯出內容不含 VIN、GPS、帳號、轉接器位址、完整車輛設定檔或原始診斷流量。';
 }

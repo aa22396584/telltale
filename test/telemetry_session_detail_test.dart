@@ -39,7 +39,7 @@ void main() {
     expect(find.text('1 個狀態'), findsOneWidget);
     expect(find.text('2 個缺口'), findsOneWidget);
     expect(find.text('已手動停止'), findsOneWidget);
-    expect(find.text(telemetryReplayDisclaimer), findsOneWidget);
+    expect(find.text('預覽已抽樣；匯出保留完整已記錄事件'), findsOneWidget);
     expect(find.text('1x'), findsOneWidget);
     expect(find.text('4x'), findsOneWidget);
     expect(find.text('16x'), findsOneWidget);

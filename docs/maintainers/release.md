@@ -60,17 +60,31 @@ Android 的 versionCode 完全由 `pubspec.yaml` 第 4 行的 `version: x.y.z+N`
 grep '^version:' pubspec.yaml
 ```
 
-截至 **2026-09-06**，Play production 已發布 **`1.0.9` / versionCode 10**（completed /
-`PUBLISHED`）。GitHub community 預發行停在 **`v1.0.9-beta.1` / `1.0.9+10`**，
-尚未含語言切換。本樹是 **`1.0.10+11`**。跟 Play 不是同一條簽章線（community
-金鑰不能覆蓋 Play 安裝）。Play 已消耗 1–10；**下一份上傳 Play 的 `+N` 必須 > 10**。
+截至 **2026-09-07 重讀 Console 當下**，Play production 已發布 **`1.0.10` / versionCode 11**
+（completed）。GitHub community 預發行停在 **`v1.0.10-beta.1`**，跟 Play 不是同一條簽章線
+（community 金鑰不能覆蓋 Play 安裝）。本樹是 **`1.0.11+12`**。
+Play 已消耗 1–11；**下一份上傳 Play 的 `+N` 必須 > 11**。
+
+這一段每次發版都會過期，而過期的數字不會讓任何指令失敗 —— 它只會讓下一位讀者
+相信一件已經不成立的事。所以真正的指令是下面那一行，不是這一段文字：
+
+```bash
+gplay status --package com.cbstudio.telltale | python3 -c "import sys,json; \
+  print([t for t in json.load(sys.stdin)['tracks']['tracks'] if t['releases']])"
+```
+
+**這道指令給的是下界，不是最大值。** 它只列出各軌道**現行的 release**，所以已經燒掉
+但不再是現行版本的 versionCode 看不到（實測輸出只有 6 與 11，而 1–5、7–10 都已用過）。
+更要緊的是：**上傳過但從未 release 的 bundle 一樣會佔用它的 versionCode，而這道指令
+完全看不到它**。撞到的代價是上傳被擋（`Version code N has already been used`），不是
+錯誤的發布 —— 但既然這一段的用意就是「用可靠的指令取代會過期的數字」，這個缺口必須
+一起寫下來，否則它只是換了一種方式讓人自信地弄錯。
+
+真正的最大值要到 Play Console → 版本 → App bundle 探索工具去讀，那裡才列出每一個
+上傳過的 bundle，不論它有沒有被發布。
 Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。
-
-```bash
-# Play 下一版至少是 1.0.10+11（先重讀 Console，不要只信這段文字）
-```
 
 版本名（`+` 左邊）是給使用者看的，versionCode（`+` 右邊）是給 Play 排序用的，
 兩者不必同步遞增，但 versionCode 必須嚴格遞增。
@@ -161,7 +175,7 @@ release 打包任務丟 `GradleException` 而不是靜靜退回 debug 金鑰。�
 
 1. 確認 `grep -n universal_ble pubspec.yaml` 有命中，而 `flutter_blue_plus` 只出現在
    解釋為什麼不用它的註解裡
-2. 依第 1 節把 `version:` bump（versionCode 只能往上，Play 已用到 10）
+2. 依第 1 節把 `version:` bump（versionCode 只能往上；用上面那道 `gplay status` 讀出目前最大值，不要照抄文件裡的數字）
 3. 重新 `flutter build appbundle --release --flavor field`
 4. 上傳新 AAB 並確認軌道頁顯示的「有效草稿版本」就是它
 5. 走第 5 節的實機閘門，才輪到送審

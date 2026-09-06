@@ -34,6 +34,15 @@ final _entry = RegExp(r'^### (\d+)\. (.*)$');
 /// `dtcRescanFirst` with it. Punctuation drift in a Markdown file must not be
 /// able to disarm a test.
 final _english = RegExp(r'^\*\*English( \(clause\))?\*\*[\s\u00a0]*[—–-][\s\u00a0]*(.*)$');
+
+/// The Chinese half, held to the same standard where the entry names an ARB
+/// key. It used not to be checked at all, on the reasoning that the register
+/// quotes zh from source files all over the tree rather than only the ARBs —
+/// true for the unkeyed entries, and it let an entry written an hour earlier
+/// record 「故障燈已亮」 for a key that ships 「故障燈亮著」. The unchecked half
+/// rots immediately, which is the whole argument of this file applied to
+/// itself.
+final _chinese = RegExp(r'^\*\*繁體中文\*\*[\s\u00a0]*[—–-][\s\u00a0]*(.*)$');
 final _shipped = RegExp(r'^\*\*Shipped as\*\* (.*)$');
 
 /// A backticked ARB key, optionally qualified by a class: `AppLocalizations.foo`
@@ -45,13 +54,23 @@ final _shipped = RegExp(r'^\*\*Shipped as\*\* (.*)$');
 /// looser first version did exactly that on its first run.
 final _key = RegExp(r'`(?:[A-Z][A-Za-z0-9_]*\.)?([a-z][A-Za-z0-9_]*)`');
 
-/// Markdown emphasis and the register's own em-dash conventions are formatting,
-/// not copy. A shipped string never contains `**`.
+/// Whitespace normalisation, applied to both sides.
+///
+/// A non-breaking space and a run of spaces render the same, and a Markdown
+/// file picks them up from editors without anybody deciding to.
 String _plain(String value) => value
-    .replaceAll('**', '')
     .replaceAll(' ', ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+/// The register's own Markdown emphasis, stripped from the REGISTER side only.
+///
+/// It used to be stripped from both, and that hid a real defect: a shipped
+/// string containing a literal `**not**` compared equal to a register entry
+/// saying `not`, so the guard passed while the screen rendered the asterisks.
+/// Emphasis is a property of the Markdown file. Whatever the ARB holds is what
+/// a reader sees, character for character, and this comparison says so.
+String _fromRegister(String value) => _plain(value.replaceAll('**', ''));
 
 /// How many sentences a string is, roughly: a terminator followed by a space.
 ///
@@ -62,10 +81,12 @@ int _sentences(String value) =>
     RegExp(r'[.!?](\s|$)').allMatches(value).length.clamp(1, 1 << 30);
 
 class _Hedge {
-  _Hedge(this.number, this.title, this.english, this.keys, this.clauseOnly);
+  _Hedge(this.number, this.title, this.english, this.chinese, this.keys,
+      this.clauseOnly);
   final int number;
   final String title;
   final String english;
+  final String? chinese;
   final List<String> keys;
 
   /// True when the register records a fragment of a longer shipped sentence
@@ -81,6 +102,7 @@ List<_Hedge> _readRegister() {
   int? number;
   var title = '';
   String? english;
+  String? chinese;
   var clauseOnly = false;
   var keys = <String>[];
 
@@ -88,7 +110,7 @@ List<_Hedge> _readRegister() {
     final n = number;
     final e = english;
     if (n != null && e != null && keys.isNotEmpty) {
-      hedges.add(_Hedge(n, title, e, keys, clauseOnly));
+      hedges.add(_Hedge(n, title, e, chinese, keys, clauseOnly));
     }
   }
 
@@ -99,6 +121,7 @@ List<_Hedge> _readRegister() {
       number = int.parse(entry.group(1)!);
       title = entry.group(2)!;
       english = null;
+      chinese = null;
       clauseOnly = false;
       keys = <String>[];
       continue;
@@ -106,7 +129,12 @@ List<_Hedge> _readRegister() {
     final en = _english.firstMatch(line);
     if (en != null) {
       clauseOnly = en.group(1) != null;
-      english = _plain(en.group(2)!);
+      english = _fromRegister(en.group(2)!);
+      continue;
+    }
+    final zhLine = _chinese.firstMatch(line);
+    if (zhLine != null) {
+      chinese = _fromRegister(zhLine.group(1)!);
       continue;
     }
     final shipped = _shipped.firstMatch(line);
@@ -130,8 +158,8 @@ List<_Hedge> _readRegister() {
   return hedges;
 }
 
-Map<String, String> _arb() {
-  final raw = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync());
+Map<String, String> _arb([String file = 'app_en.arb']) {
+  final raw = jsonDecode(File('lib/l10n/$file').readAsStringSync());
   return <String, String>{
     for (final e in (raw as Map<String, dynamic>).entries)
       if (!e.key.startsWith('@') && e.value is String) e.key: e.value as String,
@@ -141,6 +169,7 @@ Map<String, String> _arb() {
 void main() {
   final hedges = _readRegister();
   final arb = _arb();
+  final zhArb = _arb('app_zh_Hant.arb');
 
   test('the register names keys that exist', () {
     final missing = <String>[];
@@ -202,6 +231,91 @@ void main() {
           'Either the translation was softened — which is the defect this file '
           'exists to catch — or the register is stale and should be updated in '
           'the same change that moved the copy.\n\n${broken.join('\n\n')}',
+    );
+  });
+
+  test('the Chinese half is held to what ships too', () {
+    // Only where the entry names an ARB key — the unkeyed entries quote zh from
+    // source files across the tree, and `glossary_evidence_test.dart` holds
+    // those to their line numbers instead.
+    //
+    // A reviewer defeated a structural guard on the English by swapping 「已」
+    // for 「未」, which moved no index it was checking. Pinning the sentence
+    // verbatim is what makes any edit fail, and the Chinese needs that as much
+    // as the English does — more so, because the Chinese is what most of this
+    // app's users read.
+    final broken = <String>[];
+    for (final hedge in hedges) {
+      final recorded = hedge.chinese;
+      if (recorded == null) continue;
+      for (final key in hedge.keys) {
+        final shipped = zhArb[key];
+        if (shipped == null) continue;
+        if (_plain(shipped) != recorded) {
+          broken.add(
+            '#${hedge.number} $key\n'
+            '  register: $recorded\n'
+            '  shipped:  ${_plain(shipped)}',
+          );
+        }
+      }
+    }
+    expect(broken, isEmpty, reason: broken.join('\n\n'));
+  });
+
+  test('every keyed entry has a Chinese line that parsed', () {
+    // `hedges` only ever holds keyed entries, so this is exact rather than a
+    // floor — and it is the asymmetry that made the last hole invisible.
+    //
+    // A broken `**English**` line stops the hedge being built at all, so the
+    // count disagrees with the number of `Shipped as` lines and the control
+    // fires. A broken `**繁體中文**` line just leaves `chinese` null, which is
+    // legitimate for the unkeyed entries, so nothing could tell "there is no
+    // Chinese here" from "the Chinese line stopped parsing".
+    //
+    // A reviewer found the way in: `_chinese` accepts —, – and -, but not
+    // U+FF0D `－`, which is what a CJK IME produces in fullwidth mode — on the
+    // one line that is by definition typed with a CJK IME. Swapping that
+    // character on entry 11 dropped it from the guard, and gutting its Chinese
+    // to 「這次沒有讀到凍結幀。可以直接清除。」 then passed. That entry is the
+    // one whose own note says the mistake it prevents is irreversible: clearing
+    // destroys an unread freeze frame permanently.
+    //
+    // Adding U+FF0D to the character class would be the arms race again. The
+    // assertion is the fix.
+    final unparsed = hedges
+        .where((h) => h.chinese == null)
+        .map((h) => '#${h.number} ${h.title}')
+        .toList();
+    expect(
+      unparsed,
+      isEmpty,
+      reason: 'A keyed entry whose 繁體中文 line stopped parsing is silently '
+          'unguarded, and the count-based control cannot see it:\n'
+          '${unparsed.join('\n')}',
+    );
+  });
+
+  test('no shipped string carries Markdown emphasis', () {
+    // `_fromRegister` strips `**` from the register side only, so a shipped
+    // string carrying it now fails the comparison — but it fails saying the
+    // sentences differ, which sends the next reader looking for a wording
+    // change that is not there. This says what actually happened.
+    final withEmphasis = <String>[];
+    for (final hedge in hedges) {
+      for (final key in hedge.keys) {
+        for (final entry in {'en': arb[key], 'zh': zhArb[key]}.entries) {
+          if (entry.value?.contains('**') ?? false) {
+            withEmphasis.add('#${hedge.number} $key (${entry.key})');
+          }
+        }
+      }
+    }
+    expect(
+      withEmphasis,
+      isEmpty,
+      reason: 'These would render literal asterisks to a reader:\n'
+          '${withEmphasis.join('\n')}',
     );
   });
 

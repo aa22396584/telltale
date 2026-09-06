@@ -2855,5 +2855,27 @@
   "datumAssumptionsFromRecording": "The estimate uses the vehicle settings as they were when this was recorded.",
   "@datumAssumptionsFromRecording": {
     "description": "Shown in the estimate details for a replayed session whose file did not store the parameter list. It must not imply the settings were verified, only that they are the ones in force at record time."
+  },
+  "adapterConcernFirmwareNeverReleasedSummary": "Reports firmware v{version}, which was never released",
+  "@adapterConcernFirmwareNeverReleasedSummary": {
+    "description": "Clone-adapter detection. Elm Electronics never shipped this version number, so the firmware is not the one the adapter says it is. Must not be softened into a compatibility note: the point is that the device's account of itself is unreliable.",
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "adapterConcernFirmwareNeverReleasedDetail": "Elm Electronics never published this version, so the firmware on this adapter is not the one it claims. Many of these still work — but its description of itself cannot be trusted, and it is worth suspecting first when something will not read.",
+  "adapterConcernPpsRefusedSummary": "Claims v{version}, yet does not know ATPPS, which v1.1 had",
+  "@adapterConcernPpsRefusedSummary": {
+    "description": "Clone-adapter detection: the claimed version and the implemented command set contradict each other. ATPPS and the version numbers are protocol tokens and are not translated.",
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "adapterConcernPpsRefusedDetail": "The programmable-parameter summary (ATPPS) has existed since ELM327 v1.1, and even high-end adapters such as OBDLink support it. The version it claims and the commands it actually implements do not line up.",
+  "adapterConcernNoIdentitySummary": "Does not answer AT@1, the device-identity command from the first release",
+  "adapterConcernNoIdentityDetail": "This command has existed since ELM327 v1.0. Not answering it means this chip implements a smaller command set than any official firmware.",
+  "telemetryReplaySampled": "The preview is sampled; the export keeps every recorded event.",
+  "@telemetryReplaySampled": {
+    "description": "Shown under a replayed session's chart, always. The chart a reader is looking at is not the whole recording, and this sentence is the only thing that says so — dropping or softening it lets somebody read a sampled curve as a complete one."
+  },
+  "telemetryExportDisclosure": "The export contains signal names, values, observation and source times, transport kind, protocol, frozen PID labels, units and formulas, and the estimate assumptions (mass, drag, displacement, fuel and similar parameters). JSON may also contain your own custom labels, units, formulas and complete frozen definitions. The export does not contain the VIN, GPS, an account, the adapter address, the full vehicle profile, or raw diagnostic traffic.",
+  "@telemetryExportDisclosure": {
+    "description": "Shown on the export sheet. It is where the app tells the reader what leaves the device, and it is what the store listing's 'no personal data collected' rests on. Both halves are load-bearing: the enumeration of what IS included, and the enumeration of what is NOT. Do not shorten either."
   }
 }

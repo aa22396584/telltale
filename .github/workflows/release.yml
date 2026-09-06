@@ -320,9 +320,10 @@ jobs:
           > - `docs/verification/test-evidence.md` and
           >   `docs/verification/device-verification.md` record the exact boundary.
           >
-          > If you have an adapter and a car, this is the build to try. Settings →
-          > 匯出紀錄 exports a verbatim transcript of everything the adapter said;
-          > an issue with that file attached is the most useful thing you can send.
+          > If you have an adapter and a car, this is the build to try.
+          > Settings → Export transcript writes out a verbatim record of
+          > everything the adapter said; an issue with that file attached is the
+          > most useful thing you can send.
           >
           > **預發行版本。** 模擬 ELM327、分段與故障注入測試已通過；Samsung 實體手機
           > 也已用真實藍牙無線電與 Android GATT，連上 Mac 主機的 BLE rig。

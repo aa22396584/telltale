@@ -235,7 +235,7 @@ class _ReplayBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Spacing.md),
-        const Text(telemetryReplayDisclaimer),
+        Text(l10n.telemetryReplaySampled),
         const SizedBox(height: Spacing.md),
         Wrap(
           spacing: Spacing.sm,

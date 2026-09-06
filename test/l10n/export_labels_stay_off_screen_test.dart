@@ -33,6 +33,9 @@ const _exportOnly = <String, String>{
   '.formula':
       'datumFormulaText(l10n, status) in '
           'lib/ui/widgets/status/datum_status_copy.dart',
+  'exportSummary':
+      'adapterConcernSummary(l10n, concern) in '
+          'lib/ui/screens/settings/adapter_concern_copy.dart',
 };
 
 /// Where an export-only symbol is legitimately named.
@@ -46,6 +49,11 @@ const _allowed = <String>{
   'lib/ui/widgets/status/datum_status_copy.dart',
 };
 
+/// The export-only doc comments name these on purpose, and a doc comment is
+/// where the rule belongs. Only `//` lines are stripped before the scan, so a
+/// `///` line naming the symbol would read as a violation.
+const _docCommentPrefix = '///';
+
 void main() {
   test('lib/ui never reads a string that was written for an export file', () {
     final offences = <String>[];
@@ -57,7 +65,9 @@ void main() {
       final lines = entity.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
-        final code = line.trimLeft().startsWith('//')
+        final trimmed = line.trimLeft();
+        final code =
+            trimmed.startsWith('//') || trimmed.startsWith(_docCommentPrefix)
             ? ''
             : line.split('//').first;
         for (final entry in _exportOnly.entries) {

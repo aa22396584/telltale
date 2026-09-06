@@ -32,7 +32,7 @@ class TelemetryExportSheet extends StatelessWidget {
               style: context.texts.titleLarge,
             ),
             const SizedBox(height: Spacing.md),
-            const Text(telemetryExportDisclosure),
+            Text(l10n.telemetryExportDisclosure),
             const SizedBox(height: Spacing.lg),
             Wrap(
               spacing: Spacing.md,
