@@ -27,7 +27,7 @@ ADAPTER_ADDRESS="${FIELD_BT_ADAPTER_ADDRESS:-}"
 TRANSPORT="${FIELD_BT_TRANSPORT:-ble}"
 PACKAGE="${FIELD_BT_PACKAGE:-com.cbstudio.telltale}"
 EVIDENCE_DIR="${FIELD_BT_EVIDENCE_DIR:-$ROOT/docs/verification}"
-JOURNEY_TIMEOUT="${FIELD_BT_JOURNEY_TIMEOUT:-}"
+JOURNEY_TIMEOUT="${FIELD_BT_JOURNEY_TIMEOUT:-300}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 PROBE_ONLY=0
 FORCE_JOURNEY=0
@@ -165,8 +165,9 @@ if [[ -n "$ADAPTER_ADDRESS" ]]; then
   JOURNEY_CMD+=(--dart-define=FIELD_BT_ADAPTER_ADDRESS="$ADAPTER_ADDRESS")
 fi
 set +e
-if [[ -n "$JOURNEY_TIMEOUT" ]]; then
-  python3 - "$JOURNEY_TIMEOUT" "$JOURNEY_LOG" "${JOURNEY_CMD[@]}" <<'PY'
+python3 - "$JOURNEY_TIMEOUT" "$JOURNEY_LOG" "${JOURNEY_CMD[@]}" <<'PY'
+import os
+import signal
 import subprocess
 import sys
 
@@ -174,7 +175,13 @@ limit = float(sys.argv[1])
 log_path = sys.argv[2]
 cmd = sys.argv[3:]
 with open(log_path, "w", encoding="utf-8") as log:
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+    )
     assert proc.stdout is not None
     try:
         out, _ = proc.communicate(timeout=limit)
@@ -182,18 +189,17 @@ with open(log_path, "w", encoding="utf-8") as log:
         sys.stdout.write(out or "")
         sys.exit(proc.returncode or 0)
     except subprocess.TimeoutExpired:
-        proc.kill()
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            proc.kill()
         out, _ = proc.communicate()
         log.write(out or "")
         sys.stdout.write(out or "")
         print("not-run: journey timed out", file=sys.stderr)
         sys.exit(124)
 PY
-  JOURNEY_RC=$?
-else
-  "${JOURNEY_CMD[@]}" 2>&1 | tee "$JOURNEY_LOG"
-  JOURNEY_RC=${PIPESTATUS[0]}
-fi
+JOURNEY_RC=$?
 set -e
 
 {

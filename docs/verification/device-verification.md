@@ -43,9 +43,10 @@ When the dongle is powered, the one-command gate is:
 cd app && tool/field_bt_verify/run.sh
 ```
 
-See `tool/field_bt_verify/README.md`. It refuses the journey while ACL is down
-and only then drives `integration_test/field_bt_journey_test.dart` (field
-flavor) through Connect → live PIDs → short record.
+See `tool/field_bt_verify/README.md`. ACL-down is an observation, not a
+refused field pass. A field PASS still requires a fresh connect → live PIDs
+→ short record from `integration_test/field_bt_journey_test.dart` (field
+flavor) in this run. `--probe-only` never prints that PASS.
 
 ## 2026-09-01 — OBDBLE ACL recheck (still unpowered)
 

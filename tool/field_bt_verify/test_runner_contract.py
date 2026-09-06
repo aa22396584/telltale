@@ -134,6 +134,45 @@ exit 0
         self.assertNotIn("--name OBDII", log)
         self.assertNotIn("OBDII", log.split("FIELD_BT_ADAPTER_NAME", 1)[-1][:200])
 
+    def test_unmatched_address_does_not_start_name_only_journey(self) -> None:
+        dumpsys = (
+            "  ConnectionState: STATE_DISCONNECTED\n"
+            "    AA:BB:CC:00:00:01(Public ) => AA:BB:CC:00:00:01(Public ) "
+            "[ DUAL ] [0x010000] [ACL BR/EDR:N LE:N] "
+            "[ Encryption status(BR/EDR): null LE: null] OBDBLE\n"
+            "    AA:BB:CC:00:00:02(Public ) => AA:BB:CC:00:00:02(Public ) "
+            "[ DUAL ] [0x010000] [ACL BR/EDR:Y LE:N] "
+            "[ Encryption status(BR/EDR): null LE: null] OBDBLE\n"
+        )
+        harness = self._harness(dumpsys)
+        proc = self._run(
+            harness,
+            ["--skip-install", "--address", "DE:AD:BE:EF:00:01"],
+        )
+        combined = proc.stdout + proc.stderr
+        self.assertNotEqual(proc.returncode, 0, combined)
+        self.assertFalse(
+            harness["flutter_log"].exists(),
+            combined,
+        )
+        self.assertNotIn("field_bt_verify: PASS", combined)
+
+    def test_not_in_bond_inventory_still_reaches_connect_entry(self) -> None:
+        dumpsys = (
+            "  ConnectionState: STATE_DISCONNECTED\n"
+            "    AA:BB:CC:00:00:01(Public ) => AA:BB:CC:00:00:01(Public ) "
+            "[ DUAL ] [0x240404] [ACL BR/EDR:N LE:N] "
+            "[ Encryption status(BR/EDR): null LE: null] Galaxy Buds\n"
+        )
+        harness = self._harness(dumpsys)
+        proc = self._run(harness, ["--skip-install"])
+        combined = proc.stdout + proc.stderr
+        self.assertIn(
+            "connect-entry-reached",
+            harness["flutter_log"].read_text(),
+            combined,
+        )
+
     def test_missing_flutter_fails_closed(self) -> None:
         harness = self._harness()
         proc = self._run(

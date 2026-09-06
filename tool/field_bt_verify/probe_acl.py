@@ -50,10 +50,15 @@ class ProbeResult:
     transport: str | None
     adapter_connection_state: str | None
     ambiguous: bool
+    address_unmatched: bool = False
 
     @property
     def not_in_bond_inventory(self) -> bool:
-        return not self.hits and not self.ambiguous
+        return (
+            not self.hits
+            and not self.ambiguous
+            and not self.address_unmatched
+        )
 
     @property
     def transport_link_up(self) -> bool:
@@ -77,12 +82,22 @@ class ProbeResult:
 
     @property
     def exit_code(self) -> int:
-        return 1 if self.ambiguous else 0
+        if self.ambiguous or self.address_unmatched:
+            return 1
+        return 0
 
     @property
     def summary(self) -> str:
         state = self.adapter_connection_state or "ConnectionState: <missing>"
         names = ", ".join(self.requested_names)
+        if self.address_unmatched:
+            seen = ", ".join(
+                sorted({h.address or "?" for h in self.hits}),
+            ) or "none"
+            return (
+                f"requested address {self.requested_address} did not match "
+                f"dumpsys rows for {names} (seen {seen}); {state}"
+            )
         if self.ambiguous:
             addrs = ", ".join(
                 sorted({h.address or "?" for h in self.hits}),
@@ -172,12 +187,23 @@ def evaluate(
 ) -> ProbeResult:
     """Return a fact-layer observation. Never infers unpowered/out-of-range."""
     hits = parse_bond_lines(text, names)
+    addrs = {(h.address or "").casefold() for h in hits}
     if address:
         wanted = address.casefold()
-        hits = [h for h in hits if (h.address or "").casefold() == wanted]
+        matched = [h for h in hits if (h.address or "").casefold() == wanted]
+        if not matched:
+            return ProbeResult(
+                hits=tuple(hits),
+                requested_names=names,
+                requested_address=address,
+                transport=transport,
+                adapter_connection_state=connection_state(text),
+                ambiguous=len(addrs) > 1,
+                address_unmatched=True,
+            )
+        hits = matched
         ambiguous = False
     else:
-        addrs = {(h.address or "").casefold() for h in hits}
         ambiguous = len(addrs) > 1
     return ProbeResult(
         hits=tuple(hits),
@@ -243,6 +269,7 @@ def main(argv: list[str] | None = None) -> int:
             f"transport_link_up: {str(result.transport_link_up).lower()}\n"
             f"not_in_bond_inventory: {str(result.not_in_bond_inventory).lower()}\n"
             f"ambiguous: {str(result.ambiguous).lower()}\n"
+            f"address_unmatched: {str(result.address_unmatched).lower()}\n"
             f"---\n"
         )
         for hit in result.hits:

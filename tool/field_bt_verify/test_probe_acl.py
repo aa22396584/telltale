@@ -141,6 +141,28 @@ class ProbeAclTest(unittest.TestCase):
         self.assertEqual(result.hits[0].acl_le, LinkState.DISCONNECTED)
         self.assertNotIn("unpowered", result.summary.lower())
 
+    def test_unmatched_address_among_duplicates_stays_fail_closed(self) -> None:
+        text = bond_line(addr="AA:BB:CC:00:00:01") + bond_line(
+            addr="AA:BB:CC:00:00:02",
+        )
+        result = evaluate(
+            text,
+            ("OBDBLE",),
+            address="DE:AD:BE:EF:00:01",
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertFalse(result.not_in_bond_inventory)
+        self.assertIn("did not match", result.summary.lower())
+
+    def test_unmatched_address_on_single_hit_is_not_inventory_miss(self) -> None:
+        result = evaluate(
+            bond_line(addr="AA:BB:CC:00:00:01"),
+            ("OBDBLE",),
+            address="DE:AD:BE:EF:00:01",
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertFalse(result.not_in_bond_inventory)
+
     def test_duplicate_name_selects_requested_address(self) -> None:
         text = bond_line(addr="AA:BB:CC:00:00:01") + bond_line(
             addr="AA:BB:CC:00:00:02",
