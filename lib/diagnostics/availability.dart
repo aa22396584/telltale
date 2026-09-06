@@ -153,40 +153,67 @@ enum DatumAssumptionNote { recordedVehicleSettings }
 /// catalog can supply — the stoichiometric AFR and the fuel density come from
 /// the fuel type, so asking where they came from has no answer beyond "the
 /// fuel you picked".
-/// [fuelType] and [drivetrain] are the two parameters whose value is a *word*
-/// rather than a number, so they cannot be formatted into [value] without
-/// choosing a language. They travel here as identifiers instead.
+/// What an assumption's value *is*, so that a value which is a word cannot be
+/// written down as a bare string.
 ///
-/// They were briefly not carried at all: the renderer took a `VehicleProfile?`
-/// and read them off it, [value] was `''` for the fuel, and one of the two
-/// dashboard call sites did not pass a profile. That screen then read
-/// `Fuel  (generic default)` in English and 「燃料 （通用預設）」 in Chinese — an
-/// origin claim about a blank, and for a Chinese reader a straight regression
-/// from what shipped. A record that needs a second object to be readable is a
-/// record with two ways to be wrong.
+/// This exists because the obvious shape kept failing in the same direction. A
+/// plain `String value` first held `''` for the fuel, with the name read off a
+/// `VehicleProfile?` handed in beside it — and one of two callers did not hand
+/// one in, so the dialog rendered `Fuel  (generic default)`. Replacing that with
+/// the frozen export wording fixed the blank and put Traditional Chinese into a
+/// public field one ternary away from the screen, guarded by a test that looks
+/// for Han characters. That guard watches a coincidence: the export vocabulary
+/// happens to be Chinese today. A word-valued parameter whose export wording is
+/// Latin would render the frozen term in the English build with nothing failing,
+/// which a reviewer demonstrated.
+///
+/// So the type says which kind of value it is, both renderers switch on it
+/// exhaustively, and there is no `String` to fall through to. Adding a fourth
+/// kind breaks the compile in `AvailabilityPolicy._exportNote` and in
+/// `assumptionsText` at the same time, which is the only arrangement that makes
+/// "somebody must decide how to translate this" impossible to skip.
+sealed class AssumptionValue {
+  const AssumptionValue();
+}
+
+/// A number and its unit. Reads the same in both languages, so it is the one
+/// kind that carries its own formatting.
+final class MeasuredValue extends AssumptionValue {
+  const MeasuredValue(this.formatted);
+  final String formatted;
+}
+
+/// The fuel. Carries the identifier and never a word: the export asks
+/// [FuelType.exportLabel] and the screen asks the ARBs.
+final class FuelValue extends AssumptionValue {
+  const FuelValue(this.fuel);
+  final FuelType fuel;
+}
+
+/// A drivetrain efficiency and the layout it belongs to. The percentage is the
+/// same in both languages; the layout's name is not.
+final class DrivetrainValue extends AssumptionValue {
+  const DrivetrainValue(this.percent, this.drivetrain);
+  final String percent;
+  final Drivetrain drivetrain;
+}
+
+/// A vehicle parameter, its value, and where the value came from.
+///
+/// [origin] is null for a parameter that is not a profile field the user or a
+/// catalog can supply — the stoichiometric AFR and the fuel density come from
+/// the fuel type, so asking where they came from has no answer beyond "the
+/// fuel you picked".
 final class VehicleAssumption {
   const VehicleAssumption({
     required this.field,
     required this.value,
     this.origin,
-    this.fuelType,
-    this.drivetrain,
   });
 
   final AssumptionField field;
-
-  /// Already formatted and carrying its unit, because a number with a unit
-  /// reads the same in both languages. Never empty.
-  final String value;
-
+  final AssumptionValue value;
   final VehicleFieldOrigin? origin;
-
-  /// Set only for [AssumptionField.fuelType].
-  final FuelType? fuelType;
-
-  /// Set only for [AssumptionField.drivetrainEfficiency], where [value] is the
-  /// efficiency percentage and this names the layout it belongs to.
-  final Drivetrain? drivetrain;
 }
 
 class DatumStatus {
@@ -615,60 +642,59 @@ abstract final class AvailabilityPolicy {
     EstimateKind.horsepower => [
       VehicleAssumption(
         field: AssumptionField.mass,
-        value: '${profile.massKg.toStringAsFixed(0)} kg',
+        value: MeasuredValue('${profile.massKg.toStringAsFixed(0)} kg'),
         origin: profile.massField.origin,
       ),
       VehicleAssumption(
         field: AssumptionField.dragCoefficient,
-        value: profile.dragCoefficient.toStringAsFixed(2),
+        value: MeasuredValue(profile.dragCoefficient.toStringAsFixed(2)),
         origin: profile.dragCoefficientField.origin,
       ),
       VehicleAssumption(
         field: AssumptionField.frontalArea,
-        value: '${profile.frontalAreaM2.toStringAsFixed(1)} m²',
+        value: MeasuredValue('${profile.frontalAreaM2.toStringAsFixed(1)} m²'),
         origin: profile.frontalAreaField.origin,
       ),
       VehicleAssumption(
         field: AssumptionField.rollingResistance,
-        value: profile.rollingResistance.toStringAsFixed(3),
+        value: MeasuredValue(profile.rollingResistance.toStringAsFixed(3)),
         origin: profile.rollingResistanceField.origin,
       ),
       VehicleAssumption(
         field: AssumptionField.drivetrainEfficiency,
-        // The drivetrain's name is not in `value`: it is a word, and words
-        // here belong to the caller's language. The UI appends its own.
-        value: '${(profile.drivetrainEfficiency * 100).toStringAsFixed(0)}%',
+        value: DrivetrainValue(
+          '${(profile.drivetrainEfficiency * 100).toStringAsFixed(0)}%',
+          profile.drivetrain,
+        ),
         origin: profile.drivetrainField.origin,
-        drivetrain: profile.drivetrain,
       ),
     ],
     EstimateKind.fuel => [
       VehicleAssumption(
         field: AssumptionField.fuelType,
-        // The fuel's whole value is its name, so there is no number to format.
-        // `value` carries the export wording — the one place the frozen
-        // Chinese has to appear for formatAssumptionsForExport to reproduce
-        // the sentence byte for byte — and the screen reads `fuelType`.
-        value: profile.fuelType.exportLabel,
+        value: FuelValue(profile.fuelType),
         origin: profile.fuelTypeField.origin,
-        fuelType: profile.fuelType,
       ),
       VehicleAssumption(
         field: AssumptionField.stoichAfr,
-        value: profile.stoichAfr.toStringAsFixed(1),
+        value: MeasuredValue(profile.stoichAfr.toStringAsFixed(1)),
       ),
       VehicleAssumption(
         field: AssumptionField.fuelDensity,
-        value: '${profile.fuelDensityGPerL.toStringAsFixed(0)} g/L',
+        value: MeasuredValue(
+          '${profile.fuelDensityGPerL.toStringAsFixed(0)} g/L',
+        ),
       ),
       VehicleAssumption(
         field: AssumptionField.displacement,
-        value: '${profile.displacementL.toStringAsFixed(1)} L',
+        value: MeasuredValue('${profile.displacementL.toStringAsFixed(1)} L'),
         origin: profile.displacementField.origin,
       ),
       VehicleAssumption(
         field: AssumptionField.volumetricEfficiency,
-        value: '${profile.volumetricEfficiency.toStringAsFixed(0)}%',
+        value: MeasuredValue(
+          '${profile.volumetricEfficiency.toStringAsFixed(0)}%',
+        ),
         origin: profile.volumetricEfficiencyField.origin,
       ),
     ],
@@ -695,10 +721,12 @@ abstract final class AvailabilityPolicy {
       AssumptionField.displacement => '排氣量',
       AssumptionField.volumetricEfficiency => 'VE',
     };
-    final drivetrain = a.drivetrain;
-    final value = drivetrain == null
-        ? a.value
-        : '${a.value} ${drivetrain.exportLabel}';
+    final value = switch (a.value) {
+      MeasuredValue(:final formatted) => formatted,
+      FuelValue(:final fuel) => fuel.exportLabel,
+      DrivetrainValue(:final percent, :final drivetrain) =>
+        '$percent ${drivetrain.exportLabel}',
+    };
     final origin = a.origin;
     return origin == null
         ? '$name $value'

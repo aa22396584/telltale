@@ -150,13 +150,19 @@ String? assumptionsText(AppLocalizations l10n, DatumStatus status) {
   }
   final parts = status.assumptionFields.map((assumption) {
     final field = assumptionFieldLabel(l10n, assumption.field);
-    final fuel = assumption.fuelType;
-    final drivetrain = assumption.drivetrain;
-    final value = fuel != null
-        ? fuelTypeLabel(l10n, fuel)
-        : drivetrain != null
-        ? '${assumption.value} ${drivetrainLabel(l10n, drivetrain)}'
-        : assumption.value;
+    // Exhaustive, with nothing to fall through to. A fourth kind of value
+    // breaks the compile here and in `AvailabilityPolicy._exportNote` at the
+    // same time, which is what makes "decide how this is worded" impossible to
+    // skip. The previous shape dispatched on which nullable field was set and
+    // ended in `: assumption.value` — so a new word-valued parameter rendered
+    // its frozen export wording on the English screen, caught only if that
+    // wording happened to contain Han characters.
+    final value = switch (assumption.value) {
+      MeasuredValue(:final formatted) => formatted,
+      FuelValue(:final fuel) => fuelTypeLabel(l10n, fuel),
+      DrivetrainValue(:final percent, :final drivetrain) =>
+        '$percent ${drivetrainLabel(l10n, drivetrain)}',
+    };
     final origin = assumption.origin;
     return origin == null
         ? l10n.assumptionWithoutOrigin(field, value)

@@ -87,13 +87,20 @@ void main() {
         final status = statusFor(kind);
         final exported = status.assumptions!;
         for (final assumption in status.assumptionFields) {
-          if (assumption.value.isNotEmpty) {
-            expect(
-              exported,
-              contains(assumption.value),
-              reason: '${assumption.field.name} is not in the exported sentence',
-            );
-          }
+          // Every kind of value must reach the exported sentence, including
+          // the two whose wording is chosen rather than formatted. The earlier
+          // version of this loop skipped empty values, which quietly excused
+          // the fuel — the one field that was broken.
+          final rendered = switch (assumption.value) {
+            MeasuredValue(:final formatted) => formatted,
+            FuelValue(:final fuel) => fuel.exportLabel,
+            DrivetrainValue(:final percent) => percent,
+          };
+          expect(
+            exported,
+            contains(rendered),
+            reason: '${assumption.field.name} is not in the exported sentence',
+          );
         }
         expect(
           status.assumptionFields.map((a) => a.field).toList(),
@@ -118,38 +125,73 @@ void main() {
     // The parameter is gone. These check that it cannot come back by another
     // door.
 
-    test('no assumption carries an empty value', () {
+    test('a measured value is a measurement, not a word', () {
+      // The last hole a reviewer found, and the one the type cannot close:
+      // `MeasuredValue('Kompressor')` compiles. The type now names the intent
+      // — a number and its unit — so putting a word there is an explicit lie
+      // rather than the default path, and this is what makes the lie fail.
+      //
+      // Checked by shape rather than by looking for Han characters. The
+      // previous guard was `containsChinese`, which watches a coincidence: the
+      // frozen export vocabulary happens to be Chinese today, so a word-valued
+      // parameter whose export wording was Latin would have rendered on the
+      // English screen with nothing objecting.
+      final number = RegExp(r'^-?\d');
       for (final kind in EstimateKind.values) {
         for (final a in AvailabilityPolicy.assumptionsFor(profile, kind)) {
-          expect(
-            a.value,
-            isNotEmpty,
-            reason: '${a.field.name} has no value, so whatever renders it will '
-                'print its field name and its origin around a blank',
-          );
+          if (a.value case MeasuredValue(:final formatted)) {
+            expect(
+              number.hasMatch(formatted),
+              isTrue,
+              reason: '${a.field.name} is "$formatted", which does not begin '
+                  'with a number. If it is a word, it needs its own '
+                  'AssumptionValue kind so both renderers are made to name it.',
+            );
+          }
         }
       }
     });
 
-    test('the two word-valued parameters carry their identifier', () {
+    test('no measured value is blank', () {
+      // The sealed type stops a *word* being written as a bare string. It does
+      // not stop a number being formatted into an empty one, which is the same
+      // defect — a field name and an origin printed around a blank.
+      for (final kind in EstimateKind.values) {
+        for (final a in AvailabilityPolicy.assumptionsFor(profile, kind)) {
+          if (a.value case MeasuredValue(:final formatted)) {
+            expect(formatted, isNotEmpty, reason: '${a.field.name} is blank');
+          }
+        }
+      }
+    });
+
+    test('each field carries the kind of value it means', () {
+      // The pairing the type cannot state: `AssumptionValue` says a value is a
+      // fuel, and `AssumptionField` says the row is about fuel, and nothing in
+      // the language ties the two together. A fuel row carrying a
+      // `MeasuredValue('汽油')` would compile, render, and put the frozen
+      // export word on an English screen.
       final byField = {
         for (final kind in EstimateKind.values)
           for (final a in AvailabilityPolicy.assumptionsFor(profile, kind))
-            a.field: a,
+            a.field: a.value,
       };
-      expect(byField[AssumptionField.fuelType]!.fuelType, isNotNull);
-      expect(byField[AssumptionField.drivetrainEfficiency]!.drivetrain,
-          isNotNull);
-      // And nothing else claims to be one, which is what keeps the renderer's
-      // dispatch on those two fields honest.
-      for (final a in byField.values) {
-        if (a.field != AssumptionField.fuelType) {
-          expect(a.fuelType, isNull, reason: '${a.field.name} carries a fuel');
+      expect(byField[AssumptionField.fuelType], isA<FuelValue>());
+      expect(
+        byField[AssumptionField.drivetrainEfficiency],
+        isA<DrivetrainValue>(),
+      );
+      for (final entry in byField.entries) {
+        if (entry.key == AssumptionField.fuelType ||
+            entry.key == AssumptionField.drivetrainEfficiency) {
+          continue;
         }
-        if (a.field != AssumptionField.drivetrainEfficiency) {
-          expect(a.drivetrain, isNull,
-              reason: '${a.field.name} carries a drivetrain');
-        }
+        expect(
+          entry.value,
+          isA<MeasuredValue>(),
+          reason: '${entry.key.name} is a number and a unit, or it is a word '
+              'somebody has to decide how to translate',
+        );
       }
     });
 
