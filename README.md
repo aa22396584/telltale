@@ -196,7 +196,7 @@ Telltale proactively uploads nothing. Local diagnostic exports can contain VIN,
 device, adapter, and fault identifiers. You control explicit export and sharing;
 operating-system backup may also copy private app data according to device
 settings. Read [the repository policy](PRIVACY.md) or the
-[published privacy policy](https://iml1s.github.io/telltale/privacy.html).
+[published privacy policy](https://iml1s.github.io/telltale/privacy.html#en).
 
 Use the app only while parked or as a passenger. Save diagnostic evidence before
 clearing DTCs, and do not treat this app as a substitute for professional

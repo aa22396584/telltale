@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telltale — Open-source OBD2 telemetry and diagnostics</title>
+<meta name="description" content="Telltale is an open-source Flutter app for OBD2 telemetry and diagnostics over Bluetooth Classic, BLE, Wi-Fi, or its built-in Demo ECU.">
+<link rel="alternate" hreflang="zh-Hant" href="https://iml1s.github.io/telltale/index.html">
+<link rel="alternate" hreflang="en" href="https://iml1s.github.io/telltale/index.en.html">
+<link rel="alternate" hreflang="x-default" href="https://iml1s.github.io/telltale/index.html">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfcfd;
+    --fg: #172027;
+    --muted: #53616d;
+    --rule: #dce3e8;
+    --accent: #0b6b63;
+    --accent-fg: #fff;
+    --card: #f1f5f7;
+    --warning: #fff6d8;
+    --warning-fg: #4d3a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11171c;
+      --fg: #edf2f5;
+      --muted: #acb8c1;
+      --rule: #33404a;
+      --accent: #62d5c6;
+      --accent-fg: #092420;
+      --card: #1a232a;
+      --warning: #3a300d;
+      --warning-fg: #ffeaa3;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC",
+      "PingFang TC", "Microsoft JhengHei", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); text-underline-offset: .18em; }
+  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 3px; }
+  .skip {
+    position: absolute;
+    left: 1rem;
+    top: -5rem;
+    padding: .65rem 1rem;
+    background: var(--accent);
+    color: var(--accent-fg);
+    z-index: 2;
+  }
+  .skip:focus { top: 1rem; }
+  header, main, footer { width: min(100% - 2.5rem, 48rem); margin-inline: auto; }
+  header { padding: 2.5rem 0 1.75rem; border-bottom: 1px solid var(--rule); }
+  h1 { margin: 0; font-size: clamp(2.25rem, 8vw, 4rem); line-height: 1; letter-spacing: -.04em; }
+  .tagline { margin: .75rem 0 1.25rem; color: var(--muted); font-size: 1.08rem; }
+  .language-nav { display: flex; flex-wrap: wrap; gap: .55rem 1rem; }
+  .language-nav a { font-weight: 700; }
+  main { padding: 0 0 3rem; }
+  section { padding: 2.75rem 0; scroll-margin-top: 1rem; }
+  section + section { border-top: 1px solid var(--rule); }
+  h2 { margin: 0 0 1rem; font-size: 1.75rem; line-height: 1.2; }
+  h3 { margin: 2rem 0 .6rem; font-size: 1.12rem; }
+  p { margin: .7rem 0 1rem; }
+  .lead { font-size: 1.12rem; }
+  blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.2rem;
+    background: var(--card);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 .5rem .5rem 0;
+    font-size: 1.08rem;
+  }
+  ul { padding-left: 1.35rem; }
+  li { margin: .35rem 0; }
+  .transports { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
+  .transports li { margin: 0; padding: .28rem .65rem; background: var(--card); border-radius: 999px; }
+  .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0; }
+  .button {
+    display: inline-block;
+    padding: .72rem 1rem;
+    border: 2px solid var(--accent);
+    border-radius: .45rem;
+    font-weight: 750;
+    text-decoration: none;
+  }
+  .button.primary { background: var(--accent); color: var(--accent-fg); }
+  .notice { padding: 1rem 1.15rem; background: var(--warning); color: var(--warning-fg); border-radius: .5rem; }
+  .evidence { padding: 1rem 1.15rem; background: var(--card); border-radius: .5rem; }
+  footer { padding: 1.5rem 0 3rem; border-top: 1px solid var(--rule); color: var(--muted); }
+  footer nav { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header>
+  <h1>Telltale</h1>
+  <p class="tagline">Open-source Flutter OBD2 telemetry and diagnostics</p>
+  <nav class="language-nav" aria-label="Language / 語言">
+    <span aria-current="page">English</span>
+    <a href="index.html" hreflang="zh-Hant">繁體中文</a>
+  </nav>
+</header>
+
+<main id="content">
+  <p class="lead">Telltale reads live vehicle data and OBD2 faults through an ELM327-compatible adapter, while making incomplete or conflicting evidence visibly uncertain.</p>
+
+  <blockquote><strong>A plausible wrong number is worse than no number.</strong></blockquote>
+
+  <h3>Connections</h3>
+  <ul class="transports" aria-label="Supported connections">
+    <li>Bluetooth Classic / RFCOMM (Android only)</li>
+    <li>Bluetooth LE / GATT</li>
+    <li>Wi-Fi / TCP</li>
+    <li>Built-in Demo ECU</li>
+  </ul>
+  <p>Android is the primary physically tested platform for device, UI, and BLE-rig paths. iOS and macOS currently have compile gates only, not equivalent physical-device or vehicle verification.</p>
+
+  <div class="actions" aria-label="Downloads and project links">
+    <a class="button primary" href="https://github.com/ImL1s/telltale/releases">Download APK from GitHub Releases</a>
+    <a class="button" href="https://play.google.com/store/apps/details?id=com.cbstudio.telltale">Install from Google Play</a>
+    <a class="button" href="https://github.com/ImL1s/telltale">View source</a>
+  </div>
+
+  <p>The Google Play edition is paid, but has the same features as the source and community APK at the same version, with no paid unlocks. Buying it supports ongoing maintenance and avoids building, installing, and managing updates yourself; users who prefer to build it themselves can continue to use the source or GitHub APK for free.</p>
+
+  <p class="notice"><strong>Before installing:</strong> GitHub APKs use a community signing key. They cannot update, or be updated by, the Google Play build. Switching requires uninstalling Telltale, which removes local app data; export diagnostic records and note any settings you need first.</p>
+
+  <h3>Experimental powertrain-battery laboratory</h3>
+  <p>The powertrain-battery catalog contains 221 source-backed PHEV, HEV, BEV, MHEV, REEV, and FCEV profiles: 205 are research-only; twelve are installable cross-corroborated community profiles (MG ZS EV Mk1, MG4 Electric, MG5 EV, BYD Atto 3, Hyundai Ioniq 5 and Ioniq 6, Kia EV6, Hyundai Kona Electric, Kia Niro EV, Kia Soul EV, Renault Zoe Ph1, VW e-up! gen2 — every formula agrees byte-for-byte across at least two independent implementations, installation requires an identity acknowledgement, and every connection requires a fresh vehicle confirmation before read-only polling starts); four are experimental profiles restricted to the off-by-default one-shot laboratory, including the Kia EV9 and Toyota bZ4X / Subaru Solterra e-TNGA. Each laboratory attempt requires new, short-lived, one-use consent and sends only one pinned read-only command; there is no identifier scan, batch, or automatic retry. Any structurally mismatched response shows as a fault, never a number. See the <a href="https://github.com/ImL1s/telltale/blob/main/docs/powertrain-battery-profiles.md">powertrain-battery profile, evidence, and safety boundaries</a>.</p>
+
+  <h3>Current verification boundary</h3>
+  <div class="evidence">
+    <p><strong>Verified:</strong> a real Samsung-to-Mac BLE/GATT radio path using a simulated ELM327, including discovery, connection, UART writes, and notifications. Separately, one Samsung, CL-OBDII-M25B, and Toyota GT86 combination produced a retained real-vehicle session; its retained idle-polling segments used CAN 11-bit / 500 kbit/s and contained no <code>NO DATA</code>, CAN/BUS error, timeout, or malformed reply.</p>
+    <p><strong>Still not proven:</strong> this one observation does not certify adapter firmware, PID accuracy, complete DTC coverage, loaded-road behaviour, or general GT86 support. It also does not prove that another adapter, ECU/BMS, or any catalogued PHEV or other powertrain-battery profile exposes the same PID, scale, or payload.</p>
+  </div>
+
+  <p>Use Telltale only while parked or as a passenger. Save diagnostic evidence before clearing DTCs. The app proactively uploads nothing; exported records may contain VIN, device, and adapter identifiers.</p>
+</main>
+
+<footer>
+  <nav aria-label="Project links">
+    <a href="https://github.com/ImL1s/telltale/releases">Releases</a>
+    <a href="https://github.com/ImL1s/telltale">GitHub</a>
+    <a href="privacy.html#en">Privacy</a>
+    <a href="https://github.com/ImL1s/telltale/issues">Issues</a>
+    <a href="index.html">繁體中文</a>
+  </nav>
+  <p>GPL-3.0 · Telltale</p>
+</footer>
+</body>
+</html>
