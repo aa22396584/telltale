@@ -130,6 +130,17 @@ class ProbeAclTest(unittest.TestCase):
         self.assertTrue(result.ambiguous)
         self.assertNotEqual(result.exit_code, 0)
 
+    def test_samsung_redacted_mac_is_still_an_address(self) -> None:
+        text = (
+            "    XX:XX:XX:XX:22:33(Public ) => XX:XX:XX:XX:22:33(Public ) "
+            "[ DUAL ] [0x010000] [ACL BR/EDR:N LE:N] "
+            "[ Encryption status(BR/EDR): null LE: null] OBDBLE\n"
+        )
+        result = evaluate(text, ("OBDBLE",))
+        self.assertEqual(result.hits[0].address, "XX:XX:XX:XX:22:33")
+        self.assertEqual(result.hits[0].acl_le, LinkState.DISCONNECTED)
+        self.assertNotIn("unpowered", result.summary.lower())
+
     def test_duplicate_name_selects_requested_address(self) -> None:
         text = bond_line(addr="AA:BB:CC:00:00:01") + bond_line(
             addr="AA:BB:CC:00:00:02",

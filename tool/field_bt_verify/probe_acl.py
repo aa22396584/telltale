@@ -113,7 +113,8 @@ _ACL_RE = re.compile(
     r"ACL BR/EDR:(?P<br>[YN])\s+LE:(?P<le>[YN])",
     re.IGNORECASE,
 )
-_MAC_RE = re.compile(r"(?i)((?:[0-9a-f]{2}:){5}[0-9a-f]{2})")
+# Samsung dumpsys may redact OUI octets as XX:XX:XX:XX:22:33.
+_MAC_RE = re.compile(r"(?i)((?:[0-9a-fx]{2}:){5}[0-9a-fx]{2})")
 
 
 def _link(token: str | None) -> LinkState:
