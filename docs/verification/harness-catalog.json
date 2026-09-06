@@ -100,6 +100,23 @@
       "hardware": false
     },
     {
+      "id": "public-oracles",
+      "claim": "Public Ircama + chaos E2E + project-owned freeze-frame reference",
+      "files": [
+        "test/emulator_integration_test.dart",
+        "test/chaos_oracle_test.dart",
+        "test/chaos_poll_oracle_test.dart",
+        "test/freeze_frame_oracle_test.dart",
+        "tool/obd_test_rig/chaos_proxy.py",
+        "tool/obd_test_rig/freeze_frame_reference.py",
+        "tool/workshop/run_public_oracles.sh",
+        "tool/workshop/skip_manifest.json",
+        "tool/oracle_guard/assert_no_skips.py"
+      ],
+      "ci": "telltale public-oracles job (Ircama, chaos per scenario, freeze-frame reference)",
+      "hardware": false
+    },
+    {
       "id": "platform-docs",
       "claim": "Honest matrix + this catalog stay in tree",
       "files": [

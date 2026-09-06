@@ -19,7 +19,7 @@ described on a current first-party product page. Commercial rigs marked
 | L0 | Built-in Demo ECU + `integration_test/demo_rig_test.dart` | Fresh Samsung `SM-S9280` pass in the current telemetry-v1 evidence bundle | Shipped UI, recording, History/replay, CSV/JSON capture, lifecycle callbacks, Mode 01/03/04/09 flows and simulated-evidence labelling | No OS socket/radio, adapter, OBD connector, ECU or vehicle. The callbacks are test-injected, not Android Home/force-stop. |
 | L1 | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) v3.0.5 + `emulator_integration_test.dart` | Hash-locked external oracle in CI | The client works against an independently implemented ELM327 conversation; the repo exercises its 11-bit CAN scenario over TCP | Its default scenario is not a GT86 or any real vehicle. It does not prove adapter firmware, electrical CAN, timing or vehicle support. Its CC BY-NC-SA code is not copied into the app. |
 | L1 | Ircama through `tool/obd_test_rig/chaos_proxy.py` + `chaos_oracle_test.dart` | Run in CI | Real TCP framing plus deterministic fragmentation, delay, peer close, missing prompt and critical-reply corruption | Physical radio loss, adapter reset, CAN arbitration and uninjected faults. |
-| L1 | Project-owned `elm327_virtual_server.py` + `freeze_frame_oracle_test.dart` | Fetched from a reviewed private research-branch commit, hash-pinned, and required in CI | A separately maintained oracle's Mode 02, DTC classes, readiness, VIN reassembly, multi-controller census, deadline and mid-session drop shapes | It is not an independent third-party implementation; it is still a software server and currently an 11-bit CAN oracle. |
+| L1 | Project-owned `tool/obd_test_rig/freeze_frame_reference.py` + `freeze_frame_oracle_test.dart` | Public CI via `tool/workshop/run_public_oracles.sh` | Mode 02 without a support mask, DTC classes, readiness, VIN reassembly, multi-controller census, deadline and mid-session drop shapes | It is not an independent third-party implementation; AT@1 is `Telltale Freeze-Frame Reference`. 11-bit CAN only. |
 | L1 | `integration_test/telemetry_memory_rig_test.dart` + `tool/telemetry_memory_rig/` | Runnable; feasible in-process contracts are present, but no fresh device terminal log is in the current telemetry-v1 evidence bundle | Five production streaming sources, app-owned source/ledger parity, capacity/policy/contention/pending-state paths, and bounded PSS measurement when the full runner executes | Not a complete Revision-8 Gate C force-stop matrix; it uses synthetic fixtures and a measured injected platform, not a real chooser, adapter, ECU, or vehicle. See `GATE_C_BLOCKERS.md`. |
 | L2 | Android lifecycle/storage rig + `tool/telemetry_lifecycle_rig/run.sh` | Runnable; no fresh terminal device log is in the current telemetry-v1 evidence bundle | When executed, actual Home and `am force-stop`, exact durable-prefix identity/count recovery, recovered footer, and root History UI | Uses Demo data; no socket, Bluetooth radio, adapter, ECU, or vehicle. Runner presence is not a pass. |
 | L2 | Android Wi-Fi rig + `integration_test/wifi_rig_test.dart` | Fresh Samsung `SM-S9280` nominal pass in the current telemetry-v1 evidence bundle | Shipped wizard and actual phone LAN TCP to the Mac fragmentation proxy and Ircama; 65 commands across two phone connections, including resume, with zero injected faults | The proxy and ELM/ECU are software. The run does not prove chaos after first value, a purchased Wi-Fi adapter/hotspot, cellular handoff, ECU, or vehicle. |
@@ -77,10 +77,12 @@ python3 -m unittest discover -s tool/field_bt_verify -p 'test_*.py' -v
 python3 -m unittest discover -s tool/desktop_bt_probe -p 'test_*.py' -v
 ```
 
-The external-oracle job in `.github/workflows/ci.yml` starts both software
-oracles, runs the Flutter tests in required mode, parses the JSON test events,
-and fails if any oracle case was skipped. A green ordinary `flutter test` with
-the oracle port closed is not oracle evidence.
+The public-oracle job in `.github/workflows/ci.yml` runs
+`tool/workshop/run_public_oracles.sh`: Ircama (required), a fresh chaos-proxy
+process per scenario, and the project-owned freeze-frame reference. It parses
+each JSON report with `tool/oracle_guard/assert_no_skips.py` using a count
+discovered from the Dart file. A green ordinary `flutter test` with the oracle
+port closed is not oracle evidence.
 
 ## Field-data privacy boundary
 

@@ -51,13 +51,14 @@ their required emulator or fault proxy is running and explicitly enabled:
 
 | suite | tests | simulator |
 |---|---|---|
-| `test/emulator_integration_test.dart` | 6 | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
-| `test/freeze_frame_oracle_test.dart` | 7 | a second simulator, not in this repository — see below |
-| `test/chaos_oracle_test.dart` | 1 | Ircama through `tool/obd_test_rig/chaos_proxy.py` |
+| `test/emulator_integration_test.dart` | discovered | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
+| `test/freeze_frame_oracle_test.dart` | discovered | project-owned `tool/obd_test_rig/freeze_frame_reference.py` |
+| `test/chaos_oracle_test.dart` | discovered | Ircama through `tool/obd_test_rig/chaos_proxy.py` |
+| `test/chaos_poll_oracle_test.dart` | discovered | armed close after the first live poll |
 
-The Ircama row used to say **5**. The file has six visible `test()` cases;
-public CI's oracle job asserts `6`. Do not "fix" a skip by lowering that
-number. The extracted guard is `tool/oracle_guard/assert_no_skips.py`.
+Case counts are produced by `tool/workshop/count_dart_tests.py` from the files
+themselves. Public CI feeds that number to `tool/oracle_guard/assert_no_skips.py`.
+Do not type a replacement integer into the workflow to make a skip look green.
 
 **A skipped test and a passing test print the same summary and both exit 0.**
 That is why the number is worth knowing: `~14` is the expected default and `~8`
@@ -126,10 +127,13 @@ suite intentionally marks an unavailable external oracle as skipped.
 Both suites listen on port 35000 and tell each other apart by the answer to
 `AT@1`, so only one can run at a time.
 
-The second suite's simulator lives on a branch of the private repository and is
-not distributable from here. Its 7 tests will skip for you and run in CI on the
-private side. If you are changing freeze-frame handling, say so in the pull
-request and it will be run against that oracle before merge.
+The freeze-frame suite talks to `tool/obd_test_rig/freeze_frame_reference.py`.
+That process is project-owned (AT@1 is `Telltale Freeze-Frame Reference`); it is
+not a third-party oracle and must not be described as one. Ircama remains the
+independent third-party check. Run both through
+`tool/workshop/run_public_oracles.sh` from a clean checkout — no private token
+is required. `--dart-define=FREEZE_FRAME_ORACLE_REQUIRED=true` turns a missing
+listener into a failure.
 
 `tool/obd_test_rig/README.md` documents the no-fault fragmentation pass and the
 three fresh-process fault runs (`close`, `no_prompt`, and `corrupt`). These use

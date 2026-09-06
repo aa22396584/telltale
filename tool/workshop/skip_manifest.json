@@ -1,0 +1,443 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_allows_flutter_gradle_build_generated_file_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_allows_flutter_gradle_dot_gradle_generated_file_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_allows_flutter_gradle_kotlin_errors_generated_file_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_allows_only_flutter_gradle_project_writability_probe",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_arbitrary_flutter_root_file_creation",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_engine_stamp_atomic_replace",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_engine_stamp_metadata_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_build_script_atomic_replace",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_build_script_metadata_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_project_root_rename",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_settings_atomic_replace",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_settings_content_overwrite",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_gradle_settings_metadata_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_integration_test_build_script_atomic_replace",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_integration_test_build_script_content_overwrite",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_integration_test_build_script_metadata_write",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_integration_test_root_file_creation",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_version_check_stamp_creation",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_flutter_version_check_stamp_overwrite",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_android_sdk_sandbox.AndroidSdkSandboxContractTest.test_profile_denies_generated_root_symlink_escape",
+      "file": "tool/telemetry_memory_rig/test_android_sdk_sandbox.py",
+      "reason": "requires macOS sandbox-exec",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_bridge.MainTests.test_log_symlink_is_refused_without_modifying_target",
+      "file": "tool/ble_test_rig/test_bridge.py",
+      "reason": "O_NOFOLLOW unavailable",
+      "applicable_platforms": []
+    },
+    {
+      "id": "test_chaos_proxy.ConfigTest.test_file_logger_refuses_symlink_target",
+      "file": "tool/obd_test_rig/test_chaos_proxy.py",
+      "reason": "O_NOFOLLOW unavailable",
+      "applicable_platforms": []
+    },
+    {
+      "id": "test_probe.PrivateProbeLogTest.test_symlink_target_is_refused_without_modifying_target",
+      "file": "tool/ble_test_rig/test_probe.py",
+      "reason": "O_NOFOLLOW unavailable",
+      "applicable_platforms": []
+    },
+    {
+      "id": "test_process_scope.ProcessScopeTest.test_real_unreaped_zombie_anchor_does_not_require_getsid",
+      "file": "tool/telemetry_memory_rig/test_process_scope.py",
+      "reason": "requires Darwin zombie identity",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_python_isolation.PythonIsolationTest.test_darwin_kernel_runtime_can_be_invoked_as_exact_python_executable",
+      "file": "tool/telemetry_memory_rig/test_python_isolation.py",
+      "reason": "Darwin libproc is required",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_controller_lock_serializes_distinct_private_tmp_roots",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_dead_private_ircama_lock_is_removed_before_start",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_emulator_candidates_use_only_the_private_state_pid_lock",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_expiry_stops_live_owned_process_with_missing_pid_file",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_expiry_stops_live_owned_process_without_pid_fingerprint",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_forced_stop_removes_only_matching_dead_private_ircama_lock",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_host_bundle_identity_does_not_change_with_controller_tmpdir",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_invalid_action_returns_usage_error",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_launchservices_executes_only_private_runtime_scripts",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_live_or_recycled_private_ircama_lock_is_preserved",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_malformed_private_ircama_lock_fails_closed",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_old_expiry_preserves_newer_valid_owner_pid_file",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_purge_preserves_per_run_stop_locks_and_removes_only_evidence",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_shared_tmpdir_is_refused_before_state_or_tools_are_used",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_start_readiness_retries_a_transient_full_status_failure",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_status_failure_does_not_fall_through_to_success_event",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_status_refuses_identity_lost_during_final_snapshot",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_stop_discovers_live_owned_processes_without_valid_pid_files",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_run_controller.RunControllerTest.test_stop_removes_dead_malformed_pid_files",
+      "file": "tool/ble_test_rig/test_run_controller.py",
+      "reason": "the BLE rig controller is macOS-only",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_scoped_command.ScopedCommandContractTest.test_real_unreaped_leader_anchor_contains_detached_same_sid_orphan",
+      "file": "tool/telemetry_memory_rig/test_scoped_command.py",
+      "reason": "requires macOS process sessions",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_scoped_command.ScopedCommandContractTest.test_real_wrapper_waits_for_two_pipe_authorization",
+      "file": "tool/telemetry_memory_rig/test_scoped_command.py",
+      "reason": "requires macOS process sessions",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_sealed_sdk_exec.SealedSdkExecRealTest.test_actual_flutter_command_is_quiet_under_live_source_guard",
+      "file": "tool/telemetry_memory_rig/test_sealed_sdk_exec.py",
+      "reason": "requires the macOS FSEvents fswatch used by Gate C",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardClassificationTest.test_item_cloned_reconciliation_detects_xattr_delta",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS xattrs",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardClassificationTest.test_native_pure_clone_source_hint_reconciles_without_repo_mutation",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardProcessTest.test_native_darwin_backend_observes_cloned_included_file",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardProcessTest.test_native_darwin_backend_watches_parent_of_exact_file",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardProcessTest.test_native_darwin_clean_stop_has_flush_and_drain_proof",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardProcessTest.test_native_sink_inside_exact_file_parent_is_rejected",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_source_tree_guard.SourceTreeGuardProcessTest.test_two_overlapping_native_guards_with_external_ledgers_both_quiesce",
+      "file": "tool/telemetry_memory_rig/test_source_tree_guard.py",
+      "reason": "requires macOS FSEvents",
+      "applicable_platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "test_tree_manifest.TreeManifestTest.test_external_native_build_cache_special_file_is_rejected",
+      "file": "tool/telemetry_memory_rig/test_tree_manifest.py",
+      "reason": "FIFO is not supported",
+      "applicable_platforms": []
+    },
+    {
+      "id": "test_tree_manifest.TreeManifestTest.test_special_file_in_build_input_fails_closed",
+      "file": "tool/telemetry_memory_rig/test_tree_manifest.py",
+      "reason": "FIFO is not supported",
+      "applicable_platforms": []
+    }
+  ]
+}

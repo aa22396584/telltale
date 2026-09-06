@@ -167,6 +167,20 @@ Do not reuse one proxy between cases: its command counter intentionally spans
 TCP reconnects. CI also checks the exact command prefix and rejects a skipped
 oracle, so a green process that never injected its fault cannot pass.
 
+## Freeze-frame reference
+
+`freeze_frame_reference.py` is a **project-owned** ELM327 TCP server. `AT@1`
+answers `Telltale Freeze-Frame Reference`. It is not Ircama and not a private
+research binary. It implements the public freeze-frame / multi-ECU / readiness
+fixture, including `020000` → `NO DATA`, and an `AT#` control plane on a
+second socket.
+
+```bash
+python3 tool/obd_test_rig/freeze_frame_reference.py --bind 127.0.0.1 --port 35000
+~/fvm/versions/3.47.0/bin/flutter test test/freeze_frame_oracle_test.dart \
+  --dart-define=FREEZE_FRAME_ORACLE_REQUIRED=true
+```
+
 ## Scope
 
 This rig exercises TCP framing, fragmentation, delay, timeout, corruption,
