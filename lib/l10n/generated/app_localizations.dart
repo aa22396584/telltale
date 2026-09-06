@@ -5552,6 +5552,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Field app connection'**
   String get telemetrySourceFieldApp;
+
+  /// Fuel type in the vehicle profile. British 'petrol' rather than American 'gas', because 'gas' also means LPG to many readers and this list contains LPG.
+  ///
+  /// In en, this message translates to:
+  /// **'Petrol'**
+  String get fuelTypeGasoline;
+
+  /// No description provided for @fuelTypeDiesel.
+  ///
+  /// In en, this message translates to:
+  /// **'Diesel'**
+  String get fuelTypeDiesel;
+
+  /// Liquefied petroleum gas. The abbreviation is the common name in English; do not expand it.
+  ///
+  /// In en, this message translates to:
+  /// **'LPG'**
+  String get fuelTypeLpg;
+
+  /// No description provided for @fuelTypeEthanolE85.
+  ///
+  /// In en, this message translates to:
+  /// **'E85 ethanol'**
+  String get fuelTypeEthanolE85;
+
+  /// No description provided for @drivetrainFwd.
+  ///
+  /// In en, this message translates to:
+  /// **'Front-wheel drive'**
+  String get drivetrainFwd;
+
+  /// No description provided for @drivetrainRwd.
+  ///
+  /// In en, this message translates to:
+  /// **'Rear-wheel drive'**
+  String get drivetrainRwd;
+
+  /// No description provided for @drivetrainAwd.
+  ///
+  /// In en, this message translates to:
+  /// **'All-wheel drive'**
+  String get drivetrainAwd;
+
+  /// A vehicle parameter an estimate rests on: the vehicle's mass including the driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Mass'**
+  String get assumptionFieldMass;
+
+  /// Drag coefficient. The symbol is the same in every language; do not translate or expand it.
+  ///
+  /// In en, this message translates to:
+  /// **'Cd'**
+  String get assumptionFieldDragCoefficient;
+
+  /// No description provided for @assumptionFieldFrontalArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Frontal area'**
+  String get assumptionFieldFrontalArea;
+
+  /// No description provided for @assumptionFieldRollingResistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Rolling resistance'**
+  String get assumptionFieldRollingResistance;
+
+  /// No description provided for @assumptionFieldDrivetrainEfficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivetrain efficiency'**
+  String get assumptionFieldDrivetrainEfficiency;
+
+  /// No description provided for @assumptionFieldFuelType.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel'**
+  String get assumptionFieldFuelType;
+
+  /// Stoichiometric air-fuel ratio. The abbreviation is standard; do not expand it.
+  ///
+  /// In en, this message translates to:
+  /// **'AFR'**
+  String get assumptionFieldStoichAfr;
+
+  /// No description provided for @assumptionFieldFuelDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Density'**
+  String get assumptionFieldFuelDensity;
+
+  /// No description provided for @assumptionFieldDisplacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Displacement'**
+  String get assumptionFieldDisplacement;
+
+  /// Volumetric efficiency. The abbreviation is standard; do not expand it.
+  ///
+  /// In en, this message translates to:
+  /// **'VE'**
+  String get assumptionFieldVolumetricEfficiency;
+
+  /// Where an assumed parameter came from: nothing about this vehicle, just a value typical of cars. The weakest of the five, and the reader must be able to tell it apart from the others at a glance — it is the difference between an estimate about their car and an estimate about a car.
+  ///
+  /// In en, this message translates to:
+  /// **'generic default'**
+  String get vehicleFieldOriginGenericDefault;
+
+  /// Where an assumed parameter came from: the reader typed it in. Not verified by the app, and must not be worded as if it were.
+  ///
+  /// In en, this message translates to:
+  /// **'entered by you'**
+  String get vehicleFieldOriginUserEntered;
+
+  /// Where an assumed parameter came from: the bundled official vehicle registry data.
+  ///
+  /// In en, this message translates to:
+  /// **'official registry'**
+  String get vehicleFieldOriginOfficialRegistry;
+
+  /// Where an assumed parameter came from: a figure the manufacturer published.
+  ///
+  /// In en, this message translates to:
+  /// **'manufacturer data'**
+  String get vehicleFieldOriginManufacturerPublication;
+
+  /// Where an assumed parameter came from: a coefficient from a physical model rather than from this vehicle. An estimate, and the wording must not suggest a measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'model coefficient'**
+  String get vehicleFieldOriginScientificModel;
+
+  /// One line of the estimate-assumptions list. The brackets are ASCII here and fullwidth in Chinese; that punctuation is part of the translation, not decoration.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} {value} ({origin})'**
+  String assumptionWithOrigin(String field, String value, String origin);
+
+  /// One line of the estimate-assumptions list, for a parameter that follows from the fuel type and so has no separate origin.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} {value}'**
+  String assumptionWithoutOrigin(String field, String value);
+
+  /// Joins the assumption lines. English uses a semicolon and a space; Chinese uses the fullwidth semicolon and no space. Using the English one in Chinese, or the reverse, is a defect this project has shipped before.
+  ///
+  /// In en, this message translates to:
+  /// **'; '**
+  String get assumptionSeparator;
+
+  /// The power estimate's formula, shown so a reader can check the working. Symbols and operators must not be translated; only the identifier words could be, and are better left as they are.
+  ///
+  /// In en, this message translates to:
+  /// **'wheelWatts = (m·a + ½ρ·Cd·A·v² + Crr·m·g)·v; engineHp = wheelHp / drivetrainEfficiency'**
+  String get datumFormulaHorsepower;
+
+  /// The fuel estimate's formula. Only the connecting words are translatable; PID 0110, MAF, MAP, VE and the units are not.
+  ///
+  /// In en, this message translates to:
+  /// **'L/h = (MAF g/s) / (AFR × fuel density g/L) × 3600; MAF is either PID 0110 or speed-density (RPM × MAP × displacement × VE / T_K); L/100km = (L/h) / speed_kmh × 100'**
+  String get datumFormulaFuelRate;
+
+  /// Shown in the estimate details for a replayed session whose file did not store the parameter list. It must not imply the settings were verified, only that they are the ones in force at record time.
+  ///
+  /// In en, this message translates to:
+  /// **'The estimate uses the vehicle settings as they were when this was recorded.'**
+  String get datumAssumptionsFromRecording;
 }
 
 class _AppLocalizationsDelegate

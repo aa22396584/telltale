@@ -67,21 +67,26 @@ Future<void> showDatumStatusDetails(
                   const SizedBox(height: Spacing.sm),
                   Text(datumReasonText(l10n, items[index])!),
                 ],
-                if (items[index].formula != null) ...[
+                // Rendered from the codes, not from the exported strings.
+                // Showing `formula` and `assumptions` verbatim is what put a
+                // block of Traditional Chinese into the English build: those
+                // two are written for the telemetry file, where the wording is
+                // deliberately frozen so two readers can compare one document.
+                if (datumFormulaText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
                     l10n.datumStatusFormula,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  Text(items[index].formula!),
+                  Text(datumFormulaText(l10n, items[index])!),
                 ],
-                if (items[index].assumptions != null) ...[
+                if (assumptionsText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
                     l10n.datumStatusAssumptions,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  Text(items[index].assumptions!),
+                  Text(assumptionsText(l10n, items[index])!),
                 ],
                 if (items[index].nextStep != null) ...[
                   const SizedBox(height: Spacing.md),

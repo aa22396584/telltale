@@ -33,7 +33,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
-import 'package:torque_obd/obd/physics/vehicle_profile.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/obd/vehicle_catalog/us_vehicle_catalog.dart';
 import 'package:torque_obd/state/obd_session.dart';
@@ -188,8 +187,9 @@ final _notThisGroupsStrings = <String>{
   // The gauge skin names used to be here. They are ARB entries now, and
   // GaugeSkin carries only geometry, so the compiler removed this line for us
   // — the allowance is meant to shrink.
-  for (final fuel in FuelType.values) fuel.label,
-  for (final drivetrain in Drivetrain.values) drivetrain.label,
+  // The fuel types and drivetrains used to be here too. Their words are ARB
+  // entries now and the enums keep only `exportLabel`, which the compiler will
+  // not let this file reach for by accident.
   for (final form in [
     lookupAppLocalizations(const Locale('en')).languageSectionTitle,
   ]) ...[form, form.toUpperCase()],

@@ -51,13 +51,12 @@ import '../support/cjk.dart';
 const _allowed = <String>{
   // The exported disagreement list on a multi-controller DTC scan.
   "            '\${disagreements.join('；')}。'",
-  "          '# ATDPN：\${_evidenceHeaderValue(c.protocolNumber, whenEmpty: '—')}',",
   // Attempt transcript and evidence header, both written to a file.
+  "          '# ATDPN：\${_evidenceHeaderValue(c.protocolNumber, whenEmpty: '—')}',",
   "    _attemptTranscript?.recordNote('\$prefix：\${detail ?? why}');",
-  // The exported assumptions sentence: 「車重 1500 kg（通用預設）；Cd 0.30…」
-  "            '\${_fieldNote('Cd', profile.dragCoefficient.toStringAsFixed(2), profile.dragCoefficientField.origin)}；'",
-  "            'AFR \${profile.stoichAfr.toStringAsFixed(1)}；'",
-  "  ) => '\$label \$value（\${_originLabel(origin)}）';",
+  // The exported assumptions sentence, composed by _exportNote.
+  "  ) => assumptionsFor(profile, kind).map(_exportNote).join('；');",
+  "        : '\$name \$value（\${_originLabel(origin)}）';",
 };
 
 /// The directories this reads, in a fixed order so failures list consistently.

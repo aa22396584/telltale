@@ -9,8 +9,21 @@ enum FuelType {
   lpg('液化石油氣 (LPG)', 15.6, 540),
   ethanolE85('E85 酒精汽油', 9.8, 782);
 
-  const FuelType(this.label, this.stoichAfr, this.densityGPerL);
-  final String label;
+  const FuelType(this.exportLabel, this.stoichAfr, this.densityGPerL);
+
+  /// The word this fuel is called **in an exported evidence file**, and nowhere
+  /// else.
+  ///
+  /// `AvailabilityPolicy.formatAssumptionsForExport` composes the assumptions sentence
+  /// that `DatumStatus.exportFields` writes into telemetry JSON, and that
+  /// sentence stays in Traditional Chinese on purpose: an evidence file whose
+  /// wording follows a phone setting is one that two people cannot compare.
+  ///
+  /// **Never render this on a screen.** The shipped words live in
+  /// `lib/ui/screens/settings/vehicle_profile_copy.dart`, and
+  /// `test/l10n/export_labels_stay_off_screen_test.dart` fails if this getter
+  /// is referenced from `lib/ui`.
+  final String exportLabel;
   final double stoichAfr;
   final double densityGPerL;
 }
@@ -20,8 +33,10 @@ enum Drivetrain {
   rwd('後輪驅動', 0.85),
   awd('四輪驅動', 0.80);
 
-  const Drivetrain(this.label, this.efficiency);
-  final String label;
+  const Drivetrain(this.exportLabel, this.efficiency);
+
+  /// Export-only. See [FuelType.exportLabel].
+  final String exportLabel;
   final double efficiency;
 }
 

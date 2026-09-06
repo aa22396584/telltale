@@ -105,6 +105,117 @@ enum DatumNextStep {
 }
 
 /// One status object for live UI, recorder, replay, and export.
+/// One vehicle parameter an estimate rests on.
+///
+/// The estimates the dashboard shows are only as good as these, and the app's
+/// whole claim is that it says so rather than presenting a model output as a
+/// measurement. So the details dialog lists them — with, for each one, where
+/// the number came from.
+///
+/// This is the identifier; `lib/ui/widgets/status/datum_status_copy.dart` has
+/// the words. It used to be a pre-composed Traditional Chinese sentence, which
+/// worked for the telemetry export it was written for and meant an English
+/// reader who opened the dialog got a wall of Chinese.
+enum AssumptionField {
+  mass,
+  dragCoefficient,
+  frontalArea,
+  rollingResistance,
+  drivetrainEfficiency,
+  fuelType,
+  stoichAfr,
+  fuelDensity,
+  displacement,
+  volumetricEfficiency,
+}
+
+/// Which formula produced an estimate.
+///
+/// Same split as [DatumReason] and [DatumStatus.reason]: the identifier is for
+/// the screen, and [DatumStatus.formula] stays the exported string.
+enum DatumFormula { horsepower, fuelRate }
+
+/// A note shown in place of a parameter list.
+///
+/// Only one so far, and it exists because a replayed session may have been
+/// recorded before assumptions were stored in the file. What the app says then
+/// is its own sentence and belongs in the ARBs; what a recording *did* store is
+/// a quotation from an evidence file and is shown exactly as written.
+enum DatumAssumptionNote { recordedVehicleSettings }
+
+/// A vehicle parameter, its value, and where the value came from.
+///
+/// [value] is already formatted and carries its unit, because the formatting is
+/// the same in both languages — `1500 kg` is `1500 kg`. What differs is the
+/// name of the field and the name of the origin, and neither is stored here.
+///
+/// [origin] is null for a parameter that is not a profile field the user or a
+/// catalog can supply — the stoichiometric AFR and the fuel density come from
+/// the fuel type, so asking where they came from has no answer beyond "the
+/// fuel you picked".
+/// What an assumption's value *is*, so that a value which is a word cannot be
+/// written down as a bare string.
+///
+/// This exists because the obvious shape kept failing in the same direction. A
+/// plain `String value` first held `''` for the fuel, with the name read off a
+/// `VehicleProfile?` handed in beside it — and one of two callers did not hand
+/// one in, so the dialog rendered `Fuel  (generic default)`. Replacing that with
+/// the frozen export wording fixed the blank and put Traditional Chinese into a
+/// public field one ternary away from the screen, guarded by a test that looks
+/// for Han characters. That guard watches a coincidence: the export vocabulary
+/// happens to be Chinese today. A word-valued parameter whose export wording is
+/// Latin would render the frozen term in the English build with nothing failing,
+/// which a reviewer demonstrated.
+///
+/// So the type says which kind of value it is, both renderers switch on it
+/// exhaustively, and there is no `String` to fall through to. Adding a fourth
+/// kind breaks the compile in `AvailabilityPolicy._exportNote` and in
+/// `assumptionsText` at the same time, which is the only arrangement that makes
+/// "somebody must decide how to translate this" impossible to skip.
+sealed class AssumptionValue {
+  const AssumptionValue();
+}
+
+/// A number and its unit. Reads the same in both languages, so it is the one
+/// kind that carries its own formatting.
+final class MeasuredValue extends AssumptionValue {
+  const MeasuredValue(this.formatted);
+  final String formatted;
+}
+
+/// The fuel. Carries the identifier and never a word: the export asks
+/// [FuelType.exportLabel] and the screen asks the ARBs.
+final class FuelValue extends AssumptionValue {
+  const FuelValue(this.fuel);
+  final FuelType fuel;
+}
+
+/// A drivetrain efficiency and the layout it belongs to. The percentage is the
+/// same in both languages; the layout's name is not.
+final class DrivetrainValue extends AssumptionValue {
+  const DrivetrainValue(this.percent, this.drivetrain);
+  final String percent;
+  final Drivetrain drivetrain;
+}
+
+/// A vehicle parameter, its value, and where the value came from.
+///
+/// [origin] is null for a parameter that is not a profile field the user or a
+/// catalog can supply — the stoichiometric AFR and the fuel density come from
+/// the fuel type, so asking where they came from has no answer beyond "the
+/// fuel you picked".
+final class VehicleAssumption {
+  const VehicleAssumption({
+    required this.field,
+    required this.value,
+    this.origin,
+  });
+
+  final AssumptionField field;
+  final AssumptionValue value;
+  final VehicleFieldOrigin? origin;
+}
+
 class DatumStatus {
   const DatumStatus({
     required this.availability,
@@ -119,7 +230,10 @@ class DatumStatus {
     this.gaps = const [],
     this.nextStep,
     this.formula,
+    this.formulaCode,
     this.assumptions,
+    this.assumptionFields = const [],
+    this.assumptionNote,
     this.justUpdated = false,
   });
 
@@ -146,8 +260,26 @@ class DatumStatus {
   final List<DatumGap> gaps;
 
   final DatumNextStep? nextStep;
+
+  /// The exported formula string, in one language, for the same reason
+  /// [reason] is. [formulaCode] is what the screen renders.
   final String? formula;
+
+  /// The same fact as [formula], as an identifier the UI can translate.
+  final DatumFormula? formulaCode;
+
+  /// The exported assumptions sentence. Composed from [assumptionFields] by
+  /// [AvailabilityPolicy.formatAssumptionsForExport], so the two cannot carry
+  /// different facts — only different words, which is the point.
   final String? assumptions;
+
+  /// The same facts as [assumptions], as data the UI can render in either
+  /// language.
+  final List<VehicleAssumption> assumptionFields;
+
+  /// Set instead of [assumptionFields] when there is no parameter list to show
+  /// and the app is speaking for itself rather than quoting a recording.
+  final DatumAssumptionNote? assumptionNote;
 
   /// Whether this value arrived on the most recent poll. Screen-only.
   final bool justUpdated;
@@ -443,7 +575,12 @@ abstract final class AvailabilityPolicy {
     String quantity = '估算',
     EstimateKind kind = EstimateKind.horsepower,
   }) {
-    final assumptions = estimateAssumptions(profile, kind);
+    final assumptions = formatAssumptionsForExport(profile, kind);
+    final assumptionFields = assumptionsFor(profile, kind);
+    final formulaCode = switch (kind) {
+      EstimateKind.horsepower => DatumFormula.horsepower,
+      EstimateKind.fuel => DatumFormula.fuelRate,
+    };
     if (value == null || !value.isFinite) {
       return DatumStatus(
         availability: FeatureAvailability.unavailable,
@@ -460,7 +597,9 @@ abstract final class AvailabilityPolicy {
         },
         nextStep: DatumNextStep.estimateOnlyOtherReadingsUnaffected,
         formula: formula,
+        formulaCode: formulaCode,
         assumptions: assumptions,
+        assumptionFields: assumptionFields,
       );
     }
     final max = switch (kind) {
@@ -478,7 +617,9 @@ abstract final class AvailabilityPolicy {
           : DatumQuality.valid,
       operationRisk: OperationRisk.display,
       formula: formula,
+      formulaCode: formulaCode,
       assumptions: assumptions,
+      assumptionFields: assumptionFields,
       reason: profile.isConfirmed ? null : '假設尚未確認，仍可估算',
       reasonCode: profile.isConfirmed
           ? null
@@ -487,28 +628,110 @@ abstract final class AvailabilityPolicy {
     );
   }
 
-  static String estimateAssumptions(VehicleProfile profile, EstimateKind kind) {
-    return switch (kind) {
-      EstimateKind.horsepower =>
-        '${_fieldNote('車重', '${profile.massKg.toStringAsFixed(0)} kg', profile.massField.origin)}；'
-            '${_fieldNote('Cd', profile.dragCoefficient.toStringAsFixed(2), profile.dragCoefficientField.origin)}；'
-            '${_fieldNote('迎風面積', '${profile.frontalAreaM2.toStringAsFixed(1)} m²', profile.frontalAreaField.origin)}；'
-            '${_fieldNote('滾動阻力', profile.rollingResistance.toStringAsFixed(3), profile.rollingResistanceField.origin)}；'
-            '${_fieldNote('傳動效率', '${(profile.drivetrainEfficiency * 100).toStringAsFixed(0)}% ${profile.drivetrain.label}', profile.drivetrainField.origin)}',
-      EstimateKind.fuel =>
-        '${_fieldNote('燃料', profile.fuelType.label, profile.fuelTypeField.origin)}；'
-            'AFR ${profile.stoichAfr.toStringAsFixed(1)}；'
-            '密度 ${profile.fuelDensityGPerL.toStringAsFixed(0)} g/L；'
-            '${_fieldNote('排氣量', '${profile.displacementL.toStringAsFixed(1)} L', profile.displacementField.origin)}；'
-            '${_fieldNote('VE', '${profile.volumetricEfficiency.toStringAsFixed(0)}%', profile.volumetricEfficiencyField.origin)}',
-    };
-  }
+  /// The parameters an estimate of [kind] rests on, as data.
+  ///
+  /// One source for both renderings: [formatAssumptionsForExport] composes the
+  /// Traditional Chinese sentence that goes into telemetry JSON from this list,
+  /// and the details dialog renders the same list through the ARBs. They can
+  /// differ in wording — that is what having two of them is for — but they
+  /// cannot differ in which fields, which values, or which origins.
+  static List<VehicleAssumption> assumptionsFor(
+    VehicleProfile profile,
+    EstimateKind kind,
+  ) => switch (kind) {
+    EstimateKind.horsepower => [
+      VehicleAssumption(
+        field: AssumptionField.mass,
+        value: MeasuredValue('${profile.massKg.toStringAsFixed(0)} kg'),
+        origin: profile.massField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.dragCoefficient,
+        value: MeasuredValue(profile.dragCoefficient.toStringAsFixed(2)),
+        origin: profile.dragCoefficientField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.frontalArea,
+        value: MeasuredValue('${profile.frontalAreaM2.toStringAsFixed(1)} m²'),
+        origin: profile.frontalAreaField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.rollingResistance,
+        value: MeasuredValue(profile.rollingResistance.toStringAsFixed(3)),
+        origin: profile.rollingResistanceField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.drivetrainEfficiency,
+        value: DrivetrainValue(
+          '${(profile.drivetrainEfficiency * 100).toStringAsFixed(0)}%',
+          profile.drivetrain,
+        ),
+        origin: profile.drivetrainField.origin,
+      ),
+    ],
+    EstimateKind.fuel => [
+      VehicleAssumption(
+        field: AssumptionField.fuelType,
+        value: FuelValue(profile.fuelType),
+        origin: profile.fuelTypeField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.stoichAfr,
+        value: MeasuredValue(profile.stoichAfr.toStringAsFixed(1)),
+      ),
+      VehicleAssumption(
+        field: AssumptionField.fuelDensity,
+        value: MeasuredValue(
+          '${profile.fuelDensityGPerL.toStringAsFixed(0)} g/L',
+        ),
+      ),
+      VehicleAssumption(
+        field: AssumptionField.displacement,
+        value: MeasuredValue('${profile.displacementL.toStringAsFixed(1)} L'),
+        origin: profile.displacementField.origin,
+      ),
+      VehicleAssumption(
+        field: AssumptionField.volumetricEfficiency,
+        value: MeasuredValue(
+          '${profile.volumetricEfficiency.toStringAsFixed(0)}%',
+        ),
+        origin: profile.volumetricEfficiencyField.origin,
+      ),
+    ],
+  };
 
-  static String _fieldNote(
-    String label,
-    String value,
-    VehicleFieldOrigin origin,
-  ) => '$label $value（${_originLabel(origin)}）';
+  /// The Traditional Chinese sentence written into telemetry exports.
+  ///
+  /// Not for a screen. See [FuelType.exportLabel].
+  static String formatAssumptionsForExport(
+    VehicleProfile profile,
+    EstimateKind kind,
+  ) => assumptionsFor(profile, kind).map(_exportNote).join('；');
+
+  static String _exportNote(VehicleAssumption a) {
+    final name = switch (a.field) {
+      AssumptionField.mass => '車重',
+      AssumptionField.dragCoefficient => 'Cd',
+      AssumptionField.frontalArea => '迎風面積',
+      AssumptionField.rollingResistance => '滾動阻力',
+      AssumptionField.drivetrainEfficiency => '傳動效率',
+      AssumptionField.fuelType => '燃料',
+      AssumptionField.stoichAfr => 'AFR',
+      AssumptionField.fuelDensity => '密度',
+      AssumptionField.displacement => '排氣量',
+      AssumptionField.volumetricEfficiency => 'VE',
+    };
+    final value = switch (a.value) {
+      MeasuredValue(:final formatted) => formatted,
+      FuelValue(:final fuel) => fuel.exportLabel,
+      DrivetrainValue(:final percent, :final drivetrain) =>
+        '$percent ${drivetrain.exportLabel}',
+    };
+    final origin = a.origin;
+    return origin == null
+        ? '$name $value'
+        : '$name $value（${_originLabel(origin)}）';
+  }
 
   static String? serviceByte(String modeAndPid) {
     final value = PollableServices.normalise(modeAndPid);
@@ -656,6 +879,11 @@ abstract final class AvailabilityPolicy {
       reason: derived ? _recordedEstimateReason(definition) : null,
       reasonCode: derived ? _recordedEstimateReasonCode(definition) : null,
       formula: derived ? definition.equation : null,
+      assumptionNote: derived &&
+              (definition.assumptions == null ||
+                  definition.assumptions!.isEmpty)
+          ? DatumAssumptionNote.recordedVehicleSettings
+          : null,
       assumptions: derived
           ? definition.assumptions != null && definition.assumptions!.isNotEmpty
                 ? definition.assumptions
@@ -728,6 +956,10 @@ abstract final class AvailabilityPolicy {
       statusReason: status.statusReason,
       nextStep: status.nextStep,
       formula: definition.equation,
+      assumptionNote:
+          definition.assumptions == null || definition.assumptions!.isEmpty
+          ? DatumAssumptionNote.recordedVehicleSettings
+          : null,
       assumptions:
           definition.assumptions != null && definition.assumptions!.isNotEmpty
           ? definition.assumptions

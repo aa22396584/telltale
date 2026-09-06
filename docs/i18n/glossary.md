@@ -147,15 +147,15 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 來源 | provenance | README.md:189 'evidence, provenance, and real-vehicle limits' ↔ README.zh-TW.md:163 '證據、來源與實車限制' (T2) | evidenced |  |
 | 來源 revision | source revision | README.md:91-92 ↔ README.zh-TW.md:77 (T1 — 'revision' kept English) | evidenced |  |
 | 傳動效率 | transmission efficiency | README.md:75 ↔ README.zh-TW.md:65 (T1) | evidenced |  |
-| 原廠資料 | manufacturer publication | lib/diagnostics/availability.dart:758 VehicleFieldOrigin.manufacturerPublication => '原廠資料' (T3) | evidenced |  |
+| 原廠資料 | manufacturer data | lib/l10n/app_en.arb:2818 ↔ lib/l10n/app_zh_Hant.arb:932 (T1 same ARB key) | evidenced | The English was 'manufacturer publication' here while nothing shipped it. What ships is 'manufacturer data': shorter, and 'publication' invites the reader to expect a document they can go and read. |
 | 大電池目錄 | powertrain-battery catalog | README.md:58 'powertrain-battery catalog' ↔ README.zh-TW.md:52 '大電池目錄' (T1) | evidenced |  |
 | 大電池車型設定 | powertrain battery profiles | README.md:189 doc table ↔ README.zh-TW.md:163 doc table (T2 same table row) | evidenced |  |
-| 官方型錄 | official registry | lib/diagnostics/availability.dart:757 VehicleFieldOrigin.officialRegistry => '官方型錄' (T3) | evidenced |  |
+| 官方型錄 | official registry | lib/l10n/app_en.arb:2814 ↔ lib/l10n/app_zh_Hant.arb:931 (T1 same ARB key) | evidenced | The strongest of the five origins. It must not be worded so as to sound like a measurement of this car — it is a record about this model. |
 | 容積效率 | volumetric efficiency | lib/obd/session_evidence.dart:205 'volumetricEfficiency' => '容積效率' (T3) | evidenced |  |
 | 實驗室 | laboratory | README.md:69 'the one-shot laboratory' ↔ README.zh-TW.md:59 '單次實驗室' (T1); README.md:81-82 ↔ README.zh-TW.md:70 | evidenced |  |
 | 年式 | model year | README.md:73 'model years 1984–2027' ↔ README.zh-TW.md:64 '年式 1984–2027' (T1); README.md:85 'selected year' ↔ README.zh-TW.md:72 '所選年式' | evidenced |  |
 | 快照 | snapshot | README.md:72 'EPA Find-a-Car snapshot' ↔ README.zh-TW.md:63 'EPA Find-a-Car 快照' (T1); README.md:179 ↔ README.zh-TW.md:153 | evidenced |  |
-| 手動輸入 | user entered | lib/diagnostics/availability.dart:756 VehicleFieldOrigin.userEntered => '手動輸入' (T3) | evidenced |  |
+| 手動輸入 | entered by you | lib/l10n/app_en.arb:2810 ↔ lib/l10n/app_zh_Hant.arb:930 (T1 same ARB key) | evidenced | 'user entered' was the glossary's own coinage and read like a database column. The shipped English addresses the reader, because the point of the word is that the app did not check this number — they typed it. |
 | 扭力 | torque | README.md:75 ↔ README.zh-TW.md:65 (T1); README.md:77 ↔ README.zh-TW.md:67 | evidenced | 扭力 (TW) not 扭矩 (CN). Distinct from the Torque/Torque Pro product name at README.md:210 ↔ README.zh-TW.md:181, which is never translated. |
 | 排氣量 | displacement | lib/obd/session_evidence.dart:203 'displacementL' => '排氣量' (T3 key ↔ label); docs/field-guide.zh-TW.md:164 | evidenced |  |
 | 正面投影面積 | frontal area | lib/obd/session_evidence.dart:209 'frontalAreaM2' => '正面投影面積' (T3) | evidenced |  |
@@ -165,7 +165,8 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 經完整性檢查 | integrity-checked | README.md:58 ↔ README.zh-TW.md:52 (T1); README.md:72 ↔ README.zh-TW.md:63 | evidenced |  |
 | 車輛設定 | vehicle profile | README.md:76 'every configured vehicle profile' ↔ README.zh-TW.md:66 '每組車輛設定' (T1) | evidenced | INCONSISTENCY: 'profile' is 車輛設定 here, 車型設定 at README.md:189 ↔ README.zh-TW.md:163, and kept as bare `profile` at README.zh-TW.md:77. Three renderings. |
 | 車重 | mass | README.md:75 'does not infer mass, torque, drag, VE' ↔ README.zh-TW.md:65 '不推測車重、扭力、風阻、VE' (T1); lib/obd/session_evidence.dart:204 'massKg' => '車重' | evidenced |  |
-| 通用預設 | generic default | lib/diagnostics/availability.dart:755 VehicleFieldOrigin.genericDefault => '通用預設' (T3) | evidenced |  |
+| 通用預設 | generic default | lib/l10n/app_en.arb:2806 ↔ lib/l10n/app_zh_Hant.arb:929 (T1 same ARB key) | evidenced | The weakest of the five origins, and the one a reader most needs to spot: it means the estimate is about a car, not about their car. |
+| 模型係數 | model coefficient | lib/l10n/app_en.arb:2822 ↔ lib/l10n/app_zh_Hant.arb:933 (T1 same ARB key) | evidenced | A number from a physical model rather than from this vehicle. Never 'measured' and never 'official' — #44's rule about 推算 applies to it directly. |
 | 雜湊 | hash | README.md:91 'verified catalog hash' ↔ README.zh-TW.md:77 '已驗證的目錄雜湊' (T1); README.md:188 'hashes' ↔ README.zh-TW.md:162 '雜湊' | evidenced |  |
 | 風阻 | drag | README.md:75 ↔ README.zh-TW.md:65 (T1); lib/obd/session_evidence.dart:208 'dragCoefficient' => '風阻係數' | evidenced |  |
 | 馬力 | horsepower | README.md:77 'profile-derived horsepower, torque, and fuel estimates' ↔ README.zh-TW.md:67 '實車的馬力、扭力或油耗' (T1) | evidenced |  |
