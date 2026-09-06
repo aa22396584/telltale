@@ -22,6 +22,8 @@ import 'package:torque_obd/state/telemetry_sessions.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_store.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'support/localized_app.dart';
 
 void main() {
   test('Demo record → CSV/JSON export stages files before soft-fail share',
@@ -108,14 +110,14 @@ void main() {
     final csvExport = await actions.export(sessionId, TelemetryExportFormat.csv);
     expect(csvExport.isSuccess, isFalse);
     expect(
-      csvExport.message,
+      csvExport.message(lookupAppLocalizations(testUiLocale)),
       '檔案已準備完成，但系統分享介面無法開啟。',
     );
     final jsonExport =
         await actions.export(sessionId, TelemetryExportFormat.json);
     expect(jsonExport.isSuccess, isFalse);
     expect(
-      jsonExport.message,
+      jsonExport.message(lookupAppLocalizations(testUiLocale)),
       '檔案已準備完成，但系統分享介面無法開啟。',
     );
     expect(platform.calls, 2);

@@ -1,75 +1,110 @@
+/// Human-readable copy for telemetry status, recorder outcomes and durations.
+///
+/// These take an [AppLocalizations] rather than a [BuildContext] on purpose.
+/// Half of this copy is chosen in places that have no widget above them — a
+/// static table, a top-level function, a notifier — and threading a context to
+/// those would either fail or invite someone to reach for a global one. A
+/// plain parameter keeps the functions pure, so a pure-Dart test can assert
+/// both languages with `lookupAppLocalizations(...)` and no widget pump.
+///
+/// Limits are placeholders, never spelled into the sentence. The recorder
+/// already owns `telemetryRecorderDurationLimit` and `TelemetryQuota.groupLimit`;
+/// writing "60 minutes" into the copy would create a second copy of a constant
+/// that can drift from the one the code enforces.
 library;
 
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/telemetry_recorder.dart';
 import '../../../telemetry/session/telemetry_recorder.dart';
 import '../../../telemetry/session/telemetry_session.dart';
+import '../../../telemetry/session/telemetry_session_store.dart';
 
-String telemetryStatusLabel(TelemetryStatus status) => switch (status) {
-  TelemetryStatus.stale => '資料已過期',
-  TelemetryStatus.unsupported => '目前引擎控制器已確認不支援',
-  TelemetryStatus.noAnswer => '無回應，稍後重試',
-  TelemetryStatus.formulaError => '公式錯誤',
-  TelemetryStatus.busError => '匯流排錯誤',
-  TelemetryStatus.headerMismatch => '標頭不符目前匯流排',
-  TelemetryStatus.unsafeServiceRefusal => '此服務不是唯讀查詢，已停止發送',
+String telemetryStatusLabel(AppLocalizations l10n, TelemetryStatus status) =>
+    switch (status) {
+      TelemetryStatus.stale => l10n.telemetryStatusStale,
+      TelemetryStatus.unsupported => l10n.telemetryStatusUnsupported,
+      TelemetryStatus.noAnswer => l10n.telemetryStatusNoAnswer,
+      TelemetryStatus.formulaError => l10n.telemetryStatusFormulaError,
+      TelemetryStatus.busError => l10n.telemetryStatusBusError,
+      TelemetryStatus.headerMismatch => l10n.telemetryStatusHeaderMismatch,
+      TelemetryStatus.unsafeServiceRefusal =>
+        l10n.telemetryStatusUnsafeServiceRefusal,
+    };
+
+String telemetryTerminalReasonLabel(
+  AppLocalizations l10n,
+  TelemetryTerminalReason reason,
+) => switch (reason) {
+  TelemetryTerminalReason.user => l10n.telemetryEndedByUser,
+  TelemetryTerminalReason.disconnect => l10n.telemetryEndedByDisconnect,
+  TelemetryTerminalReason.sessionReplacement =>
+    l10n.telemetryEndedBySessionReplacement,
+  TelemetryTerminalReason.background => l10n.telemetryEndedByBackground,
+  TelemetryTerminalReason.durationLimit => l10n.telemetryEndedByDurationLimit(
+    telemetryRecorderDurationLimit.inMinutes,
+  ),
+  TelemetryTerminalReason.sessionSizeLimit =>
+    l10n.telemetryEndedBySessionSizeLimit,
+  TelemetryTerminalReason.librarySizeLimit =>
+    l10n.telemetryEndedByLibrarySizeLimit,
+  TelemetryTerminalReason.storageBackpressure =>
+    l10n.telemetryEndedByStorageBackpressure,
+  TelemetryTerminalReason.configurationChanged =>
+    l10n.telemetryEndedByConfigurationChanged,
+  TelemetryTerminalReason.storageFailure => l10n.telemetryEndedByStorageFailure,
+  TelemetryTerminalReason.recoveredAfterInterruption =>
+    l10n.telemetryEndedByRecoveredAfterInterruption,
 };
 
-String telemetryTerminalReasonLabel(TelemetryTerminalReason reason) =>
-    switch (reason) {
-      TelemetryTerminalReason.user => '已手動停止',
-      TelemetryTerminalReason.disconnect => '連線中斷後已停止',
-      TelemetryTerminalReason.sessionReplacement => '連線工作階段已更換',
-      TelemetryTerminalReason.background => 'App 進入背景後已停止',
-      TelemetryTerminalReason.durationLimit => '已達 60 分鐘上限',
-      TelemetryTerminalReason.sessionSizeLimit => '已達單筆紀錄容量上限',
-      TelemetryTerminalReason.librarySizeLimit => '本機紀錄空間已滿',
-      TelemetryTerminalReason.storageBackpressure => '儲存速度不足',
-      TelemetryTerminalReason.configurationChanged => 'PID 設定已變更',
-      TelemetryTerminalReason.storageFailure => '儲存失敗',
-      TelemetryTerminalReason.recoveredAfterInterruption => '上次中斷後已復原',
-    };
-
-String telemetryStartOutcomeLabel(TelemetryStartOutcome outcome) =>
-    switch (outcome) {
-      TelemetryStartOutcome.recording => '已開始紀錄',
-      TelemetryStartOutcome.disconnected => '請先連線再開始紀錄',
-      TelemetryStartOutcome.background => '請回到 App 前景再開始紀錄',
-      TelemetryStartOutcome.speedUnknown ||
-      TelemetryStartOutcome.startInvalidatedSpeedUnknown => '無法確認車輛已停止；請先中斷連線',
-      TelemetryStartOutcome.moving ||
-      TelemetryStartOutcome.startInvalidatedMoving => '請停車後操作',
-      TelemetryStartOutcome.startInvalidatedBackground => 'App 已進入背景，未開始紀錄',
-      TelemetryStartOutcome.startInvalidatedDisconnect => '連線已中斷，未開始紀錄',
-      TelemetryStartOutcome.startInvalidatedSessionReplacement =>
-        '連線工作階段已更換，未開始紀錄',
-      TelemetryStartOutcome.libraryGroupLimit => '本機紀錄已達 20 組上限，請先匯出或刪除',
-      TelemetryStartOutcome.libraryByteLimit ||
-      TelemetryStartOutcome.noRoomForValue => '本機紀錄空間不足，請先匯出或刪除',
-      TelemetryStartOutcome.invalidConfiguration => 'PID 設定無法安全紀錄，請檢查定義',
-      TelemetryStartOutcome.idCollision ||
-      TelemetryStartOutcome.storageFailure => '無法建立紀錄檔',
-      TelemetryStartOutcome.restartRequired => '啟動清理未完成；請重新啟動 App 以修復紀錄',
-      TelemetryStartOutcome.startBusy ||
-      TelemetryStartOutcome.artifactBusy ||
-      TelemetryStartOutcome.pidLocked => '另一個紀錄或檔案作業尚未完成',
-    };
-
-const telemetryPendingOwnerRecoveryCopy = '作業仍由目前程序持有；若持續停在此狀態，請完全關閉並重新啟動 App';
+String telemetryStartOutcomeLabel(
+  AppLocalizations l10n,
+  TelemetryStartOutcome outcome,
+) => switch (outcome) {
+  TelemetryStartOutcome.recording => l10n.telemetryStartRecording,
+  TelemetryStartOutcome.disconnected => l10n.telemetryStartNeedsConnection,
+  TelemetryStartOutcome.background => l10n.telemetryStartNeedsForeground,
+  // Unknown speed refuses exactly as hard as known movement does. The absence
+  // of a speed reading is not evidence that the car is parked.
+  TelemetryStartOutcome.speedUnknown ||
+  TelemetryStartOutcome.startInvalidatedSpeedUnknown =>
+    l10n.telemetryStartSpeedUnknown,
+  TelemetryStartOutcome.moving ||
+  TelemetryStartOutcome.startInvalidatedMoving => l10n.telemetryStartMoving,
+  TelemetryStartOutcome.startInvalidatedBackground =>
+    l10n.telemetryStartInvalidatedBackground,
+  TelemetryStartOutcome.startInvalidatedDisconnect =>
+    l10n.telemetryStartInvalidatedDisconnect,
+  TelemetryStartOutcome.startInvalidatedSessionReplacement =>
+    l10n.telemetryStartInvalidatedSessionReplacement,
+  TelemetryStartOutcome.libraryGroupLimit =>
+    l10n.telemetryStartLibraryGroupLimit(TelemetryQuota.groupLimit),
+  TelemetryStartOutcome.libraryByteLimit ||
+  TelemetryStartOutcome.noRoomForValue => l10n.telemetryStartLibraryByteLimit,
+  TelemetryStartOutcome.invalidConfiguration =>
+    l10n.telemetryStartInvalidConfiguration,
+  TelemetryStartOutcome.idCollision ||
+  TelemetryStartOutcome.storageFailure => l10n.telemetryStartCannotCreateFile,
+  TelemetryStartOutcome.restartRequired => l10n.telemetryRestartToRepairStartup,
+  TelemetryStartOutcome.startBusy ||
+  TelemetryStartOutcome.artifactBusy ||
+  TelemetryStartOutcome.pidLocked => l10n.telemetryStartBusy,
+};
 
 /// Persistent recovery guidance for recorder work that cannot safely be
 /// cancelled or released by a UI timeout.
 String? telemetryRecorderRecoveryLabel(
+  AppLocalizations l10n,
   TelemetryRecorderState state, {
   bool startNeedsRestart = false,
 }) {
   if (state.phase == TelemetryRecorderPhase.preparing ||
       state.phase == TelemetryRecorderPhase.finalizing) {
-    return telemetryPendingOwnerRecoveryCopy;
+    return l10n.telemetryPendingOwnerRecovery;
   }
   if (!state.requiresRestart && !startNeedsRestart) return null;
   return state.phase == TelemetryRecorderPhase.preparing
-      ? '啟動清理未完成；請重新啟動 App 以修復紀錄'
-      : '儲存作業未完成；請重新啟動 App 以修復紀錄';
+      ? l10n.telemetryRestartToRepairStartup
+      : l10n.telemetryRestartToRepairSave;
 }
 
 String formatTelemetryDuration(int elapsedUs) {

@@ -22,5 +22,81 @@
   "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
   "startupRestartHint": "Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.",
   "languageSaveFailed": "Could not save the language. Try again.",
-  "appearanceSectionTitle": "Appearance"
+  "appearanceSectionTitle": "Appearance",
+  "telemetryStatusStale": "Data is stale",
+  "@telemetryStatusStale": {
+    "description": "A live reading that has stopped updating. Not an error and not a fresh value."
+  },
+  "telemetryStatusUnsupported": "The controller answered that it does not support this",
+  "@telemetryStatusUnsupported": {
+    "description": "Distinct from no answer: the ECU replied, and the reply said unsupported."
+  },
+  "telemetryStatusNoAnswer": "No answer — will retry",
+  "@telemetryStatusNoAnswer": {
+    "description": "Silence, not a refusal. Must never read as unsupported."
+  },
+  "telemetryStatusFormulaError": "Formula error",
+  "telemetryStatusBusError": "Bus error",
+  "telemetryStatusHeaderMismatch": "Header does not match this bus",
+  "telemetryStatusUnsafeServiceRefusal": "Not a read-only query — nothing was sent",
+  "@telemetryStatusUnsafeServiceRefusal": {
+    "description": "The app refused to transmit. Says what did NOT happen."
+  },
+  "telemetryEndedByUser": "Stopped by you",
+  "telemetryEndedByDisconnect": "Stopped when the connection dropped",
+  "telemetryEndedBySessionReplacement": "The connection session was replaced",
+  "telemetryEndedByBackground": "Stopped when Telltale went to the background",
+  "telemetryEndedByDurationLimit": "Reached the {minutes}-minute limit",
+  "@telemetryEndedByDurationLimit": {
+    "description": "{minutes} comes from telemetryRecorderDurationLimit; never spell the number in the copy.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryEndedBySessionSizeLimit": "This recording reached its size limit",
+  "telemetryEndedByLibrarySizeLimit": "Local recording storage is full",
+  "telemetryEndedByStorageBackpressure": "Storage could not keep up",
+  "telemetryEndedByConfigurationChanged": "The PID selection changed",
+  "telemetryEndedByStorageFailure": "Saving failed",
+  "telemetryEndedByRecoveredAfterInterruption": "Recovered after the last interruption",
+  "telemetryStartRecording": "Recording started",
+  "telemetryStartNeedsConnection": "Connect before starting a recording",
+  "telemetryStartNeedsForeground": "Bring Telltale to the foreground before starting a recording",
+  "telemetryStartSpeedUnknown": "Cannot confirm the vehicle is stopped — disconnect first",
+  "@telemetryStartSpeedUnknown": {
+    "description": "Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car."
+  },
+  "telemetryStartMoving": "Park the vehicle first",
+  "telemetryStartInvalidatedBackground": "Telltale went to the background — no recording started",
+  "telemetryStartInvalidatedDisconnect": "The connection dropped — no recording started",
+  "telemetryStartInvalidatedSessionReplacement": "The connection session was replaced — no recording started",
+  "telemetryStartLibraryGroupLimit": "Local recordings reached the limit of {limit} — export or delete some first",
+  "@telemetryStartLibraryGroupLimit": {
+    "description": "{limit} comes from TelemetryQuota.groupLimit.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "telemetryStartLibraryByteLimit": "Not enough local storage for a recording — export or delete some first",
+  "telemetryStartInvalidConfiguration": "This PID selection cannot be recorded safely — check the definitions",
+  "telemetryStartCannotCreateFile": "Could not create the recording file",
+  "telemetryStartBusy": "Another recording or file operation has not finished",
+  "telemetryRestartToRepairStartup": "Startup cleanup did not finish — restart Telltale to repair the recordings",
+  "@telemetryRestartToRepairStartup": {
+    "description": "Also the startOutcome for restartRequired; one sentence, one key."
+  },
+  "telemetryRestartToRepairSave": "Saving did not finish — restart Telltale to repair the recordings",
+  "telemetryPendingOwnerRecovery": "This process still holds the operation. If it stays here, quit Telltale completely and reopen it",
+  "telemetryStartNeedsActivePid": "Enable at least one PID first",
+  "telemetryStartTooManyPids": "Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first",
+  "@telemetryStartTooManyPids": {
+    "description": "Refers to DerivedEstimates.maxLiveSignals. 'estimated' must never read as 'measured'."
+  },
+  "telemetryBlockedByRecorder": "Stop and save the recording first",
+  "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
 }

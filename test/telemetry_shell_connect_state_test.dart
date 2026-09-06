@@ -7,7 +7,6 @@ import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/ui/shell.dart';
-import 'package:torque_obd/ui/widgets/telemetry/telemetry_status_copy.dart';
 import 'support/localized_app.dart';
 
 void main() {
@@ -75,7 +74,7 @@ void main() {
       expect(rail.destinations, hasLength(5));
       expect(find.textContaining('正在儲存紀錄'), findsOneWidget);
       expect(
-        find.textContaining(telemetryPendingOwnerRecoveryCopy),
+        find.textContaining('作業仍由目前程序持有'),
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('telemetry-shell-stop')), findsNothing);
@@ -179,7 +178,7 @@ void main() {
 
     expect(find.textContaining('正在準備錄製'), findsOneWidget);
     expect(
-      find.textContaining(telemetryPendingOwnerRecoveryCopy),
+      find.textContaining('作業仍由目前程序持有'),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('telemetry-shell-stop')), findsNothing);

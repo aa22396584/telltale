@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../screens/telemetry/telemetry_sessions_screen.dart';
 import '../panel.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// Offline entry to saved sessions on the connection screen.
 ///
@@ -64,7 +65,9 @@ class _HistoryPanel extends StatelessWidget {
                     Text('本機紀錄', style: context.texts.titleMedium),
                     const SizedBox(height: Spacing.xs),
                     Text(
-                      permitted ? '已儲存 $count 組，可離線回放與匯出' : access.message!,
+                      permitted
+                          ? '已儲存 $count 組，可離線回放與匯出'
+                          : access.message(AppLocalizations.of(context))!,
                       style: context.texts.bodySmall,
                     ),
                   ],

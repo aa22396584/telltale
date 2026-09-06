@@ -9,6 +9,7 @@ import '../../../state/telemetry_recorder.dart';
 import '../../../telemetry/session/telemetry_recorder.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import 'telemetry_status_copy.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class TelemetryRecorderStrip extends ConsumerWidget {
   const TelemetryRecorderStrip({super.key});
@@ -25,7 +26,8 @@ class TelemetryRecorderStrip extends ConsumerWidget {
     final palette = context.palette;
     final recording = state.phase == TelemetryRecorderPhase.recording;
     final finalizing = state.phase == TelemetryRecorderPhase.finalizing;
-    final recoveryCopy = telemetryRecorderRecoveryLabel(state);
+    final l10n = AppLocalizations.of(context);
+    final recoveryCopy = telemetryRecorderRecoveryLabel(l10n, state);
     final title = recording
         ? state.valueCount == 0
               ? '準備錄製'

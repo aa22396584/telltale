@@ -12,6 +12,7 @@ import '../../../state/telemetry_trends.dart';
 import '../../../telemetry/session/timeline_downsampler.dart';
 import '../../widgets/panel.dart';
 import 'telemetry_status_copy.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class LiveTrendCard extends StatelessWidget {
   const LiveTrendCard({
@@ -38,7 +39,7 @@ class LiveTrendCard extends StatelessWidget {
         ? '目前未連線'
         : status == null
         ? '即時資料'
-        : telemetryStatusLabel(status);
+        : telemetryStatusLabel(AppLocalizations.of(context), status);
     final semantics = [
       _signalName(pid),
       value == null
