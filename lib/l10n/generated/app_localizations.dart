@@ -3872,6 +3872,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scanning…'**
   String get wearScanning;
+
+  /// Screen-reader state for the trend card: answers whether a recording is running, and therefore also covers completed and failed. Distinct from telemetryRecorderPhaseIdle, which is the recorder panel's section title and names what the recorder is rather than what it is doing.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recording'**
+  String get telemetryRecorderNotRecording;
 }
 
 class _AppLocalizationsDelegate

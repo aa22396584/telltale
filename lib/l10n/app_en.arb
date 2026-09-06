@@ -2144,5 +2144,9 @@
       }
     }
   },
-  "wearScanning": "Scanning…"
+  "wearScanning": "Scanning…",
+  "telemetryRecorderNotRecording": "Not recording",
+  "@telemetryRecorderNotRecording": {
+    "description": "Screen-reader state for the trend card: answers whether a recording is running, and therefore also covers completed and failed. Distinct from telemetryRecorderPhaseIdle, which is the recorder panel's section title and names what the recorder is rather than what it is doing."
+  }
 }

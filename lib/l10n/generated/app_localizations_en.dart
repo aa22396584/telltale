@@ -2458,4 +2458,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wearScanning => 'Scanning…';
+
+  @override
+  String get telemetryRecorderNotRecording => 'Not recording';
 }

@@ -224,35 +224,34 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardChoosePids => 'Choose PIDs';
+  String get dashboardChoosePids => '選擇 PID';
 
   @override
-  String get dashboardEmptyBody =>
-      'Pick the signals you want to watch on the PID page and they will appear here.';
+  String get dashboardEmptyBody => '到 PID 頁面挑選想要監看的訊號，它們會出現在這裡。';
 
   @override
-  String get dashboardEmptyTitle => 'The dashboard is empty';
+  String get dashboardEmptyTitle => '儀表板是空的';
 
   @override
-  String get dashboardGenericObd => 'Generic OBD';
+  String get dashboardGenericObd => '通用 OBD';
 
   @override
-  String get dashboardLocalRecordings => 'Local recordings';
+  String get dashboardLocalRecordings => '本機紀錄';
 
   @override
-  String get dashboardNotConnected => 'Not connected';
+  String get dashboardNotConnected => '未連線';
 
   @override
-  String get dashboardSingleRequestMode => 'Single request mode';
+  String get dashboardSingleRequestMode => '單筆模式';
 
   @override
-  String get dashboardVinRead => 'VIN read';
+  String get dashboardVinRead => '已讀 VIN';
 
   @override
-  String get dashboardWorkspaceGauges => 'Gauges';
+  String get dashboardWorkspaceGauges => '儀表';
 
   @override
-  String get dashboardWorkspaceTrends => 'Trends';
+  String get dashboardWorkspaceTrends => '趨勢';
 
   @override
   String get datumStatusAssumptions => '假設';
@@ -267,36 +266,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get datumStatusFormula => '公式';
 
   @override
-  String get derivedAirflow => 'Airflow';
+  String get derivedAirflow => '空氣流量';
 
   @override
-  String get derivedEcuFuelTitle => 'ECU fuel data';
+  String get derivedEcuFuelTitle => 'ECU 油耗資料';
 
   @override
-  String get derivedEcuReported => 'ECU reported';
+  String get derivedEcuReported => 'ECU 回報';
 
   @override
-  String get derivedEngineHorsepower => 'Engine power';
+  String get derivedEngineHorsepower => '引擎馬力';
 
   @override
-  String get derivedEstimatedFuelTitle => 'Estimated fuel use';
+  String get derivedEstimatedFuelTitle => '估算油耗';
 
   @override
-  String get derivedEstimatesDetailsTitle =>
-      'Estimate formulas and assumptions';
+  String get derivedEstimatesDetailsTitle => '估算公式與假設';
 
   @override
-  String get derivedEstimatesTitle => 'Estimated values';
+  String get derivedEstimatesTitle => '推算數值';
 
   @override
-  String get derivedFuelUse => 'Fuel use';
+  String get derivedFuelUse => '油耗';
 
   @override
-  String get derivedTorque => 'Torque';
+  String get derivedTorque => '扭力';
 
   @override
-  String get derivedUnavailableMessage =>
-      'Horsepower can only be estimated once vehicle speed and acceleration data arrive';
+  String get derivedUnavailableMessage => '等待車速與加速度資料後才能推算馬力';
 
   @override
   String dtcBothSilentDetail(Object mode) {
@@ -570,7 +567,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get gaugeUnsupportedByVehicle => 'Not supported by this vehicle';
+  String get gaugeUnsupportedByVehicle => '此車輛不支援';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
@@ -1302,7 +1299,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get semanticsFieldSeparator => ', ';
+  String get semanticsFieldSeparator => '，';
 
   @override
   String get settingsAdapterConcernsFooter =>
@@ -1718,7 +1715,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get telemetryDeleteSessionTitle => '刪除本機紀錄？';
 
   @override
-  String get telemetryDemoData => 'Built-in simulator data';
+  String get telemetryDemoData => '內建模擬資料';
 
   @override
   String get telemetryDismissNotice => '關閉提示';
@@ -1811,7 +1808,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get telemetryNotConnected => 'Not connected';
+  String get telemetryNotConnected => '目前未連線';
 
   @override
   String get telemetryOfflineSampledReplay => '離線抽樣回放';
@@ -1923,7 +1920,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get telemetryReturnToTrends => '返回趨勢';
 
   @override
-  String get telemetryRigData => 'Test rig data';
+  String get telemetryRigData => '測試馬具資料';
 
   @override
   String telemetrySentenceJoin(String first, String second) {
@@ -2087,66 +2084,63 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get trendAxisNow => 'Now';
+  String get trendAxisNow => '現在';
 
   @override
-  String get trendChooseSignals => 'Choose signals';
+  String get trendChooseSignals => '選擇訊號';
 
   @override
-  String get trendLiveData => 'Live data';
+  String get trendLiveData => '即時資料';
 
   @override
-  String get trendNoSignalsBody =>
-      'Enable the signals you want to watch on the PID page first.';
+  String get trendNoSignalsBody => '先到 PID 頁面啟用想要監看的訊號。';
 
   @override
-  String get trendNoSignalsTitle => 'No trend signals available';
+  String get trendNoSignalsTitle => '沒有可用的趨勢訊號';
 
   @override
-  String get trendNoUnits => 'No units';
+  String get trendNoUnits => '無單位';
 
   @override
   String trendPickSignalsBody(int limit) {
-    return 'Compare up to $limit signals. This does not change which PIDs are polled.';
+    return '最多可以比較 $limit 項訊號，不會改變已啟用的 PID 輪詢。';
   }
 
   @override
-  String get trendPickSignalsTitle => 'Choose trend signals';
+  String get trendPickSignalsTitle => '選擇趨勢訊號';
 
   @override
   String trendRemoveSignal(String name) {
-    return 'Remove $name';
+    return '移除 $name';
   }
 
   @override
-  String get trendSelectionSaveFailed =>
-      'Could not save the trend display selection';
+  String get trendSelectionSaveFailed => '無法儲存趨勢顯示選擇';
 
   @override
   String trendSheetBody(int limit) {
-    return 'Choose at most $limit. This only changes the chart, not PID polling or a recording in progress.';
+    return '最多選擇 $limit 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。';
   }
 
   @override
   String trendSheetDone(int selected, int limit) {
-    return 'Done · $selected/$limit';
+    return '完成 · $selected/$limit';
   }
 
   @override
-  String get trendSignalNoLongerActive =>
-      'One of those signals is no longer in the PID watch list';
+  String get trendSignalNoLongerActive => '其中一項訊號已不在 PID 監看清單';
 
   @override
-  String get trendSignalsHeading => 'Trend signals';
+  String get trendSignalsHeading => '趨勢訊號';
 
   @override
   String trendTooManySelected(int limit) {
-    return 'Choose at most $limit';
+    return '最多選擇 $limit 項';
   }
 
   @override
   String trendWindowSemantics(int seconds) {
-    return 'Showing the last $seconds seconds';
+    return '顯示最近 $seconds 秒趨勢';
   }
 
   @override
@@ -2215,6 +2209,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wearScanning => '掃描中…';
+
+  @override
+  String get telemetryRecorderNotRecording => '未錄製';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2436,6 +2433,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get dashboardChoosePids => '選擇 PID';
+
+  @override
+  String get dashboardEmptyBody => '到 PID 頁面挑選想要監看的訊號，它們會出現在這裡。';
+
+  @override
+  String get dashboardEmptyTitle => '儀表板是空的';
+
+  @override
+  String get dashboardGenericObd => '通用 OBD';
+
+  @override
+  String get dashboardLocalRecordings => '本機紀錄';
+
+  @override
+  String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardSingleRequestMode => '單筆模式';
+
+  @override
+  String get dashboardVinRead => '已讀 VIN';
+
+  @override
+  String get dashboardWorkspaceGauges => '儀表';
+
+  @override
+  String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
   String get datumStatusAssumptions => '假設';
 
   @override
@@ -2446,6 +2473,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get datumStatusFormula => '公式';
+
+  @override
+  String get derivedAirflow => '空氣流量';
+
+  @override
+  String get derivedEcuFuelTitle => 'ECU 油耗資料';
+
+  @override
+  String get derivedEcuReported => 'ECU 回報';
+
+  @override
+  String get derivedEngineHorsepower => '引擎馬力';
+
+  @override
+  String get derivedEstimatedFuelTitle => '估算油耗';
+
+  @override
+  String get derivedEstimatesDetailsTitle => '估算公式與假設';
+
+  @override
+  String get derivedEstimatesTitle => '推算數值';
+
+  @override
+  String get derivedFuelUse => '油耗';
+
+  @override
+  String get derivedTorque => '扭力';
+
+  @override
+  String get derivedUnavailableMessage => '等待車速與加速度資料後才能推算馬力';
 
   @override
   String dtcBothSilentDetail(Object mode) {
@@ -2717,6 +2774,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String gaugeReadingStale(String reading) {
     return '$reading（資料已過期）';
   }
+
+  @override
+  String get gaugeUnsupportedByVehicle => '此車輛不支援';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
@@ -3448,6 +3508,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get semanticsFieldSeparator => '，';
+
+  @override
   String get settingsAdapterConcernsFooter =>
       '這些是轉接器對自己的描述對不起來，不是它讀錯了車。要確認數值，只能拿第二個獨立量測去對（見速查表）。';
 
@@ -3861,6 +3924,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get telemetryDeleteSessionTitle => '刪除本機紀錄？';
 
   @override
+  String get telemetryDemoData => '內建模擬資料';
+
+  @override
   String get telemetryDismissNotice => '關閉提示';
 
   @override
@@ -3949,6 +4015,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   ) {
     return '本機儲存 $groups / $groupLimit 組，$used / $byteLimit MiB';
   }
+
+  @override
+  String get telemetryNotConnected => '目前未連線';
 
   @override
   String get telemetryOfflineSampledReplay => '離線抽樣回放';
@@ -4058,6 +4127,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get telemetryReturnToTrends => '返回趨勢';
+
+  @override
+  String get telemetryRigData => '測試馬具資料';
 
   @override
   String telemetrySentenceJoin(String first, String second) {
@@ -4221,6 +4293,66 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get trendAxisNow => '現在';
+
+  @override
+  String get trendChooseSignals => '選擇訊號';
+
+  @override
+  String get trendLiveData => '即時資料';
+
+  @override
+  String get trendNoSignalsBody => '先到 PID 頁面啟用想要監看的訊號。';
+
+  @override
+  String get trendNoSignalsTitle => '沒有可用的趨勢訊號';
+
+  @override
+  String get trendNoUnits => '無單位';
+
+  @override
+  String trendPickSignalsBody(int limit) {
+    return '最多可以比較 $limit 項訊號，不會改變已啟用的 PID 輪詢。';
+  }
+
+  @override
+  String get trendPickSignalsTitle => '選擇趨勢訊號';
+
+  @override
+  String trendRemoveSignal(String name) {
+    return '移除 $name';
+  }
+
+  @override
+  String get trendSelectionSaveFailed => '無法儲存趨勢顯示選擇';
+
+  @override
+  String trendSheetBody(int limit) {
+    return '最多選擇 $limit 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。';
+  }
+
+  @override
+  String trendSheetDone(int selected, int limit) {
+    return '完成 · $selected/$limit';
+  }
+
+  @override
+  String get trendSignalNoLongerActive => '其中一項訊號已不在 PID 監看清單';
+
+  @override
+  String get trendSignalsHeading => '趨勢訊號';
+
+  @override
+  String trendTooManySelected(int limit) {
+    return '最多選擇 $limit 項';
+  }
+
+  @override
+  String trendWindowSemantics(int seconds) {
+    return '顯示最近 $seconds 秒趨勢';
+  }
+
+  @override
   String get wearBack => '返回';
 
   @override
@@ -4286,4 +4418,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get wearScanning => '掃描中…';
+
+  @override
+  String get telemetryRecorderNotRecording => '未錄製';
 }

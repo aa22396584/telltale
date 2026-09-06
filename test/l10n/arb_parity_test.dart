@@ -93,6 +93,13 @@ void main() {
       // The language control names both languages in both languages, so a
       // reader who cannot read the current one can still find their way out.
       'languageSectionTitle',
+      // An SAE J1979 term, on docs/i18n/do-not-translate.md. Somebody who has
+      // met PIDs knows the acronym, and somebody who has not is not helped by a
+      // translation of it that no other tool or datasheet uses.
+      'navPid',
+      // Placeholders and a unit. Units are not a language: MiB is MiB in both,
+      // and translating it would make two exports incomparable.
+      'telemetryLibraryBytes',
     };
     final untranslated = <String>[];
     for (final key in _messageKeys(en)) {

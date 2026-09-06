@@ -32,7 +32,7 @@ String telemetryRecorderPhaseLabel(
   // recorder panel's job to say, at the size that question deserves.
   TelemetryRecorderPhase.idle ||
   TelemetryRecorderPhase.completed ||
-  TelemetryRecorderPhase.failed => l10n.telemetryRecorderPhaseIdle,
+  TelemetryRecorderPhase.failed => l10n.telemetryRecorderNotRecording,
 };
 
 class TelemetryWorkspace extends ConsumerWidget {
