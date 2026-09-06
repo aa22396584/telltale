@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/addressing.dart';
 import '../../../obd/pid/formula_engine.dart';
 import '../../../obd/pid/pid.dart';
@@ -114,19 +115,20 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// Asks before throwing away edits. Returns true when it is safe to leave.
   Future<bool> _confirmDiscard() async {
     if (!_isDirty) return true;
+    final l10n = AppLocalizations.of(context);
     final discard = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('放棄未儲存的變更？'),
-        content: const Text('這個 PID 的修改還沒有儲存，離開後會遺失。'),
+        title: Text(l10n.pidEditorDiscardTitle),
+        content: Text(l10n.pidEditorDiscardBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('繼續編輯'),
+            child: Text(l10n.pidEditorKeepEditing),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('放棄'),
+            child: Text(l10n.pidEditorDiscard),
           ),
         ],
       ),
@@ -199,7 +201,11 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// Shared with the CSV importer, which already refused a malformed range or
   /// header while this screen accepted both — and then substituted `0`/`100`
   /// for bounds it could not parse, giving a gauge a scale nobody chose.
-  String? get _definitionRejection =>
+  ///
+  /// `PidDefinition.rejectionReason` returns its own wording, which still lives
+  /// in `lib/obd/pid/pid.dart` and is shared with the CSV importer; only the
+  /// collision reason below belongs to this screen.
+  String? _definitionRejection(AppLocalizations l10n) =>
       PidDefinition.rejectionReason(
         name: _name.text,
         modeAndPid: PollableServices.normalise(_modeAndPid.text),
@@ -208,7 +214,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
         maxText: _max.text,
         requireBounds: true,
       ) ??
-      _collision;
+      _collision(l10n);
 
   /// Whether the edited identity already belongs to a different custom PID.
   ///
@@ -217,7 +223,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// second — its definition gone from the registry, its gauge gone from the
   /// dashboard, and nothing said so. Refusing is the only answer that does not
   /// throw away something the user made.
-  String? get _collision {
+  String? _collision(AppLocalizations l10n) {
     final candidate = Pid(
       name: _name.text.trim().isEmpty ? 'x' : _name.text.trim(),
       shortName: '',
@@ -235,22 +241,20 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
         .read(pidRegistryProvider)
         .where((p) => p.isCustom && p.id == candidate.id);
     if (clash.isEmpty) return null;
-    return '已經有一個自訂 PID 使用這組設定（${clash.first.name}）。'
-        '請改用不同的模式 + PID、標頭或名稱後綴。';
+    // The name of the PID it collides with is the whole point of the message:
+    // it is the only way the author can find the definition they would have
+    // destroyed. It passes through as the user typed it, in either language.
+    return l10n.pidEditorCollision(clash.first.name);
   }
 
-  bool get _canSave =>
-      _modeAndPid.text.trim().length >= 4 &&
-      _definitionRejection == null &&
-      _preview.error == null;
-
-  void _showMutationLocked() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(kPidMutationLockedMessage)),
-    );
+  void _showMutationLocked(AppLocalizations l10n) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.telemetryBlockedByRecorder)));
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final pid = Pid(
       name: _name.text.trim(),
       shortName: _shortName.text.trim().isEmpty
@@ -284,13 +288,14 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
               PidMutationFailure.locked
         : (await registry.replaceCustom(previous, pid)).isLocked;
     if (locked) {
-      if (mounted) _showMutationLocked();
+      if (mounted) _showMutationLocked(l10n);
       return;
     }
     if (mounted) context.pop();
   }
 
   Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context);
     final pid = _original;
     if (pid == null) return;
     // Asked, because this screen already asks about something smaller.
@@ -303,17 +308,16 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('刪除這個 PID？'),
-        content: Text('「${pid.name}」的定義會被移除，儀表板上的這個錶也會一起'
-            '消失，而且無法復原。'),
+        title: Text(l10n.pidEditorDeleteTitle),
+        content: Text(l10n.pidEditorDeleteBody(pid.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.pidActionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('刪除'),
+            child: Text(l10n.pidActionDelete),
           ),
         ],
       ),
@@ -323,7 +327,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
         .read(pidRegistryProvider.notifier)
         .removeCustom(pid);
     if (outcome.isLocked) {
-      if (mounted) _showMutationLocked();
+      if (mounted) _showMutationLocked(l10n);
       return;
     }
     if (mounted) context.pop();
@@ -331,8 +335,14 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final preview = _preview;
+    final definitionRejection = _definitionRejection(l10n);
+    final canSave =
+        _modeAndPid.text.trim().length >= 4 &&
+        definitionRejection == null &&
+        preview.error == null;
 
     return PopScope(
       canPop: false,
@@ -344,13 +354,15 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       },
       child: Scaffold(
       appBar: AppBar(
-        title: Text(_original == null ? '新增自訂 PID' : '編輯 PID'),
+        title: Text(
+          _original == null ? l10n.pidEditorTitleNew : l10n.pidEditorTitleEdit,
+        ),
         actions: [
           if (_original != null)
             IconButton(
               onPressed: _delete,
               icon: const Icon(Icons.delete_outline),
-              tooltip: '刪除',
+              tooltip: l10n.pidActionDelete,
             ),
         ],
       ),
@@ -362,11 +374,11 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           Spacing.xxxl,
         ),
         children: [
-          const SectionHeading('識別'),
+          SectionHeading(l10n.pidEditorSectionIdentity),
           TextField(
             controller: _name,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(labelText: '名稱'),
+            decoration: InputDecoration(labelText: l10n.pidEditorFieldName),
           ),
           const SizedBox(height: Spacing.md),
           Row(
@@ -374,21 +386,25 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
               Expanded(
                 child: TextField(
                   controller: _shortName,
-                  decoration: const InputDecoration(labelText: '簡稱（顯示於錶面）'),
+                  decoration: InputDecoration(
+                    labelText: l10n.pidEditorFieldShortName,
+                  ),
                 ),
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
                 child: TextField(
                   controller: _units,
-                  decoration: const InputDecoration(labelText: '單位'),
+                  decoration: InputDecoration(
+                    labelText: l10n.pidEditorFieldUnits,
+                  ),
                 ),
               ),
             ],
           ),
 
           const SizedBox(height: Spacing.xl),
-          const SectionHeading('查詢'),
+          SectionHeading(l10n.pidEditorSectionQuery),
           Row(
             children: [
               Expanded(
@@ -403,12 +419,16 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
                   ],
                   style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
                   decoration: InputDecoration(
-                    labelText: '模式 + PID',
+                    labelText: l10n.pidEditorFieldModeAndPid,
+                    // `_serviceRejection` is `PollableServices`' own wording in
+                    // lib/obd/pid/pid.dart. It says which service was refused
+                    // and why polling it is unsafe; keeping that reason is the
+                    // point, so it is passed through rather than replaced.
                     errorText: _modeAndPid.text.trim().length >= 4
                         ? _serviceRejection
                         : null,
                     errorMaxLines: 3,
-                    helperText: '例如 010C 或 221101',
+                    helperText: l10n.pidEditorModeAndPidHelper,
                   ),
                 ),
               ),
@@ -418,9 +438,9 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
                   controller: _header,
                   textCapitalization: TextCapitalization.characters,
                   style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'CAN 標頭',
-                    helperText: '7E0 = 引擎',
+                  decoration: InputDecoration(
+                    labelText: l10n.pidEditorFieldHeader,
+                    helperText: l10n.pidEditorHeaderHelper,
                   ),
                 ),
               ),
@@ -428,15 +448,19 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           ),
 
           const SizedBox(height: Spacing.xl),
-          const SectionHeading('公式'),
+          SectionHeading(l10n.pidEditorSectionFormula),
           TextField(
             controller: _equation,
             maxLines: 2,
             style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
             decoration: InputDecoration(
-              labelText: '運算式',
+              labelText: l10n.pidEditorFieldEquation,
+              // `FormulaEngine`'s own wording, from lib/obd/pid/formula_engine.dart.
               errorText: preview.error,
-              helperText: 'A..N 對應回應位元組；可用 SIGNED()、ABS()、LOG10()、VAL{PID}、BARO',
+              // The literal `VAL{PID}` is passed in rather than written into
+              // the ARB: braces are placeholder syntax there, and this token is
+              // formula syntax that must stay byte-identical in both languages.
+              helperText: l10n.pidEditorEquationHelper('VAL{PID}'),
               helperMaxLines: 2,
             ),
           ),
@@ -444,9 +468,9 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           TextField(
             controller: _sample,
             style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
-            decoration: const InputDecoration(
-              labelText: '測試用回應位元組',
-              helperText: '輸入十六進位，即時預覽計算結果',
+            decoration: InputDecoration(
+              labelText: l10n.pidEditorFieldSample,
+              helperText: l10n.pidEditorSampleHelper,
             ),
           ),
           const SizedBox(height: Spacing.lg),
@@ -454,6 +478,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
             value: preview.value,
             error: preview.error,
             substitutedDependencies: _dependencies.toList(),
+            substitutedValue: _sampleDependencyValue,
             units: _units.text,
             minValue: double.tryParse(_min.text) ?? 0,
             maxValue: double.tryParse(_max.text) ?? 100,
@@ -461,14 +486,14 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           ),
 
           const SizedBox(height: Spacing.xl),
-          const SectionHeading('錶面範圍與優先權'),
+          SectionHeading(l10n.pidEditorSectionRangeAndPriority),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _min,
                   keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-                  decoration: const InputDecoration(labelText: '最小值'),
+                  decoration: InputDecoration(labelText: l10n.pidEditorFieldMin),
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -476,7 +501,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
                 child: TextField(
                   controller: _max,
                   keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-                  decoration: const InputDecoration(labelText: '最大值'),
+                  decoration: InputDecoration(labelText: l10n.pidEditorFieldMax),
                 ),
               ),
             ],
@@ -485,7 +510,10 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           SegmentedButton<PriorityTier>(
             segments: [
               for (final tier in PriorityTier.values.reversed)
-                ButtonSegment(value: tier, label: Text(tier.label)),
+                ButtonSegment(
+                  value: tier,
+                  label: Text(priorityTierLabel(l10n, tier)),
+                ),
             ],
             selected: {_priority},
             onSelectionChanged: (s) => setState(() => _priority = s.first),
@@ -499,19 +527,19 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
           // Only once there is something to judge. An empty form is not a
           // wrong one, and opening "new PID" to a red error is a poor way to
           // begin.
-          if (!_canSave &&
+          if (!canSave &&
               _modeAndPid.text.trim().length >= 4 &&
-              _definitionRejection != null) ...[
+              definitionRejection != null) ...[
             Text(
-              _definitionRejection!,
+              definitionRejection,
               style: context.texts.bodySmall?.copyWith(color: palette.danger),
             ),
             const SizedBox(height: Spacing.md),
           ],
           FilledButton.icon(
-            onPressed: _canSave ? _save : null,
+            onPressed: canSave ? _save : null,
             icon: const Icon(Icons.check, size: 20),
-            label: const Text('儲存'),
+            label: Text(l10n.pidEditorSave),
           ),
         ],
       ),
@@ -519,6 +547,20 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     );
   }
 }
+
+/// How often the scheduler is asked to poll a definition.
+///
+/// Takes an [AppLocalizations] rather than a [BuildContext] so the whole enum
+/// can be walked in both languages from a pure-Dart test. `PriorityTier.label`
+/// is the identifier-side English and stays where it is; this is the copy the
+/// segmented button shows.
+String priorityTierLabel(AppLocalizations l10n, PriorityTier tier) =>
+    switch (tier) {
+      PriorityTier.veryLow => l10n.pidPriorityVeryLow,
+      PriorityTier.low => l10n.pidPriorityLow,
+      PriorityTier.medium => l10n.pidPriorityMedium,
+      PriorityTier.high => l10n.pidPriorityHigh,
+    };
 
 class _PreviewPanel extends StatelessWidget {
   const _PreviewPanel({
@@ -529,6 +571,7 @@ class _PreviewPanel extends StatelessWidget {
     required this.maxValue,
     required this.sampleBytes,
     required this.substitutedDependencies,
+    required this.substitutedValue,
   });
 
   final double? value;
@@ -541,8 +584,13 @@ class _PreviewPanel extends StatelessWidget {
   /// PIDs whose value the editor stood in for, since it has no live data.
   final List<String> substitutedDependencies;
 
+  /// The stand-in the editor used for them. Passed in rather than written into
+  /// the sentence so the copy cannot disagree with the number actually used.
+  final double substitutedValue;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final ok = error == null && value != null;
 
@@ -560,13 +608,16 @@ class _PreviewPanel extends StatelessWidget {
                 color: ok ? palette.success : palette.danger,
               ),
               const SizedBox(width: Spacing.sm),
-              Text('即時預覽', style: context.texts.labelSmall),
+              Text(l10n.pidPreviewTitle, style: context.texts.labelSmall),
             ],
           ),
           const SizedBox(height: Spacing.md),
           if (!ok)
             Text(
-              error ?? '無法計算',
+              // `error` is `FormulaEngine`'s wording; the fallback is this
+              // screen's, for the case where evaluation produced no value and
+              // no message either.
+              error ?? l10n.pidPreviewCannotEvaluate,
               style: context.texts.bodyMedium?.copyWith(color: palette.danger),
             )
           else ...[
@@ -596,8 +647,12 @@ class _PreviewPanel extends StatelessWidget {
             if (substitutedDependencies.isNotEmpty) ...[
               const SizedBox(height: Spacing.sm),
               Text(
-                '預覽時以 100 代入 ${substitutedDependencies.map((d) => 'VAL{$d}').join('、')}；'
-                '實際數值會在連線後由該 PID 提供。',
+                l10n.pidPreviewSubstituted(
+                  substitutedValue,
+                  substitutedDependencies
+                      .map((d) => 'VAL{$d}')
+                      .join(l10n.pidListSeparator),
+                ),
                 style: context.texts.bodySmall,
               ),
             ],
@@ -606,7 +661,7 @@ class _PreviewPanel extends StatelessWidget {
               value: value!,
               minValue: minValue,
               maxValue: maxValue,
-              label: '計算結果',
+              label: l10n.pidPreviewResultLabel,
               units: units,
             ),
           ],
