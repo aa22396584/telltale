@@ -904,7 +904,6 @@
   "derivedAirflowSourceMaf": "MAF 感測器",
   "derivedAirflowSourceSpeedDensity": "Speed-Density 推算",
   "derivedAirflowSourceUnavailable": "進氣量無法取得",
-  "derivedFuelSourceEcu": "ECU 回報",
   "derivedFuelSourceStoichiometric": "化學計量比推算",
   "derivedFuelSourceUnavailable": "油耗無法取得",
   "telemetrySourceDemo": "內建模擬",

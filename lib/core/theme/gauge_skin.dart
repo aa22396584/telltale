@@ -80,12 +80,10 @@ class GaugeSkin extends ThemeExtension<GaugeSkin> {
     required this.usesMonospaceReadout,
   });
 
-  /// Stable across releases: this is what gets persisted.
+  /// Stable across releases: this is what gets persisted — and, since the
+  /// words moved out of this class, the key the picker's copy is chosen by.
+  /// See `lib/ui/screens/settings/gauge_skin_copy.dart`.
   final String id;
-
-  /// Shown in the picker.
-
-  /// One line saying what it is *for*, not what it looks like.
 
   /// Where the scale begins, in radians, measured the way `Canvas.drawArc`
   /// does — zero at three o'clock, increasing clockwise.

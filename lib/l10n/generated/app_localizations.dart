@@ -879,10 +879,10 @@ abstract class AppLocalizations {
   /// **'Malformed packet; only the raw reply can be inspected.'**
   String get datumReasonMalformedPacket;
 
-  /// PidFault.noAnswer. Temporary silence, and docs/i18n/hedge-register.md entry 16 requires it stay distinguishable from datumReasonPidUnsupported: silence is not a controller saying it lacks a PID.
+  /// Shown in a datum's details dialog when a PID went unanswered. The app does retry, on the 60-second backoff in PollingEngine.noAnswerBackoff, so this must not tell the reader to act. It previously read 'try again shortly', which contradicted telemetryStatusNoAnswer — the same Chinese sentence, rendered one tap away on the tile itself, saying the app would retry.
   ///
   /// In en, this message translates to:
-  /// **'No response; try again shortly.'**
+  /// **'No answer — the app retries in about a minute.'**
   String get datumReasonNoAnswer;
 
   /// docs/i18n/hedge-register.md entry 25. Explicitly not zero and not unsupported — the app's baseline refusal to print a number it does not have.
@@ -5522,12 +5522,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Air mass unavailable'**
   String get derivedAirflowSourceUnavailable;
-
-  /// Provenance pill: the fuel figure is the ECU's own fuel rate, which accounts for the mixture actually being run. This is the one case that is measured rather than estimated.
-  ///
-  /// In en, this message translates to:
-  /// **'ECU reported'**
-  String get derivedFuelSourceEcu;
 
   /// Provenance pill: fuel was derived from air mass assuming a stoichiometric mixture, so it is wrong by roughly the lambda the engine is running. Do not translate this as if it were a measurement.
   ///

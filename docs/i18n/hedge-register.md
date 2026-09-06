@@ -12,7 +12,8 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-26 entries.
+41 entries. Every entry that names a **Shipped as** key is checked against the shipped
+English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 
 ### 1. 一個看起來合理的錯數字，比沒有數字更糟。
 
@@ -98,9 +99,9 @@ reviewer's invention and needs maintainer sign-off before it ships.
 
 **繁體中文** — 這次沒有讀到凍結幀 —— 不代表車上沒有。
 
-**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear.
+**English** — This scan did not read a freeze frame — that does not mean the vehicle has none. Rescan first, then decide whether to clear
 
-**Shipped as** `dtcClearDialogFrameUnread`, `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). The same sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
+**Shipped as** `dtcClearDialogFrameUnread`, `dtcFreezeFrameUnreadPanel` (lib/l10n/app_en.arb). Recorded without the closing full stop because the panel continues the sentence (‘…whether to clear the fault codes, because clearing destroys…’) while the dialog ends there; what both must carry is the clause, and `hedge_register_guard_test.dart` checks exactly that. The same sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3053 '凍結幀沒有讀到 —— 這不代表車上沒有。'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss.
 
@@ -257,3 +258,143 @@ and take it for an inspection it cannot pass — having also destroyed the freez
 would have explained the fault. The whole point of the word is that this one does not go
 away because you asked it to. **proposed** — the English above has not been confirmed by a
 maintainer.
+
+### 28. 故障燈沒有亮
+
+**繁體中文** — 故障燈沒有亮
+
+**English** — The fault lamp is not lit
+
+**Shipped as** `dtcMilOff` (lib/l10n/app_en.arb), against `dtcMilOn` — 故障燈已亮 / 'The fault lamp is lit'.
+
+**Why it is load-bearing.** `lib/ui/screens/dtc/dtc_screen.dart:1072` picks between the two with `summary.milOn ? … : …`, so the pair is one binary readout of a physical lamp. A reviewer inverted `dtcMilOff` to 'The fault lamp is lit' and the whole suite stayed green: both branches would have said the same thing, and a driver reading the screen instead of the dashboard would be told a warning lamp is on when it is not — or worse, off when it is. The negation is the entire content of this string.
+
+### 29. 可看 raw / error，不可當成正常數值
+
+**繁體中文** — 可看 raw / error，不可當成正常數值
+
+**English** — The raw reply and the error can be inspected; neither may be read as a normal value.
+
+**Shipped as** `datumNextStepRawOnly` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** This is entry 1's rule rendered into UI: it is the sentence that stands between a malformed packet and a reader treating its bytes as a sensor value. Dropping the 不可/'neither may' turns an explicit prohibition into an invitation. A reviewer inverted it to '…either may be read as a normal value' and nothing failed.
+
+### 30. 我知道來源資料與合成測試不能證明我的實車適用
+
+**繁體中文** — 我知道來源資料與合成測試不能證明我的實車適用
+
+**English** — I understand that the source data and the synthetic tests do not prove this applies to my own vehicle
+
+**Shipped as** `settingsBatteryLabEvidenceAck` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/settings/settings_screen.dart:218` — one of the two checkboxes gating the battery laboratory, which sends manufacturer-specific commands to a high-voltage battery controller. Its sibling `settingsBatteryLabWireAck` is guarded; this one was not, and inverting it to 'I confirm … prove' left the suite green. A consent checkbox that states the opposite of what the user is consenting to is not a weaker consent, it is a false record of one.
+
+### 31. 進氣量無法取得
+
+**繁體中文** — 進氣量無法取得
+
+**English** — Air mass unavailable
+
+**Shipped as** `derivedAirflowSourceUnavailable` (lib/l10n/app_en.arb), and `derivedFuelSourceUnavailable` — 油耗無法取得 / 'Fuel rate unavailable' — for the same reason.
+
+**Why it is load-bearing.** `lib/obd/physics/physics_engine.dart:26-27`: 'Neither was available. Not the same as zero air flow, which would mean a stopped engine.' A reviewer changed this to 'No air flow' and the whole suite — including the guard file written for these very keys — stayed green. Rendered beside a rev counter reading 3000 rpm, 'No air flow' is the text form of the defect `derived_provenance_test.dart:152-162` already exists to prevent: a confident statement that the engine is not breathing, from a car that is. The word must say *unavailable*, and the string must not be readable as a measurement. `engine_vocabulary_copy_test.dart` now checks both positively.
+
+### 32. 品牌名稱或 VIN 本身都不能證明重量、風阻、VE 與傳動效率。
+
+**繁體中文** — 品牌名稱或 VIN 本身都不能證明重量、風阻、VE 與傳動效率。
+
+**English** — A brand name or a VIN alone does not establish mass, drag, VE or transmission efficiency.
+
+**Shipped as** `settingsProfileNameProvesNothing` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** It is the sentence that stops a matched VIN from being read as a verified vehicle profile. Every power and fuel estimate rests on those four parameters, and the details dialog labels each one with an origin precisely because a name is not a measurement. Softening 不能證明 to 'may not fully describe' would leave the reader believing the numbers were looked up.
+
+### 33. 壞封包，只可查看原文
+
+**繁體中文** — 壞封包，只可查看原文
+
+**English** — Malformed packet; only the raw reply can be inspected.
+
+**Shipped as** `datumReasonMalformedPacket` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `docs/protocol-deviations.zh-TW.md` records what happens when a malformed reply is salvaged instead of refused: `DATA ERROR` becomes the two bytes `DA AE` and is read as a sensor value. The 只可/'only' is the restriction; without it the sentence describes a packet rather than forbidding a use of it.
+
+### 34. 紀錄損壞，無法安全讀取
+
+**繁體中文** — 紀錄損壞，無法安全讀取
+
+**English** — The recording is damaged and cannot be read safely
+
+**Shipped as** `telemetryDamagedCorrupt` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** A damaged telemetry file is evidence somebody may act on. 無法安全讀取/'cannot be read safely' refuses it outright; 'may be incomplete' would invite a reader to use the parts that survived, which is the same error as splicing a multi-frame response.
+
+### 35. 藍牙權限已被永久拒絕。系統不會再顯示授權對話框，請到應用程式設定開啟。
+
+**繁體中文** — 藍牙權限已被永久拒絕。系統不會再顯示授權對話框，請到應用程式設定開啟。
+
+**English** — Bluetooth permission is permanently denied. The system will not ask again, so turn it on in app settings.
+
+**Shipped as** `connectBlePermissionDeniedForever` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** The load-bearing half is 系統不會再顯示授權對話框/'will not ask again'. Without it a reader taps Connect repeatedly and concludes the adapter is broken, when the fix is two taps away in Settings. It is a hedge about the *platform's* behaviour rather than the vehicle's, and it is the only thing that turns a dead end into an instruction.
+
+### 36. 可能是車輛未提供、回覆不完整或這次連線沒有讀到；不會猜測或補字。
+
+**繁體中文** — 可能是車輛未提供、回覆不完整或這次連線沒有讀到；不會猜測或補字。
+
+**English** — The vehicle may not offer one, the reply may have been incomplete, or it was not read on this connection; nothing is guessed and no characters are filled in.
+
+**Shipped as** `settingsVinUnavailableDetail` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** 不會猜測或補字/'nothing is guessed and no characters are filled in' is a promise about the parser, and `vin_contract_test.dart` enforces it: a truncated reply is rejected rather than padded out, and letters a VIN may not contain are rejected rather than filtered. A VIN identifies a vehicle to a mechanic and to a registry. The sentence must keep both halves — the three reasons it may be missing, and the refusal to invent one.
+
+### 37. 本次連線尚未確認。仍可讀取 OBD 實測資料，但不顯示依車重、VE 與風阻推算的數值。
+
+**繁體中文** — 本次連線尚未確認。仍可讀取 OBD 實測資料，但不顯示依車重、VE 與風阻推算的數值。
+
+**English** — Not confirmed on this connection. Measured OBD readings are still shown, but values estimated from mass, VE and drag are not.
+
+**Shipped as** `settingsProfileUnconfirmedConnectedDetail` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** It draws the app's central line in one sentence: measured readings survive an unconfirmed profile, estimates do not. Softening 但不顯示/'but … are not' into 'may be less accurate' would restore exactly the behaviour this refuses — a plausible power figure computed from a mass nobody checked.
+
+### 38. 只會套用：{fields}。車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。
+
+**繁體中文** — 只會套用：{fields}。車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。
+
+**English** — Only {fields} will be applied. Mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.
+
+**Shipped as** `settingsEpaWillApplyOnly` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** Shown when a catalog match is about to be applied. The enumeration of what stays unresolved is the whole content: a reader who sees "matched from the official catalog" and not this list will believe the power estimate now rests on their car. Five of the six named parameters are the ones the horsepower formula uses.
+
+### 39. 單次查詢沒有完成；沒有發布或保留數值。
+
+**繁體中文** — 單次查詢沒有完成；沒有發布或保留數值。
+
+**English** — The one-shot query did not finish; no value was published or kept.
+
+**Shipped as** `powertrainProbeDidNotFinish` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** A battery-controller probe that did not finish must not leave a number on screen or in a recording. The second clause is a statement about what the app did with the partial data, not a description of the failure, and dropping it lets a reader assume a value shown elsewhere came from this probe.
+
+### 40. PID 設定無法安全紀錄，請檢查定義
+
+**繁體中文** — PID 設定無法安全紀錄，請檢查定義
+
+**English** — This PID selection cannot be recorded safely — check the definitions
+
+**Shipped as** `telemetryStartInvalidConfiguration` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** 無法安全紀錄/'cannot be recorded safely' refuses the recording outright. A recording made from definitions the app could not validate produces an evidence file whose numbers nobody can account for, which is worse than no recording — the file outlives the session that would have explained it.
+
+### 41. 實驗 · 未驗證
+
+**繁體中文** — 實驗 · 未驗證
+
+**English** — Experimental · unverified
+
+**Shipped as** `powertrainStatusExperimental` (lib/l10n/app_en.arb), alongside `powertrainNotInstallableInThisRelease` — 此版本不可安裝 / 'Not installable in this release'.
+
+**Why it is load-bearing.** Two words, both of them the point, on a screen that sends manufacturer-specific commands to a high-voltage battery controller. 未驗證/'unverified' is the same hedge as `DatumBadge.unverified` and must not be smoothed into 'beta' or 'preview', neither of which says that nobody has checked the results against a real vehicle.

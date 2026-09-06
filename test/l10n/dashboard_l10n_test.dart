@@ -567,6 +567,25 @@ void main() {
       expect(_unexpectedChinese(tester), isEmpty);
       expect(find.text('Estimated values'), findsOneWidget);
 
+      // The provenance pill, as a rendered literal.
+      //
+      // This fixture has a MAF reading and no ECU fuel rate, so it takes the
+      // two-source branch of `dashboard_screen.dart` — the one that builds
+      // 'A · B' by concatenating three interpolations across three source
+      // lines. `flutter analyze` has nothing to say about a broken adjacent-
+      // string concatenation, and the scan above only asks whether the result
+      // contains Chinese: 'MAF sensorStoichiometric estimate' would pass it.
+      //
+      // Earlier in this branch, changing a getter to a method left five sites
+      // interpolating a closure and rendering `Closure: (AppLocalizations) =>
+      // String` on screen, with analyze silent throughout. A rendered literal
+      // is the only thing that catches that class.
+      expect(
+        find.text('MAF sensor · Stoichiometric estimate'),
+        findsOneWidget,
+        reason: 'the two-source pill lost its separator, a label, or a space',
+      );
+
       // No cell label may be ellipsised. These sit in a fixed-width column and
       // are the place where a longer English phrase turns into an ellipsis
       // that hides which quantity the number belongs to; `flutter analyze`
@@ -693,6 +712,17 @@ void main() {
   // per render object, so pumping a second locale into the same tester reports
   // nothing, and a version of this that looped inside one test passed against a
   // deliberately broken layout.
+  // Empty, and kept rather than deleted along with the branch that reads it.
+  //
+  // It held one entry: a 22-pixel StatusPill overflow at 320dp with 2x text,
+  // exempted because it was believed unavoidable. It was not — the label needed
+  // a `Flexible` — so the pill was fixed and the exemption became unearned.
+  //
+  // The scaffolding stays because the next genuinely-unavoidable overflow
+  // should be recorded here with a reason rather than discovered by someone
+  // deleting an assertion, and because an empty allowance is a smaller thing to
+  // read than a re-added mechanism. If it is still empty a year from now,
+  // delete it and this comment together.
   const knownNarrowOverflow = <String>{};
 
   group('English lays out wherever Chinese does', () {

@@ -64,6 +64,24 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
 
+      # `lib/l10n/generated/` is committed, and `flutter test` reads the
+      # committed files while the ARB guards read the .arb files. So an edit to
+      # an .arb with no regeneration leaves every test green while the built app
+      # ships the previous string — a suite agreeing with itself about copy the
+      # product does not have, which is the failure mode this repository is
+      # organised against.
+      #
+      # `flutter pub get` above already regenerates, so this only has to notice
+      # that it changed something.
+      - name: Generated localizations match the ARBs
+        run: |
+          if ! git diff --exit-code --stat lib/l10n/generated; then
+            echo
+            echo 'lib/l10n/generated is stale. Run:'
+            echo '  flutter gen-l10n && git add lib/l10n/generated'
+            exit 1
+          fi
+
       # The three simulator-backed oracle files self-skip here because no
       # simulator is listening. The `oracle` job below exercises the public
       # third-party suite and refuses to pass if any expected test skips; the

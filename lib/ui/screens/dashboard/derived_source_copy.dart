@@ -34,7 +34,10 @@ String airflowSourceLabel(AppLocalizations l10n, AirflowSource source) =>
 /// that a reader takes it for a reading off the vehicle.
 String fuelSourceLabel(AppLocalizations l10n, FuelSource source) =>
     switch (source) {
-      FuelSource.measured => l10n.derivedFuelSourceEcu,
+      // Shares `derivedEcuReported` with the measured-fuel strip 160 lines
+      // away on the same screen. Two keys held the identical sentence in
+      // both languages; editing one would have left the other behind.
+      FuelSource.measured => l10n.derivedEcuReported,
       FuelSource.stoichiometricEstimate =>
         l10n.derivedFuelSourceStoichiometric,
       FuelSource.unavailable => l10n.derivedFuelSourceUnavailable,

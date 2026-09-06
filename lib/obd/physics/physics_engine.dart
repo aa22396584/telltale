@@ -123,11 +123,14 @@ abstract final class PhysicsEngine {
   /// It returned 0 for a non-positive MAP, and `derive` only checked that MAP
   /// was *present*. So a failed sensor answering `41 0B 00` — 0 kPa, which a
   /// running engine cannot produce — came out as a confident **0.0 g/s**
-  /// labelled 「Speed-Density 推算」 — [AirflowSource.speedDensity], whose words
-  /// now live in the UI — beside a fuel rate that showed `--`
+  /// labelled 「Speed-Density 推算」, beside a fuel rate that showed `--`
   /// because its own guard is `maf > 0`. One row contradicting itself, and the
   /// airflow half saying the engine is not breathing while the rev counter says
   /// 3000 rpm.
+  ///
+  /// That label is [AirflowSource.speedDensity]; its words live in
+  /// `lib/ui/screens/dashboard/derived_source_copy.dart` now, and the quotation
+  /// above is what the screen actually said at the time.
   ///
   /// [mafGramsPerSecond]'s own doc comment records this exact failure as
   /// already fixed — "substituting MAP = 0 produced a confident 0.0 g/s on the

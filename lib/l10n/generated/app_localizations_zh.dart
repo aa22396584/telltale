@@ -3046,9 +3046,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get derivedAirflowSourceUnavailable => '進氣量無法取得';
 
   @override
-  String get derivedFuelSourceEcu => 'ECU 回報';
-
-  @override
   String get derivedFuelSourceStoichiometric => '化學計量比推算';
 
   @override
@@ -6103,9 +6100,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get derivedAirflowSourceUnavailable => '進氣量無法取得';
-
-  @override
-  String get derivedFuelSourceEcu => 'ECU 回報';
 
   @override
   String get derivedFuelSourceStoichiometric => '化學計量比推算';

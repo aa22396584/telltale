@@ -471,7 +471,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Malformed packet; only the raw reply can be inspected.';
 
   @override
-  String get datumReasonNoAnswer => 'No response; try again shortly.';
+  String get datumReasonNoAnswer =>
+      'No answer — the app retries in about a minute.';
 
   @override
   String get datumReasonNoReadingYet => 'No reading yet.';
@@ -3437,9 +3438,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get derivedAirflowSourceUnavailable => 'Air mass unavailable';
-
-  @override
-  String get derivedFuelSourceEcu => 'ECU reported';
 
   @override
   String get derivedFuelSourceStoichiometric => 'Stoichiometric estimate';

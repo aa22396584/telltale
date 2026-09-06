@@ -56,7 +56,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 公式錯誤 | formula error | lib/l10n/app_en.arb:799 ↔ lib/l10n/app_zh_Hant.arb:121 (T1 same ARB key) | evidenced |  |
 | 凍結幀 | freeze frame | README.md:56 'freeze frames' ↔ README.zh-TW.md:50 '凍結幀' (T1); docs/field-guide.zh-TW.md:213 heading | evidenced |  |
 | 動力系統 | powertrain | lib/l10n/app_en.arb:1253 ↔ lib/l10n/app_zh_Hant.arb:744 (T1 same ARB key) | evidenced | Distinct from 大電池 used for 'powertrain battery' at README.md:58 ↔ README.zh-TW.md:52. Same English word, two zh renderings by domain. |
-| 化學計量比推算 | Stoichiometric estimate | lib/l10n/app_en.arb:2755 ↔ lib/l10n/app_zh_Hant.arb:908 (T1 same ARB key) | evidenced |  |
+| 化學計量比推算 | Stoichiometric estimate | lib/l10n/app_en.arb:2751 ↔ lib/l10n/app_zh_Hant.arb:907 (T1 same ARB key) | evidenced |  |
 | 匯流排 | bus | lib/obd/elm327_client.dart:82 Elm327ErrorCode.canError ↔ 'CAN 匯流排錯誤' (T3); :86 busBusy ↔ '匯流排忙碌'; :87 busError ↔ '匯流排錯誤' | evidenced |  |
 | 協定 | protocol | README.md:174 'ELM327 protocol' ↔ README.zh-TW.md:148 'ELM327 協定' (T1); docs/protocol-deviations.zh-TW.md:152 '各種匯流排協定' | evidenced |  |
 | 即時 PID 儀表 | Live PID dashboards | README.md:56 ↔ README.zh-TW.md:50 (T1) | evidenced | INCONSISTENCY: 'dashboard' is 儀表板 at README.md:21/README.zh-TW.md:20 and store/README.md:13, but 'PID dashboards' is 儀表 here and 'BMS gauges' is also 儀表 (README.md:64 ↔ README.zh-TW.md:57). 儀表 does double duty for gauge and dashboard-of-gauges. |
@@ -141,7 +141,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
 | 資料已過期 | stale | lib/l10n/app_en.arb:305 ↔ lib/l10n/app_zh_Hant.arb:657 (T1 same ARB key) | evidenced | #45 names this explicitly: stale ≠ live. A reading that stopped updating is not a current one, and must never render as though it were |
-| ECU 回報 | ECU reported | lib/l10n/app_en.arb:2751 ↔ lib/l10n/app_zh_Hant.arb:907 (T1 same ARB key) | evidenced | The identifier says `measured`; both shipped strings say the ECU reported it. #44 forbids rendering 推算/estimate as measured, and using the bare word for the true case invites exactly that slip, so the English names the reporter rather than the act of measuring. |
+| ECU 回報 | ECU reported | lib/l10n/app_en.arb:419 ↔ lib/l10n/app_zh_Hant.arb:715 (T1 same ARB key, `derivedEcuReported`) | evidenced | The identifier for the fuel case says `measured`; both shipped strings say the ECU reported it. #44 forbids rendering 推算/estimate as measured, and using the bare word for the true case invites exactly that slip, so the English names the reporter rather than the act of measuring. `derivedFuelSourceEcu` briefly held a second, byte-identical copy of this sentence and was merged away. |
 | VE | VE | README.md:75 ↔ README.zh-TW.md:65 (T1 — unchanged); spelled out as 容積效率 in lib/obd/session_evidence.dart:205 'volumetricEfficiency' | evidenced |  |
 | make／廠牌（製造商部門） | make label | README.md:73 '146 make labels' ↔ README.zh-TW.md:64 '146 個 make／廠牌（製造商部門）標籤' (T1 — the project's own inline gloss) | evidenced | zh keeps the English token AND glosses it, because EPA 'make' means a manufacturer division, not a brand. Keep both halves. |
 | 來源 | provenance | README.md:189 'evidence, provenance, and real-vehicle limits' ↔ README.zh-TW.md:163 '證據、來源與實車限制' (T2) | evidenced |  |

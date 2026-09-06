@@ -6,6 +6,13 @@
 // `ThemeExtension` of dial geometry, the physics engine, and `lib/state`. The
 // engine keeps the distinctions; these files keep the words.
 //
+// TWO of the three are guarded here. `telemetrySourceLabel` is guarded in
+// `test/telemetry_session_library_test.dart`, next to the library that reads
+// it, by a stronger test than anything in this file: six literals across two
+// languages plus a distinctness property. It is named here because somebody
+// adding a fourth `TelemetrySource` will read this header, look for the group,
+// find none, and reasonably conclude nobody is watching.
+//
 // What this file does NOT do is `expect(gaugeSkinName(l10n, skin),
 // l10n.gaugeSkinCluster)`. That reads the same ARB entry the mapper reads, so
 // it agrees with itself and would go on agreeing if the entry were replaced
@@ -67,24 +74,46 @@ void main() {
       expect(fuelSourceLabel(zh, FuelSource.measured), 'ECU 回報');
     });
 
-    test('unavailable is not worded as a reading', () {
-      // Neither input set was available. That is not zero air flow, which
-      // would mean a stopped engine, and it is not a measurement of nothing.
+    test('unavailable says unavailable, and never says zero', () {
+      // The first version of this test asserted that the unavailable label
+      // differed from the other two — which merely repeated the distinctness
+      // test below, and let "No air flow" through. A reviewer found it by
+      // mutation: the whole suite stayed green on a string that, rendered
+      // beside a rev counter reading 3000 rpm, says the engine is not
+      // breathing. `physics_engine.dart` says "not the same as zero air flow,
+      // which would mean a stopped engine", the ARB @description says it, and
+      // the comment above the old assertion said it. Three statements of the
+      // rule and nothing checking it.
+      //
+      // So this checks it positively: the word must be there, and the string
+      // must not be readable as a measurement.
+      final looksLikeAReading = RegExp(r'^[\d.,\s]*(g/s|L/h|L/100km|kg/h|%)?$');
+
+      expect(airflowSourceLabel(en, AirflowSource.unavailable),
+          contains('unavailable'));
+      expect(fuelSourceLabel(en, FuelSource.unavailable),
+          contains('unavailable'));
+      expect(airflowSourceLabel(zh, AirflowSource.unavailable),
+          contains('無法取得'));
+      expect(fuelSourceLabel(zh, FuelSource.unavailable),
+          contains('無法取得'));
+
       for (final l10n in [en, zh]) {
-        expect(
+        for (final label in [
           airflowSourceLabel(l10n, AirflowSource.unavailable),
-          isNot(anyOf(
-            equals(airflowSourceLabel(l10n, AirflowSource.measured)),
-            equals(airflowSourceLabel(l10n, AirflowSource.speedDensity)),
-          )),
-        );
-        expect(
           fuelSourceLabel(l10n, FuelSource.unavailable),
-          isNot(anyOf(
-            equals(fuelSourceLabel(l10n, FuelSource.measured)),
-            equals(fuelSourceLabel(l10n, FuelSource.stoichiometricEstimate)),
-          )),
-        );
+        ]) {
+          expect(
+            looksLikeAReading.hasMatch(label),
+            isFalse,
+            reason: '"$label" reads as a value. An absence rendered as a '
+                'number is the defect this app exists to prevent.',
+          );
+          // Nor may it name the absent quantity as though reporting it: a bare
+          // "0" anywhere is the cheapest way back to the same failure.
+          expect(RegExp(r'(^|\s)0([.,]0+)?($|\s)').hasMatch(label), isFalse,
+              reason: '"$label" contains a zero reading');
+        }
       }
     });
 
@@ -125,6 +154,35 @@ void main() {
           expect(gaugeSkinDescription(l10n, skin), isNotEmpty);
         }
       }
+    });
+
+    test('each description belongs to the skin it sits under', () {
+      // `isNotEmpty` catches "forgot to fill one in". It does not catch
+      // "filled in the wrong one", and a reviewer proved it: pointing
+      // Minimal's description at gaugeSkinTrackDescription left the whole
+      // suite green, so the picker would describe Minimal as "Segmented bar,
+      // no smoothing" — a dial the reader is not looking at. That is the same
+      // hazard the unknown-skin fallback below is written to avoid, checked
+      // for names and not for the sentences underneath them.
+      for (final l10n in [en, zh]) {
+        expect(
+          GaugeSkin.all.map((skin) => gaugeSkinDescription(l10n, skin)).toSet(),
+          hasLength(GaugeSkin.all.length),
+          reason: 'two skins share a description, so one of them is wrong',
+        );
+      }
+      // A pairing nothing else pins: each description has to be the one whose
+      // ARB key matches the skin id, not merely a distinct string.
+      expect(gaugeSkinDescription(en, GaugeSkin.minimal),
+          en.gaugeSkinMinimalDescription);
+      expect(gaugeSkinDescription(en, GaugeSkin.track),
+          en.gaugeSkinTrackDescription);
+      expect(gaugeSkinDescription(en, GaugeSkin.cluster),
+          en.gaugeSkinClusterDescription);
+      expect(gaugeSkinDescription(en, GaugeSkin.classic),
+          en.gaugeSkinClassicDescription);
+      expect(gaugeSkinDescription(en, GaugeSkin.night),
+          en.gaugeSkinNightDescription);
     });
 
     test('the five names are distinct, so the picker is a choice', () {

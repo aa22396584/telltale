@@ -376,9 +376,9 @@
   "@datumReasonMalformedPacket": {
     "description": "The response did not parse. Nothing here may be shown as a number."
   },
-  "datumReasonNoAnswer": "No response; try again shortly.",
+  "datumReasonNoAnswer": "No answer — the app retries in about a minute.",
   "@datumReasonNoAnswer": {
-    "description": "PidFault.noAnswer. Temporary silence, and docs/i18n/hedge-register.md entry 16 requires it stay distinguishable from datumReasonPidUnsupported: silence is not a controller saying it lacks a PID."
+    "description": "Shown in a datum's details dialog when a PID went unanswered. The app does retry, on the 60-second backoff in PollingEngine.noAnswerBackoff, so this must not tell the reader to act. It previously read 'try again shortly', which contradicted telemetryStatusNoAnswer — the same Chinese sentence, rendered one tap away on the tile itself, saying the app would retry."
   },
   "datumReasonNoReadingYet": "No reading yet.",
   "@datumReasonNoReadingYet": {
@@ -2747,10 +2747,6 @@
   "derivedAirflowSourceUnavailable": "Air mass unavailable",
   "@derivedAirflowSourceUnavailable": {
     "description": "Provenance pill: neither a MAF reading nor the full speed-density input set was available. Not the same as zero air flow, which would mean a stopped engine."
-  },
-  "derivedFuelSourceEcu": "ECU reported",
-  "@derivedFuelSourceEcu": {
-    "description": "Provenance pill: the fuel figure is the ECU's own fuel rate, which accounts for the mixture actually being run. This is the one case that is measured rather than estimated."
   },
   "derivedFuelSourceStoichiometric": "Stoichiometric estimate",
   "@derivedFuelSourceStoichiometric": {
