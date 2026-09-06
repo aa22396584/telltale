@@ -7,6 +7,7 @@ import 'package:torque_obd/app.dart';
 import 'package:torque_obd/core/form_factor.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/l10n/startup_copy.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/wear/wear_shell.dart';
 
@@ -69,7 +70,90 @@ void main() {
     (tester) async {
       await pumpTorqueApp(tester, prefs: {kLocalePreferenceKey: 'zh_Hant'});
       await expectLocalizedMaterialApps(tester, traditionalChineseLocale);
-      expect(find.textContaining('正在檢查'), findsWidgets);
     },
   );
+
+  test('retryable startup title is not the in-progress loading copy', () {
+    final en = lookupAppLocalizations(englishLocale);
+    final zh = lookupAppLocalizations(traditionalChineseLocale);
+
+    expect(en.startupCannotComplete, 'Cannot finish startup checks');
+    expect(en.startupCannotComplete, isNot(en.startupChecking));
+    expect(en.startupCannotComplete, isNot(en.startupRestartRequired));
+    expect(zh.startupCannotComplete, '目前無法完成啟動檢查');
+    expect(zh.startupCannotComplete, isNot(zh.startupChecking));
+    expect(zh.startupCannotComplete, isNot(zh.startupRestartRequired));
+
+    expect(
+      startupStatusTitle(l10n: en, loading: true, restartRequired: false),
+      en.startupChecking,
+    );
+    expect(
+      startupStatusTitle(l10n: en, loading: false, restartRequired: true),
+      en.startupRestartRequired,
+    );
+    expect(
+      startupStatusTitle(l10n: en, loading: false, restartRequired: false),
+      en.startupCannotComplete,
+    );
+    expect(
+      startupStatusTitle(l10n: zh, loading: false, restartRequired: false),
+      '目前無法完成啟動檢查',
+    );
+    expect(
+      startupStatusTitle(l10n: zh, loading: true, restartRequired: false),
+      zh.startupChecking,
+    );
+  });
+
+  testWidgets('retryable AppStartupScreen uses failure copy, Retry, not loading', (
+    tester,
+  ) async {
+    var retried = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: englishLocale,
+        supportedLocales: supportedAppLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: AppStartupScreen(
+          loading: false,
+          restartRequired: false,
+          retry: () => retried = true,
+        ),
+      ),
+    );
+    expect(find.text('Cannot finish startup checks'), findsOneWidget);
+    expect(
+      find.text('Checking local share cache and telemetry records'),
+      findsNothing,
+    );
+    expect(find.text('Restart required to continue safely'), findsNothing);
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    expect(retried, isTrue);
+  });
+
+  testWidgets('loading AppStartupScreen uses checking copy, not failure', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: englishLocale,
+        supportedLocales: supportedAppLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: AppStartupScreen(
+          loading: true,
+          restartRequired: false,
+          retry: () {},
+        ),
+      ),
+    );
+    expect(
+      find.text('Checking local share cache and telemetry records'),
+      findsOneWidget,
+    );
+    expect(find.text('Cannot finish startup checks'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+  });
 }

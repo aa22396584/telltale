@@ -8,6 +8,7 @@ import 'core/form_factor.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'l10n/locale_resolution.dart';
+import 'l10n/startup_copy.dart';
 import 'state/app_share_coordinator.dart';
 import 'state/locale_settings.dart';
 import 'state/powertrain_battery_profiles.dart';
@@ -152,7 +153,11 @@ class _TorqueAppState extends ConsumerState<TorqueApp>
             supportedLocales: supportedAppLocales,
             localizationsDelegates: _l10nDelegates,
             builder: _withTelemetryArtifactNotice,
-            home: _AppStartupScreen(outcome: outcome, retry: _retryStartup),
+            home: AppStartupScreen(
+              loading: outcome == null,
+              restartRequired: outcome?.requiresRestart == true,
+              retry: _retryStartup,
+            ),
           );
         }
         return MaterialApp.router(
@@ -207,16 +212,28 @@ final class _AppStartupOutcome {
       recovery == TelemetryStartupRecoveryPhase.restartRequired;
 }
 
-class _AppStartupScreen extends StatelessWidget {
-  const _AppStartupScreen({required this.outcome, required this.retry});
+/// Pre-router startup status. Loading, retryable failure, and restart-required
+/// are three states and must not share title copy.
+class AppStartupScreen extends StatelessWidget {
+  const AppStartupScreen({
+    required this.loading,
+    required this.restartRequired,
+    required this.retry,
+    super.key,
+  });
 
-  final _AppStartupOutcome? outcome;
+  final bool loading;
+  final bool restartRequired;
   final VoidCallback retry;
 
   @override
   Widget build(BuildContext context) {
-    final blocked = outcome?.requiresRestart == true;
     final l10n = AppLocalizations.of(context);
+    final title = startupStatusTitle(
+      l10n: l10n,
+      loading: loading,
+      restartRequired: restartRequired,
+    );
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -227,29 +244,31 @@ class _AppStartupScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (outcome == null) ...[
+                  if (loading) ...[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 20),
-                    Text(l10n.startupChecking, textAlign: TextAlign.center),
+                    Text(title, textAlign: TextAlign.center),
                   ] else ...[
                     Icon(
-                      blocked ? Icons.restart_alt : Icons.lock_clock_outlined,
+                      restartRequired
+                          ? Icons.restart_alt
+                          : Icons.lock_clock_outlined,
                       size: 48,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      blocked
-                          ? l10n.startupRestartRequired
-                          : l10n.startupChecking,
+                      title,
                       style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      blocked ? l10n.startupRestartHint : l10n.startupRetryHint,
+                      restartRequired
+                          ? l10n.startupRestartHint
+                          : l10n.startupRetryHint,
                       textAlign: TextAlign.center,
                     ),
-                    if (!blocked) ...[
+                    if (!restartRequired) ...[
                       const SizedBox(height: 20),
                       FilledButton.icon(
                         onPressed: retry,

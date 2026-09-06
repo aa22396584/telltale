@@ -13,6 +13,10 @@
   "connectBody": "Plug in an ELM327 adapter and switch the ignition on, or use the built-in simulator.",
   "settingsHeadline": "Settings",
   "startupChecking": "Checking local share cache and telemetry records",
+  "startupCannotComplete": "Cannot finish startup checks",
+  "@startupCannotComplete": {
+    "description": "Retryable startup failure title. Distinct from startupChecking (in-progress) and startupRestartRequired (must quit)."
+  },
   "startupRetry": "Retry",
   "startupRestartRequired": "Restart required to continue safely",
   "startupRetryHint": "Keep Telltale in the foreground, then retry after other file work finishes. Recording, replay, export and delete stay closed until startup completes.",
