@@ -175,6 +175,153 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get dashboardEmptyTitle => '儀表板是空的';
+
+  @override
+  String get dashboardEmptyBody => '到 PID 頁面挑選想要監看的訊號，它們會出現在這裡。';
+
+  @override
+  String get dashboardChoosePids => '選擇 PID';
+
+  @override
+  String get dashboardWorkspaceGauges => '儀表';
+
+  @override
+  String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
+  String get dashboardLocalRecordings => '本機紀錄';
+
+  @override
+  String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardGenericObd => '通用 OBD';
+
+  @override
+  String get dashboardVinRead => '已讀 VIN';
+
+  @override
+  String get dashboardSingleRequestMode => '單筆模式';
+
+  @override
+  String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get derivedEstimatesTitle => '推算數值';
+
+  @override
+  String get derivedEstimatesDetailsTitle => '估算公式與假設';
+
+  @override
+  String get derivedAirflow => '空氣流量';
+
+  @override
+  String get derivedFuelUse => '油耗';
+
+  @override
+  String get derivedEngineHorsepower => '引擎馬力';
+
+  @override
+  String get derivedTorque => '扭力';
+
+  @override
+  String get derivedEstimatedFuelTitle => '估算油耗';
+
+  @override
+  String get derivedEcuFuelTitle => 'ECU 油耗資料';
+
+  @override
+  String get derivedEcuReported => 'ECU 回報';
+
+  @override
+  String get derivedUnavailableMessage => '等待車速與加速度資料後才能推算馬力';
+
+  @override
+  String get telemetryRecorderPhasePreparing => '正在準備錄製';
+
+  @override
+  String get telemetryRecorderPhaseRecording => '正在錄製';
+
+  @override
+  String get telemetryRecorderPhaseFinalizing => '正在儲存紀錄';
+
+  @override
+  String get telemetryRecorderPhaseIdle => '未錄製';
+
+  @override
+  String get telemetryNotConnected => '目前未連線';
+
+  @override
+  String get telemetryDemoData => '內建模擬資料';
+
+  @override
+  String get telemetryRigData => '測試馬具資料';
+
+  @override
+  String get trendSignalsHeading => '趨勢訊號';
+
+  @override
+  String get trendNoSignalsTitle => '沒有可用的趨勢訊號';
+
+  @override
+  String get trendNoSignalsBody => '先到 PID 頁面啟用想要監看的訊號。';
+
+  @override
+  String get trendPickSignalsTitle => '選擇趨勢訊號';
+
+  @override
+  String trendPickSignalsBody(int limit) {
+    return '最多可以比較 $limit 項訊號，不會改變已啟用的 PID 輪詢。';
+  }
+
+  @override
+  String get trendLiveData => '即時資料';
+
+  @override
+  String get trendNoUnits => '無單位';
+
+  @override
+  String trendWindowSemantics(int seconds) {
+    return '顯示最近 $seconds 秒趨勢';
+  }
+
+  @override
+  String get trendAxisNow => '現在';
+
+  @override
+  String get semanticsFieldSeparator => '，';
+
+  @override
+  String trendRemoveSignal(String name) {
+    return '移除 $name';
+  }
+
+  @override
+  String get trendChooseSignals => '選擇訊號';
+
+  @override
+  String trendTooManySelected(int limit) {
+    return '最多選擇 $limit 項';
+  }
+
+  @override
+  String get trendSignalNoLongerActive => '其中一項訊號已不在 PID 監看清單';
+
+  @override
+  String get trendSelectionSaveFailed => '無法儲存趨勢顯示選擇';
+
+  @override
+  String trendSheetBody(int limit) {
+    return '最多選擇 $limit 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。';
+  }
+
+  @override
+  String trendSheetDone(int selected, int limit) {
+    return '完成 · $selected/$limit';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -347,4 +494,151 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get telemetryArtifactRestartRequired =>
       '本機檔案作業狀態無法確認；請完全關閉並重新啟動 App 後再操作';
+
+  @override
+  String get dashboardEmptyTitle => '儀表板是空的';
+
+  @override
+  String get dashboardEmptyBody => '到 PID 頁面挑選想要監看的訊號，它們會出現在這裡。';
+
+  @override
+  String get dashboardChoosePids => '選擇 PID';
+
+  @override
+  String get dashboardWorkspaceGauges => '儀表';
+
+  @override
+  String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
+  String get dashboardLocalRecordings => '本機紀錄';
+
+  @override
+  String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardGenericObd => '通用 OBD';
+
+  @override
+  String get dashboardVinRead => '已讀 VIN';
+
+  @override
+  String get dashboardSingleRequestMode => '單筆模式';
+
+  @override
+  String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get derivedEstimatesTitle => '推算數值';
+
+  @override
+  String get derivedEstimatesDetailsTitle => '估算公式與假設';
+
+  @override
+  String get derivedAirflow => '空氣流量';
+
+  @override
+  String get derivedFuelUse => '油耗';
+
+  @override
+  String get derivedEngineHorsepower => '引擎馬力';
+
+  @override
+  String get derivedTorque => '扭力';
+
+  @override
+  String get derivedEstimatedFuelTitle => '估算油耗';
+
+  @override
+  String get derivedEcuFuelTitle => 'ECU 油耗資料';
+
+  @override
+  String get derivedEcuReported => 'ECU 回報';
+
+  @override
+  String get derivedUnavailableMessage => '等待車速與加速度資料後才能推算馬力';
+
+  @override
+  String get telemetryRecorderPhasePreparing => '正在準備錄製';
+
+  @override
+  String get telemetryRecorderPhaseRecording => '正在錄製';
+
+  @override
+  String get telemetryRecorderPhaseFinalizing => '正在儲存紀錄';
+
+  @override
+  String get telemetryRecorderPhaseIdle => '未錄製';
+
+  @override
+  String get telemetryNotConnected => '目前未連線';
+
+  @override
+  String get telemetryDemoData => '內建模擬資料';
+
+  @override
+  String get telemetryRigData => '測試馬具資料';
+
+  @override
+  String get trendSignalsHeading => '趨勢訊號';
+
+  @override
+  String get trendNoSignalsTitle => '沒有可用的趨勢訊號';
+
+  @override
+  String get trendNoSignalsBody => '先到 PID 頁面啟用想要監看的訊號。';
+
+  @override
+  String get trendPickSignalsTitle => '選擇趨勢訊號';
+
+  @override
+  String trendPickSignalsBody(int limit) {
+    return '最多可以比較 $limit 項訊號，不會改變已啟用的 PID 輪詢。';
+  }
+
+  @override
+  String get trendLiveData => '即時資料';
+
+  @override
+  String get trendNoUnits => '無單位';
+
+  @override
+  String trendWindowSemantics(int seconds) {
+    return '顯示最近 $seconds 秒趨勢';
+  }
+
+  @override
+  String get trendAxisNow => '現在';
+
+  @override
+  String get semanticsFieldSeparator => '，';
+
+  @override
+  String trendRemoveSignal(String name) {
+    return '移除 $name';
+  }
+
+  @override
+  String get trendChooseSignals => '選擇訊號';
+
+  @override
+  String trendTooManySelected(int limit) {
+    return '最多選擇 $limit 項';
+  }
+
+  @override
+  String get trendSignalNoLongerActive => '其中一項訊號已不在 PID 監看清單';
+
+  @override
+  String get trendSelectionSaveFailed => '無法儲存趨勢顯示選擇';
+
+  @override
+  String trendSheetBody(int limit) {
+    return '最多選擇 $limit 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。';
+  }
+
+  @override
+  String trendSheetDone(int selected, int limit) {
+    return '完成 · $selected/$limit';
+  }
 }

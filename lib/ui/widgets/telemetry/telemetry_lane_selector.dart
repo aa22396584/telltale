@@ -7,8 +7,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/pid/pid.dart';
 import '../../../state/telemetry_trends.dart';
+
+/// Why a selection was not applied, or null when it was.
+///
+/// Takes an [AppLocalizations] rather than a [BuildContext]: the outcome is
+/// decided in a notifier and reported after an await, and a pure-Dart test can
+/// walk every outcome in both languages with no widget pump.
+String? telemetryTrendSelectionOutcomeLabel(
+  AppLocalizations l10n,
+  TelemetryTrendSelectionOutcome outcome,
+) => switch (outcome) {
+  TelemetryTrendSelectionOutcome.tooMany => l10n.trendTooManySelected(
+    maximumTelemetryTrendLanes,
+  ),
+  TelemetryTrendSelectionOutcome.unavailable => l10n.trendSignalNoLongerActive,
+  TelemetryTrendSelectionOutcome.storageFailure => l10n.trendSelectionSaveFailed,
+  // Applied and no-change are not worth a message.
+  TelemetryTrendSelectionOutcome.applied ||
+  TelemetryTrendSelectionOutcome.noChange => null,
+};
 
 class TelemetryLaneSelector extends ConsumerWidget {
   const TelemetryLaneSelector({
@@ -26,6 +46,7 @@ class TelemetryLaneSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final byId = {for (final pid in activePids) pid.id: pid};
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,7 +71,9 @@ class TelemetryLaneSelector extends ConsumerWidget {
                     onDeleted: enabled
                         ? () => unawaited(_remove(context, ref, id))
                         : null,
-                    deleteButtonTooltipMessage: '移除 ${_name(pid)}',
+                    deleteButtonTooltipMessage: l10n.trendRemoveSignal(
+                      _name(pid),
+                    ),
                   ),
                 ),
             ConstrainedBox(
@@ -58,7 +81,7 @@ class TelemetryLaneSelector extends ConsumerWidget {
               child: ActionChip(
                 key: const ValueKey('telemetry-lane-selector'),
                 avatar: const Icon(Icons.tune, size: 18),
-                label: const Text('選擇訊號'),
+                label: Text(l10n.trendChooseSignals),
                 onPressed: enabled && activePids.isNotEmpty
                     ? () => _showSelector(context, ref)
                     : null,
@@ -80,15 +103,17 @@ class TelemetryLaneSelector extends ConsumerWidget {
   }
 
   Future<void> _remove(BuildContext context, WidgetRef ref, String id) async {
+    final l10n = AppLocalizations.of(context);
     final next = selectedIds.where((candidate) => candidate != id).toList();
     final outcome = await ref
         .read(telemetryTrendsProvider.notifier)
         .setSelectedIds(next);
     if (!context.mounted) return;
-    _showOutcome(context, outcome);
+    _showOutcome(context, l10n, outcome);
   }
 
   Future<void> _showSelector(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final initial = selectedIds.toSet();
     final result = await showModalBottomSheet<List<String>>(
       context: context,
@@ -103,19 +128,15 @@ class TelemetryLaneSelector extends ConsumerWidget {
         .read(telemetryTrendsProvider.notifier)
         .setSelectedIds(result);
     if (!context.mounted) return;
-    _showOutcome(context, outcome);
+    _showOutcome(context, l10n, outcome);
   }
 
   static void _showOutcome(
     BuildContext context,
+    AppLocalizations l10n,
     TelemetryTrendSelectionOutcome outcome,
   ) {
-    final message = switch (outcome) {
-      TelemetryTrendSelectionOutcome.tooMany => '最多選擇 4 項',
-      TelemetryTrendSelectionOutcome.unavailable => '其中一項訊號已不在 PID 監看清單',
-      TelemetryTrendSelectionOutcome.storageFailure => '無法儲存趨勢顯示選擇',
-      _ => null,
-    };
+    final message = telemetryTrendSelectionOutcomeLabel(l10n, outcome);
     if (message != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
@@ -144,6 +165,7 @@ class _TelemetryLaneSheetState extends State<_TelemetryLaneSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: DraggableScrollableSheet(
         expand: false,
@@ -162,10 +184,13 @@ class _TelemetryLaneSheetState extends State<_TelemetryLaneSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('趨勢訊號', style: context.texts.headlineSmall),
+                  Text(
+                    l10n.trendSignalsHeading,
+                    style: context.texts.headlineSmall,
+                  ),
                   const SizedBox(height: Spacing.xs),
                   Text(
-                    '最多選擇 4 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。',
+                    l10n.trendSheetBody(maximumTelemetryTrendLanes),
                     style: context.texts.bodySmall,
                   ),
                 ],
@@ -190,9 +215,16 @@ class _TelemetryLaneSheetState extends State<_TelemetryLaneSheet> {
                           : '${pid.modeAndPid} · ${pid.units}',
                     ),
                     onChanged: (value) {
-                      if (value == true && _selected.length >= 4) {
+                      if (value == true &&
+                          _selected.length >= maximumTelemetryTrendLanes) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('最多選擇 4 項')),
+                          SnackBar(
+                            content: Text(
+                              l10n.trendTooManySelected(
+                                maximumTelemetryTrendLanes,
+                              ),
+                            ),
+                          ),
                         );
                         return;
                       }
@@ -217,7 +249,12 @@ class _TelemetryLaneSheetState extends State<_TelemetryLaneSheet> {
                       .map((pid) => pid.id)
                       .toList(),
                 ),
-                child: Text('完成 · ${_selected.length}/4'),
+                child: Text(
+                  l10n.trendSheetDone(
+                    _selected.length,
+                    maximumTelemetryTrendLanes,
+                  ),
+                ),
               ),
             ),
           ],
