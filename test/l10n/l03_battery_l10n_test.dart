@@ -668,6 +668,51 @@ void main() {
   });
 
   group('the distinctions this screen refuses to blur', () {
+    // Review found this dialog had ZERO references anywhere in test/l10n. The
+    // Chinese had four guards; the English had none, and the battery test only
+    // checked the dialog rendered no Chinese — which a weakened English
+    // sentence passes.
+    //
+    // It is the consent a driver reads before sending a command to a
+    // high-voltage battery controller using a reverse-engineered source. All
+    // four claims are what make that consent informed rather than a button.
+    test('the one-shot consent keeps all four claims, in both languages', () {
+      final e = en.powertrainExperimentalDataDisclosure.toLowerCase();
+      expect(e, contains('candidate read'),
+          reason: 'a candidate is not a verified reading');
+      expect(e, isNot(contains('verified read')));
+      expect(e, contains('not a manufacturer'),
+          reason: 'the source is not the vehicle maker');
+      expect(e, contains('local diagnostic transcript'));
+      expect(e, contains('not uploaded automatically'),
+          reason: 'what leaves the phone, and what does not');
+      expect(e, contains('never installed as a pid'),
+          reason: 'a one-shot read must not become a permanent gauge');
+
+      final c = zh.powertrainExperimentalDataDisclosure;
+      expect(c, contains('候選讀取'));
+      expect(c, contains('不是原廠'));
+      expect(c, contains('本機診斷紀錄'));
+      expect(c, contains('不會由此功能自動上傳'));
+      expect(c, contains('不會安裝成 PID'));
+    });
+
+    // The checkbox itself, and review found it unguarded in BOTH languages —
+    // older and quieter than an English-only gap, because the Chinese has been
+    // shipping for months. Both halves are load-bearing: the vehicle must be
+    // parked, AND the number may still not apply even when it answers.
+    test('the parked acknowledgement keeps both halves, in both languages', () {
+      final e = en.powertrainExperimentalParkedAck.toLowerCase();
+      expect(e, contains('safely parked'));
+      expect(e, contains('reads once'));
+      expect(e, contains('may still not apply'));
+
+      final c = zh.powertrainExperimentalParkedAck;
+      expect(c, contains('安全停妥'));
+      expect(c, contains('只讀一次'));
+      expect(c, contains('仍可能不適用'));
+    });
+
     test('research-only never reads as installable or supported', () {
       // The tier that must never be mistaken for something that works.
       expect(

@@ -546,9 +546,40 @@ void main() {
       );
     });
 
+    // Silence is not an answer. Each of these says, in its own words, that a
+    // category which did not reply cannot be read as a category with nothing
+    // to report — and each had only en-vs-zh parity, which passes on any
+    // English that says something different.
+    //
+    // What a weakened one costs: a driver reads "no pending faults", drives
+    // away, and the fault the ECU had not yet confirmed is still there.
+    test('a category that did not answer is not a category with nothing to say', () {
+      expect(
+        _en.dtcSilentPendingDetail.toLowerCase(),
+        allOf(
+          contains('cannot tell the two apart'),
+          contains('must not be taken to mean there are no pending faults'),
+        ),
+      );
+      expect(
+        _en.dtcSilentPermanentDetail.toLowerCase(),
+        contains('the two cannot be told apart'),
+      );
+      expect(
+        _en.dtcStoredSilentDetail('03').toLowerCase(),
+        allOf(
+          contains('cannot be confirmed'),
+          contains('not the same thing as having no fault codes'),
+        ),
+      );
+    });
+
     test('the destroyed-by-clearing warning survives in English', () {
       // Also register #11, and unguarded for the same reason: parity only.
-      expect(_en.dtcFreezeFrameBody('P0301').toLowerCase(), contains('destroys'));
+      expect(
+        _en.dtcFreezeFrameBody('P0301').toLowerCase(),
+        contains('destroys this record'),
+      );
       expect(_en.dtcClearDialogBody.toLowerCase(), contains('cannot be cleared'));
     });
 
