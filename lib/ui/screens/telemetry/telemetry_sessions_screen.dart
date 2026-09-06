@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../state/telemetry_sessions.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class TelemetrySessionsScreen extends ConsumerWidget {
   const TelemetrySessionsScreen({super.key});
@@ -20,7 +21,7 @@ class TelemetrySessionsScreen extends ConsumerWidget {
     if (access != TelemetryHistoryAccess.permitted) {
       return Scaffold(
         appBar: AppBar(title: const Text('本機紀錄')),
-        body: Center(child: Text(access.message!)),
+        body: Center(child: Text(access.message(AppLocalizations.of(context))!)),
       );
     }
     final library = ref.watch(telemetrySessionLibraryProvider);
@@ -135,7 +136,7 @@ class _DamagedTile extends ConsumerWidget {
     } else {
       if (result.failure != TelemetrySessionActionFailure.restartRequired) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('刪除未完成：${result.message}')));
+            .showSnackBar(SnackBar(content: Text('刪除未完成：${result.message(AppLocalizations.of(context))}')));
       }
     }
   }
@@ -175,7 +176,7 @@ class _SessionTile extends StatelessWidget {
         '${_durationLabel(session.duration)} · ${session.signalCount} 項訊號\n'
         '${session.valueCount} 筆有效值 · ${session.statusCount} 個狀態 · '
         '${session.gapCount} 個缺口\n'
-        '${telemetryTerminalReasonLabel(session.terminalReason)}',
+        '${telemetryTerminalReasonLabel(AppLocalizations.of(context), session.terminalReason)}',
       ),
       trailing: const Icon(Icons.chevron_right),
     ),

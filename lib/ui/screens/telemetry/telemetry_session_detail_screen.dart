@@ -12,6 +12,7 @@ import '../../../telemetry/session/telemetry_session.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_status_copy.dart';
 import 'telemetry_export_sheet.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class TelemetrySessionDetailScreen extends ConsumerStatefulWidget {
   const TelemetrySessionDetailScreen({required this.sessionId, super.key});
@@ -82,6 +83,9 @@ class _TelemetrySessionDetailScreenState
   }
 
   Future<void> _export() async {
+    // Read before the awaits. The message describes the export the user asked
+    // for, so it belongs to the language that was on screen when they asked.
+    final l10n = AppLocalizations.of(context);
     final box = context.findRenderObject() as RenderBox?;
     final origin = box == null
         ? null
@@ -93,7 +97,7 @@ class _TelemetrySessionDetailScreenState
         .export(widget.sessionId, format, sharePositionOrigin: origin);
     if (!result.isSuccess &&
         result.failure != TelemetrySessionActionFailure.restartRequired) {
-      _snack('匯出未完成：${result.message}');
+      _snack('匯出未完成：${result.message(l10n)}');
     }
   }
 
@@ -125,7 +129,7 @@ class _TelemetrySessionDetailScreenState
       Navigator.pop(context);
     } else {
       if (result.failure != TelemetrySessionActionFailure.restartRequired) {
-        _snack('刪除未完成：${result.message}');
+        _snack('刪除未完成：${result.message(AppLocalizations.of(context))}');
       }
     }
   }
@@ -145,7 +149,7 @@ class _TelemetrySessionDetailScreenState
     if (access != TelemetryHistoryAccess.permitted) {
       return Scaffold(
         appBar: AppBar(title: const Text('紀錄回放')),
-        body: Center(child: Text(access.message!)),
+        body: Center(child: Text(access.message(AppLocalizations.of(context))!)),
       );
     }
     final replay = ref.watch(telemetrySessionReplayProvider(widget.sessionId));
@@ -215,7 +219,12 @@ class _ReplayBody extends StatelessWidget {
             Text('${replay.valueCount} 筆有效值'),
             Text('${replay.statusCount} 個狀態'),
             Text('${replay.gapCount} 個缺口'),
-            Text(telemetryTerminalReasonLabel(replay.terminalReason)),
+            Text(
+              telemetryTerminalReasonLabel(
+                AppLocalizations.of(context),
+                replay.terminalReason,
+              ),
+            ),
             const Text('離線抽樣回放'),
           ],
         ),

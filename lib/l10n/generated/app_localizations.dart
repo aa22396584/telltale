@@ -182,6 +182,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Appearance'**
   String get appearanceSectionTitle;
+
+  /// A live reading that has stopped updating. Not an error and not a fresh value.
+  ///
+  /// In en, this message translates to:
+  /// **'Data is stale'**
+  String get telemetryStatusStale;
+
+  /// Distinct from no answer: the ECU replied, and the reply said unsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'The controller answered that it does not support this'**
+  String get telemetryStatusUnsupported;
+
+  /// Silence, not a refusal. Must never read as unsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer — will retry'**
+  String get telemetryStatusNoAnswer;
+
+  /// No description provided for @telemetryStatusFormulaError.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula error'**
+  String get telemetryStatusFormulaError;
+
+  /// No description provided for @telemetryStatusBusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus error'**
+  String get telemetryStatusBusError;
+
+  /// No description provided for @telemetryStatusHeaderMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Header does not match this bus'**
+  String get telemetryStatusHeaderMismatch;
+
+  /// The app refused to transmit. Says what did NOT happen.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a read-only query — nothing was sent'**
+  String get telemetryStatusUnsafeServiceRefusal;
+
+  /// No description provided for @telemetryEndedByUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped by you'**
+  String get telemetryEndedByUser;
+
+  /// No description provided for @telemetryEndedByDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped when the connection dropped'**
+  String get telemetryEndedByDisconnect;
+
+  /// No description provided for @telemetryEndedBySessionReplacement.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection session was replaced'**
+  String get telemetryEndedBySessionReplacement;
+
+  /// No description provided for @telemetryEndedByBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped when Telltale went to the background'**
+  String get telemetryEndedByBackground;
+
+  /// {minutes} comes from telemetryRecorderDurationLimit; never spell the number in the copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the {minutes}-minute limit'**
+  String telemetryEndedByDurationLimit(int minutes);
+
+  /// No description provided for @telemetryEndedBySessionSizeLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'This recording reached its size limit'**
+  String get telemetryEndedBySessionSizeLimit;
+
+  /// No description provided for @telemetryEndedByLibrarySizeLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Local recording storage is full'**
+  String get telemetryEndedByLibrarySizeLimit;
+
+  /// No description provided for @telemetryEndedByStorageBackpressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage could not keep up'**
+  String get telemetryEndedByStorageBackpressure;
+
+  /// No description provided for @telemetryEndedByConfigurationChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The PID selection changed'**
+  String get telemetryEndedByConfigurationChanged;
+
+  /// No description provided for @telemetryEndedByStorageFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving failed'**
+  String get telemetryEndedByStorageFailure;
+
+  /// No description provided for @telemetryEndedByRecoveredAfterInterruption.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovered after the last interruption'**
+  String get telemetryEndedByRecoveredAfterInterruption;
+
+  /// No description provided for @telemetryStartRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording started'**
+  String get telemetryStartRecording;
+
+  /// No description provided for @telemetryStartNeedsConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect before starting a recording'**
+  String get telemetryStartNeedsConnection;
+
+  /// No description provided for @telemetryStartNeedsForeground.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring Telltale to the foreground before starting a recording'**
+  String get telemetryStartNeedsForeground;
+
+  /// Refuses on unknown speed. Absence of a speed reading is not evidence of a parked car.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot confirm the vehicle is stopped — disconnect first'**
+  String get telemetryStartSpeedUnknown;
+
+  /// No description provided for @telemetryStartMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Park the vehicle first'**
+  String get telemetryStartMoving;
+
+  /// No description provided for @telemetryStartInvalidatedBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Telltale went to the background — no recording started'**
+  String get telemetryStartInvalidatedBackground;
+
+  /// No description provided for @telemetryStartInvalidatedDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection dropped — no recording started'**
+  String get telemetryStartInvalidatedDisconnect;
+
+  /// No description provided for @telemetryStartInvalidatedSessionReplacement.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection session was replaced — no recording started'**
+  String get telemetryStartInvalidatedSessionReplacement;
+
+  /// {limit} comes from TelemetryQuota.groupLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Local recordings reached the limit of {limit} — export or delete some first'**
+  String telemetryStartLibraryGroupLimit(int limit);
+
+  /// No description provided for @telemetryStartLibraryByteLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough local storage for a recording — export or delete some first'**
+  String get telemetryStartLibraryByteLimit;
+
+  /// No description provided for @telemetryStartInvalidConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'This PID selection cannot be recorded safely — check the definitions'**
+  String get telemetryStartInvalidConfiguration;
+
+  /// No description provided for @telemetryStartCannotCreateFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the recording file'**
+  String get telemetryStartCannotCreateFile;
+
+  /// No description provided for @telemetryStartBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Another recording or file operation has not finished'**
+  String get telemetryStartBusy;
+
+  /// Also the startOutcome for restartRequired; one sentence, one key.
+  ///
+  /// In en, this message translates to:
+  /// **'Startup cleanup did not finish — restart Telltale to repair the recordings'**
+  String get telemetryRestartToRepairStartup;
+
+  /// No description provided for @telemetryRestartToRepairSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving did not finish — restart Telltale to repair the recordings'**
+  String get telemetryRestartToRepairSave;
+
+  /// No description provided for @telemetryPendingOwnerRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'This process still holds the operation. If it stays here, quit Telltale completely and reopen it'**
+  String get telemetryPendingOwnerRecovery;
+
+  /// No description provided for @telemetryStartNeedsActivePid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable at least one PID first'**
+  String get telemetryStartNeedsActivePid;
+
+  /// Refers to DerivedEstimates.maxLiveSignals. 'estimated' must never read as 'measured'.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording keeps the estimated-power and estimated-fuel columns — turn some PIDs off first'**
+  String get telemetryStartTooManyPids;
+
+  /// No description provided for @telemetryBlockedByRecorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and save the recording first'**
+  String get telemetryBlockedByRecorder;
+
+  /// No description provided for @telemetryDeleteNeedsConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm this delete first'**
+  String get telemetryDeleteNeedsConfirmation;
+
+  /// No description provided for @telemetryArtifactRestartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing'**
+  String get telemetryArtifactRestartRequired;
 }
 
 class _AppLocalizationsDelegate
