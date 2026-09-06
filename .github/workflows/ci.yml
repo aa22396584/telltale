@@ -458,6 +458,74 @@ jobs:
           print(f'OK: {len(md_zh)} sections, identical across both files and both languages.')
           PY
 
+  store-assets:
+    name: each README shows its own language's screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The two READMEs hotlink screenshots through raw.githubusercontent.com,
+      # so nothing local resolves them and nothing local breaks when they rot.
+      # A reader gets a broken image on the repo front page and we hear about it
+      # from them.
+      #
+      # Since 1.0.11 there are two sets of screenshots, one per listing
+      # language, and the interesting failure is not a missing file — it is the
+      # English README showing the Chinese screenshots after a copy-paste. That
+      # would render perfectly and quietly tell every English reader the app has
+      # no English interface, which is the exact claim the screenshots exist to
+      # make. So this checks the locale, not just the path.
+      - name: Resolve every hotlinked asset
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          PREFIX = 'https://raw.githubusercontent.com/ImL1s/telltale/main/'
+          # Which README is allowed to show which locale's assets. Assets with
+          # no text in them (the icon, the video) are shared and listed as None.
+          expected = {'README.md': 'en-US', 'README.zh-TW.md': 'zh-TW'}
+
+          problems = []
+          seen = 0
+
+          for name, locale in expected.items():
+              text = pathlib.Path(name).read_text(encoding='utf-8')
+              for url in re.findall(re.escape(PREFIX) + r'([^\s")\]]+)', text):
+                  seen += 1
+                  path = pathlib.Path(url)
+                  if not path.exists():
+                      problems.append(f'{name}: {url} does not exist in the repo')
+                      continue
+                  if url.startswith('store/'):
+                      parts = url.split('/')
+                      # store/<locale>/<file> for anything with words in it.
+                      if len(parts) == 3 and parts[1] in expected.values():
+                          if parts[1] != locale:
+                              problems.append(
+                                  f'{name} shows {parts[1]} assets; it must show {locale}. '
+                                  'A reader would take the screenshots as proof the app '
+                                  'does not speak their language.')
+                      elif len(parts) != 2:
+                          problems.append(f'{name}: {url} is not store/<locale>/<file> '
+                                          'nor a shared store/<file>')
+
+          # Both locales must actually be complete, or one listing ships short.
+          for locale in expected.values():
+              for shot in ['01-connect', '02-dashboard', '03-dtc-freeze',
+                           '05-performance', '06-skins', 'feature-1024x500']:
+                  f = pathlib.Path(f'store/{locale}/{shot}.png')
+                  if not f.exists():
+                      problems.append(f'{f} is missing; the {locale} listing cannot be built')
+
+          if problems:
+              print('Store assets do not line up:')
+              for p in problems:
+                  print(' - ' + p)
+              sys.exit(1)
+          print(f'OK: {seen} hotlinks resolve, and each README shows its own locale.')
+          PY
+
   rigs:
     name: test rigs — framing and fault injection
     runs-on: ubuntu-latest
