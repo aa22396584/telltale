@@ -10,6 +10,11 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ### Added
 
+- Settings shows the maintainer-recommended adapter catalog (currently the
+  existing Shopee affiliate listing) with commission disclosure and model/NCC
+  check. Connect keeps a secondary text link below the transports so it does
+  not compete with 直接連線 / 啟動模擬器 / 上次轉接器.
+
 ## 1.0.8 — 2026-09-06
 
 Google Play production `1.0.8` / versionCode 9 (`PUBLISHED`). GitHub community

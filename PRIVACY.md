@@ -1,11 +1,12 @@
 # Telltale 隱私權政策
 
-最後更新：2026 年 8 月 29 日
+最後更新：2026 年 9 月 6 日
 
 ## 一句話版本
 
 **Telltale 本身不收集資料，也不會主動上傳資料。** 沒有帳號、沒有廣告、沒有分析、
-沒有當機回報服務。App 唯一主動建立的連線是你設定的 ELM327 轉接器。
+沒有當機回報服務。App 唯一自己建立的連線是你設定的 ELM327 轉接器。
+推薦轉接器連結只有在你點下去時，才會交給系統開啟蝦皮或瀏覽器。
 
 ---
 
@@ -42,7 +43,9 @@ Telltale 需要 `INTERNET` 權限，但**不用來連上網際網路**。它只�
 ELM327 轉接器開啟一條 TCP 連線 —— 那是一個區域位址（通常是
 `192.168.0.10:35000`），Android 沒有更精確的權限可以表達「只連本地」。
 
-App 不會發出任何其他網路要求。你可以在飛航模式下（開著藍牙）完整使用它。
+App 不會自己對網際網路發出要求。連線與設定頁的推薦轉接器是維護者的推廣分潤
+連結：只有你點下去時，系統才會開啟蝦皮或瀏覽器，站台政策歸該賣場。
+其餘功能可以在飛航模式下（開著藍牙）完整使用。
 官方車型目錄與來源 manifest 已包在 App 內；只有維護者更新原始碼快照的工具會下載
 官方公開資料，安裝在手機上的 App 不會送出 VIN 或車型搜尋。
 
@@ -93,13 +96,14 @@ Telltale 以 GPL-3.0 授權開放原始碼。本政策所述的每一項，你�
 
 # Telltale Privacy Policy
 
-Last updated: 29 August 2026
+Last updated: 6 September 2026
 
 ## In one sentence
 
 **Telltale itself collects nothing and proactively uploads nothing.** There are
 no accounts, ads, analytics, or crash reporting. The only connection the app
-initiates is to the ELM327 adapter you configure.
+itself initiates is to the ELM327 adapter you configure. Recommended-adapter
+links open Shopee or a browser only after you tap them.
 
 ## What we collect
 
@@ -125,8 +129,11 @@ Disable backup for Telltale or the device if you do not want this data backed up
 
 The `INTERNET` permission is not used to reach the internet. It opens a TCP
 connection to a Wi-Fi ELM327 adapter on a local address — Android has no
-narrower permission for "local network only". The app makes no other network
-requests and works fully in aeroplane mode with Bluetooth on.
+narrower permission for "local network only". The app does not itself make
+other network requests. Recommended-adapter links on Connect and Settings are
+maintainer affiliate listings: they open Shopee or a browser only after you
+tap them, and that store's policy applies there. Everything else works fully
+in aeroplane mode with Bluetooth on.
 
 The official vehicle catalog and its source manifest are bundled with the app.
 Only the maintainer's source-update tool downloads the public official data;
