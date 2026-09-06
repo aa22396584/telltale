@@ -501,11 +501,14 @@ jobs:
           import pathlib, re, sys
 
           problems = []
+          policy_path = pathlib.Path('docs/privacy.html')
+          policy = policy_path.read_text(encoding='utf-8')
+
           pages = {
-              'docs/index.html': ('zh-Hant', 'index.en.html'),
-              'docs/index.en.html': ('en', 'index.html'),
+              'docs/index.html': ('zh-Hant', 'index.en.html', 'zh'),
+              'docs/index.en.html': ('en', 'index.html', 'en'),
           }
-          for path, (lang, sibling) in pages.items():
+          for path, (lang, sibling, anchor) in pages.items():
               f = pathlib.Path(path)
               if not f.exists():
                   problems.append(f'{path} is missing')
@@ -517,14 +520,52 @@ jobs:
                   problems.append(f'{path} declares lang={found}, expected {lang}')
               if f'href="{sibling}"' not in text:
                   problems.append(f'{path} does not link {sibling}')
-              if 'privacy.html' not in text:
-                  problems.append(f'{path} does not link the privacy policy')
+              if f'privacy.html#{anchor}' not in text:
+                  problems.append(
+                      f'{path} does not link privacy.html#{anchor}. A reader '
+                      'sent to the policy without an anchor lands at the top '
+                      'of a long document in the other language.')
 
-          policy = pathlib.Path('docs/privacy.html').read_text(encoding='utf-8')
-          for anchor in ['id="zh"', 'id="en"']:
-              if anchor not in policy:
-                  problems.append(f'docs/privacy.html lost {anchor}, so a '
+          # Every anchor any file in the repo links into the policy has to
+          # exist. Checking the two ends separately — "the pages link the
+          # policy" and "the policy has ids" — passed a page pointing at
+          # `privacy.html#zh-TW`, which is nowhere. A reviewer found that, and
+          # it is precisely the failure the anchors were added to prevent.
+          linked = set()
+          for f in list(pathlib.Path('docs').rglob('*.html')) + [
+              pathlib.Path('README.md'), pathlib.Path('README.zh-TW.md')]:
+              if not f.exists():
+                  continue
+              for m in re.finditer(r'privacy\.html#([A-Za-z0-9_-]+)',
+                                   f.read_text(encoding='utf-8')):
+                  linked.add((str(f), m.group(1)))
+          for source, anchor in sorted(linked):
+              if f'id="{anchor}"' not in policy:
+                  problems.append(
+                      f'{source} links privacy.html#{anchor}, which the policy '
+                      'does not define')
+          for anchor in ['zh', 'en']:
+              if f'id="{anchor}"' not in policy:
+                  problems.append(f'docs/privacy.html lost id="{anchor}", so a '
                                   'language link into it lands at the top')
+
+          # The two READMEs are mirrored from the private repo's `app/`, and
+          # `docs/` is not — so a sync in that direction reverts an edit here
+          # while leaving the site untouched. Losing an anchor is silent to the
+          # loop above, which only checks that anchors which ARE present exist.
+          # This makes it loud, and it is the shape most likely to happen: a
+          # `--delete` mirror putting back a `privacy.html` with no fragment.
+          for readme, anchor in [('README.md', 'en'),
+                                 ('README.zh-TW.md', 'zh')]:
+              f = pathlib.Path(readme)
+              if not f.exists():
+                  problems.append(f'{readme} is missing')
+                  continue
+              if f'privacy.html#{anchor}' not in f.read_text(encoding='utf-8'):
+                  problems.append(
+                      f'{readme} does not link privacy.html#{anchor}. If a '
+                      'mirror from the private repo reverted it, the same edit '
+                      'has to land in torque:app/ as well.')
 
           if problems:
               print('The site pages do not line up:')
