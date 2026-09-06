@@ -440,14 +440,17 @@ abstract final class DtcDecoder {
     4: PowertrainSubsystem.auxiliaryEmissionControls,
     5: PowertrainSubsystem.speedAndIdleControl,
     6: PowertrainSubsystem.computerOutputCircuit,
+    // J2012 gives blocks 7 and 8 the same subsystem, so they share one
+    // identifier rather than two that would have to be translated identically
+    // forever.
     7: PowertrainSubsystem.transmission,
+    8: PowertrainSubsystem.transmission,
     // Published as "control modules, input and output signals". An earlier
     // wording here said 變速箱與控制模組訊號 — half of that was invented to make
     // it read like its neighbours, which is the same liberty the P2270
     // description was dropped for. The words now live in the ARBs, and the
     // @-description on `dtcSubsystemControlModuleSignals` carries the warning
     // with them.
-    8: PowertrainSubsystem.transmission,
     9: PowertrainSubsystem.controlModuleSignals,
   };
 
