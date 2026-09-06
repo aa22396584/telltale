@@ -178,8 +178,8 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
   }
 
   Future<void> _startBleScan() async {
-    // Captured before the first await, and again before the listener closure
-    // below: reading the context after an await trips
+    // Captured before the first await, and used by the listener closure below
+    // as well: reading the context after an await trips
     // use_build_context_synchronously, and the note belongs to the language
     // that was on screen when the user asked for the scan.
     final l10n = AppLocalizations.of(context);
