@@ -26,8 +26,10 @@ import '../../../obd/transport/classic_transport.dart';
 import '../../../obd/transport/obd_transport.dart';
 import '../../../obd/transport/serial_transport.dart';
 import '../../../obd/transport/wifi_transport.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../state/obd_session.dart';
 import '../../../state/settings.dart';
+import '../../widgets/language_picker.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_connect_recorder_status.dart';
 import '../../widgets/telemetry/telemetry_history_entry.dart';
@@ -547,18 +549,45 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Telltale', style: context.texts.headlineMedium),
-                    Text('車輛即時遙測', style: context.texts.bodySmall),
+                    Text(
+                      AppLocalizations.of(context).appTitle,
+                      style: context.texts.headlineMedium,
+                    ),
+                    Text(
+                      AppLocalizations.of(context).appTagline,
+                      style: context.texts.bodySmall,
+                    ),
                   ],
                 ),
+              ),
+              TextButton(
+                key: const Key('connect_language_entry'),
+                onPressed: () {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    showDragHandle: true,
+                    builder: (sheetContext) {
+                      return const SafeArea(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          child: LanguagePicker(),
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Text(AppLocalizations.of(context).languageSectionTitle),
               ),
             ],
           ),
           const SizedBox(height: Spacing.xl),
-          Text('選擇連線方式', style: context.texts.titleLarge),
+          Text(
+            AppLocalizations.of(context).connectHeadline,
+            style: context.texts.titleLarge,
+          ),
           const SizedBox(height: Spacing.xs),
           Text(
-            '插上 ELM327 轉接器並開啟電門，或直接使用內建模擬器體驗完整功能。',
+            AppLocalizations.of(context).connectBody,
             style: context.texts.bodyMedium,
           ),
         ],
@@ -736,10 +765,7 @@ class _WifiBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          wifiConnectInstructions(),
-          style: context.texts.bodyMedium,
-        ),
+        Text(wifiConnectInstructions(), style: context.texts.bodyMedium),
         const SizedBox(height: Spacing.lg),
         Row(
           children: [
@@ -1389,10 +1415,10 @@ class _LastAdapterCard extends ConsumerWidget {
   /// adapter must not offer reconnect on a host where that transport is
   /// disabled in the UI.
   bool _reconnectAllowed(LastAdapter last) => switch (last.kind) {
-        TransportKind.bluetoothClassic => classicTransportAvailable,
-        TransportKind.bluetoothLe => bleTransportAvailable,
-        TransportKind.wifi || TransportKind.demo => true,
-      };
+    TransportKind.bluetoothClassic => classicTransportAvailable,
+    TransportKind.bluetoothLe => bleTransportAvailable,
+    TransportKind.wifi || TransportKind.demo => true,
+  };
 
   Future<void> _reconnect(
     BuildContext context,
@@ -1619,8 +1645,7 @@ String wifiConnectInstructions({@visibleForTesting bool? isPhone}) {
       '桌面系統通常會把熱點當預設路由；不需要 Android 那套 Wi-Fi 路由綁定。';
 }
 
-bool get _phoneFormFactor =>
-    !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+bool get _phoneFormFactor => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
 List<TransportQuestion> whichTransportGuidance({
   required bool classicAvailable,
@@ -1629,42 +1654,42 @@ List<TransportQuestion> whichTransportGuidance({
 }) {
   final phone = phoneCentricCopy ?? _phoneFormFactor;
   return [
-  (
-    transport: TransportKind.wifi,
-    question: phone
-        ? '手機的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？'
-        : '系統的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？',
-    answer: phone
-        ? '選 Wi-Fi。先把手機連上那個網路，再回來輸入位址。'
-        : '選 Wi-Fi。先把這台裝置連上那個網路，再回來輸入位址。',
-  ),
-  if (bleAvailable)
     (
-      transport: TransportKind.bluetoothLe,
-      question: '盒子、賣場標題或裝置名稱上有 BLE、4.0、5.0 這些字？',
-      // The fallback is in the answer rather than only in the note at the
-      // bottom, because the cheap clones lie: a box marked "Bluetooth 4.0"
-      // is sometimes an SPP-only adapter with a dual-mode chip it does not
-      // use. Somebody who answered honestly and got nothing needs the next
-      // step attached to the answer that failed them, not four lines below
-      // it. Only offer Classic when this host actually enables it.
-      answer: classicAvailable
-          ? '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
-              '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
-              '如果掃描不到，那盒子上的 4.0 只是晶片規格，改用 Bluetooth Classic。'
-          : '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
-              '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
-              '如果掃描不到，先確認轉接器有通電，或改試 Wi‑Fi；'
-              '此主機未開放 Bluetooth Classic。',
+      transport: TransportKind.wifi,
+      question: phone
+          ? '手機的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？'
+          : '系統的 Wi-Fi 清單裡多出一個網路（像 V-LINK、WiFi_OBDII）？',
+      answer: phone
+          ? '選 Wi-Fi。先把手機連上那個網路，再回來輸入位址。'
+          : '選 Wi-Fi。先把這台裝置連上那個網路，再回來輸入位址。',
     ),
-  if (classicAvailable)
-    (
-      transport: TransportKind.bluetoothClassic,
-      question: '都不是 —— 比較舊、盒子上寫 2.0 或 3.0？',
-      answer:
-          '選 Bluetooth Classic。先在系統設定裡配對完成，'
-          'App 不能代替你配對。配對碼多半是 1234 或 0000。',
-    ),
+    if (bleAvailable)
+      (
+        transport: TransportKind.bluetoothLe,
+        question: '盒子、賣場標題或裝置名稱上有 BLE、4.0、5.0 這些字？',
+        // The fallback is in the answer rather than only in the note at the
+        // bottom, because the cheap clones lie: a box marked "Bluetooth 4.0"
+        // is sometimes an SPP-only adapter with a dual-mode chip it does not
+        // use. Somebody who answered honestly and got nothing needs the next
+        // step attached to the answer that failed them, not four lines below
+        // it. Only offer Classic when this host actually enables it.
+        answer: classicAvailable
+            ? '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
+                  '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
+                  '如果掃描不到，那盒子上的 4.0 只是晶片規格，改用 Bluetooth Classic。'
+            : '選 Bluetooth LE。不需要事先配對，直接在 App 裡掃描 —— '
+                  '就算它出現在系統的藍牙配對清單裡，也不要去配對，那條路走不通。'
+                  '如果掃描不到，先確認轉接器有通電，或改試 Wi‑Fi；'
+                  '此主機未開放 Bluetooth Classic。',
+      ),
+    if (classicAvailable)
+      (
+        transport: TransportKind.bluetoothClassic,
+        question: '都不是 —— 比較舊、盒子上寫 2.0 或 3.0？',
+        answer:
+            '選 Bluetooth Classic。先在系統設定裡配對完成，'
+            'App 不能代替你配對。配對碼多半是 1234 或 0000。',
+      ),
   ];
 }
 
@@ -1683,9 +1708,9 @@ String bleEmptyScanGuidance({bool? classicAvailable}) {
   final classic = classicAvailable ?? classicTransportAvailable;
   final classicOrWifi = classic
       ? '最後看盒子上的規格，如果寫的是 2.0 或 3.0，那是 Bluetooth Classic，'
-          '不會出現在這份清單裡，請改用上面的 Bluetooth Classic。'
+            '不會出現在這份清單裡，請改用上面的 Bluetooth Classic。'
       : '最後看盒子上的規格：若寫的是 2.0／3.0 或只有 Wi‑Fi，'
-          '請改試 Wi‑Fi（此主機未開放 Bluetooth Classic）。';
+            '請改試 Wi‑Fi（此主機未開放 Bluetooth Classic）。';
   return '搜尋結束，沒有找到 BLE 轉接器。依序確認：轉接器的燈有沒有亮 —— '
       '多數 OBD 插座要電門轉到 ON 才供電；再來是距離，先坐進車裡再搜尋；'
       '$classicOrWifi'

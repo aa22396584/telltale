@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
   # The theme uses CupertinoPageTransitionsBuilder on iOS/macOS, which draws
   # Cupertino glyphs. Without this the release build warns that the font is
@@ -112,6 +115,7 @@ flutter_launcher_icons:
     image_path: assets/icon/icon.png
 
 flutter:
+  generate: true
   # A command without --flavor must build/install the real field package, not
   # both field and synthetic rig variants (which leaves Flutter unable to pick
   # a single output APK). Rig automation always opts in explicitly.

@@ -23,6 +23,7 @@ import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
+import 'support/localized_app.dart';
 
 class _ReconnectSession extends ObdSession {
   _ReconnectSession(this.succeeds);
@@ -110,7 +111,7 @@ Future<_ReconnectSession> _pumpShortcut(
           () => session = _ReconnectSession(succeeds),
         ),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: localizedMaterialAppRouter(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
