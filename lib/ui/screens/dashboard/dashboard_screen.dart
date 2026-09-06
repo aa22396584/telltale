@@ -31,6 +31,7 @@ import '../../widgets/gauges/dial_gauge.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/powertrain_profile_confirm_banner.dart';
 import '../../widgets/status/datum_status_badge.dart';
+import '../../widgets/status/datum_status_copy.dart';
 import '../../widgets/telemetry/telemetry_recorder_panel.dart';
 import '../pids/pid_manager_screen.dart';
 import 'telemetry_workspace.dart';
@@ -343,7 +344,9 @@ String? _gaugeFootnote(
     PidFault.refusedUnsafeService => l10n.telemetryStatusUnsafeServiceRefusal,
     PidFault.unsupported || null => null,
   };
-  final badge = status.badgeText.isEmpty ? null : status.badgeText;
+  final badge = status.badges.isEmpty
+      ? null
+      : datumBadgeText(l10n, status);
   if (faultLabel != null && badge != null) return '$badge · $faultLabel';
   return faultLabel ?? badge;
 }
@@ -409,8 +412,9 @@ class _UnsupportedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final badge = status.badgeText;
-    final unsupported = AppLocalizations.of(context).gaugeUnsupportedByVehicle;
+    final l10n = AppLocalizations.of(context);
+    final badge = datumBadgeText(l10n, status);
+    final unsupported = l10n.gaugeUnsupportedByVehicle;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Spacing.sm),
@@ -516,8 +520,17 @@ class _StatusStrip extends ConsumerWidget {
                     ? StatusTone.neutral
                     : StatusTone.good,
               ),
-              if (sessionStatus.reason != null)
-                StatusPill(label: sessionStatus.reason!, tone: StatusTone.warn),
+              // The chip reads the gap identifiers, not the exported sentence
+              // in `sessionStatus.reason`. Missing identification never blocks
+              // generic OBD, and none of these says the vehicle lacks a VIN —
+              // only that this session did not read one.
+              if (sessionStatus.gaps.isNotEmpty)
+                StatusPill(
+                  label: sessionStatus.gaps
+                      .map((gap) => datumGapLabel(l10n, gap))
+                      .join(' · '),
+                  tone: StatusTone.warn,
+                ),
               StatusPill(
                 label: '${snapshot.pidsPerSecond.round()} PIDs/s',
                 icon: Icons.bolt,
@@ -751,7 +764,7 @@ class _DerivedStrip extends ConsumerWidget {
           context,
           title: l10n.derivedEstimatesDetailsTitle,
           status: hpStatus,
-          extra: [if (fuelStatus.badgeText.isNotEmpty) fuelStatus],
+          extra: [if (fuelStatus.badges.isNotEmpty) fuelStatus],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -787,7 +800,7 @@ class _DerivedStrip extends ConsumerWidget {
               ],
             ),
             if (metrics.airflowSource != AirflowSource.unavailable ||
-                fuelStatus.badgeText.isNotEmpty) ...[
+                fuelStatus.badges.isNotEmpty) ...[
               const SizedBox(height: Spacing.xs),
               Wrap(
                 spacing: Spacing.sm,
@@ -801,7 +814,7 @@ class _DerivedStrip extends ConsumerWidget {
                       tone: StatusTone.neutral,
                       dense: true,
                     ),
-                  if (fuelStatus.badgeText.isNotEmpty)
+                  if (fuelStatus.badges.isNotEmpty)
                     DatumStatusBadge(status: fuelStatus),
                 ],
               ),
@@ -951,7 +964,7 @@ class _MeasuredFuelStrip extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (status.badgeText.isNotEmpty)
+                if (status.badges.isNotEmpty)
                   DatumStatusBadge(status: status)
                 else
                   StatusPill(

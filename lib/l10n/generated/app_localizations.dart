@@ -99,6 +99,96 @@ abstract class AppLocalizations {
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
   ];
 
+  /// No description provided for @adapterErrorActivityAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus activity alert.'**
+  String get adapterErrorActivityAlert;
+
+  /// No description provided for @adapterErrorBufferFull.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter\'s buffer overflowed.'**
+  String get adapterErrorBufferFull;
+
+  /// No description provided for @adapterErrorBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus error; the wiring may be the cause.'**
+  String get adapterErrorBus;
+
+  /// No description provided for @adapterErrorBusBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The bus is busy.'**
+  String get adapterErrorBusBusy;
+
+  /// No description provided for @adapterErrorBusInit.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus initialisation failed.'**
+  String get adapterErrorBusInit;
+
+  /// The adapter answered CAN ERROR. The literal stays untranslated wherever the reply itself is quoted; this is the sentence written for a driver.
+  ///
+  /// In en, this message translates to:
+  /// **'CAN bus error.'**
+  String get adapterErrorCan;
+
+  /// No description provided for @adapterErrorData.
+  ///
+  /// In en, this message translates to:
+  /// **'The data that arrived is not correct.'**
+  String get adapterErrorData;
+
+  /// No description provided for @adapterErrorFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal feedback error.'**
+  String get adapterErrorFeedback;
+
+  /// No description provided for @adapterErrorInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapter internal error.'**
+  String get adapterErrorInternal;
+
+  /// No description provided for @adapterErrorLowPowerAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter is about to enter low-power mode.'**
+  String get adapterErrorLowPowerAlert;
+
+  /// No description provided for @adapterErrorLowVoltageReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Low voltage reset the adapter.'**
+  String get adapterErrorLowVoltageReset;
+
+  /// Elm327ErrorCode.noData. Deliberately NOT 'the vehicle does not support this': NO DATA is the adapter reporting that nothing arrived before its own timeout, and a busy ECU, a receive filter or one aggressive timing window produces it exactly as an absent sensor does. Both possibilities must survive translation.
+  ///
+  /// In en, this message translates to:
+  /// **'No reply arrived — it may be temporary silence, or the vehicle may not support this.'**
+  String get adapterErrorNoData;
+
+  /// No description provided for @adapterErrorStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'The transfer was interrupted.'**
+  String get adapterErrorStopped;
+
+  /// Elm327ErrorCode.unableToConnect. The remedy is half the message: most OBD sockets are unpowered until the ignition is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the ECU. Check that the ignition is on.'**
+  String get adapterErrorUnableToConnect;
+
+  /// Elm327ErrorCode.unknownCommand. A statement about the ADAPTER, never about the vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter does not support this command.'**
+  String get adapterErrorUnknownCommand;
+
   /// No description provided for @appTagline.
   ///
   /// In en, this message translates to:
@@ -116,6 +206,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Appearance'**
   String get appearanceSectionTitle;
+
+  /// ObdConnectionActivity.abortingPreviousConnection. Says the tap registered and what is being waited for; the wizard showed nothing at all here before.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping the previous connection, one moment…'**
+  String get connectActivityAbortingPreviousConnection;
 
   /// Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec.
   ///
@@ -314,6 +410,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a connection'**
   String get connectHeadline;
+
+  /// ObdConnectionIssue.adapterAcceptedThenSilent. Both causes are load-bearing: an unpowered socket and a second app holding the adapter look identical from here, and naming only one sends half the readers looking in the wrong place.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.'**
+  String get connectIssueAdapterAcceptedThenSilent;
+
+  /// ObdConnectionIssue.adapterSilentOnReset. Failing on the very first command is a different diagnosis from failing later, and the command is named rather than described. {command} is an AT command and is never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter did not answer the reset command ({command}). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.'**
+  String connectIssueAdapterSilentOnReset(String command);
+
+  /// ObdConnectionIssue.adapterStoppedResponding. States what already happened, not a warning about what might.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter stopped responding and the connection has been dropped.'**
+  String get connectIssueAdapterStoppedResponding;
+
+  /// ObdConnectionIssue.connectionSetupFailed. The raw exception text is deliberately not shown here; it is written to the transcript, which is where somebody can act on it.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.'**
+  String get connectIssueConnectionSetupFailed;
+
+  /// ObdConnectionIssue.handshakeIncomplete. No step reported a failure, so this is the least specific thing that is still true. It must stay a possibility, never a verdict on the adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialisation did not pass. The adapter may not be compatible.'**
+  String get connectIssueHandshakeIncomplete;
+
+  /// ObdConnectionIssue.handshakeStepFailed. Which command died is the whole value of this message: it separates 'this is not an ELM327' from 'the adapter is fine but the ignition is off'. {command} is an AT command or a mode/PID and is never translated; {reason} is the step's own outcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialisation failed at {command} ({reason}). Check that the adapter is seated properly and the vehicle\'s ignition is on.'**
+  String connectIssueHandshakeStepFailed(String command, String reason);
+
+  /// ObdConnectionIssue.previousConnectionStillAborting. A refusal that says what happened and what to do about it; a silent false here was the defect this replaced.
+  ///
+  /// In en, this message translates to:
+  /// **'The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.'**
+  String get connectIssuePreviousConnectionStillAborting;
 
   /// No description provided for @connectLastAdapterConnect.
   ///
@@ -572,6 +710,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trends'**
   String get dashboardWorkspaceTrends;
+
+  /// EvidenceKind.community. A claim about the SOURCE of the decode, never about this car; it is always shown together with datumBadgeUnverifiedOnThisVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community decode'**
+  String get datumBadgeCommunityDecode;
+
+  /// DatumOrigin.demo. The number came from Telltale's own simulator, not from a vehicle. This has to be unmistakable: a simulated reading that passes for a live one is the worst thing this app can do.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated'**
+  String get datumBadgeDemo;
+
+  /// DatumOrigin.calculated. Computed from a vehicle profile, never read off the bus. Estimated is not measured, and the two must stay two different words.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated'**
+  String get datumBadgeEstimated;
+
+  /// EvidenceKind.experimental. Always shown with datumBadgeUnverifiedOnThisVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental'**
+  String get datumBadgeExperimental;
+
+  /// EvidenceKind.fieldVerified. Verified on a real vehicle, which is why the English says field rather than just verified — a catalog entry passing validation is not this.
+  ///
+  /// In en, this message translates to:
+  /// **'Field-verified'**
+  String get datumBadgeFieldVerified;
+
+  /// DatumQuality.invalid. The datum failed a structural check and may not be read as a value at all. Distinct from datumBadgeUnverified, which says nothing about the value.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid'**
+  String get datumBadgeInvalid;
+
+  /// The value arrived on the most recent poll. The opposite pole of datumBadgeStale; never render either as the other.
+  ///
+  /// In en, this message translates to:
+  /// **'Just updated'**
+  String get datumBadgeJustUpdated;
+
+  /// DatumQuality.outOfReferenceRange. A check was run against the definition's own minimum and maximum and the value fell outside it. Not merely 'unusual' — a check failed, and the reading is kept rather than hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of range'**
+  String get datumBadgeOutOfReferenceRange;
+
+  /// DatumQuality.partial. Something was not read. Partial is not all clear and must never read as a completed or fault-free result.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get datumBadgePartial;
+
+  /// DatumQuality.stale. The reading stopped updating. Stale is not live; a reading that stopped updating must never render as a current one.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale'**
+  String get datumBadgeStale;
+
+  /// DatumQuality.tentativeDecode. The bytes were decoded with a formula that is not confirmed for this vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tentative decode'**
+  String get datumBadgeTentativeDecode;
+
+  /// EvidenceKind.notTested and EvidenceKind.unknown. Nobody has checked this against a real vehicle. Unverified is not invalid and it is not verified; it is a statement about evidence, not about the number.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get datumBadgeUnverified;
+
+  /// The second half of the community and experimental pairs. The source may be corroborated elsewhere; nobody has driven it on THIS car. Never shorten to 'unverified' — the scope is the whole point.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified on this vehicle'**
+  String get datumBadgeUnverifiedOnThisVehicle;
+
+  /// DatumOrigin.userEntered and EvidenceKind.userSupplied. The definition came from the person holding the phone, so the app makes no claim about it.
+  ///
+  /// In en, this message translates to:
+  /// **'User-supplied'**
+  String get datumBadgeUserSupplied;
+
+  /// DatumGap.modelYearUnknown. One of the optional identification gaps listed on the dashboard session chip. None of them blocks generic OBD.
+  ///
+  /// In en, this message translates to:
+  /// **'Model year unknown'**
+  String get datumGapModelYearUnknown;
+
+  /// DatumGap.noCatalogMatch. The catalog holds no entry for this vehicle. Not a fault, and not a reason to stop reading generic OBD.
+  ///
+  /// In en, this message translates to:
+  /// **'No catalog match'**
+  String get datumGapNoCatalogMatch;
+
+  /// DatumGap.vinNotRead. A read outcome, never a claim that the vehicle has no VIN. VIN is on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'VIN not read'**
+  String get datumGapVinNotRead;
+
+  /// DatumNextStep.estimateOnlyOtherReadingsUnaffected. Scopes a failed estimate so nobody reads it as the session going wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'This affects only the estimate; the other readings still apply.'**
+  String get datumNextStepEstimateOnly;
+
+  /// DatumNextStep.genericObdContinues. Missing identification never blocks generic OBD, and this sentence is what says so.
+  ///
+  /// In en, this message translates to:
+  /// **'You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.'**
+  String get datumNextStepGenericObd;
+
+  /// DatumNextStep.otherReadingsUnaffected. One PID failing is not the session failing.
+  ///
+  /// In en, this message translates to:
+  /// **'The failure affects only this item; the other readings still apply.'**
+  String get datumNextStepOtherReadings;
+
+  /// DatumNextStep.rawOnlyNeverANumber. The raw bytes stay available for diagnosis, and the sentence exists to stop somebody reading them as a measurement.
+  ///
+  /// In en, this message translates to:
+  /// **'The raw reply and the error can be inspected; neither may be read as a normal value.'**
+  String get datumNextStepRawOnly;
+
+  /// DatumReason.assumptionsUnconfirmed. docs/i18n/hedge-register.md entry 18: both halves are required. 'Unconfirmed' alone reads as an error and 'an estimate is shown' alone reads as a validated number.
+  ///
+  /// In en, this message translates to:
+  /// **'The assumptions are unconfirmed; an estimate is still shown.'**
+  String get datumReasonAssumptionsUnconfirmed;
+
+  /// PidFault.busError. A fault on the link, not a statement about the vehicle's capabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus error.'**
+  String get datumReasonBusError;
+
+  /// PidFault.formulaError. The definition's own equation failed, so the fault is in the app or the imported PID, not in the car.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula error.'**
+  String get datumReasonFormulaError;
+
+  /// DatumReason.fuelEstimateMissingInputs. Says the estimate could not be made, never that the vehicle uses no fuel.
+  ///
+  /// In en, this message translates to:
+  /// **'The fuel-use estimate is missing a required input.'**
+  String get datumReasonFuelEstimateMissingInputs;
+
+  /// PidFault.headerNotOnThisBus. A statement about the PID DEFINITION, deliberately kept apart from datumReasonPidUnsupported, which is a statement about the car. Merging them sends somebody looking at their vehicle for a problem that is in a field they can edit.
+  ///
+  /// In en, this message translates to:
+  /// **'The header does not match the bus this vehicle uses.'**
+  String get datumReasonHeaderNotOnThisBus;
+
+  /// DatumReason.horsepowerEstimateMissingInputs. Says the estimate could not be made, never that the engine produced no power.
+  ///
+  /// In en, this message translates to:
+  /// **'The horsepower estimate is missing a required input.'**
+  String get datumReasonHorsepowerEstimateMissingInputs;
+
+  /// The response did not parse. Nothing here may be shown as a number.
+  ///
+  /// In en, this message translates to:
+  /// **'Malformed packet; only the raw reply can be inspected.'**
+  String get datumReasonMalformedPacket;
+
+  /// PidFault.noAnswer. Temporary silence, and docs/i18n/hedge-register.md entry 16 requires it stay distinguishable from datumReasonPidUnsupported: silence is not a controller saying it lacks a PID.
+  ///
+  /// In en, this message translates to:
+  /// **'No response; try again shortly.'**
+  String get datumReasonNoAnswer;
+
+  /// docs/i18n/hedge-register.md entry 25. Explicitly not zero and not unsupported — the app's baseline refusal to print a number it does not have.
+  ///
+  /// In en, this message translates to:
+  /// **'No reading yet.'**
+  String get datumReasonNoReadingYet;
+
+  /// The formula produced NaN or an infinity, so there is no value to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a finite number.'**
+  String get datumReasonNonFiniteValue;
+
+  /// DatumQuality.outOfReferenceRange. Both halves matter: a check failed, AND the reading was not silently discarded or clamped.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside the usual reference range; kept as it was read.'**
+  String get datumReasonOutOfReferenceRangeKept;
+
+  /// PidFault.unsupported, the only state that justifies an assertion about the CAR. docs/i18n/hedge-register.md entry 16: it must stay distinguishable from datumReasonNoAnswer, which is temporary.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle does not support this PID.'**
+  String get datumReasonPidUnsupported;
+
+  /// PidFault.refusedUnsafeService as a reason on a datum.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is not a read-only query.'**
+  String get datumReasonUnsafeService;
+
+  /// The same fact plus the action taken. The app refused to transmit; nothing was written to the vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is not a read-only query, so it was not sent.'**
+  String get datumReasonUnsafeServiceStopped;
 
   /// No description provided for @datumStatusAssumptions.
   ///
@@ -1196,6 +1544,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not supported by this vehicle'**
   String get gaugeUnsupportedByVehicle;
+
+  /// InitNote.aborted. The remaining steps were not attempted, which is not the same as their having failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped after an earlier step failed.'**
+  String get handshakeNoteAborted;
+
+  /// InitNote.ecuRefusedSupportQuery. A refusal is an answer: something is on the bus. Distinct from handshakeNoteEcuSilent.
+  ///
+  /// In en, this message translates to:
+  /// **'The ECU refused the support query (negative response).'**
+  String get handshakeNoteEcuRefusedSupportQuery;
+
+  /// InitNote.ecuSilent. 0100 is the only step that proves a vehicle is on the bus; every AT command answers happily with the ignition off.
+  ///
+  /// In en, this message translates to:
+  /// **'The ECU did not answer.'**
+  String get handshakeNoteEcuSilent;
+
+  /// InitNote.notAcknowledged. The reply printed no error but never said OK either, and 'printed no error' is a much weaker claim than 'answered correctly'.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter did not acknowledge this command.'**
+  String get handshakeNoteNotAcknowledged;
+
+  /// InitNote.notModeOnePositiveReply. Mode 01 is on docs/i18n/do-not-translate.md.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply is not a Mode 01 positive response.'**
+  String get handshakeNoteNotModeOnePositiveReply;
+
+  /// InitNote.pidEchoMismatch. Accepting it would build the supported-PID set out of bytes that answer a different question.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply echoes a different PID from the one that was asked for.'**
+  String get handshakeNotePidEchoMismatch;
+
+  /// InitNote.supportMaskTooShort. The hex bytes are wire values and are never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'The support reply is too short; 41 00 and four more bytes are required.'**
+  String get handshakeNoteSupportMaskTooShort;
+
+  /// InitNote.timedOut. Silence within the window, not a refusal and not a capability claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out.'**
+  String get handshakeNoteTimedOut;
+
+  /// No description provided for @handshakeStepAdapterVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the adapter version'**
+  String get handshakeStepAdapterVersion;
+
+  /// ATAT1. The app sends AT1 rather than the more aggressive AT2, which shortens the window an ECU has to answer; see docs/protocol-deviations.zh-TW.md.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable adaptive timing, the setting the datasheet recommends'**
+  String get handshakeStepAdaptiveTiming;
+
+  /// No description provided for @handshakeStepBatteryVoltage.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the battery voltage'**
+  String get handshakeStepBatteryVoltage;
+
+  /// No description provided for @handshakeStepDeviceIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the device identifier string'**
+  String get handshakeStepDeviceIdentity;
+
+  /// ATE0. An echoed command is valid hex that prepends bytes to a reading, which is why this step is critical.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off command echo'**
+  String get handshakeStepEchoOff;
+
+  /// No description provided for @handshakeStepLinefeedsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off linefeeds'**
+  String get handshakeStepLinefeedsOff;
+
+  /// No description provided for @handshakeStepMemoryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off memory writes'**
+  String get handshakeStepMemoryOff;
+
+  /// Stands in when a failed step reported nothing at all about why. Not a claim that the vehicle lacks something — only that this step said nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'no response'**
+  String get handshakeStepNoReason;
+
+  /// ATSP0. Nothing downstream works without a protocol, which is why this step is critical.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect the bus protocol automatically'**
+  String get handshakeStepProtocolAuto;
+
+  /// No description provided for @handshakeStepProtocolDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the protocol description'**
+  String get handshakeStepProtocolDescription;
+
+  /// No description provided for @handshakeStepProtocolNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the protocol number'**
+  String get handshakeStepProtocolNumber;
+
+  /// No description provided for @handshakeStepReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Software-reset the adapter'**
+  String get handshakeStepReset;
+
+  /// ATST66. The figure is what the command means (0x66 timer units of 4 ms), not a constant the code enforces elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the response timeout to about 408 ms'**
+  String get handshakeStepResponseTimeout;
+
+  /// No description provided for @handshakeStepSpacesOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off spaces, cutting a third of the traffic'**
+  String get handshakeStepSpacesOff;
+
+  /// 0100. The only step that proves a VEHICLE is there: every AT command answers with the ignition off and this one does not. Both halves of the sentence are load-bearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask which PIDs the ECU supports, proving a vehicle answered'**
+  String get handshakeStepSupportProbe;
 
   /// No description provided for @languageSaveFailed.
   ///

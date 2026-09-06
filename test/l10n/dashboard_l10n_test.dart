@@ -68,13 +68,7 @@ final _cjk = chinese;
 /// Each entry names where it lives, so the list shrinks as those groups land
 /// rather than quietly outliving them.
 const _foreignChinese = <String, String>{
-  '示範': 'lib/diagnostics/availability.dart DatumOrigin.demo',
-  '估算': 'lib/diagnostics/availability.dart badgeLabels',
-  '未驗證': 'lib/diagnostics/availability.dart badgeLabels',
-  '部分': 'lib/diagnostics/availability.dart',
-  '剛更新': 'lib/diagnostics/availability.dart freshnessLabel',
   '推算值': 'lib/diagnostics/availability.dart',
-  'VIN 未讀到': 'lib/diagnostics/availability.dart genericObdSession',
   'MAF 感測器': 'lib/obd/physics/physics_engine.dart AirflowSource.label',
   'Speed-Density 推算': 'lib/obd/physics/physics_engine.dart',
   '化學計量比推算': 'lib/obd/physics/physics_engine.dart FuelSource.label',

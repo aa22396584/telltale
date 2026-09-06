@@ -27,7 +27,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:torque_obd/core/theme/app_theme.dart';
-import 'package:torque_obd/diagnostics/availability.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
@@ -79,19 +78,6 @@ Set<String> _notOwnedByThisWave() => {
   for (final source in TelemetrySource.values) telemetrySourceLabel(source),
   for (final access in TelemetryHistoryAccess.values)
     ?access.message(lookupAppLocalizations(englishLocale)),
-  // `DatumStatus.badgeText` is built in lib/diagnostics/availability.dart.
-  // Enumerated rather than transcribed, for the same self-healing reason.
-  for (final origin in DatumOrigin.values)
-    for (final evidence in EvidenceKind.values)
-      for (final quality in DatumQuality.values)
-        ...DatumStatus(
-          availability: FeatureAvailability.usable,
-          origin: origin,
-          evidence: evidence,
-          compatibility: Compatibility.unknown,
-          quality: quality,
-          operationRisk: OperationRisk.display,
-        ).badgeLabels,
 };
 
 List<String> _renderedStrings(WidgetTester tester) {

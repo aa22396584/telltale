@@ -1,11 +1,42 @@
 {
   "@@locale": "en",
+  "adapterErrorActivityAlert": "Bus activity alert.",
+  "adapterErrorBufferFull": "The adapter's buffer overflowed.",
+  "adapterErrorBus": "Bus error; the wiring may be the cause.",
+  "adapterErrorBusBusy": "The bus is busy.",
+  "adapterErrorBusInit": "Bus initialisation failed.",
+  "adapterErrorCan": "CAN bus error.",
+  "@adapterErrorCan": {
+    "description": "The adapter answered CAN ERROR. The literal stays untranslated wherever the reply itself is quoted; this is the sentence written for a driver."
+  },
+  "adapterErrorData": "The data that arrived is not correct.",
+  "adapterErrorFeedback": "Signal feedback error.",
+  "adapterErrorInternal": "Adapter internal error.",
+  "adapterErrorLowPowerAlert": "The adapter is about to enter low-power mode.",
+  "adapterErrorLowVoltageReset": "Low voltage reset the adapter.",
+  "adapterErrorNoData": "No reply arrived — it may be temporary silence, or the vehicle may not support this.",
+  "@adapterErrorNoData": {
+    "description": "Elm327ErrorCode.noData. Deliberately NOT 'the vehicle does not support this': NO DATA is the adapter reporting that nothing arrived before its own timeout, and a busy ECU, a receive filter or one aggressive timing window produces it exactly as an absent sensor does. Both possibilities must survive translation."
+  },
+  "adapterErrorStopped": "The transfer was interrupted.",
+  "adapterErrorUnableToConnect": "Cannot reach the ECU. Check that the ignition is on.",
+  "@adapterErrorUnableToConnect": {
+    "description": "Elm327ErrorCode.unableToConnect. The remedy is half the message: most OBD sockets are unpowered until the ignition is on."
+  },
+  "adapterErrorUnknownCommand": "The adapter does not support this command.",
+  "@adapterErrorUnknownCommand": {
+    "description": "Elm327ErrorCode.unknownCommand. A statement about the ADAPTER, never about the vehicle."
+  },
   "appTagline": "Live vehicle telemetry",
   "appTitle": "Telltale",
   "@appTitle": {
     "description": "App name shown in window titles and the connect header."
   },
   "appearanceSectionTitle": "Appearance",
+  "connectActivityAbortingPreviousConnection": "Stopping the previous connection, one moment…",
+  "@connectActivityAbortingPreviousConnection": {
+    "description": "ObdConnectionActivity.abortingPreviousConnection. Says the tap registered and what is being waited for; the wizard showed nothing at all here before."
+  },
   "connectAnswerBleWithClassic": "Choose Bluetooth LE. It does not need pairing first — scan for it inside the app. Even if it appears in the system Bluetooth pairing list, do not pair it; that route does not work. If the scan finds nothing, the 4.0 on the box was only the chip spec — use Bluetooth Classic instead.",
   "@connectAnswerBleWithClassic": {
     "description": "Routing answer for BLE where this host also has Classic. Both halves are load-bearing: do not pair it, and what to do when a box marked 4.0 was only the chip spec."
@@ -77,6 +108,47 @@
     "description": "Past tense, so a panel full of green rows cannot be read as the current connection."
   },
   "connectHeadline": "Choose a connection",
+  "connectIssueAdapterAcceptedThenSilent": "The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.",
+  "@connectIssueAdapterAcceptedThenSilent": {
+    "description": "ObdConnectionIssue.adapterAcceptedThenSilent. Both causes are load-bearing: an unpowered socket and a second app holding the adapter look identical from here, and naming only one sends half the readers looking in the wrong place."
+  },
+  "connectIssueAdapterSilentOnReset": "The adapter did not answer the reset command ({command}). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.",
+  "@connectIssueAdapterSilentOnReset": {
+    "description": "ObdConnectionIssue.adapterSilentOnReset. Failing on the very first command is a different diagnosis from failing later, and the command is named rather than described. {command} is an AT command and is never translated.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "connectIssueAdapterStoppedResponding": "The adapter stopped responding and the connection has been dropped.",
+  "@connectIssueAdapterStoppedResponding": {
+    "description": "ObdConnectionIssue.adapterStoppedResponding. States what already happened, not a warning about what might."
+  },
+  "connectIssueConnectionSetupFailed": "The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.",
+  "@connectIssueConnectionSetupFailed": {
+    "description": "ObdConnectionIssue.connectionSetupFailed. The raw exception text is deliberately not shown here; it is written to the transcript, which is where somebody can act on it."
+  },
+  "connectIssueHandshakeIncomplete": "Initialisation did not pass. The adapter may not be compatible.",
+  "@connectIssueHandshakeIncomplete": {
+    "description": "ObdConnectionIssue.handshakeIncomplete. No step reported a failure, so this is the least specific thing that is still true. It must stay a possibility, never a verdict on the adapter."
+  },
+  "connectIssueHandshakeStepFailed": "Initialisation failed at {command} ({reason}). Check that the adapter is seated properly and the vehicle's ignition is on.",
+  "@connectIssueHandshakeStepFailed": {
+    "description": "ObdConnectionIssue.handshakeStepFailed. Which command died is the whole value of this message: it separates 'this is not an ELM327' from 'the adapter is fine but the ignition is off'. {command} is an AT command or a mode/PID and is never translated; {reason} is the step's own outcome.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "connectIssuePreviousConnectionStillAborting": "The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.",
+  "@connectIssuePreviousConnectionStillAborting": {
+    "description": "ObdConnectionIssue.previousConnectionStillAborting. A refusal that says what happened and what to do about it; a silent false here was the defect this replaced."
+  },
   "connectLastAdapterConnect": "Connect now",
   "connectLastAdapterForget": "Forget",
   "connectLastAdapterTitle": "Last adapter used",
@@ -192,6 +264,146 @@
   "dashboardVinRead": "VIN read",
   "dashboardWorkspaceGauges": "Gauges",
   "dashboardWorkspaceTrends": "Trends",
+  "datumBadgeCommunityDecode": "Community decode",
+  "@datumBadgeCommunityDecode": {
+    "description": "EvidenceKind.community. A claim about the SOURCE of the decode, never about this car; it is always shown together with datumBadgeUnverifiedOnThisVehicle."
+  },
+  "datumBadgeDemo": "Simulated",
+  "@datumBadgeDemo": {
+    "description": "DatumOrigin.demo. The number came from Telltale's own simulator, not from a vehicle. This has to be unmistakable: a simulated reading that passes for a live one is the worst thing this app can do."
+  },
+  "datumBadgeEstimated": "Estimated",
+  "@datumBadgeEstimated": {
+    "description": "DatumOrigin.calculated. Computed from a vehicle profile, never read off the bus. Estimated is not measured, and the two must stay two different words."
+  },
+  "datumBadgeExperimental": "Experimental",
+  "@datumBadgeExperimental": {
+    "description": "EvidenceKind.experimental. Always shown with datumBadgeUnverifiedOnThisVehicle."
+  },
+  "datumBadgeFieldVerified": "Field-verified",
+  "@datumBadgeFieldVerified": {
+    "description": "EvidenceKind.fieldVerified. Verified on a real vehicle, which is why the English says field rather than just verified — a catalog entry passing validation is not this."
+  },
+  "datumBadgeInvalid": "Invalid",
+  "@datumBadgeInvalid": {
+    "description": "DatumQuality.invalid. The datum failed a structural check and may not be read as a value at all. Distinct from datumBadgeUnverified, which says nothing about the value."
+  },
+  "datumBadgeJustUpdated": "Just updated",
+  "@datumBadgeJustUpdated": {
+    "description": "The value arrived on the most recent poll. The opposite pole of datumBadgeStale; never render either as the other."
+  },
+  "datumBadgeOutOfReferenceRange": "Out of range",
+  "@datumBadgeOutOfReferenceRange": {
+    "description": "DatumQuality.outOfReferenceRange. A check was run against the definition's own minimum and maximum and the value fell outside it. Not merely 'unusual' — a check failed, and the reading is kept rather than hidden."
+  },
+  "datumBadgePartial": "Partial",
+  "@datumBadgePartial": {
+    "description": "DatumQuality.partial. Something was not read. Partial is not all clear and must never read as a completed or fault-free result."
+  },
+  "datumBadgeStale": "Stale",
+  "@datumBadgeStale": {
+    "description": "DatumQuality.stale. The reading stopped updating. Stale is not live; a reading that stopped updating must never render as a current one."
+  },
+  "datumBadgeTentativeDecode": "Tentative decode",
+  "@datumBadgeTentativeDecode": {
+    "description": "DatumQuality.tentativeDecode. The bytes were decoded with a formula that is not confirmed for this vehicle."
+  },
+  "datumBadgeUnverified": "Unverified",
+  "@datumBadgeUnverified": {
+    "description": "EvidenceKind.notTested and EvidenceKind.unknown. Nobody has checked this against a real vehicle. Unverified is not invalid and it is not verified; it is a statement about evidence, not about the number."
+  },
+  "datumBadgeUnverifiedOnThisVehicle": "Unverified on this vehicle",
+  "@datumBadgeUnverifiedOnThisVehicle": {
+    "description": "The second half of the community and experimental pairs. The source may be corroborated elsewhere; nobody has driven it on THIS car. Never shorten to 'unverified' — the scope is the whole point."
+  },
+  "datumBadgeUserSupplied": "User-supplied",
+  "@datumBadgeUserSupplied": {
+    "description": "DatumOrigin.userEntered and EvidenceKind.userSupplied. The definition came from the person holding the phone, so the app makes no claim about it."
+  },
+  "datumGapModelYearUnknown": "Model year unknown",
+  "@datumGapModelYearUnknown": {
+    "description": "DatumGap.modelYearUnknown. One of the optional identification gaps listed on the dashboard session chip. None of them blocks generic OBD."
+  },
+  "datumGapNoCatalogMatch": "No catalog match",
+  "@datumGapNoCatalogMatch": {
+    "description": "DatumGap.noCatalogMatch. The catalog holds no entry for this vehicle. Not a fault, and not a reason to stop reading generic OBD."
+  },
+  "datumGapVinNotRead": "VIN not read",
+  "@datumGapVinNotRead": {
+    "description": "DatumGap.vinNotRead. A read outcome, never a claim that the vehicle has no VIN. VIN is on docs/i18n/do-not-translate.md."
+  },
+  "datumNextStepEstimateOnly": "This affects only the estimate; the other readings still apply.",
+  "@datumNextStepEstimateOnly": {
+    "description": "DatumNextStep.estimateOnlyOtherReadingsUnaffected. Scopes a failed estimate so nobody reads it as the session going wrong."
+  },
+  "datumNextStepGenericObd": "You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.",
+  "@datumNextStepGenericObd": {
+    "description": "DatumNextStep.genericObdContinues. Missing identification never blocks generic OBD, and this sentence is what says so."
+  },
+  "datumNextStepOtherReadings": "The failure affects only this item; the other readings still apply.",
+  "@datumNextStepOtherReadings": {
+    "description": "DatumNextStep.otherReadingsUnaffected. One PID failing is not the session failing."
+  },
+  "datumNextStepRawOnly": "The raw reply and the error can be inspected; neither may be read as a normal value.",
+  "@datumNextStepRawOnly": {
+    "description": "DatumNextStep.rawOnlyNeverANumber. The raw bytes stay available for diagnosis, and the sentence exists to stop somebody reading them as a measurement."
+  },
+  "datumReasonAssumptionsUnconfirmed": "The assumptions are unconfirmed; an estimate is still shown.",
+  "@datumReasonAssumptionsUnconfirmed": {
+    "description": "DatumReason.assumptionsUnconfirmed. docs/i18n/hedge-register.md entry 18: both halves are required. 'Unconfirmed' alone reads as an error and 'an estimate is shown' alone reads as a validated number."
+  },
+  "datumReasonBusError": "Bus error.",
+  "@datumReasonBusError": {
+    "description": "PidFault.busError. A fault on the link, not a statement about the vehicle's capabilities."
+  },
+  "datumReasonFormulaError": "Formula error.",
+  "@datumReasonFormulaError": {
+    "description": "PidFault.formulaError. The definition's own equation failed, so the fault is in the app or the imported PID, not in the car."
+  },
+  "datumReasonFuelEstimateMissingInputs": "The fuel-use estimate is missing a required input.",
+  "@datumReasonFuelEstimateMissingInputs": {
+    "description": "DatumReason.fuelEstimateMissingInputs. Says the estimate could not be made, never that the vehicle uses no fuel."
+  },
+  "datumReasonHeaderNotOnThisBus": "The header does not match the bus this vehicle uses.",
+  "@datumReasonHeaderNotOnThisBus": {
+    "description": "PidFault.headerNotOnThisBus. A statement about the PID DEFINITION, deliberately kept apart from datumReasonPidUnsupported, which is a statement about the car. Merging them sends somebody looking at their vehicle for a problem that is in a field they can edit."
+  },
+  "datumReasonHorsepowerEstimateMissingInputs": "The horsepower estimate is missing a required input.",
+  "@datumReasonHorsepowerEstimateMissingInputs": {
+    "description": "DatumReason.horsepowerEstimateMissingInputs. Says the estimate could not be made, never that the engine produced no power."
+  },
+  "datumReasonMalformedPacket": "Malformed packet; only the raw reply can be inspected.",
+  "@datumReasonMalformedPacket": {
+    "description": "The response did not parse. Nothing here may be shown as a number."
+  },
+  "datumReasonNoAnswer": "No response; try again shortly.",
+  "@datumReasonNoAnswer": {
+    "description": "PidFault.noAnswer. Temporary silence, and docs/i18n/hedge-register.md entry 16 requires it stay distinguishable from datumReasonPidUnsupported: silence is not a controller saying it lacks a PID."
+  },
+  "datumReasonNoReadingYet": "No reading yet.",
+  "@datumReasonNoReadingYet": {
+    "description": "docs/i18n/hedge-register.md entry 25. Explicitly not zero and not unsupported — the app's baseline refusal to print a number it does not have."
+  },
+  "datumReasonNonFiniteValue": "Not a finite number.",
+  "@datumReasonNonFiniteValue": {
+    "description": "The formula produced NaN or an infinity, so there is no value to show."
+  },
+  "datumReasonOutOfReferenceRangeKept": "Outside the usual reference range; kept as it was read.",
+  "@datumReasonOutOfReferenceRangeKept": {
+    "description": "DatumQuality.outOfReferenceRange. Both halves matter: a check failed, AND the reading was not silently discarded or clamped."
+  },
+  "datumReasonPidUnsupported": "This vehicle does not support this PID.",
+  "@datumReasonPidUnsupported": {
+    "description": "PidFault.unsupported, the only state that justifies an assertion about the CAR. docs/i18n/hedge-register.md entry 16: it must stay distinguishable from datumReasonNoAnswer, which is temporary."
+  },
+  "datumReasonUnsafeService": "This service is not a read-only query.",
+  "@datumReasonUnsafeService": {
+    "description": "PidFault.refusedUnsafeService as a reason on a datum."
+  },
+  "datumReasonUnsafeServiceStopped": "This service is not a read-only query, so it was not sent.",
+  "@datumReasonUnsafeServiceStopped": {
+    "description": "The same fact plus the action taken. The app refused to transmit; nothing was written to the vehicle."
+  },
   "datumStatusAssumptions": "Assumptions",
   "datumStatusClose": "Close",
   "datumStatusFollowsData": "Status follows the data",
@@ -603,6 +815,71 @@
   "gaugeUnsupportedByVehicle": "Not supported by this vehicle",
   "@gaugeUnsupportedByVehicle": {
     "description": "PidFault.unsupported only: the controller answered, and the answer said unsupported. Never use it for silence - that is telemetryStatusNoAnswer. It names the vehicle on purpose: the app's own refusal to transmit reads completely differently (telemetryStatusUnsafeServiceRefusal), and this tile must not be read as Telltale declining. It shares a square tile about 122dp wide with the availability badge, so anything longer needs re-measuring against test/l10n/dashboard_l10n_test.dart."
+  },
+  "handshakeNoteAborted": "Stopped after an earlier step failed.",
+  "@handshakeNoteAborted": {
+    "description": "InitNote.aborted. The remaining steps were not attempted, which is not the same as their having failed."
+  },
+  "handshakeNoteEcuRefusedSupportQuery": "The ECU refused the support query (negative response).",
+  "@handshakeNoteEcuRefusedSupportQuery": {
+    "description": "InitNote.ecuRefusedSupportQuery. A refusal is an answer: something is on the bus. Distinct from handshakeNoteEcuSilent."
+  },
+  "handshakeNoteEcuSilent": "The ECU did not answer.",
+  "@handshakeNoteEcuSilent": {
+    "description": "InitNote.ecuSilent. 0100 is the only step that proves a vehicle is on the bus; every AT command answers happily with the ignition off."
+  },
+  "handshakeNoteNotAcknowledged": "The adapter did not acknowledge this command.",
+  "@handshakeNoteNotAcknowledged": {
+    "description": "InitNote.notAcknowledged. The reply printed no error but never said OK either, and 'printed no error' is a much weaker claim than 'answered correctly'."
+  },
+  "handshakeNoteNotModeOnePositiveReply": "The reply is not a Mode 01 positive response.",
+  "@handshakeNoteNotModeOnePositiveReply": {
+    "description": "InitNote.notModeOnePositiveReply. Mode 01 is on docs/i18n/do-not-translate.md."
+  },
+  "handshakeNotePidEchoMismatch": "The reply echoes a different PID from the one that was asked for.",
+  "@handshakeNotePidEchoMismatch": {
+    "description": "InitNote.pidEchoMismatch. Accepting it would build the supported-PID set out of bytes that answer a different question."
+  },
+  "handshakeNoteSupportMaskTooShort": "The support reply is too short; 41 00 and four more bytes are required.",
+  "@handshakeNoteSupportMaskTooShort": {
+    "description": "InitNote.supportMaskTooShort. The hex bytes are wire values and are never translated."
+  },
+  "handshakeNoteTimedOut": "Timed out.",
+  "@handshakeNoteTimedOut": {
+    "description": "InitNote.timedOut. Silence within the window, not a refusal and not a capability claim."
+  },
+  "handshakeStepAdapterVersion": "Read the adapter version",
+  "handshakeStepAdaptiveTiming": "Enable adaptive timing, the setting the datasheet recommends",
+  "@handshakeStepAdaptiveTiming": {
+    "description": "ATAT1. The app sends AT1 rather than the more aggressive AT2, which shortens the window an ECU has to answer; see docs/protocol-deviations.zh-TW.md."
+  },
+  "handshakeStepBatteryVoltage": "Read the battery voltage",
+  "handshakeStepDeviceIdentity": "Read the device identifier string",
+  "handshakeStepEchoOff": "Turn off command echo",
+  "@handshakeStepEchoOff": {
+    "description": "ATE0. An echoed command is valid hex that prepends bytes to a reading, which is why this step is critical."
+  },
+  "handshakeStepLinefeedsOff": "Turn off linefeeds",
+  "handshakeStepMemoryOff": "Turn off memory writes",
+  "handshakeStepNoReason": "no response",
+  "@handshakeStepNoReason": {
+    "description": "Stands in when a failed step reported nothing at all about why. Not a claim that the vehicle lacks something — only that this step said nothing."
+  },
+  "handshakeStepProtocolAuto": "Detect the bus protocol automatically",
+  "@handshakeStepProtocolAuto": {
+    "description": "ATSP0. Nothing downstream works without a protocol, which is why this step is critical."
+  },
+  "handshakeStepProtocolDescription": "Read the protocol description",
+  "handshakeStepProtocolNumber": "Read the protocol number",
+  "handshakeStepReset": "Software-reset the adapter",
+  "handshakeStepResponseTimeout": "Set the response timeout to about 408 ms",
+  "@handshakeStepResponseTimeout": {
+    "description": "ATST66. The figure is what the command means (0x66 timer units of 4 ms), not a constant the code enforces elsewhere."
+  },
+  "handshakeStepSpacesOff": "Turn off spaces, cutting a third of the traffic",
+  "handshakeStepSupportProbe": "Ask which PIDs the ECU supports, proving a vehicle answered",
+  "@handshakeStepSupportProbe": {
+    "description": "0100. The only step that proves a VEHICLE is there: every AT command answers with the ignition off and this one does not. Both halves of the sentence are load-bearing."
   },
   "languageSaveFailed": "Could not save the language. Try again.",
   "languageSectionTitle": "Language / 語言",

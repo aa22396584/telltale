@@ -354,11 +354,10 @@ void main() {
   });
 
   group('per-value status details', () {
-    // Everything except the four strings this file owns is passed through from
-    // `diagnostics/availability.dart`, which is another group's file and still
-    // Chinese. The test injects ASCII for the caller-supplied fields and
-    // excludes `badgeText` by name, so a failure here means the dialog's own
-    // chrome is untranslated rather than someone else's data.
+    // The caller-supplied prose is injected as ASCII, so anything Chinese the
+    // dialog renders is its own. `badgeText` no longer needs excluding: the
+    // badge words moved into the ARBs with the rest of the data-status
+    // vocabulary, so the dialog is now checked whole.
     const status = DatumStatus(
       availability: FeatureAvailability.usable,
       origin: DatumOrigin.ecuReported,
@@ -369,7 +368,7 @@ void main() {
       reason: 'ASCII reason',
       formula: '(A*256+B)/4',
       assumptions: 'ASCII assumption',
-      nextStep: 'ASCII next step',
+      nextStep: DatumNextStep.otherReadingsUnaffected,
     );
 
     testWidgets('the English dialog chrome carries no Chinese', (tester) async {
@@ -393,10 +392,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      final rendered = _renderedText(
-        tester,
-        find.byType(AlertDialog),
-      ).where((s) => s != status.badgeText).toList();
+      final rendered = _renderedText(tester, find.byType(AlertDialog));
       expect(rendered, isNotEmpty);
       _expectNoChinese(rendered, where: 'the datum status dialog');
     });

@@ -10,6 +10,55 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get adapterErrorActivityAlert => 'Bus activity alert.';
+
+  @override
+  String get adapterErrorBufferFull => 'The adapter\'s buffer overflowed.';
+
+  @override
+  String get adapterErrorBus => 'Bus error; the wiring may be the cause.';
+
+  @override
+  String get adapterErrorBusBusy => 'The bus is busy.';
+
+  @override
+  String get adapterErrorBusInit => 'Bus initialisation failed.';
+
+  @override
+  String get adapterErrorCan => 'CAN bus error.';
+
+  @override
+  String get adapterErrorData => 'The data that arrived is not correct.';
+
+  @override
+  String get adapterErrorFeedback => 'Signal feedback error.';
+
+  @override
+  String get adapterErrorInternal => 'Adapter internal error.';
+
+  @override
+  String get adapterErrorLowPowerAlert =>
+      'The adapter is about to enter low-power mode.';
+
+  @override
+  String get adapterErrorLowVoltageReset => 'Low voltage reset the adapter.';
+
+  @override
+  String get adapterErrorNoData =>
+      'No reply arrived — it may be temporary silence, or the vehicle may not support this.';
+
+  @override
+  String get adapterErrorStopped => 'The transfer was interrupted.';
+
+  @override
+  String get adapterErrorUnableToConnect =>
+      'Cannot reach the ECU. Check that the ignition is on.';
+
+  @override
+  String get adapterErrorUnknownCommand =>
+      'The adapter does not support this command.';
+
+  @override
   String get appTagline => 'Live vehicle telemetry';
 
   @override
@@ -17,6 +66,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceSectionTitle => 'Appearance';
+
+  @override
+  String get connectActivityAbortingPreviousConnection =>
+      'Stopping the previous connection, one moment…';
 
   @override
   String get connectAnswerBleWithClassic =>
@@ -143,6 +196,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectHeadline => 'Choose a connection';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      'The adapter accepted the connection but answered nothing in time. Usually it is not powered yet — most OBD sockets only supply power with the ignition on — or another app is already connected to it, in which case close that one and try again.';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return 'The adapter did not answer the reset command ($command). This device may not be an ELM327 adapter, or the connection may have gone to the wrong device.';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding =>
+      'The adapter stopped responding and the connection has been dropped.';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      'The connection failed while it was being established. Check that the adapter has power and is nearby, then try again. The full error is kept in the log below.';
+
+  @override
+  String get connectIssueHandshakeIncomplete =>
+      'Initialisation did not pass. The adapter may not be compatible.';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return 'Initialisation failed at $command ($reason). Check that the adapter is seated properly and the vehicle\'s ignition is on.';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      'The previous connection is still being stopped and the adapter has not been released yet. Wait a few seconds and try again.';
 
   @override
   String get connectLastAdapterConnect => 'Connect now';
@@ -293,6 +376,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardWorkspaceTrends => 'Trends';
+
+  @override
+  String get datumBadgeCommunityDecode => 'Community decode';
+
+  @override
+  String get datumBadgeDemo => 'Simulated';
+
+  @override
+  String get datumBadgeEstimated => 'Estimated';
+
+  @override
+  String get datumBadgeExperimental => 'Experimental';
+
+  @override
+  String get datumBadgeFieldVerified => 'Field-verified';
+
+  @override
+  String get datumBadgeInvalid => 'Invalid';
+
+  @override
+  String get datumBadgeJustUpdated => 'Just updated';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => 'Out of range';
+
+  @override
+  String get datumBadgePartial => 'Partial';
+
+  @override
+  String get datumBadgeStale => 'Stale';
+
+  @override
+  String get datumBadgeTentativeDecode => 'Tentative decode';
+
+  @override
+  String get datumBadgeUnverified => 'Unverified';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => 'Unverified on this vehicle';
+
+  @override
+  String get datumBadgeUserSupplied => 'User-supplied';
+
+  @override
+  String get datumGapModelYearUnknown => 'Model year unknown';
+
+  @override
+  String get datumGapNoCatalogMatch => 'No catalog match';
+
+  @override
+  String get datumGapVinNotRead => 'VIN not read';
+
+  @override
+  String get datumNextStepEstimateOnly =>
+      'This affects only the estimate; the other readings still apply.';
+
+  @override
+  String get datumNextStepGenericObd =>
+      'You can carry on with generic OBD, or choose the vehicle by hand and fill in the parameters.';
+
+  @override
+  String get datumNextStepOtherReadings =>
+      'The failure affects only this item; the other readings still apply.';
+
+  @override
+  String get datumNextStepRawOnly =>
+      'The raw reply and the error can be inspected; neither may be read as a normal value.';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed =>
+      'The assumptions are unconfirmed; an estimate is still shown.';
+
+  @override
+  String get datumReasonBusError => 'Bus error.';
+
+  @override
+  String get datumReasonFormulaError => 'Formula error.';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs =>
+      'The fuel-use estimate is missing a required input.';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus =>
+      'The header does not match the bus this vehicle uses.';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs =>
+      'The horsepower estimate is missing a required input.';
+
+  @override
+  String get datumReasonMalformedPacket =>
+      'Malformed packet; only the raw reply can be inspected.';
+
+  @override
+  String get datumReasonNoAnswer => 'No response; try again shortly.';
+
+  @override
+  String get datumReasonNoReadingYet => 'No reading yet.';
+
+  @override
+  String get datumReasonNonFiniteValue => 'Not a finite number.';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept =>
+      'Outside the usual reference range; kept as it was read.';
+
+  @override
+  String get datumReasonPidUnsupported =>
+      'This vehicle does not support this PID.';
+
+  @override
+  String get datumReasonUnsafeService =>
+      'This service is not a read-only query.';
+
+  @override
+  String get datumReasonUnsafeServiceStopped =>
+      'This service is not a read-only query, so it was not sent.';
 
   @override
   String get datumStatusAssumptions => 'Assumptions';
@@ -722,6 +923,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gaugeUnsupportedByVehicle => 'Not supported by this vehicle';
+
+  @override
+  String get handshakeNoteAborted => 'Stopped after an earlier step failed.';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'The ECU refused the support query (negative response).';
+
+  @override
+  String get handshakeNoteEcuSilent => 'The ECU did not answer.';
+
+  @override
+  String get handshakeNoteNotAcknowledged =>
+      'The adapter did not acknowledge this command.';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply =>
+      'The reply is not a Mode 01 positive response.';
+
+  @override
+  String get handshakeNotePidEchoMismatch =>
+      'The reply echoes a different PID from the one that was asked for.';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort =>
+      'The support reply is too short; 41 00 and four more bytes are required.';
+
+  @override
+  String get handshakeNoteTimedOut => 'Timed out.';
+
+  @override
+  String get handshakeStepAdapterVersion => 'Read the adapter version';
+
+  @override
+  String get handshakeStepAdaptiveTiming =>
+      'Enable adaptive timing, the setting the datasheet recommends';
+
+  @override
+  String get handshakeStepBatteryVoltage => 'Read the battery voltage';
+
+  @override
+  String get handshakeStepDeviceIdentity => 'Read the device identifier string';
+
+  @override
+  String get handshakeStepEchoOff => 'Turn off command echo';
+
+  @override
+  String get handshakeStepLinefeedsOff => 'Turn off linefeeds';
+
+  @override
+  String get handshakeStepMemoryOff => 'Turn off memory writes';
+
+  @override
+  String get handshakeStepNoReason => 'no response';
+
+  @override
+  String get handshakeStepProtocolAuto =>
+      'Detect the bus protocol automatically';
+
+  @override
+  String get handshakeStepProtocolDescription =>
+      'Read the protocol description';
+
+  @override
+  String get handshakeStepProtocolNumber => 'Read the protocol number';
+
+  @override
+  String get handshakeStepReset => 'Software-reset the adapter';
+
+  @override
+  String get handshakeStepResponseTimeout =>
+      'Set the response timeout to about 408 ms';
+
+  @override
+  String get handshakeStepSpacesOff =>
+      'Turn off spaces, cutting a third of the traffic';
+
+  @override
+  String get handshakeStepSupportProbe =>
+      'Ask which PIDs the ECU supports, proving a vehicle answered';
 
   @override
   String get languageSaveFailed => 'Could not save the language. Try again.';

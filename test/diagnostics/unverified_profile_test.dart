@@ -78,6 +78,6 @@ void main() {
       ),
     );
     expect(status.evidence, EvidenceKind.userSupplied);
-    expect(status.badgeText, contains('使用者提供'));
+    expect(status.badges, contains(DatumBadge.userSupplied));
   });
 }

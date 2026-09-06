@@ -66,6 +66,40 @@ enum FieldEventMarker {
   final String label;
 }
 
+/// Why a connection attempt ended, as an identifier the screen can translate.
+///
+/// [ObdConnectionState.error] keeps its sentence: `_failAttempt` writes it into
+/// the attempt transcript, and a record whose language follows a phone setting
+/// is one nobody can compare with anybody else's. This says the same thing
+/// without the words.
+///
+/// Nothing here covers a [TransportException]: those sentences are authored by
+/// the four transports and are still passed through as text.
+enum ObdConnectionIssue {
+  /// No step reported a failure, so there is nothing more specific to say.
+  handshakeIncomplete,
+
+  /// The very first command went unanswered. This is a different diagnosis
+  /// from a later step failing: it usually means the paired device is not an
+  /// ELM327 at all, rather than that the vehicle is asleep.
+  adapterSilentOnReset,
+
+  /// A named step failed. Which one it was is the whole value of the message.
+  handshakeStepFailed,
+
+  /// The link came up and then nothing answered — most often an adapter that
+  /// is not powered, because most OBD sockets are dead until the ignition is
+  /// on.
+  adapterAcceptedThenSilent,
+
+  connectionSetupFailed,
+  previousConnectionStillAborting,
+  adapterStoppedResponding,
+}
+
+/// What a busy connection is waiting for, as an identifier.
+enum ObdConnectionActivity { abortingPreviousConnection }
+
 enum FieldEventRecordResult { persisted, memoryOnly, unavailable }
 
 class ObdConnectionState {
@@ -89,6 +123,16 @@ class ObdConnectionState {
   final double? batteryVoltage;
   final String? error;
 
+  /// The same fact as [error], as an identifier. Null where the sentence came
+  /// from a transport rather than from this file.
+  final ObdConnectionIssue? issue;
+
+  /// The step [ObdConnectionIssue.handshakeStepFailed] is about.
+  final InitProgress? issueStep;
+
+  /// The same fact as [detail], as an identifier.
+  final ObdConnectionActivity? activity;
+
   /// Handshake steps observed so far, in order, for the wizard's live list.
   final List<InitProgress> initSteps;
 
@@ -100,6 +144,9 @@ class ObdConnectionState {
     this.detail = '',
     this.batteryVoltage,
     this.error,
+    this.issue,
+    this.issueStep,
+    this.activity,
     this.initSteps = const [],
   });
 
@@ -116,6 +163,9 @@ class ObdConnectionState {
     String? detail,
     double? batteryVoltage,
     String? error,
+    ObdConnectionIssue? issue,
+    InitProgress? issueStep,
+    ObdConnectionActivity? activity,
     bool clearError = false,
     List<InitProgress>? initSteps,
   }) {
@@ -127,6 +177,16 @@ class ObdConnectionState {
       detail: detail ?? this.detail,
       batteryVoltage: batteryVoltage ?? this.batteryVoltage,
       error: clearError ? null : (error ?? this.error),
+      // The identifier travels with the sentence, in both directions. Clearing
+      // one and keeping the other would leave the screen rendering the reason
+      // for a failure that is no longer being reported.
+      issue: clearError ? null : (issue ?? this.issue),
+      issueStep: clearError ? null : (issueStep ?? this.issueStep),
+      // Likewise for the busy line: a caller that sets `detail` and not
+      // `activity` is replacing the line, not annotating the old one. Without
+      // this, a Bluetooth Classic tier notice inherited "aborting the previous
+      // connection" and the screen kept saying it for the rest of the attempt.
+      activity: detail != null ? activity : (activity ?? this.activity),
       initSteps: initSteps ?? this.initSteps,
     );
   }
@@ -173,6 +233,12 @@ String describeConnectException(Object error) {
   return '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，'
       '然後再試一次。完整的錯誤留在下方的紀錄裡。';
 }
+
+/// The identifier for the sentence [describeConnectException] chose.
+ObdConnectionIssue connectExceptionIssue(Object error) =>
+    error is TimeoutException
+    ? ObdConnectionIssue.adapterAcceptedThenSilent
+    : ObdConnectionIssue.connectionSetupFailed;
 
 class ObdSession extends Notifier<ObdConnectionState> {
   Elm327Client? _client;
@@ -1058,6 +1124,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
         kind: kind,
         deviceName: transport.displayName,
         detail: '正在中止上一個連線，請稍候…',
+        activity: ObdConnectionActivity.abortingPreviousConnection,
       );
       // Reaches the transport. `_teardown` disposes the client, and
       // `Elm327Client.dispose()` disconnects its transport — which is where a
@@ -1118,6 +1185,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
         state = state.copyWith(
           phase: ConnectionPhase.failed,
           error: '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。',
+          issue: ObdConnectionIssue.previousConnectionStillAborting,
         );
         return false;
       }
@@ -1162,6 +1230,8 @@ class ObdSession extends Notifier<ObdConnectionState> {
     String why, {
     String prefix = '連線失敗',
     String? detail,
+    ObdConnectionIssue? issue,
+    InitProgress? issueStep,
   }) async {
     _completeEvidence(client, outcome: 'failed');
     // Before the teardown reads it. The sentence on screen is what the user
@@ -1174,7 +1244,12 @@ class ObdSession extends Notifier<ObdConnectionState> {
       await client.dispose();
       return false;
     }
-    state = state.copyWith(phase: ConnectionPhase.failed, error: why);
+    state = state.copyWith(
+      phase: ConnectionPhase.failed,
+      error: why,
+      issue: issue,
+      issueStep: issueStep,
+    );
     await _teardown();
     return false;
   }
@@ -1285,11 +1360,14 @@ class ObdSession extends Notifier<ObdConnectionState> {
         return false;
       }
       if (!ok) {
+        final failure = _describeHandshakeFailure(steps);
         return await _failAttempt(
           generation,
           client,
-          _describeHandshakeFailure(steps),
+          failure.message,
           prefix: '握手失敗',
+          issue: failure.issue,
+          issueStep: failure.step,
         );
       }
     } on TransportException catch (e) {
@@ -1302,6 +1380,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
         client,
         describeConnectException(e),
         detail: '$e',
+        issue: connectExceptionIssue(e),
       );
     }
 
@@ -1413,19 +1492,37 @@ class ObdSession extends Notifier<ObdConnectionState> {
   /// "Initialisation failed" tells nobody anything. Which command died, and
   /// whether it died on the very first one, separates "this is not an ELM327"
   /// from "the adapter is fine but the ignition is off".
-  static String _describeHandshakeFailure(List<InitProgress> steps) {
+  static ({String message, ObdConnectionIssue issue, InitProgress? step})
+  _describeHandshakeFailure(List<InitProgress> steps) {
     final failed = steps.where((s) => s.status == InitStatus.failed).toList();
     if (failed.isEmpty) {
-      return '初始化未通過，轉接器可能不相容。';
+      return (
+        message: '初始化未通過，轉接器可能不相容。',
+        issue: ObdConnectionIssue.handshakeIncomplete,
+        step: null,
+      );
     }
 
     final first = failed.first;
     if (first.index == 0) {
-      return '轉接器沒有回應重置指令（${first.step.command}）。'
-          '這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。';
+      return (
+        message:
+            '轉接器沒有回應重置指令（${first.step.command}）。'
+            '這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。',
+        issue: ObdConnectionIssue.adapterSilentOnReset,
+        step: first,
+      );
     }
-    return '初始化在 ${first.step.command} 失敗（${first.detail ?? '無回應'}）。'
-        '請確認轉接器已插好、車輛電門已開啟。';
+    // `first.detail` is never null for a classified failure — `InitProgress`
+    // derives it from the note or the adapter's error code — so 無回應 stands
+    // only for a step that failed with nothing to say about why.
+    return (
+      message:
+          '初始化在 ${first.step.command} 失敗（${first.detail ?? '無回應'}）。'
+          '請確認轉接器已插好、車輛電門已開啟。',
+      issue: ObdConnectionIssue.handshakeStepFailed,
+      step: first,
+    );
   }
 
   /// Reports the link lost — unless the session it was about is already gone.
@@ -1458,6 +1555,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     state = state.copyWith(
       phase: ConnectionPhase.failed,
       error: '轉接器停止回應，連線已中斷。',
+      issue: ObdConnectionIssue.adapterStoppedResponding,
     );
     unawaited(_teardown());
   }

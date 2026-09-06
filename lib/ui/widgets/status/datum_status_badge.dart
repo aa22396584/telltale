@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../panel.dart';
+import 'datum_status_copy.dart';
 
 class DatumStatusBadge extends StatelessWidget {
   const DatumStatusBadge({required this.status, this.dense = true, super.key});
@@ -16,8 +17,8 @@ class DatumStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = status.badgeText;
-    if (text.isEmpty) return const SizedBox.shrink();
+    if (status.badges.isEmpty) return const SizedBox.shrink();
+    final text = datumBadgeText(AppLocalizations.of(context), status);
     final tone = switch (status.quality) {
       DatumQuality.invalid => StatusTone.bad,
       DatumQuality.outOfReferenceRange => StatusTone.warn,
@@ -58,13 +59,13 @@ Future<void> showDatumStatusDetails(
                 // "normal" — the datum has not been checked, it merely
                 // carries no badge.
                 Text(
-                  items[index].badgeText.isEmpty
+                  items[index].badges.isEmpty
                       ? l10n.datumStatusFollowsData
-                      : items[index].badgeText,
+                      : datumBadgeText(l10n, items[index]),
                 ),
-                if (items[index].reason != null) ...[
+                if (datumReasonText(l10n, items[index]) != null) ...[
                   const SizedBox(height: Spacing.sm),
-                  Text(items[index].reason!),
+                  Text(datumReasonText(l10n, items[index])!),
                 ],
                 if (items[index].formula != null) ...[
                   const SizedBox(height: Spacing.md),
@@ -84,7 +85,7 @@ Future<void> showDatumStatusDetails(
                 ],
                 if (items[index].nextStep != null) ...[
                   const SizedBox(height: Spacing.md),
-                  Text(items[index].nextStep!),
+                  Text(datumNextStepLabel(l10n, items[index].nextStep!)),
                 ],
               ],
             ],

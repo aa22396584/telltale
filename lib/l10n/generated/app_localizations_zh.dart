@@ -10,6 +10,51 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get adapterErrorActivityAlert => '匯流排活動警示';
+
+  @override
+  String get adapterErrorBufferFull => '轉接器緩衝區溢位';
+
+  @override
+  String get adapterErrorBus => '匯流排錯誤，可能是接線問題';
+
+  @override
+  String get adapterErrorBusBusy => '匯流排忙碌';
+
+  @override
+  String get adapterErrorBusInit => '匯流排初始化失敗';
+
+  @override
+  String get adapterErrorCan => 'CAN 匯流排錯誤';
+
+  @override
+  String get adapterErrorData => '收到的資料不正確';
+
+  @override
+  String get adapterErrorFeedback => '訊號回授錯誤';
+
+  @override
+  String get adapterErrorInternal => '轉接器內部錯誤';
+
+  @override
+  String get adapterErrorLowPowerAlert => '轉接器即將進入低功耗模式';
+
+  @override
+  String get adapterErrorLowVoltageReset => '電壓過低導致轉接器重置';
+
+  @override
+  String get adapterErrorNoData => '沒有收到回應（可能是暫時無回應，或車輛不支援）';
+
+  @override
+  String get adapterErrorStopped => '傳輸被中斷';
+
+  @override
+  String get adapterErrorUnableToConnect => '無法與 ECU 通訊，請確認電門已開啟';
+
+  @override
+  String get adapterErrorUnknownCommand => '轉接器不支援此指令';
+
+  @override
   String get appTagline => '車輛即時遙測';
 
   @override
@@ -17,6 +62,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceSectionTitle => '外觀';
+
+  @override
+  String get connectActivityAbortingPreviousConnection => '正在中止上一個連線，請稍候…';
 
   @override
   String get connectAnswerBleWithClassic =>
@@ -135,6 +183,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectHeadline => '選擇連線方式';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      '轉接器接受了連線，但在時限內沒有回應。通常是它還沒通電 —— 多數 OBD 插座要電門轉到 ON 才供電；也可能是它正被另一個 App 連著，先關掉那個再試。';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return '轉接器沒有回應重置指令（$command）。這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding => '轉接器停止回應，連線已中斷。';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，然後再試一次。完整的錯誤留在下方的紀錄裡。';
+
+  @override
+  String get connectIssueHandshakeIncomplete => '初始化未通過，轉接器可能不相容。';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return '初始化在 $command 失敗（$reason）。請確認轉接器已插好、車輛電門已開啟。';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。';
 
   @override
   String get connectLastAdapterConnect => '直接連線';
@@ -277,6 +353,111 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
+  String get datumBadgeCommunityDecode => '社群解碼';
+
+  @override
+  String get datumBadgeDemo => '示範';
+
+  @override
+  String get datumBadgeEstimated => '估算';
+
+  @override
+  String get datumBadgeExperimental => '實驗';
+
+  @override
+  String get datumBadgeFieldVerified => '已驗證';
+
+  @override
+  String get datumBadgeInvalid => '無效';
+
+  @override
+  String get datumBadgeJustUpdated => '剛更新';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => '異常';
+
+  @override
+  String get datumBadgePartial => '部分';
+
+  @override
+  String get datumBadgeStale => '過期';
+
+  @override
+  String get datumBadgeTentativeDecode => '暫定解碼';
+
+  @override
+  String get datumBadgeUnverified => '未驗證';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => '本車未驗證';
+
+  @override
+  String get datumBadgeUserSupplied => '使用者提供';
+
+  @override
+  String get datumGapModelYearUnknown => '年式未知';
+
+  @override
+  String get datumGapNoCatalogMatch => '型錄無匹配';
+
+  @override
+  String get datumGapVinNotRead => 'VIN 未讀到';
+
+  @override
+  String get datumNextStepEstimateOnly => '只影響此估算，其他讀值照用';
+
+  @override
+  String get datumNextStepGenericObd => '可繼續通用 OBD，或手動選車、補參數';
+
+  @override
+  String get datumNextStepOtherReadings => '失敗只影響此項，其他讀值照用';
+
+  @override
+  String get datumNextStepRawOnly => '可看 raw / error，不可當成正常數值';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed => '假設尚未確認，仍可估算';
+
+  @override
+  String get datumReasonBusError => '匯流排錯誤';
+
+  @override
+  String get datumReasonFormulaError => '公式錯誤';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs => '油耗缺少必要輸入';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus => '標頭不符本車匯流排';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs => '馬力缺少必要輸入';
+
+  @override
+  String get datumReasonMalformedPacket => '壞封包，只可查看原文';
+
+  @override
+  String get datumReasonNoAnswer => '無回應，稍後重試';
+
+  @override
+  String get datumReasonNoReadingYet => '尚無讀值';
+
+  @override
+  String get datumReasonNonFiniteValue => '非有限數值';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept => '超出一般參考範圍，已保留';
+
+  @override
+  String get datumReasonPidUnsupported => '此車輛不支援這個 PID';
+
+  @override
+  String get datumReasonUnsafeService => '此服務不是唯讀查詢';
+
+  @override
+  String get datumReasonUnsafeServiceStopped => '此服務不是唯讀查詢，已停止發送';
 
   @override
   String get datumStatusAssumptions => '假設';
@@ -641,6 +822,76 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get handshakeNoteAborted => '已中止';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'ECU 拒絕了支援度查詢（negative response）';
+
+  @override
+  String get handshakeNoteEcuSilent => 'ECU 沒有回應';
+
+  @override
+  String get handshakeNoteNotAcknowledged => '轉接器未確認此指令';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply => '回應不是 Mode 01 的正向回覆';
+
+  @override
+  String get handshakeNotePidEchoMismatch => '回應的 PID 與查詢不符';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）';
+
+  @override
+  String get handshakeNoteTimedOut => '逾時';
+
+  @override
+  String get handshakeStepAdapterVersion => '讀取轉接器版本';
+
+  @override
+  String get handshakeStepAdaptiveTiming => '啟用自適應計時（datasheet 建議值）';
+
+  @override
+  String get handshakeStepBatteryVoltage => '讀取電瓶電壓';
+
+  @override
+  String get handshakeStepDeviceIdentity => '讀取裝置識別字串';
+
+  @override
+  String get handshakeStepEchoOff => '關閉指令回音';
+
+  @override
+  String get handshakeStepLinefeedsOff => '關閉換行字元';
+
+  @override
+  String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepNoReason => '無回應';
+
+  @override
+  String get handshakeStepProtocolAuto => '自動偵測匯流排協定';
+
+  @override
+  String get handshakeStepProtocolDescription => '讀取協定描述';
+
+  @override
+  String get handshakeStepProtocolNumber => '讀取協定編號';
+
+  @override
+  String get handshakeStepReset => '軟體重置轉接器';
+
+  @override
+  String get handshakeStepResponseTimeout => '設定回應逾時 ~408ms';
+
+  @override
+  String get handshakeStepSpacesOff => '關閉空白字元，減少 33% 傳輸量';
+
+  @override
+  String get handshakeStepSupportProbe => '查詢 ECU 支援的 PID（確認車輛已回應）';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
@@ -2761,6 +3012,51 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   AppLocalizationsZhHant() : super('zh_Hant');
 
   @override
+  String get adapterErrorActivityAlert => '匯流排活動警示';
+
+  @override
+  String get adapterErrorBufferFull => '轉接器緩衝區溢位';
+
+  @override
+  String get adapterErrorBus => '匯流排錯誤，可能是接線問題';
+
+  @override
+  String get adapterErrorBusBusy => '匯流排忙碌';
+
+  @override
+  String get adapterErrorBusInit => '匯流排初始化失敗';
+
+  @override
+  String get adapterErrorCan => 'CAN 匯流排錯誤';
+
+  @override
+  String get adapterErrorData => '收到的資料不正確';
+
+  @override
+  String get adapterErrorFeedback => '訊號回授錯誤';
+
+  @override
+  String get adapterErrorInternal => '轉接器內部錯誤';
+
+  @override
+  String get adapterErrorLowPowerAlert => '轉接器即將進入低功耗模式';
+
+  @override
+  String get adapterErrorLowVoltageReset => '電壓過低導致轉接器重置';
+
+  @override
+  String get adapterErrorNoData => '沒有收到回應（可能是暫時無回應，或車輛不支援）';
+
+  @override
+  String get adapterErrorStopped => '傳輸被中斷';
+
+  @override
+  String get adapterErrorUnableToConnect => '無法與 ECU 通訊，請確認電門已開啟';
+
+  @override
+  String get adapterErrorUnknownCommand => '轉接器不支援此指令';
+
+  @override
   String get appTagline => '車輛即時遙測';
 
   @override
@@ -2768,6 +3064,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get appearanceSectionTitle => '外觀';
+
+  @override
+  String get connectActivityAbortingPreviousConnection => '正在中止上一個連線，請稍候…';
 
   @override
   String get connectAnswerBleWithClassic =>
@@ -2886,6 +3185,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectHeadline => '選擇連線方式';
+
+  @override
+  String get connectIssueAdapterAcceptedThenSilent =>
+      '轉接器接受了連線，但在時限內沒有回應。通常是它還沒通電 —— 多數 OBD 插座要電門轉到 ON 才供電；也可能是它正被另一個 App 連著，先關掉那個再試。';
+
+  @override
+  String connectIssueAdapterSilentOnReset(String command) {
+    return '轉接器沒有回應重置指令（$command）。這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。';
+  }
+
+  @override
+  String get connectIssueAdapterStoppedResponding => '轉接器停止回應，連線已中斷。';
+
+  @override
+  String get connectIssueConnectionSetupFailed =>
+      '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，然後再試一次。完整的錯誤留在下方的紀錄裡。';
+
+  @override
+  String get connectIssueHandshakeIncomplete => '初始化未通過，轉接器可能不相容。';
+
+  @override
+  String connectIssueHandshakeStepFailed(String command, String reason) {
+    return '初始化在 $command 失敗（$reason）。請確認轉接器已插好、車輛電門已開啟。';
+  }
+
+  @override
+  String get connectIssuePreviousConnectionStillAborting =>
+      '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。';
 
   @override
   String get connectLastAdapterConnect => '直接連線';
@@ -3028,6 +3355,111 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardWorkspaceTrends => '趨勢';
+
+  @override
+  String get datumBadgeCommunityDecode => '社群解碼';
+
+  @override
+  String get datumBadgeDemo => '示範';
+
+  @override
+  String get datumBadgeEstimated => '估算';
+
+  @override
+  String get datumBadgeExperimental => '實驗';
+
+  @override
+  String get datumBadgeFieldVerified => '已驗證';
+
+  @override
+  String get datumBadgeInvalid => '無效';
+
+  @override
+  String get datumBadgeJustUpdated => '剛更新';
+
+  @override
+  String get datumBadgeOutOfReferenceRange => '異常';
+
+  @override
+  String get datumBadgePartial => '部分';
+
+  @override
+  String get datumBadgeStale => '過期';
+
+  @override
+  String get datumBadgeTentativeDecode => '暫定解碼';
+
+  @override
+  String get datumBadgeUnverified => '未驗證';
+
+  @override
+  String get datumBadgeUnverifiedOnThisVehicle => '本車未驗證';
+
+  @override
+  String get datumBadgeUserSupplied => '使用者提供';
+
+  @override
+  String get datumGapModelYearUnknown => '年式未知';
+
+  @override
+  String get datumGapNoCatalogMatch => '型錄無匹配';
+
+  @override
+  String get datumGapVinNotRead => 'VIN 未讀到';
+
+  @override
+  String get datumNextStepEstimateOnly => '只影響此估算，其他讀值照用';
+
+  @override
+  String get datumNextStepGenericObd => '可繼續通用 OBD，或手動選車、補參數';
+
+  @override
+  String get datumNextStepOtherReadings => '失敗只影響此項，其他讀值照用';
+
+  @override
+  String get datumNextStepRawOnly => '可看 raw / error，不可當成正常數值';
+
+  @override
+  String get datumReasonAssumptionsUnconfirmed => '假設尚未確認，仍可估算';
+
+  @override
+  String get datumReasonBusError => '匯流排錯誤';
+
+  @override
+  String get datumReasonFormulaError => '公式錯誤';
+
+  @override
+  String get datumReasonFuelEstimateMissingInputs => '油耗缺少必要輸入';
+
+  @override
+  String get datumReasonHeaderNotOnThisBus => '標頭不符本車匯流排';
+
+  @override
+  String get datumReasonHorsepowerEstimateMissingInputs => '馬力缺少必要輸入';
+
+  @override
+  String get datumReasonMalformedPacket => '壞封包，只可查看原文';
+
+  @override
+  String get datumReasonNoAnswer => '無回應，稍後重試';
+
+  @override
+  String get datumReasonNoReadingYet => '尚無讀值';
+
+  @override
+  String get datumReasonNonFiniteValue => '非有限數值';
+
+  @override
+  String get datumReasonOutOfReferenceRangeKept => '超出一般參考範圍，已保留';
+
+  @override
+  String get datumReasonPidUnsupported => '此車輛不支援這個 PID';
+
+  @override
+  String get datumReasonUnsafeService => '此服務不是唯讀查詢';
+
+  @override
+  String get datumReasonUnsafeServiceStopped => '此服務不是唯讀查詢，已停止發送';
 
   @override
   String get datumStatusAssumptions => '假設';
@@ -3392,6 +3824,76 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get gaugeUnsupportedByVehicle => '此車輛不支援';
+
+  @override
+  String get handshakeNoteAborted => '已中止';
+
+  @override
+  String get handshakeNoteEcuRefusedSupportQuery =>
+      'ECU 拒絕了支援度查詢（negative response）';
+
+  @override
+  String get handshakeNoteEcuSilent => 'ECU 沒有回應';
+
+  @override
+  String get handshakeNoteNotAcknowledged => '轉接器未確認此指令';
+
+  @override
+  String get handshakeNoteNotModeOnePositiveReply => '回應不是 Mode 01 的正向回覆';
+
+  @override
+  String get handshakeNotePidEchoMismatch => '回應的 PID 與查詢不符';
+
+  @override
+  String get handshakeNoteSupportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）';
+
+  @override
+  String get handshakeNoteTimedOut => '逾時';
+
+  @override
+  String get handshakeStepAdapterVersion => '讀取轉接器版本';
+
+  @override
+  String get handshakeStepAdaptiveTiming => '啟用自適應計時（datasheet 建議值）';
+
+  @override
+  String get handshakeStepBatteryVoltage => '讀取電瓶電壓';
+
+  @override
+  String get handshakeStepDeviceIdentity => '讀取裝置識別字串';
+
+  @override
+  String get handshakeStepEchoOff => '關閉指令回音';
+
+  @override
+  String get handshakeStepLinefeedsOff => '關閉換行字元';
+
+  @override
+  String get handshakeStepMemoryOff => '關閉記憶體寫入';
+
+  @override
+  String get handshakeStepNoReason => '無回應';
+
+  @override
+  String get handshakeStepProtocolAuto => '自動偵測匯流排協定';
+
+  @override
+  String get handshakeStepProtocolDescription => '讀取協定描述';
+
+  @override
+  String get handshakeStepProtocolNumber => '讀取協定編號';
+
+  @override
+  String get handshakeStepReset => '軟體重置轉接器';
+
+  @override
+  String get handshakeStepResponseTimeout => '設定回應逾時 ~408ms';
+
+  @override
+  String get handshakeStepSpacesOff => '關閉空白字元，減少 33% 傳輸量';
+
+  @override
+  String get handshakeStepSupportProbe => '查詢 ECU 支援的 PID（確認車輛已回應）';
 
   @override
   String get languageSaveFailed => '無法儲存語言設定，請再試一次。';
