@@ -65,8 +65,13 @@ under `1.0.10` below.
 - Wi-Fi route-binding failures and the Bluetooth and location permission labels
   are still Chinese. They reach the connect screen when Android refuses to bind
   a route or the reader declines a permission. Tracked in #45.
-- Ten load-bearing sentences ship correct English and have no test that would
-  fail if a translation reversed them. Named individually in #47.
+- Some load-bearing sentences ship correct English with no guard that would fail
+  if a translation reversed them, and some have a guard that checks the wrong
+  property. Named individually in #47, along with the reason a count is the
+  wrong shape for this: a reviewer defeated a structural guard on the replay
+  notice by changing 「已」 to 「未」, which moved no position it was checking.
+  A sentence with a guard that agrees with a reversal is worse than one with no
+  guard, because the green tick is what the next translator will trust.
 - Transcripts, evidence headers and telemetry CSV/JSON exports stay in
   Traditional Chinese on purpose. An evidence file whose language depends on a
   phone setting is one that two readers cannot compare. Tracked in #46.
