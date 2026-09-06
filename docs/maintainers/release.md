@@ -60,15 +60,16 @@ Android 的 versionCode 完全由 `pubspec.yaml` 第 4 行的 `version: x.y.z+N`
 grep '^version:' pubspec.yaml
 ```
 
-截至 **2026-09-06**，Play production 已發布 **`1.0.8` / versionCode 9**（completed /
+截至 **2026-09-06**，Play production 已發布 **`1.0.9` / versionCode 10**（completed /
 `PUBLISHED`）。GitHub community 預發行是 **`v1.0.9-beta.1` / `1.0.9+10`**，
-跟 Play 不是同一條簽章線。Play 已消耗 1–9；**下一份上傳 Play 的 `+N` 必須 > 9**。
+跟 Play 不是同一條簽章線（community 金鑰不能覆蓋 Play 安裝）。Play 已消耗 1–10；
+**下一份上傳 Play 的 `+N` 必須 > 10**。
 Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。
 
 ```bash
-# Play 下一版至少是 1.0.9+10（若尚未把這份 community 樹上傳 Play）
+# Play 下一版至少是 1.0.10+11（先重讀 Console，不要只信這段文字）
 ```
 
 版本名（`+` 左邊）是給使用者看的，versionCode（`+` 右邊）是給 Play 排序用的，
@@ -160,7 +161,7 @@ release 打包任務丟 `GradleException` 而不是靜靜退回 debug 金鑰。�
 
 1. 確認 `grep -n universal_ble pubspec.yaml` 有命中，而 `flutter_blue_plus` 只出現在
    解釋為什麼不用它的註解裡
-2. 依第 1 節把 `version:` bump（versionCode 只能往上，Play 已用到 9）
+2. 依第 1 節把 `version:` bump（versionCode 只能往上，Play 已用到 10）
 3. 重新 `flutter build appbundle --release --flavor field`
 4. 上傳新 AAB 並確認軌道頁顯示的「有效草稿版本」就是它
 5. 走第 5 節的實機閘門，才輪到送審

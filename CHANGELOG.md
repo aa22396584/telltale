@@ -10,10 +10,9 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## 1.0.9 — 2026-09-06
 
-GitHub community pre-release `v1.0.9-beta.1` (separate signing lineage).
-Play production remains `1.0.8` / versionCode 9 (`PUBLISHED`); this tree is
-`1.0.9+10`. Next Play upload must still be `> 9`. iOS App Store remains
-deferred until 2027.
+Google Play production `1.0.9` / versionCode 10 (`PUBLISHED`). GitHub community
+pre-release `v1.0.9-beta.1` (separate signing lineage). Next Play upload must
+be `> 10`. iOS App Store remains deferred until 2027.
 
 ### Added
 
