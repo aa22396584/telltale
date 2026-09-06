@@ -67,7 +67,10 @@ This is the maintainer's affiliate link. A qualifying purchase may pay the
 maintainer a commission. You are free to search for or buy the same model
 elsewhere. Marketplace content and hardware revisions can change; verify the
 full model `CL-OBDII-M25B` and NCC number `CCAH22LP5300T8` before buying.
+The same catalog is in the app: Settings has the full disclosure card; Connect
+keeps a secondary text link below the transports.
 
 這是維護者的推廣分潤連結；符合條件的購買可能讓維護者取得佣金。你也可以自行搜尋
 或向其他通路購買同型號。賣場內容與硬體版本可能變更，購買前請核對完整型號
-`CL-OBDII-M25B` 與 NCC 號碼 `CCAH22LP5300T8`。
+`CL-OBDII-M25B` 與 NCC 號碼 `CCAH22LP5300T8`。App 內同一筆：設定頁是完整揭露
+卡，連線頁只在轉接器列表下方放次要文字連結。

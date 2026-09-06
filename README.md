@@ -120,6 +120,8 @@ session dated 2026-08-27.
 **[View this adapter on Shopee](https://s.shopee.tw/3LQPiOY7uv)** — this is a
 maintainer affiliate link. A qualifying purchase may pay the maintainer a
 commission; you are free to search for or buy the same model elsewhere.
+The same listing is in the app: Settings shows the full disclosure card;
+Connect keeps a secondary text link below the transports.
 
 This is one observed adapter/phone/vehicle combination, not certification or
 a promise that every listing variant, phone, vehicle, PID, or firmware behaves

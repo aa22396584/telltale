@@ -1,11 +1,13 @@
 # Remaining human-only steps (2026-09-06)
 
 Play production **1.0.8 / versionCode 9 is PUBLISHED**. GitHub community
-pre-release is `v1.0.8-beta.1`. **iOS App Store is deferred until 2027** —
+pre-release for the in-app adapter catalog is **`v1.0.9-beta.1` / `1.0.9+10`**
+(separate signing lineage). **iOS App Store is deferred until 2027** —
 do not TestFlight or submit this year (Personal Team `ABHJVZBWQN`; paid
 team `ZAZT4JZ625` Distribution cert REVOKED; ASC API 401).
 
-Public CI oracle remains `ImL1s/telltale`. Next Android `+N` must be **> 9**.
+Public CI oracle remains `ImL1s/telltale`. Next Play Android `+N` must be **> 9**.
+Do not treat the GitHub `+10` APK as a Play upload.
 
 Attached hardware at check time:
 
@@ -33,12 +35,12 @@ on a real watch until a provisioning / Data Layer path exists.
 
 Preflight that does **not** need a Console click (current `origin/master`):
 
-- `pubspec.yaml` `version: 1.0.8+9` (Play production is 9; next upload must be > 9)
+- `pubspec.yaml` `version: 1.0.9+10` (Play production is still 9; next Play upload must be > 9)
 - `applicationId` = `com.cbstudio.telltale`
 - BLE dependency is `universal_ble`; `flutter_blue_plus` is comment-only
 - Privacy policy URL in `docs/maintainers/release.md` is
   `https://iml1s.github.io/telltale/privacy.html` and that page loads
-  (last updated 2026-08-29)
+  (last updated 2026-09-06; in-app Shopee affiliate is tap-to-open only)
 
 Phone Play **1.0.8 is done** (production completed / published). Remaining:
 

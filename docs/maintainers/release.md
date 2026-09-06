@@ -61,13 +61,14 @@ grep '^version:' pubspec.yaml
 ```
 
 截至 **2026-09-06**，Play production 已發布 **`1.0.8` / versionCode 9**（completed /
-`PUBLISHED`）。1–8 都已消耗（含 GitHub community 用過的號碼）；**下一版 `+N` 必須 > 9**。
+`PUBLISHED`）。GitHub community 預發行是 **`v1.0.9-beta.1` / `1.0.9+10`**，
+跟 Play 不是同一條簽章線。Play 已消耗 1–9；**下一份上傳 Play 的 `+N` 必須 > 9**。
 Play 不接受重複的 versionCode，上傳會直接被擋下，訊息是 `Version code N has already been
 used`。每次發版都要先在 Play Console 重讀已使用的最大值；`+N` 必須更大，不能
 重用、不能倒退。
 
 ```bash
-# 2026-09-06 之後的下一版範例：1.0.8+9 → 1.0.9+10
+# Play 下一版至少是 1.0.9+10（若尚未把這份 community 樹上傳 Play）
 ```
 
 版本名（`+` 左邊）是給使用者看的，versionCode（`+` 右邊）是給 Play 排序用的，
