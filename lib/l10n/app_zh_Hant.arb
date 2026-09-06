@@ -10,6 +10,7 @@
   "connectBody": "插上 ELM327 轉接器並開啟電門，或直接使用內建模擬器體驗完整功能。",
   "settingsHeadline": "設定",
   "startupChecking": "正在檢查本機分享暫存與遙測紀錄",
+  "startupCannotComplete": "目前無法完成啟動檢查",
   "startupRetry": "重試",
   "startupRestartRequired": "需要重新啟動才能安全繼續",
   "startupRetryHint": "請讓 Telltale 保持在前景，並在其他檔案作業完成後重試。啟動完成前不會開放紀錄、回放、匯出或刪除。",

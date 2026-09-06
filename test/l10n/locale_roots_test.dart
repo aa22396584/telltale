@@ -7,6 +7,7 @@ import 'package:torque_obd/app.dart';
 import 'package:torque_obd/core/form_factor.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/l10n/startup_copy.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/wear/wear_shell.dart';
 
@@ -69,7 +70,65 @@ void main() {
     (tester) async {
       await pumpTorqueApp(tester, prefs: {kLocalePreferenceKey: 'zh_Hant'});
       await expectLocalizedMaterialApps(tester, traditionalChineseLocale);
-      expect(find.textContaining('正在檢查'), findsWidgets);
     },
   );
+
+  test('retryable startup title is not the in-progress loading copy', () {
+    final en = lookupAppLocalizations(englishLocale);
+    final zh = lookupAppLocalizations(traditionalChineseLocale);
+
+    expect(en.startupCannotComplete, 'Cannot finish startup checks');
+    expect(en.startupCannotComplete, isNot(en.startupChecking));
+    expect(zh.startupCannotComplete, '目前無法完成啟動檢查');
+    expect(zh.startupCannotComplete, isNot(zh.startupChecking));
+
+    expect(
+      startupStatusTitle(l10n: en, loading: true, restartRequired: false),
+      en.startupChecking,
+    );
+    expect(
+      startupStatusTitle(l10n: en, loading: false, restartRequired: true),
+      en.startupRestartRequired,
+    );
+    expect(
+      startupStatusTitle(l10n: en, loading: false, restartRequired: false),
+      en.startupCannotComplete,
+    );
+    expect(
+      startupStatusTitle(l10n: zh, loading: false, restartRequired: false),
+      '目前無法完成啟動檢查',
+    );
+    expect(
+      startupStatusTitle(l10n: zh, loading: true, restartRequired: false),
+      zh.startupChecking,
+    );
+  });
+
+  testWidgets('retryable startup title renders the failure copy, not loading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: englishLocale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (context) {
+            return Text(
+              startupStatusTitle(
+                l10n: AppLocalizations.of(context),
+                loading: false,
+                restartRequired: false,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    expect(find.text('Cannot finish startup checks'), findsOneWidget);
+    expect(
+      find.text('Checking local share cache and telemetry records'),
+      findsNothing,
+    );
+  });
 }

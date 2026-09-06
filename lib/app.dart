@@ -8,6 +8,7 @@ import 'core/form_factor.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'l10n/locale_resolution.dart';
+import 'l10n/startup_copy.dart';
 import 'state/app_share_coordinator.dart';
 import 'state/locale_settings.dart';
 import 'state/powertrain_battery_profiles.dart';
@@ -238,9 +239,11 @@ class _AppStartupScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      blocked
-                          ? l10n.startupRestartRequired
-                          : l10n.startupChecking,
+                      startupStatusTitle(
+                        l10n: l10n,
+                        loading: false,
+                        restartRequired: blocked,
+                      ),
                       style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),

@@ -141,6 +141,12 @@ abstract class AppLocalizations {
   /// **'Checking local share cache and telemetry records'**
   String get startupChecking;
 
+  /// Retryable startup failure title. Distinct from startupChecking (in-progress) and startupRestartRequired (must quit).
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot finish startup checks'**
+  String get startupCannotComplete;
+
   /// No description provided for @startupRetry.
   ///
   /// In en, this message translates to:

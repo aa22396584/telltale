@@ -31,6 +31,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get startupChecking => '正在檢查本機分享暫存與遙測紀錄';
 
   @override
+  String get startupCannotComplete => '目前無法完成啟動檢查';
+
+  @override
   String get startupRetry => '重試';
 
   @override
@@ -75,6 +78,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get startupChecking => '正在檢查本機分享暫存與遙測紀錄';
+
+  @override
+  String get startupCannotComplete => '目前無法完成啟動檢查';
 
   @override
   String get startupRetry => '重試';

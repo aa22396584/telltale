@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking local share cache and telemetry records';
 
   @override
+  String get startupCannotComplete => 'Cannot finish startup checks';
+
+  @override
   String get startupRetry => 'Retry';
 
   @override
