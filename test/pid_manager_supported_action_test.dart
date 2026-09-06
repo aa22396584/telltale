@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
 import 'package:torque_obd/ui/screens/pids/pid_manager_screen.dart';
@@ -63,6 +64,7 @@ void main() {
 
   test('confirmation states exact count and refresh-rate warning', () {
     final message = supportedPidConfirmationMessage(
+      l10n: lookupAppLocalizations(testUiLocale),
       summary: _summary(supported: const {'010C', '0120'}),
       addCount: 3,
     );

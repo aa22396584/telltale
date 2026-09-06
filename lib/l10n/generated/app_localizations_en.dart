@@ -602,6 +602,318 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSettings => 'Settings';
 
   @override
+  String get pidActionCancel => 'Cancel';
+
+  @override
+  String get pidActionDelete => 'Delete';
+
+  @override
+  String get pidArrangeBody =>
+      'Drag to reorder. The dashboard fills left to right and top to bottom, so whatever is first is seen first.';
+
+  @override
+  String get pidArrangeEmptyMessage =>
+      'Enable a few in the list first, then come back to order them.';
+
+  @override
+  String get pidArrangeEmptyTitle => 'No PID is enabled yet';
+
+  @override
+  String pidBulkActionAddConfirmed(int count) {
+    return 'Add the $count confirmed';
+  }
+
+  @override
+  String get pidBulkActionAllActive => 'All already enabled';
+
+  @override
+  String get pidBulkActionIncomplete => 'Scan data is incomplete';
+
+  @override
+  String get pidBulkActionLocked => 'Cannot change while recording';
+
+  @override
+  String get pidBulkActionPending => 'Waiting for scan results';
+
+  @override
+  String get pidBulkActionZero => 'No confirmed supported PIDs';
+
+  @override
+  String pidBulkAddCount(int count) {
+    return 'Add $count';
+  }
+
+  @override
+  String pidBulkAddDialogTitle(int count) {
+    return 'Add $count confirmed supported PIDs?';
+  }
+
+  @override
+  String pidBulkAdded(int count) {
+    return 'Added $count confirmed supported PIDs.';
+  }
+
+  @override
+  String pidBulkUnconfirmedBlocks(int count) {
+    return '$count support blocks are still unconfirmed — this adds only the items with positive evidence.';
+  }
+
+  @override
+  String pidBulkWillAdd(int count) {
+    return 'Will add $count. The more PIDs are enabled, the less often each one may refresh.';
+  }
+
+  @override
+  String pidCapabilityConfirmedCount(int confirmed) {
+    return '$confirmed confirmed';
+  }
+
+  @override
+  String get pidCapabilityCoverageNone =>
+      'No contiguous coverage established yet';
+
+  @override
+  String pidCapabilityCoverageThroughEnd(String through) {
+    return 'Contiguous coverage 01–$through (reached the end)';
+  }
+
+  @override
+  String pidCapabilityCoverageThroughUnknown(String through) {
+    return 'Contiguous coverage 01–$through (unknown beyond)';
+  }
+
+  @override
+  String get pidCapabilityPhaseAttemptFinished => 'This support scan finished';
+
+  @override
+  String get pidCapabilityPhaseInterrupted =>
+      'The support scan was interrupted';
+
+  @override
+  String get pidCapabilityPhaseNotStarted => 'Scan not started';
+
+  @override
+  String get pidCapabilityPhaseRunning =>
+      'Confirming what this vehicle supports';
+
+  @override
+  String pidCapabilitySemantics(String phase, int confirmed, int unknown) {
+    return 'Vehicle-supported PIDs. $phase. $confirmed confirmed. $unknown unknown blocks.';
+  }
+
+  @override
+  String get pidCapabilityTitle => 'Vehicle-supported PIDs';
+
+  @override
+  String pidCapabilityUnknownBlocks(int unknown) {
+    return '$unknown unknown blocks';
+  }
+
+  @override
+  String pidEditorCollision(String name) {
+    return 'A custom PID already uses this combination ($name). Use a different mode + PID, header, or name suffix.';
+  }
+
+  @override
+  String pidEditorDeleteBody(String name) {
+    return 'The definition for “$name” is removed, its gauge disappears from the dashboard, and this cannot be undone.';
+  }
+
+  @override
+  String get pidEditorDeleteTitle => 'Delete this PID?';
+
+  @override
+  String get pidEditorDiscard => 'Discard';
+
+  @override
+  String get pidEditorDiscardBody =>
+      'The changes to this PID have not been saved, and leaving loses them.';
+
+  @override
+  String get pidEditorDiscardTitle => 'Discard unsaved changes?';
+
+  @override
+  String pidEditorEquationHelper(String valSyntax) {
+    return 'A..N map to the response bytes; SIGNED(), ABS(), LOG10(), $valSyntax and BARO are available';
+  }
+
+  @override
+  String get pidEditorFieldEquation => 'Expression';
+
+  @override
+  String get pidEditorFieldHeader => 'CAN header';
+
+  @override
+  String get pidEditorFieldMax => 'Maximum';
+
+  @override
+  String get pidEditorFieldMin => 'Minimum';
+
+  @override
+  String get pidEditorFieldModeAndPid => 'Mode + PID';
+
+  @override
+  String get pidEditorFieldName => 'Name';
+
+  @override
+  String get pidEditorFieldSample => 'Test response bytes';
+
+  @override
+  String get pidEditorFieldShortName => 'Short name (shown on the gauge)';
+
+  @override
+  String get pidEditorFieldUnits => 'Units';
+
+  @override
+  String get pidEditorHeaderHelper => '7E0 = engine';
+
+  @override
+  String get pidEditorKeepEditing => 'Keep editing';
+
+  @override
+  String get pidEditorModeAndPidHelper => 'For example 010C or 221101';
+
+  @override
+  String get pidEditorSampleHelper =>
+      'Enter hex to preview the result as you type';
+
+  @override
+  String get pidEditorSave => 'Save';
+
+  @override
+  String get pidEditorSectionFormula => 'Formula';
+
+  @override
+  String get pidEditorSectionIdentity => 'Identity';
+
+  @override
+  String get pidEditorSectionQuery => 'Query';
+
+  @override
+  String get pidEditorSectionRangeAndPriority => 'Gauge range and priority';
+
+  @override
+  String get pidEditorTitleEdit => 'Edit PID';
+
+  @override
+  String get pidEditorTitleNew => 'New custom PID';
+
+  @override
+  String pidExportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get pidExportNoCustomPids => 'There are no custom PIDs to export.';
+
+  @override
+  String get pidImportNothingToImport => 'No definitions to import.';
+
+  @override
+  String pidImportPickerFailed(String error) {
+    return 'Could not open the file picker: $error';
+  }
+
+  @override
+  String pidImportReadFailed(String error) {
+    return 'Could not read the file: $error';
+  }
+
+  @override
+  String get pidListSeparator => ', ';
+
+  @override
+  String get pidManagerActiveOnly => 'Enabled only';
+
+  @override
+  String get pidManagerAdd => 'New';
+
+  @override
+  String get pidManagerArrangeDashboard => 'Arrange dashboard';
+
+  @override
+  String pidManagerCounts(int active, int total) {
+    return '$active enabled · $total available';
+  }
+
+  @override
+  String get pidManagerExportCsv => 'Export custom PIDs';
+
+  @override
+  String get pidManagerHeadline => 'PID manager';
+
+  @override
+  String get pidManagerImportCsv => 'Import CSV';
+
+  @override
+  String get pidManagerMoreActions => 'More';
+
+  @override
+  String get pidManagerNoMatchMessage =>
+      'Try another keyword, or create a custom PID.';
+
+  @override
+  String get pidManagerNoMatchTitle => 'No matching PID';
+
+  @override
+  String get pidManagerPowertrainBatteryCatalog => 'Powertrain-battery catalog';
+
+  @override
+  String get pidManagerSearchHint => 'Search by name or PID code…';
+
+  @override
+  String get pidPickCsvDialogTitle => 'Choose a PID definition CSV';
+
+  @override
+  String get pidPillCustom => 'Custom';
+
+  @override
+  String get pidPillUnsupported => 'Unsupported';
+
+  @override
+  String get pidPreviewCannotEvaluate => 'Cannot evaluate';
+
+  @override
+  String get pidPreviewResultLabel => 'Result';
+
+  @override
+  String pidPreviewSubstituted(double value, String dependencies) {
+    final intl.NumberFormat valueNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String valueString = valueNumberFormat.format(value);
+
+    return 'The preview substitutes $valueString for $dependencies; the real value comes from that PID once connected.';
+  }
+
+  @override
+  String get pidPreviewTitle => 'Live preview';
+
+  @override
+  String get pidPriorityHigh => 'High';
+
+  @override
+  String get pidPriorityLow => 'Low';
+
+  @override
+  String get pidPriorityMedium => 'Medium';
+
+  @override
+  String get pidPriorityVeryLow => 'Very Low';
+
+  @override
+  String get pidRowEdit => 'Edit';
+
+  @override
+  String pidRowShowOnDashboard(String name) {
+    return 'Show $name on the dashboard';
+  }
+
+  @override
+  String pidRowStaleUnits(String units) {
+    return '$units · stale';
+  }
+
+  @override
   String get recommendedPurchaseDisclosure =>
       'This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.';
 

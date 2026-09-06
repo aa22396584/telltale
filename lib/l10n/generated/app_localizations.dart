@@ -969,6 +969,522 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navSettings;
 
+  /// No description provided for @pidActionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get pidActionCancel;
+
+  /// No description provided for @pidActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get pidActionDelete;
+
+  /// No description provided for @pidArrangeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder. The dashboard fills left to right and top to bottom, so whatever is first is seen first.'**
+  String get pidArrangeBody;
+
+  /// No description provided for @pidArrangeEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable a few in the list first, then come back to order them.'**
+  String get pidArrangeEmptyMessage;
+
+  /// No description provided for @pidArrangeEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No PID is enabled yet'**
+  String get pidArrangeEmptyTitle;
+
+  /// No description provided for @pidBulkActionAddConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the {count} confirmed'**
+  String pidBulkActionAddConfirmed(int count);
+
+  /// No description provided for @pidBulkActionAllActive.
+  ///
+  /// In en, this message translates to:
+  /// **'All already enabled'**
+  String get pidBulkActionAllActive;
+
+  /// No description provided for @pidBulkActionIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan data is incomplete'**
+  String get pidBulkActionIncomplete;
+
+  /// No description provided for @pidBulkActionLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot change while recording'**
+  String get pidBulkActionLocked;
+
+  /// No description provided for @pidBulkActionPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for scan results'**
+  String get pidBulkActionPending;
+
+  /// Nothing was confirmed. Not a claim that the vehicle supports nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed supported PIDs'**
+  String get pidBulkActionZero;
+
+  /// No description provided for @pidBulkAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {count}'**
+  String pidBulkAddCount(int count);
+
+  /// No description provided for @pidBulkAddDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {count} confirmed supported PIDs?'**
+  String pidBulkAddDialogTitle(int count);
+
+  /// No description provided for @pidBulkAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} confirmed supported PIDs.'**
+  String pidBulkAdded(int count);
+
+  /// Both halves are load-bearing: still unconfirmed, AND only positively evidenced items are added.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} support blocks are still unconfirmed — this adds only the items with positive evidence.'**
+  String pidBulkUnconfirmedBlocks(int count);
+
+  /// 'may refresh less often' is a hedge; the scheduler makes no promise about a rate.
+  ///
+  /// In en, this message translates to:
+  /// **'Will add {count}. The more PIDs are enabled, the less often each one may refresh.'**
+  String pidBulkWillAdd(int count);
+
+  /// No description provided for @pidCapabilityConfirmedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{confirmed} confirmed'**
+  String pidCapabilityConfirmedCount(int confirmed);
+
+  /// No description provided for @pidCapabilityCoverageNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No contiguous coverage established yet'**
+  String get pidCapabilityCoverageNone;
+
+  /// {through} is a hex PID number and is never localized.
+  ///
+  /// In en, this message translates to:
+  /// **'Contiguous coverage 01–{through} (reached the end)'**
+  String pidCapabilityCoverageThroughEnd(String through);
+
+  /// Unknown beyond that point, not absent beyond it.
+  ///
+  /// In en, this message translates to:
+  /// **'Contiguous coverage 01–{through} (unknown beyond)'**
+  String pidCapabilityCoverageThroughUnknown(String through);
+
+  /// Scoped to this attempt. Never 'scan complete', which would read as full coverage.
+  ///
+  /// In en, this message translates to:
+  /// **'This support scan finished'**
+  String get pidCapabilityPhaseAttemptFinished;
+
+  /// No description provided for @pidCapabilityPhaseInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'The support scan was interrupted'**
+  String get pidCapabilityPhaseInterrupted;
+
+  /// No description provided for @pidCapabilityPhaseNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan not started'**
+  String get pidCapabilityPhaseNotStarted;
+
+  /// No description provided for @pidCapabilityPhaseRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming what this vehicle supports'**
+  String get pidCapabilityPhaseRunning;
+
+  /// Screen-reader summary of the capability panel. {phase} is one of the pidCapabilityPhase* strings.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle-supported PIDs. {phase}. {confirmed} confirmed. {unknown} unknown blocks.'**
+  String pidCapabilitySemantics(String phase, int confirmed, int unknown);
+
+  /// No description provided for @pidCapabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle-supported PIDs'**
+  String get pidCapabilityTitle;
+
+  /// Unknown, never unsupported: these blocks were not read at all.
+  ///
+  /// In en, this message translates to:
+  /// **'{unknown} unknown blocks'**
+  String pidCapabilityUnknownBlocks(int unknown);
+
+  /// A refusal that names the reason and the remedy. A generic 'invalid' would be a regression.
+  ///
+  /// In en, this message translates to:
+  /// **'A custom PID already uses this combination ({name}). Use a different mode + PID, header, or name suffix.'**
+  String pidEditorCollision(String name);
+
+  /// {name} is the user's own PID name and passes through untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'The definition for “{name}” is removed, its gauge disappears from the dashboard, and this cannot be undone.'**
+  String pidEditorDeleteBody(String name);
+
+  /// No description provided for @pidEditorDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this PID?'**
+  String get pidEditorDeleteTitle;
+
+  /// No description provided for @pidEditorDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get pidEditorDiscard;
+
+  /// No description provided for @pidEditorDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The changes to this PID have not been saved, and leaving loses them.'**
+  String get pidEditorDiscardBody;
+
+  /// No description provided for @pidEditorDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get pidEditorDiscardTitle;
+
+  /// {valSyntax} carries the literal VAL{PID} token, which cannot be written inline because ARB reads braces as a placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'A..N map to the response bytes; SIGNED(), ABS(), LOG10(), {valSyntax} and BARO are available'**
+  String pidEditorEquationHelper(String valSyntax);
+
+  /// No description provided for @pidEditorFieldEquation.
+  ///
+  /// In en, this message translates to:
+  /// **'Expression'**
+  String get pidEditorFieldEquation;
+
+  /// No description provided for @pidEditorFieldHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'CAN header'**
+  String get pidEditorFieldHeader;
+
+  /// No description provided for @pidEditorFieldMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum'**
+  String get pidEditorFieldMax;
+
+  /// No description provided for @pidEditorFieldMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum'**
+  String get pidEditorFieldMin;
+
+  /// No description provided for @pidEditorFieldModeAndPid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode + PID'**
+  String get pidEditorFieldModeAndPid;
+
+  /// No description provided for @pidEditorFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get pidEditorFieldName;
+
+  /// No description provided for @pidEditorFieldSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Test response bytes'**
+  String get pidEditorFieldSample;
+
+  /// No description provided for @pidEditorFieldShortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Short name (shown on the gauge)'**
+  String get pidEditorFieldShortName;
+
+  /// No description provided for @pidEditorFieldUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get pidEditorFieldUnits;
+
+  /// 7E0 is a CAN id and stays byte-identical.
+  ///
+  /// In en, this message translates to:
+  /// **'7E0 = engine'**
+  String get pidEditorHeaderHelper;
+
+  /// No description provided for @pidEditorKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get pidEditorKeepEditing;
+
+  /// Mode and PID numbers are never localized.
+  ///
+  /// In en, this message translates to:
+  /// **'For example 010C or 221101'**
+  String get pidEditorModeAndPidHelper;
+
+  /// No description provided for @pidEditorSampleHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter hex to preview the result as you type'**
+  String get pidEditorSampleHelper;
+
+  /// No description provided for @pidEditorSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get pidEditorSave;
+
+  /// No description provided for @pidEditorSectionFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get pidEditorSectionFormula;
+
+  /// No description provided for @pidEditorSectionIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get pidEditorSectionIdentity;
+
+  /// No description provided for @pidEditorSectionQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'Query'**
+  String get pidEditorSectionQuery;
+
+  /// No description provided for @pidEditorSectionRangeAndPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Gauge range and priority'**
+  String get pidEditorSectionRangeAndPriority;
+
+  /// No description provided for @pidEditorTitleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit PID'**
+  String get pidEditorTitleEdit;
+
+  /// No description provided for @pidEditorTitleNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New custom PID'**
+  String get pidEditorTitleNew;
+
+  /// No description provided for @pidExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String pidExportFailed(String error);
+
+  /// No description provided for @pidExportNoCustomPids.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no custom PIDs to export.'**
+  String get pidExportNoCustomPids;
+
+  /// No description provided for @pidImportNothingToImport.
+  ///
+  /// In en, this message translates to:
+  /// **'No definitions to import.'**
+  String get pidImportNothingToImport;
+
+  /// No description provided for @pidImportPickerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the file picker: {error}'**
+  String pidImportPickerFailed(String error);
+
+  /// No description provided for @pidImportReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the file: {error}'**
+  String pidImportReadFailed(String error);
+
+  /// Separator for an inline list of machine tokens. English uses a comma and a space; Chinese uses the enumeration comma.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get pidListSeparator;
+
+  /// Filter chip label; must stay short enough for a chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled only'**
+  String get pidManagerActiveOnly;
+
+  /// No description provided for @pidManagerAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get pidManagerAdd;
+
+  /// No description provided for @pidManagerArrangeDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrange dashboard'**
+  String get pidManagerArrangeDashboard;
+
+  /// Counts come from the active list and the registry; never spell a number into the sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'{active} enabled · {total} available'**
+  String pidManagerCounts(int active, int total);
+
+  /// No description provided for @pidManagerExportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export custom PIDs'**
+  String get pidManagerExportCsv;
+
+  /// Screen title of the PID manager.
+  ///
+  /// In en, this message translates to:
+  /// **'PID manager'**
+  String get pidManagerHeadline;
+
+  /// The CSV column headers themselves are a machine format and are never localized.
+  ///
+  /// In en, this message translates to:
+  /// **'Import CSV'**
+  String get pidManagerImportCsv;
+
+  /// Tooltip on the overflow menu.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get pidManagerMoreActions;
+
+  /// No description provided for @pidManagerNoMatchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another keyword, or create a custom PID.'**
+  String get pidManagerNoMatchMessage;
+
+  /// No description provided for @pidManagerNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching PID'**
+  String get pidManagerNoMatchTitle;
+
+  /// No description provided for @pidManagerPowertrainBatteryCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Powertrain-battery catalog'**
+  String get pidManagerPowertrainBatteryCatalog;
+
+  /// No description provided for @pidManagerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or PID code…'**
+  String get pidManagerSearchHint;
+
+  /// No description provided for @pidPickCsvDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a PID definition CSV'**
+  String get pidPickCsvDialogTitle;
+
+  /// No description provided for @pidPillCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get pidPillCustom;
+
+  /// Only for a PID the vehicle positively disclaimed. Silence is never this.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported'**
+  String get pidPillUnsupported;
+
+  /// No description provided for @pidPreviewCannotEvaluate.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot evaluate'**
+  String get pidPreviewCannotEvaluate;
+
+  /// No description provided for @pidPreviewResultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get pidPreviewResultLabel;
+
+  /// {value} comes from the editor's own stand-in constant; never spell the number into the sentence. An estimate stands in for a measurement here, and the sentence must keep saying so.
+  ///
+  /// In en, this message translates to:
+  /// **'The preview substitutes {value} for {dependencies}; the real value comes from that PID once connected.'**
+  String pidPreviewSubstituted(double value, String dependencies);
+
+  /// No description provided for @pidPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live preview'**
+  String get pidPreviewTitle;
+
+  /// No description provided for @pidPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get pidPriorityHigh;
+
+  /// No description provided for @pidPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get pidPriorityLow;
+
+  /// No description provided for @pidPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get pidPriorityMedium;
+
+  /// No description provided for @pidPriorityVeryLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Very Low'**
+  String get pidPriorityVeryLow;
+
+  /// No description provided for @pidRowEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get pidRowEdit;
+
+  /// Semantics label for the row switch. {name} is user-authored data and passes through untouched.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {name} on the dashboard'**
+  String pidRowShowOnDashboard(String name);
+
+  /// Stale, not live. {units} is the definition's own unit text and is never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'{units} · stale'**
+  String pidRowStaleUnits(String units);
+
   /// Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change.
   ///
   /// In en, this message translates to:

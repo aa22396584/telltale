@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/pid/pid.dart';
 import '../../../obd/pid/pid_csv.dart';
 import '../../../obd/polling_engine.dart';
@@ -61,12 +62,54 @@ final class SupportedPidBulkPresentation {
       addCount > 0;
 }
 
+/// Takes an [AppLocalizations] rather than a [BuildContext] for the reason
+/// `telemetry_status_copy.dart` gives: the sentence is assembled outside any
+/// widget, and a plain parameter keeps it assertable in both languages from a
+/// pure-Dart test.
+///
+/// The two halves are joined here rather than written as one ARB entry so the
+/// unconfirmed-blocks warning can be present or absent without a translator
+/// having to keep two near-identical paragraphs in step.
 String supportedPidConfirmationMessage({
+  required AppLocalizations l10n,
   required ObdCapabilitySummary summary,
   required int addCount,
-}) =>
-    '${summary.unknownOrUnverifiedBlockCount > 0 ? '仍有 ${summary.unknownOrUnverifiedBlockCount} 個支援區塊未確認，這次只加入已有正面證據的項目。\n\n' : ''}'
-    '將加入 $addCount 項。啟用越多 PID，單項資料的更新頻率可能降低。';
+}) => [
+  if (summary.unknownOrUnverifiedBlockCount > 0)
+    l10n.pidBulkUnconfirmedBlocks(summary.unknownOrUnverifiedBlockCount),
+  l10n.pidBulkWillAdd(addCount),
+].join('\n\n');
+
+/// Where the support scan stands. Unknown is never rendered as unsupported:
+/// [ObdCapabilityDiscoveryPhase.interrupted] means the app stopped asking, not
+/// that the vehicle answered.
+String obdCapabilityPhaseLabel(
+  AppLocalizations l10n,
+  ObdCapabilityDiscoveryPhase phase,
+) => switch (phase) {
+  ObdCapabilityDiscoveryPhase.notStarted => l10n.pidCapabilityPhaseNotStarted,
+  ObdCapabilityDiscoveryPhase.running => l10n.pidCapabilityPhaseRunning,
+  ObdCapabilityDiscoveryPhase.attemptFinished =>
+    l10n.pidCapabilityPhaseAttemptFinished,
+  ObdCapabilityDiscoveryPhase.interrupted =>
+    l10n.pidCapabilityPhaseInterrupted,
+};
+
+/// The bulk-add button's label, which doubles as its semantics label.
+String supportedPidBulkActionLabel(
+  AppLocalizations l10n,
+  SupportedPidBulkPresentation presentation,
+) => switch (presentation.state) {
+  SupportedPidBulkUiState.pending => l10n.pidBulkActionPending,
+  SupportedPidBulkUiState.incomplete =>
+    presentation.addCount > 0
+        ? l10n.pidBulkActionAddConfirmed(presentation.addCount)
+        : l10n.pidBulkActionIncomplete,
+  SupportedPidBulkUiState.zero => l10n.pidBulkActionZero,
+  SupportedPidBulkUiState.ready => l10n.pidBulkAddCount(presentation.addCount),
+  SupportedPidBulkUiState.allActive => l10n.pidBulkActionAllActive,
+  SupportedPidBulkUiState.locked => l10n.pidBulkActionLocked,
+};
 
 SupportedPidBulkPresentation supportedPidBulkPresentation({
   required ObdCapabilitySummary summary,
@@ -130,14 +173,18 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
   }
 
   Future<void> _togglePid(Pid pid) async {
+    // Read before the await: the message belongs to the language that was on
+    // screen when the user tapped, and `context` may not survive the gap.
+    final l10n = AppLocalizations.of(context);
     final outcome = await ref.read(activePidsProvider.notifier).toggle(pid);
-    if (outcome.isLocked) _snack(kPidMutationLockedMessage);
+    if (outcome.isLocked) _snack(l10n.telemetryBlockedByRecorder);
   }
 
   Future<void> _addConfirmedSupported(
     ObdCapabilitySummary summary,
     List<Pid> active,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final presentation = supportedPidBulkPresentation(
       summary: summary,
       active: active,
@@ -147,9 +194,10 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('加入 ${presentation.addCount} 項已確認支援 PID？'),
+        title: Text(l10n.pidBulkAddDialogTitle(presentation.addCount)),
         content: Text(
           supportedPidConfirmationMessage(
+            l10n: l10n,
             summary: summary,
             addCount: presentation.addCount,
           ),
@@ -157,11 +205,11 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.pidActionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('加入 ${presentation.addCount} 項'),
+            child: Text(l10n.pidBulkAddCount(presentation.addCount)),
           ),
         ],
       ),
@@ -171,9 +219,9 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         .read(activePidsProvider.notifier)
         .appendPositivelyConfirmed(summary);
     if (outcome.isLocked) {
-      _snack(kPidMutationLockedMessage);
+      _snack(l10n.telemetryBlockedByRecorder);
     } else if (outcome.addedCount > 0) {
-      _snack('已加入 ${outcome.addedCount} 項已確認支援 PID。');
+      _snack(l10n.pidBulkAdded(outcome.addedCount));
     }
   }
 
@@ -197,15 +245,16 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
   }
 
   Future<void> _importCsv() async {
+    final l10n = AppLocalizations.of(context);
     final PlatformFile? picked;
     try {
       picked = await FilePicker.pickFile(
-        dialogTitle: '選擇 PID 定義 CSV',
+        dialogTitle: l10n.pidPickCsvDialogTitle,
         type: FileType.custom,
         allowedExtensions: const ['csv', 'txt'],
       );
     } on Exception catch (e) {
-      _snack('無法開啟檔案選擇器：$e');
+      _snack(l10n.pidImportPickerFailed('$e'));
       return;
     }
     if (picked == null) return;
@@ -217,7 +266,7 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
       // every one of them.
       contents = utf8.decode(await picked.readAsBytes(), allowMalformed: true);
     } on Exception catch (e) {
-      _snack('讀取檔案失敗：$e');
+      _snack(l10n.pidImportReadFailed('$e'));
       return;
     }
 
@@ -230,7 +279,13 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     }
 
     if (result.pids.isEmpty) {
-      _snack(result.errors.isEmpty ? '沒有可匯入的定義。' : result.errors.first);
+      // `result.errors` is `PidCsv`'s own wording and is still Chinese-only;
+      // that string belongs to lib/obd/pid/pid_csv.dart, not to this screen.
+      _snack(
+        result.errors.isEmpty
+            ? l10n.pidImportNothingToImport
+            : result.errors.first,
+      );
       return;
     }
     // Warnings are reported too, and separately from errors. A row that was
@@ -254,9 +309,10 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
   }
 
   Future<void> _exportCsv() async {
+    final l10n = AppLocalizations.of(context);
     final custom = ref.read(pidRegistryProvider.notifier).customPids;
     if (custom.isEmpty) {
-      _snack('目前沒有自訂 PID 可匯出。');
+      _snack(l10n.pidExportNoCustomPids);
       return;
     }
 
@@ -271,12 +327,13 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
       final error = outcome.userFacingError;
       if (error != null) _snack(error);
     } on Exception catch (e) {
-      _snack('匯出失敗：$e');
+      _snack(l10n.pidExportFailed('$e'));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final registry = ref.watch(pidRegistryProvider);
     final active = ref.watch(activePidsProvider);
@@ -329,11 +386,14 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'PID 管理',
+                                l10n.pidManagerHeadline,
                                 style: context.texts.headlineMedium,
                               ),
                               Text(
-                                '已啟用 ${active.length} 項 · 共 ${registry.length} 項可用',
+                                l10n.pidManagerCounts(
+                                  active.length,
+                                  registry.length,
+                                ),
                                 style: context.texts.bodySmall,
                               ),
                             ],
@@ -342,19 +402,19 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                         FilledButton.icon(
                           onPressed: () => context.push(PidEditorScreen.path),
                           icon: const Icon(Icons.add, size: 18),
-                          label: const Text('新增'),
+                          label: Text(l10n.pidManagerAdd),
                         ),
                         PopupMenuButton<_PidMenuAction>(
                           onSelected: _handleMenu,
-                          tooltip: '更多',
-                          itemBuilder: (context) => const [
+                          tooltip: l10n.pidManagerMoreActions,
+                          itemBuilder: (context) => [
                             PopupMenuItem(
                               value: _PidMenuAction.arrange,
                               child: ListTile(
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
-                                leading: Icon(Icons.reorder, size: 20),
-                                title: Text('排列儀表板'),
+                                leading: const Icon(Icons.reorder, size: 20),
+                                title: Text(l10n.pidManagerArrangeDashboard),
                               ),
                             ),
                             PopupMenuItem(
@@ -362,11 +422,11 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                               child: ListTile(
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
-                                leading: Icon(
+                                leading: const Icon(
                                   Icons.file_download_outlined,
                                   size: 20,
                                 ),
-                                title: Text('匯入 CSV'),
+                                title: Text(l10n.pidManagerImportCsv),
                               ),
                             ),
                             PopupMenuItem(
@@ -374,11 +434,11 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                               child: ListTile(
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
-                                leading: Icon(
+                                leading: const Icon(
                                   Icons.file_upload_outlined,
                                   size: 20,
                                 ),
-                                title: Text('匯出自訂 PID'),
+                                title: Text(l10n.pidManagerExportCsv),
                               ),
                             ),
                           ],
@@ -394,9 +454,9 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                     const SizedBox(height: Spacing.lg),
                     TextField(
                       onChanged: (v) => setState(() => _query = v),
-                      decoration: const InputDecoration(
-                        hintText: '搜尋名稱或 PID 代碼…',
-                        prefixIcon: Icon(Icons.search, size: 20),
+                      decoration: InputDecoration(
+                        hintText: l10n.pidManagerSearchHint,
+                        prefixIcon: const Icon(Icons.search, size: 20),
                       ),
                     ),
                     const SizedBox(height: Spacing.md),
@@ -405,7 +465,7 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                         FilterChip(
                           selected: _activeOnly,
                           onSelected: (v) => setState(() => _activeOnly = v),
-                          label: const Text('只顯示已啟用'),
+                          label: Text(l10n.pidManagerActiveOnly),
                           showCheckmark: false,
                           selectedColor: palette.accent.withValues(alpha: 0.16),
                           labelStyle: context.texts.labelMedium?.copyWith(
@@ -420,7 +480,7 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                           onPressed: () =>
                               context.push(PowertrainBatteryCatalogScreen.path),
                           icon: const Icon(Icons.electric_car_outlined, size: 18),
-                          label: const Text('大電池目錄'),
+                          label: Text(l10n.pidManagerPowertrainBatteryCatalog),
                         ),
                       ],
                     ),
@@ -429,11 +489,11 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
               ),
             ),
             if (visible.isEmpty)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 child: EmptyState(
                   icon: Icons.search_off,
-                  title: '沒有符合的 PID',
-                  message: '換個關鍵字，或建立一個自訂 PID。',
+                  title: l10n.pidManagerNoMatchTitle,
+                  message: l10n.pidManagerNoMatchMessage,
                 ),
               )
             else
@@ -502,70 +562,75 @@ final class PidCapabilityPanel extends StatelessWidget {
   final SupportedPidBulkPresentation presentation;
   final VoidCallback onAdd;
 
-  String get _phaseLabel => switch (summary.phase) {
-    ObdCapabilityDiscoveryPhase.notStarted => '尚未開始掃描',
-    ObdCapabilityDiscoveryPhase.running => '正在確認車輛支援項目',
-    ObdCapabilityDiscoveryPhase.attemptFinished => '本次支援掃描已完成',
-    ObdCapabilityDiscoveryPhase.interrupted => '支援掃描已中斷',
-  };
-
-  String get _actionLabel => switch (presentation.state) {
-    SupportedPidBulkUiState.pending => '等待掃描結果',
-    SupportedPidBulkUiState.incomplete =>
-      presentation.addCount > 0
-          ? '加入已確認的 ${presentation.addCount} 項'
-          : '掃描資料不完整',
-    SupportedPidBulkUiState.zero => '沒有確認支援項目',
-    SupportedPidBulkUiState.ready => '加入 ${presentation.addCount} 項',
-    SupportedPidBulkUiState.allActive => '已全部啟用',
-    SupportedPidBulkUiState.locked => '錄製中無法變更',
-  };
-
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label:
-        '車輛支援 PID。$_phaseLabel。確認 ${presentation.confirmedCount} 項。'
-        '未知區塊 ${summary.unknownOrUnverifiedBlockCount} 個。',
-    child: Panel(
-      padding: const EdgeInsets.all(Spacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('車輛支援 PID', style: context.texts.titleMedium),
-          const SizedBox(height: Spacing.xs),
-          Text(_phaseLabel, style: context.texts.bodySmall),
-          const SizedBox(height: Spacing.sm),
-          Wrap(
-            spacing: Spacing.md,
-            runSpacing: Spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('確認 ${presentation.confirmedCount} 項'),
-              Text('未知區塊 ${summary.unknownOrUnverifiedBlockCount}'),
-              if (summary.contiguousCoverageThroughPid case final through?)
-                Text(
-                  '連續涵蓋 01–${through.toRadixString(16).toUpperCase().padLeft(2, '0')}'
-                  '${summary.contiguousCoverageReachedVerifiedTerminal ? '（已到終點）' : '（後續未知）'}',
-                )
-              else
-                const Text('連續涵蓋尚未建立'),
-            ],
-          ),
-          const SizedBox(height: Spacing.sm),
-          Semantics(
-            button: true,
-            label: _actionLabel,
-            child: FilledButton.icon(
-              onPressed: presentation.canAdd ? onAdd : null,
-              icon: const Icon(Icons.playlist_add_check),
-              label: Text(_actionLabel),
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final phaseLabel = obdCapabilityPhaseLabel(l10n, summary.phase);
+    final actionLabel = supportedPidBulkActionLabel(l10n, presentation);
+    final through = summary.contiguousCoverageThroughPid;
+    return Semantics(
+      container: true,
+      label: l10n.pidCapabilitySemantics(
+        phaseLabel,
+        presentation.confirmedCount,
+        summary.unknownOrUnverifiedBlockCount,
       ),
-    ),
-  );
+      child: Panel(
+        padding: const EdgeInsets.all(Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.pidCapabilityTitle, style: context.texts.titleMedium),
+            const SizedBox(height: Spacing.xs),
+            Text(phaseLabel, style: context.texts.bodySmall),
+            const SizedBox(height: Spacing.sm),
+            Wrap(
+              spacing: Spacing.md,
+              runSpacing: Spacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  l10n.pidCapabilityConfirmedCount(presentation.confirmedCount),
+                ),
+                Text(
+                  l10n.pidCapabilityUnknownBlocks(
+                    summary.unknownOrUnverifiedBlockCount,
+                  ),
+                ),
+                if (through != null)
+                  Text(
+                    // The hex PID is a machine token in both languages; only
+                    // the sentence around it changes.
+                    summary.contiguousCoverageReachedVerifiedTerminal
+                        ? l10n.pidCapabilityCoverageThroughEnd(
+                            _hexPid(through),
+                          )
+                        : l10n.pidCapabilityCoverageThroughUnknown(
+                            _hexPid(through),
+                          ),
+                  )
+                else
+                  Text(l10n.pidCapabilityCoverageNone),
+              ],
+            ),
+            const SizedBox(height: Spacing.sm),
+            Semantics(
+              button: true,
+              label: actionLabel,
+              child: FilledButton.icon(
+                onPressed: presentation.canAdd ? onAdd : null,
+                icon: const Icon(Icons.playlist_add_check),
+                label: Text(actionLabel),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _hexPid(int value) =>
+      value.toRadixString(16).toUpperCase().padLeft(2, '0');
 }
 
 class _PidRow extends StatelessWidget {
@@ -598,6 +663,7 @@ class _PidRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final accent = context.gaugeColors(GaugeHue.forKey(pid.id)).bright;
 
@@ -636,16 +702,16 @@ class _PidRow extends StatelessWidget {
                     ),
                     if (pid.isCustom) ...[
                       const SizedBox(width: Spacing.sm),
-                      const StatusPill(
-                        label: '自訂',
+                      StatusPill(
+                        label: l10n.pidPillCustom,
                         tone: StatusTone.accent,
                         dense: true,
                       ),
                     ],
                     if (isUnsupported) ...[
                       const SizedBox(width: Spacing.sm),
-                      const StatusPill(
-                        label: '不支援',
+                      StatusPill(
+                        label: l10n.pidPillUnsupported,
                         tone: StatusTone.warn,
                         dense: true,
                       ),
@@ -691,7 +757,7 @@ class _PidRow extends StatelessWidget {
                     style: AppTypography.readout(palette, 17),
                   ),
                   Text(
-                    isStale ? '${pid.units} · 已過期' : pid.units,
+                    isStale ? l10n.pidRowStaleUnits(pid.units) : pid.units,
                     style: context.texts.labelSmall,
                   ),
                 ],
@@ -702,12 +768,15 @@ class _PidRow extends StatelessWidget {
             IconButton(
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
-              tooltip: '編輯',
+              tooltip: l10n.pidRowEdit,
             ),
           // A bare switch announces only "on"/"off" with no subject. In a
           // list of twenty-three rows that is not enough to act on.
+          //
+          // `pid.name` is the author's own text and goes through verbatim in
+          // either language; it is data, never a key.
           Semantics(
-            label: '在儀表板顯示 ${pid.name}',
+            label: l10n.pidRowShowOnDashboard(pid.name),
             child: Switch(
               value: isActive,
               onChanged: (_) => unawaited(onToggle()),
@@ -728,6 +797,9 @@ class _ArrangeSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Captured once, before the reorder callback awaits: the refusal must be
+    // in the language that was on screen when the drag happened.
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final active = ref.watch(activePidsProvider);
 
@@ -748,21 +820,21 @@ class _ArrangeSheet extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('排列儀表板', style: context.texts.headlineSmall),
-                  const SizedBox(height: Spacing.xs),
                   Text(
-                    '拖曳調整順序。儀表板由左至右、由上而下填滿，排在前面的最先看到。',
-                    style: context.texts.bodySmall,
+                    l10n.pidManagerArrangeDashboard,
+                    style: context.texts.headlineSmall,
                   ),
+                  const SizedBox(height: Spacing.xs),
+                  Text(l10n.pidArrangeBody, style: context.texts.bodySmall),
                 ],
               ),
             ),
             Expanded(
               child: active.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.tune,
-                      title: '還沒有啟用任何 PID',
-                      message: '先在清單中啟用幾項，再回來排列順序。',
+                      title: l10n.pidArrangeEmptyTitle,
+                      message: l10n.pidArrangeEmptyMessage,
                     )
                   : ReorderableListView.builder(
                       scrollController: scrollController,
@@ -783,8 +855,8 @@ class _ArrangeSheet extends ConsumerWidget {
                               .reorder(oldIndex, newIndex);
                           if (outcome.isLocked && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(kPidMutationLockedMessage),
+                              SnackBar(
+                                content: Text(l10n.telemetryBlockedByRecorder),
                               ),
                             );
                           }

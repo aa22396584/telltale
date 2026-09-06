@@ -528,6 +528,310 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navSettings => '設定';
 
   @override
+  String get pidActionCancel => '取消';
+
+  @override
+  String get pidActionDelete => '刪除';
+
+  @override
+  String get pidArrangeBody => '拖曳調整順序。儀表板由左至右、由上而下填滿，排在前面的最先看到。';
+
+  @override
+  String get pidArrangeEmptyMessage => '先在清單中啟用幾項，再回來排列順序。';
+
+  @override
+  String get pidArrangeEmptyTitle => '還沒有啟用任何 PID';
+
+  @override
+  String pidBulkActionAddConfirmed(int count) {
+    return '加入已確認的 $count 項';
+  }
+
+  @override
+  String get pidBulkActionAllActive => '已全部啟用';
+
+  @override
+  String get pidBulkActionIncomplete => '掃描資料不完整';
+
+  @override
+  String get pidBulkActionLocked => '錄製中無法變更';
+
+  @override
+  String get pidBulkActionPending => '等待掃描結果';
+
+  @override
+  String get pidBulkActionZero => '沒有確認支援項目';
+
+  @override
+  String pidBulkAddCount(int count) {
+    return '加入 $count 項';
+  }
+
+  @override
+  String pidBulkAddDialogTitle(int count) {
+    return '加入 $count 項已確認支援 PID？';
+  }
+
+  @override
+  String pidBulkAdded(int count) {
+    return '已加入 $count 項已確認支援 PID。';
+  }
+
+  @override
+  String pidBulkUnconfirmedBlocks(int count) {
+    return '仍有 $count 個支援區塊未確認，這次只加入已有正面證據的項目。';
+  }
+
+  @override
+  String pidBulkWillAdd(int count) {
+    return '將加入 $count 項。啟用越多 PID，單項資料的更新頻率可能降低。';
+  }
+
+  @override
+  String pidCapabilityConfirmedCount(int confirmed) {
+    return '確認 $confirmed 項';
+  }
+
+  @override
+  String get pidCapabilityCoverageNone => '連續涵蓋尚未建立';
+
+  @override
+  String pidCapabilityCoverageThroughEnd(String through) {
+    return '連續涵蓋 01–$through（已到終點）';
+  }
+
+  @override
+  String pidCapabilityCoverageThroughUnknown(String through) {
+    return '連續涵蓋 01–$through（後續未知）';
+  }
+
+  @override
+  String get pidCapabilityPhaseAttemptFinished => '本次支援掃描已完成';
+
+  @override
+  String get pidCapabilityPhaseInterrupted => '支援掃描已中斷';
+
+  @override
+  String get pidCapabilityPhaseNotStarted => '尚未開始掃描';
+
+  @override
+  String get pidCapabilityPhaseRunning => '正在確認車輛支援項目';
+
+  @override
+  String pidCapabilitySemantics(String phase, int confirmed, int unknown) {
+    return '車輛支援 PID。$phase。確認 $confirmed 項。未知區塊 $unknown 個。';
+  }
+
+  @override
+  String get pidCapabilityTitle => '車輛支援 PID';
+
+  @override
+  String pidCapabilityUnknownBlocks(int unknown) {
+    return '未知區塊 $unknown';
+  }
+
+  @override
+  String pidEditorCollision(String name) {
+    return '已經有一個自訂 PID 使用這組設定（$name）。請改用不同的模式 + PID、標頭或名稱後綴。';
+  }
+
+  @override
+  String pidEditorDeleteBody(String name) {
+    return '「$name」的定義會被移除，儀表板上的這個錶也會一起消失，而且無法復原。';
+  }
+
+  @override
+  String get pidEditorDeleteTitle => '刪除這個 PID？';
+
+  @override
+  String get pidEditorDiscard => '放棄';
+
+  @override
+  String get pidEditorDiscardBody => '這個 PID 的修改還沒有儲存，離開後會遺失。';
+
+  @override
+  String get pidEditorDiscardTitle => '放棄未儲存的變更？';
+
+  @override
+  String pidEditorEquationHelper(String valSyntax) {
+    return 'A..N 對應回應位元組；可用 SIGNED()、ABS()、LOG10()、$valSyntax、BARO';
+  }
+
+  @override
+  String get pidEditorFieldEquation => '運算式';
+
+  @override
+  String get pidEditorFieldHeader => 'CAN 標頭';
+
+  @override
+  String get pidEditorFieldMax => '最大值';
+
+  @override
+  String get pidEditorFieldMin => '最小值';
+
+  @override
+  String get pidEditorFieldModeAndPid => '模式 + PID';
+
+  @override
+  String get pidEditorFieldName => '名稱';
+
+  @override
+  String get pidEditorFieldSample => '測試用回應位元組';
+
+  @override
+  String get pidEditorFieldShortName => '簡稱（顯示於錶面）';
+
+  @override
+  String get pidEditorFieldUnits => '單位';
+
+  @override
+  String get pidEditorHeaderHelper => '7E0 = 引擎';
+
+  @override
+  String get pidEditorKeepEditing => '繼續編輯';
+
+  @override
+  String get pidEditorModeAndPidHelper => '例如 010C 或 221101';
+
+  @override
+  String get pidEditorSampleHelper => '輸入十六進位，即時預覽計算結果';
+
+  @override
+  String get pidEditorSave => '儲存';
+
+  @override
+  String get pidEditorSectionFormula => '公式';
+
+  @override
+  String get pidEditorSectionIdentity => '識別';
+
+  @override
+  String get pidEditorSectionQuery => '查詢';
+
+  @override
+  String get pidEditorSectionRangeAndPriority => '錶面範圍與優先權';
+
+  @override
+  String get pidEditorTitleEdit => '編輯 PID';
+
+  @override
+  String get pidEditorTitleNew => '新增自訂 PID';
+
+  @override
+  String pidExportFailed(String error) {
+    return '匯出失敗：$error';
+  }
+
+  @override
+  String get pidExportNoCustomPids => '目前沒有自訂 PID 可匯出。';
+
+  @override
+  String get pidImportNothingToImport => '沒有可匯入的定義。';
+
+  @override
+  String pidImportPickerFailed(String error) {
+    return '無法開啟檔案選擇器：$error';
+  }
+
+  @override
+  String pidImportReadFailed(String error) {
+    return '讀取檔案失敗：$error';
+  }
+
+  @override
+  String get pidListSeparator => '、';
+
+  @override
+  String get pidManagerActiveOnly => '只顯示已啟用';
+
+  @override
+  String get pidManagerAdd => '新增';
+
+  @override
+  String get pidManagerArrangeDashboard => '排列儀表板';
+
+  @override
+  String pidManagerCounts(int active, int total) {
+    return '已啟用 $active 項 · 共 $total 項可用';
+  }
+
+  @override
+  String get pidManagerExportCsv => '匯出自訂 PID';
+
+  @override
+  String get pidManagerHeadline => 'PID 管理';
+
+  @override
+  String get pidManagerImportCsv => '匯入 CSV';
+
+  @override
+  String get pidManagerMoreActions => '更多';
+
+  @override
+  String get pidManagerNoMatchMessage => '換個關鍵字，或建立一個自訂 PID。';
+
+  @override
+  String get pidManagerNoMatchTitle => '沒有符合的 PID';
+
+  @override
+  String get pidManagerPowertrainBatteryCatalog => '大電池目錄';
+
+  @override
+  String get pidManagerSearchHint => '搜尋名稱或 PID 代碼…';
+
+  @override
+  String get pidPickCsvDialogTitle => '選擇 PID 定義 CSV';
+
+  @override
+  String get pidPillCustom => '自訂';
+
+  @override
+  String get pidPillUnsupported => '不支援';
+
+  @override
+  String get pidPreviewCannotEvaluate => '無法計算';
+
+  @override
+  String get pidPreviewResultLabel => '計算結果';
+
+  @override
+  String pidPreviewSubstituted(double value, String dependencies) {
+    final intl.NumberFormat valueNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String valueString = valueNumberFormat.format(value);
+
+    return '預覽時以 $valueString 代入 $dependencies；實際數值會在連線後由該 PID 提供。';
+  }
+
+  @override
+  String get pidPreviewTitle => '即時預覽';
+
+  @override
+  String get pidPriorityHigh => '高';
+
+  @override
+  String get pidPriorityLow => '低';
+
+  @override
+  String get pidPriorityMedium => '中';
+
+  @override
+  String get pidPriorityVeryLow => '極低';
+
+  @override
+  String get pidRowEdit => '編輯';
+
+  @override
+  String pidRowShowOnDashboard(String name) {
+    return '在儀表板顯示 $name';
+  }
+
+  @override
+  String pidRowStaleUnits(String units) {
+    return '$units · 已過期';
+  }
+
+  @override
   String get recommendedPurchaseDisclosure =>
       '這是維護者的推廣分潤連結；符合條件的購買可能產生佣金。不是轉接器認證或購買保證。賣場內容與硬體版本可能變更，購買前請核對完整型號與 NCC 號碼。你也可以自行搜尋其他通路。';
 
@@ -1570,6 +1874,310 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get navSettings => '設定';
+
+  @override
+  String get pidActionCancel => '取消';
+
+  @override
+  String get pidActionDelete => '刪除';
+
+  @override
+  String get pidArrangeBody => '拖曳調整順序。儀表板由左至右、由上而下填滿，排在前面的最先看到。';
+
+  @override
+  String get pidArrangeEmptyMessage => '先在清單中啟用幾項，再回來排列順序。';
+
+  @override
+  String get pidArrangeEmptyTitle => '還沒有啟用任何 PID';
+
+  @override
+  String pidBulkActionAddConfirmed(int count) {
+    return '加入已確認的 $count 項';
+  }
+
+  @override
+  String get pidBulkActionAllActive => '已全部啟用';
+
+  @override
+  String get pidBulkActionIncomplete => '掃描資料不完整';
+
+  @override
+  String get pidBulkActionLocked => '錄製中無法變更';
+
+  @override
+  String get pidBulkActionPending => '等待掃描結果';
+
+  @override
+  String get pidBulkActionZero => '沒有確認支援項目';
+
+  @override
+  String pidBulkAddCount(int count) {
+    return '加入 $count 項';
+  }
+
+  @override
+  String pidBulkAddDialogTitle(int count) {
+    return '加入 $count 項已確認支援 PID？';
+  }
+
+  @override
+  String pidBulkAdded(int count) {
+    return '已加入 $count 項已確認支援 PID。';
+  }
+
+  @override
+  String pidBulkUnconfirmedBlocks(int count) {
+    return '仍有 $count 個支援區塊未確認，這次只加入已有正面證據的項目。';
+  }
+
+  @override
+  String pidBulkWillAdd(int count) {
+    return '將加入 $count 項。啟用越多 PID，單項資料的更新頻率可能降低。';
+  }
+
+  @override
+  String pidCapabilityConfirmedCount(int confirmed) {
+    return '確認 $confirmed 項';
+  }
+
+  @override
+  String get pidCapabilityCoverageNone => '連續涵蓋尚未建立';
+
+  @override
+  String pidCapabilityCoverageThroughEnd(String through) {
+    return '連續涵蓋 01–$through（已到終點）';
+  }
+
+  @override
+  String pidCapabilityCoverageThroughUnknown(String through) {
+    return '連續涵蓋 01–$through（後續未知）';
+  }
+
+  @override
+  String get pidCapabilityPhaseAttemptFinished => '本次支援掃描已完成';
+
+  @override
+  String get pidCapabilityPhaseInterrupted => '支援掃描已中斷';
+
+  @override
+  String get pidCapabilityPhaseNotStarted => '尚未開始掃描';
+
+  @override
+  String get pidCapabilityPhaseRunning => '正在確認車輛支援項目';
+
+  @override
+  String pidCapabilitySemantics(String phase, int confirmed, int unknown) {
+    return '車輛支援 PID。$phase。確認 $confirmed 項。未知區塊 $unknown 個。';
+  }
+
+  @override
+  String get pidCapabilityTitle => '車輛支援 PID';
+
+  @override
+  String pidCapabilityUnknownBlocks(int unknown) {
+    return '未知區塊 $unknown';
+  }
+
+  @override
+  String pidEditorCollision(String name) {
+    return '已經有一個自訂 PID 使用這組設定（$name）。請改用不同的模式 + PID、標頭或名稱後綴。';
+  }
+
+  @override
+  String pidEditorDeleteBody(String name) {
+    return '「$name」的定義會被移除，儀表板上的這個錶也會一起消失，而且無法復原。';
+  }
+
+  @override
+  String get pidEditorDeleteTitle => '刪除這個 PID？';
+
+  @override
+  String get pidEditorDiscard => '放棄';
+
+  @override
+  String get pidEditorDiscardBody => '這個 PID 的修改還沒有儲存，離開後會遺失。';
+
+  @override
+  String get pidEditorDiscardTitle => '放棄未儲存的變更？';
+
+  @override
+  String pidEditorEquationHelper(String valSyntax) {
+    return 'A..N 對應回應位元組；可用 SIGNED()、ABS()、LOG10()、$valSyntax、BARO';
+  }
+
+  @override
+  String get pidEditorFieldEquation => '運算式';
+
+  @override
+  String get pidEditorFieldHeader => 'CAN 標頭';
+
+  @override
+  String get pidEditorFieldMax => '最大值';
+
+  @override
+  String get pidEditorFieldMin => '最小值';
+
+  @override
+  String get pidEditorFieldModeAndPid => '模式 + PID';
+
+  @override
+  String get pidEditorFieldName => '名稱';
+
+  @override
+  String get pidEditorFieldSample => '測試用回應位元組';
+
+  @override
+  String get pidEditorFieldShortName => '簡稱（顯示於錶面）';
+
+  @override
+  String get pidEditorFieldUnits => '單位';
+
+  @override
+  String get pidEditorHeaderHelper => '7E0 = 引擎';
+
+  @override
+  String get pidEditorKeepEditing => '繼續編輯';
+
+  @override
+  String get pidEditorModeAndPidHelper => '例如 010C 或 221101';
+
+  @override
+  String get pidEditorSampleHelper => '輸入十六進位，即時預覽計算結果';
+
+  @override
+  String get pidEditorSave => '儲存';
+
+  @override
+  String get pidEditorSectionFormula => '公式';
+
+  @override
+  String get pidEditorSectionIdentity => '識別';
+
+  @override
+  String get pidEditorSectionQuery => '查詢';
+
+  @override
+  String get pidEditorSectionRangeAndPriority => '錶面範圍與優先權';
+
+  @override
+  String get pidEditorTitleEdit => '編輯 PID';
+
+  @override
+  String get pidEditorTitleNew => '新增自訂 PID';
+
+  @override
+  String pidExportFailed(String error) {
+    return '匯出失敗：$error';
+  }
+
+  @override
+  String get pidExportNoCustomPids => '目前沒有自訂 PID 可匯出。';
+
+  @override
+  String get pidImportNothingToImport => '沒有可匯入的定義。';
+
+  @override
+  String pidImportPickerFailed(String error) {
+    return '無法開啟檔案選擇器：$error';
+  }
+
+  @override
+  String pidImportReadFailed(String error) {
+    return '讀取檔案失敗：$error';
+  }
+
+  @override
+  String get pidListSeparator => '、';
+
+  @override
+  String get pidManagerActiveOnly => '只顯示已啟用';
+
+  @override
+  String get pidManagerAdd => '新增';
+
+  @override
+  String get pidManagerArrangeDashboard => '排列儀表板';
+
+  @override
+  String pidManagerCounts(int active, int total) {
+    return '已啟用 $active 項 · 共 $total 項可用';
+  }
+
+  @override
+  String get pidManagerExportCsv => '匯出自訂 PID';
+
+  @override
+  String get pidManagerHeadline => 'PID 管理';
+
+  @override
+  String get pidManagerImportCsv => '匯入 CSV';
+
+  @override
+  String get pidManagerMoreActions => '更多';
+
+  @override
+  String get pidManagerNoMatchMessage => '換個關鍵字，或建立一個自訂 PID。';
+
+  @override
+  String get pidManagerNoMatchTitle => '沒有符合的 PID';
+
+  @override
+  String get pidManagerPowertrainBatteryCatalog => '大電池目錄';
+
+  @override
+  String get pidManagerSearchHint => '搜尋名稱或 PID 代碼…';
+
+  @override
+  String get pidPickCsvDialogTitle => '選擇 PID 定義 CSV';
+
+  @override
+  String get pidPillCustom => '自訂';
+
+  @override
+  String get pidPillUnsupported => '不支援';
+
+  @override
+  String get pidPreviewCannotEvaluate => '無法計算';
+
+  @override
+  String get pidPreviewResultLabel => '計算結果';
+
+  @override
+  String pidPreviewSubstituted(double value, String dependencies) {
+    final intl.NumberFormat valueNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String valueString = valueNumberFormat.format(value);
+
+    return '預覽時以 $valueString 代入 $dependencies；實際數值會在連線後由該 PID 提供。';
+  }
+
+  @override
+  String get pidPreviewTitle => '即時預覽';
+
+  @override
+  String get pidPriorityHigh => '高';
+
+  @override
+  String get pidPriorityLow => '低';
+
+  @override
+  String get pidPriorityMedium => '中';
+
+  @override
+  String get pidPriorityVeryLow => '極低';
+
+  @override
+  String get pidRowEdit => '編輯';
+
+  @override
+  String pidRowShowOnDashboard(String name) {
+    return '在儀表板顯示 $name';
+  }
+
+  @override
+  String pidRowStaleUnits(String units) {
+    return '$units · 已過期';
+  }
 
   @override
   String get recommendedPurchaseDisclosure =>
