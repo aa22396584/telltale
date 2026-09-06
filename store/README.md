@@ -60,13 +60,42 @@ im.convert('RGB').save(dst, 'PNG', optimize=True)
 ## 隱私檢查
 
 - `03-dtc-freeze.png` 顯示的是內建 Demo ECU 的固定測試 VIN
-  `1D4GP00R55B123456`，不是實車或使用者資料。Play 商店目前可只使用其餘四張截圖；
-  若要重新加入這張，應在素材文案中清楚標示為 Demo 資料。
+  `1D4GP00R55B123456`，不是實車或使用者資料。**2026-09-06 查證：Play 上的 zh-TW
+  listing 五張截圖全部在線，包含這一張。**（先前這裡寫著「可只使用其餘四張」，讀起來
+  像是描述現況，其實只是一個選項 —— `gplay images list` 才是現況。）
 - 原始 GT86 實車錄影曾短暫顯示真實 VIN，因此**不得直接上傳**。
   `preview-gt86-vin-redacted.mp4` 已裁掉 Android 狀態列與手勢列，將 VIN 欄位遮蔽，
   並以模糊背景輸出為 16:9 標準影片，避免被 YouTube 歸類為 Shorts。
   Play Console 的影片欄位只接受 YouTube 網址，應把這個遮蔽版上傳為公開或不公開影片，
   關閉廣告、允許嵌入且不設年齡限制。
+
+## 文案：`metadata/`
+
+Listing 的文字以前只存在於 Play Console，改不留痕跡、看不出誰改了什麼。現在它在這裡：
+
+```
+store/metadata/<locale>/
+├── title.txt              ≤ 30 字元
+├── short_description.txt  ≤ 80 字元
+├── full_description.txt   ≤ 4000 字元
+├── video.txt              YouTube 網址
+└── changelogs/<versionCode>.txt   ≤ 500 字元
+```
+
+`store/upload.sh` 把這些文字與 `store/<locale>/` 的圖片組成 Play CLI 要的 FastLane
+樹（在暫存目錄裡，不進版控），然後上傳。**預設是 dry run**：
+
+```bash
+store/upload.sh                # 只列出會改什麼
+store/upload.sh --apply        # 真的寫入並 commit edit
+store/upload.sh --apply en-US  # 只做一個語系
+```
+
+它只碰 listing 與圖片，不碰任何發布軌道。兩者分開的理由很實際：改一行文案不應該有
+任何機會順手把一個 build 推上 production。
+
+字數上限由 CI 的 `store-assets` job 檢查。Play 是在上傳時才拒絕的，那時候要嘛已經改了
+一半、要嘛在等 API 回應 —— 在本機就知道便宜得多。
 
 ## 為什麼沒有 `04-`
 

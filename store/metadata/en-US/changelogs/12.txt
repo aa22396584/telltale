@@ -1,0 +1,5 @@
+The interface is now English. Connect, dashboard, fault codes, freeze frame, acceleration and settings all read in English or Traditional Chinese — switch it on the connect screen or in Settings, or follow the system.
+
+Fixed: in the English build the estimated-values panel still named its air-mass and fuel sources in Chinese, and so did the gauge skins.
+
+Known gap: the estimate details dialog still lists its vehicle assumptions in Chinese. Tracked at github.com/ImL1s/telltale/issues/45.

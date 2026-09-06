@@ -1,0 +1,45 @@
+Read your car through an ELM327 adapter: live RPM, speed, coolant, load and intake temperature, fault codes, and the full vehicle state recorded at the moment a fault occurred.
+
+This app is organised around one sentence:
+
+A plausible wrong number is worse than no number.
+
+Diagnostic results get acted on with a wrench. A −40 °C coolant reading gets a sensor replaced; "no fault codes" sends someone away in a car that still has a problem. So every rule here exists to make uncertainty look like uncertainty, instead of like an answer.
+
+▍What it does
+
+• Six hand-drawn gauges in five skins — not just recoloured: the dial shape, needle and motion differ. Both dark and light backgrounds
+• Fault codes: Mode 03 stored, Mode 07 pending, Mode 0A permanent, each labelled with the controller that reported it
+• Freeze frame: the vehicle state at the moment the fault was confirmed — RPM, coolant, load, fuel trim. It is the only record in the app of conditions while the fault was happening, and clearing the codes destroys it permanently, so the app asks first
+• Emissions readiness: know before the inspection whether it will pass
+• Derived values: power, torque, fuel use, air flow. Generic OBD still works with no VIN and no catalog match; estimates are labelled with the formula and the vehicle assumptions they rest on, and are not measurements
+• Custom PIDs: write your own formulas, with CSV import and export
+• Acceleration test: timed from a standstill to a target speed
+• Diagnostic transcript: every byte exchanged with the adapter is kept and can be exported when a connection fails; recording and export keep their status labels
+• English and Traditional Chinese throughout, switchable on the connect screen and in Settings, or set to follow the system
+
+▍Four ways to connect
+
+Bluetooth Classic (RFCOMM/SPP), Bluetooth LE (GATT UART), Wi-Fi (TCP), and a built-in Demo simulator — every screen works with no adapter and no vehicle.
+
+▍What it deliberately refuses to do
+
+• It does not turn "the controllers that answered reported no codes" into "this vehicle has no fault codes"
+• When two controllers answer the same question differently, it uses neither — picking one is picking at random
+• Unverified readings stay usable and stay labelled with their source and state (unverified / estimated / anomalous); a malformed packet never becomes a plausible-looking number
+• No ads, no tracking, no personal data collected
+
+▍Open source
+
+The source is on GitHub under GPL-3.0, and you can build it yourself:
+https://github.com/ImL1s/telltale
+
+The paid Play edition has exactly the same features — nothing is held back. It is for people who would rather not build it themselves, and for those willing to support continued development.
+
+▍What you need
+
+An ELM327 OBD2 adapter (Bluetooth or Wi-Fi) and an OBD2-compliant vehicle. It still connects and reads without a catalog entry or vehicle data.
+
+▍Notice
+
+This app is not affiliated with, endorsed by, or derived from Ian Hawkins' Torque or Torque Pro. The OBD2 implementation follows public standards including SAE J1979 and the ELM327 datasheet.
