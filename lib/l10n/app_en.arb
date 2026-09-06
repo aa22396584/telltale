@@ -98,5 +98,125 @@
   },
   "telemetryBlockedByRecorder": "Stop and save the recording first",
   "telemetryDeleteNeedsConfirmation": "Confirm this delete first",
-  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing"
+  "telemetryArtifactRestartRequired": "The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing",
+  "navDashboard": "Dashboard",
+  "@navDashboard": {
+    "description": "Bottom-navigation and rail destination. On screen on every screen, in a five-tab bar; a label that does not fit is ellipsised by the framework, so keep it short enough to render whole at 360dp."
+  },
+  "navPid": "PID",
+  "@navPid": {
+    "description": "Navigation destination for the PID manager. PID is an SAE J1979 term and is not translated in either language."
+  },
+  "navDtc": "Fault codes",
+  "@navDtc": {
+    "description": "Navigation destination for the fault-code screen. 'Fault codes' is the spelled-out term the README and glossary use; DTC stays available as the acronym elsewhere. It measures inside the 72dp a fifth of a 360dp bar allows, so the long form ships."
+  },
+  "navPerformance": "Timing",
+  "@navPerformance": {
+    "description": "Navigation destination for the acceleration-timing screen, which times 0 to a target speed. NOT 'Performance': measured in the shipped SpaceGrotesk at 12sp it wants 78.8dp against the 72dp a fifth of a 360dp bar allows, so it would render as 'Performanc…' — and a truncated label is worse than a shorter true one. 'Timing' is what the screen does."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not."
+  },
+  "gaugeNoData": "No data",
+  "@gaugeNoData": {
+    "description": "Spoken and shown when a dial has no value at all. Not zero, and not unsupported."
+  },
+  "gaugeNoDataBecause": "No data — {reason}",
+  "@gaugeNoDataBecause": {
+    "description": "A dial with no value leads with the reason, because that is the whole of what there is to say. {reason} is the footnote already on screen (formula error, bus error, no answer) and each stays distinct.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "gaugeReadingStale": "{reading} (data is stale)",
+  "@gaugeReadingStale": {
+    "description": "Screen-reader value for a dial whose number is real and whose age is the qualification. The number stays; the parenthetical says it stopped arriving.",
+    "placeholders": {
+      "reading": {
+        "type": "String"
+      }
+    }
+  },
+  "datumStatusFollowsData": "Status follows the data",
+  "@datumStatusFollowsData": {
+    "description": "Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged."
+  },
+  "datumStatusFormula": "Formula",
+  "datumStatusAssumptions": "Assumptions",
+  "datumStatusClose": "Close",
+  "fieldEventHeading": "Field event markers",
+  "fieldEventBody": "Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.",
+  "@fieldEventBody": {
+    "description": "Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does."
+  },
+  "fieldEventRecorded": "Recorded and saved: {marker}",
+  "@fieldEventRecorded": {
+    "description": "Both halves are claims: the event is in the session AND it reached storage.",
+    "placeholders": {
+      "marker": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldEventMemoryOnly": "Recorded in this session, but the automatic save failed — export the transcript now.",
+  "@fieldEventMemoryOnly": {
+    "description": "Must not read as saved. The event exists only in memory, so the remedy is immediate and explicit."
+  },
+  "fieldEventUnavailable": "There is no live vehicle connection to record against.",
+  "fieldEventIgnitionOn": "Ignition on",
+  "fieldEventEngineStarted": "Engine started",
+  "fieldEventThrottleBlip": "Throttle blip",
+  "fieldEventRoadTestStarted": "Road test started",
+  "recommendedPurchaseHeading": "Recommended adapter",
+  "recommendedPurchaseStoreShopee": "Shopee",
+  "@recommendedPurchaseStoreShopee": {
+    "description": "The storefront's own name. Shopee publishes as 蝦皮 in Taiwan and Shopee elsewhere, so each language gets the name its reader can read."
+  },
+  "recommendedPurchaseModelLine": "Model {model} · NCC {approval}",
+  "@recommendedPurchaseModelLine": {
+    "description": "{model} and {approval} are printed on the hardware and never translated.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "approval": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseViewOnStore": "View on {store}",
+  "@recommendedPurchaseViewOnStore": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseOpenFailed": "Could not open the {store} link",
+  "@recommendedPurchaseOpenFailed": {
+    "description": "The panel never pretends a failed launch succeeded.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseNoAdapterYet": "No adapter yet? See the recommended one on {store}",
+  "@recommendedPurchaseNoAdapterYet": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedPurchaseDisclosure": "This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.",
+  "@recommendedPurchaseDisclosure": {
+    "description": "Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change."
+  },
+  "recommendedPurchaseShortDisclosureLead": "This is an affiliate link, not an adapter certification.",
+  "recommendedPurchaseShortDisclosureAction": "Full disclosure in Settings"
 }

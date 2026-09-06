@@ -199,4 +199,114 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get telemetryArtifactRestartRequired =>
       'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing';
+
+  @override
+  String get navDashboard => 'Dashboard';
+
+  @override
+  String get navPid => 'PID';
+
+  @override
+  String get navDtc => 'Fault codes';
+
+  @override
+  String get navPerformance => 'Timing';
+
+  @override
+  String get navSettings => 'Settings';
+
+  @override
+  String get gaugeNoData => 'No data';
+
+  @override
+  String gaugeNoDataBecause(String reason) {
+    return 'No data — $reason';
+  }
+
+  @override
+  String gaugeReadingStale(String reading) {
+    return '$reading (data is stale)';
+  }
+
+  @override
+  String get datumStatusFollowsData => 'Status follows the data';
+
+  @override
+  String get datumStatusFormula => 'Formula';
+
+  @override
+  String get datumStatusAssumptions => 'Assumptions';
+
+  @override
+  String get datumStatusClose => 'Close';
+
+  @override
+  String get fieldEventHeading => 'Field event markers';
+
+  @override
+  String get fieldEventBody =>
+      'Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.';
+
+  @override
+  String fieldEventRecorded(String marker) {
+    return 'Recorded and saved: $marker';
+  }
+
+  @override
+  String get fieldEventMemoryOnly =>
+      'Recorded in this session, but the automatic save failed — export the transcript now.';
+
+  @override
+  String get fieldEventUnavailable =>
+      'There is no live vehicle connection to record against.';
+
+  @override
+  String get fieldEventIgnitionOn => 'Ignition on';
+
+  @override
+  String get fieldEventEngineStarted => 'Engine started';
+
+  @override
+  String get fieldEventThrottleBlip => 'Throttle blip';
+
+  @override
+  String get fieldEventRoadTestStarted => 'Road test started';
+
+  @override
+  String get recommendedPurchaseHeading => 'Recommended adapter';
+
+  @override
+  String get recommendedPurchaseStoreShopee => 'Shopee';
+
+  @override
+  String recommendedPurchaseModelLine(String model, String approval) {
+    return 'Model $model · NCC $approval';
+  }
+
+  @override
+  String recommendedPurchaseViewOnStore(String store) {
+    return 'View on $store';
+  }
+
+  @override
+  String recommendedPurchaseOpenFailed(String store) {
+    return 'Could not open the $store link';
+  }
+
+  @override
+  String recommendedPurchaseNoAdapterYet(String store) {
+    return 'No adapter yet? See the recommended one on $store';
+  }
+
+  @override
+  String get recommendedPurchaseDisclosure =>
+      'This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.';
+
+  @override
+  String get recommendedPurchaseShortDisclosureLead =>
+      'This is an affiliate link, not an adapter certification.';
+
+  @override
+  String get recommendedPurchaseShortDisclosureAction =>
+      'Full disclosure in Settings';
 }

@@ -416,6 +416,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The state of local file work cannot be confirmed. Quit Telltale completely and reopen it before continuing'**
   String get telemetryArtifactRestartRequired;
+
+  /// Bottom-navigation and rail destination. On screen on every screen, in a five-tab bar; a label that does not fit is ellipsised by the framework, so keep it short enough to render whole at 360dp.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get navDashboard;
+
+  /// Navigation destination for the PID manager. PID is an SAE J1979 term and is not translated in either language.
+  ///
+  /// In en, this message translates to:
+  /// **'PID'**
+  String get navPid;
+
+  /// Navigation destination for the fault-code screen. 'Fault codes' is the spelled-out term the README and glossary use; DTC stays available as the acronym elsewhere. It measures inside the 72dp a fifth of a 360dp bar allows, so the long form ships.
+  ///
+  /// In en, this message translates to:
+  /// **'Fault codes'**
+  String get navDtc;
+
+  /// Navigation destination for the acceleration-timing screen, which times 0 to a target speed. NOT 'Performance': measured in the shipped SpaceGrotesk at 12sp it wants 78.8dp against the 72dp a fifth of a 360dp bar allows, so it would render as 'Performanc…' — and a truncated label is worse than a shorter true one. 'Timing' is what the screen does.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing'**
+  String get navPerformance;
+
+  /// Navigation destination for Settings. Separate from settingsHeadline: a tab label has a width budget a headline does not.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
+  /// Spoken and shown when a dial has no value at all. Not zero, and not unsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get gaugeNoData;
+
+  /// A dial with no value leads with the reason, because that is the whole of what there is to say. {reason} is the footnote already on screen (formula error, bus error, no answer) and each stays distinct.
+  ///
+  /// In en, this message translates to:
+  /// **'No data — {reason}'**
+  String gaugeNoDataBecause(String reason);
+
+  /// Screen-reader value for a dial whose number is real and whose age is the qualification. The number stays; the parenthetical says it stopped arriving.
+  ///
+  /// In en, this message translates to:
+  /// **'{reading} (data is stale)'**
+  String gaugeReadingStale(String reading);
+
+  /// Shown in the per-value details dialog when the datum carries no badge. It must never read as 'valid', 'OK' or 'normal' — it says only that nothing was flagged.
+  ///
+  /// In en, this message translates to:
+  /// **'Status follows the data'**
+  String get datumStatusFollowsData;
+
+  /// No description provided for @datumStatusFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get datumStatusFormula;
+
+  /// No description provided for @datumStatusAssumptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Assumptions'**
+  String get datumStatusAssumptions;
+
+  /// No description provided for @datumStatusClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get datumStatusClose;
+
+  /// No description provided for @fieldEventHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Field event markers'**
+  String get fieldEventHeading;
+
+  /// Safety copy. 'attempted' is load-bearing: the save can fail, and fieldEventMemoryOnly is what the user sees when it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Press only when the vehicle is fully stopped, by a passenger or by an operator who is parked. Events share one timeline with the raw OBD data, and an immediate save is attempted.'**
+  String get fieldEventBody;
+
+  /// Both halves are claims: the event is in the session AND it reached storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded and saved: {marker}'**
+  String fieldEventRecorded(String marker);
+
+  /// Must not read as saved. The event exists only in memory, so the remedy is immediate and explicit.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded in this session, but the automatic save failed — export the transcript now.'**
+  String get fieldEventMemoryOnly;
+
+  /// No description provided for @fieldEventUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no live vehicle connection to record against.'**
+  String get fieldEventUnavailable;
+
+  /// No description provided for @fieldEventIgnitionOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition on'**
+  String get fieldEventIgnitionOn;
+
+  /// No description provided for @fieldEventEngineStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine started'**
+  String get fieldEventEngineStarted;
+
+  /// No description provided for @fieldEventThrottleBlip.
+  ///
+  /// In en, this message translates to:
+  /// **'Throttle blip'**
+  String get fieldEventThrottleBlip;
+
+  /// No description provided for @fieldEventRoadTestStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Road test started'**
+  String get fieldEventRoadTestStarted;
+
+  /// No description provided for @recommendedPurchaseHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended adapter'**
+  String get recommendedPurchaseHeading;
+
+  /// The storefront's own name. Shopee publishes as 蝦皮 in Taiwan and Shopee elsewhere, so each language gets the name its reader can read.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopee'**
+  String get recommendedPurchaseStoreShopee;
+
+  /// {model} and {approval} are printed on the hardware and never translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Model {model} · NCC {approval}'**
+  String recommendedPurchaseModelLine(String model, String approval);
+
+  /// No description provided for @recommendedPurchaseViewOnStore.
+  ///
+  /// In en, this message translates to:
+  /// **'View on {store}'**
+  String recommendedPurchaseViewOnStore(String store);
+
+  /// The panel never pretends a failed launch succeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the {store} link'**
+  String recommendedPurchaseOpenFailed(String store);
+
+  /// No description provided for @recommendedPurchaseNoAdapterYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No adapter yet? See the recommended one on {store}'**
+  String recommendedPurchaseNoAdapterYet(String store);
+
+  /// Commercial disclosure. Every qualifier is regulated copy: 'may pay' never 'will pay', 'not an adapter certification', 'not a purchase guarantee', and the instruction to check the model and NCC number before buying. Shortening any clause is a compliance change, not a style change.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a maintainer affiliate link; a qualifying purchase may pay the maintainer a commission. It is not an adapter certification or a purchase guarantee. Listing contents and hardware revisions can change, so check the full model number and NCC number before buying. You are also free to look for other sellers yourself.'**
+  String get recommendedPurchaseDisclosure;
+
+  /// No description provided for @recommendedPurchaseShortDisclosureLead.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an affiliate link, not an adapter certification.'**
+  String get recommendedPurchaseShortDisclosureLead;
+
+  /// No description provided for @recommendedPurchaseShortDisclosureAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Full disclosure in Settings'**
+  String get recommendedPurchaseShortDisclosureAction;
 }
 
 class _AppLocalizationsDelegate
