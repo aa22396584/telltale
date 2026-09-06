@@ -8,6 +8,23 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+## 1.0.10 — 2026-09-06
+
+Google Play production target `1.0.10` / versionCode 11. GitHub community
+pre-release `v1.0.10-beta.1` (separate signing lineage). iOS App Store remains
+deferred until 2027.
+
+### Added
+
+- English UI, with a language control on the connect screen (`Language / 語言`)
+  and in Settings. Choose English, Traditional Chinese, or follow the system.
+  This is the store build that includes that switch; `1.0.9` on Play and
+  GitHub `v1.0.9-beta.1` shipped before it landed.
+
+### Fixed
+
+- Retryable startup failure uses its own title, not the “checking” copy.
+
 ## 1.0.9 — 2026-09-06
 
 Google Play production `1.0.9` / versionCode 10 (`PUBLISHED`). GitHub community
