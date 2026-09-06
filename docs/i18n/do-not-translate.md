@@ -63,20 +63,23 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `00A`
 
 ## Adapter responses (must appear exactly as the hardware sends them)
-- `PID 01`
-- `PID 02`
 - `NO DATA`
 - `DATA ERROR`
 - `BUS INIT`
 - `CAN ERROR`
 - `BUFFER FULL`
 - `UNABLE TO CONNECT`
+- `CARLZS LAB`
+
+## Standard names and mode/PID labels
+
 - `SAE J1979`
 - `ISO 15765-4`
 - `ISO 15765-2`
 - `ISO 9141-2`
 - `ISO 14230-4`
-- `CARLZS LAB`
+- `PID 01`
+- `PID 02`
 
 ## Everything else
 - `020500`
@@ -120,7 +123,7 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `BMS`
 - `ECU`
 - `ECM`
-- `VIN`
+- `VIN` — `docs/field-guide.zh-TW.md:52` glosses it once as 車身號碼 on first mention for a reader who has not met the acronym. That is the only place; everywhere else it stays VIN
 - `MAF`
 - `MAP`
 - `VE`
@@ -131,7 +134,7 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `SCR`
 - `GPF`
 - `DTC`
-- `MIL`
+- `Distance Travelled With MIL On` — a built-in PID name, matched literally on import and export. The bare acronym `MIL` is deliberately NOT on this list: the app already ships the concept as 故障燈 in Chinese prose (`lib/ui/screens/dtc/dtc_screen.dart:1022`), so listing `MIL` as untranslatable would contradict the shipped app. See the 故障燈 row in the glossary
 - `CAN 11-bit`
 - `CAN 29-bit`
 - `500 kbit/s`

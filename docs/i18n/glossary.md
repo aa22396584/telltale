@@ -9,11 +9,24 @@ longer contains the Chinese term. That is deliberate: a glossary nobody can veri
 into folklore, and this one is checked on every run.
 
 **Status.** `evidenced` means both languages appear together at the cited place — the same
-file, or the two language versions of one document. `inferred` means both languages exist in
-the tree but were never written side by side, so the pairing is this glossary's reasoning
-rather than the project's own; it is still usable, and it is labelled so a reviewer knows
-which kind of claim they are reading. `proposed` means the English has no source in the
-repository at all and needs maintainer sign-off before it ships. The status is written by
+file, or the two language versions of one document. On a `T3` row the "English" is usually a
+Dart identifier rather than shipped English copy: `無回應，稍後重試 / no answer` is evidenced
+by `PidFault.noAnswer`, and the app has never rendered the string "no answer". That is a
+convention this project already uses, not a loophole, but it is worth knowing which kind of
+artefact you are looking at.
+
+`inferred` means both languages exist in the tree but were never written side by side, so
+the pairing is this glossary's reasoning rather than the project's own.
+
+`proposed` means **the English has not been confirmed by a maintainer**. It is a statement
+about review, not about the repository. An earlier draft of this file claimed the status was
+"written by hand, never computed", which was both unfalsifiable and untrue in effect: the
+`proposed` rows were exactly the rows the test could not evidence. Two rows make the point —
+`化學計量比推算 / stoichiometric estimate` counts as evidenced and `Speed-Density 推算 /
+Speed-Density estimate` does not, purely because one enum is spelled `stoichiometricEstimate`
+and the other `speedDensity`. Same Chinese head word, same English word, opposite status. So
+`proposed` may disagree with what the test can prove, in either direction, and a maintainer
+moving a row to `evidenced` without changing the code is a legitimate act. The status is written by
 hand, never computed — a generator that marked rows using the same rule the test checks
 would only be agreeing with itself.
 
@@ -26,7 +39,7 @@ next to its Chinese label in `lib/`. Anything else names the file directly.
 be added.
 
 
-145 terms. See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedge-register.md).
+See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedge-register.md).
 
 ## OBD2 and protocol
 
@@ -62,7 +75,8 @@ be added.
 | 控制器 | controller | lib/state/dtc_scan.dart:47 'Controllers that gave this category a terminal answer.' ↔ same file :581 '控制器 … 回報…' (T3 same file); docs/field-guide.zh-TW.md:206 | inferred | zh at lib/state/dtc_scan.dart:581; en at :47 of the same file, 534 lines away — not one place. |
 | 故障碼 | fault code | README.md:56 'fault codes' ↔ README.zh-TW.md:50 '故障碼' (T1) | evidenced | DTC as an acronym stays English (see doNotTranslate); the spelled-out concept is 故障碼. |
 | 標頭 | header | lib/diagnostics/availability.dart:316 PidFault.headerNotOnThisBus ↔ '標頭不符本車匯流排' (T3); docs/protocol-deviations.zh-TW.md:69 '發送標頭' | evidenced |  |
-| 永久 | permanent | lib/obd/dtc/dtc.dart:37 permanent('永久', '0A', …) (T3) | evidenced |  |
+| 故障燈 | MIL | lib/ui/screens/dtc/dtc_screen.dart:1022 `summary.milOn ? '故障燈亮著' : '故障燈沒有亮'`; lib/obd/pid/pid_library.dart:236 'Distance Travelled With MIL On' | inferred | The app ships 故障燈 in Chinese prose and MIL only inside an English PID name (`Distance Travelled With MIL On`); no place writes both, so the pairing is this glossary's. Spell it out on first mention in English if the audience may not know the acronym |
+| 永久 | permanent | lib/obd/dtc/dtc.dart:37 permanent('永久', '0A', …) (T3) | evidenced | A permanent code is NOT clearable, and English copy must never imply that pressing Clear removes it. lib/obd/dtc/dtc.dart:37 says 無法用診斷儀清除，需修復後由 ECU 自行確認; lib/ui/screens/dtc/dtc_screen.dart:78 repeats it. #45 names this explicitly |
 | 汽油微粒濾清器（GPF） | gasoline particulate filter (GPF) | lib/obd/readiness.dart:46 gasolineParticulateFilter('汽油微粒濾清器（GPF）') (T3); docs/field-guide.zh-TW.md:247-250 explains it | evidenced | LOAD-BEARING: field-guide:247-249 says many OBD tables mistranslate this bit as 空調冷媒 (A/C refrigerant) and that is wrong. Keep GPF in the string. |
 | 無回應，稍後重試 | no answer | lib/diagnostics/availability.dart:313 PidFault.noAnswer => '無回應，稍後重試' (T3) | evidenced |  |
 | 燃油系統監控 | fuel system | lib/obd/readiness.dart:37 fuelSystem('燃油系統監控') (T3) | evidenced |  |
@@ -104,7 +118,7 @@ be added.
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
 | App 截圖與實車示範 | Screenshots and vehicle demo | README.md:17 ↔ README.zh-TW.md:16 (T1 heading) | evidenced |  |
-| Language / 語言 | Language | lib/l10n/app_en.arb:8-10 languageSectionTitle ↔ lib/l10n/app_zh_Hant.arb:8 (T1 — byte-identical in both ARBs) | evidenced | DO NOT localize. app_en.arb:10 description: 'Bilingual label for the language picker. Options use self-names.'; also written: 語言 |
+| Language / 語言 | Language / 語言 | lib/l10n/app_en.arb:8-10 languageSectionTitle ↔ lib/l10n/app_zh_Hant.arb:8 (T1 — byte-identical in both ARBs) | evidenced | DO NOT localize. app_en.arb:10 description: 'Bilingual label for the language picker. Options use self-names.' |
 | 主打圖片（feature graphic） | feature graphic | store/README.md:11 '主打圖片（feature graphic）' (T1 — the project's own inline gloss) | evidenced |  |
 | 儀表 | gauge | README.md:64 'read-only BMS gauges' ↔ README.zh-TW.md:57 '唯讀 BMS 儀表' (T1) | evidenced | See the 即時 PID 儀表 note: 儀表 renders both 'gauge' and 'PID dashboard'. |
 | 儀表板 | dashboard | README.md:21 alt 'Telltale live telemetry dashboard' ↔ README.zh-TW.md:20 alt 'Telltale 即時遙測儀表板' (T1); store/README.md:13 | evidenced |  |
@@ -126,6 +140,8 @@ be added.
 
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
+| 資料已過期 | stale | lib/ui/widgets/telemetry/telemetry_status_copy.dart:8 `TelemetryStatus.stale => '資料已過期'` (T3); also lib/ui/widgets/gauges/dial_gauge.dart:185 | evidenced | #45 names this explicitly: stale ≠ live. A reading that stopped updating is not a current one, and must never render as though it were |
+| ECU 回報 | reported by the ECU | lib/obd/physics/physics_engine.dart:51 `FuelSource.measured => 'ECU 回報'` (T3) | proposed | The identifier says `measured`; the shipped Chinese says ECU 回報. English copy should say **reported by the ECU**, not "measured" — #44 forbids rendering 推算/estimate as measured, and using the bare word here for the true case invites exactly that slip. The pairing has never been written down, hence inferred |
 | VE | VE | README.md:75 ↔ README.zh-TW.md:65 (T1 — unchanged); spelled out as 容積效率 in lib/obd/session_evidence.dart:205 'volumetricEfficiency' | evidenced |  |
 | make／廠牌（製造商部門） | make label | README.md:73 '146 make labels' ↔ README.zh-TW.md:64 '146 個 make／廠牌（製造商部門）標籤' (T1 — the project's own inline gloss) | evidenced | zh keeps the English token AND glosses it, because EPA 'make' means a manufacturer division, not a brand. Keep both halves. |
 | 來源 | provenance | README.md:189 'evidence, provenance, and real-vehicle limits' ↔ README.zh-TW.md:163 '證據、來源與實車限制' (T2) | evidenced |  |

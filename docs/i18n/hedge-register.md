@@ -221,3 +221,20 @@ reviewer's invention and needs maintainer sign-off before it ships.
 **English** — NO PROJECT ENGLISH — proposed: Unknown monitor
 
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:1083 and :1091 (the readiness chip label). Explained at docs/field-guide.zh-TW.md:243-245: the vehicle reported a readiness monitor this app has no name for, and '它照樣會算進「還有 N 項沒有完成」—— 叫不出名字不等於可以當作已完成。' The hedge is that an UNNAMED monitor is still counted as INCOMPLETE; a translation that renders it 'N/A' or 'other' invites the reader to discount it.
+
+### 27. 永久故障碼（Mode 0A）無法清除。
+
+**繁體中文** — 永久故障碼（Mode 0A）無法清除。車輛需要重新完成一輪自我診斷才能通過驗車。
+
+**English** — Permanent codes (Mode 0A) cannot be cleared. The vehicle has to complete a
+fresh round of self-diagnosis before it will pass an inspection.
+
+**Why it is load-bearing.** `lib/obd/dtc/dtc.dart:37` defines the category as
+「無法用診斷儀清除，需修復後由 ECU 自行確認」and `lib/ui/screens/dtc/dtc_screen.dart:78`
+repeats it beside the Clear button. Issue #45 names this specific mistranslation: a
+permanent code must never read as something Clear can remove. Somebody who believes it can
+will press Clear, watch the stored and pending codes disappear, conclude the car is fixed,
+and take it for an inspection it cannot pass — having also destroyed the freeze frame that
+would have explained the fault. The whole point of the word is that this one does not go
+away because you asked it to. **proposed** — the English above has not been confirmed by a
+maintainer.

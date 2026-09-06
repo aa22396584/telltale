@@ -10,9 +10,9 @@ they define appear in both languages side by side.
 
 | Document | What it settles |
 |---|---|
-| [glossary.md](glossary.md) | 145 term pairs, each with the file that already established it |
-| [do-not-translate.md](do-not-translate.md) | 227 tokens that must stay byte-identical, and why the line falls where it does |
-| [hedge-register.md](hedge-register.md) | 26 sentences whose qualifiers are load-bearing |
+| [glossary.md](glossary.md) | Term pairs, each with the file and line that established it |
+| [do-not-translate.md](do-not-translate.md) | Tokens that must stay byte-identical, and why the line falls where it does |
+| [hedge-register.md](hedge-register.md) | Sentences whose qualifiers are load-bearing |
 
 ## The rule these exist to enforce
 

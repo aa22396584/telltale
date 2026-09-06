@@ -33,6 +33,7 @@ class _Term {
     required this.en,
     required this.status,
     required this.evidence,
+    required this.note,
     required this.line,
   });
 
@@ -45,6 +46,7 @@ class _Term {
   /// this project's, but assembled from two files.
   final String status;
   final String evidence;
+  final String note;
   final int line;
 
   bool get isProposed => status.toLowerCase().startsWith('proposed');
@@ -214,6 +216,7 @@ bool _areTranslationPair(String a, String b) {
       en: cells[2],
       evidence: cells[3],
       status: cells[4],
+      note: cells.length > 5 ? cells[5] : '',
       line: i + 1,
     ));
   }
@@ -347,6 +350,29 @@ void main() {
     );
   });
 
+  test('no English term is the translation of two different Chinese terms', () {
+    // The mirror of the check above, and it was missing. 設定 and 設定頁 both mapped to
+    // "Settings", so a translator working from English had no way to know which Chinese
+    // term to use. Rows that disambiguate in their Note are the legitimate case.
+    final byEn = <String, Set<String>>{};
+    final disambiguated = <String>{};
+    for (final term in terms) {
+      byEn.putIfAbsent(term.en, () => <String>{}).add(term.zh);
+      if (term.note.contains('context:')) disambiguated.add(term.en);
+    }
+    final collisions = byEn.entries
+        .where((e) => e.value.length > 1 && !disambiguated.contains(e.key))
+        .map((e) => '${e.key} ← ${e.value.join(" / ")}')
+        .toList();
+    expect(
+      collisions,
+      isEmpty,
+      reason:
+          'a translator going from English cannot tell these apart; give the narrower row '
+          'a Note beginning "context:" or merge them:\n${collisions.join("\n")}',
+    );
+  });
+
   test('the glossary never translates a do-not-translate token', () {
     // The first version compared the do-not-translate list against the CHINESE column. The
     // list is almost entirely ASCII, so no input could ever make it red. The English column
@@ -354,11 +380,16 @@ void main() {
     final tokens = <String>{};
     for (final line in File('docs/i18n/do-not-translate.md').readAsLinesSync()) {
       if (!line.startsWith('- `')) continue;
-      // Take only the backticked token. Entries carry a trailing prose gloss, and slicing
-      // to the LAST backtick swallowed it, producing keys that matched nothing.
+      // Take only the backticked token, then drop any gloss inside it. An entry reads
+      // `` - `Language / 語言 (bilingual section title …)` ``, and keeping the parenthetical
+      // produced a key that matched nothing — which is how a real contradiction stayed
+      // hidden: the glossary translated "Language / 語言" while this list said not to.
       final end = line.indexOf('`', 3);
       if (end < 0) continue;
-      tokens.add(line.substring(3, end));
+      var token = line.substring(3, end).trim();
+      final gloss = token.indexOf(' (');
+      if (gloss > 0) token = token.substring(0, gloss).trim();
+      tokens.add(token);
     }
     expect(tokens, isNotEmpty, reason: 'the do-not-translate list did not parse');
 
