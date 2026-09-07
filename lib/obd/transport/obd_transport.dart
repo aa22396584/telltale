@@ -183,10 +183,11 @@ enum TransportIssue {
   // by the connect screen. Everything below happens to a command, on a link
   // that came up, and is rendered by the command-failure table in
   // `lib/ui/screens/settings/manual_command_copy.dart` -- from the manual
-  // command panel, and from the fault-code screen for the three that a scan,
-  // a clear or a VIN read can raise. The split is not stylistic: a connect
-  // failure is answered by trying again, and a command failure is answered by
-  // reading what the adapter did.
+  // command panel, and from the fault-code screen for the three a scan can
+  // raise. A clear and a VIN read raise them too and carry them nowhere; that
+  // file's header says which routes are wired and which are not, and why. The
+  // split is not stylistic: a connect failure is answered by trying again, and
+  // a command failure is answered by reading what the adapter did.
 
   /// The transport reported that the link went away without being asked to.
   ///

@@ -8,10 +8,22 @@
 ///
 /// Two screens, not one. The settings panel asks [commandFailureText] with the
 /// exception it caught; the fault-code screen reaches the same table through
-/// [commandIssueText], because a scan, a clear or a VIN read is a command on an
-/// open link too and its failures are the same failures. This file therefore
-/// lives under `settings/` for history rather than for ownership, and the name
-/// that matters is `commandFailure`, not `settingsManualCommand`.
+/// [commandIssueText], because a scan is a command on an open link too and its
+/// failures are the same failures. This file therefore lives under `settings/`
+/// for history rather than for ownership, and the name that matters is
+/// `commandFailure`, not `settingsManualCommand`.
+///
+/// **The scan is the only one wired.** A clear and a VIN read also reach
+/// `sendGlobal` and can raise the same identifiers, and neither carries one to
+/// a screen: `PollingEngine.clearDtcs` lets the `TransportException` escape
+/// uncaught into `dtc_scan.dart`'s `on Object`, which interpolates
+/// `toString()` -- and `toString()` prints the message and drops the issue --
+/// into a Chinese wrapper sentence; `readVin`'s is discarded outright. Both
+/// render exactly what they rendered before this file existed. They are not
+/// wired here because the clear panel's own prose is still engine-composed
+/// Traditional Chinese, so an identifier arriving there would be a field
+/// nothing reads. ImL1s/telltale#45 owns that, and until it lands this
+/// paragraph is the honest description of the reach.
 ///
 /// Like the other copy tables it takes an `AppLocalizations` parameter rather
 /// than a `BuildContext`, so a test can walk both languages with no widget
