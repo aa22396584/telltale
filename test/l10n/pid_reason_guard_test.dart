@@ -21,21 +21,22 @@
 // Both are read out of the source rather than exercised, because both are
 // properties of a call that may never run in a test.
 //
-// The reader is `test/support/dart_source_reader.dart`, taken verbatim from
-// the branch that first extracted it out of `transport_issue_guard_test.dart`.
-// That file still owns the fixtures that prove it — see "the reader itself:
-// what counts as code" there — and the two bugs it has already had (an escape
-// check comparing a one-character value against a two-character string, and
-// raw strings like `r'C:\'` whose backslash is content) are pinned by them.
-// None of that is re-tested here: a third hand-written parser is exactly what
-// the extraction exists to prevent.
+// The reader is `test/support/dart_source_reader.dart` — the shared one on
+// `main`, not a copy. `transport_issue_guard_test.dart` imports the same file
+// and its "the reader itself: what counts as code" fixtures drive it, so the
+// two bugs it has already had (an escape check comparing a one-character value
+// against a two-character string, and raw strings like `r'C:\'` whose
+// backslash is content) are pinned there and none of it is re-tested here.
 //
-// This branch deliberately does not re-do the extraction in
-// `transport_issue_guard_test.dart` itself. It landed on `main` while this work
-// was in progress, and re-applying it here would only put a conflict in front
-// of whoever merges — one whose careless resolution would undo the widening
-// that landed with it. Until then that file carries its own private copy of the
-// same code, which is why this header does not call the reader "shared".
+// This branch first landed a second copy of that reader, a bool-mask rewrite,
+// with a header claiming it was taken verbatim and that the extraction had not
+// happened yet. All of that was false against `main`, which had already
+// extracted a wider `SourceRegion` model that six test files import. Worse than
+// the duplication was the header: it argued whoever resolved the add/add
+// conflict into keeping the weaker copy — and nothing exercised that copy, so
+// reintroducing the escape bug into it left the suite green. The copy is gone;
+// what stays is the note that a header telling a resolver which side to keep
+// has to be true, because it will be believed.
 library;
 
 import 'dart:io';
@@ -146,6 +147,8 @@ Iterable<_Call> _callsTo(String className) sync* {
 }
 
 void main() {
+  _pointerTests();
+
   test('no FormulaException settles for a null identifier', () {
     final naked = <String>[];
     for (final call in _callsTo('FormulaException')) {
@@ -238,5 +241,51 @@ void main() {
         reason: '$named is named by this guard and no longer exists',
       );
     }
+  });
+}
+
+/// Every `lib/…` or `test/…` Dart path a comment under `lib/` points at.
+///
+/// Backticked, because that is how this repo writes a path and it is what
+/// separates a real pointer from prose that happens to contain a slash.
+final RegExp _pointer = RegExp(r'`((?:lib|test)/[A-Za-z0-9_/.]+\.dart)`');
+
+void _pointerTests() {
+  test('a comment that names a guard names one that exists', () {
+    // Five pointers on this branch led nowhere: three to
+    // `test/l10n/formula_issue_guard_test.dart`, which was renamed to
+    // `pid_reason_guard_test.dart` before it landed, one to
+    // `lib/ui/screens/pids/formula_copy.dart`, whose file is
+    // `pid_formula_copy.dart`, and one to a file that was deleted.
+    //
+    // The cost is not the broken link. Every one of those comments was
+    // explaining why some rule is safe to rely on — "the guard lives here" —
+    // and a reader who takes the sentence at its word inherits a belief that a
+    // check exists when none does. That is the same failure as a green test
+    // that asserts nothing, arriving by a different route.
+    //
+    // Repo-wide rather than scoped to this slice, because the failure is: all
+    // 26 such pointers under `lib/` resolve today, so there is nothing to
+    // grandfather and no reason to make the next one wait for its own guard.
+    final broken = <String>[];
+    for (final file in _librarySources()) {
+      final src = file.readAsStringSync();
+      final regions = sourceRegions(src);
+      for (final match in _pointer.allMatches(src)) {
+        // Only in a comment. A path inside a string literal is an import or a
+        // runtime path, which is the compiler's business, not this guard's.
+        if (regions[match.start] != SourceRegion.comment) continue;
+        final path = match.group(1)!;
+        if (File(path).existsSync()) continue;
+        final line = '\n'.allMatches(src.substring(0, match.start)).length + 1;
+        broken.add('${file.path}:$line -> $path');
+      }
+    }
+    expect(
+      broken,
+      isEmpty,
+      reason: 'these comments name a file that does not exist:\n'
+          '${broken.join('\n')}',
+    );
   });
 }

@@ -100,8 +100,43 @@ void main() {
       // in the sentence would have satisfied.
       expect(result.errors.first.lineNumber, 2);
       expect(result.errors.first.issue, PidCsvIssue.rowInvalidModeAndPid);
+      // And the cell it choked on, not just that it choked. The importer
+      // deliberately refuses rather than repairs — `22-11O1` with a letter O
+      // must not become the valid-and-different `22111` — so the reader has to
+      // see the characters they wrote. `text: cell(2)` is a second copy of
+      // that value now the sentence no longer interpolates it at the throw;
+      // replacing it with `'ZZZ'` left the suite green.
+      expect(result.errors.first.text, 'ZZ');
       expect(result.errors.last.lineNumber, 3);
       expect(result.errors.last.issue, PidCsvIssue.rowEmptyEquation);
+    });
+
+    test('a defaulted range reports the bounds that were actually applied', () {
+      // The warning exists because a substituted scale is invisible: a needle
+      // reads as authoritative against whatever bounds it is drawn on, whoever
+      // picked them. Which makes the two numbers the whole content of it —
+      // `999`/`999` substituted at the construction is a warning about a scale
+      // that was never applied, and the suite did not notice.
+      const columns =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,'
+          'Units,Header\r\n';
+
+      final bothBlank =
+          PidCsv.parse('${columns}Trans,T,2211A6,A-40,,,C,7E0\r\n');
+      expect(bothBlank.errors, isEmpty);
+      expect(bothBlank.warnings.single.issue, PidCsvIssue.rowRangeDefaulted);
+      expect(bothBlank.warnings.single.lineNumber, 2);
+      expect(bothBlank.warnings.single.minValue, 0);
+      expect(bothBlank.warnings.single.maxValue, 100);
+
+      // A lower bound that parsed is kept, and the upper one is derived from
+      // it — so the two fields are not interchangeable and a value taken from
+      // the wrong one shows up here.
+      final maxBlank =
+          PidCsv.parse('${columns}Trans,T,2211A6,A-40,50,,C,7E0\r\n');
+      expect(maxBlank.errors, isEmpty);
+      expect(maxBlank.warnings.single.minValue, 50);
+      expect(maxBlank.warnings.single.maxValue, 150);
     });
 
     test('an empty file reports why nothing was imported', () {
@@ -226,6 +261,62 @@ void _strictParsingTests() {
         )?.issue,
         PidRejection.minNotANumber,
       );
+    });
+
+    test('a refusal quotes back what was actually typed', () {
+      // The four arms that carry `text`. Before the identifier migration the
+      // typed value was interpolated into the sentence at the return, so there
+      // was one copy of it; now the screen reads `reason.text` and nothing
+      // compared the two. Substituting `'ZZZ'` at all three of the sites
+      // below left the whole suite green and told the reader that a header
+      // they never typed was the invalid one.
+      //
+      // Distinct fixtures per arm on purpose: a value copied from the wrong
+      // field would otherwise pass.
+      final header = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7EG',
+        minText: '0',
+        maxText: '100',
+      );
+      expect(header?.issue, PidRejection.invalidHeader);
+      expect(header?.text, '7EG');
+
+      final min = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: 'lo',
+        maxText: '100',
+      );
+      expect(min?.issue, PidRejection.minNotANumber);
+      expect(min?.text, 'lo');
+
+      final max = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: '0',
+        maxText: 'hi',
+      );
+      expect(max?.issue, PidRejection.maxNotANumber);
+      expect(max?.text, 'hi');
+
+      final redline = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: '0',
+        maxText: '100',
+        redlineText: 'red',
+      );
+      expect(redline?.issue, PidRejection.redlineNotANumber);
+      expect(redline?.text, 'red');
+    });
+
+    test('the editor and the importer still agree on the blank-bounds rule',
+        () {
 
       // Blank bounds are a spreadsheet's business and not the editor's, which
       // is the one place the two callers legitimately differ.

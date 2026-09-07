@@ -180,7 +180,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       // `e.message` is the engine's own Traditional Chinese, kept for the
       // diagnostics that read it and unreachable here: every throw in
       // `formula_engine.dart` names a `FormulaIssue`, and
-      // `test/l10n/formula_issue_guard_test.dart` reads the source to keep it
+      // `test/l10n/pid_reason_guard_test.dart` reads the source to keep it
       // that way. If one ever did not, an untranslated reason under a field
       // that is refusing to save still beats no reason at all.
       return (value: null, error: formulaIssueText(l10n, e) ?? e.message);

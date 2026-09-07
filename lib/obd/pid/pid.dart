@@ -491,9 +491,15 @@ enum PidRejection {
   identifierNeedsTwoBytes,
 
   /// Any other allowed service whose identifier is the wrong width. Carries
-  /// the service and how many bytes it wants. Unreachable while the allowlist
-  /// is `01/02/09/22` and the first two of those have their own arms, and kept
-  /// because [PollableServices.allowed] is a set somebody may add to.
+  /// the service and how many bytes it wants.
+  ///
+  /// Reached today, not held in reserve. The two arms above belong to `02` and
+  /// `22`; `01` and `09` have none, so anything of theirs that is not one
+  /// identifier byte lands here — `010C0D` and `0902AA` are both typeable in
+  /// the editor's mode+PID field. This comment used to say the arm was
+  /// unreachable "while the first two of the allowlist have their own arms",
+  /// which was wrong twice over, and pointed the next reviewer away from a
+  /// live path whose carried values nothing was checking.
   identifierWrongLength,
 
   /// The definition has no name.

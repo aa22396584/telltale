@@ -106,12 +106,12 @@ enum FormulaIssue {
 /// validator, and what `powertrain_battery_probe.dart` stringifies into a
 /// probe transcript; both are diagnostics rather than screen copy. What a
 /// screen renders is [issue], through
-/// `lib/ui/screens/pids/formula_copy.dart`.
+/// `lib/ui/screens/pids/pid_formula_copy.dart`.
 ///
 /// [issue] is **required and nullable**, the same shape `TransportException`
 /// uses: the compiler refuses a throw that forgets it, and a deliberate `null`
 /// has to be typed out where somebody reviewing the diff can see it.
-/// `test/l10n/formula_issue_guard_test.dart` then refuses even that.
+/// `test/l10n/pid_reason_guard_test.dart` then refuses even that.
 class FormulaException implements Exception {
   final String message;
   final String source;

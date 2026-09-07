@@ -397,6 +397,121 @@ void main() {
     });
   });
 
+  // The link this branch created, and the one a hand-typed copy table cannot
+  // reach. Before this slice the value was interpolated into `message` at the
+  // throw site — one expression, with no second copy to diverge from. Now the
+  // screen reads `exception.byteLetter`, `.byteCount`, `.argument`, `.term`
+  // and `.pidKey` instead, and a copy table proves only that the sentence is
+  // right *for a payload it handed itself*. Corrupting all of them at once —
+  // `byteLetter: letter` to `'Z'`, `byteCount: bytes.length` to `0`,
+  // `argument: v` to `0`, `pidKey: key` to `'XXXX'`, `term: s` to `'zzz'` —
+  // left the whole suite green, and the reader was then told fluently, in
+  // their own language, "The formula refers to byte Z, but the reply carried
+  // only 0 bytes".
+  //
+  // So these drive the real engine and compare what it carried against what
+  // the test itself put in. Every expected value below is a literal derived
+  // from this test's own input, never read back off the exception.
+  group('a refusal carries the values the engine actually saw', () {
+    FormulaException thrownBy(void Function() body) {
+      try {
+        body();
+      } on FormulaException catch (e) {
+        return e;
+      }
+      fail('expected a FormulaException');
+    }
+
+    // Two throw sites, one identifier. `SIGNED(C)` and a bare `C` are the same
+    // fact with the same remedy, so they share `byteBeyondResponse` — which is
+    // exactly why each needs its own pin: one site could carry `'Z'`/`0` while
+    // the other stayed correct and the identifier assertion would not notice.
+    // Different letters and different payload lengths, so a value copied from
+    // the wrong site is a failure rather than a coincidence.
+    test('SIGNED() past the payload names the byte and the length it saw', () {
+      final e = thrownBy(() => engine.evaluateBytes('SIGNED(C)', const [1, 2]));
+      expect(e.issue, FormulaIssue.byteBeyondResponse);
+      expect(e.byteLetter, 'C');
+      expect(e.byteCount, 2);
+    });
+
+    test('a bare byte past the payload names its own byte and length', () {
+      final e = thrownBy(() => engine.evaluateBytes('E+1', const [1, 2, 3]));
+      expect(e.issue, FormulaIssue.byteBeyondResponse);
+      expect(e.byteLetter, 'E');
+      expect(e.byteCount, 3);
+    });
+
+    test('LOG10 of a non-positive argument carries the argument', () {
+      // `A = 0`, so the argument the function was handed is -128. Rendering a
+      // 0 here would read as an ordinary boundary complaint about an
+      // expression that is nowhere near the boundary.
+      final e = thrownBy(() => engine.evaluateBytes('LOG10(A-128)', const [0]));
+      expect(e.issue, FormulaIssue.log10NonPositiveArgument);
+      expect(e.argument, -128.0);
+    });
+
+    test('an unparsable term carries the fragment, after substitution', () {
+      // `1@2`, not `A@B`: the reader is shown what the reducer choked on, and
+      // the bytes are already in it. Pinning the post-substitution form is
+      // deliberate — it is what the sentence quotes.
+      final e = thrownBy(() => engine.evaluateBytes('A@B', const [1, 2]));
+      expect(e.issue, FormulaIssue.unparsableTerm);
+      expect(e.term, '1@2');
+    });
+
+    test('an unresolvable VAL{} carries the key that could not be resolved',
+        () {
+      final e =
+          thrownBy(() => engine.evaluateBytes('VAL{010C}+1', const []));
+      expect(e.issue, FormulaIssue.dependencyControllerUnknown);
+      expect(e.pidKey, '010C');
+    });
+
+    test('a dependency nobody has read yet carries its key', () {
+      final e = thrownBy(
+        () => engine.evaluateBytes(
+          'VAL{0133}+1',
+          const [],
+          requester: FormulaEngine.probePid('0000'),
+          now: DateTime(2026, 8, 15),
+        ),
+      );
+      expect(e.issue, FormulaIssue.dependencyNotYetMeasured);
+      expect(e.pidKey, '0133');
+    });
+
+    test('the two-definitions refusal carries the contested key', () {
+      // The longest sentence in this feature, and the one that tells the
+      // reader that taking a gauge off the dashboard will not stop 010B being
+      // polled. A key substituted here sends them to edit a definition they do
+      // not have.
+      final now = DateTime(2026, 8, 15);
+      const raw = Pid(
+        name: 'map', shortName: 'map', modeAndPid: '010B', equation: 'A',
+        minValue: 0, maxValue: 255, units: 'kPa',
+      );
+      const converted = Pid(
+        name: 'boost', shortName: 'boost', modeAndPid: '010B',
+        equation: 'A*0.145', minValue: 0, maxValue: 255, units: 'psi',
+        variant: 'psi',
+      );
+      engine.cachePidValue(raw, 100, now);
+      engine.cachePidValue(converted, 14.5, now);
+
+      final e = thrownBy(
+        () => engine.evaluateBytes(
+          'VAL{010B}+1',
+          const [],
+          requester: FormulaEngine.probePid('0000'),
+          now: now,
+        ),
+      );
+      expect(e.issue, FormulaIssue.dependencyTwoDefinitions);
+      expect(e.pidKey, '010B');
+    });
+  });
+
   group('failure handling', () {
     test('rejects an empty formula', () {
       expect(() => engine.evaluateBytes('', const [1]), throwsA(isA<FormulaException>()));

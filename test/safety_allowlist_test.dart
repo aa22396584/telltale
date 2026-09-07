@@ -61,18 +61,50 @@ void main() {
       // spelled into it and this assertion is about the identifier the screen
       // is handed rather than about wording.
       expect(refusal?.service, '21');
+      // The allowlist itself, compared against the set rather than against a
+      // list typed out here. It is the sharpest of these: `pid.dart` carries
+      // it as data precisely so the sentence cannot name four services while
+      // the set holds five, and substituting `const ['99']` at the
+      // construction ships "Only 99 are allowed" — a false statement about
+      // what this app will transmit, in fluent English, with every test green.
+      expect(refusal?.allowedServices, PollableServices.allowed.toList());
       expect(PollableServices.identifierLength('2101'), isNull);
-      expect(
-        PidDefinition.rejectionReason(
-          name: 'Local battery',
-          modeAndPid: '2101',
-          header: '7E0',
-          minText: '0',
-          maxText: '100',
-          requireBounds: true,
-        )?.issue,
-        PidRejection.serviceNotReadOnly,
+
+      final definitionRefusal = PidDefinition.rejectionReason(
+        name: 'Local battery',
+        modeAndPid: '2101',
+        header: '7E0',
+        minText: '0',
+        maxText: '100',
+        requireBounds: true,
       );
+      expect(definitionRefusal?.issue, PidRejection.serviceNotReadOnly);
+      // This line was `contains('服務 21')` before the identifier migration,
+      // which pinned the interpolated byte on this second path. Reducing it to
+      // the identifier alone moved the hole rather than closing it: the byte
+      // now travels as data, so it is the data that has to be checked.
+      expect(definitionRefusal?.service, '21');
+      expect(
+        definitionRefusal?.allowedServices,
+        PollableServices.allowed.toList(),
+      );
+    });
+
+    test('an allowed service with a wrong-width identifier says which and how '
+        'wide', () {
+      // Reachable, contrary to what `PidRejection.identifierWrongLength` used
+      // to claim about itself. The two arms above it belong to `02` and `22`,
+      // so `01` and `09` fall straight through to this one — and both are
+      // typeable in the editor's mode+PID field.
+      final overlongMode01 = PollableServices.rejectionReason('010C0D');
+      expect(overlongMode01?.issue, PidRejection.identifierWrongLength);
+      expect(overlongMode01?.service, '01');
+      expect(overlongMode01?.expectedBytes, 1);
+
+      final overlongMode09 = PollableServices.rejectionReason('0902AA');
+      expect(overlongMode09?.issue, PidRejection.identifierWrongLength);
+      expect(overlongMode09?.service, '09');
+      expect(overlongMode09?.expectedBytes, 1);
     });
 
     test('anything that writes, controls or resets is refused', () {

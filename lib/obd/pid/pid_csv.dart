@@ -104,6 +104,9 @@ class PidCsvResult {
   /// One entry per row that could not be parsed, with the reason. Surfaced to
   /// the user rather than swallowed: a silently-skipped row looks identical to
   /// a successful import that happened to be short.
+  ///
+  /// The screen renders `errors.first`, and only when nothing imported at all;
+  /// otherwise it shows how many rows were skipped.
   final List<PidCsvDiagnostic> errors;
 
   /// Rows that were imported, but not exactly as written.
@@ -112,6 +115,21 @@ class PidCsvResult {
   /// a choice on the author's behalf — and the one that matters is a
   /// substituted scale, because a needle reads as authoritative against
   /// whatever bounds it is drawn on, whoever picked them.
+  ///
+  /// **Counted, not quoted.** `pid_manager_screen.dart` passes
+  /// `warnings.length` into `PidImportOutcome.describe(defaultedRanges:)` and
+  /// nothing else reads them, so the line number and the substituted bounds
+  /// each entry carries do not currently reach a reader. This comment used to
+  /// say they were "surfaced to the user", which is how a reviewer comes to
+  /// believe a diagnostic is doing work it is not.
+  ///
+  /// The per-row sentence (`pidImportRowRangeDefaulted`) is built and pinned
+  /// anyway, because [PidCsvIssue] is switched over exhaustively and the arm
+  /// has to exist. It is deliberately not wired into the snackbar in this
+  /// slice: `PidImportOutcome.describe` is still Traditional Chinese, so
+  /// appending a translated clause to it would produce a half-English
+  /// snackbar — a regression that is real, traded for one that is only
+  /// unrealised copy.
   final List<PidCsvDiagnostic> warnings;
 
   const PidCsvResult({
