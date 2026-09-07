@@ -50,7 +50,7 @@ import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 
 import '../support/cjk.dart';
-import '../support/dart_source_regions.dart';
+import '../support/dart_source_reader.dart';
 
 void main() {
   final en = lookupAppLocalizations(englishLocale);

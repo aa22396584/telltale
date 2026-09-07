@@ -21,7 +21,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../support/dart_source_regions.dart';
+import '../support/dart_source_reader.dart';
 
 /// Symbols that exist to be written into an export and must not be read by the
 /// interface, with what to use instead.

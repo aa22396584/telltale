@@ -1,65 +1,66 @@
-// A reader that tells Dart code from the strings and comments around it.
-//
-// Extracted from `test/l10n/transport_issue_guard_test.dart`, which needed it
-// first and still owns the fixtures that prove it — see the "the reader itself"
-// test there. It lives here because a second guard now scans for a second
-// construction (`test/l10n/datum_reason_guard_test.dart`), and the alternative
-// to sharing this was a third hand-written parser. Two of the three bugs this
-// file has already survived came from exactly that: a naive scanner that had
-// never met an interpolated quote or an escaped apostrophe.
-//
-// Not a `_test.dart` file, so `flutter test` does not run it on its own; the
-// fixtures that hold it honest run from the transport guard.
+/// One reader for "which part of this Dart file am I looking at", shared by
+/// every source-scanning guard.
+///
+/// It was written inside `test/l10n/transport_issue_guard_test.dart`, whose
+/// header explains at length why a substring search is not enough: a
+/// `TransportIssue.` written in a comment satisfied one, and
+/// `'${notes.join('；')}'` puts a quote inside an interpolation, which a
+/// quote-toggling scanner reads as closing the outer literal — desynchronising
+/// every quote after it in the file. A guard that stops seeing constructions is
+/// one that reports success.
+///
+/// It lives here because a second guard now needs it, and this repo's tests
+/// already say what happens to two copies of the same rule: they drift apart,
+/// and the weaker one is the one that stays green. The transport guard's
+/// "the reader itself: what counts as code" test still drives this code, so the
+/// fixtures that pin the two bugs it has actually had — an escape check that
+/// compared one character against the two-character string `r'\\'` and was
+/// therefore always false, and raw strings like `r'C:\'` where a backslash is
+/// content rather than an escape — keep holding it.
+///
+/// [SourceRegion] is a three-way answer rather than the original bool mask
+/// because "not code" was not specific enough: a guard that forbids Chinese in
+/// string literals has to allow it in comments, and this repo writes its
+/// comments in Chinese.
 library;
 
-/// [src] with every string and comment character replaced by a space.
-///
-/// Offsets and line breaks are preserved, so anything matched against this can
-/// still be located in the original.
-String codeOnly(String src) {
-  final mask = codeMask(src);
-  final out = StringBuffer();
-  for (var i = 0; i < src.length; i++) {
-    out.write(mask[i] ? src[i] : (src[i] == '\n' ? '\n' : ' '));
-  }
-  return out.toString();
+/// What a single character of a Dart source file is part of.
+enum SourceRegion {
+  /// Real code: not inside a string literal and not inside a comment.
+  code,
+
+  /// Inside a string literal, including its opening and closing quotes.
+  ///
+  /// The code inside `${...}` is [code], not this: an interpolation re-enters
+  /// the language, and the string that opened it resumes at the matching `}`.
+  string,
+
+  /// Inside a `//` line comment or a `/* */` block comment.
+  comment,
 }
 
-/// True at every index that is real code -- not inside a string literal and not
-/// inside a comment.
-///
-/// One pass, shared by every reader in this file, because they have to agree.
-/// Two
-/// things made the naive version wrong:
-///
-///   * `// TODO: pick a TransportIssue. for this one` satisfied a substring
-///     search, so a throw with no identifier passed. Precedent for stripping
-///     first: `test/l10n/l04_status_l10n_test.dart` does the same, for the same
-///     reason -- comments may name the rule; code may not.
-///   * `'${tierNotes.join('；')}'` in `classic_transport.dart` puts a quote
-///     inside an interpolation. Tracking quotes alone reads the inner `'` as
-///     closing the outer literal. It happens to resynchronise there because the
-///     nested quotes pair up, which is luck, not correctness -- an odd number
-///     desynchronises everything after it in the file, and a guard that stops
-///     seeing constructions is one that reports success.
-///
-/// So interpolation is a stack: `${` inside a string re-enters code, and the
-/// matching `}` returns to the string that opened it.
+/// Raw strings do not process escapes, so a backslash in one is content.
 class _Frame {
   const _Frame.string(this.quote, {this.raw = false}) : braceDepth = -1;
   const _Frame.interpolation(this.braceDepth) : quote = '', raw = false;
 
   final String quote;
   final int braceDepth;
-
-  /// Raw strings do not process escapes, so a backslash in one is content.
   final bool raw;
 
   bool get isString => braceDepth < 0;
 }
 
-List<bool> codeMask(String src) {
-  final mask = List<bool>.filled(src.length, false);
+/// Classifies every character of [src]. The result has one entry per code unit,
+/// so anything matched against a derived view can still be located in [src].
+List<SourceRegion> sourceRegions(String src) {
+  final regions = List<SourceRegion>.filled(src.length, SourceRegion.code);
+  void mark(int from, int to, SourceRegion region) {
+    for (var i = from; i < to && i < src.length; i++) {
+      regions[i] = region;
+    }
+  }
+
   final frames = <_Frame>[];
   var braces = 0;
   var i = 0;
@@ -68,53 +69,60 @@ List<bool> codeMask(String src) {
     final c = src[i];
 
     if (inString) {
-      // Was `c == r'\\'`, comparing one character against a two-character
-      // string -- always false, so no escape was ever honoured and
-      // `'don\\'t reopen'` closed the literal at the apostrophe, inverting the
-      // mask for the rest of the file. Everyday Dart, and far likelier than any
-      // triple-quote shape. The `raw` test is not decoration: fixing the
-      // comparison alone breaks `r'C:\\'`, which has no escapes to honour.
+      // The escape pair, both halves. Comparing `c` against a two-character
+      // string here was always false, so no escape was honoured and
+      // `'don\'t reopen'` closed the literal at the apostrophe, inverting
+      // everything after it in the file. The `raw` test is not decoration:
+      // fixing the comparison alone breaks `r'C:\'`, which has no escapes.
       if (c == '\\' && !frames.last.raw) {
+        mark(i, i + 2, SourceRegion.string);
         i += 2;
         continue;
       }
       if (c == r'$' && i + 1 < src.length && src[i + 1] == '{') {
         braces++;
         frames.add(_Frame.interpolation(braces));
+        mark(i, i + 2, SourceRegion.string);
         i += 2;
         continue;
       }
       if (src.startsWith(frames.last.quote, i)) {
+        mark(i, i + frames.last.quote.length, SourceRegion.string);
         i += frames.last.quote.length;
         frames.removeLast();
         continue;
       }
+      regions[i] = SourceRegion.string;
       i++;
       continue;
     }
 
     if (c == '/' && i + 1 < src.length && src[i + 1] == '/') {
+      final start = i;
       while (i < src.length && src[i] != '\n') {
         i++;
       }
+      mark(start, i, SourceRegion.comment);
       continue;
     }
     if (c == '/' && i + 1 < src.length && src[i + 1] == '*') {
       final close = src.indexOf('*/', i + 2);
-      i = close == -1 ? src.length : close + 2;
+      final end = close == -1 ? src.length : close + 2;
+      mark(i, end, SourceRegion.comment);
+      i = end;
       continue;
     }
     if (c == "'" || c == '"') {
       // Dart has exactly four string forms, and that is why this is finite
       // work rather than a heuristic. A triple quote read as three toggles
-      // inverts the rest of the file; two such strings then cancel, so the file
-      // ends balanced while the region between them is invisible. No end-state
-      // check can see that -- inversions pair up -- so the mask has to be right.
+      // inverts the rest of the file; two such strings then cancel, so the
+      // file ends balanced while the region between them is invisible. No
+      // end-state check can see that — inversions pair up — so this has to be
+      // right rather than merely self-consistent.
       final triple = c * 3;
       final quote = src.startsWith(triple, i) ? triple : c;
-      frames.add(
-        _Frame.string(quote, raw: i > 0 && src[i - 1] == 'r'),
-      );
+      frames.add(_Frame.string(quote, raw: i > 0 && src[i - 1] == 'r'));
+      mark(i, i + quote.length, SourceRegion.string);
       i += quote.length;
       continue;
     }
@@ -123,18 +131,73 @@ List<bool> codeMask(String src) {
       if (frames.isNotEmpty &&
           !frames.last.isString &&
           frames.last.braceDepth == braces) {
-        frames.removeLast(); // back into the string that opened this
+        // Back into the string that opened this interpolation. The brace
+        // belongs to the literal, not to the code inside it.
+        frames.removeLast();
         braces--;
+        regions[i] = SourceRegion.string;
         i++;
         continue;
       }
       braces--;
     }
-    mask[i] = true;
+    regions[i] = SourceRegion.code;
     i++;
   }
-  return mask;
+  return regions;
 }
+
+/// True at every index of [src] that is real code.
+List<bool> codeMask(String src) =>
+    sourceRegions(src).map((r) => r == SourceRegion.code).toList();
+
+/// [src] with every character outside [region] replaced by a space.
+///
+/// Offsets and line breaks are preserved, so a match against the result can
+/// still be reported as a line number in the original.
+String onlyRegion(String src, SourceRegion region) {
+  final regions = sourceRegions(src);
+  final out = StringBuffer();
+  for (var i = 0; i < src.length; i++) {
+    out.write(
+      regions[i] == region ? src[i] : (src[i] == '\n' ? '\n' : ' '),
+    );
+  }
+  return out.toString();
+}
+
+/// [src] with every string and comment character replaced by a space.
+String codeOnly(String src) => onlyRegion(src, SourceRegion.code);
+
+/// [src] with only its comments replaced by spaces — code and string literals
+/// both survive.
+///
+/// The view a whole-line guard needs, and the reason it is not [codeOnly]:
+/// several guards here match text that legitimately lives inside a literal —
+/// an `import 'package:flutter/material.dart'` is a string, and so is a
+/// `join('、')` separator — so blanking literals would leave those guards
+/// reading nothing and reporting success. What they actually want removed is
+/// the comment, because this repo names its own rules in comments and a guard
+/// that cannot tell `// AppLocalizations` from an import accuses the file that
+/// documents the rule.
+///
+/// The naive form of this — `line.split('//').first` — truncates at the `//`
+/// of a URL, which silently hides everything after it on that line. That is
+/// the failure three separate guards carried a copy of.
+String withoutComments(String src) {
+  final regions = sourceRegions(src);
+  final out = StringBuffer();
+  for (var i = 0; i < src.length; i++) {
+    out.write(
+      regions[i] == SourceRegion.comment ? (src[i] == '\n' ? '\n' : ' ') : src[i],
+    );
+  }
+  return out.toString();
+}
+
+/// [src] with everything that is not string-literal content replaced by a
+/// space — the inverse view, for guards that police what the strings say.
+String stringLiteralsOnly(String src) => onlyRegion(src, SourceRegion.string);
 
 /// The top-level arguments of the call whose `(` is at [open], read through
 /// [mask] so string and comment content cannot look like syntax.

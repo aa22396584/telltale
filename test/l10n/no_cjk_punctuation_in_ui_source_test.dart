@@ -24,7 +24,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/cjk.dart';
-import '../support/dart_source_regions.dart';
+import '../support/dart_source_reader.dart';
 
 /// Deliberate CJK punctuation that is data or a self-name, not copy. Matched by
 /// exact line content so a new one has to be added here on purpose.
@@ -78,7 +78,7 @@ Iterable<File> get _scanned sync* {
 /// — it could also accuse a line that was fine.
 ///
 /// Neither cost was worth paying, because the parser the comment did not want
-/// to write already exists: `test/support/dart_source_regions.dart`, shared
+/// to write already exists: `test/support/dart_source_reader.dart`, shared
 /// with the transport guard and the identifier guard, with fixtures pinning
 /// the two bugs it has actually had. String literals are kept deliberately —
 /// see the scan below on why this is a whole-line check and not a literal one.

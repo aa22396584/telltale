@@ -20,7 +20,7 @@
 // comments would be switched off within a week, and then it would be
 // protecting nothing while still looking like protection.
 //
-// The reader is `test/support/dart_source_regions.dart`, the one
+// The reader is `test/support/dart_source_reader.dart`, the one
 // `transport_issue_guard_test.dart` uses. Three naive scanners is exactly the
 // pattern `test/support/cjk.dart` exists to end — nine waves each wrote their
 // own detector, eight matched Han characters only, and a real defect shipped
@@ -61,7 +61,7 @@ import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/ui/wear/wear_permission_copy.dart';
 
 import '../support/cjk.dart';
-import '../support/dart_source_regions.dart';
+import '../support/dart_source_reader.dart';
 
 /// The files whose string literals must stay free of Chinese.
 ///
