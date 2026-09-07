@@ -66,9 +66,9 @@ import '../support/dart_source_reader.dart';
 /// A guard scoped to one file is honest about its scope and still shaped like
 /// the defect it exists to remove.
 ///
-/// Two things on this path are deliberately outside the list, because a guard
-/// that fails on work nobody has done yet gets an exception list rather than a
-/// fix:
+/// Three things on this path are deliberately outside the list, because a
+/// guard that fails on work nobody has done yet gets an exception list rather
+/// than a fix:
 ///
 ///   * `lib/state/pid_registry.dart` — `PidImportOutcome.describe` composes
 ///     the CSV-import snackbar out of Chinese sentence fragments joined with
@@ -81,6 +81,18 @@ import '../support/dart_source_reader.dart';
 ///     gets English — and excluded by this slice's brief. It is not a Chinese
 ///     literal, so this scan would not see it either way; it is named here so
 ///     the exclusion is a decision rather than an oversight.
+///   * `powertrain_battery_catalog_screen.dart:530`'s
+///     `Text('${result.failure?.name}: ${result.detail}')` in the probe-result
+///     dialog. Same class as the entry above, same screen, same probe path,
+///     three lines from code this slice rewrote: `failure.name` is an English
+///     enum identifier and `detail` is English developer prose from
+///     `powertrain_battery_probe.dart` (`'decoder invariant failed; this
+///     profile is quarantined'`), both shown verbatim to a Chinese driver.
+///     Also invisible to this scan — the Chinese reader's half of the defect
+///     leaves no Chinese literal behind — so it too is listed rather than
+///     left to be discovered as an omission. It needs a refusal identifier
+///     per `PowertrainBatteryProbeFailure` before it can be localized,
+///     which is a slice of its own and not this one.
 const _refusalPath = <String>[
   'lib/state/powertrain_battery_profiles.dart',
   'lib/state/pid_mutation_lock.dart',

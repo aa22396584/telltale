@@ -9,6 +9,7 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_mutation_lock.dart';
 import 'package:torque_obd/state/pid_registry.dart';
+import 'package:torque_obd/state/powertrain_battery_experiments.dart';
 import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/screens/pids/powertrain_battery_catalog_screen.dart';
 import 'support/localized_app.dart';
@@ -161,6 +162,69 @@ Future<ProviderContainer> _pump(
   );
   await tester.pumpAndSettle();
   return container;
+}
+
+/// The one community profile in the production catalog the one-shot
+/// laboratory may actually read.
+///
+/// The fixture catalog at the top of this file cannot stand in for the render
+/// tests below: `canProbe` is decided by the real validator against the real
+/// profile, and what those tests are about is the screen rendering whatever
+/// the real `authorize()` decided.
+const _probeProfileId = 'mg-zs-ev-au-2021';
+const _probeButtonKey = Key('powertrain_probe_$_probeProfileId');
+const _probeCommandKey = Key(
+  'powertrain_probe_command_${_probeProfileId}_22B046',
+);
+
+/// Production catalog, searched down to that profile, laboratory open,
+/// connection up — the state a driver is in when they tap "read once".
+Future<ProviderContainer> _pumpProbeReady(
+  WidgetTester tester, {
+  Locale locale = testUiLocale,
+}) async {
+  final production = await tester.runAsync(PowertrainBatteryCatalogAsset.load);
+  final container = await _pump(
+    tester,
+    snapshot: production!,
+    experimentalAccess: true,
+    connected: true,
+    locale: locale,
+  );
+  await tester.enterText(
+    find.byKey(const Key('powertrain_profile_search')),
+    'ZS EV',
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(_probeButtonKey));
+  await tester.pumpAndSettle();
+  return container;
+}
+
+/// Taps through the command picker and both acknowledgements, stopping with
+/// the consent dialog open and its confirm button live.
+///
+/// The gap this leaves is the point: `authorize()` runs when confirm is
+/// tapped, not when the dialog opened, so a caller can change the world in
+/// between exactly as a driver reading two dialogs allows it to change.
+Future<void> _openProbeConsent(WidgetTester tester) async {
+  await tester.tap(find.byKey(_probeButtonKey));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(_probeCommandKey));
+  await tester.pumpAndSettle();
+  // Scrolled to, not merely found. The English consent copy is long enough
+  // to push both checkboxes past the 800x600 test viewport, and a tap that
+  // misses leaves the confirm button disabled — which looks exactly like the
+  // screen refusing to render anything.
+  for (final ack in const [
+    Key('powertrain_experimental_identity_ack'),
+    Key('powertrain_experimental_parked_ack'),
+  ]) {
+    await tester.ensureVisible(find.byKey(ack));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ack));
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -343,6 +407,81 @@ void main() {
   );
 
   testWidgets(
+    'the recording lock refuses a catalog install too, and installs nothing',
+    (tester) async {
+      // The install path at `_installProfile` snacks `pidMutationFailureText`
+      // through the same two lines as the uninstall path above, and until
+      // this test only the uninstall half was ever rendered by a widget —
+      // a screen can route one of two identical-looking call sites into
+      // nothing and the copy tests would not notice. The sentence is typed
+      // out here rather than read from AppLocalizations, for the reason
+      // given above it.
+      final container = await _pump(tester);
+      addTearDown(container.dispose);
+
+      final token = container
+          .read(pidMutationLockProvider)
+          .tryAcquire('recording')!;
+      await tester.ensureVisible(
+        find.byKey(const Key('powertrain_install_mg-zs-ev')),
+      );
+      await tester.tap(find.byKey(const Key('powertrain_install_mg-zs-ev')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('powertrain_install_identity_ack')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('powertrain_confirm_install')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('請先停止並儲存'), findsOneWidget);
+      // The refusal has to be a refusal, not just a sentence: a screen that
+      // installed the profile and then snacked the lock message would pass
+      // the assertion above on its own.
+      expect(
+        container
+            .read(pidRegistryProvider.notifier)
+            .installedPowertrainProfileIds,
+        isEmpty,
+      );
+      container.read(pidMutationLockProvider).release(token);
+    },
+  );
+
+  testWidgets(
+    'the recording lock refuses an English install in English',
+    (tester) async {
+      final container = await _pump(tester, locale: const Locale('en'));
+      addTearDown(container.dispose);
+
+      final token = container
+          .read(pidMutationLockProvider)
+          .tryAcquire('recording')!;
+      await tester.ensureVisible(
+        find.byKey(const Key('powertrain_install_mg-zs-ev')),
+      );
+      await tester.tap(find.byKey(const Key('powertrain_install_mg-zs-ev')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('powertrain_install_identity_ack')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('powertrain_confirm_install')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stop and save the recording first'), findsOneWidget);
+      expect(find.text('請先停止並儲存'), findsNothing);
+      expect(
+        container
+            .read(pidRegistryProvider.notifier)
+            .installedPowertrainProfileIds,
+        isEmpty,
+      );
+      container.read(pidMutationLockProvider).release(token);
+    },
+  );
+
+  testWidgets(
     'an install accepted after the connection changed grants nothing',
     (tester) async {
       final container = await _pump(tester, connected: true);
@@ -471,6 +610,204 @@ void main() {
 
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
+    },
+  );
+
+  // -- the render site ---------------------------------------------------
+  //
+  // Everything before this point pins the engine's identifier and the copy
+  // function's sentence. Neither is what a driver reads; the screen is. Both
+  // refusal render sites in `_probeExperimental` could be collapsed onto
+  // `PowertrainProbeRefusal.labClosed` and this suite stayed byte-identically
+  // green — a driver quarantined at the attempt cap was told the laboratory
+  // had been switched off, which is round one's defect relocated from
+  // `lib/state/` to `lib/ui/`.
+  //
+  // Every sentence below is typed out by hand in both languages, and the cap
+  // is typed as a literal `3` rather than read from `maxAttemptsPerCommand`:
+  // asking the constant what the number is would agree with whatever the
+  // constant currently says, which is the entire reason `attemptCap` is
+  // carried to the render site instead of looked up there.
+
+  testWidgets(
+    'a quarantine that lands before the tap is refused in its own words',
+    (tester) async {
+      final container = await _pumpProbeReady(tester);
+      addTearDown(container.dispose);
+
+      // The frame on screen was built while the button was still live; the
+      // quarantine lands after it and before the finger does. That window is
+      // the only way `_probeExperimental`'s own quarantine check is reached,
+      // because `quarantine()` publishes new state, the body watches it and
+      // the settled frame disables the button. Not pumping between these two
+      // lines *is* the race the check exists for, not a way around it — and
+      // the last assertion holds the door shut afterwards.
+      container
+          .read(powertrainExperimentalProbeConsentsProvider.notifier)
+          .quarantine(
+            _probeProfileId,
+            PowertrainProbeRefusal.quarantinedAtAttemptCap,
+          );
+      await tester.tap(find.byKey(_probeButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('本次連線已隔離：同一個指令已經嘗試 3 次。請重新連線後再試。'),
+        findsOneWidget,
+      );
+      // Refused before anything was chosen: the command picker never opened.
+      expect(find.byKey(_probeCommandKey), findsNothing);
+      expect(
+        tester.widget<OutlinedButton>(find.byKey(_probeButtonKey)).onPressed,
+        isNull,
+      );
+    },
+  );
+
+  testWidgets(
+    'the same quarantined tap on an English screen is refused in English',
+    (tester) async {
+      final container = await _pumpProbeReady(
+        tester,
+        locale: const Locale('en'),
+      );
+      addTearDown(container.dispose);
+
+      container
+          .read(powertrainExperimentalProbeConsentsProvider.notifier)
+          .quarantine(
+            _probeProfileId,
+            PowertrainProbeRefusal.quarantinedAtAttemptCap,
+          );
+      await tester.tap(find.byKey(_probeButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Quarantined for this connection: the same command has already been '
+          'tried 3 times. Reconnect before trying again.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('本次連線已隔離：同一個指令已經嘗試 3 次。請重新連線後再試。'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'a quarantine recorded while the consent dialog sat open names itself, '
+    'and names the cap the decision carried',
+    (tester) async {
+      // The second render site. `authorize()` runs when confirm is tapped,
+      // so this is the state of the world it judges, not the state the tap
+      // on "read once" saw. It is also the only test in this repository that
+      // renders `decision.attemptCap`: the other site passes the constant
+      // straight through, so it cannot tell the difference if the decision
+      // stops carrying it.
+      final container = await _pumpProbeReady(tester);
+      addTearDown(container.dispose);
+      await _openProbeConsent(tester);
+
+      container
+          .read(powertrainExperimentalProbeConsentsProvider.notifier)
+          .quarantine(
+            _probeProfileId,
+            PowertrainProbeRefusal.quarantinedAtAttemptCap,
+          );
+      await tester.tap(
+        find.byKey(const Key('powertrain_confirm_experimental_probe')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('本次連線已隔離：同一個指令已經嘗試 3 次。請重新連線後再試。'),
+        findsOneWidget,
+      );
+      // Refused means refused: no consent was issued, so nothing could have
+      // reached the wire.
+      expect(
+        container.read(powertrainExperimentalProbeConsentsProvider),
+        isEmpty,
+      );
+    },
+  );
+
+  testWidgets(
+    'the confirmed-into-a-quarantine refusal reads in English too',
+    (tester) async {
+      final container = await _pumpProbeReady(
+        tester,
+        locale: const Locale('en'),
+      );
+      addTearDown(container.dispose);
+      await _openProbeConsent(tester);
+
+      container
+          .read(powertrainExperimentalProbeConsentsProvider.notifier)
+          .quarantine(
+            _probeProfileId,
+            PowertrainProbeRefusal.quarantinedAtAttemptCap,
+          );
+      await tester.tap(
+        find.byKey(const Key('powertrain_confirm_experimental_probe')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Quarantined for this connection: the same command has already been '
+          'tried 3 times. Reconnect before trying again.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('本次連線已隔離：同一個指令已經嘗試 3 次。請重新連線後再試。'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'the laboratory switched off while the dialog sat open is refused as '
+    'that, and not as a quarantine',
+    (tester) async {
+      // Two different refusals rendered at one site. Without this, that site
+      // could hold a single hard-wired sentence and the four tests above
+      // would all still pass; with it, the site has to render the decision.
+      // It is also the scenario `labClosed` is worded for — the switch went
+      // off between the tap and the authorization, which is the one refusal
+      // here a driver can cause without a race.
+      final container = await _pumpProbeReady(
+        tester,
+        locale: const Locale('en'),
+      );
+      addTearDown(container.dispose);
+      await _openProbeConsent(tester);
+
+      await container
+          .read(powertrainBatteryExperimentalAccessProvider.notifier)
+          .setEnabled(false);
+      await tester.tap(
+        find.byKey(const Key('powertrain_confirm_experimental_probe')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'The experimental battery laboratory was switched off before this '
+          'read could be authorized.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Quarantined for this connection: the same command has already been '
+          'tried 3 times. Reconnect before trying again.',
+        ),
+        findsNothing,
+      );
     },
   );
 }
