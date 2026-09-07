@@ -233,6 +233,54 @@ produced a bug that survived a green test suite.
   same defect: one branch's header said a screen's permission refusal "is always
   the Bluetooth one" while line 555 of that same file asked for location.
 
+- **A check that says more than it checks is worse than no check.** The gap is
+  invisible to the suite, because the victim is a reader rather than a
+  compiler. This one rule was broken three times in one afternoon, each time by
+  a sentence one notch stronger than the thing underneath it:
+
+  | The prose said | The check actually did |
+  |---|---|
+  | *this exact binary has been walked on a phone* | nothing — the flag was `case $TAG in *-*)` |
+  | *a release build of **this commit** was walked* | matched a **version**, which does not move when the code does |
+  | *no walk of this version is recorded* | returned before reading the file at all |
+
+  None of the three could fail. The first was found by a reviewer, the second
+  by a second reviewer after the first fix shipped, the third by the same
+  reviewer in the same pass. Write the sentence *after* the check, from the
+  check, and name what it does not cover — a reader can weigh a stated gap and
+  cannot weigh a false claim.
+
+- **An attestation is a field, not a sentence.** A gate that reads prose reads
+  mentions as claims. `## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed`
+  cleared a full release of 1.0.12 against a gate that searched dated headings
+  for the version; so did `x1.0.12oops` and `1.0.12-rc.1 planned, no walk`. The
+  first of those states the opposite of what it was read as stating, and nobody
+  has to be dishonest to write any of them. What a machine reads must be a line
+  that takes a deliberate keystroke and cannot occur inside a sentence meaning
+  something else — `Device walk attested: 1.0.12`, anchored at both ends.
+
+- **A gate that a person can only clear alone must be clearable alone.** The
+  rule before this one required a second adapter and another vehicle. There is
+  no number of cars that is "enough", so it never cleared, so every release was
+  a pre-release and GitHub's Latest badge sat on a build from nine days earlier
+  while the same commit was on Play production at 100%. The boundary did not
+  disappear; it moved into the release notes, printed on every build, where it
+  is a thing to **state** rather than a thing to **block** on. A gate a
+  maintainer cannot pass is not a standard, it is a stall.
+
+- **`cmd | grep -q` under `pipefail` is a size-dependent false refusal.**
+  `grep -q` exits on its first match, the upstream process takes SIGPIPE, and
+  `pipefail` reports the pipeline as failed — so a line that IS present is read
+  as absent. Whether it bites depends on whether the output fits the pipe
+  buffer, so it passes on today's file and fails on a later one with no code
+  change to blame. Read into a variable, or grep the file directly.
+
+- **A mutation that reports no failure has two explanations, and the second is
+  more likely.** Either the test is weak, or the mutation never applied. A
+  swap of two table rows in a shell heredoc reported green here because shell
+  quoting ate the escaped backticks and the file was never edited. Assert the
+  anchor exists before replacing it, and diff the file afterwards.
+
 `docs/protocol-deviations.zh-TW.md` records where this app deliberately departs from the
 specification it was derived from, and why. Three of those departures fix
 commands that would break a connection to a real vehicle — one of them
