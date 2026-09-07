@@ -373,7 +373,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: this bus takes grouped requests and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.';
+      'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.';
 
   @override
   String get dashboardPollingModeHelpRate =>

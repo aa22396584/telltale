@@ -404,13 +404,24 @@ void main() {
       );
       expect(zh.dashboardPollingModeHelpSingle, contains('每個 Mode 01 PID 各自讀取'));
 
-      // The enabled paragraph now speaks for a state where the bus is known to
-      // take grouped requests, so it says so rather than hedging about it.
+      // canBatch is addressing.isCan && a nonempty verified-support map. That
+      // is set after a support block answers and before any grouped request
+      // has been sent, so the first snapshot that lights this pill can follow
+      // a single-PID poll. "This bus takes grouped requests" is an observation
+      // no exchange has supplied yet. Permission is what the flag proves.
       expect(
         en.dashboardPollingModeHelpBatching,
-        contains('this bus takes grouped requests'),
+        contains('grouped attempts are permitted'),
       );
-      expect(zh.dashboardPollingModeHelpBatching, contains('這條匯流排接受併批請求'));
+      expect(zh.dashboardPollingModeHelpBatching, contains('允許嘗試併批'));
+      expect(
+        en.dashboardPollingModeHelpBatching,
+        isNot(contains('this bus takes grouped requests')),
+      );
+      expect(
+        zh.dashboardPollingModeHelpBatching,
+        isNot(contains('這條匯流排接受併批請求')),
+      );
 
       // The rate is observed, and depends on six named things.
       expect(en.dashboardPollingModeHelpRate, contains('observed over the last second'));

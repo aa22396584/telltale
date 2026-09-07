@@ -350,7 +350,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排接受併批請求，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -3879,7 +3879,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排接受併批請求，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
 
   @override
   String get dashboardPollingModeHelpRate =>

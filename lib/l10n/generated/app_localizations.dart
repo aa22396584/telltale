@@ -702,7 +702,7 @@ abstract class AppLocalizations {
   /// Explains the enabled side of the pill, which is shown only when PriorityScheduler.fastModeEnabled and canBatch are both set. Must not claim that grouping was observed.
   ///
   /// In en, this message translates to:
-  /// **'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: this bus takes grouped requests and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.'**
+  /// **'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.'**
   String get dashboardPollingModeHelpBatching;
 
   /// Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages.
