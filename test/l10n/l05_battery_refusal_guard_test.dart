@@ -676,8 +676,17 @@ void main() {
       // the recording lock on save and on confirmed delete —
       // pid_editor_test.dart
       'lib/ui/screens/pids/pid_editor_screen.dart -> pidMutationFailureText x1',
-      // the recording lock on the dashboard toggle, and on the manager's own
-      // mutation path — pid_manager_lock_test.dart
+      // :182 the dashboard toggle and :866 the arrange sheet's reorder, both
+      // driven in pid_manager_lock_test.dart.
+      //
+      // This line said both were covered before either had been checked. Only
+      // the toggle was: a reviewer mutated all seven sites one at a time and
+      // the reorder survived with zero failures, mutant compiling clean. The
+      // census counts CALLS and cannot see whether a path was ever walked, and
+      // the prose beside it filled that gap with a claim nothing verifies.
+      // That is the same defect one level up from the one this guard exists
+      // for, so: every note here is a claim, and a claim is only worth what
+      // the mutation behind it showed.
       'lib/ui/screens/pids/pid_manager_screen.dart -> pidMutationFailureText x2',
     };
     expect(sites, equals(known),
