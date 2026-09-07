@@ -229,10 +229,19 @@ void main() {
       expect(r.stdout, contains('does not exist'));
     });
 
-    test('the real evidence file attests the version being released', () {
+    test('the gate reaches a decision on the real evidence file', () {
       // Not a fixture: the file the workflow will actually read, at the version
-      // pubspec.yaml actually carries. This is the test that fails when someone
-      // bumps the version and forgets the walk.
+      // pubspec.yaml actually carries.
+      //
+      // What is NOT asserted here is that the walk exists. A version bump
+      // legitimately precedes its walk, and a pre-release tag never claims one
+      // -- so demanding an entry would turn the unit suite red for exactly the
+      // window in which cutting a beta is the correct move. That is the stall
+      // this rule was written to remove; reintroducing it one layer down would
+      // be the same mistake in a place nobody looks.
+      //
+      // Whether the walk happened is settled at tag time, by the workflow, on
+      // the tag that makes the claim.
       final pubspec = File('pubspec.yaml').readAsStringSync();
       final version = RegExp(r'^version:\s*(\d+\.\d+\.\d+)\+\d+$',
               multiLine: true)
@@ -240,8 +249,39 @@ void main() {
           ?.group(1);
       expect(version, isNotNull, reason: 'pubspec.yaml must carry X.Y.Z+N');
       final r = gate('v$version');
-      expect(r.exitCode, 0,
-          reason: 'pubspec is at $version; ${r.stdout}${r.stderr}');
+      expect(r.stderr, isEmpty, reason: 'the real file must parse cleanly');
+      expect(r.exitCode, anyOf(0, 1), reason: 'a decision, not a crash');
+      expect(
+        r.stdout,
+        r.exitCode == 0
+            ? contains('device walk recorded for $version')
+            : contains('::error::'),
+      );
+    });
+
+    test('every walk already recorded is one the gate can still see', () {
+      // The false-refusal direction, and the one that actually costs something:
+      // the maintainer does the walk, writes it down, and the gate refuses the
+      // tag anyway because the heading is in a shape it cannot read. Nothing
+      // here demands new work -- it reads the versions the real file already
+      // attests and requires the gate to agree with every one of them.
+      final evidence =
+          File('docs/verification/device-verification.md').readAsStringSync();
+      final versions = RegExp(r'^## \d{4}-\d{2}-\d{2}.*$', multiLine: true)
+          .allMatches(evidence)
+          .expand((h) => RegExp(r'(?<![0-9.])(\d+\.\d+\.\d+)(?![0-9.])')
+              .allMatches(h.group(0)!))
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(versions, isNotEmpty,
+          reason: 'the file must contain at least one dated version entry, '
+              'or this test is asserting nothing');
+      for (final v in versions) {
+        final r = gate('v$v');
+        expect(r.exitCode, 0,
+            reason: 'a dated heading names $v, so the gate must clear it; '
+                'got ${r.stdout}${r.stderr}');
+      }
     });
   });
 }
