@@ -426,13 +426,20 @@ void main() {
       'double-quoted': 'final d = r"\${don\'t}";\n',
       'triple single-quoted': 'final d = r\'\'\'\${don"t}\'\'\';\n',
       'triple double-quoted': 'final d = r"""\${don\'t}""";\n',
-      // The outer literal must be DOUBLE-quoted and the injected quote a
-      // double quote, or the apostrophe pairs with the outer closing quote and
-      // the whole thing resynchronises -- which is how the first attempt at
-      // this case passed under the mutation it was written for.
-      'raw inside an interpolation inside a non-raw literal':
-          'final d = "\${ r\'\${don"t}\' }";\n',
     };
+    // Nesting -- a raw literal inside an interpolation inside a non-raw one --
+    // is NOT here, and that is the second thing this fixture had to learn.
+    // Three attempts sat in this map, and all three passed with the raw gate
+    // removed entirely. `codeMask` cannot see a nesting mistake through a
+    // desync: whatever quote is injected, the enclosing literal brings its own
+    // closing quote of the same type to pair with it, and the source
+    // resynchronises before the call on the next line. Adding a second
+    // injected quote does not help; that was tried too.
+    //
+    // The nesting case is pinned in l05_string_identifiers_test.dart instead,
+    // by asserting the classification directly rather than a consequence of
+    // it: `found("const a = '\${ r\"\${測試}\" }';")`. Consulting the
+    // outermost frame instead of the innermost reddens that and nothing here.
     rawForms.forEach((label, prefix) {
       expect(
         callsFound('${prefix}throw TransportException(\'y\', issue: null);'),
