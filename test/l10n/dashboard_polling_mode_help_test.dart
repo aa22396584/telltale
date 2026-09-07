@@ -354,9 +354,14 @@ void main() {
         isNot(contains('過短或錯亂')),
       );
 
-      // The fallback label covers two unrelated states and has to name both.
-      // A bus that never groups is not a fallback from anything, and a driver
-      // on a non-CAN vehicle sees this label for the whole session.
+      // The fallback label covers three unrelated states and has to name all
+      // of them. A bus that never groups is not a fallback from anything; a
+      // CAN bus whose support blocks have not answered yet is grouping held
+      // back on purpose, with nothing wrong and nothing failed; and only the
+      // third is a fallback from a bad reply. The copy named the first and the
+      // third, so a driver in the second was told either that their bus does
+      // not group — it might — or that a grouped request had failed. None had
+      // been sent.
       expect(
         en.dashboardPollingModeHelpSingle,
         contains('does not take grouped requests'),
@@ -364,6 +369,30 @@ void main() {
       expect(en.dashboardPollingModeHelpSingle, contains('non-CAN'));
       expect(zh.dashboardPollingModeHelpSingle, contains('根本不接受併批請求'));
       expect(zh.dashboardPollingModeHelpSingle, contains('非 CAN'));
+
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        contains('no support block has answered yet'),
+      );
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        contains('grouping PIDs the vehicle has not confirmed'),
+      );
+      expect(zh.dashboardPollingModeHelpSingle, contains('還沒有任何支援區塊回應過'));
+      expect(zh.dashboardPollingModeHelpSingle, contains('尚未確認的 PID'));
+
+      // And the two-cause wording does not come back. Its connective is what
+      // vanishes when the third state is written in, so that is what is
+      // pinned: a sentence that reads "non-CAN vehicle, and drops back" has
+      // gone back to naming two.
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        isNot(contains('non-CAN vehicle, and drops back')),
+      );
+      expect(
+        zh.dashboardPollingModeHelpSingle,
+        isNot(contains('Telltale 會一直待在這個模式；而當')),
+      );
 
       // Mode 01, because a powertrain profile response is drained as one batch
       // in either mode: several logical PIDs, one command, one reply. Saying

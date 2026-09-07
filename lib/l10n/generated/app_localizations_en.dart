@@ -381,7 +381,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      'Single request mode means each Mode 01 PID is read on its own. Telltale stays in it when the bus does not take grouped requests at all, which is every non-CAN vehicle, and drops back to it when a grouped request does not come back in a form it can split apart again: truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.';
+      'Single request mode means each Mode 01 PID is read on its own. Telltale uses it when the bus does not take grouped requests at all, which is every non-CAN vehicle; while no support block has answered yet, because grouping PIDs the vehicle has not confirmed is what makes a reply come back short; and after a grouped request fails to come back in a form it can split apart again, whether truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.';
 
   @override
   String get dashboardPollingModeHelpTitle => 'Polling mode';

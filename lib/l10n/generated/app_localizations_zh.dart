@@ -358,7 +358,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      '「單筆模式」代表每個 Mode 01 PID 各自讀取。當匯流排根本不接受併批請求時（所有非 CAN 車輛都是如此），Telltale 會一直待在這個模式；而當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），它會退回這個模式。讀數仍會持續更新，這本身不等於連線失敗。';
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。三種情況會用到它：匯流排根本不接受併批請求（所有非 CAN 車輛都是如此）；還沒有任何支援區塊回應過，因為把車輛尚未確認的 PID 併起來問，正是回覆會過短的原因；以及併批的請求沒有回來成一份能拆回各 PID 的答覆（被截斷、轉接器回報緩衝區已滿，或根本沒有回應）。讀數仍會持續更新，這本身不等於連線失敗。';
 
   @override
   String get dashboardPollingModeHelpTitle => '讀取模式';
@@ -3887,7 +3887,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      '「單筆模式」代表每個 Mode 01 PID 各自讀取。當匯流排根本不接受併批請求時（所有非 CAN 車輛都是如此），Telltale 會一直待在這個模式；而當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），它會退回這個模式。讀數仍會持續更新，這本身不等於連線失敗。';
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。三種情況會用到它：匯流排根本不接受併批請求（所有非 CAN 車輛都是如此）；還沒有任何支援區塊回應過，因為把車輛尚未確認的 PID 併起來問，正是回覆會過短的原因；以及併批的請求沒有回來成一份能拆回各 PID 的答覆（被截斷、轉接器回報緩衝區已滿，或根本沒有回應）。讀數仍會持續更新，這本身不等於連線失敗。';
 
   @override
   String get dashboardPollingModeHelpTitle => '讀取模式';

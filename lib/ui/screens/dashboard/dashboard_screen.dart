@@ -596,6 +596,16 @@ class _StatusStrip extends ConsumerWidget {
 /// state cannot make. When either half is down, every Mode 01 PID is read on
 /// its own, which is what the fallback label says and what the code does.
 ///
+/// **The fallback label covers three states and cannot tell them apart.** The
+/// bus is not CAN and never will group; the bus is CAN but no support block
+/// has answered yet, so `canBatch` is still false and grouping is held back on
+/// purpose, because asking about PIDs the vehicle has not confirmed is what
+/// makes a batch come back short; or grouping was withdrawn after a bad reply.
+/// A driver sees one label for all three, and they are not equivalent — the
+/// second resolves itself as discovery lands, the first never does. Two labels
+/// cannot say that, so the explanation behind the pill enumerates all three
+/// rather than the pill implying a single cause.
+///
 /// The one thing neither half stops is a powertrain profile response: those
 /// PIDs share a single reply by construction, `popBatch` drains them as one
 /// batch before it reads either flag, and `buildCommand` sends them as one
