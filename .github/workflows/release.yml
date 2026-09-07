@@ -22,8 +22,20 @@
 # GitHub pre-release. The flag means exactly one thing, and it is a thing one
 # person can settle in an afternoon:
 #
-#   pre-release  =  this exact binary has not been walked on a phone
-#   full release =  it has
+#   pre-release  =  no walk of this version is recorded in
+#                   docs/verification/device-verification.md
+#   full release =  a release build of this commit was walked on a phone, and
+#                   that walk is recorded there under this version
+#
+# CI enforces it rather than trusting the tag: tool/release/require_device_walk.sh
+# refuses a full-release tag whose version has no dated entry in that file. The
+# flag used to be derived from the tag string alone and validated nothing, so
+# "walked" was true only when whoever cut the tag happened to have done it.
+#
+# What the full release does NOT claim, and says so in its own notes: that the
+# published APK is the walked one. The walk is done on a locally signed release
+# build of the same commit; this workflow signs with the community key. Same
+# source, same commit, different signature.
 #
 # It used to mean something else, and that is why every release from v1.0.7 to
 # v1.0.11 was a pre-release and GitHub's Latest badge sat on v1.0.6 for nine
@@ -144,6 +156,11 @@ jobs:
           printf 'APP_VERSION=%s\nAPP_VERSION_NAME=%s\nAPP_VERSION_CODE=%s\nCOMMIT_SHA=%s\n' \
             "$pub_version" "$version_name" "$version_code" "$head_commit" \
             >> "$GITHUB_ENV"
+
+      - name: Require a recorded device walk for a full release
+        env:
+          TAG: ${{ steps.release_tag.outputs.tag }}
+        run: bash tool/release/require_device_walk.sh "$TAG"
 
       - name: Require successful exact-head main CI
         env:
@@ -312,126 +329,41 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release_tag.outputs.tag }}
+          APP_VERSION: ${{ steps.describe.outputs.version }}
+          APK_SIZE: ${{ steps.describe.outputs.size }}
+          APK_SHA256: ${{ steps.describe.outputs.sha256 }}
+          APK_FINGERPRINT: ${{ steps.describe.outputs.fingerprint }}
         run: |
           set -euo pipefail
           cp build/app/outputs/flutter-apk/app-field-release.apk \
              "telltale-${TAG}.apk"
           sha256sum "telltale-${TAG}.apk" > SHA256SUMS
 
-          # SemVer says everything after the first hyphen is a pre-release
-          # identifier. v1.0.1 is a release; v1.0.1-beta.1 is not.
-          PRERELEASE=""
-          case "$TAG" in
-            *-*) PRERELEASE="--prerelease" ;;
+          # The flag and the paragraph that explains it come from one reading of
+          # one tag, inside a script test/release_notes_contract_test.dart
+          # executes. Deriving the flag a second time here is how they came to
+          # disagree: the notes claimed a walk the flag did not gate on.
+          bash tool/release/release_notes.sh notes > notes.md
+
+          # Assigned on its own line, then matched exhaustively. Inlined as
+          # `if [ "$(... flag)" = prerelease ]` this fails OPEN: a condition is
+          # exempt from set -e, `[` discards the substitution's exit status, and
+          # a crashed script compares empty against "prerelease" -- publishing a
+          # full release, which is the one direction that must never happen by
+          # accident.
+          release_flag=$(bash tool/release/release_notes.sh flag)
+          release_args=()
+          case "$release_flag" in
+            prerelease) release_args+=(--prerelease) ;;
+            full) ;;
+            *) echo "::error::Unexpected release flag: '$release_flag'"; exit 1 ;;
           esac
-
-          # The evidence boundary is NOT tied to the pre-release flag, and this
-          # is the second thing that flag was silently doing. It used to carry
-          # both "not ready to use" and "never run against a real car", so the
-          # only way to publish a release people could find was to delete the
-          # honest paragraph. Every release since v1.0.6 was therefore marked
-          # pre-release, GitHub kept the Latest badge on a build from weeks
-          # earlier, and the same commit was already on Play production at 100%.
-          # The boundary is true of every build and now prints on every build;
-          # the flag says one checkable thing and nothing else.
-          : > notes.md
-          if [ -n "$PRERELEASE" ]; then
-            cat >> notes.md <<'PRE'
-          > **Pre-release.** This tag was cut for testing: the exact binary below
-          > has not been walked on a phone. A full release has.
-          >
-          > **預發行版本。** 這個 tag 是為了測試而開的：下面這份 binary
-          > 本身沒有在實機上走過一遍。正式版有。
-
-          PRE
-          fi
-
-          cat >> notes.md <<'PRE'
-          > **What this build has been run against, and what it has not.**
-          >
-          > - The protocol layer passes the simulated ELM327 rigs, including
-          >   framing and fault-injection checks, and a third-party ELM327
-          >   implementation this project did not write.
-          > - A physical Samsung phone completed a real Bluetooth LE/GATT session
-          >   over the phone's and Mac's actual radios against the Mac-hosted rig.
-          > - **One** real-vehicle observation exists: a purchased CARLZS LAB
-          >   `CL-OBDII-M25B` over Bluetooth LE, connected to a Toyota GT86. One
-          >   adapter and one car is not adapter compatibility and not
-          >   vehicle-generation compatibility, and the protocol-level transcript
-          >   from that session has not been reviewed or published.
-          > - **Still unverified:** any second adapter, any other vehicle, and
-          >   every engine-running condition.
-          > - `docs/verification/test-evidence.md` and
-          >   `docs/verification/device-verification.md` record the exact
-          >   boundary, dated. They are the source; this list is a summary.
-          >
-          > If you have an adapter and a car, this is the build to try.
-          > Settings → Export transcript writes out a verbatim record of
-          > everything the adapter said; an issue with that file attached is the
-          > most useful thing you can send.
-          >
-          > **這份 build 跑過什麼，沒跑過什麼。**
-          > 模擬 ELM327、分段與故障注入測試已通過，也跑過一份本專案沒有寫的
-          > 第三方 ELM327 實作；Samsung 實體手機已用真實藍牙無線電與 Android
-          > GATT 連上 Mac 主機的 BLE rig。真車觀察只有**一次**：購買的 CARLZS LAB
-          > `CL-OBDII-M25B` 透過 BLE 連上一台 Toyota GT86。一個轉接器加一台車不等於
-          > 轉接器相容性，也不等於車型世代相容性，而那次連線的協定層逐字紀錄
-          > 尚未審閱、也尚未公開。**仍未驗證：**第二個轉接器、其他任何車輛，
-          > 以及所有引擎運轉中的情境。詳細證據界線見 `docs/verification/`，那裡才是
-          > 來源，這份清單只是摘要。有轉接器又有車的話，這就是該試的版本；出問題請到
-          > 「設定 → 匯出紀錄」把逐字紀錄存下來，附在 issue 裡送回來。
-
-          PRE
-
-          cat >> notes.md <<EOF
-          Telltale ${{ steps.describe.outputs.version }}
-
-          **English** | 繁體中文 below
-
-          A ready-made APK for anyone who would rather not run a Flutter
-          toolchain. Same source, same features as the Google Play build —
-          nothing is held back.
-
-          | | |
-          |---|---|
-          | File | \`telltale-${TAG}.apk\` (${{ steps.describe.outputs.size }}) |
-          | SHA-256 | \`${{ steps.describe.outputs.sha256 }}\` |
-          | Signing certificate | \`${{ steps.describe.outputs.fingerprint }}\` |
-
-          **This build is signed with the community key, not the Google Play
-          key.** It therefore cannot update — and cannot be updated by — an
-          install that came from the Play Store; Android will refuse with a
-          signature mismatch. Export any diagnostic records you need before
-          switching: uninstalling removes Telltale's local app data. The two keys
-          are separate on purpose: sharing them would let anything that compromised
-          CI publish a replacement for a store install.
-
-          Verify before installing:
-
-          \`\`\`
-          sha256sum telltale-${TAG}.apk
-          \`\`\`
-
-          ---
-
-          給不想自己架 Flutter 環境的人的現成 APK。原始碼相同、功能與 Google Play
-          版完全一致，沒有閹割。
-
-          **這份是社群簽章金鑰簽的，不是 Google Play 的上架金鑰。** 所以它無法用來更新
-          從 Play 商店安裝的版本，反之亦然 —— Android 會以簽章不符拒絕。要換過去請先解除
-          安裝；解除安裝會刪除 Telltale 本機資料，請先匯出要保留的診斷紀錄。兩把金鑰刻意
-          分開：共用的話，任何入侵 CI 的人就能發布一個能取代商店安裝的版本。
-
-          安裝前請先核對 SHA-256。
-          EOF
 
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "::error::Release $TAG already exists; published assets are immutable by policy"
             exit 1
           fi
 
-          release_args=()
-          [ -n "$PRERELEASE" ] && release_args+=("$PRERELEASE")
           gh release create "$TAG" "telltale-${TAG}.apk" SHA256SUMS \
             --title "Telltale ${TAG}" \
             --notes-file notes.md \
