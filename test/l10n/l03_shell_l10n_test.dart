@@ -580,21 +580,49 @@ void main() {
       expect(find.textContaining('推廣分潤'), findsOneWidget);
     });
 
-    test(
-      'an unlocalized storefront keeps its own name rather than a guess',
-      () {
-        const invented = RecommendedPurchase(
-          id: 'example',
-          storeLabel: 'Example Store',
+    test('every storefront in the enum has a name in both languages', () {
+      // This replaced 'an unlocalized storefront keeps its own name rather
+      // than a guess', which built a `RecommendedPurchase` with
+      // `storeLabel: 'Example Store'` and checked that the panel echoed it
+      // back. That fallback was protecting against one thing — a store
+      // rendered under another store's name — and it cannot happen any more:
+      // `RecommendedStore` is an enum and `recommendedStoreLabel` switches on
+      // it exhaustively, so a second storefront does not compile until the
+      // switch names it. What the compiler still cannot see is a name that is
+      // empty, or two stores pointed at the same ARB entry, so that is what is
+      // asserted here.
+      final seen = <String, RecommendedStore>{};
+      for (final store in RecommendedStore.values) {
+        final purchase = RecommendedPurchase(
+          id: 'probe',
+          store: store,
           productLabel: 'Example',
           url: 'https://example.test/',
           model: 'X',
           radioApproval: 'Y',
         );
-        expect(recommendedStoreLabel(en, invented), 'Example Store');
-        expect(recommendedStoreLabel(zh, invented), 'Example Store');
-      },
-    );
+        for (final (language, l10n) in [('English', en), ('Chinese', zh)]) {
+          final name = recommendedStoreLabel(l10n, purchase);
+          expect(
+            name.trim(),
+            isNotEmpty,
+            reason: '$store has no $language name, so the store CTA reads '
+                '"View on " with nothing after it',
+          );
+        }
+        // English only: the two languages are allowed to agree on a store
+        // that publishes one name worldwide, but two different stores sharing
+        // one name sends somebody to the wrong shop.
+        final name = recommendedStoreLabel(en, purchase);
+        final clash = seen[name];
+        expect(
+          clash,
+          isNull,
+          reason: '$store and $clash both render as "$name"',
+        );
+        seen[name] = store;
+      }
+    });
   });
 
   group('language picker', () {

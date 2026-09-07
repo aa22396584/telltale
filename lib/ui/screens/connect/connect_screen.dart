@@ -179,12 +179,13 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// without offering it, the wizard is a dead end.
   bool _permissionPermanentlyDenied = false;
 
-  // `BlePermissionResult.deniedLabel` is deliberately not read here. It
-  // carries a fixed Chinese word chosen in the permission layer, which cannot
-  // be localized from this screen, and it would name nothing new: the only
-  // caller that shows it lists bonded adapters with `forScanning: false`, and
-  // that path never requests location — the refusal is always the Bluetooth
-  // one. The messages below say so outright instead of interpolating it.
+  // `BlePermissionResult.deniedKind` is deliberately not read here. It is an
+  // identifier now rather than the fixed Chinese word it used to be, so the
+  // reason is no longer that it cannot be localized from this screen — it is
+  // that it would name nothing new: this screen lists bonded adapters with
+  // `forScanning: false`, and that path never requests location, so the
+  // refusal is always the Bluetooth one. The messages below say so outright
+  // instead of interpolating it.
 
   Future<void> _loadPairedDevices() async {
     // Read before the first await. Every await below can outlive the screen,
