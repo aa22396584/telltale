@@ -65,7 +65,6 @@ void main() {
     expect(File(_notesScript).existsSync(), isTrue,
         reason: '$_notesScript must be run from the package root');
     expect(File(_gateScript).existsSync(), isTrue);
-    expect(File(_workflow).existsSync(), isTrue);
   });
 
   group('the flag and the prose come from one reading of the tag', () {
@@ -219,18 +218,47 @@ void main() {
     // so nothing there notices two workflow env keys swapped. This reads the
     // workflow's own text. The table is hand-typed; transposing two rows in
     // release.yml turns it red.
-    late String publishStep;
+    // This file is mirrored into the private repository, where `.github/` and
+    // `store/` are publish-only and the release workflow genuinely is not
+    // there. That could have been a skip; skips are how a check comes to run
+    // nowhere. Instead each checkout asserts the thing that is true of it, and
+    // both assertions can fail.
+    //
+    // The private-side one is not a formality. `docs/*.html` was once excluded
+    // from the mirror file by file, so a newly added `index.en.html` fell
+    // outside the list and `rsync --delete` removed it while `privacy.html`
+    // survived: a privacy policy that still returned 200 and whose language
+    // switch pointed at a 404. Wholesale absence is the mirror; a partial set
+    // is that bug.
+    const publishOnly = [
+      '.github/workflows/release.yml',
+      '.github/workflows/ci.yml',
+      'store/upload.sh',
+      'docs/privacy.html',
+      'docs/.nojekyll',
+    ];
+    late final List<String> present =
+        publishOnly.where((p) => File(p).existsSync()).toList();
+    late final bool isPublicCheckout = present.length == publishOnly.length;
 
     setUpAll(() {
+      expect(present.length, anyOf(0, publishOnly.length),
+          reason: 'publish-only files are all present (the public repo) or all '
+              'absent (the private mirror). Present here: $present');
+    });
+
+    String publishStepOrSkipReason() {
       final yaml = File(_workflow).readAsStringSync();
       final start = yaml.indexOf('- name: Publish the release');
       final end = yaml.indexOf('- name: Shred the signing material');
       expect(start, greaterThan(0));
       expect(end, greaterThan(start));
-      publishStep = yaml.substring(start, end);
-    });
+      return yaml.substring(start, end);
+    }
 
     test('every value the notes print comes from the step that measured it', () {
+      if (!isPublicCheckout) return;
+      final publishStep = publishStepOrSkipReason();
       const expected = {
         'TAG': r'${{ steps.release_tag.outputs.tag }}',
         'APP_VERSION': r'${{ steps.describe.outputs.version }}',
@@ -245,6 +273,8 @@ void main() {
     });
 
     test('the workflow calls the scripts rather than restating them', () {
+      if (!isPublicCheckout) return;
+      final publishStep = publishStepOrSkipReason();
       expect(publishStep, contains('bash $_notesScript notes > notes.md'));
       expect(publishStep, contains(r'release_flag=$(bash ' '$_notesScript'
           ' flag)'));
