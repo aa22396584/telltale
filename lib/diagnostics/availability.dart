@@ -582,11 +582,21 @@ abstract final class AvailabilityPolicy {
     );
   }
 
+  /// An estimate's status, including the case where its inputs are missing.
+  ///
+  /// [kind] is required rather than defaulted. It chooses the ceiling the value
+  /// is range-checked against, the assumption list, the formula code — and,
+  /// since the `quantity` string moved in here, the noun in the exported
+  /// sentence. A default made all four of those follow from forgetting an
+  /// argument: a fuel estimate with a missing input exported
+  /// `馬力缺少必要輸入` and a horsepower range check, which is a precise,
+  /// plausible, wrong record rather than a neutral one. [DatumStatus.reasonCode]
+  /// was made required in this same wave for the same reason.
   static DatumStatus forEstimate({
     required VehicleProfile profile,
     required double? value,
     required String formula,
-    EstimateKind kind = EstimateKind.horsepower,
+    required EstimateKind kind,
   }) {
     final assumptions = formatAssumptionsForExport(profile, kind);
     final assumptionFields = assumptionsFor(profile, kind);

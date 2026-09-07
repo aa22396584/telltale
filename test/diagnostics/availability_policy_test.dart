@@ -121,6 +121,7 @@ void main() {
         profile: profile,
         value: 145,
         formula: AvailabilityPolicy.horsepowerFormula,
+        kind: EstimateKind.horsepower,
       );
       expect(status.isNumericSuccess, isTrue);
       expect(status.origin, DatumOrigin.calculated);
@@ -159,14 +160,69 @@ void main() {
         profile: profile,
         value: 1500,
         formula: AvailabilityPolicy.horsepowerFormula,
+        kind: EstimateKind.horsepower,
       );
       expect(hpInRange.quality, DatumQuality.valid);
       final hpOutlier = AvailabilityPolicy.forEstimate(
         profile: profile,
         value: 2500,
         formula: AvailabilityPolicy.horsepowerFormula,
+        kind: EstimateKind.horsepower,
       );
       expect(hpOutlier.quality, DatumQuality.outOfReferenceRange);
+    });
+
+    test('an estimate with no inputs names its own quantity in the export', () {
+      // The one word in this sentence a caller used to choose. `forEstimate`
+      // took a `quantity` string and all three call sites were in `lib/ui`;
+      // it is now derived from [EstimateKind] inside the policy, which is
+      // where export wording has to be decided. Nothing pinned the result of
+      // that switch, and two arms of the same shape transpose silently: a fuel
+      // estimate would write `馬力缺少必要輸入` into the evidence file, and two
+      // people comparing that file would read a precise, plausible, wrong
+      // sentence.
+      //
+      // Typed out here rather than read back from the switch under test. A
+      // test that asks the code what it says agrees with the code however
+      // wrong it is — the same reason `test/l10n/l04_status_l10n_test.dart`
+      // refuses to compare an ARB entry against itself.
+      const expected = {
+        EstimateKind.horsepower: (
+          '馬力缺少必要輸入',
+          DatumReason.horsepowerEstimateMissingInputs,
+        ),
+        EstimateKind.fuel: (
+          '油耗缺少必要輸入',
+          DatumReason.fuelEstimateMissingInputs,
+        ),
+      };
+      // A third kind must fail here rather than be quietly skipped by a loop
+      // over a map that no longer covers the enum.
+      expect(expected.keys.toSet(), EstimateKind.values.toSet());
+      for (final entry in expected.entries) {
+        final (sentence, code) = entry.value;
+        final status = AvailabilityPolicy.forEstimate(
+          profile: const VehicleProfile(massKg: 1280, isConfirmed: false),
+          value: null,
+          formula: AvailabilityPolicy.horsepowerFormula,
+          kind: entry.key,
+        );
+        expect(status.reason, sentence, reason: '${entry.key}');
+        expect(status.reasonCode, code, reason: '${entry.key}');
+        expect(status.exportFields['reason'], sentence, reason: '${entry.key}');
+        expect(status.availability, FeatureAvailability.unavailable);
+        expect(status.isNumericSuccess, isFalse);
+        expect(
+          status.nextStep,
+          DatumNextStep.estimateOnlyOtherReadingsUnaffected,
+        );
+      }
+      // And the two quantities are not the same sentence, so a transposition
+      // is a change rather than a no-op.
+      expect(
+        expected[EstimateKind.horsepower]!.$1,
+        isNot(expected[EstimateKind.fuel]!.$1),
+      );
     });
 
     test('finite out-of-range coolant is kept as 異常', () {

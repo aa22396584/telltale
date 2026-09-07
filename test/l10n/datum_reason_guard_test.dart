@@ -33,6 +33,13 @@
 // This file imports nothing from `package:torque_obd`, which is deliberate: a
 // mutation that removes a required argument does not compile, and a guard that
 // cannot run when the code is broken cannot be shown to work.
+//
+// That is also why the *agreement* between a code and the sentence beside it is
+// not checked here. This file can only see that both are present; whether they
+// say the same thing needs the real enum, the real producers and the shipped
+// ARB, and that is `test/l10n/datum_reason_agreement_test.dart`. Presence
+// without agreement is how `reasonCode: DatumReason.busError` could sit beside
+// `reason: '此服務不是唯讀查詢，已停止發送'` with the whole suite green.
 library;
 
 import 'dart:io';
@@ -41,12 +48,48 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/dart_source_reader.dart';
 
-/// What a screen can render instead of the exported sentence.
+/// What a screen can render instead of the exported sentence, when merely
+/// being set is enough.
 ///
-/// `gaps` is a list the screen names item by item, `statusReason` is a recorded
-/// telemetry status with its own copy table, and `reasonCode` is the general
-/// case. Any one of them is enough.
-const _screenReadable = ['reasonCode:', 'statusReason:', 'gaps:'];
+/// `statusReason` is a recorded telemetry status with its own copy table, and
+/// `reasonCode` is the general case. Either one, present and not `null`, means
+/// the screen has an identifier.
+///
+/// `gaps:` is deliberately NOT in this list. It is screen-readable only when
+/// there is something in it — see [_gapsCarryTheReason].
+const _screenReadable = ['reasonCode:', 'statusReason:'];
+
+/// `gaps:` counts as the sentence's replacement only when the sentence is
+/// itself gated on that same list being non-empty.
+///
+/// `datumReasonText` renders gaps under `if (status.gaps.isNotEmpty)`, so
+/// `DatumStatus(reason: 'x', reasonCode: null, gaps: const [])` exports a
+/// sentence and then falls through all three sources and returns `null` — the
+/// blank line this guard exists to prevent, waved through by the guard,
+/// because "is `gaps:` set and not the literal `null`" was the whole test.
+///
+/// The real site (`genericObdSession`) writes
+/// `reason: gaps.isEmpty ? null : …, gaps: gaps`, and that pairing is what
+/// makes it correct: the export exists exactly when the screen has items to
+/// name. So that is what is checked, rather than the presence of an argument.
+/// A gap list that arrives some other way is not rejected as wrong — it is
+/// reported as unproven, which is the same answer this guard gives every other
+/// shape it cannot follow.
+bool _gapsCarryTheReason(List<String> args, String reason) {
+  final at = args.indexWhere((a) => a.startsWith('gaps:'));
+  if (at < 0) return false;
+  final list = _value(args[at]);
+  // Not a plain name: a literal, a call, a conditional. There is no identifier
+  // for the sentence to be gated on, so there is nothing to check. The
+  // `gaps: const []` probe lands here.
+  if (!RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*$').hasMatch(list)) return false;
+  final name = RegExp.escape(list);
+  // The two orders of the same gate. Read on the blanked text, where string
+  // contents are already spaces, so `join(' · ')` cannot look like syntax.
+  return RegExp('^$name' r'\.isEmpty\s*\?\s*null\s*:').hasMatch(reason) ||
+      (RegExp('^$name' r'\.isNotEmpty\s*\?').hasMatch(reason) &&
+          RegExp(r':\s*null$').hasMatch(reason));
+}
 
 void main() {
   test('no DatumStatus exports a sentence the screen cannot replace', () {
@@ -86,8 +129,8 @@ void main() {
     // The scan above runs on a tree that is supposed to be clean, so a green
     // run proves nothing about whether it can go red. These are the shapes it
     // exists to separate.
-    List<String> check(String src) => (_Scan()..read(src, 'fixture.dart'))
-        .offences;
+    _Scan scan(String src) => _Scan()..read(src, 'fixture.dart');
+    List<String> check(String src) => scan(src).offences;
 
     expect(
       check("DatumStatus(reason: '壞封包', reasonCode: DatumReason.x);"),
@@ -123,10 +166,36 @@ void main() {
       reason: 'a recorded status is screen-readable',
     );
     expect(
+      check("DatumStatus(reason: gaps.isEmpty ? null : gaps.join(' · '), "
+          'reasonCode: null, gaps: gaps);'),
+      isEmpty,
+      reason: 'so is a gap list, when the sentence is gated on that same list '
+          'being non-empty — the shape genericObdSession actually writes',
+    );
+    expect(
+      check("DatumStatus(reason: gaps.isNotEmpty ? gaps.join(' · ') : null, "
+          'reasonCode: null, gaps: gaps);'),
+      isEmpty,
+      reason: 'and the same gate written the other way round',
+    );
+    expect(
       check("DatumStatus(reason: gaps.join(' · '), reasonCode: null, "
           'gaps: gaps);'),
-      isEmpty,
-      reason: 'so is a gap list',
+      hasLength(1),
+      reason: 'an ungated sentence beside a list that may be empty is not '
+          'proven to have anything to render',
+    );
+    expect(
+      check("DatumStatus(reason: 'x', reasonCode: null, gaps: const []);"),
+      hasLength(1),
+      reason: 'the shape the presence test waved through: datumReasonText '
+          'gates on gaps.isNotEmpty, so this falls through all three sources '
+          'and renders the blank line this guard exists to prevent',
+    );
+    expect(
+      check("DatumStatus(reason: 'x', reasonCode: null, gaps: gaps);"),
+      hasLength(1),
+      reason: 'a constant sentence cannot be gated on the list at all',
     );
     expect(
       check("// DatumStatus(reason: '壞封包', reasonCode: null);"),
@@ -138,11 +207,35 @@ void main() {
       isEmpty,
       reason: 'nor is one inside a string',
     );
+    // Not `isEmpty`: the declaration has no `reason:` argument, so it passes
+    // that way whether the branch that is supposed to skip it runs or not —
+    // which is how the branch spent this slice never running. What is asserted
+    // is the count, because only the branch can make it zero.
+    expect(
+      scan("const DatumStatus({required this.availability, this.reason, "
+              'required this.reasonCode});')
+          .constructions,
+      0,
+      reason: 'the declaration is skipped as a declaration, not by accident',
+    );
     expect(
       check("const DatumStatus({required this.availability, this.reason, "
           'required this.reasonCode});'),
       isEmpty,
       reason: 'the declaration is not a construction',
+    );
+    expect(
+      scan("const DatumStatus({required this.availability, super.reason});")
+          .constructions,
+      0,
+      reason: 'a super parameter is a declaration too',
+    );
+    expect(
+      scan("DatumStatus(reason: '壞封包', reasonCode: DatumReason.x);")
+          .constructions,
+      1,
+      reason: 'and a real call still counts, so the skip is not swallowing '
+          'everything',
     );
     expect(
       check("DatumStatus(reason: '假設尚未確認', reasonCode: DatumReason.x, "
@@ -174,8 +267,9 @@ void main() {
 
 /// Every Dart file under `lib/`.
 ///
-/// The whole tree rather than `lib/diagnostics/`, where all thirteen
-/// constructions live today. A producer added in `lib/state/` would be exactly
+/// The whole tree rather than `lib/diagnostics/`, where all twelve
+/// constructions live today (thirteen `DatumStatus(` matches, one of which is
+/// the declaration). A producer added in `lib/state/` would be exactly
 /// as wrong and exactly as invisible, and narrowing the scan to where the
 /// problem happens to be now is how a guard quietly stops covering it.
 List<File> _sources() => Directory('lib')
@@ -186,6 +280,13 @@ List<File> _sources() => Directory('lib')
 
 /// The text after `name:` in a named argument, trimmed.
 String _value(String arg) => arg.substring(arg.indexOf(':') + 1).trim();
+
+/// A field-initialising formal — `this.x` or `super.x`, optionally `required`,
+/// optionally the first entry inside the `{…}` of an optional-named block.
+///
+/// Only a declaration has these, so an argument list containing one is a
+/// declaration.
+final _declaration = RegExp(r'^\{?\s*(required\s+)?(this|super)\.');
 
 /// The rule, in one place.
 ///
@@ -232,11 +333,17 @@ class _Scan {
       // matches the same pattern and has no `reason:` argument, so it would pass
       // by accident rather than by rule — and an accident is what a guard is
       // for. Named explicitly instead.
-      if (trimmed.any(
-        (a) => a.startsWith('this.') || a.startsWith('required this.'),
-      )) {
-        continue;
-      }
+      //
+      // The previous form tested `a.startsWith('this.')` and never once ran:
+      // `topLevelArgs` counts `{` as depth, so the whole named-parameter block
+      // arrives as ONE argument beginning `{required this.…`. It passed only
+      // because `indexWhere('reason:')` returned −1 on that blob — by accident,
+      // exactly what the comment above claims it avoids — while the declaration
+      // was still counted in [constructions], giving `constructions > 0` a floor
+      // of 1 that the declaration alone satisfied. The optional-parameter brace
+      // is part of the pattern now, and `scan(...).constructions` is asserted in
+      // the fixtures below so the branch cannot go quiet again.
+      if (trimmed.any(_declaration.hasMatch)) continue;
       constructions++;
 
       final at = trimmed.indexWhere((a) => a.startsWith('reason:'));
@@ -248,9 +355,12 @@ class _Scan {
       if (_value(trimmed[at]) == 'null') continue;
       exportedReasons++;
 
-      final companion = _screenReadable.any(
-        (name) => trimmed.any((a) => a.startsWith(name) && _value(a) != 'null'),
-      );
+      final companion =
+          _screenReadable.any(
+            (name) =>
+                trimmed.any((a) => a.startsWith(name) && _value(a) != 'null'),
+          ) ||
+          _gapsCarryTheReason(trimmed, _value(trimmed[at]));
       if (companion) continue;
       offences.add(
         '$path:$line — ${_firstLine(quoted[at])} is exported with no '

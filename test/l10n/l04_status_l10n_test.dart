@@ -337,9 +337,12 @@ void main() {
 
   group('what the engine hands the screen', () {
     test('every reason a live PID can carry is translated', () {
-      // The last fallback in datumReasonText is DatumStatus.reason, which is
-      // the exported Chinese. Reaching it in an English build is the bug this
-      // walks the whole PidFault enum to prevent.
+      // datumReasonText has no last fallback any more: it resolves gaps, then
+      // reasonCode, then statusReason, and returns null. So a live PID whose
+      // reason has no identifier is not Chinese on an English screen — it is
+      // no line at all, and the reader is told nothing about why the number is
+      // missing. Walking the whole PidFault enum is what says every one of
+      // them has an identifier and every identifier is translated.
       for (final fault in [...PidFault.values, null]) {
         final status = AvailabilityPolicy.forPid(
           pid: PidLibrary.engineRpm,
@@ -372,6 +375,7 @@ void main() {
         profile: const VehicleProfile(massKg: 1280, isConfirmed: false),
         value: 5000,
         formula: AvailabilityPolicy.horsepowerFormula,
+        kind: EstimateKind.horsepower,
       );
       expect(status.badges, contains(DatumBadge.estimated));
       expect(status.badges, contains(DatumBadge.outOfReferenceRange));
@@ -392,6 +396,7 @@ void main() {
         profile: const VehicleProfile(massKg: 1280, isConfirmed: false),
         value: 145,
         formula: AvailabilityPolicy.horsepowerFormula,
+        kind: EstimateKind.horsepower,
       );
       final fields = status.exportFields;
       // Issue #46 owns these three; this wave must not have moved them.
