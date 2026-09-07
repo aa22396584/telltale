@@ -156,7 +156,7 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 年式 | model year | README.md:73 'model years 1984–2027' ↔ README.zh-TW.md:64 '年式 1984–2027' (T1); README.md:85 'selected year' ↔ README.zh-TW.md:72 '所選年式' | evidenced |  |
 | 快照 | snapshot | README.md:72 'EPA Find-a-Car snapshot' ↔ README.zh-TW.md:63 'EPA Find-a-Car 快照' (T1); README.md:179 ↔ README.zh-TW.md:153 | evidenced |  |
 | 手動輸入 | entered by you | lib/l10n/app_en.arb:2830 ↔ lib/l10n/app_zh_Hant.arb:936 (T1 same ARB key) | evidenced | 'user entered' was the glossary's own coinage and read like a database column. The shipped English addresses the reader, because the point of the word is that the app did not check this number — they typed it. |
-| 扭力 | torque | README.md:75 ↔ README.zh-TW.md:65 (T1); README.md:77 ↔ README.zh-TW.md:67 | evidenced | 扭力 (TW) not 扭矩 (CN). Distinct from the Torque/Torque Pro product name at README.md:210 ↔ README.zh-TW.md:181, which is never translated. |
+| 扭力 | torque | README.md:75 ↔ README.zh-TW.md:65 (T1); README.md:77 ↔ README.zh-TW.md:67 | evidenced | 扭力 (TW) not 扭矩 (CN). Distinct from the Torque/Torque Pro product name at README.md:216 ↔ README.zh-TW.md:181, which is never translated. |
 | 排氣量 | displacement | lib/obd/session_evidence.dart:203 'displacementL' => '排氣量' (T3 key ↔ label); docs/field-guide.zh-TW.md:164 | evidenced |  |
 | 正面投影面積 | frontal area | lib/obd/session_evidence.dart:209 'frontalAreaM2' => '正面投影面積' (T3) | evidenced |  |
 | 油耗 | fuel estimate | README.md:77-78 ↔ README.zh-TW.md:67 (T1); docs/field-guide.zh-TW.md:163 '推算數值（馬力、扭力、油耗）' | evidenced |  |
@@ -199,15 +199,15 @@ See also [do-not-translate.md](do-not-translate.md) and [hedge-register.md](hedg
 | 繁體中文 | English | Evidence | Status | Note |
 |---|---|---|---|---|
 | 佣金 | commission | README.md:122 'may pay the maintainer a commission' ↔ README.zh-TW.md:102 '可能讓維護者取得佣金' (T1) | evidenced | Keep the modal: 'may pay' / '可能…取得', never 'will'. |
-| 來源與重用聲明 | source and reuse notices | README.md:212 ↔ README.zh-TW.md:182-183 (T1) | evidenced |  |
-| 授權與聲明 | Licence and disclaimer | README.md:206 '## Licence and disclaimer' ↔ README.zh-TW.md:178 '## 授權與聲明' (T1 heading) | evidenced | British 'Licence' in prose (README.md:99,206); the SPDX id GPL-3.0 and the LICENSE filename stay as-is. |
+| 來源與重用聲明 | source and reuse notices | README.md:218 ↔ README.zh-TW.md:182-183 (T1) | evidenced |  |
+| 授權與聲明 | Licence and disclaimer | README.md:212 '## Licence and disclaimer' ↔ README.zh-TW.md:178 '## 授權與聲明' (T1 heading) | evidenced | British 'Licence' in prose (README.md:99,212); the SPDX id GPL-3.0 and the LICENSE filename stay as-is. |
 | 推廣分潤連結 | affiliate link | README.md:120-121 'this is a maintainer affiliate link' ↔ README.zh-TW.md:101-102 '這是維護者的推廣分潤連結' (T1) | evidenced | Disclosure copy — regulated. Do not shorten to 推薦連結. |
 | 揭露卡 | disclosure card | README.md:123 'the full disclosure card' ↔ README.zh-TW.md:103 '完整揭露卡' (T1) | evidenced |  |
 | 版本紀錄 | Changelog | README.md:190 doc table ↔ README.zh-TW.md:164 (T2) | evidenced |  |
 | 社群互動規範 | community expectations | README.md:204 'for community expectations' ↔ README.zh-TW.md:175-176 '社群互動規範見' (T1) | evidenced | also written: Code of Conduct |
-| 第三方來源聲明 | third-party notices | README.md:213-214 'separate third-party notices' ↔ README.zh-TW.md:183-184 '另有第三方來源聲明' (T1) | evidenced |  |
-| 自行承擔使用風險 | at your own risk | README.md:214-215 'Use the app at your own risk' ↔ README.zh-TW.md:184 '請自行承擔使用風險' (T1) | evidenced |  |
-| 貢獻指南 | Contributing | README.md:191 doc table ↔ README.zh-TW.md:165 (T2); README.md:208 'the contributor guide' ↔ README.zh-TW.md:180 '貢獻指南' | evidenced | also written: contributor guide |
+| 第三方來源聲明 | third-party notices | README.md:219-220 'separate third-party notices' ↔ README.zh-TW.md:183-184 '另有第三方來源聲明' (T1) | evidenced |  |
+| 自行承擔使用風險 | at your own risk | README.md:220-221 'Use the app at your own risk' ↔ README.zh-TW.md:184 '請自行承擔使用風險' (T1) | evidenced |  |
+| 貢獻指南 | Contributing | README.md:191 doc table ↔ README.zh-TW.md:165 (T2); README.md:214 'the contributor guide' ↔ README.zh-TW.md:180 '貢獻指南' | evidenced | also written: contributor guide |
 | 隱私權政策 | privacy policy | README.md:199 'published privacy policy' ↔ README.zh-TW.md:172 '已發布的隱私權政策' (T1) | evidenced |  |
 | 隱私與安全使用 | Privacy and safe use | README.md:193 heading ↔ README.zh-TW.md:167 heading (T1) | evidenced |  |
 
