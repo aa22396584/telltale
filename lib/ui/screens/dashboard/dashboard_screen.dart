@@ -541,12 +541,13 @@ class _StatusStrip extends ConsumerWidget {
               ),
               // Only once something has actually been polled.
               //
-              // The flag defaults to on, and an empty snapshot is published
-              // verbatim when the app connects while backgrounded — so the
-              // pill spoke about polling, in good tone, before a single
-              // request had gone out. It describes a live session and must
-              // not be the first thing on screen.
-              if (snapshot.capturedAt != null)
+              // `capturedAt` is not that. `PollingEngine.current` stamps it on
+              // every heartbeat, including the 120 ms idle spin when no PID
+              // is selected, so a session that had sent nothing announced
+              // single-request mode after about a second. A poll leaves a
+              // reading, a fault, or a non-zero PIDs/s; the heartbeat leaves
+              // none of those.
+              if (_snapshotHasBeenPolled(snapshot))
                 PollingModePill(
                   schedulerAllowsGrouping: snapshot.fastModeEnabled,
                   busAllowsGrouping: ref.watch(busGroupsRequestsProvider),
@@ -570,6 +571,19 @@ class _StatusStrip extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// True when [snapshot] is from a polling cycle, not the idle heartbeat.
+///
+/// `PollingEngine.current` stamps `capturedAt` on every read. The loop that
+/// finds `_active` empty delays 120 ms and never calls `_pollBatch`, so a
+/// session with no PIDs selected still gets a non-null stamp after about a
+/// second. A poll leaves a reading, a fault, or a non-zero PIDs/s.
+bool _snapshotHasBeenPolled(TelemetrySnapshot snapshot) {
+  if (snapshot.capturedAt == null) return false;
+  return snapshot.readings.isNotEmpty ||
+      snapshot.faults.isNotEmpty ||
+      snapshot.pidsPerSecond > 0;
 }
 
 /// The polling-mode pill, and the explanation behind it.

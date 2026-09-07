@@ -226,6 +226,7 @@ Future<ProviderContainer> _pumpDashboard(
   LocalePreference preference = LocalePreference.english,
   double textScale = 1,
   bool polled = true,
+  TelemetrySnapshot? snapshot,
 }) async {
   SharedPreferences.setMockInitialValues({
     kLocalePreferenceKey: localePreferenceToStored(preference),
@@ -237,9 +238,10 @@ Future<ProviderContainer> _pumpDashboard(
       obdSessionProvider.overrideWith(_ConnectedSession.new),
       telemetryProvider.overrideWith(
         (ref) => Stream.value(
-          polled
-              ? _polled(batchingEnabled: batchingEnabled)
-              : const TelemetrySnapshot(pidsPerSecond: 12),
+          snapshot ??
+              (polled
+                  ? _polled(batchingEnabled: batchingEnabled)
+                  : const TelemetrySnapshot(pidsPerSecond: 12)),
         ),
       ),
       telemetryRecorderProgressProvider.overrideWith(_FixedProgress.new),
@@ -450,6 +452,20 @@ void main() {
         expect(value, contains('PIDs/s'));
       }
     });
+  });
+
+  testWidgets('a heartbeat with no poll does not announce a polling mode', (
+    tester,
+  ) async {
+    // `PollingEngine.current` stamps capturedAt on the idle spin when
+    // `_active` is empty. That is not a poll: no Mode 01 PID was read, and
+    // the fallback paragraph would claim otherwise.
+    await _pumpDashboard(
+      tester,
+      batchingEnabled: true,
+      snapshot: TelemetrySnapshot(capturedAt: DateTime.now()),
+    );
+    expect(find.byKey(PollingModePill.pillKey), findsNothing);
   });
 
   testWidgets('a tap on the pill opens the explanation', (tester) async {
@@ -666,7 +682,7 @@ void main() {
     // here would either fail on a defect it did not introduce or, once
     // softened, stop being able to fail at all. So each geometry is rendered
     // twice: once with the snapshot unpolled, where the pill is hidden by the
-    // `capturedAt` gate, and once with it shown. What the pill adds must be
+    // poll gate, and once with it shown. What the pill adds must be
     // nothing.
     const geometries = <String, (Size, double)>{
       '320dp portrait': (Size(320, 640), 1),
@@ -699,7 +715,7 @@ void main() {
           expect(
             find.byKey(PollingModePill.pillKey),
             findsNothing,
-            reason: 'the capturedAt gate let the pill through before a poll',
+            reason: 'the poll gate let the pill through before a poll',
           );
 
           final withPill = await _renderErrors(tester, () async {
