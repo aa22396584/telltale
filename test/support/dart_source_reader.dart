@@ -223,6 +223,22 @@ List<String>? topLevelArgs(String src, List<bool> mask, int open) {
 /// which is invisible once the argument has been copied into a new string.
 /// [topLevelArgs] is this function plus `substring`, so the two cannot disagree
 /// about where an argument begins.
+///
+/// **[open] must be the offset of a `(` that [mask] says is code.** Every
+/// caller already ensures that — two skip a match whose start is masked out,
+/// and the third matches against `codeOnly`, where a `(` inside a comment or a
+/// string is a space. Outside that contract the two implementations differ:
+/// review measured 1392 offsets across `lib/`, `test/` and `integration_test/`
+/// where the old accumulator swept up the text between [open] and the first
+/// real `(` into the first argument, and this one returns it empty. None is
+/// reachable, which is why the difference is documented rather than
+/// reconciled — but the contract was implicit before, and an implicit contract
+/// is one the next caller does not know it is breaking.
+///
+/// `start` cannot be read while still `-1`: reaching the read requires `depth`
+/// to be 1, and the only transition from 0 to 1 is the `(` that sets it.
+/// Verified rather than argued — the same review diffed every offset of every
+/// file, exceptions included, and found no `RangeError` path.
 List<(int, int)>? topLevelArgSpans(String src, List<bool> mask, int open) {
   final spans = <(int, int)>[];
   var start = -1;
