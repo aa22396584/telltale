@@ -17,6 +17,112 @@ Round 9 added a proxy in that socket that logs every byte and can hold a reply
 back, which is how the timing findings were tested and how one of them was
 found to have been testing nothing at all.
 
+## The one line a machine reads
+
+An entry carries the line below when a release build of that version was
+installed on a phone and the screens the changelog names were exercised on it.
+Most entries here are not that, and do not carry it. The 2026-09-06 round is
+the near miss worth naming: it installed the 1.0.8 APK and got as far as a
+failed connect, then says of itself "**Not** a field BLE/Classic/vehicle
+pass". A line reading `Device walk attested: 1.0.8` above that paragraph would
+be arguing with the paragraph. The gate reads the line; the entry is what a
+person reads to decide whether the line was earned.
+
+```
+Device walk attested: <version>
+```
+
+`<version>` is a placeholder here on purpose, and it is not a stylistic choice.
+This paragraph lives inside the file the gate scans, so an example written as a
+real version **is** an attestation: with `Device walk attested: 1.0.12` in this
+code block, deleting the entry below still cleared a full release of 1.0.12.
+The documentation of the gate satisfied the gate.
+
+A reviewer found that. The obvious regression test did not — it stripped every
+`Device walk attested:` line and watched the gate refuse, which strips the
+example along with the entry and so passes either way. What catches it is
+counting: `test/release_notes_contract_test.dart` requires **one** attestation
+per version, and a second copy of a version is something that is not an entry.
+
+`.github/workflows/release.yml` refuses a full-release tag whose version has no
+such line, before it builds anything. That is the whole of the gate: it does
+not read the prose, and the prose is still what the entry is for.
+
+It is a separate line rather than something parsed out of a heading because a
+heading is a sentence, and sentences mention versions without attesting them.
+`## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed` cleared an earlier version
+of this gate for 1.0.12 — a line that says the opposite of what it was read as
+saying. A field takes a deliberate keystroke; a mention does not.
+
+**The line attests the version, not the commit.** Nothing checks that the code
+walked is byte-for-byte the code tagged, and the release notes say so rather
+than implying otherwise. Neither does it attest the published APK: the walked
+build is not signed with the community key, and CI's is.
+
+Both gaps were raised as defects, and both are being kept rather than closed —
+so the reason belongs here, not in a review thread. Binding the attestation to
+a commit SHA sounds free and is not: the walk happens on a branch, before the
+squash merge that creates the commit a tag can point at, so the SHA a
+maintainer could write down is one that never reaches `main`. Binding it to the
+published APK's digest needs a second workflow, a download, a commit and
+another wait on every release — and it would prove the maintainer *downloaded*
+the artifact, not that they walked it, which is what this file is for. A
+weaker claim that is true beats a stronger one nobody can check, and the price
+of keeping it is one sentence in the release notes saying which claim it is.
+
+## 2026-09-07 — 1.0.12 release APK, English walk-through on the phone
+
+Device walk attested: 1.0.12
+
+Samsung `R5CX10VFFBA`. Built `app-field-release.apk` from `release/1.0.12` with
+`-PallowUnsignedRelease=true` — the Gradle guard refuses a release build with no
+`android/key.properties` rather than quietly signing with the debug key, and this
+worktree has none. **So this binary is debug-signed and is not the artifact CI
+publishes**; the walk establishes behaviour, not the release signature. The old
+install had to be removed first for the same reason.
+
+`dumpsys package` after install: `versionCode=13 versionName=1.0.12` — read from
+the package manager, not from what `adb install` printed, because that command
+has printed its own failure and exited 0 here before.
+
+Walked in `Locale('en')`, chosen through the app's own picker on the connect
+screen before any connection, VIN or permission — which is the reachability that
+ImL1s/telltale#92's first acceptance line asks for. No crash; the pid was
+unchanged from launch to the end of the walk.
+
+English throughout, checked screen by screen: connect (including the affiliate
+line, which now reads **Shopee** rather than 蝦皮 — ImL1s/telltale#103), Demo
+simulator card and its description, dashboard with live gauges, Settings
+(vehicle profile, `Petrol / Diesel / LPG` fuel picker, commission disclosure,
+`View on Shopee`), fault codes (scan of the Demo ECU: 3 codes, VIN
+`1D4GP00R55B123456`, a freeze frame whose cause code `P0301` was read — so the
+Mode 02 gate was exercised, not bypassed — readiness monitors, and English code
+descriptions), and the estimate details dialog, which is the one
+ImL1s/telltale#101 fixed: it now reads `Mass 1500 kg (generic default); Cd 0.30
+(generic default)…` where an English build used to render the exported
+Traditional Chinese sentence.
+
+Manual command box: `ATI` → `ELM327 v2.1`, and the panel chrome is English.
+
+**One failure, and it is why this walk was worth doing.** Sending `2F1234` — a
+write service the box refuses — renders, in the English build:
+
+    不認得的指令「2F1234」。這裡只接受唯讀查詢（Mode 01/02/03/05/06/07/09/0A/22）
+    與轉接器查詢指令。
+
+That is `ObdSession.manualCommandRefusal`, which ImL1s/telltale#45 owns and which
+is not in this release. ImL1s/telltale#102 localized the *adapter's* failures on
+this panel, not the panel's own policy refusals. The changelog for 1.0.12 had
+been written from the diff and claimed the box was fixed; the phone is what said
+otherwise, and the changelog now names this as still Chinese rather than
+implying it was fixed.
+
+**What this does not establish.** No adapter, no vehicle, no Bluetooth or Wi-Fi
+transport — the whole walk ran on the in-app Demo simulator, which is an object
+inside the process and never touches a socket. It says the English strings reach
+the screens; it says nothing about the protocol layer that the rigs and the one
+GT86 observation cover.
+
 ## 2026-09-06 — 1.0.8 release APK, OBDBLE still unpowered
 
 Samsung `R5CX10VFFBA`: installed Play-upload-key `app-field-release.apk`

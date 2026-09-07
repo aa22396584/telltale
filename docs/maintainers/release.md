@@ -25,8 +25,25 @@ GitHub APK 發布順序：
    單向同步到公開 repo；不得 force-push。
 2. 確認公開 `main` 的 exact-head CI 通過，而且 `pubspec.yaml` 的
    `versionName` 與 tag 主版號一致。
-3. 尚未完成購買轉接器／實車驗證時使用預發行 tag，例如
-   `v1.0.4-beta.1`；不得用穩定版 tag 隱藏這個缺口。
+3. 決定 tag 帶不帶預發行後綴。**正式版的條件只有一個，而且一個人清得掉：**
+   把 release build 裝上手機走過一遍，在
+   `docs/verification/device-verification.md` 的走查條目裡加上這一行並 commit：
+
+   ```
+   Device walk attested: <版本>
+   ```
+
+   （`<版本>` 寫成佔位符是刻意的：這份文件不是閘門掃描的對象，但它是下一筆走查條目
+   的複製來源，而**證據檔自己**的說明段落曾經因為範例寫成真實版本號而滿足了閘門。）
+
+   CI 會在 build 之前查它，沒有就拒絕正式版 tag。走查前要發，就帶後綴
+   （`v1.0.12-beta.1`）—— 那個後綴既不要求、也不宣稱走查過。
+
+   這裡原本寫的是「尚未完成購買轉接器／實車驗證時使用預發行 tag」。那個條件
+   一個人永遠清不掉（買不完轉接器、開不完車型），於是每一版都是 beta，
+   GitHub 的 Latest 徽章在 v1.0.6 上停了九天。轉接器與車輛的界線沒有消失，
+   它每一版都印在 release notes 的證據段落裡，不分正式或預發行 —— 它是要
+   **說明**的事，不是要**擋**發布的閘門。
 4. 推送 annotated tag，等 Release workflow 自己測試、建置、簽章與上傳：
 
    ```bash

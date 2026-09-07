@@ -19,10 +19,41 @@
 # a replacement for a store install.
 #
 # A tag carrying a SemVer pre-release suffix (v1.0.1-beta.1) is published as a
-# GitHub pre-release and carries an extra section stating what has and has not
-# been verified. The rule lives here rather than in a person's memory, because
-# the one release where somebody forgets to tick the box is the one where the
-# claim matters.
+# GitHub pre-release. The flag means exactly one thing, and it is a thing one
+# person can settle in an afternoon:
+#
+#   pre-release  =  this tag neither requires nor attests a device walk
+#   full release =  docs/verification/device-verification.md carries the line
+#                   `Device walk attested: <version>` for this version
+#
+# CI enforces it rather than trusting the tag: tool/release/require_device_walk.sh
+# refuses a full-release tag without that line, before it builds anything. The
+# flag used to be derived from the tag string alone and validated nothing, so
+# "walked" was true only when whoever cut the tag happened to have done it.
+#
+# Two things the full release does NOT claim, and says so in its own notes.
+# It attests the VERSION, not the commit -- nothing checks that the code walked
+# is byte-for-byte the code tagged. And the walked build is not the published
+# APK: the walk runs on a locally signed build, this workflow signs with the
+# community key.
+#
+# It used to mean something else, and that is why every release from v1.0.7 to
+# v1.0.11 was a pre-release and GitHub's Latest badge sat on v1.0.6 for nine
+# days while the same commit shipped to Play production at 100%. The flag was
+# carrying "never run against a real car" as well, and the evidence paragraph
+# was printed only when it was set -- so publishing a release people could find
+# meant deleting the honest paragraph. Nobody was going to do that, so nobody
+# published one.
+#
+# A gate a maintainer cannot pass is not a standard, it is a stall. The things
+# one person cannot do -- a second adapter, another vehicle, any engine-running
+# condition -- do not block a release and never should have. They are stated,
+# on every release, in the boundary section below, which now prints whether or
+# not the flag is set. The flag gates what the maintainer controls; the prose
+# states what they do not.
+#
+# The rule lives here rather than in a person's memory, because the one release
+# where somebody forgets to tick the box is the one where the claim matters.
 name: Release
 
 on:
@@ -125,6 +156,11 @@ jobs:
           printf 'APP_VERSION=%s\nAPP_VERSION_NAME=%s\nAPP_VERSION_CODE=%s\nCOMMIT_SHA=%s\n' \
             "$pub_version" "$version_name" "$version_code" "$head_commit" \
             >> "$GITHUB_ENV"
+
+      - name: Require a recorded device walk for a full release
+        env:
+          TAG: ${{ steps.release_tag.outputs.tag }}
+        run: bash tool/release/require_device_walk.sh "$TAG"
 
       - name: Require successful exact-head main CI
         env:
@@ -293,100 +329,45 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release_tag.outputs.tag }}
+          APP_VERSION: ${{ steps.describe.outputs.version }}
+          APK_SIZE: ${{ steps.describe.outputs.size }}
+          APK_SHA256: ${{ steps.describe.outputs.sha256 }}
+          APK_FINGERPRINT: ${{ steps.describe.outputs.fingerprint }}
         run: |
           set -euo pipefail
           cp build/app/outputs/flutter-apk/app-field-release.apk \
              "telltale-${TAG}.apk"
           sha256sum "telltale-${TAG}.apk" > SHA256SUMS
 
-          # SemVer says everything after the first hyphen is a pre-release
-          # identifier. v1.0.1 is a release; v1.0.1-beta.1 is not.
-          PRERELEASE=""
-          case "$TAG" in
-            *-*) PRERELEASE="--prerelease" ;;
+          # The flag and the paragraph that explains it come from one reading of
+          # one tag, inside a script test/release_notes_contract_test.dart
+          # executes. Deriving the flag a second time here is how they came to
+          # disagree: the notes claimed a walk the flag did not gate on.
+          bash tool/release/release_notes.sh notes > notes.md
+
+          # Assigned on its own line, then matched exhaustively. Inlined as
+          # `if [ "$(... flag)" = prerelease ]` this fails OPEN: a condition is
+          # exempt from set -e, `[` discards the substitution's exit status, and
+          # a crashed script compares empty against "prerelease" -- publishing a
+          # full release, which is the one direction that must never happen by
+          # accident.
+          release_flag=$(bash tool/release/release_notes.sh flag)
+          release_args=()
+          case "$release_flag" in
+            prerelease) release_args+=(--prerelease) ;;
+            full) ;;
+            *) echo "::error::Unexpected release flag: '$release_flag'"; exit 1 ;;
           esac
-
-          : > notes.md
-          if [ -n "$PRERELEASE" ]; then
-            cat >> notes.md <<'PRE'
-          > **Pre-release.** What has been verified, and what has not:
-          >
-          > - The protocol layer passes the simulated ELM327 rigs, including
-          >   framing and fault-injection checks.
-          > - A physical Samsung phone completed a real Bluetooth LE/GATT session
-          >   over the phone's and Mac's actual radios against the Mac-hosted rig.
-          > - **Not yet verified:** the purchased CAR25 adapter, any other physical
-          >   ELM327 adapter, a vehicle ECU/CAN bus, or a real vehicle.
-          > - `docs/verification/test-evidence.md` and
-          >   `docs/verification/device-verification.md` record the exact boundary.
-          >
-          > If you have an adapter and a car, this is the build to try.
-          > Settings → Export transcript writes out a verbatim record of
-          > everything the adapter said; an issue with that file attached is the
-          > most useful thing you can send.
-          >
-          > **預發行版本。** 模擬 ELM327、分段與故障注入測試已通過；Samsung 實體手機
-          > 也已用真實藍牙無線電與 Android GATT，連上 Mac 主機的 BLE rig。
-          > 但 CAR25／購買的實體轉接器、車輛 ECU／CAN 與真車仍未驗證。
-          > 詳細證據界線見 `docs/verification/`。有轉接器又有車的話，這就是該試的版本；
-          > 出問題請到「設定 → 匯出紀錄」把逐字紀錄存下來，附在 issue 裡送回來。
-
-          PRE
-          fi
-
-          cat >> notes.md <<EOF
-          Telltale ${{ steps.describe.outputs.version }}
-
-          **English** | 繁體中文 below
-
-          A ready-made APK for anyone who would rather not run a Flutter
-          toolchain. Same source, same features as the Google Play build —
-          nothing is held back.
-
-          | | |
-          |---|---|
-          | File | \`telltale-${TAG}.apk\` (${{ steps.describe.outputs.size }}) |
-          | SHA-256 | \`${{ steps.describe.outputs.sha256 }}\` |
-          | Signing certificate | \`${{ steps.describe.outputs.fingerprint }}\` |
-
-          **This build is signed with the community key, not the Google Play
-          key.** It therefore cannot update — and cannot be updated by — an
-          install that came from the Play Store; Android will refuse with a
-          signature mismatch. Export any diagnostic records you need before
-          switching: uninstalling removes Telltale's local app data. The two keys
-          are separate on purpose: sharing them would let anything that compromised
-          CI publish a replacement for a store install.
-
-          Verify before installing:
-
-          \`\`\`
-          sha256sum telltale-${TAG}.apk
-          \`\`\`
-
-          ---
-
-          給不想自己架 Flutter 環境的人的現成 APK。原始碼相同、功能與 Google Play
-          版完全一致，沒有閹割。
-
-          **這份是社群簽章金鑰簽的，不是 Google Play 的上架金鑰。** 所以它無法用來更新
-          從 Play 商店安裝的版本，反之亦然 —— Android 會以簽章不符拒絕。要換過去請先解除
-          安裝；解除安裝會刪除 Telltale 本機資料，請先匯出要保留的診斷紀錄。兩把金鑰刻意
-          分開：共用的話，任何入侵 CI 的人就能發布一個能取代商店安裝的版本。
-
-          安裝前請先核對 SHA-256。
-          EOF
 
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "::error::Release $TAG already exists; published assets are immutable by policy"
             exit 1
           fi
 
-          release_args=()
-          [ -n "$PRERELEASE" ] && release_args+=("$PRERELEASE")
           gh release create "$TAG" "telltale-${TAG}.apk" SHA256SUMS \
             --title "Telltale ${TAG}" \
             --notes-file notes.md \
-            --verify-tag "${release_args[@]}"
+            --verify-tag ${release_args[@]+"${release_args[@]}"}
 
       - name: Shred the signing material
         if: always()
