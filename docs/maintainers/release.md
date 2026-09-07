@@ -25,25 +25,15 @@ GitHub APK 發布順序：
    單向同步到公開 repo；不得 force-push。
 2. 確認公開 `main` 的 exact-head CI 通過，而且 `pubspec.yaml` 的
    `versionName` 與 tag 主版號一致。
-3. 決定 tag 帶不帶預發行後綴。**正式版的條件只有一個，而且一個人清得掉：**
-   把 release build 裝上手機走過一遍，在
-   `docs/verification/device-verification.md` 的走查條目裡加上這一行並 commit：
+3. 依 §0.1 決定 tag 帶不帶預發行後綴。要發正式版，先把
 
    ```
    Device walk attested: <版本>
    ```
 
-   （`<版本>` 寫成佔位符是刻意的：這份文件不是閘門掃描的對象，但它是下一筆走查條目
-   的複製來源，而**證據檔自己**的說明段落曾經因為範例寫成真實版本號而滿足了閘門。）
-
-   CI 會在 build 之前查它，沒有就拒絕正式版 tag。走查前要發，就帶後綴
-   （`v1.0.12-beta.1`）—— 那個後綴既不要求、也不宣稱走查過。
-
-   這裡原本寫的是「尚未完成購買轉接器／實車驗證時使用預發行 tag」。那個條件
-   一個人永遠清不掉（買不完轉接器、開不完車型），於是每一版都是 beta，
-   GitHub 的 Latest 徽章在 v1.0.6 上停了九天。轉接器與車輛的界線沒有消失，
-   它每一版都印在 release notes 的證據段落裡，不分正式或預發行 —— 它是要
-   **說明**的事，不是要**擋**發布的閘門。
+   這一行加進 `docs/verification/device-verification.md` 的走查條目裡並 commit ——
+   `tool/release/require_device_walk.sh` 會在 build 之前查它，沒有就擋下 tag。
+   完整規則、以及那一行**沒有**宣稱的兩件事，見 §0.1。
 4. 推送 annotated tag，等 Release workflow 自己測試、建置、簽章與上傳：
 
    ```bash
@@ -59,10 +49,54 @@ GitHub APK 發布順序：
 這些步驟只宣告 GitHub community APK 發布。它不等於 Google Play
 production、不等於實車驗證，也不等於公開上架已可在每個區域下載。
 
-**iOS App Store：延到 2027。** 今年不要走 TestFlight 或正式送審。
-`DEVELOPMENT_TEAM` `ABHJVZBWQN` 是 Personal Team；付費 team `ZAZT4JZ625` 的
-Apple Distribution 憑證已 REVOKED，現有 ASC API key 回 401。
+### 0.1 預發行後綴的意思，只有一個
 
+```
+v1.0.12         正式版   docs/verification/device-verification.md 裡有
+                        「Device walk attested: 1.0.12」這一行
+v1.0.12-beta.1  預發行   沒有那一行
+```
+
+**就這一件事，沒有第二件。** CI 會在四十分鐘的 build 之前查
+（`tool/release/require_device_walk.sh`），沒有就擋下正式版 tag。舊的做法是從 tag
+字串推導，什麼都沒驗 —— 那句宣稱只有在「開 tag 的人剛好真的走過」時才成立。
+
+寫那一行之前要做的事：本機 `flutter build apk --release --flavor field`，裝上手機，
+把 changelog 提到的每條 user-facing flow 走一遍。做完了，在該版本的走查條目裡寫下
+看到什麼（含**沒過**的部分），加上那一行，commit。**一個人、一個下午。**
+
+**它跟第 5 步是兩件事，不要合併。** 第 5 步是發布**之後**從 GitHub Release 重新下載
+APK 來核對簽章與安裝 —— 那是在驗 CI 產出的那份成品。這裡這一趟是在 tag **之前**，
+驗的是本機建的 release build，簽章不同。兩趟都要走，順序不能對調：佐證那一行必須在
+第 4 步推 tag 之前就在 `main` 上，否則 CI 會擋下來。
+
+（這段原本寫成「就是這份文件第 5 步本來就要求的」。不是 —— 第 5 步在 tag 之後，
+產生不出 tag 之前就要存在的東西。CONTRIBUTING 那條「a comment that names a guard
+must name one that exists」就是這個形狀，而它跟這段是同一個 commit 加的。）
+
+**為什麼是一行欄位而不是從標題認版本號。** 第一版是在日期標題裡找版本號，然後被三個
+輸入打穿，第一個還是明說「沒裝」的句子：
+
+```
+## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed
+## 2026-09-07 — x1.0.12oops
+## 2026-09-07 — 1.0.12-rc.1 planned, no walk
+```
+
+標題是句子，句子會提到版本卻不主張它。**提及不是佐證。**
+
+**那一行沒有宣稱的兩件事。** 它佐證的是**版本**，不是 commit —— 沒有任何檢查確認走查的
+程式碼與打 tag 的程式碼相同。它也不佐證發布出去的那份 APK —— 走查的那份不是用社群
+金鑰簽的。兩者都是刻意留著而不是忘了：commit SHA 綁不了（走查發生在 squash merge
+之前，寫得下來的 SHA 不會出現在 main），APK digest 綁得了但要多一個 workflow、多一次
+下載與等待，而且它證明的是「下載過」不是「走查過」。**一句成立的弱宣稱，勝過一句沒人
+能查的強宣稱** —— 代價是 release notes 裡要有一句話說清楚它是哪一種，而現在有。
+
+**轉接器與車輛的界線沒有消失。** 它每一版都印在 release notes 的證據段落裡，不分正式
+或預發行，寫清楚哪些跑過、哪些沒跑過。它是要**說明**的事，不是要**擋**發布的閘門 ——
+這裡原本寫的是「尚未完成購買轉接器／實車驗證時使用預發行 tag」，那個條件一個人永遠
+清不掉，於是每一版都是 beta，GitHub 的 Latest 徽章在 v1.0.6 上停了九天，而同一個
+commit 那時已經在 Play production 100%。
 ---
 
 ## 1. 先把 `pubspec.yaml` 的 `version:` 往上帶

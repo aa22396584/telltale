@@ -194,6 +194,92 @@ produced a bug that survived a green test suite.
 - **The adapter's self-report is a claim, not a fact.** Clones report v1.5 and
   behave like v1.3. State is committed only when the adapter literally answers
   `OK`.
+- **A check that cannot fail is not a check.** Every guard is proved by
+  mutation: break the thing it guards, run it, watch it go red, restore. Not by
+  reading it. Guards in this repository have been silent no-ops for a `continue`
+  on an unparseable construct, an anchor that never matched the real source, a
+  one-character value compared against a two-character string so no escape was
+  ever honoured, a test compared against a copy of the code that produced it,
+  and a wait whose condition was satisfied by "nothing exists". Every one of
+  them was green.
+- **A test that measures shape does not measure content.** Uniqueness,
+  non-emptiness, presence in both languages and absence of Chinese are all
+  invariant under swapping two arms of a switch. Three parallel branches shipped
+  exactly those four assertions in one week, and in each the transposition
+  passed the entire suite: an adapter yanked mid-command read *"Nothing is
+  connected, so the command was not sent"*; a fuel estimate wrote
+  `馬力缺少必要輸入` into the evidence export; a refused Location permission told
+  the user to turn on Bluetooth. If you add an identifier→sentence table, add a
+  **hand-typed** expectation table beside it — you type the expected string, it
+  is not read back from the ARB, from `AppLocalizations`, or from the function
+  under test — and prove it by transposing two arms and watching it fail.
+- **An identifier migration has five links, and pinning one moves the hole.**
+
+  ```
+  condition → identifier → sentence → the values in the sentence → the render site
+  ```
+
+  Each needs its own mutation. Reviews of the same branch broke it at a
+  different link three rounds running: the copy table was pinned, so corrupting
+  the carried values stayed green (*"the formula refers to byte Z, but the reply
+  carried only 0 bytes"*); those were pinned, so collapsing five refusal
+  conditions onto one identifier stayed green; that was pinned, so collapsing
+  the two render sites stayed green, because no test in the repository ever
+  rendered a refusal through a widget. The chain is only as pinned as its
+  loosest link, and the loosest one is usually the one nearest the reader.
+- **A comment that names a guard must name one that exists.** A pointer to a
+  test file that was renamed is how the next person comes to believe a guard is
+  there. Comments claiming a reachability property the code contradicts are the
+  same defect: one branch's header said a screen's permission refusal "is always
+  the Bluetooth one" while line 555 of that same file asked for location.
+
+- **A check that says more than it checks is worse than no check.** The gap is
+  invisible to the suite, because the victim is a reader rather than a
+  compiler. This one rule was broken three times in one afternoon, each time by
+  a sentence one notch stronger than the thing underneath it:
+
+  | The prose said | The check actually did |
+  |---|---|
+  | *this exact binary has been walked on a phone* | nothing — the flag was `case $TAG in *-*)` |
+  | *a release build of **this commit** was walked* | matched a **version**, which does not move when the code does |
+  | *no walk of this version is recorded* | returned before reading the file at all |
+
+  None of the three could fail. The first was found by a reviewer, the second
+  by a second reviewer after the first fix shipped, the third by the same
+  reviewer in the same pass. Write the sentence *after* the check, from the
+  check, and name what it does not cover — a reader can weigh a stated gap and
+  cannot weigh a false claim.
+
+- **An attestation is a field, not a sentence.** A gate that reads prose reads
+  mentions as claims. `## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed`
+  cleared a full release of 1.0.12 against a gate that searched dated headings
+  for the version; so did `x1.0.12oops` and `1.0.12-rc.1 planned, no walk`. The
+  first of those states the opposite of what it was read as stating, and nobody
+  has to be dishonest to write any of them. What a machine reads must be a line
+  that takes a deliberate keystroke and cannot occur inside a sentence meaning
+  something else — `Device walk attested: 1.0.12`, anchored at both ends.
+
+- **A gate that a person can only clear alone must be clearable alone.** The
+  rule before this one required a second adapter and another vehicle. There is
+  no number of cars that is "enough", so it never cleared, so every release was
+  a pre-release and GitHub's Latest badge sat on a build from nine days earlier
+  while the same commit was on Play production at 100%. The boundary did not
+  disappear; it moved into the release notes, printed on every build, where it
+  is a thing to **state** rather than a thing to **block** on. A gate a
+  maintainer cannot pass is not a standard, it is a stall.
+
+- **`cmd | grep -q` under `pipefail` is a size-dependent false refusal.**
+  `grep -q` exits on its first match, the upstream process takes SIGPIPE, and
+  `pipefail` reports the pipeline as failed — so a line that IS present is read
+  as absent. Whether it bites depends on whether the output fits the pipe
+  buffer, so it passes on today's file and fails on a later one with no code
+  change to blame. Read into a variable, or grep the file directly.
+
+- **A mutation that reports no failure has two explanations, and the second is
+  more likely.** Either the test is weak, or the mutation never applied. A
+  swap of two table rows in a shell heredoc reported green here because shell
+  quoting ate the escaped backticks and the file was never edited. Assert the
+  anchor exists before replacing it, and diff the file afterwards.
 
 `docs/protocol-deviations.zh-TW.md` records where this app deliberately departs from the
 specification it was derived from, and why. Three of those departures fix
