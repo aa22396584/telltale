@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 
@@ -7,6 +8,16 @@ const String androidFieldApplicationId = 'com.cbstudio.telltale';
 const String androidRigApplicationId = 'com.cbstudio.telltale.rig';
 
 typedef PlatformMetadataLoader = Future<Object?> Function();
+
+/// What the engine running this process says about itself, read from Dart.
+///
+/// `ImageFilter.isShaderFilterSupported` is documented to be true only when
+/// Impeller is the rendering engine, so it separates the backend the app
+/// *asked* for — [PlatformMetadata.renderer], decided in Kotlin before the
+/// engine started — from the one the engine *is*. Under `flutter test` this
+/// reads `skia`, which is a fact about the test runner, not about the app.
+String observedRendererFamily() =>
+    ui.ImageFilter.isShaderFilterSupported ? 'impeller' : 'skia';
 
 final class PlatformMetadata {
   const PlatformMetadata({
@@ -18,6 +29,9 @@ final class PlatformMetadata {
     required this.manufacturer,
     required this.model,
     required this.sdkInt,
+    this.renderer = unknownPlatformMetadata,
+    this.rendererReason = unknownPlatformMetadata,
+    this.rendererObserved = unknownPlatformMetadata,
   });
 
   factory PlatformMetadata.unknown() => const PlatformMetadata(
@@ -31,7 +45,9 @@ final class PlatformMetadata {
     sdkInt: unknownPlatformMetadata,
   );
 
-  factory PlatformMetadata.dartIoFallback() {
+  factory PlatformMetadata.dartIoFallback({
+    String Function() observedRenderer = observedRendererFamily,
+  }) {
     try {
       return PlatformMetadata(
         applicationId: unknownPlatformMetadata,
@@ -42,6 +58,7 @@ final class PlatformMetadata {
         manufacturer: unknownPlatformMetadata,
         model: unknownPlatformMetadata,
         sdkInt: unknownPlatformMetadata,
+        rendererObserved: _normalized(observedRenderer()),
       );
     } on Object {
       return PlatformMetadata.unknown();
@@ -58,6 +75,9 @@ final class PlatformMetadata {
       manufacturer: _normalized(values['manufacturer']),
       model: _normalized(values['model']),
       sdkInt: _normalized(values['sdkInt']),
+      renderer: _normalized(values['renderer']),
+      rendererReason: _normalized(values['rendererReason']),
+      rendererObserved: _normalized(values['rendererObserved']),
     );
   }
 
@@ -69,6 +89,20 @@ final class PlatformMetadata {
   final String manufacturer;
   final String model;
   final String sdkInt;
+
+  /// The rendering backend the Android host asked the engine for before it
+  /// started — `impeller-default`, `skia-forced`, `skia-engine-default` — or
+  /// `unknown` where the host did not decide (other platforms) or its decision
+  /// was not the one applied. Decided by `RendererPolicy.kt`.
+  final String renderer;
+
+  /// Why: the property that matched the denylist, or the values that did not.
+  final String rendererReason;
+
+  /// What the engine reports about itself from Dart, `impeller` or `skia`,
+  /// via [observedRendererFamily]. Independent of [renderer], so an evidence
+  /// file shows both what was asked for and what ran.
+  final String rendererObserved;
 
   bool get isObdTestRigApplication =>
       platform == 'android' && applicationId == androidRigApplicationId;
@@ -122,10 +156,16 @@ final class PlatformMetadataCache {
       'com.cbstudio.telltale/platform_metadata',
     ),
     this.timeout = const Duration(milliseconds: 500),
-  }) : _value = initialValue ?? PlatformMetadata.dartIoFallback();
+    this.observedRenderer = observedRendererFamily,
+  }) : _value =
+           initialValue ??
+           PlatformMetadata.dartIoFallback(observedRenderer: observedRenderer);
 
   final MethodChannel channel;
   final Duration timeout;
+
+  /// Injectable so tests do not pin what the test runner renders with.
+  final String Function() observedRenderer;
   PlatformMetadata _value;
 
   PlatformMetadata get value => _value;
@@ -148,6 +188,9 @@ final class PlatformMetadataCache {
         if (_value.platform == 'android') {
           normalizedKeys['platform'] = 'android';
         }
+        // Read here, not on the native side: the host knows what it asked
+        // for, only the engine knows what it became.
+        normalizedKeys['rendererObserved'] = observedRenderer();
         _value = PlatformMetadata.fromPlatformMap(normalizedKeys);
       }
     } on Object {

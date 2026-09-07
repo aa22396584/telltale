@@ -154,6 +154,14 @@ final class SessionEvidenceMetadata {
         '(SDK ${_safe(platform.sdkInt)})',
       )
       ..writeln('# 手機：${_safe(platform.manufacturer)} ${_safe(platform.model)}')
+      // Asked-for and observed, side by side: a support report that says
+      // `skia-forced (ro.board.platform=msm8974)` explains a slow dashboard
+      // before anyone asks, and one that says `impeller-default` beside an
+      // engine reporting `skia` says the override was not what put it there.
+      ..writeln(
+        '# 渲染：${_safe(platform.renderer)}（${_safe(platform.rendererReason)}）'
+        '；引擎回報 ${_safe(platform.rendererObserved)}',
+      )
       ..writeln(
         '# 連線開始車輛設定快照（UTC ${startedAt.toUtc().toIso8601String()}）：'
         '${_number(profile.displacementL)} L · '

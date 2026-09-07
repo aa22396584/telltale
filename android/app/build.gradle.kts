@@ -238,6 +238,12 @@ kotlin {
     }
 }
 
+dependencies {
+    // Plain JUnit for the pre-engine renderer decision, which is a pure
+    // function of three property strings and needs no Android runtime.
+    testImplementation("junit:junit:4.13.2")
+}
+
 flutter {
     source = "../.."
 }

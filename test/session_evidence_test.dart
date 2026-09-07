@@ -66,6 +66,7 @@ void main() {
           '# App：1.0.3 (4)\n'
           '# 平台：android 16 (SDK 36)\n'
           '# 手機：Samsung SM-S9380\n'
+          '# 渲染：unknown（unknown）；引擎回報 unknown\n'
           '# 連線開始車輛設定快照（UTC 2026-08-21T03:14:05.000Z）：'
           '1.8 L · 1420 kg · VE 88% · 汽油 · 前輪驅動\n'
           '# 連線開始車輛設定 JSON：'
@@ -135,6 +136,37 @@ void main() {
         ),
       );
       expect(header, isNot(contains('# 連線開始車輛設定證據.車重')));
+    });
+
+    test('the header says what was asked of the engine and what it became', () {
+      final evidence = SessionEvidenceMetadata(
+        sessionId: 'render-1',
+        startedAt: DateTime.utc(2026, 9, 7),
+        platform: const PlatformMetadata(
+          applicationId: 'com.cbstudio.telltale',
+          appVersion: '1.0.13',
+          appBuild: '14',
+          platform: 'android',
+          osVersion: '11',
+          manufacturer: 'samsung',
+          model: 'SM-N9005',
+          sdkInt: '30',
+          renderer: 'skia-forced',
+          rendererReason: 'ro.board.platform=msm8974',
+          rendererObserved: 'skia',
+        ),
+        vehicleProfile: const VehicleProfile(),
+        transportKind: 'Bluetooth LE',
+        deviceName: 'OBDII',
+      );
+
+      expect(
+        evidence.renderHeader(),
+        contains(
+          '# 手機：samsung SM-N9005\n'
+          '# 渲染：skia-forced（ro.board.platform=msm8974）；引擎回報 skia\n',
+        ),
+      );
     });
 
     test('the .rig application ID is simulated without a Dart define', () {

@@ -191,6 +191,84 @@ void main() {
       },
     );
 
+    test('the renderer the host asked for travels with its reason', () {
+      final metadata = PlatformMetadata.fromPlatformMap(<String, Object?>{
+        'platform': 'android',
+        'renderer': 'skia-forced',
+        'rendererReason': 'ro.board.platform=msm8974',
+        'rendererObserved': 'skia',
+      });
+
+      expect(metadata.renderer, 'skia-forced');
+      expect(metadata.rendererReason, 'ro.board.platform=msm8974');
+      expect(metadata.rendererObserved, 'skia');
+    });
+
+    test('a host that did not decide leaves the renderer unknown', () {
+      final metadata = PlatformMetadata.fromPlatformMap(<String, Object?>{
+        'platform': 'android',
+        'renderer': '',
+        'rendererReason': null,
+      });
+
+      expect(metadata.renderer, unknownPlatformMetadata);
+      expect(metadata.rendererReason, unknownPlatformMetadata);
+      expect(metadata.rendererObserved, unknownPlatformMetadata);
+      expect(PlatformMetadata.unknown().renderer, unknownPlatformMetadata);
+      expect(
+        PlatformMetadata.unknown().rendererObserved,
+        unknownPlatformMetadata,
+      );
+    });
+
+    test(
+      'the observed renderer is read from the engine on prefetch, not from the host',
+      () async {
+        // The host cannot know what the engine became; the native reply
+        // carries what was asked for, and the value the engine reports is
+        // read in Dart. A native `rendererObserved` must not survive.
+        final cache = PlatformMetadataCache(
+          initialValue: _androidFallback(),
+          timeout: const Duration(milliseconds: 500),
+          observedRenderer: () => 'impeller',
+        );
+
+        await cache.prefetch(
+          loader: () async => <String, Object?>{
+            'applicationId': 'com.cbstudio.telltale',
+            'renderer': 'impeller-default',
+            'rendererReason': 'ro.board.platform=pineapple ro.hardware.vulkan=adreno',
+            'rendererObserved': 'from-the-host',
+          },
+        );
+
+        expect(cache.value.renderer, 'impeller-default');
+        expect(
+          cache.value.rendererReason,
+          'ro.board.platform=pineapple ro.hardware.vulkan=adreno',
+        );
+        expect(cache.value.rendererObserved, 'impeller');
+      },
+    );
+
+    test('the dart:io fallback carries the observed renderer too', () {
+      final fallback = PlatformMetadata.dartIoFallback(
+        observedRenderer: () => 'skia',
+      );
+
+      expect(fallback.renderer, unknownPlatformMetadata);
+      expect(fallback.rendererObserved, 'skia');
+      final cache = PlatformMetadataCache(observedRenderer: () => 'skia');
+      expect(cache.value.rendererObserved, 'skia');
+    });
+
+    test('the engine probe answers one of the two families it can be', () {
+      // Which one is a fact about the process running this test, not about
+      // the app, so it is not pinned; that the probe answers at all, and
+      // only in the vocabulary the header prints, is.
+      expect(observedRendererFamily(), isIn(<String>['impeller', 'skia']));
+    });
+
     test('empty native metadata preserves known Android provenance', () async {
       final cache = PlatformMetadataCache(
         initialValue: _androidFallback(),

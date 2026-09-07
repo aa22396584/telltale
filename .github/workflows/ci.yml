@@ -119,6 +119,49 @@ jobs:
             exit 1
           fi
 
+      # `RendererPolicy.kt` decides, before the engine starts, whether a phone
+      # gets Impeller or is forced to Skia. It is a pure function of three
+      # strings and is tested on the JVM here, not on a device. Gradle needs
+      # `android/local.properties`, which the build above wrote. The XML report
+      # is read back because a test task that ran zero tests also exits 0.
+      - name: Renderer policy unit tests (JVM)
+        run: |
+          set -euo pipefail
+          # A previous run's report would satisfy the check below; make the
+          # guard true on any machine, not only on a fresh checkout.
+          rm -rf build/app/test-results/testFieldDebugUnitTest
+          (cd android && ./gradlew --no-daemon -q :app:testFieldDebugUnitTest)
+          python3 - <<'EOF'
+          import glob, sys, xml.etree.ElementTree as ET
+          files = sorted(glob.glob('build/app/test-results/testFieldDebugUnitTest/TEST-*.xml'))
+          # `tests` counts skipped cases too; only executed ones count here.
+          executed = failed = 0
+          suites = set()
+          for f in files:
+              r = ET.parse(f).getroot()
+              suites.add(r.get('name'))
+              executed += int(r.get('tests', 0)) - int(r.get('skipped', 0))
+              failed += int(r.get('failures', 0)) + int(r.get('errors', 0))
+              print(f"{r.get('name')}: {r.get('tests')} tests, {r.get('skipped')} skipped, {r.get('failures')} failures, {r.get('errors')} errors")
+          # The suites that must appear are read off the test sources, not
+          # written here, so adding a test class cannot be forgotten by this gate.
+          import re
+          expected = set()
+          for src in glob.glob('android/app/src/test/kotlin/**/*.kt', recursive=True):
+              text = open(src, encoding='utf-8').read()
+              pkg = re.search(r'^package\s+([\w.]+)', text, re.M)
+              for cls in re.findall(r'^class\s+(\w+Test)\b', text, re.M):
+                  expected.add(f"{pkg.group(1)}.{cls}" if pkg else cls)
+          if not expected:
+              print('::error::no test classes found under android/app/src/test'); sys.exit(1)
+          if executed == 0:
+              print('::error::no JVM unit tests ran'); sys.exit(1)
+          if not expected <= suites:
+              print(f'::error::expected suites did not run: {sorted(expected - suites)}'); sys.exit(1)
+          if failed:
+              print(f'::error::{failed} JVM unit test(s) failed'); sys.exit(1)
+          EOF
+
   vehicle-catalogs:
     name: vehicle catalogs — offline updater tests
     runs-on: ubuntu-latest
@@ -127,6 +170,7 @@ jobs:
       run:
         shell: bash
     steps:
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

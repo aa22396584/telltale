@@ -34,6 +34,14 @@ Future<void> main() async {
   // closed as simulated rather than claiming physical provenance.
   await prefetchPlatformMetadata();
   final platformMetadata = platformMetadataCache.value;
+  // Both renderer facts on one logcat line, where a support request can find
+  // them: what the Android host asked the engine for, and what the engine says
+  // it became. The host's own line is `Telltale: renderer: …`.
+  debugPrint(
+    'renderer: ${platformMetadata.renderer} '
+    '(${platformMetadata.rendererReason}); '
+    'engine reports ${platformMetadata.rendererObserved}',
+  );
   final rigShareCaptureEnabled = isRigShareCaptureEligible(
     metadata: platformMetadata,
     buildFlag: isObdTestRigBuild,

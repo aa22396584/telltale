@@ -8,6 +8,26 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+### Fixed
+
+- The community APK died at launch on a Samsung Note 3 (`hlte`, Adreno 330)
+  running DivestOS 18.1. The phone reports Android 11, which is past the
+  engine's API 29 Impeller gate, so Flutter chose Impeller, found no Vulkan
+  driver, fell to its own OpenGL ES backend and crashed in the GPU driver's
+  shader linker before the first frame. Telltale now reads
+  `ro.board.platform` and `ro.hardware.vulkan` before the engine starts and,
+  on the one SoC with a tombstone (`msm8974`), starts the engine with Impeller
+  disabled so it renders with Skia. Every other phone keeps whatever the
+  engine chooses for it — Impeller from Android 10 up, apart from the
+  engine's own exception for Vivante GPUs, Skia below that. One thing does
+  change on them: in release builds a launch Intent can no longer switch the
+  renderer, because the app now owns the engine's start-up arguments. The
+  decision and its reason are written into
+  evidence file headers as `# 渲染：…`, beside what the engine itself reports.
+  Not yet run on the reporter's phone: the emulator and a Galaxy S24 Ultra
+  show the two sides of the switch; the Note 3 row is the reporter's. (#121,
+  #104)
+
 ## 1.0.12 — 2026-09-07
 
 Google Play production target `1.0.12` / versionCode 13. GitHub community

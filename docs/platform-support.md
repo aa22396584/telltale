@@ -185,3 +185,92 @@ unpowered): `/sdcard/Download/torque-obd-20260827-133618-recovered.txt` —
   channel handoff is proven; picker selection is not automated)
 - Keyboard/mouse shell density polish
 - Notarized / store-signed packages (unsigned archives only)
+
+## Rendering backend on Android
+
+Flutter 3.47 selects Impeller on every API 29+ device except one with a
+Vivante GPU (`ro.hardware.egl`), and, in the engine paths read at
+`4cf2416426` (`flutter_main.cc`, `platform_view_android.cc`, the dynamic/GL/VK
+Impeller contexts and five GLES backend files), has no route back to Skia once
+the engine is up: without a Vulkan driver it uses Impeller's own OpenGL ES
+backend, and those files carry no GPU denylist for that backend. The
+historical fix for Adreno 3xx silicon was the API < 29 gate
+(flutter/flutter#165075, for the Nexus 5). A custom ROM that reports API 30 on
+the same silicon walks past it — that is #121: a Samsung Note 3 on DivestOS
+18.1, `SIGSEGV` in `libsc-a3xx.so` under `libflutter.so`, before the first
+frame.
+
+So the app decides, before the engine exists (`MainActivity.onCreate`, ahead of
+`super.onCreate()`), from two system properties:
+
+| `ro.board.platform` or `ro.hardware.vulkan` | API | decision | the engine then |
+|---|---|---|---|
+| in `RendererPolicy.impellerGlesCrashes` (today `msm8974`) | ≥ 29 | `skia-forced` — `--enable-impeller=false` | Skia OpenGL ES |
+| anything else, or unreadable | ≥ 29 | `impeller-default` — nothing passed | its own choice: Impeller (Vulkan, or its GLES backend without Vulkan), or Skia on a Vivante GPU |
+| any | < 29 | `skia-engine-default` — nothing passed | Skia, by its own gate |
+
+The rule is `android/app/src/main/kotlin/com/cbstudio/telltale/RendererPolicy.kt`,
+a pure function tested on the JVM (`android/app/src/test/…/RendererPolicyTest.kt`,
+run by CI). Matching is exact after trim and lower-case. "No Vulkan" is not a
+criterion: a healthy GLES-only phone and this crash look identical by that
+measure. An unreadable property is unknown and keeps the default, so the worst a
+broken read can do is leave a phone on the engine's default. In release the
+shell arguments are the app's alone; launch-Intent extras are not consulted,
+so an Intent can no longer move a phone onto Skia (flutter/flutter#190461 is
+the engine's own plan to do the same). "Nothing passed" means the engine
+chooses: Impeller on API 29+, except its own Vivante exception; Skia below.
+
+What it costs at start-up, on the main thread, before the engine: the two
+property reads share one 250 ms budget; the budget bounds the poll that waits
+for a `getprop` child, not the spawn or the `destroy()` after it, which nothing
+here can interrupt. Reflection normally answers in microseconds and the child
+is only spawned when reflection is refused. The decision is made once per
+process; a warm relaunch reuses it and reports it as still applied.
+
+The reason always carries both property values and, on a match, which one
+matched (`… matched=ro.board.platform`), so an evidence file shows the two
+properties disagreeing rather than only the one that decided. A second line
+per property says which path answered: `reflection`, `getprop`, or
+`deadline-expired` — the budget was already spent before a child could be
+started, which is the line to look for when a slow start-up is being chased.
+
+What is recorded: one logcat line `Telltale: renderer: <decision> (<reason>)`,
+one from Dart `renderer: <decision> (<reason>); engine reports <impeller|skia>`,
+and the same two facts in every evidence file header as `# 渲染：…`. The engine
+side is read from `ImageFilter.isShaderFilterSupported`, which is true only
+under Impeller — so the header shows what was asked for and what ran, and they
+can disagree.
+
+Verified with Flutter 3.47.0 release builds. The first rows below are from the
+final code of the change (`7e89fb5`), each read from logcat; the forced row is
+from an earlier build of the same branch with `pineapple` placed in the
+denylist for one build and removed after, because the S24 is the only phone
+here and its own platform string is the only way to reach the Skia branch.
+
+| device | build (SHA-256) | `Telltale:` lines | engine line | Dart `engine reports` |
+|---|---|---|---|---|
+| Galaxy S24 Ultra, API 36, `pineapple` / `adreno`, cold start | `rig` flavor, Torque-signed, `685aa309…1391a4` | `property … via reflection` ×2; `renderer: impeller-default (ro.board.platform=pineapple ro.hardware.vulkan=adreno)` | `Using the Impeller rendering backend (Vulkan).` | `impeller` |
+| same phone, back out and tap the icon again (process kept) | same | `renderer: impeller-default (…), applied earlier in this process` | the same Vulkan line, from the new engine | `impeller` |
+| same phone, `pineapple` in the denylist for one throwaway build | `rig`, earlier commit | `renderer: skia-forced (ro.board.platform=pineapple)` | no Impeller line; `skia: [SkFontMgr Android Parser]` | `skia`; the connect screen rendered |
+| emulator `sdk_gphone64_arm64`, API 36, `ranchu`, cold start | `field` flavor, community-signed, `2912d81c…60c8ee`, installed **over** the published `v1.0.12` and then over the previous candidate — same-signature upgrades | `property … via reflection` ×2; `renderer: impeller-default (ro.board.platform=(empty) ro.hardware.vulkan=ranchu)` | `Using the Impeller rendering backend (OpenGLES).` | `impeller` |
+| same emulator, back out and tap again | same | `renderer: impeller-default (…), applied earlier in this process` | the same OpenGLES line | `impeller` |
+
+Two things those rows say beyond the switch. On API 36, both on the phone and
+on the emulator, `ro.*` is read **by reflection** — the hidden-API policy did
+not refuse `SystemProperties.get` there; whether it does on Android 11 is
+still only knowable from the reporter's phone, and the `getprop` path is what
+answers if it does. And on the emulator the Dart line read
+`renderer: unknown (unknown)` on three of four launches while the Kotlin line
+above it carried the decision: the platform-metadata prefetch has a 500 ms
+budget so that field evidence can never hold up a start, and the emulator
+missed it. `unknown` is honest there; the logcat line from Kotlin is the one
+that always carries the decision, and the header's engine-reported half comes
+from Dart itself and is not affected.
+
+The published `v1.0.12` on that emulator, before the first upgrade, printed the
+same OpenGLES line and no `renderer:` line at all — the pre-fix shape.
+
+Not verified: the reporter's `hlte`. No Adreno 3xx device is on hand, and an
+emulator cannot fake `ro.board.platform`. #121 stays open for that row; the
+rows above show the switch's two sides, not the crash going away on the phone
+that had it.
