@@ -19,10 +19,29 @@
 # a replacement for a store install.
 #
 # A tag carrying a SemVer pre-release suffix (v1.0.1-beta.1) is published as a
-# GitHub pre-release and carries an extra section stating what has and has not
-# been verified. The rule lives here rather than in a person's memory, because
-# the one release where somebody forgets to tick the box is the one where the
-# claim matters.
+# GitHub pre-release. The flag means exactly one thing, and it is a thing one
+# person can settle in an afternoon:
+#
+#   pre-release  =  this exact binary has not been walked on a phone
+#   full release =  it has
+#
+# It used to mean something else, and that is why every release from v1.0.7 to
+# v1.0.11 was a pre-release and GitHub's Latest badge sat on v1.0.6 for nine
+# days while the same commit shipped to Play production at 100%. The flag was
+# carrying "never run against a real car" as well, and the evidence paragraph
+# was printed only when it was set -- so publishing a release people could find
+# meant deleting the honest paragraph. Nobody was going to do that, so nobody
+# published one.
+#
+# A gate a maintainer cannot pass is not a standard, it is a stall. The things
+# one person cannot do -- a second adapter, another vehicle, any engine-running
+# condition -- do not block a release and never should have. They are stated,
+# on every release, in the boundary section below, which now prints whether or
+# not the flag is set. The flag gates what the maintainer controls; the prose
+# states what they do not.
+#
+# The rule lives here rather than in a person's memory, because the one release
+# where somebody forgets to tick the box is the one where the claim matters.
 name: Release
 
 on:
@@ -306,33 +325,63 @@ jobs:
             *-*) PRERELEASE="--prerelease" ;;
           esac
 
+          # The evidence boundary is NOT tied to the pre-release flag, and this
+          # is the second thing that flag was silently doing. It used to carry
+          # both "not ready to use" and "never run against a real car", so the
+          # only way to publish a release people could find was to delete the
+          # honest paragraph. Every release since v1.0.6 was therefore marked
+          # pre-release, GitHub kept the Latest badge on a build from weeks
+          # earlier, and the same commit was already on Play production at 100%.
+          # The boundary is true of every build and now prints on every build;
+          # the flag says one checkable thing and nothing else.
           : > notes.md
           if [ -n "$PRERELEASE" ]; then
             cat >> notes.md <<'PRE'
-          > **Pre-release.** What has been verified, and what has not:
+          > **Pre-release.** This tag was cut for testing: the exact binary below
+          > has not been walked on a phone. A full release has.
+          >
+          > **預發行版本。** 這個 tag 是為了測試而開的：下面這份 binary
+          > 本身沒有在實機上走過一遍。正式版有。
+
+          PRE
+          fi
+
+          cat >> notes.md <<'PRE'
+          > **What this build has been run against, and what it has not.**
           >
           > - The protocol layer passes the simulated ELM327 rigs, including
-          >   framing and fault-injection checks.
+          >   framing and fault-injection checks, and a third-party ELM327
+          >   implementation this project did not write.
           > - A physical Samsung phone completed a real Bluetooth LE/GATT session
           >   over the phone's and Mac's actual radios against the Mac-hosted rig.
-          > - **Not yet verified:** the purchased CAR25 adapter, any other physical
-          >   ELM327 adapter, a vehicle ECU/CAN bus, or a real vehicle.
+          > - **One** real-vehicle observation exists: a purchased CARLZS LAB
+          >   `CL-OBDII-M25B` over Bluetooth LE, connected to a Toyota GT86. One
+          >   adapter and one car is not adapter compatibility and not
+          >   vehicle-generation compatibility, and the protocol-level transcript
+          >   from that session has not been reviewed or published.
+          > - **Still unverified:** any second adapter, any other vehicle, and
+          >   every engine-running condition.
           > - `docs/verification/test-evidence.md` and
-          >   `docs/verification/device-verification.md` record the exact boundary.
+          >   `docs/verification/device-verification.md` record the exact
+          >   boundary, dated. They are the source; this list is a summary.
           >
           > If you have an adapter and a car, this is the build to try.
           > Settings → Export transcript writes out a verbatim record of
           > everything the adapter said; an issue with that file attached is the
           > most useful thing you can send.
           >
-          > **預發行版本。** 模擬 ELM327、分段與故障注入測試已通過；Samsung 實體手機
-          > 也已用真實藍牙無線電與 Android GATT，連上 Mac 主機的 BLE rig。
-          > 但 CAR25／購買的實體轉接器、車輛 ECU／CAN 與真車仍未驗證。
-          > 詳細證據界線見 `docs/verification/`。有轉接器又有車的話，這就是該試的版本；
-          > 出問題請到「設定 → 匯出紀錄」把逐字紀錄存下來，附在 issue 裡送回來。
+          > **這份 build 跑過什麼，沒跑過什麼。**
+          > 模擬 ELM327、分段與故障注入測試已通過，也跑過一份本專案沒有寫的
+          > 第三方 ELM327 實作；Samsung 實體手機已用真實藍牙無線電與 Android
+          > GATT 連上 Mac 主機的 BLE rig。真車觀察只有**一次**：購買的 CARLZS LAB
+          > `CL-OBDII-M25B` 透過 BLE 連上一台 Toyota GT86。一個轉接器加一台車不等於
+          > 轉接器相容性，也不等於車型世代相容性，而那次連線的協定層逐字紀錄
+          > 尚未審閱、也尚未公開。**仍未驗證：**第二個轉接器、其他任何車輛，
+          > 以及所有引擎運轉中的情境。詳細證據界線見 `docs/verification/`，那裡才是
+          > 來源，這份清單只是摘要。有轉接器又有車的話，這就是該試的版本；出問題請到
+          > 「設定 → 匯出紀錄」把逐字紀錄存下來，附在 issue 裡送回來。
 
           PRE
-          fi
 
           cat >> notes.md <<EOF
           Telltale ${{ steps.describe.outputs.version }}

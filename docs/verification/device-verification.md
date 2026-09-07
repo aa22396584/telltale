@@ -17,6 +17,57 @@ Round 9 added a proxy in that socket that logs every byte and can hold a reply
 back, which is how the timing findings were tested and how one of them was
 found to have been testing nothing at all.
 
+## 2026-09-07 — 1.0.12 release APK, English walk-through on the phone
+
+Samsung `R5CX10VFFBA`. Built `app-field-release.apk` from `release/1.0.12` with
+`-PallowUnsignedRelease=true` — the Gradle guard refuses a release build with no
+`android/key.properties` rather than quietly signing with the debug key, and this
+worktree has none. **So this binary is debug-signed and is not the artifact CI
+publishes**; the walk establishes behaviour, not the release signature. The old
+install had to be removed first for the same reason.
+
+`dumpsys package` after install: `versionCode=13 versionName=1.0.12` — read from
+the package manager, not from what `adb install` printed, because that command
+has printed its own failure and exited 0 here before.
+
+Walked in `Locale('en')`, chosen through the app's own picker on the connect
+screen before any connection, VIN or permission — which is the reachability that
+ImL1s/telltale#92's first acceptance line asks for. No crash; the pid was
+unchanged from launch to the end of the walk.
+
+English throughout, checked screen by screen: connect (including the affiliate
+line, which now reads **Shopee** rather than 蝦皮 — ImL1s/telltale#103), Demo
+simulator card and its description, dashboard with live gauges, Settings
+(vehicle profile, `Petrol / Diesel / LPG` fuel picker, commission disclosure,
+`View on Shopee`), fault codes (scan of the Demo ECU: 3 codes, VIN
+`1D4GP00R55B123456`, a freeze frame whose cause code `P0301` was read — so the
+Mode 02 gate was exercised, not bypassed — readiness monitors, and English code
+descriptions), and the estimate details dialog, which is the one
+ImL1s/telltale#101 fixed: it now reads `Mass 1500 kg (generic default); Cd 0.30
+(generic default)…` where an English build used to render the exported
+Traditional Chinese sentence.
+
+Manual command box: `ATI` → `ELM327 v2.1`, and the panel chrome is English.
+
+**One failure, and it is why this walk was worth doing.** Sending `2F1234` — a
+write service the box refuses — renders, in the English build:
+
+    不認得的指令「2F1234」。這裡只接受唯讀查詢（Mode 01/02/03/05/06/07/09/0A/22）
+    與轉接器查詢指令。
+
+That is `ObdSession.manualCommandRefusal`, which ImL1s/telltale#45 owns and which
+is not in this release. ImL1s/telltale#102 localized the *adapter's* failures on
+this panel, not the panel's own policy refusals. The changelog for 1.0.12 had
+been written from the diff and claimed the box was fixed; the phone is what said
+otherwise, and the changelog now names this as still Chinese rather than
+implying it was fixed.
+
+**What this does not establish.** No adapter, no vehicle, no Bluetooth or Wi-Fi
+transport — the whole walk ran on the in-app Demo simulator, which is an object
+inside the process and never touches a socket. It says the English strings reach
+the screens; it says nothing about the protocol layer that the rigs and the one
+GT86 observation cover.
+
 ## 2026-09-06 — 1.0.8 release APK, OBDBLE still unpowered
 
 Samsung `R5CX10VFFBA`: installed Play-upload-key `app-field-release.apk`
