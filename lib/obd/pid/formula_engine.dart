@@ -17,13 +17,133 @@ import 'dart:math' as math;
 
 import 'pid.dart';
 
+/// Why a formula could not be evaluated, as an identifier a screen translates.
+///
+/// The engine is pure Dart and has no business holding a language. Every value
+/// here is a distinct *fact about the formula* with its own remedy; where a
+/// sentence names a value — the byte letter, the referenced PID, the argument
+/// that was out of domain — that value travels on [FormulaException] as data
+/// and reaches the ARB as a placeholder, so no identifier has a number baked
+/// into it.
+enum FormulaIssue {
+  /// Nothing was typed at all.
+  emptyFormula,
+
+  /// Something was typed, but a sub-expression came out empty — `A*`, `(1+)`.
+  /// Not [emptyFormula]: the remedy is to finish an operator, not to write a
+  /// formula.
+  emptySubExpression,
+
+  /// A `(` with no `)`, or the other way round.
+  unbalancedParentheses,
+
+  /// A fragment that is neither a number, an operator, nor a name this dialect
+  /// knows. Carries the fragment.
+  unparsableTerm,
+
+  /// `ABS(`/`LOG10(` nested past the evaluator's limit. Distinct from
+  /// [parenthesisNestingTooDeep] because it names a different construct to
+  /// simplify.
+  functionNestingTooDeep,
+
+  /// Plain `(` groups nested past the evaluator's limit.
+  parenthesisNestingTooDeep,
+
+  /// `/` by zero. Separate from [moduloByZero] because the operator the author
+  /// has to find is a different character in a different place.
+  divisionByZero,
+
+  /// `%` by zero.
+  moduloByZero,
+
+  /// `LOG10` of zero or a negative number, which has no value. Carries the
+  /// argument.
+  log10NonPositiveArgument,
+
+  /// The arithmetic produced NaN or an infinity, at the end or part-way
+  /// through. Either way there is no reading, and the remedy is the same.
+  resultNotFinite,
+
+  /// The formula refers to a byte the reply does not contain. Carries the
+  /// letter and how many bytes did arrive.
+  byteBeyondResponse,
+
+  /// `BARO` was used with no requesting PID, so which controller's ambient
+  /// pressure is meant cannot be decided.
+  baroControllerUnknown,
+
+  /// Two definitions on this controller both supply ambient pressure, so the
+  /// value could be either. Not [baroControllerUnknown]: the controller is
+  /// known and it is the definitions that are ambiguous.
+  baroTwoDefinitions,
+
+  /// Ambient pressure has never been measured on this controller. The remedy
+  /// is to wait for a reading; nothing is wrong with the formula.
+  baroNotYetMeasured,
+
+  /// Ambient pressure was measured and is now older than the cache window. A
+  /// different fact from [baroNotYetMeasured] with a different remedy: the
+  /// source has stopped answering rather than not yet started.
+  baroMeasurementStale,
+
+  /// `VAL{...}` was used with no requesting PID. Carries the referenced key.
+  dependencyControllerUnknown,
+
+  /// Two definitions on this controller both decode the referenced key.
+  /// Carries the key.
+  dependencyTwoDefinitions,
+
+  /// The referenced PID has no usable value — never read, or gone stale.
+  /// Carries the key.
+  dependencyNotYetMeasured,
+}
+
 /// Thrown when a formula cannot be evaluated. Carries the offending source so
 /// the PID editor can show the user what it choked on.
+///
+/// [message] is deliberately unchanged and still Traditional Chinese. It is
+/// what `FormulaEngine.validate` returns into the powertrain-battery catalogue
+/// validator, and what `powertrain_battery_probe.dart` stringifies into a
+/// probe transcript; both are diagnostics rather than screen copy. What a
+/// screen renders is [issue], through
+/// `lib/ui/screens/pids/formula_copy.dart`.
+///
+/// [issue] is **required and nullable**, the same shape `TransportException`
+/// uses: the compiler refuses a throw that forgets it, and a deliberate `null`
+/// has to be typed out where somebody reviewing the diff can see it.
+/// `test/l10n/formula_issue_guard_test.dart` then refuses even that.
 class FormulaException implements Exception {
   final String message;
   final String source;
 
-  const FormulaException(this.message, this.source);
+  /// What went wrong, for the screen to translate.
+  final FormulaIssue? issue;
+
+  /// The `VAL{...}` key the sentence names, for the dependency issues.
+  final String? pidKey;
+
+  /// The byte letter (`A`..`N`) the formula referenced.
+  final String? byteLetter;
+
+  /// How many data bytes the reply actually carried.
+  final int? byteCount;
+
+  /// The out-of-domain argument, for [FormulaIssue.log10NonPositiveArgument].
+  final double? argument;
+
+  /// The fragment that could not be parsed.
+  final String? term;
+
+  const FormulaException(
+    this.message,
+    this.source, {
+    required this.issue,
+    this.pidKey,
+    this.byteLetter,
+    this.byteCount,
+    this.argument,
+    this.term,
+  });
 
   @override
   String toString() => 'FormulaException: $message (in "$source")';
@@ -146,11 +266,11 @@ class FormulaEngine {
       // boost formula dividing by a baro value that has not arrived yet would
       // show 0 kPa rather than admitting it cannot be computed.
       _Operator('/', (a, b) {
-        if (b == 0) throw const _ArithmeticFailure('除以零');
+        if (b == 0) throw const _ArithmeticFailure('除以零', FormulaIssue.divisionByZero);
         return a / b;
       }),
       _Operator('%', (a, b) {
-        if (b == 0) throw const _ArithmeticFailure('模除以零');
+        if (b == 0) throw const _ArithmeticFailure('模除以零', FormulaIssue.moduloByZero);
         // Truncated remainder, not Dart's Euclidean `%`.
         //
         // These formulas come from Torque, which is a Java app, and Java's `%`
@@ -300,7 +420,11 @@ class FormulaEngine {
     DateTime? now,
   }) {
     if (equation.trim().isEmpty) {
-      throw FormulaException('Formula is empty', equation);
+      throw FormulaException(
+        'Formula is empty',
+        equation,
+        issue: FormulaIssue.emptyFormula,
+      );
     }
     final double result;
     try {
@@ -315,12 +439,16 @@ class FormulaEngine {
       final prepared = _preprocess(equation, dataBytes, requester, now);
       result = _reduce(prepared, equation);
     } on _ArithmeticFailure catch (e) {
-      throw FormulaException(e.message, equation);
+      throw FormulaException(e.message, equation, issue: e.issue);
     }
     // NaN and infinity render as "--" at best and as a garbage gauge position
     // at worst; neither is a reading.
     if (result.isNaN || result.isInfinite) {
-      throw FormulaException('運算結果不是有效數值', equation);
+      throw FormulaException(
+        '運算結果不是有效數值',
+        equation,
+        issue: FormulaIssue.resultNotFinite,
+      );
     }
     return result;
   }
@@ -390,7 +518,11 @@ class FormulaEngine {
 
     if (s.contains('BARO')) {
       if (requester == null) {
-        throw FormulaException('無法判斷 BARO 所屬的控制器，拒絕求值', equation);
+        throw FormulaException(
+          '無法判斷 BARO 所屬的控制器，拒絕求值',
+          equation,
+          issue: FormulaIssue.baroControllerUnknown,
+        );
       }
       final controller = _controllerKey(requester.header);
       if (_baroAmbiguous.contains(controller)) {
@@ -398,17 +530,26 @@ class FormulaEngine {
           '有兩個定義同時提供大氣壓力，數值可能是其中任何一個，因此無法採用。'
           '請移除其中一個測量大氣壓力的錶。',
           equation,
+          issue: FormulaIssue.baroTwoDefinitions,
         );
       }
       final baro = _baro[controller];
       // Absent ambient pressure is not sea level. Refusing here is what turns
       // "wrong by the altitude" into "unavailable", which the gauge can show.
       if (baro == null) {
-        throw FormulaException('尚未取得大氣壓力量測值，無法計算', equation);
+        throw FormulaException(
+          '尚未取得大氣壓力量測值，無法計算',
+          equation,
+          issue: FormulaIssue.baroNotYetMeasured,
+        );
       }
       // `now == null` is the authoring path, which has no measurements to age.
       if (now != null && now.difference(baro.at).abs() > maxCacheAge) {
-        throw FormulaException('大氣壓力量測值已過期，無法計算', equation);
+        throw FormulaException(
+          '大氣壓力量測值已過期，無法計算',
+          equation,
+          issue: FormulaIssue.baroMeasurementStale,
+        );
       }
       s = s.replaceAll('BARO', _format(baro.value));
     }
@@ -419,7 +560,12 @@ class FormulaEngine {
       // asking, the reference cannot be resolved to a specific sensor — and
       // resolving it to whichever controller wrote the key last is the defect.
       if (requester == null) {
-        throw FormulaException('無法判斷 VAL{$key} 所屬的控制器，拒絕求值', equation);
+        throw FormulaException(
+          '無法判斷 VAL{$key} 所屬的控制器，拒絕求值',
+          equation,
+          issue: FormulaIssue.dependencyControllerUnknown,
+          pidKey: key,
+        );
       }
       // `now == null` is the authoring path, which has no measurements to age
       // — the same exemption BARO gets a few lines above, for the same reason.
@@ -434,8 +580,9 @@ class FormulaEngine {
       // it is fresh, because a dependency that stopped answering leaves a
       // number that looks exactly like one that is still arriving.
       if (cached == null) {
+        final ambiguous = isAmbiguous(requester.header, key);
         throw FormulaException(
-          isAmbiguous(requester.header, key)
+          ambiguous
               // Not "remove one of the gauges", which is advice that can be
               // followed exactly and change nothing. `PollingEngine` merges
               // `PidLibrary.physicsInputs` into the active set on every
@@ -449,6 +596,14 @@ class FormulaEngine {
                   '把面板上的錶移掉不會停止讀取它們。'
               : '尚未取得相依 PID $key 的有效數值',
           equation,
+          // Two facts, not one identifier with a flag. "Nobody has read this
+          // yet" is waited out; "two definitions decode it" is only fixed by
+          // editing one of them, and the copy for the second says so at
+          // length.
+          issue: ambiguous
+              ? FormulaIssue.dependencyTwoDefinitions
+              : FormulaIssue.dependencyNotYetMeasured,
+          pidKey: key,
         );
       }
       return _format(cached);
@@ -461,6 +616,14 @@ class FormulaEngine {
         throw FormulaException(
           '公式參照位元組 $letter，但回應只有 ${bytes.length} 個位元組',
           equation,
+          // One identifier for both throw sites, deliberately. `SIGNED(C)` and
+          // a bare `C` are two spellings of one fact — the formula named a
+          // byte the reply does not contain — with one remedy, and which
+          // spelling was used is not something the reader has to be told: the
+          // letter is carried as data and the sentence names it.
+          issue: FormulaIssue.byteBeyondResponse,
+          byteLetter: letter,
+          byteCount: bytes.length,
         );
       }
       final raw = bytes[index];
@@ -483,6 +646,14 @@ class FormulaEngine {
         throw FormulaException(
           '公式參照位元組 $letter，但回應只有 ${bytes.length} 個位元組',
           equation,
+          // One identifier for both throw sites, deliberately. `SIGNED(C)` and
+          // a bare `C` are two spellings of one fact — the formula named a
+          // byte the reply does not contain — with one remedy, and which
+          // spelling was used is not something the reader has to be told: the
+          // letter is carried as data and the sentence names it.
+          issue: FormulaIssue.byteBeyondResponse,
+          byteLetter: letter,
+          byteCount: bytes.length,
         );
       }
       s = s.replaceAll(pattern, bytes[i].toString());
@@ -507,7 +678,11 @@ class FormulaEngine {
     var guard = 0;
     while (previous != s) {
       if (++guard > 64) {
-        throw FormulaException('公式的函式巢狀太深', equation);
+        throw FormulaException(
+          '公式的函式巢狀太深',
+          equation,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
       }
       previous = s;
       s = _applyFunction(s, _absPattern, equation, (v) => v.abs());
@@ -517,7 +692,12 @@ class FormulaEngine {
       // admitting the expression has no value there.
       s = _applyFunction(s, _log10Pattern, equation, (v) {
         if (v <= 0) {
-          throw FormulaException('LOG10 的引數必須大於 0（收到 $v）', equation);
+          throw FormulaException(
+            'LOG10 的引數必須大於 0（收到 $v）',
+            equation,
+            issue: FormulaIssue.log10NonPositiveArgument,
+            argument: v,
+          );
         }
         return math.log(v) / math.ln10;
       });
@@ -543,7 +723,11 @@ class FormulaEngine {
       final match = _functionWrappedParens.firstMatch(s);
       if (match == null) return s;
       if (++guard > 64) {
-        throw FormulaException('公式的括號巢狀太深', source);
+        throw FormulaException(
+          '公式的括號巢狀太深',
+          source,
+          issue: FormulaIssue.parenthesisNestingTooDeep,
+        );
       }
       final inner = _reduce(match.group(2)!, source);
       s = s.replaceRange(
@@ -566,7 +750,11 @@ class FormulaEngine {
       final match = pattern.firstMatch(s);
       if (match == null) return s;
       if (++guard > 64) {
-        throw FormulaException('Formula nests functions too deeply', source);
+        throw FormulaException(
+          'Formula nests functions too deeply',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
       }
       final inner = _reduce(match.group(1)!, source);
       s = s.replaceRange(match.start, match.end, _format(fn(inner)));
@@ -575,18 +763,40 @@ class FormulaEngine {
 
   double _reduce(String expression, String source) {
     var s = expression.trim();
-    if (s.isEmpty) throw FormulaException('Empty sub-expression', source);
+    if (s.isEmpty) {
+      throw FormulaException(
+        'Empty sub-expression',
+        source,
+        issue: FormulaIssue.emptySubExpression,
+      );
+    }
 
     // Collapse parentheses innermost-first.
     var guard = 0;
     while (s.contains('(')) {
       if (++guard > 256) {
-        throw FormulaException('Formula nests parentheses too deeply', source);
+        throw FormulaException(
+          'Formula nests parentheses too deeply',
+          source,
+          issue: FormulaIssue.parenthesisNestingTooDeep,
+        );
       }
       final close = s.indexOf(')');
-      if (close == -1) throw FormulaException('Unbalanced parentheses', source);
+      if (close == -1) {
+        throw FormulaException(
+          'Unbalanced parentheses',
+          source,
+          issue: FormulaIssue.unbalancedParentheses,
+        );
+      }
       final open = s.lastIndexOf('(', close);
-      if (open == -1) throw FormulaException('Unbalanced parentheses', source);
+      if (open == -1) {
+        throw FormulaException(
+          'Unbalanced parentheses',
+          source,
+          issue: FormulaIssue.unbalancedParentheses,
+        );
+      }
       final value = _reduce(s.substring(open + 1, close), source);
       s = s.replaceRange(open, close + 1, _format(value));
     }
@@ -635,7 +845,12 @@ class FormulaEngine {
     if (s.startsWith('~')) return (~_reduce(s.substring(1), source).toInt()).toDouble();
     if (s.startsWith('!')) return _reduce(s.substring(1), source) == 0.0 ? 1.0 : 0.0;
 
-    throw FormulaException('Cannot parse "$s"', source);
+    throw FormulaException(
+      'Cannot parse "$s"',
+      source,
+      issue: FormulaIssue.unparsableTerm,
+      term: s,
+    );
   }
 
   /// Finds the right-most occurrence of [op] that is acting as a binary
@@ -672,7 +887,11 @@ class FormulaEngine {
     // expression producing a plausible temperature. An evaluation that cannot
     // continue has to say so.
     if (value.isNaN || value.isInfinite) {
-      throw const FormulaException('運算結果不是有效數值', '');
+      throw const FormulaException(
+        '運算結果不是有效數值',
+        '',
+        issue: FormulaIssue.resultNotFinite,
+      );
     }
     final magnitude = value.abs();
     final rendered = magnitude == magnitude.roundToDouble() && magnitude < 1e15
@@ -744,7 +963,14 @@ class FormulaEngine {
 /// [FormulaException] at the public boundary.
 class _ArithmeticFailure implements Exception {
   final String message;
-  const _ArithmeticFailure(this.message);
+
+  /// Not nullable. This one never crosses a package boundary and every throw
+  /// of it is in this file, so there is no reason to allow a failure that
+  /// cannot say what it was — and `evaluateBytes` can forward it without a
+  /// fallback.
+  final FormulaIssue issue;
+
+  const _ArithmeticFailure(this.message, this.issue);
 }
 
 class _Operator {

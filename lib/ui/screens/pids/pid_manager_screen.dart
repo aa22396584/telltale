@@ -23,6 +23,7 @@ import '../../../state/app_share_entry_controller.dart';
 import '../../../state/app_share_coordinator.dart';
 import '../../widgets/panel.dart';
 import 'pid_editor_screen.dart';
+import 'pid_import_copy.dart';
 import 'powertrain_battery_catalog_screen.dart';
 
 class PidManagerScreen extends ConsumerStatefulWidget {
@@ -279,12 +280,12 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     }
 
     if (result.pids.isEmpty) {
-      // `result.errors` is `PidCsv`'s own wording and is still Chinese-only;
-      // that string belongs to lib/obd/pid/pid_csv.dart, not to this screen.
+      // `result.errors` carries identifiers; the words are this screen's, in
+      // pid_import_copy.dart.
       _snack(
         result.errors.isEmpty
             ? l10n.pidImportNothingToImport
-            : result.errors.first,
+            : pidCsvDiagnosticText(l10n, result.errors.first),
       );
       return;
     }

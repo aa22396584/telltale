@@ -3000,5 +3000,301 @@
     "placeholders": {
       "installed": {}
     }
+  },
+  "pidFormulaEmpty": "The formula is empty.",
+  "@pidFormulaEmpty": {
+    "description": "FormulaIssue.emptyFormula. Nothing was typed at all."
+  },
+  "pidFormulaEmptySubExpression": "Part of the formula is empty — an operator with nothing after it, or brackets with nothing in them.",
+  "@pidFormulaEmptySubExpression": {
+    "description": "FormulaIssue.emptySubExpression. Not the same as an empty formula: something was typed, and the remedy is to finish it rather than to write one."
+  },
+  "pidFormulaUnbalancedParentheses": "The brackets do not match: every ( needs a closing ).",
+  "@pidFormulaUnbalancedParentheses": {
+    "description": "FormulaIssue.unbalancedParentheses. The bracket characters are formula syntax and are the same in both languages."
+  },
+  "pidFormulaUnparsableTerm": "“{term}” is not a number, an operator, or a name this editor understands.",
+  "@pidFormulaUnparsableTerm": {
+    "description": "FormulaIssue.unparsableTerm. {term} is the fragment the reducer stopped on, quoted back exactly as it stands in the formula so the author can find it.",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "pidFormulaFunctionNestingTooDeep": "ABS() and LOG10() are nested too deeply to evaluate. Simplify the formula.",
+  "@pidFormulaFunctionNestingTooDeep": {
+    "description": "FormulaIssue.functionNestingTooDeep. Names the construct to simplify; the bracket depth limit has its own message."
+  },
+  "pidFormulaParenthesisNestingTooDeep": "The brackets are nested too deeply to evaluate. Simplify the formula.",
+  "@pidFormulaParenthesisNestingTooDeep": {
+    "description": "FormulaIssue.parenthesisNestingTooDeep. A different construct from the function limit, so a different sentence: the author has to find a different thing."
+  },
+  "pidFormulaDivisionByZero": "The formula divides by zero.",
+  "@pidFormulaDivisionByZero": {
+    "description": "FormulaIssue.divisionByZero. Separate from the modulo case: the character to look for is a different one."
+  },
+  "pidFormulaModuloByZero": "The formula takes a remainder modulo zero.",
+  "@pidFormulaModuloByZero": {
+    "description": "FormulaIssue.moduloByZero."
+  },
+  "pidFormulaLog10NonPositiveArgument": "LOG10 needs an argument greater than 0, and this one came out as {argument}.",
+  "@pidFormulaLog10NonPositiveArgument": {
+    "description": "FormulaIssue.log10NonPositiveArgument. {argument} is the value the argument reduced to, never spelled into the sentence. Answering 0 for an impossible input is what this refusal exists to avoid.",
+    "placeholders": {
+      "argument": {
+        "type": "double"
+      }
+    }
+  },
+  "pidFormulaResultNotFinite": "The arithmetic produced no usable number, so there is no reading to show.",
+  "@pidFormulaResultNotFinite": {
+    "description": "FormulaIssue.resultNotFinite. Covers a non-finite intermediate as well as a non-finite result: both mean there is no reading, and rendering either as 0 is the failure this app is arranged against."
+  },
+  "pidFormulaByteBeyondResponse": "The formula refers to byte {letter}, but the reply carried only {count} bytes.",
+  "@pidFormulaByteBeyondResponse": {
+    "description": "FormulaIssue.byteBeyondResponse. {letter} is A..N and is formula syntax, not a word. Substituting 0 for a byte the ECU did not send produces a confident wrong number, which is why this is a refusal.",
+    "placeholders": {
+      "letter": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidFormulaBaroControllerUnknown": "BARO cannot be used here, because which controller’s ambient pressure is meant is not known.",
+  "@pidFormulaBaroControllerUnknown": {
+    "description": "FormulaIssue.baroControllerUnknown. BARO is formula syntax and stays as written."
+  },
+  "pidFormulaBaroTwoDefinitions": "Two definitions both supply ambient pressure, so the value could be either one and neither can be used. Remove one of the gauges that measures ambient pressure.",
+  "@pidFormulaBaroTwoDefinitions": {
+    "description": "FormulaIssue.baroTwoDefinitions. The controller is known and it is the definitions that are ambiguous, which is why this is not the “which controller” message."
+  },
+  "pidFormulaBaroNotYetMeasured": "Ambient pressure has not been read yet, so this cannot be calculated.",
+  "@pidFormulaBaroNotYetMeasured": {
+    "description": "FormulaIssue.baroNotYetMeasured. Absent ambient pressure is not sea level; refusing is what turns “wrong by the altitude” into “unavailable”."
+  },
+  "pidFormulaBaroMeasurementStale": "The ambient pressure reading is out of date, so this cannot be calculated.",
+  "@pidFormulaBaroMeasurementStale": {
+    "description": "FormulaIssue.baroMeasurementStale. A different fact from never having read one, with a different remedy: the source has stopped answering rather than not yet started."
+  },
+  "pidFormulaDependencyControllerUnknown": "{reference} cannot be resolved here, because which controller that PID belongs to is not known.",
+  "@pidFormulaDependencyControllerUnknown": {
+    "description": "FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "pidFormulaDependencyTwoDefinitions": "Two definitions both decode {key}, so the value could be either one and neither can be used. Change one of them to a different mode+PID. Note: the PIDs the estimates need (010B, 010C, 010D) are always read, so taking a gauge off the dashboard does not stop them.",
+  "@pidFormulaDependencyTwoDefinitions": {
+    "description": "FormulaIssue.dependencyTwoDefinitions. The last sentence is load-bearing and must not be dropped: “remove one of the gauges” is advice that can be followed exactly and change nothing, because PollingEngine merges the physics inputs into the active set whatever is on the dashboard.",
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "pidFormulaDependencyNotYetMeasured": "No usable value has been read for {key} yet.",
+  "@pidFormulaDependencyNotYetMeasured": {
+    "description": "FormulaIssue.dependencyNotYetMeasured. Covers never-read and gone-stale alike; either way substituting zero would turn a boost formula into raw manifold pressure.",
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionMalformedModeAndPid": "Not a valid mode+PID: hexadecimal characters only, in whole byte pairs.",
+  "@pidRejectionMalformedModeAndPid": {
+    "description": "PidRejection.malformedModeAndPid. Deleting every non-hex character would turn a typo into a different, perfectly valid request, so this is a refusal rather than a repair."
+  },
+  "pidRejectionServiceNotReadOnly": "Service {service} is not a read-only query and must not be sent to the vehicle over and over. Only {services} are allowed — current data, freeze frame, vehicle information and ReadDataByIdentifier.",
+  "@pidRejectionServiceNotReadOnly": {
+    "description": "PidRejection.serviceNotReadOnly. {services} is PollableServices.allowed joined with pidListSeparator, never a list spelled into the sentence: the allowlist is a vehicle-safety boundary somebody may add to, and copy naming four services while the set holds five is a false statement about what this app transmits.",
+    "placeholders": {
+      "service": {
+        "type": "String"
+      },
+      "services": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionFreezeFrameNeedsFrame": "A freeze-frame query needs two bytes, the PID and the frame number — for example 020500 (PID 05, frame 0).",
+  "@pidRejectionFreezeFrameNeedsFrame": {
+    "description": "PidRejection.freezeFrameNeedsFrame. The missing byte is a frame index rather than another PID byte, which is why this is not the generic wrong-length message."
+  },
+  "pidRejectionIdentifierNeedsTwoBytes": "ReadDataByIdentifier needs a two-byte identifier — for example 221101.",
+  "@pidRejectionIdentifierNeedsTwoBytes": {
+    "description": "PidRejection.identifierNeedsTwoBytes. ReadDataByIdentifier is the service’s name in ISO 14229 and stays in English in both."
+  },
+  "pidRejectionIdentifierWrongLength": "A service {service} query needs a {bytes}-byte identifier.",
+  "@pidRejectionIdentifierWrongLength": {
+    "description": "PidRejection.identifierWrongLength. The fallback arm for an allowed service with no example of its own; unreachable while the allowlist is 01/02/09/22, and kept because that set can grow.",
+    "placeholders": {
+      "service": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "pidRejectionNameRequired": "Enter a name.",
+  "@pidRejectionNameRequired": {
+    "description": "PidRejection.nameRequired."
+  },
+  "pidRejectionInvalidHeader": "“{text}” is not a valid header: 3 digits for 11-bit CAN, 6 for the legacy protocols, 8 for 29-bit CAN.",
+  "@pidRejectionInvalidHeader": {
+    "description": "PidRejection.invalidHeader. {text} is what the author typed, quoted back unchanged. The three widths are bus facts, not preferences.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionBoundsRequired": "Fill in both ends of the gauge range.",
+  "@pidRejectionBoundsRequired": {
+    "description": "PidRejection.boundsRequired. The editor requires both; the importer treats a blank column as a default, which is the one place the two callers legitimately differ."
+  },
+  "pidRejectionMinNotANumber": "The lower bound “{text}” is not a valid number.",
+  "@pidRejectionMinNotANumber": {
+    "description": "PidRejection.minNotANumber.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionMaxNotANumber": "The upper bound “{text}” is not a valid number.",
+  "@pidRejectionMaxNotANumber": {
+    "description": "PidRejection.maxNotANumber.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionMinNotFinite": "The lower bound has to be a finite number.",
+  "@pidRejectionMinNotFinite": {
+    "description": "PidRejection.minNotFinite. Distinct from “not a number”: double.tryParse accepts NaN and Infinity, and a NaN bound pins the needle at full scale and then wedges jsonEncode on save."
+  },
+  "pidRejectionMaxNotFinite": "The upper bound has to be a finite number.",
+  "@pidRejectionMaxNotFinite": {
+    "description": "PidRejection.maxNotFinite."
+  },
+  "pidRejectionRedlineNotANumber": "The redline start “{text}” is not a valid number.",
+  "@pidRejectionRedlineNotANumber": {
+    "description": "PidRejection.redlineNotANumber. The redline has no field in the editor and arrives from an imported definition, so the value is quoted back.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pidRejectionRedlineNotFinite": "The redline start has to be a finite number.",
+  "@pidRejectionRedlineNotFinite": {
+    "description": "PidRejection.redlineNotFinite."
+  },
+  "pidRejectionMaxNotAboveMin": "The upper bound has to be greater than the lower bound.",
+  "@pidRejectionMaxNotAboveMin": {
+    "description": "PidRejection.maxNotAboveMin."
+  },
+  "pidImportMalformedCsv": "This file could not be read as CSV: {detail}",
+  "@pidImportMalformedCsv": {
+    "description": "PidCsvIssue.malformedCsv. {detail} is the CSV decoder’s own complaint and is not translated; it names an offset in the file, which is what somebody needs to find the damage.",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportNoRows": "The file has no rows in it.",
+  "@pidImportNoRows": {
+    "description": "PidCsvIssue.noRows. The file parsed and is empty, which is not the same as parsing to rows that yield nothing."
+  },
+  "pidImportDuplicateHeaderColumns": "The header row names the same column twice: {columns}. There is no way to tell which one to use, so fix the file first.",
+  "@pidImportDuplicateHeaderColumns": {
+    "description": "PidCsvIssue.duplicateHeaderColumns. {columns} is joined with pidListSeparator and spelled as the file spells them — somebody has to find the column in a spreadsheet. Taking the first occurrence would be a silent choice between two columns that both claim to be the equation.",
+    "placeholders": {
+      "columns": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportMissingRequiredColumns": "The header row is missing required columns: {columns}. {required} are all needed.",
+  "@pidImportMissingRequiredColumns": {
+    "description": "PidCsvIssue.missingRequiredColumns. Both lists are joined with pidListSeparator and carried as data: {required} comes from PidCsv, so it cannot go stale against the importer the way a list written into this sentence would.",
+    "placeholders": {
+      "columns": {
+        "type": "String"
+      },
+      "required": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportRowTooFewColumns": "Row {line}: not enough cells — name, short name, PID and formula are the minimum.",
+  "@pidImportRowTooFewColumns": {
+    "description": "PidCsvIssue.rowTooFewColumns. {line} is the 1-based line as a spreadsheet numbers it. A row number is data; never spell one into the sentence.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportRowInvalidModeAndPid": "Row {line}: “{text}” is not a valid mode+PID (hexadecimal characters only, in whole byte pairs).",
+  "@pidImportRowInvalidModeAndPid": {
+    "description": "PidCsvIssue.rowInvalidModeAndPid. Quotes the offending cell back, which is what the bare PidRejection.malformedModeAndPid cannot do and why the importer keeps its own message here.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportRowEmptyEquation": "Row {line}: the formula cell is empty.",
+  "@pidImportRowEmptyEquation": {
+    "description": "PidCsvIssue.rowEmptyEquation.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportRowRejected": "Row {line}: {reason}",
+  "@pidImportRowRejected": {
+    "description": "PidCsvIssue.rowDefinitionRejected. {reason} is a PidRejection already rendered by pid_rejection_copy.dart, so both halves are translated. The two call sites in pid_csv.dart differ only in which validator reached the row first.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportRowRangeDefaulted": "Row {line}: the gauge range was blank, so {min}–{max} was applied. Check that this scale suits this sensor.",
+  "@pidImportRowRangeDefaulted": {
+    "description": "PidCsvIssue.rowRangeDefaulted. A warning, not a rejection: the row is in, drawn against a scale nobody chose, and a needle reads as authoritative against whatever bounds it is drawn on.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "min": {
+        "type": "double"
+      },
+      "max": {
+        "type": "double"
+      }
+    }
+  },
+  "pidImportNothingImportable": "The file has rows in it, but none of them is a PID definition.",
+  "@pidImportNothingImportable": {
+    "description": "PidCsvIssue.nothingImportable. Distinct from an empty file: there was content, and it produced nothing."
   }
 }

@@ -96,7 +96,12 @@ void main() {
       final result = PidCsv.parse(wire);
       expect(result.pids, hasLength(1));
       expect(result.errors, hasLength(2));
-      expect(result.errors.first, contains('2'));
+      // The row, by number rather than by a substring that any digit anywhere
+      // in the sentence would have satisfied.
+      expect(result.errors.first.lineNumber, 2);
+      expect(result.errors.first.issue, PidCsvIssue.rowInvalidModeAndPid);
+      expect(result.errors.last.lineNumber, 3);
+      expect(result.errors.last.issue, PidCsvIssue.rowEmptyEquation);
     });
 
     test('an empty file reports why nothing was imported', () {
@@ -198,8 +203,8 @@ void _strictParsingTests() {
           header: '7EG',
           minText: '0',
           maxText: '100',
-        ),
-        contains('標頭'),
+        )?.issue,
+        PidRejection.invalidHeader,
       );
       expect(
         PidDefinition.rejectionReason(
@@ -208,8 +213,8 @@ void _strictParsingTests() {
           header: '7E0',
           minText: '100',
           maxText: '10',
-        ),
-        contains('上限'),
+        )?.issue,
+        PidRejection.maxNotAboveMin,
       );
       expect(
         PidDefinition.rejectionReason(
@@ -218,8 +223,8 @@ void _strictParsingTests() {
           header: '7E0',
           minText: 'abc',
           maxText: '100',
-        ),
-        contains('下限'),
+        )?.issue,
+        PidRejection.minNotANumber,
       );
 
       // Blank bounds are a spreadsheet's business and not the editor's, which
@@ -299,7 +304,11 @@ void _reorderedColumns() {
       const csv = 'Name,Units\r\nTrans Temp,°C\r\n';
       final result = PidCsv.parse(csv);
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('ModeAndPID'));
+      expect(result.errors.single.issue, PidCsvIssue.missingRequiredColumns);
+      // Spelled as a spreadsheet spells it. The importer compares column names
+      // with case and spaces removed, and reporting `modeandpid` sends the
+      // reader looking for a column that is not in their file under that name.
+      expect(result.errors.single.columns, contains('ModeAndPID'));
     });
 
     test('no header row still means positional, as it always did', () {
@@ -322,8 +331,8 @@ void _reorderedColumns() {
           'Trans Temp,2211A6,A-40,A*100/255\r\n';
       final result = PidCsv.parse(csv);
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('Equation'));
-      expect(result.errors.single, contains('重複'));
+      expect(result.errors.single.issue, PidCsvIssue.duplicateHeaderColumns);
+      expect(result.errors.single.columns, contains('Equation'));
     });
 
     test(

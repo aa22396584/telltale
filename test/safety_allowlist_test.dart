@@ -37,7 +37,10 @@ void main() {
       // user supplied, `A` bound to the frame index `00`, and `A-40` displayed
       // -40 °C where the real reading was 83 °C.
       expect(PollableServices.isPollable('0205'), isFalse);
-      expect(PollableServices.rejectionReason('0205'), contains('幀編號'));
+      expect(
+        PollableServices.rejectionReason('0205')?.issue,
+        PidRejection.freezeFrameNeedsFrame,
+      );
 
       // Mode 22 identifiers are two bytes; one is not a shorter form of it.
       expect(PollableServices.isPollable('2211'), isFalse);
@@ -52,7 +55,12 @@ void main() {
 
     test('Mode 21 is reserved for the experimental one-shot probe', () {
       expect(PollableServices.isPollable('2101'), isFalse);
-      expect(PollableServices.rejectionReason('2101'), contains('服務 21'));
+      final refusal = PollableServices.rejectionReason('2101');
+      expect(refusal?.issue, PidRejection.serviceNotReadOnly);
+      // The service byte travels as data, so the sentence does not have one
+      // spelled into it and this assertion is about the identifier the screen
+      // is handed rather than about wording.
+      expect(refusal?.service, '21');
       expect(PollableServices.identifierLength('2101'), isNull);
       expect(
         PidDefinition.rejectionReason(
@@ -62,8 +70,8 @@ void main() {
           minText: '0',
           maxText: '100',
           requireBounds: true,
-        ),
-        contains('服務 21'),
+        )?.issue,
+        PidRejection.serviceNotReadOnly,
       );
     });
 
@@ -104,7 +112,12 @@ void main() {
         '${columns}Actuate,ACT,2F011203,A,0,100,x,7E0\r\n',
       );
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('2F'));
+      expect(result.errors.single.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(
+        result.errors.single.rejection?.issue,
+        PidRejection.serviceNotReadOnly,
+      );
+      expect(result.errors.single.rejection?.service, '2F');
     });
 
     test('refuses Mode 21 from the ordinary custom PID path', () {
@@ -112,7 +125,12 @@ void main() {
         '${columns}Local battery,LOCAL,2101,A,0,100,%,7E0\r\n',
       );
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('服務 21'));
+      expect(result.errors.single.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(
+        result.errors.single.rejection?.issue,
+        PidRejection.serviceNotReadOnly,
+      );
+      expect(result.errors.single.rejection?.service, '21');
     });
 
     test('still accepts an ordinary ReadDataByIdentifier row', () {

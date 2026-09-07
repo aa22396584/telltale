@@ -3677,4 +3677,192 @@ class AppLocalizationsEn extends AppLocalizations {
   String commandFailureLegacyScanWouldBePartial(Object installed) {
     return 'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller $installed. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.';
   }
+
+  @override
+  String get pidFormulaEmpty => 'The formula is empty.';
+
+  @override
+  String get pidFormulaEmptySubExpression =>
+      'Part of the formula is empty — an operator with nothing after it, or brackets with nothing in them.';
+
+  @override
+  String get pidFormulaUnbalancedParentheses =>
+      'The brackets do not match: every ( needs a closing ).';
+
+  @override
+  String pidFormulaUnparsableTerm(String term) {
+    return '“$term” is not a number, an operator, or a name this editor understands.';
+  }
+
+  @override
+  String get pidFormulaFunctionNestingTooDeep =>
+      'ABS() and LOG10() are nested too deeply to evaluate. Simplify the formula.';
+
+  @override
+  String get pidFormulaParenthesisNestingTooDeep =>
+      'The brackets are nested too deeply to evaluate. Simplify the formula.';
+
+  @override
+  String get pidFormulaDivisionByZero => 'The formula divides by zero.';
+
+  @override
+  String get pidFormulaModuloByZero =>
+      'The formula takes a remainder modulo zero.';
+
+  @override
+  String pidFormulaLog10NonPositiveArgument(double argument) {
+    return 'LOG10 needs an argument greater than 0, and this one came out as $argument.';
+  }
+
+  @override
+  String get pidFormulaResultNotFinite =>
+      'The arithmetic produced no usable number, so there is no reading to show.';
+
+  @override
+  String pidFormulaByteBeyondResponse(String letter, int count) {
+    return 'The formula refers to byte $letter, but the reply carried only $count bytes.';
+  }
+
+  @override
+  String get pidFormulaBaroControllerUnknown =>
+      'BARO cannot be used here, because which controller’s ambient pressure is meant is not known.';
+
+  @override
+  String get pidFormulaBaroTwoDefinitions =>
+      'Two definitions both supply ambient pressure, so the value could be either one and neither can be used. Remove one of the gauges that measures ambient pressure.';
+
+  @override
+  String get pidFormulaBaroNotYetMeasured =>
+      'Ambient pressure has not been read yet, so this cannot be calculated.';
+
+  @override
+  String get pidFormulaBaroMeasurementStale =>
+      'The ambient pressure reading is out of date, so this cannot be calculated.';
+
+  @override
+  String pidFormulaDependencyControllerUnknown(String reference) {
+    return '$reference cannot be resolved here, because which controller that PID belongs to is not known.';
+  }
+
+  @override
+  String pidFormulaDependencyTwoDefinitions(String key) {
+    return 'Two definitions both decode $key, so the value could be either one and neither can be used. Change one of them to a different mode+PID. Note: the PIDs the estimates need (010B, 010C, 010D) are always read, so taking a gauge off the dashboard does not stop them.';
+  }
+
+  @override
+  String pidFormulaDependencyNotYetMeasured(String key) {
+    return 'No usable value has been read for $key yet.';
+  }
+
+  @override
+  String get pidRejectionMalformedModeAndPid =>
+      'Not a valid mode+PID: hexadecimal characters only, in whole byte pairs.';
+
+  @override
+  String pidRejectionServiceNotReadOnly(String service, String services) {
+    return 'Service $service is not a read-only query and must not be sent to the vehicle over and over. Only $services are allowed — current data, freeze frame, vehicle information and ReadDataByIdentifier.';
+  }
+
+  @override
+  String get pidRejectionFreezeFrameNeedsFrame =>
+      'A freeze-frame query needs two bytes, the PID and the frame number — for example 020500 (PID 05, frame 0).';
+
+  @override
+  String get pidRejectionIdentifierNeedsTwoBytes =>
+      'ReadDataByIdentifier needs a two-byte identifier — for example 221101.';
+
+  @override
+  String pidRejectionIdentifierWrongLength(String service, int bytes) {
+    return 'A service $service query needs a $bytes-byte identifier.';
+  }
+
+  @override
+  String get pidRejectionNameRequired => 'Enter a name.';
+
+  @override
+  String pidRejectionInvalidHeader(String text) {
+    return '“$text” is not a valid header: 3 digits for 11-bit CAN, 6 for the legacy protocols, 8 for 29-bit CAN.';
+  }
+
+  @override
+  String get pidRejectionBoundsRequired =>
+      'Fill in both ends of the gauge range.';
+
+  @override
+  String pidRejectionMinNotANumber(String text) {
+    return 'The lower bound “$text” is not a valid number.';
+  }
+
+  @override
+  String pidRejectionMaxNotANumber(String text) {
+    return 'The upper bound “$text” is not a valid number.';
+  }
+
+  @override
+  String get pidRejectionMinNotFinite =>
+      'The lower bound has to be a finite number.';
+
+  @override
+  String get pidRejectionMaxNotFinite =>
+      'The upper bound has to be a finite number.';
+
+  @override
+  String pidRejectionRedlineNotANumber(String text) {
+    return 'The redline start “$text” is not a valid number.';
+  }
+
+  @override
+  String get pidRejectionRedlineNotFinite =>
+      'The redline start has to be a finite number.';
+
+  @override
+  String get pidRejectionMaxNotAboveMin =>
+      'The upper bound has to be greater than the lower bound.';
+
+  @override
+  String pidImportMalformedCsv(String detail) {
+    return 'This file could not be read as CSV: $detail';
+  }
+
+  @override
+  String get pidImportNoRows => 'The file has no rows in it.';
+
+  @override
+  String pidImportDuplicateHeaderColumns(String columns) {
+    return 'The header row names the same column twice: $columns. There is no way to tell which one to use, so fix the file first.';
+  }
+
+  @override
+  String pidImportMissingRequiredColumns(String columns, String required) {
+    return 'The header row is missing required columns: $columns. $required are all needed.';
+  }
+
+  @override
+  String pidImportRowTooFewColumns(int line) {
+    return 'Row $line: not enough cells — name, short name, PID and formula are the minimum.';
+  }
+
+  @override
+  String pidImportRowInvalidModeAndPid(int line, String text) {
+    return 'Row $line: “$text” is not a valid mode+PID (hexadecimal characters only, in whole byte pairs).';
+  }
+
+  @override
+  String pidImportRowEmptyEquation(int line) {
+    return 'Row $line: the formula cell is empty.';
+  }
+
+  @override
+  String pidImportRowRejected(int line, String reason) {
+    return 'Row $line: $reason';
+  }
+
+  @override
+  String pidImportRowRangeDefaulted(int line, double min, double max) {
+    return 'Row $line: the gauge range was blank, so $min–$max was applied. Check that this scale suits this sensor.';
+  }
+
+  @override
+  String get pidImportNothingImportable =>
+      'The file has rows in it, but none of them is a PID definition.';
 }

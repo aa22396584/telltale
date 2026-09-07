@@ -431,26 +431,130 @@ abstract final class PollableServices {
   }
 
   /// Why a request was refused, for showing the author.
-  static String? rejectionReason(String modeAndPid) {
+  ///
+  /// An identifier and its data, not a sentence: this reaches two screens (the
+  /// custom-PID editor and the CSV import result) and the words for it live in
+  /// `lib/ui/screens/pids/pid_rejection_copy.dart`.
+  static PidRejectionReason? rejectionReason(String modeAndPid) {
     final service = serviceOf(modeAndPid);
     if (service == null) {
-      return '不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。';
+      return const PidRejectionReason(PidRejection.malformedModeAndPid);
     }
     if (!allowed.contains(service)) {
-      return '服務 $service 不是唯讀查詢，不能週期性發送到車上。'
-          '只允許 ${allowed.join('、')}（現值、凍結幀、車輛資訊、ReadDataByIdentifier）。';
+      return PidRejectionReason(
+        PidRejection.serviceNotReadOnly,
+        service: service,
+        // The allowlist itself, never a list spelled into the sentence. It is
+        // a safety boundary that can gain a member, and a sentence naming four
+        // services while the set holds five is a false statement about what
+        // this app will transmit.
+        allowedServices: allowed.toList(),
+      );
     }
     final expected = _identifierBytes[service]!;
     final value = normalise(modeAndPid);
     if (value.length != 2 + expected * 2) {
       return switch (service) {
-        '02' => '凍結幀查詢需要 PID 與幀編號兩個位元組，例如 020500（PID 05、第 0 幀）。',
-        '22' => 'ReadDataByIdentifier 需要兩個位元組的識別碼，例如 221101。',
-        _ => '服務 $service 的查詢需要 $expected 個位元組的識別碼。',
+        '02' => const PidRejectionReason(PidRejection.freezeFrameNeedsFrame),
+        '22' => const PidRejectionReason(PidRejection.identifierNeedsTwoBytes),
+        _ => PidRejectionReason(
+            PidRejection.identifierWrongLength,
+            service: service,
+            expectedBytes: expected,
+          ),
       };
     }
     return null;
   }
+}
+
+/// Why a PID definition or a request was refused, as an identifier a screen
+/// translates.
+///
+/// Both doors onto a custom PID reach these — the editor renders one under the
+/// field that caused it, the CSV importer wraps one in a row number — so the
+/// sentences cannot live in `lib/obd/`, which has no language.
+enum PidRejection {
+  /// Not hex, or not a whole number of byte pairs.
+  malformedModeAndPid,
+
+  /// A well-formed request for a service that is not read-only. Carries the
+  /// service byte and the allowlist.
+  serviceNotReadOnly,
+
+  /// Mode 02 without its frame number. Named separately from
+  /// [identifierWrongLength] because the example that fixes it is specific:
+  /// the missing byte is a frame index, not another PID byte.
+  freezeFrameNeedsFrame,
+
+  /// Mode 22 with something other than a two-byte identifier.
+  identifierNeedsTwoBytes,
+
+  /// Any other allowed service whose identifier is the wrong width. Carries
+  /// the service and how many bytes it wants. Unreachable while the allowlist
+  /// is `01/02/09/22` and the first two of those have their own arms, and kept
+  /// because [PollableServices.allowed] is a set somebody may add to.
+  identifierWrongLength,
+
+  /// The definition has no name.
+  nameRequired,
+
+  /// A CAN header that is not 3, 6 or 8 hex digits. Carries what was typed.
+  invalidHeader,
+
+  /// The editor requires both bounds; a blank one is not a default here.
+  boundsRequired,
+
+  /// The lower bound is not a number. Carries what was typed.
+  minNotANumber,
+
+  /// The upper bound is not a number. Carries what was typed.
+  maxNotANumber,
+
+  /// The lower bound parsed as NaN or an infinity. Distinct from
+  /// [minNotANumber]: `NaN` *is* a number to `double.tryParse`, pins the
+  /// needle at full scale, and wedges `jsonEncode` on save.
+  minNotFinite,
+
+  /// The upper bound parsed as NaN or an infinity.
+  maxNotFinite,
+
+  /// The redline is not a number. Carries what was typed.
+  redlineNotANumber,
+
+  /// The redline parsed as NaN or an infinity.
+  redlineNotFinite,
+
+  /// The upper bound is not above the lower one.
+  maxNotAboveMin,
+}
+
+/// One [PidRejection] with whatever the sentence for it names.
+///
+/// The fields are nullable because most reasons name nothing; each doc comment
+/// on [PidRejection] says which ones it fills.
+class PidRejectionReason {
+  const PidRejectionReason(
+    this.issue, {
+    this.text,
+    this.service,
+    this.expectedBytes,
+    this.allowedServices,
+  });
+
+  final PidRejection issue;
+
+  /// What the author actually typed, quoted back so they can find it.
+  final String? text;
+
+  /// The two-hex-digit service byte.
+  final String? service;
+
+  /// How many identifier bytes the service expects.
+  final int? expectedBytes;
+
+  /// [PollableServices.allowed], carried rather than spelled out.
+  final List<String>? allowedServices;
 }
 
 /// One place that decides whether a PID definition is admissible.
@@ -472,7 +576,7 @@ abstract final class PidDefinition {
   /// empty bounds as "use the default", because a spreadsheet column can
   /// legitimately be blank. The editor cannot: a gauge without a scale has
   /// nothing to draw against, and the field is right there.
-  static String? rejectionReason({
+  static PidRejectionReason? rejectionReason({
     required String name,
     required String modeAndPid,
     required String header,
@@ -481,27 +585,28 @@ abstract final class PidDefinition {
     String? redlineText,
     bool requireBounds = false,
   }) {
-    if (name.trim().isEmpty) return '請輸入名稱。';
+    if (name.trim().isEmpty) {
+      return const PidRejectionReason(PidRejection.nameRequired);
+    }
 
     final service = PollableServices.rejectionReason(modeAndPid);
     if (service != null) return service;
 
     final headerValue = header.trim().toUpperCase().replaceAll(' ', '');
     if (headerValue.isNotEmpty && !_header.hasMatch(headerValue)) {
-      return '「$header」不是有效的標頭'
-          '（11-bit CAN 為 3 碼、舊協定為 6 碼、29-bit CAN 為 8 碼）。';
+      return PidRejectionReason(PidRejection.invalidHeader, text: header);
     }
 
     final min = double.tryParse(minText.trim());
     final max = double.tryParse(maxText.trim());
     if (requireBounds && (minText.trim().isEmpty || maxText.trim().isEmpty)) {
-      return '請填寫量程的上下限。';
+      return const PidRejectionReason(PidRejection.boundsRequired);
     }
     if (minText.trim().isNotEmpty && min == null) {
-      return '量程下限「$minText」不是有效的數值。';
+      return PidRejectionReason(PidRejection.minNotANumber, text: minText);
     }
     if (maxText.trim().isNotEmpty && max == null) {
-      return '量程上限「$maxText」不是有效的數值。';
+      return PidRejectionReason(PidRejection.maxNotANumber, text: maxText);
     }
     // `double.tryParse` accepts `NaN` and `Infinity`, and every comparison
     // against NaN is false — so `max <= min` waved them straight through. What
@@ -517,18 +622,25 @@ abstract final class PidDefinition {
     //
     // A spreadsheet exports `NaN` on its own; nobody has to be malicious.
     if (min != null && !min.isFinite) {
-      return '量程下限必須是有限的數值。';
+      return const PidRejectionReason(PidRejection.minNotFinite);
     }
     if (max != null && !max.isFinite) {
-      return '量程上限必須是有限的數值。';
+      return const PidRejectionReason(PidRejection.maxNotFinite);
     }
     if (redlineText != null && redlineText.trim().isNotEmpty) {
       final redline = double.tryParse(redlineText.trim());
-      if (redline == null) return '紅線起點「$redlineText」不是有效的數值。';
-      if (!redline.isFinite) return '紅線起點必須是有限的數值。';
+      if (redline == null) {
+        return PidRejectionReason(
+          PidRejection.redlineNotANumber,
+          text: redlineText,
+        );
+      }
+      if (!redline.isFinite) {
+        return const PidRejectionReason(PidRejection.redlineNotFinite);
+      }
     }
     if (min != null && max != null && max <= min) {
-      return '量程上限必須大於下限。';
+      return const PidRejectionReason(PidRejection.maxNotAboveMin);
     }
     return null;
   }
