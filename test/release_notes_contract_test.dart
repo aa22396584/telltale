@@ -440,13 +440,80 @@ void main() {
       );
     });
 
+    test('nothing else in the real file can stand in for the attestation', () {
+      // The gate's own documentation lives inside the file the gate scans, and
+      // the example in it was written as a real version. With
+      // `Device walk attested: 1.0.12` in that code block, deleting the actual
+      // entry still cleared a full release of 1.0.12: the explanation of the
+      // check satisfied the check. A reviewer found it; nothing here would
+      // have.
+      //
+      // What this pins is narrower than it first looks, and the narrowing
+      // was found by mutating: restoring the concrete example leaves TWO
+      // matching lines, both get stripped, and this still passes. So it does
+      // not catch a duplicate -- the test below it does. What it does catch is
+      // a stand-in of a DIFFERENT shape: if the gate ever accepted `Walked:
+      // 1.0.12`, or a dated heading again, stripping the attestation lines
+      // would leave that alternative behind and the gate would still say yes.
+      final real = File(_evidence).readAsStringSync();
+      final attested = RegExp(r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
+              multiLine: true)
+          .allMatches(real)
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(attested, isNotEmpty);
+      for (final v in attested) {
+        final stripped = real
+            .split('\n')
+            .where((l) => l.trimRight() != 'Device walk attested: $v')
+            .join('\n');
+        expect(stripped, isNot(contains('Device walk attested: $v\n')),
+            reason: 'the strip must actually remove it, or this asserts '
+                'nothing');
+        final r = gate('v$v', fixture(stripped));
+        expect(r.exitCode, 1,
+            reason: 'with every "Device walk attested: $v" removed, the file '
+                'must no longer attest $v; got ${r.stdout}');
+      }
+    });
+
+    test('one version, one attestation', () {
+      // A second line attesting the same version is not a second walk; it is
+      // something that is not an entry. That is how the gate's own
+      // documentation came to satisfy the gate: the example under "The one
+      // line a machine reads" was written as `Device walk attested: 1.0.12`,
+      // so deleting the real entry still cleared a full release. A reviewer
+      // found it, and the obvious regression test did not -- it stripped both
+      // copies and watched the gate refuse, which proves nothing.
+      //
+      // Counting is what distinguishes them. Walking one version twice is a
+      // real thing to do; recording it twice leaves a reader to pick, so amend
+      // the entry rather than adding a line.
+      final counts = <String, int>{};
+      for (final m in RegExp(r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
+              multiLine: true)
+          .allMatches(File(_evidence).readAsStringSync())) {
+        counts.update(m.group(1)!, (n) => n + 1, ifAbsent: () => 1);
+      }
+      expect(counts, isNotEmpty);
+      counts.forEach((version, n) {
+        expect(n, 1,
+            reason: '$_evidence attests $version $n times; one of them is not '
+                'a walk entry');
+      });
+    });
+
     test('every attestation the real file already carries is one the gate '
         'accepts', () {
       // The false-refusal direction, and the one that actually costs
       // something: the maintainer does the walk, writes it down, and the tag
       // is refused anyway. Nothing here demands new work -- it reads the
       // versions the file already attests.
-      final attested = RegExp(r'^Device walk attested: (\S+)\s*$',
+      // Well-formed versions only. The file's own explanation of the gate
+      // carries `Device walk attested: <version>` as a placeholder -- which
+      // the gate can never match, because it substitutes a literal X.Y.Z --
+      // and the test above is what proves that placeholder attests nothing.
+      final attested = RegExp(r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
               multiLine: true)
           .allMatches(File(_evidence).readAsStringSync())
           .map((m) => m.group(1)!)

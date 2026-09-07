@@ -19,12 +19,30 @@ found to have been testing nothing at all.
 
 ## The one line a machine reads
 
-A release build that was installed on a phone and walked through carries, in
-its entry, a line of exactly this shape:
+An entry carries the line below when a release build of that version was
+installed on a phone and the screens the changelog names were exercised on it.
+Most entries here are not that, and do not carry it. The 2026-09-06 round is
+the near miss worth naming: it installed the 1.0.8 APK and got as far as a
+failed connect, then says of itself "**Not** a field BLE/Classic/vehicle
+pass". A line reading `Device walk attested: 1.0.8` above that paragraph would
+be arguing with the paragraph. The gate reads the line; the entry is what a
+person reads to decide whether the line was earned.
 
 ```
-Device walk attested: 1.0.12
+Device walk attested: <version>
 ```
+
+`<version>` is a placeholder here on purpose, and it is not a stylistic choice.
+This paragraph lives inside the file the gate scans, so an example written as a
+real version **is** an attestation: with `Device walk attested: 1.0.12` in this
+code block, deleting the entry below still cleared a full release of 1.0.12.
+The documentation of the gate satisfied the gate.
+
+A reviewer found that. The obvious regression test did not — it stripped every
+`Device walk attested:` line and watched the gate refuse, which strips the
+example along with the entry and so passes either way. What catches it is
+counting: `test/release_notes_contract_test.dart` requires **one** attestation
+per version, and a second copy of a version is something that is not an entry.
 
 `.github/workflows/release.yml` refuses a full-release tag whose version has no
 such line, before it builds anything. That is the whole of the gate: it does
@@ -39,7 +57,18 @@ saying. A field takes a deliberate keystroke; a mention does not.
 **The line attests the version, not the commit.** Nothing checks that the code
 walked is byte-for-byte the code tagged, and the release notes say so rather
 than implying otherwise. Neither does it attest the published APK: the walked
-build is signed locally, CI signs with the community key.
+build is not signed with the community key, and CI's is.
+
+Both gaps were raised as defects, and both are being kept rather than closed —
+so the reason belongs here, not in a review thread. Binding the attestation to
+a commit SHA sounds free and is not: the walk happens on a branch, before the
+squash merge that creates the commit a tag can point at, so the SHA a
+maintainer could write down is one that never reaches `main`. Binding it to the
+published APK's digest needs a second workflow, a download, a commit and
+another wait on every release — and it would prove the maintainer *downloaded*
+the artifact, not that they walked it, which is what this file is for. A
+weaker claim that is true beats a stronger one nobody can check, and the price
+of keeping it is one sentence in the release notes saying which claim it is.
 
 ## 2026-09-07 — 1.0.12 release APK, English walk-through on the phone
 
@@ -95,8 +124,6 @@ the screens; it says nothing about the protocol layer that the rigs and the one
 GT86 observation cover.
 
 ## 2026-09-06 — 1.0.8 release APK, OBDBLE still unpowered
-
-Device walk attested: 1.0.8
 
 Samsung `R5CX10VFFBA`: installed Play-upload-key `app-field-release.apk`
 (`com.cbstudio.telltale` 1.0.8 / versionCode 9). Connect screen remembered
