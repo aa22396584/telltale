@@ -651,7 +651,7 @@ abstract class AppLocalizations {
   /// **'Enter the port (most adapters use {port}).'**
   String connectWifiPortRequired(int port);
 
-  /// Pill label while PriorityScheduler.fastModeEnabled is true. That flag is permission to group PID requests, not a record that any exchange grouped one: grouping also needs canBatch, which PriorityScheduler sets from the detected protocol, the PID confirmed batchable, and more than one request queued. Says enabled, never active or verified.
+  /// Pill label while PriorityScheduler.fastModeEnabled AND canBatch are both true. Neither is a record that any exchange grouped anything: grouping also needs the PID confirmed batchable and more than one request queued. Says enabled, never active or verified.
   ///
   /// In en, this message translates to:
   /// **'Batching enabled'**
@@ -699,10 +699,10 @@ abstract class AppLocalizations {
   /// **'About polling mode'**
   String get dashboardPollingModeHelpAction;
 
-  /// Explains the enabled side of the pill. Must not claim that grouping was observed.
+  /// Explains the enabled side of the pill, which is shown only when PriorityScheduler.fastModeEnabled and canBatch are both set. Must not claim that grouping was observed.
   ///
   /// In en, this message translates to:
-  /// **'Batching enabled means Telltale is allowed to group PID requests into one exchange, to cut the number of round trips. It is permission rather than a measurement: whether a given exchange grouped anything also depends on the bus this vehicle uses and on which PIDs it has confirmed.'**
+  /// **'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: this bus takes grouped requests and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.'**
   String get dashboardPollingModeHelpBatching;
 
   /// Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages.
@@ -711,10 +711,10 @@ abstract class AppLocalizations {
   /// **'PIDs/s is a rate observed over the last second, not a promise about latency, freshness or accuracy. It moves with the adapter, the bus, the ECU, the PIDs you selected, how large each reply is, and any errors.'**
   String get dashboardPollingModeHelpRate;
 
-  /// Explains the fallback side of the pill. Names what the three paths into PriorityScheduler.handleCorruptionEvent share rather than only the truncated-frame one — an unanswered batch is silence, not a garbled reply, and this codebase does not let those be confused.
+  /// Explains the fallback side of the pill, which covers two different states: a bus that never groups (canBatch false, every non-CAN session) and grouping withdrawn after a bad reply. Names what the three paths into PriorityScheduler.handleCorruptionEvent share rather than only the truncated-frame one — an unanswered batch is silence, not a garbled reply, and this codebase does not let those be confused. Says Mode 01 because a powertrain profile response is drained as one batch either way.
   ///
   /// In en, this message translates to:
-  /// **'Single request mode means each PID is read on its own. Telltale falls back to it when a grouped request does not come back in a form it can split apart again: truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.'**
+  /// **'Single request mode means each Mode 01 PID is read on its own. Telltale stays in it when the bus does not take grouped requests at all, which is every non-CAN vehicle, and drops back to it when a grouped request does not come back in a form it can split apart again: truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.'**
   String get dashboardPollingModeHelpSingle;
 
   /// Title of the dialog behind the polling-mode pill.
@@ -723,7 +723,7 @@ abstract class AppLocalizations {
   /// **'Polling mode'**
   String get dashboardPollingModeHelpTitle;
 
-  /// Pill label while PriorityScheduler.fastModeEnabled is false. With the flag down PriorityScheduler.popBatch stops grouping Mode 01 PIDs, so single-request is what the state proves rather than what it permits. The other side of the pill is dashboardBatchingEnabled; the raw fastMode identifier stays in logs and code and is no longer rendered.
+  /// Pill label whenever PriorityScheduler.fastModeEnabled or canBatch is false. Either way popBatch stops grouping Mode 01 PIDs, so single-request is what the state proves rather than what it permits. The other side of the pill is dashboardBatchingEnabled, which needs both; the raw fastMode identifier stays in logs and code and is no longer rendered.
   ///
   /// In en, this message translates to:
   /// **'Single request mode'**

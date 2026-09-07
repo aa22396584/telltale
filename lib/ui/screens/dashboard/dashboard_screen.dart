@@ -547,7 +547,10 @@ class _StatusStrip extends ConsumerWidget {
               // request had gone out. It describes a live session and must
               // not be the first thing on screen.
               if (snapshot.capturedAt != null)
-                PollingModePill(batchingEnabled: snapshot.fastModeEnabled),
+                PollingModePill(
+                  schedulerAllowsGrouping: snapshot.fastModeEnabled,
+                  busAllowsGrouping: ref.watch(busGroupsRequestsProvider),
+                ),
               // Shown even when unknown. Hiding the pill would make "the
               // adapter stopped reporting voltage" look identical to "this
               // screen has no voltage pill", and the whole point of ageing the
@@ -571,24 +574,32 @@ class _StatusStrip extends ConsumerWidget {
 
 /// The polling-mode pill, and the explanation behind it.
 ///
-/// What the label may say is fixed by what the flag on the snapshot proves.
-/// `PriorityScheduler.fastModeEnabled` is `true` before any request goes out,
-/// and `PollingEngine.start` resets it to `true` for every new connection, so
-/// a `true` here is permission rather than a record. Even with it set,
-/// `PriorityScheduler.popBatch` only groups a request when `canBatch` says the
-/// detected bus takes multi-PID requests, the member PID is confirmed
-/// batchable, and more than one is queued. "Enabled" is therefore the
-/// strongest true thing to print; "active", "batched" or "verified" would all
-/// be claims this state cannot make.
+/// What the label may say is fixed by what the state proves, and the state has
+/// two halves that have to agree.
 ///
-/// `false` is different, and stronger. It is only ever set by
-/// `PriorityScheduler.handleCorruptionEvent`, and while it is down `popBatch`
-/// stops grouping Mode 01 PIDs, so single-request polling is what is happening
-/// rather than what is allowed. Not *everything* stops: a powertrain profile
-/// response is drained as one batch either way, because those PIDs share a
-/// single reply by construction and `buildCommand` sends them as one command
-/// in both modes. Mode 01 is what this pill is next to and what the copy
-/// speaks about.
+/// [schedulerAllowsGrouping] is `TelemetrySnapshot.fastModeEnabled`, which is
+/// permission the scheduler grants itself: `true` before any request goes out,
+/// reset `true` by `PollingEngine.start` on every connection, and withdrawn
+/// only by `PriorityScheduler.handleCorruptionEvent`. On its own it proves
+/// nothing about the vehicle.
+///
+/// [busAllowsGrouping] is `PriorityScheduler.canBatch`, recomputed before
+/// every command from the detected addressing and the verified support map.
+/// On a non-CAN vehicle it is `false` for the whole session, and on CAN it is
+/// `false` until a support block has answered. Reading the first half alone is
+/// how this pill came to announce grouping in sessions where `popBatch` can
+/// never group anything — review found exactly that.
+///
+/// So "Batching enabled" requires both, and it is still only permission:
+/// `popBatch` also wants the member PID confirmed batchable and more than one
+/// request queued, so "active", "batched" or "verified" remain claims this
+/// state cannot make. When either half is down, every Mode 01 PID is read on
+/// its own, which is what the fallback label says and what the code does.
+///
+/// The one thing neither half stops is a powertrain profile response: those
+/// PIDs share a single reply by construction, `popBatch` drains them as one
+/// batch before it reads either flag, and `buildCommand` sends them as one
+/// command in both modes. The copy says "Mode 01" for that reason.
 ///
 /// Symbols rather than line numbers, because nothing in the suite holds a
 /// `file:line` written in a comment to the line it names. Symbols are not free
@@ -601,17 +612,32 @@ class _StatusStrip extends ConsumerWidget {
 /// it the transport, is reachable from this `context` like any other provider.
 /// The guarantee is behavioural, and the zero-traffic test is what holds it.
 class PollingModePill extends StatelessWidget {
-  const PollingModePill({required this.batchingEnabled, super.key});
+  const PollingModePill({
+    required this.schedulerAllowsGrouping,
+    required this.busAllowsGrouping,
+    super.key,
+  });
 
   /// `TelemetrySnapshot.fastModeEnabled`, carried verbatim from the scheduler.
-  final bool batchingEnabled;
+  final bool schedulerAllowsGrouping;
+
+  /// `PriorityScheduler.canBatch`, read through `busGroupsRequestsProvider`.
+  final bool busAllowsGrouping;
 
   static const Key pillKey = Key('dashboardPollingModePill');
+
+  /// The minimum square a finger gets, in a car, over a bump.
+  ///
+  /// The decoration stays the size it was: this pads the interactive region
+  /// out to the target, it does not inflate the pill. At large text the pill
+  /// is already taller than this and the constraint stops mattering.
+  static const double minTapTarget = 48;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final label = batchingEnabled
+    final grouping = schedulerAllowsGrouping && busAllowsGrouping;
+    final label = grouping
         ? l10n.dashboardBatchingEnabled
         : l10n.dashboardSingleRequestMode;
     // Merged rather than excluded: the InkWell contributes the focus and tap
@@ -626,12 +652,24 @@ class PollingModePill extends StatelessWidget {
           key: pillKey,
           borderRadius: BorderRadius.circular(Radii.pill),
           onTap: () => showPollingModeHelp(context),
-          child: StatusPill(
-            label: label,
-            icon: batchingEnabled
-                ? Icons.fast_forward
-                : Icons.slow_motion_video,
-            tone: batchingEnabled ? StatusTone.good : StatusTone.warn,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: minTapTarget,
+              minHeight: minTapTarget,
+            ),
+            // Sizes to the pill, then the constraint above grows the box
+            // around it rather than stretching it.
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: StatusPill(
+                label: label,
+                icon: grouping
+                    ? Icons.fast_forward
+                    : Icons.slow_motion_video,
+                tone: grouping ? StatusTone.good : StatusTone.warn,
+              ),
+            ),
           ),
         ),
       ),

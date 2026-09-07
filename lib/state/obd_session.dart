@@ -1959,6 +1959,32 @@ final obdCapabilitySummaryProvider = StreamProvider<ObdCapabilitySummary>((
 /// answer and not the question. Something has to ask again.
 const Duration kTelemetryHeartbeat = Duration(seconds: 1);
 
+/// Whether this session's bus can group PID requests at all.
+///
+/// Not the same question as `TelemetrySnapshot.fastModeEnabled`, and the
+/// difference is the whole reason this exists. That flag is permission the
+/// scheduler grants itself: `true` from construction, reset `true` on every
+/// connection, and only ever withdrawn by `handleCorruptionEvent`.
+/// `PriorityScheduler.canBatch` is whether grouping is possible — the engine
+/// recomputes it before every command as "the detected addressing is CAN, and
+/// at least one support block has actually answered".
+///
+/// On a non-CAN vehicle that is `false` for the entire session, and before
+/// capability discovery lands it is `false` on CAN too, while the flag stays
+/// `true` throughout. A screen reading the flag alone therefore announces that
+/// grouping is enabled in sessions where `popBatch` can never group anything.
+///
+/// Engine state rather than snapshot state, because [TelemetrySnapshot] is
+/// built in `lib/obd` and this slice does not change that library. It is
+/// re-read on every snapshot, which is the same cadence as the widget that
+/// consumes it, so the two cannot describe different moments by more than one
+/// frame.
+final busGroupsRequestsProvider = Provider<bool>((ref) {
+  ref.watch(telemetryProvider);
+  final session = ref.watch(obdSessionProvider.notifier);
+  return session.engine?.scheduler.canBatch ?? false;
+});
+
 final telemetryProvider = StreamProvider<TelemetrySnapshot>((ref) {
   final session = ref.watch(obdSessionProvider.notifier);
   final controller = StreamController<TelemetrySnapshot>();

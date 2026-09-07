@@ -350,7 +350,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      '「已啟用批次」代表 Telltale 獲准把多個 PID 請求併成一次交握，以減少來回次數。這是授權，不是量測：某一次交握到底有沒有併起來，還要看這輛車用的匯流排，以及它確認支援哪些 PID。';
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排接受併批請求，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -358,7 +358,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      '「單筆模式」代表每個 PID 各自讀取。當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），Telltale 會退回這個模式，讀數仍會持續更新。它本身不等於連線失敗。';
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。當匯流排根本不接受併批請求時（所有非 CAN 車輛都是如此），Telltale 會一直待在這個模式；而當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），它會退回這個模式。讀數仍會持續更新，這本身不等於連線失敗。';
 
   @override
   String get dashboardPollingModeHelpTitle => '讀取模式';
@@ -3879,7 +3879,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      '「已啟用批次」代表 Telltale 獲准把多個 PID 請求併成一次交握，以減少來回次數。這是授權，不是量測：某一次交握到底有沒有併起來，還要看這輛車用的匯流排，以及它確認支援哪些 PID。';
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排接受併批請求，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -3887,7 +3887,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      '「單筆模式」代表每個 PID 各自讀取。當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），Telltale 會退回這個模式，讀數仍會持續更新。它本身不等於連線失敗。';
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。當匯流排根本不接受併批請求時（所有非 CAN 車輛都是如此），Telltale 會一直待在這個模式；而當併批的請求沒有回來成一份能拆回各 PID 的答覆時（被截斷、轉接器回報緩衝區已滿，或根本沒有回應），它會退回這個模式。讀數仍會持續更新，這本身不等於連線失敗。';
 
   @override
   String get dashboardPollingModeHelpTitle => '讀取模式';

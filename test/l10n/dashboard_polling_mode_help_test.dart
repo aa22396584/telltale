@@ -7,18 +7,28 @@
 //   * `fastMode` is the name of a field, not a description of anything. It is
 //     addressed to whoever reads the log, and it was the only user-facing
 //     account of what the app was doing to the bus;
-//   * whatever replaces it must not say more than the flag proves.
-//     `PriorityScheduler.fastModeEnabled` starts `true` before a single
-//     request has gone out, `PollingEngine.start` resets it to `true` on every
-//     connection, and even while it is set a request is only grouped when the
-//     member PID is confirmed batchable and more than one is queued. So the
-//     enabled side may say "enabled" and may not say "active", "batched" or
-//     "verified". The disabled side is the stronger of the two: it is only set
-//     by `PriorityScheduler.handleCorruptionEvent`, and while it is down
-//     `popBatch` stops grouping Mode 01 PIDs, so single-request polling is
-//     observed. (It does not stop a powertrain profile response, whose PIDs
-//     share one reply by construction in either mode. Mode 01 is what this
-//     pill sits beside.)
+//   * whatever replaces it must not say more than the state proves, and the
+//     state has two halves. `PriorityScheduler.fastModeEnabled` starts `true`
+//     before a single request has gone out, `PollingEngine.start` resets it to
+//     `true` on every connection, and only `handleCorruptionEvent` withdraws
+//     it. `PriorityScheduler.canBatch` is the other half: recomputed before
+//     every command as "the addressing is CAN and a support block has
+//     answered", so it is `false` for the whole of every non-CAN session and
+//     `false` on CAN until discovery lands.
+//
+//     Reading the first half alone is how the pill came to read "Batching
+//     enabled" on sessions where `popBatch` can never group anything — review
+//     found it, and the truth-table test below is what stops it returning.
+//     "Enabled" needs both, and even then it is permission: grouping also
+//     wants the PID confirmed batchable and more than one queued, so "active",
+//     "batched" and "verified" stay unsayable. The fallback label is the
+//     provable one, and it covers two states rather than one: a bus that never
+//     groups, and grouping withdrawn after a bad reply.
+//
+//     Neither half stops a powertrain profile response, whose PIDs share one
+//     reply by construction and which `popBatch` drains as one batch before it
+//     reads either flag. That is why the copy says "Mode 01" and not "each
+//     PID".
 //
 // The expectations below are HAND-TYPED, in both languages, per this repo's
 // rule: a test that reads its expectation back from `AppLocalizations` agrees
@@ -211,6 +221,7 @@ Future<void> _openHelpPump(WidgetTester tester) async {
 Future<ProviderContainer> _pumpDashboard(
   WidgetTester tester, {
   required bool batchingEnabled,
+  bool busAllowsGrouping = true,
   LocalePreference preference = LocalePreference.english,
   double textScale = 1,
   bool polled = true,
@@ -231,6 +242,11 @@ Future<ProviderContainer> _pumpDashboard(
         ),
       ),
       telemetryRecorderProgressProvider.overrideWith(_FixedProgress.new),
+      // The engine half of the permission. The real provider reads
+      // `PriorityScheduler.canBatch` off the live engine, which a fake session
+      // does not have; overriding it is how the non-CAN session below is
+      // expressed without inventing a transport.
+      busGroupsRequestsProvider.overrideWithValue(busAllowsGrouping),
     ],
   );
   addTearDown(container.dispose);
@@ -299,25 +315,13 @@ void main() {
       expect(en.dashboardPollingModeHelpBatching, contains('round trips'));
       expect(en.dashboardPollingModeHelpBatching, contains('permission'));
       expect(zh.dashboardPollingModeHelpBatching, contains('併成一次交握'));
-      expect(zh.dashboardPollingModeHelpBatching, contains('這是授權，不是量測'));
-      // The bus is the condition that is easiest to forget and the one that
-      // holds for a whole session: `canBatch` is set from the detected
-      // protocol, so on a non-CAN vehicle the flag can be true start to finish
-      // with nothing ever grouped.
-      expect(
-        en.dashboardPollingModeHelpBatching,
-        contains('the bus this vehicle uses'),
-      );
-      expect(zh.dashboardPollingModeHelpBatching, contains('這輛車用的匯流排'));
-
+      expect(zh.dashboardPollingModeHelpBatching, contains('仍然是授權而不是量測'));
       // The fallback continues to update, and is not by itself a lost link.
-      expect(en.dashboardPollingModeHelpSingle, contains('each PID is read on its own'));
       expect(en.dashboardPollingModeHelpSingle, contains('carry on updating'));
       expect(
         en.dashboardPollingModeHelpSingle,
         contains('not a connection failure'),
       );
-      expect(zh.dashboardPollingModeHelpSingle, contains('每個 PID 各自讀取'));
       expect(zh.dashboardPollingModeHelpSingle, contains('讀數仍會持續更新'));
       expect(zh.dashboardPollingModeHelpSingle, contains('不等於連線失敗'));
 
@@ -348,6 +352,35 @@ void main() {
         zh.dashboardPollingModeHelpSingle,
         isNot(contains('過短或錯亂')),
       );
+
+      // The fallback label covers two unrelated states and has to name both.
+      // A bus that never groups is not a fallback from anything, and a driver
+      // on a non-CAN vehicle sees this label for the whole session.
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        contains('does not take grouped requests'),
+      );
+      expect(en.dashboardPollingModeHelpSingle, contains('non-CAN'));
+      expect(zh.dashboardPollingModeHelpSingle, contains('根本不接受併批請求'));
+      expect(zh.dashboardPollingModeHelpSingle, contains('非 CAN'));
+
+      // Mode 01, because a powertrain profile response is drained as one batch
+      // in either mode: several logical PIDs, one command, one reply. Saying
+      // "each PID" without the qualifier is false for anyone running an
+      // installed battery profile.
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        contains('each Mode 01 PID is read on its own'),
+      );
+      expect(zh.dashboardPollingModeHelpSingle, contains('每個 Mode 01 PID 各自讀取'));
+
+      // The enabled paragraph now speaks for a state where the bus is known to
+      // take grouped requests, so it says so rather than hedging about it.
+      expect(
+        en.dashboardPollingModeHelpBatching,
+        contains('this bus takes grouped requests'),
+      );
+      expect(zh.dashboardPollingModeHelpBatching, contains('這條匯流排接受併批請求'));
 
       // The rate is observed, and depends on six named things.
       expect(en.dashboardPollingModeHelpRate, contains('observed over the last second'));
@@ -398,6 +431,59 @@ void main() {
     await _pumpDashboard(tester, batchingEnabled: false);
     expect(find.text(enSingle), findsOneWidget);
     expect(find.text(enBatching), findsNothing);
+  });
+
+  testWidgets('a non-CAN session does not claim grouping it can never do', (
+    tester,
+  ) async {
+    // The state that made this necessary. `fastModeEnabled` is true — nothing
+    // has gone wrong, nothing has been withdrawn — but `canBatch` is false for
+    // the whole session because the addressing is not CAN, so `popBatch`
+    // returns a single Mode 01 request every time. The label read "Batching
+    // enabled" on every one of those sessions until review caught it.
+    await _pumpDashboard(
+      tester,
+      batchingEnabled: true,
+      busAllowsGrouping: false,
+    );
+    expect(find.text(enSingle), findsOneWidget);
+    expect(
+      find.text(enBatching),
+      findsNothing,
+      reason:
+          'the scheduler flag alone was allowed to claim grouping on a bus '
+          'that cannot group',
+    );
+
+    // And the explanation names that state, not only the corruption fallback.
+    await tester.tap(find.byKey(PollingModePill.pillKey));
+    await _openHelpPump(tester);
+    expect(find.textContaining('does not take grouped requests'), findsOneWidget);
+  });
+
+  testWidgets('the enabled label needs both halves of the permission', (
+    tester,
+  ) async {
+    // The truth table, hand-typed rather than derived: only both.
+    for (final row in const [
+      (scheduler: true, bus: true, expected: enBatching),
+      (scheduler: true, bus: false, expected: enSingle),
+      (scheduler: false, bus: true, expected: enSingle),
+      (scheduler: false, bus: false, expected: enSingle),
+    ]) {
+      await _pumpDashboard(
+        tester,
+        batchingEnabled: row.scheduler,
+        busAllowsGrouping: row.bus,
+      );
+      expect(
+        find.text(row.expected),
+        findsOneWidget,
+        reason:
+            'scheduler=${row.scheduler}, bus=${row.bus} should read '
+            '"${row.expected}"',
+      );
+    }
   });
 
   testWidgets('the explanation activates from the keyboard once the pill has focus', (
@@ -546,6 +632,22 @@ void main() {
           expect(rect.left, greaterThanOrEqualTo(0));
           expect(rect.right, lessThanOrEqualTo(size.width + 0.5));
 
+          // A finger, in a car, over a bump. The pill's own decoration is
+          // about 26dp tall, so the interactive region has to be padded out
+          // rather than inherit it — asserted at every geometry because the
+          // one that would lose it is the narrow one, where something has to
+          // give.
+          expect(
+            rect.height,
+            greaterThanOrEqualTo(PollingModePill.minTapTarget),
+            reason: 'the tap target shrank below 48dp at ${entry.key}',
+          );
+          expect(
+            rect.width,
+            greaterThanOrEqualTo(PollingModePill.minTapTarget),
+            reason: 'the tap target narrowed below 48dp at ${entry.key}',
+          );
+
           final opening = await _renderErrors(tester, () async {
             await _pumpDashboard(
               tester,
@@ -565,7 +667,7 @@ void main() {
           for (final paragraph in english
               ? const [
                   'group PID requests',
-                  'each PID is read on its own',
+                  'each Mode 01 PID is read on its own',
                   // Not the bare token: the throughput pill beside the
                   // explanation prints `PIDs/s` too, so a search for it finds
                   // two widgets and says nothing about this paragraph.
@@ -573,7 +675,7 @@ void main() {
                 ]
               : const [
                   '併成一次交握',
-                  '每個 PID 各自讀取',
+                  '每個 Mode 01 PID 各自讀取',
                   '過去一秒觀測到的速率',
                 ]) {
             expect(
