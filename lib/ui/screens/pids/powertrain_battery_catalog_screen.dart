@@ -135,6 +135,25 @@ class _PowertrainBatteryCatalogScreenState
         vehicleYear: year,
       );
       if (mounted) await _showProbeResult(result);
+    } on PowertrainProbeRefusedException catch (refused) {
+      // Caught before the arm below, and deliberately not reported to
+      // `FlutterError`. A refusal is an outcome this code chose — not
+      // connected, no live authorization, a lifecycle boundary crossed while
+      // the read was in flight — and reporting an expected decision as a
+      // framework error buries the real ones.
+      //
+      // It also used to be answered by `powertrainProbeDidNotFinish`, the same
+      // sentence a genuine mid-read failure gets. The last of the three is not
+      // a failure at all: a result was read and deliberately not kept.
+      if (mounted) {
+        _snack(
+          powertrainProbeRefusalText(
+            l10n,
+            refused.refusal,
+            attemptCap: decision.attemptCap,
+          ),
+        );
+      }
     } on Object catch (error, stack) {
       FlutterError.reportError(
         FlutterErrorDetails(

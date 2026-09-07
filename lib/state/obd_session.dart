@@ -36,6 +36,7 @@ import '../obd/transport/obd_transport.dart';
 import '../obd/transport/serial_transport.dart';
 import '../obd/transport/wifi_transport.dart';
 import '../core/serial/spp_serial_platform.dart';
+import 'manual_command_refusal.dart';
 import 'pid_registry.dart';
 import 'powertrain_battery_profiles.dart';
 import 'powertrain_battery_experiments.dart';
@@ -780,11 +781,26 @@ class ObdSession extends Notifier<ObdConnectionState> {
   /// one screen meant for diagnosing it.
   Future<String> sendManualCommand(String command) async {
     final c = _client;
-    if (c == null) throw const TransportException('尚未連線', issue: null);
+    if (c == null) {
+      // The one refusal here that IS a transport fact, and the identifier for
+      // it already existed. The half of its doc this line can stand behind is
+      // "provably unsent": nothing has been handed to a transport, so the
+      // adapter owes nothing. Its other half, "no link is open", is what a
+      // reader would reach for and is not quite the same claim — `_client` is
+      // assigned before `connect()` returns, so there is a window in which a
+      // socket exists and this field is still null. Nothing acts on that
+      // difference; the sentence a reader is shown is about the command.
+      throw const TransportException(
+        '尚未連線',
+        issue: TransportIssue.notConnected,
+      );
+    }
     final trimmed = command.trim();
-    if (trimmed.isEmpty) throw const TransportException('沒有輸入指令', issue: null);
+    // Not a second rule. `manualCommandRefusal('')` answers this, and the two
+    // answering differently is how a box came to have one sentence for empty
+    // input and a different one for whitespace.
     final refusal = manualCommandRefusal(trimmed);
-    if (refusal != null) throw TransportException(refusal, issue: null);
+    if (refusal != null) throw ManualCommandRefusedException(refusal);
     c.transcript.recordNote('手動送出：$trimmed');
     final response = await c.send(trimmed);
     return response.rawLines.join('\n');
@@ -806,138 +822,6 @@ class ObdSession extends Notifier<ObdConnectionState> {
     return persisted
         ? FieldEventRecordResult.persisted
         : FieldEventRecordResult.memoryOnly;
-  }
-
-  /// Why a typed command will not be sent, or null if it will.
-  ///
-  /// Serialising the box onto the ordinary command chain stopped it
-  /// *interleaving* with the poll loop. It did not stop it changing the
-  /// adapter underneath the app's model of it, and that is the part that
-  /// produces a wrong number:
-  ///
-  ///   a poll selects `7E0` and the client caches it
-  ///   the user types `ATSH 7E1`, the adapter says OK
-  ///   the next built-in `010C` trusts the cache, sends no `ATSH`,
-  ///   and the transmission answers 1000 rpm as the engine's
-  ///
-  /// Nothing on screen says which controller replied, and the number is
-  /// entirely plausible. `ATZ`, `ATD`, `ATSP`, `ATE1`, the filter and mask
-  /// commands and the monitoring commands all invalidate the negotiated model
-  /// the same way.
-  ///
-  /// And Mode 04 is worse than a wrong number: typed here it skips the
-  /// confirmation dialog, the coverage check, the acknowledgement check and
-  /// the lifecycle guard, clears whichever controller happens to be selected,
-  /// and resets the readiness monitors while the app's own model of the scan
-  /// knows nothing happened.
-  ///
-  /// So the box asks questions. It does not change anything.
-  static String? manualCommandRefusal(String command) {
-    final c = command.trim().toUpperCase().replaceAll(' ', '');
-    if (c.isEmpty) return '沒有輸入指令。';
-    // Before anything is classified, because everything below classifies *one*
-    // command and a control character means there is more than one.
-    //
-    // `\r` is the ELM327's command terminator, so `03\r04` is not a Mode 03
-    // request containing an odd character — it is two requests, and the second
-    // is a Mode 04 clear. Every check below reads the first two characters,
-    // saw `03`, and let the whole string through: the read-only box erased the
-    // vehicle's fault memory, skipping the confirmation, the coverage check
-    // and the response validation that the 清除 button exists to enforce.
-    //
-    // Nobody types this. Pasting is how it arrives — a command copied off a
-    // forum post or out of a log brings its line ending with it, and the
-    // trailing one is harmless only because `trim` already took it.
-    if (c.codeUnits.any((u) => u < 0x20 || u == 0x7F)) {
-      return '指令裡有換行或控制字元，這樣會一次送出多個指令。'
-          '轉接器以換行分隔指令，所以第二個指令不會經過這裡的任何檢查 —— '
-          '包括禁止清除故障碼的那一項。請一次只輸入一個指令。';
-    }
-    if (c.startsWith('AT')) {
-      final at = c.substring(2);
-      // Named individually rather than by prefix: `ATDP` and `ATDPN` ask which
-      // protocol is in use, `ATD` resets everything to defaults, and a prefix
-      // rule would get that exactly backwards.
-      const readOnly = {
-        'I',
-        '@1',
-        '@2',
-        '@3',
-        'RV',
-        'DP',
-        'DPN',
-        'PPS',
-        'IGN',
-        'DESC',
-        'CS',
-        'CV',
-        'RD',
-      };
-      if (readOnly.contains(at)) return null;
-      return '手動指令只接受查詢，不接受會改變轉接器設定的指令。'
-          '「$command」會改動轉接器狀態，而 App 對轉接器的認知不會跟著更新 —— '
-          '接下來的讀數可能來自另一個控制器，而畫面上看不出來。\n'
-          '可用的查詢：ATI、AT@1、ATRV、ATDP、ATDPN、ATPPS、ATIGN。';
-    }
-    // OBD services. Only the read-only ones, and never Mode 04 — clearing has
-    // its own button, and that button is where every safeguard lives.
-    final service = c.length >= 2 ? c.substring(0, 2) : '';
-    // Mode 08 is not on this list, and its absence is the point.
-    //
-    // J1979 names it "request control of on-board system, test or component" —
-    // it *actuates* things: evaporative-system leak tests, solenoids, pumps.
-    // It was sitting on a whitelist whose contract is read-only because its
-    // number looks like its neighbours', which is exactly how a control
-    // service ends up being sent by a box labelled 查詢.
-    //
-    // `05` is on it, and was missing. J1979 defines it as "request oxygen
-    // sensor monitoring test results" — stored results from completed tests,
-    // read-only, with a sensor byte rather than a PID. Leaving it out refused
-    // a legitimate query on the buses where it is the *only* way to ask: it is
-    // defined for pre-CAN implementations only, ISO 9141-2 and the J1850
-    // pair, where Mode 06 does not replace it.
-    const readOnlyServices = {
-      '01',
-      '02',
-      '03',
-      '05',
-      '06',
-      '07',
-      '09',
-      '0A',
-      '22',
-    };
-    if (c == '04' || c.startsWith('04')) {
-      return '清除故障碼請用故障碼畫面的「清除」按鈕。'
-          '從這裡送出會跳過確認、覆蓋率檢查與回應驗證，'
-          '而且只會清到目前選中的那一個控制器。';
-    }
-    // The whole command, not its first two characters.
-    //
-    // Everything above is a whitelist and this line was not: it matched a
-    // prefix and passed the rest through unread, so `03;04` was a Mode 03
-    // request as far as this was concerned. A reviewer names `;` as a command
-    // separator on STN-based adapters (OBDLink); the datasheet search did not
-    // confirm that, and the decision does not depend on it — no legal OBD
-    // request contains a character outside `0-9A-F`, so requiring them costs
-    // nothing, and being wrong in the other direction sends a clear.
-    //
-    // The same rule the response parser uses, pointed the other way: accept
-    // what is recognisably legal rather than reject what is recognisably not.
-    // A blacklist of separators is a list somebody has to keep complete.
-    if (!RegExp(r'^[0-9A-F]+$').hasMatch(c)) {
-      return '指令「$command」含有 OBD 指令不會出現的字元。'
-          '這裡只接受十六進位的服務碼與參數（例如 0100、03、2211A6），'
-          '或 AT 開頭的轉接器查詢。';
-    }
-    if (readOnlyServices.contains(service)) return null;
-    // Listed from the set rather than written out beside it. They had already
-    // drifted: Mode 05 was admitted and the help text still omitted it, so
-    // somebody whose command was refused was told 05 was not allowed by the
-    // same sentence that was supposed to tell them what is.
-    final allowed = (readOnlyServices.toList()..sort()).join('/');
-    return '不認得的指令「$command」。'
-        '這裡只接受唯讀查詢（Mode $allowed）與轉接器查詢指令。';
   }
 
   /// Starts the built-in simulator. Needs no permissions and no hardware, so
@@ -1617,7 +1501,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
   }) async {
     final client = _client;
     if (client == null || !state.isConnected || !_foreground) {
-      throw const TransportException('尚未連線，無法執行實驗唯讀查詢', issue: null);
+      throw const PowertrainProbeRefusedException(
+        PowertrainProbeRefusal.notConnectedOrNotInForeground,
+      );
     }
     final generation = _generation;
     final pauseEpoch = _pauseEpoch;
@@ -1638,7 +1524,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
       connectionGeneration: generation,
     );
     if (lease == null) {
-      throw const TransportException('單次授權不存在、已過期、冷卻中或已被隔離', issue: null);
+      throw const PowertrainProbeRefusedException(
+        PowertrainProbeRefusal.noLiveAuthorization,
+      );
     }
 
     PowertrainBatteryProbeResult? result;
@@ -1657,7 +1545,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
           !_foreground ||
           !ref.read(powertrainBatteryExperimentalAccessProvider) ||
           !identical(_client, client)) {
-        throw const TransportException('連線或前景狀態已改變，已丟棄實驗結果', issue: null);
+        throw const PowertrainProbeRefusedException(
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        );
       }
       return result;
     } finally {

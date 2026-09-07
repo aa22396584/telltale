@@ -14,6 +14,7 @@ import '../../../obd/transport/obd_transport.dart'
     show TransportException, TransportKind;
 import '../../../obd/vehicle_catalog/us_vehicle_catalog.dart';
 import '../../../obd/vehicle_catalog/us_vehicle_profile.dart';
+import '../../../state/manual_command_refusal.dart';
 import '../../../state/obd_session.dart';
 import '../../../state/powertrain_battery_experiments.dart';
 import '../../../state/powertrain_battery_profiles.dart';
@@ -56,15 +57,46 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// ships. `TransportException.message` is authored in Traditional Chinese
   /// and goes to the transcript verbatim, on purpose; this panel was reading
   /// the same string and putting it on the screen. So the identifier is asked
-  /// first, through [commandFailureText], and the sentence is what is left
-  /// when there is no identifier to ask.
+  /// first and the message is never rendered for anything that carries one.
   ///
-  /// That remainder is not decoration. Six throws in
-  /// `lib/state/obd_session.dart` — every refusal this box produces for a
-  /// command it will not send — still pass `issue: null`, and they are a
-  /// separate change (ImL1s/telltale#45). Until then their Chinese is what a
-  /// reader gets, and dropping the fallback would replace it with nothing at
-  /// all.
+  /// Three kinds of thing arrive here, and each is asked a different question.
+  ///
+  /// A command this app refused to send is a `ManualCommandRefusedException`.
+  /// It is not a transport failure — nothing was written, no link was involved
+  /// — so it carries a refusal identifier rather than a `TransportIssue`, and
+  /// [manualCommandRefusalText] always answers it.
+  ///
+  /// A command that was sent and failed is a `TransportException`, answered by
+  /// [commandFailureText] through its identifier.
+  ///
+  /// The `?? error.message` after it is not the old fallback for throws that
+  /// forgot an identifier. Every direct `TransportException` construction
+  /// under `lib/obd/` and `lib/state/` now names one, and the scan in
+  /// `test/l10n/transport_issue_guard_test.dart` fails a new one that does
+  /// not. What is left is the closed set that scan cannot see: the subclasses
+  /// which bake `issue: null` into their own constructors, held by a written
+  /// roster in the same file. Two of the three are on the path a typed command
+  /// takes, and how each gets here is written out rather than asserted,
+  /// because a comment claiming a reachability property is one nothing can
+  /// fail on:
+  ///
+  ///   * `WriteRefusedException` — every transport's `write()` opens with a
+  ///     precondition check and throws it when there is no socket,
+  ///     characteristic or connection. `Elm327Client._sendNow` does not
+  ///     convert it, so it arrives here as itself.
+  ///   * `OperationRetiredException` — `_sendNow` refuses at the lifecycle
+  ///     gate when `mayTransmit(owner)` says no. `send()` passes no owner, and
+  ///     `ObdSession`'s `mayTransmit` answers false for a null owner when the
+  ///     connection has been superseded, or when the app is not in the
+  ///     foreground and no resume validation is in flight — that window admits
+  ///     an unleased command deliberately, so the foreground half is not
+  ///     unconditional. A typed command sits on the serialized chain behind
+  ///     the poll loop's traffic, so backgrounding or disconnecting between
+  ///     the tap and the write is all it takes.
+  ///
+  /// Their Traditional Chinese is what an English reader still gets for those
+  /// two, which is a smaller defect than an empty panel and is inventoried as
+  /// its own slice.
   ///
   /// A function rather than two catch clauses so it can be tested. The panel
   /// it renders into only exists while connected, and a connected session
@@ -74,6 +106,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// unexpected type is exactly when the identifier is the useful part.
   @visibleForTesting
   static String describeManualFailure(AppLocalizations l10n, Object error) {
+    if (error is ManualCommandRefusedException) {
+      return manualCommandRefusalText(l10n, error.refusal);
+    }
     if (error is! TransportException) return '$error';
     return commandFailureText(l10n, error) ?? error.message;
   }

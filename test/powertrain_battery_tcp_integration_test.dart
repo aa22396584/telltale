@@ -116,7 +116,11 @@ void main() {
           commandKey: command.wireKey,
           vehicleYear: 2021,
         ),
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.noLiveAuthorization,
+        )),
       );
     },
   );

@@ -9,10 +9,15 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:torque_obd/state/obd_session.dart';
+import 'package:torque_obd/state/manual_command_refusal.dart';
 
 void main() {
-  String? refuse(String c) => ObdSession.manualCommandRefusal(c);
+  // The identifier and the values it carries, which is all this file is about.
+  // What each identifier *reads like* is `test/l10n/manual_command_copy_test.dart`:
+  // this one used to assert on fragments of the Chinese sentence, and those
+  // assertions moved rather than disappeared — a test that reads a sentence
+  // cannot tell a refusal from a copy edit.
+  ManualCommandRefusal? refuse(String c) => manualCommandRefusal(c);
 
   group('queries go through', () {
     test('adapter questions', () {
@@ -63,7 +68,12 @@ void main() {
       // rendered as the engine's, with nothing on screen to say so.
       final why = refuse('ATSH 7E1');
       expect(why, isNotNull);
-      expect(why, contains('另一個控制器'));
+      expect(why!.issue, ManualCommandRefusalReason.adapterStateWouldChange);
+      expect(
+        why.command,
+        'ATSH 7E1',
+        reason: 'the sentence quotes what was typed, so the refusal carries it',
+      );
     });
 
     test('resets and protocol selection', () {
@@ -102,12 +112,13 @@ void main() {
     test('Mode 04 typed here is refused, and says where to go', () {
       final why = refuse('04');
       expect(why, isNotNull);
-      expect(why, contains('清除'));
       // Typed here it would skip the confirmation, the coverage check, the
       // acknowledgement check and the lifecycle guard, clear whichever
       // controller happened to be selected, and reset the readiness monitors
-      // while the app's own model of the scan knew nothing had happened.
-      expect(why, contains('確認'));
+      // while the app's own model of the scan knew nothing had happened. That
+      // this identifier is the one that says so, and says where the button is,
+      // is pinned in `test/l10n/manual_command_copy_test.dart`.
+      expect(why!.issue, ManualCommandRefusalReason.clearHasItsOwnButton);
     });
 
     test('and so is a Mode 04 with anything after it', () {
@@ -121,8 +132,8 @@ void main() {
       // still omitted it. A refusal that misdescribes the whitelist misdirects
       // exactly the person who most needs it — the one whose command just
       // failed, at a car.
-      // Hex, so it passes the charset gate and reaches the sentence that
-      // lists the services. `ZZ` does not — it is refused a step earlier for
+      // Hex, so it passes the charset gate and reaches the refusal that
+      // carries the services. `ZZ` does not — it is refused a step earlier for
       // its characters.
       final why = refuse('FF');
       expect(why, isNotNull);
@@ -137,7 +148,7 @@ void main() {
         '0A',
         '22',
       ]) {
-        expect(why, contains(service), reason: service);
+        expect(why!.allowed, contains(service), reason: service);
         expect(
           refuse(service),
           isNull,
@@ -145,11 +156,25 @@ void main() {
         );
       }
       expect(
-        why,
+        why!.allowed,
         isNot(contains('04')),
         reason: 'and the clear must not appear in a list of read queries',
       );
-      expect(why, isNot(contains('08')), reason: 'nor a control service');
+      expect(why.allowed, isNot(contains('08')), reason: 'nor a control service');
+
+      // The other direction, which a hand-written list cannot give: the values
+      // carried are exactly the set the code accepts, so admitting a service
+      // without telling anybody is impossible rather than merely unlikely.
+      expect(
+        why.allowed.toSet(),
+        kManualCommandReadOnlyServices,
+        reason: 'the list a refused person is shown is the acceptance set',
+      );
+      expect(
+        refuse('ATZ')!.allowed.toSet(),
+        kManualCommandReadOnlyAtQueries.map((q) => 'AT$q').toSet(),
+        reason: 'and the same on the adapter side, where it had drifted 7 to 13',
+      );
     });
 
     test('R28-N6: Mode 05 is a read service and was refused', () {
@@ -221,9 +246,14 @@ void main() {
     });
 
     test('R28-N5: the refusal explains the mechanism, not just "no"', () {
-      final why = refuse('03\r04');
-      expect(why, contains('換行'));
-      expect(why, contains('一次只輸入一個指令'));
+      // The identifier is the mechanism: it says the text is more than one
+      // command, not merely that it was rejected. The words that say so are
+      // pinned in `test/l10n/manual_command_copy_test.dart`, which is where a
+      // copy edit that deleted the explanation would now go red.
+      expect(
+        refuse('03\r04')!.issue,
+        ManualCommandRefusalReason.moreThanOneCommand,
+      );
     });
 
     test('R28-N5: an ordinary command with surrounding whitespace still works', () {

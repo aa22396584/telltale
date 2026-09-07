@@ -2841,6 +2841,24 @@ abstract class AppLocalizations {
   /// **'Quarantined for this connection: an earlier one-shot read did not pass its structural checks. Reconnect before trying again.'**
   String get powertrainRefusedQuarantinedAfterRejectedRead;
 
+  /// Refusal identifier PowertrainProbeRefusal.notConnectedOrNotInForeground. One sentence for both conditions because the engine tests them in one expression and refuses both the same way.
+  ///
+  /// In en, this message translates to:
+  /// **'The one-shot read was not started: nothing is connected, or the app was not in the foreground.'**
+  String get powertrainRefusedNotConnectedOrNotInForeground;
+
+  /// Refusal identifier PowertrainProbeRefusal.noLiveAuthorization. Which of the four it was is not knowable at this point; the sentence says so rather than picking one.
+  ///
+  /// In en, this message translates to:
+  /// **'The one-shot read was not started: no single-use authorization is being held. None was given, or it has expired, gone into cooldown, or been quarantined.'**
+  String get powertrainRefusedNoLiveAuthorization;
+
+  /// Refusal identifier PowertrainProbeRefusal.discardedAtLifecycleBoundary. It must not read as a failure: a result was deliberately not published, which is the opposite of the sentence this path used to show.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection or the foreground state changed while the one-shot read was running, so its answer was discarded instead of shown. Nothing failed, and nothing was kept.'**
+  String get powertrainRefusedDiscardedAtLifecycleBoundary;
+
   /// Refusal identifier PowertrainProbeRefusal.quarantinedAtAttemptCap. {attemptCap} is PowertrainExperimentalProbeConsents.maxAttemptsPerCommand, never spelled into the copy.
   ///
   /// In en, this message translates to:
@@ -5930,6 +5948,45 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
   String get settingsManualCommandWriteFailed;
+
+  /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was typed, so nothing was sent.'**
+  String get manualCommandRefusedEmpty;
+
+  /// ManualCommandRefusalReason.moreThanOneCommand. The mechanism is the message: 03\r04 is two requests and the second one erases the vehicle's fault memory. Saying only 'refused' would leave somebody retrying the same paste.
+  ///
+  /// In en, this message translates to:
+  /// **'This text carries a line break or another control character, which sends more than one command at once. The adapter separates commands by line break, so the second one would skip every check made here — including the one that refuses to clear fault codes. Send one command at a time.'**
+  String get manualCommandRefusedMoreThanOneCommand;
+
+  /// ManualCommandRefusalReason.adapterStateWouldChange. {command} is the text as typed and {allowed} is manualCommandAdvertisedAtQueries joined with settingsListSeparator, never a list spelled into the sentence: copy that named seven queries while the set accepted more was a false statement about what this box takes, read by the one person whose command was just refused. No count here: it is what drifted.
+  ///
+  /// In en, this message translates to:
+  /// **'This box accepts questions, not commands that change what the adapter is. “{command}” would change the adapter\'s state while the app\'s model of it stayed as it was — the readings after it could come from a different controller, with nothing on screen to say so.\nQueries you can send: {allowed}.'**
+  String manualCommandRefusedAdapterStateWouldChange(
+    Object command,
+    Object allowed,
+  );
+
+  /// ManualCommandRefusalReason.clearHasItsOwnButton. Mode 04. It names where to go rather than only refusing, because the thing the person wanted is available and safeguarded a screen away.
+  ///
+  /// In en, this message translates to:
+  /// **'To clear fault codes, use the Clear button on the fault-code screen. Sent from here it would skip the confirmation, the coverage check and the response validation, and it would reach only the one controller currently selected.'**
+  String get manualCommandRefusedClearHasItsOwnButton;
+
+  /// ManualCommandRefusalReason.charactersNoObdCommandHas. A whitelist rather than a list of separators to keep complete: the cost of an incomplete blacklist here is a fault-code clear nobody asked for.
+  ///
+  /// In en, this message translates to:
+  /// **'The command “{command}” contains characters an OBD command never has. This box takes hexadecimal service codes and parameters — 0100, 03, 2211A6 — or an adapter query beginning with AT.'**
+  String manualCommandRefusedCharactersNoObdCommandHas(Object command);
+
+  /// ManualCommandRefusalReason.notAReadOnlyQuery. {allowed} is manualCommandAdvertisedServices joined with settingsListSeparator. The list was once written out beside the set and the two had already drifted: Mode 05 was admitted and the sentence still omitted it.
+  ///
+  /// In en, this message translates to:
+  /// **'“{command}” is not a command this box knows. It takes read-only queries (Mode {allowed}) and adapter queries.'**
+  String manualCommandRefusedNotAReadOnlyQuery(Object command, Object allowed);
 
   /// TransportIssue.queryHeaderRefused. The adapter answered ATSH with '?'. It must not read as a failure of the vehicle: nothing was asked of the vehicle at all. The address is interpolated because a reader who cannot see which controller was meant has nothing to act on.
   ///

@@ -35,19 +35,33 @@
 /// and it was an exception list in shipped code that the tests then had to skip
 /// on. The identifiers are carried through `DtcReadException` now and every one
 /// of them is answered below.
+///
+/// The panel's other half is [manualCommandRefusalText]. A command this app
+/// refuses to send never becomes a `TransportException` at all — no link is
+/// involved and nothing was written — so it arrives as a
+/// `ManualCommandRefusedException` carrying a `ManualCommandRefusal`, and the
+/// two tables meet only at the screen.
 library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/transport/obd_transport.dart';
+import '../../../state/manual_command_refusal.dart';
 import '../connect/handshake_copy.dart';
 
 /// What a failed command reads like, or null when nothing here can say it.
 ///
-/// Null means one thing only: an exception carrying no identifier at all (the
-/// six in `lib/state/obd_session.dart`, still to be migrated —
-/// ImL1s/telltale#45). Those fall back to the Chinese sentence at the call
-/// site, which is the behaviour this file exists to remove and has removed for
-/// everything else.
+/// Null means one thing only, and the set is now closed: the `TransportException`
+/// subclasses that bake `issue: null` into their own constructors. The roster
+/// test in `test/l10n/transport_issue_guard_test.dart` is what keeps it closed —
+/// a fourth subclass has to be written into it by hand — and two of the three
+/// can reach this panel, because `write()` is on the path a typed command
+/// takes. `SettingsScreen.describeManualFailure` says which and what it does
+/// with them.
+///
+/// `lib/state/obd_session.dart`'s throws are no longer part of that remainder.
+/// One of them carries `TransportIssue.notConnected`; the other five are
+/// refusals, which are not transport failures and are answered by
+/// [manualCommandRefusalText].
 String? commandFailureText(AppLocalizations l10n, TransportException error) {
   final issue = error.issue;
   if (issue == null) return null;
@@ -125,5 +139,44 @@ String? commandIssueText(
     TransportIssue.classicConnectTimeout ||
     TransportIssue.serialPortOpenFailed ||
     TransportIssue.serialDroppedOnOpen => transportIssueText(l10n, issue),
+  };
+}
+
+/// What a command this app refused to send reads like.
+///
+/// A refusal is not a failure: nothing was attempted, and every one of these
+/// is a decision the app made about the text in the box. They used to be six
+/// Traditional Chinese sentences composed in `lib/state/`, thrown as a
+/// `TransportException` with no identifier, and rendered verbatim in every
+/// language the app ships.
+///
+/// Two arms print values the refusal carries rather than values spelled into
+/// the copy. [ManualCommandRefusal.allowed] is joined here, with the
+/// separator the reader's language uses, because `、` in engine code is the
+/// half of a translation that gets left behind.
+///
+/// The switch is written out in full with no `_` arm: a refusal added to
+/// [ManualCommandRefusalReason] must fail to compile until somebody writes its
+/// words, rather than silently borrowing a neighbour's sentence.
+String manualCommandRefusalText(
+  AppLocalizations l10n,
+  ManualCommandRefusal refusal,
+) {
+  final allowed = refusal.allowed.join(l10n.settingsListSeparator);
+  return switch (refusal.issue) {
+    ManualCommandRefusalReason.emptyCommand => l10n.manualCommandRefusedEmpty,
+    ManualCommandRefusalReason.moreThanOneCommand =>
+      l10n.manualCommandRefusedMoreThanOneCommand,
+    ManualCommandRefusalReason.adapterStateWouldChange =>
+      l10n.manualCommandRefusedAdapterStateWouldChange(
+        refusal.command,
+        allowed,
+      ),
+    ManualCommandRefusalReason.clearHasItsOwnButton =>
+      l10n.manualCommandRefusedClearHasItsOwnButton,
+    ManualCommandRefusalReason.charactersNoObdCommandHas =>
+      l10n.manualCommandRefusedCharactersNoObdCommandHas(refusal.command),
+    ManualCommandRefusalReason.notAReadOnlyQuery =>
+      l10n.manualCommandRefusedNotAReadOnlyQuery(refusal.command, allowed),
   };
 }

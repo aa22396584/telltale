@@ -119,6 +119,17 @@ const _cap = 3;
 /// Nothing in this map is read back from the ARB, from `AppLocalizations` or
 /// from `powertrainProbeRefusalText`. That is the whole point: it is the only
 /// assertion in the file that a transposed switch arm cannot survive.
+///
+/// The last three are not `authorize`'s. They are
+/// `ObdSession.probePowertrainBatteryCommand` refusing to start a read or
+/// refusing to publish one, and until ImL1s/telltale#45 they were Traditional
+/// Chinese sentences on a `TransportException` with no identifier at all,
+/// answered on screen by `powertrainProbeDidNotFinish` — one sentence for
+/// every outcome, including the one where nothing failed. Their
+/// condition→identifier link is driven in
+/// `test/powertrain_battery_experimental_access_test.dart`, which sets up each
+/// condition against a real session; the group below covers the ones
+/// `authorize` can answer with and cannot reach these.
 const Map<PowertrainProbeRefusal, (String, String)> _expected = {
   PowertrainProbeRefusal.labClosed: (
     'The experimental battery laboratory was switched off before this read '
@@ -158,6 +169,24 @@ const Map<PowertrainProbeRefusal, (String, String)> _expected = {
     'Quarantined for this connection: an earlier one-shot read did not pass '
         'its structural checks. Reconnect before trying again.',
     '本次連線已隔離：先前一次單次讀取沒有通過結構檢查。請重新連線後再試。',
+  ),
+  PowertrainProbeRefusal.notConnectedOrNotInForeground: (
+    'The one-shot read was not started: nothing is connected, or the app was '
+        'not in the foreground.',
+    '這次單次讀取沒有開始：目前沒有連線，或 App 不在前景。',
+  ),
+  PowertrainProbeRefusal.noLiveAuthorization: (
+    'The one-shot read was not started: no single-use authorization is being '
+        'held. None was given, or it has expired, gone into cooldown, or been '
+        'quarantined.',
+    '這次單次讀取沒有開始：目前沒有持有單次授權。授權不存在、已過期、冷卻中或已被隔離。',
+  ),
+  PowertrainProbeRefusal.discardedAtLifecycleBoundary: (
+    'The connection or the foreground state changed while the one-shot read '
+        'was running, so its answer was discarded instead of shown. Nothing '
+        'failed, and nothing was kept.',
+    '單次讀取進行中，連線或前景狀態改變了，因此它的結果被丟棄而沒有顯示。'
+        '沒有任何失敗，也沒有保留任何結果。',
   ),
 };
 
@@ -667,9 +696,20 @@ void main() {
     const known = {
       // the quarantine refusal before the tap, and the one recorded while the
       // consent dialog sat open — both rendered in
-      // powertrain_battery_catalog_ui_test.dart, both locales
+      // powertrain_battery_catalog_ui_test.dart, both locales.
+      //
+      // The third is the session's own refusal, caught ahead of the screen's
+      // `on Object` arm. It is not driven through a widget: the panel needs a
+      // live connection and a connected session cannot be pumped from
+      // `testWidgets` — the fake-async clock never advances for the poller's
+      // real delays, so the test deadlocks rather than fails. What is pinned
+      // instead is each half separately: the throw and its identifier in
+      // powertrain_battery_experimental_access_test.dart, and the identifier
+      // and its sentence in this file. Said here because that is a weaker
+      // claim than the two above it, and a note that hid the difference would
+      // be the defect this census exists for.
       'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
-          '-> powertrainProbeRefusalText x2',
+          '-> powertrainProbeRefusalText x3',
       // the recording lock refusing a catalog install — same file, both locales
       'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
           '-> pidMutationFailureText x2',

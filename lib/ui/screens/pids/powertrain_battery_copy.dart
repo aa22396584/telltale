@@ -48,4 +48,18 @@ String powertrainProbeRefusalText(
     l10n.powertrainRefusedQuarantinedAtAttemptCap(attemptCap),
   PowertrainProbeRefusal.quarantinedAfterRejectedRead =>
     l10n.powertrainRefusedQuarantinedAfterRejectedRead,
+
+  // The session's own three. Everything above is the consent ledger answering
+  // before a read begins; these are the session refusing to start one, or
+  // refusing to publish what it got. They arrived here as
+  // `l10n.powertrainProbeDidNotFinish` — one sentence for every outcome — so a
+  // driver who was simply not connected read the same words as one whose
+  // adapter failed mid-read, and the last of the three read as a failure when
+  // what happened is that a result was deliberately not kept.
+  PowertrainProbeRefusal.notConnectedOrNotInForeground =>
+    l10n.powertrainRefusedNotConnectedOrNotInForeground,
+  PowertrainProbeRefusal.noLiveAuthorization =>
+    l10n.powertrainRefusedNoLiveAuthorization,
+  PowertrainProbeRefusal.discardedAtLifecycleBoundary =>
+    l10n.powertrainRefusedDiscardedAtLifecycleBoundary,
 };

@@ -174,6 +174,58 @@ enum PowertrainProbeRefusal {
 
   /// Quarantined because an earlier answer failed its structural checks.
   quarantinedAfterRejectedRead,
+
+  // ---- refused by the session rather than by the consent ledger ----
+  //
+  // The three above this line are `authorize`'s answers, decided before a tap
+  // does anything. These three are `ObdSession.probePowertrainBatteryCommand`
+  // refusing to run, or refusing to publish what it got, and they used to be
+  // Traditional Chinese sentences carried by a `TransportException` with no
+  // identifier at all. They reached the screen as
+  // `l10n.powertrainProbeDidNotFinish` — one sentence for every outcome, so a
+  // driver who was simply not connected read the same words as one whose
+  // adapter had failed mid-read.
+
+  /// Nothing is connected, or the app was not in the foreground, when the
+  /// one-shot read was asked for.
+  ///
+  /// One identifier for both because the app refuses both the same way and the
+  /// copy says both. Splitting them would be a behaviour change: the engine
+  /// tests the two conditions in a single expression, and nothing downstream
+  /// acts differently on the answer.
+  notConnectedOrNotInForeground,
+
+  /// No live single-use authorization: none was taken, or it had expired, gone
+  /// into cooldown, or been quarantined by the time the read began.
+  noLiveAuthorization,
+
+  /// The read finished, and the connection or foreground state had changed
+  /// underneath it, so the answer was thrown away rather than published.
+  ///
+  /// Nothing failed. What is being reported is a result that was deliberately
+  /// not kept, which is the opposite of the sentence the screen used to show.
+  discardedAtLifecycleBoundary,
+}
+
+/// Raised by the session when a one-shot experimental read will not run, or
+/// when its answer will not be published.
+///
+/// Not a `TransportException`. The three conditions it reports are the app's
+/// own decisions — no link asked for, no authorization held, a lifecycle
+/// boundary crossed — and a transport identifier for them would be a claim
+/// about a link that was never involved. The screen catches this before its
+/// `on Object` arm, so a refusal is answered with the sentence written for it
+/// rather than with the one that says a probe failed.
+///
+/// [toString] names the identifier, in English: a crash report is the only
+/// thing that reads it.
+final class PowertrainProbeRefusedException implements Exception {
+  const PowertrainProbeRefusedException(this.refusal);
+
+  final PowertrainProbeRefusal refusal;
+
+  @override
+  String toString() => 'PowertrainProbeRefusedException: ${refusal.name}';
 }
 
 /// The refusals that may be *recorded* as a per-connection quarantine.

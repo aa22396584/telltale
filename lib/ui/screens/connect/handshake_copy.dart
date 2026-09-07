@@ -132,15 +132,16 @@ String _failureReason(AppLocalizations l10n, InitProgress? step) {
 /// still throw `TransportException` without an identifier. Review traced it: the
 /// eight `elm327_client` throws are reachable only inside `send()`,
 /// `sendOnHeader()` and `sendGlobal()`, whose callers each catch `on Object`, so
-/// none escapes `connect()`; the six in `obd_session` are on the raw-terminal
-/// and experimental-probe paths, not this screen. `connectExceptionIssue` is
+/// none escapes `connect()`; `obd_session`'s are on the raw-terminal and
+/// experimental-probe paths, not this screen. `connectExceptionIssue` is
 /// non-nullable, so the generic catch always supplies one. On the connect screen
 /// the fallback is now effectively dead.
 ///
 /// Those eight now carry identifiers of their own, which is why this table has
 /// arms that answer null: they are command-path failures and are read on the
-/// settings manual-command panel. Six of `obd_session`'s remain — see
-/// ImL1s/telltale#45.
+/// settings manual-command panel. `obd_session`'s carry identifiers too — one
+/// a `TransportIssue`, the rest their own refusal enums — so nothing on either
+/// path is waiting for one.
 ///
 /// Which is why the guard exists: the next identifier-less throw on this path
 /// would land here silently, and a comment saying "the fallback handles it" is

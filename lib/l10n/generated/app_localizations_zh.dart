@@ -1553,6 +1553,18 @@ class AppLocalizationsZh extends AppLocalizations {
       '本次連線已隔離：先前一次單次讀取沒有通過結構檢查。請重新連線後再試。';
 
   @override
+  String get powertrainRefusedNotConnectedOrNotInForeground =>
+      '這次單次讀取沒有開始：目前沒有連線，或 App 不在前景。';
+
+  @override
+  String get powertrainRefusedNoLiveAuthorization =>
+      '這次單次讀取沒有開始：目前沒有持有單次授權。授權不存在、已過期、冷卻中或已被隔離。';
+
+  @override
+  String get powertrainRefusedDiscardedAtLifecycleBoundary =>
+      '單次讀取進行中，連線或前景狀態改變了，因此它的結果被丟棄而沒有顯示。沒有任何失敗，也沒有保留任何結果。';
+
+  @override
   String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
     return '本次連線已隔離：同一個指令已經嘗試 $attemptCap 次。請重新連線後再試。';
   }
@@ -3280,6 +3292,35 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get settingsManualCommandWriteFailed =>
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String get manualCommandRefusedEmpty => '沒有輸入指令。';
+
+  @override
+  String get manualCommandRefusedMoreThanOneCommand =>
+      '指令裡有換行或控制字元，這樣會一次送出多個指令。轉接器以換行分隔指令，所以第二個指令不會經過這裡的任何檢查 —— 包括禁止清除故障碼的那一項。請一次只輸入一個指令。';
+
+  @override
+  String manualCommandRefusedAdapterStateWouldChange(
+    Object command,
+    Object allowed,
+  ) {
+    return '手動指令只接受查詢，不接受會改變轉接器設定的指令。「$command」會改動轉接器狀態，而 App 對轉接器的認知不會跟著更新 —— 接下來的讀數可能來自另一個控制器，而畫面上看不出來。\n可用的查詢：$allowed。';
+  }
+
+  @override
+  String get manualCommandRefusedClearHasItsOwnButton =>
+      '清除故障碼請用故障碼畫面的「清除」按鈕。從這裡送出會跳過確認、覆蓋率檢查與回應驗證，而且只會清到目前選中的那一個控制器。';
+
+  @override
+  String manualCommandRefusedCharactersNoObdCommandHas(Object command) {
+    return '指令「$command」含有 OBD 指令不會出現的字元。這裡只接受十六進位的服務碼與參數（例如 0100、03、2211A6），或 AT 開頭的轉接器查詢。';
+  }
+
+  @override
+  String manualCommandRefusedNotAReadOnlyQuery(Object command, Object allowed) {
+    return '不認得的指令「$command」。這裡只接受唯讀查詢（Mode $allowed）與轉接器查詢指令。';
+  }
 
   @override
   String commandFailureQueryHeaderRefused(Object header) {
@@ -5020,6 +5061,18 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '本次連線已隔離：先前一次單次讀取沒有通過結構檢查。請重新連線後再試。';
 
   @override
+  String get powertrainRefusedNotConnectedOrNotInForeground =>
+      '這次單次讀取沒有開始：目前沒有連線，或 App 不在前景。';
+
+  @override
+  String get powertrainRefusedNoLiveAuthorization =>
+      '這次單次讀取沒有開始：目前沒有持有單次授權。授權不存在、已過期、冷卻中或已被隔離。';
+
+  @override
+  String get powertrainRefusedDiscardedAtLifecycleBoundary =>
+      '單次讀取進行中，連線或前景狀態改變了，因此它的結果被丟棄而沒有顯示。沒有任何失敗，也沒有保留任何結果。';
+
+  @override
   String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
     return '本次連線已隔離：同一個指令已經嘗試 $attemptCap 次。請重新連線後再試。';
   }
@@ -6747,6 +6800,35 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandWriteFailed =>
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String get manualCommandRefusedEmpty => '沒有輸入指令。';
+
+  @override
+  String get manualCommandRefusedMoreThanOneCommand =>
+      '指令裡有換行或控制字元，這樣會一次送出多個指令。轉接器以換行分隔指令，所以第二個指令不會經過這裡的任何檢查 —— 包括禁止清除故障碼的那一項。請一次只輸入一個指令。';
+
+  @override
+  String manualCommandRefusedAdapterStateWouldChange(
+    Object command,
+    Object allowed,
+  ) {
+    return '手動指令只接受查詢，不接受會改變轉接器設定的指令。「$command」會改動轉接器狀態，而 App 對轉接器的認知不會跟著更新 —— 接下來的讀數可能來自另一個控制器，而畫面上看不出來。\n可用的查詢：$allowed。';
+  }
+
+  @override
+  String get manualCommandRefusedClearHasItsOwnButton =>
+      '清除故障碼請用故障碼畫面的「清除」按鈕。從這裡送出會跳過確認、覆蓋率檢查與回應驗證，而且只會清到目前選中的那一個控制器。';
+
+  @override
+  String manualCommandRefusedCharactersNoObdCommandHas(Object command) {
+    return '指令「$command」含有 OBD 指令不會出現的字元。這裡只接受十六進位的服務碼與參數（例如 0100、03、2211A6），或 AT 開頭的轉接器查詢。';
+  }
+
+  @override
+  String manualCommandRefusedNotAReadOnlyQuery(Object command, Object allowed) {
+    return '不認得的指令「$command」。這裡只接受唯讀查詢（Mode $allowed）與轉接器查詢指令。';
+  }
 
   @override
   String commandFailureQueryHeaderRefused(Object header) {

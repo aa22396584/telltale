@@ -1711,6 +1711,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Quarantined for this connection: an earlier one-shot read did not pass its structural checks. Reconnect before trying again.';
 
   @override
+  String get powertrainRefusedNotConnectedOrNotInForeground =>
+      'The one-shot read was not started: nothing is connected, or the app was not in the foreground.';
+
+  @override
+  String get powertrainRefusedNoLiveAuthorization =>
+      'The one-shot read was not started: no single-use authorization is being held. None was given, or it has expired, gone into cooldown, or been quarantined.';
+
+  @override
+  String get powertrainRefusedDiscardedAtLifecycleBoundary =>
+      'The connection or the foreground state changed while the one-shot read was running, so its answer was discarded instead of shown. Nothing failed, and nothing was kept.';
+
+  @override
   String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
     return 'Quarantined for this connection: the same command has already been tried $attemptCap times. Reconnect before trying again.';
   }
@@ -3685,6 +3697,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsManualCommandWriteFailed =>
       'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
+
+  @override
+  String get manualCommandRefusedEmpty =>
+      'Nothing was typed, so nothing was sent.';
+
+  @override
+  String get manualCommandRefusedMoreThanOneCommand =>
+      'This text carries a line break or another control character, which sends more than one command at once. The adapter separates commands by line break, so the second one would skip every check made here — including the one that refuses to clear fault codes. Send one command at a time.';
+
+  @override
+  String manualCommandRefusedAdapterStateWouldChange(
+    Object command,
+    Object allowed,
+  ) {
+    return 'This box accepts questions, not commands that change what the adapter is. “$command” would change the adapter\'s state while the app\'s model of it stayed as it was — the readings after it could come from a different controller, with nothing on screen to say so.\nQueries you can send: $allowed.';
+  }
+
+  @override
+  String get manualCommandRefusedClearHasItsOwnButton =>
+      'To clear fault codes, use the Clear button on the fault-code screen. Sent from here it would skip the confirmation, the coverage check and the response validation, and it would reach only the one controller currently selected.';
+
+  @override
+  String manualCommandRefusedCharactersNoObdCommandHas(Object command) {
+    return 'The command “$command” contains characters an OBD command never has. This box takes hexadecimal service codes and parameters — 0100, 03, 2211A6 — or an adapter query beginning with AT.';
+  }
+
+  @override
+  String manualCommandRefusedNotAReadOnlyQuery(Object command, Object allowed) {
+    return '“$command” is not a command this box knows. It takes read-only queries (Mode $allowed) and adapter queries.';
+  }
 
   @override
   String commandFailureQueryHeaderRefused(Object header) {

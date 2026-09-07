@@ -23,17 +23,34 @@
 // can.
 //
 // This file holds four things that would otherwise drift apart: that no direct
-// `TransportException` anywhere in `lib/obd/` settles for `issue: null`, that
+// `TransportException` anywhere in `lib/obd/` or `lib/state/` settles for
+// `issue: null`, that
 // each identifier is answered by exactly one of the two copy tables, that every
 // identifier a screen can reach has copy in both languages, and that no two of
 // them say the same thing.
 //
 // The scan used to read `lib/obd/transport/` alone, which was the whole story
 // only while `elm327_client.dart`'s eight throws had no identifier to carry.
-// They have one now, so the directory that has to stay clean is `lib/obd/`.
-// `lib/state/obd_session.dart` is deliberately still outside it: its six are a
-// separate change (ImL1s/telltale#45), and widening this far now would fail on
-// work nobody has done yet, which is how a guard gets an exception list.
+// They have one now, and so do `lib/state/obd_session.dart`'s, so the two
+// directories that have to stay clean are `lib/obd/` and `lib/state/`.
+//
+// `lib/state/` was deliberately outside it while its six throws still passed
+// `issue: null`, because a guard that fails on work nobody has done yet gets an
+// exception list rather than a fix. They went four different ways, and a reader
+// checking one of them has to be sent to the right file:
+//
+//   * one is genuinely `TransportIssue.notConnected` and is held here;
+//   * one was a second rule for a case the first already answered, and is gone;
+//   * one became `ManualCommandRefusedException` -- declining to send a command
+//     involves no link and no bytes, so it is not a transport failure -- and
+//     fans out into one refusal identifier per reason, held by
+//     `l05_manual_refusal_guard_test.dart`;
+//   * three became `PowertrainProbeRefusedException`, held by
+//     `l05_battery_refusal_guard_test.dart` beside the rest of that enum.
+//
+// This paragraph said "five of the six" became the first of those. It was one.
+// A header that sends somebody to the wrong guard is the failure the roster
+// below warns about, arriving in the prose instead of the code.
 //
 // "Direct" is doing work in that sentence. Three subclasses bake `issue: null`
 // into their own constructors, so the scan never sees them; they are held by a
@@ -138,8 +155,9 @@ void main() {
   test('every transport failure names a real issue, not null', () {
     // The constructor makes `issue:` required, so the compiler already refuses
     // a throw that omits it. What it cannot refuse is `issue: null`, which is
-    // correct in `lib/state/obd_session.dart` -- for now, and for six throws --
-    // and wrong anywhere under `lib/obd/`.
+    // wrong anywhere under `lib/obd/` or `lib/state/`. The only constructions
+    // left carrying one are the three subclasses that bake it into their own
+    // constructors, and the roster below is what holds those.
     //
     // It also cannot refuse an identifier whose sentence names an address,
     // thrown without the address. That reads as a complete failure, analyses
@@ -153,64 +171,8 @@ void main() {
     // both, because a nested `issue:` is not a top-level argument of the call
     // that encloses it.
     final naked = <String>[];
-    for (final file in _transportSources()) {
-      final src = file.readAsStringSync();
-      final mask = codeMask(src);
-
-      for (final match in RegExp(r'\bTransportException\(').allMatches(src)) {
-        final line = '\n'.allMatches(src.substring(0, match.start)).length + 1;
-        if (!mask[match.start]) continue; // named inside a string or a comment
-        final args = topLevelArgs(src, mask, match.end - 1);
-        if (args == null) {
-          // Not `continue`. An unreadable call used to be dropped in silence,
-          // which turns ANY future desync -- whatever the vector -- into a green
-          // run. Reporting it means the reader can still be wrong, but it cannot
-          // be quiet about it.
-          naked.add('${file.path}:$line — could not be read');
-          continue;
-        }
-        // The declaration itself, and only it. `args.any(contains)` also
-        // matched a throw that passed a field named `message` -- review wrote
-        // one: a transport with `final String message` and
-        // `TransportException(this.message, issue: null)` passed the guard.
-        if (file.path.endsWith('obd_transport.dart') &&
-            args.isNotEmpty &&
-            args.first.trim() == 'this.message') {
-          continue;
-        }
-        final trimmed = args.map((a) => a.trim()).toList(growable: false);
-        final issue = trimmed.firstWhere(
-          (a) => a.startsWith('issue:'),
-          orElse: () => '',
-        );
-        if (issue.isEmpty || issue.contains('null')) {
-          naked.add(
-            '${file.path}:$line — '
-            '${issue.isEmpty ? "no issue: argument" : issue}',
-          );
-          continue;
-        }
-        final named = _interpolating.where(issue.contains);
-        if (named.isNotEmpty) {
-          // Present *and* not null, exactly as the `issue:` arm above. The
-          // first version asked only whether the argument was written, and
-          // review showed what that is worth: `issueDetail: null` at
-          // `elm327_client.dart:1501` left this green while the sentence it
-          // guards rendered with a hole where the header address goes. An
-          // argument that is spelled but says nothing is the same defect as one
-          // that was never spelled, and it looks more finished.
-          final detail = trimmed.firstWhere(
-            (a) => a.startsWith('issueDetail:'),
-            orElse: () => '',
-          );
-          if (detail.isEmpty || detail.contains('null')) {
-            naked.add(
-              '${file.path}:$line — ${named.first} '
-              '${detail.isEmpty ? "without issueDetail:" : detail}',
-            );
-          }
-        }
-      }
+    for (final file in _identifierSources()) {
+      naked.addAll(_nakedIssues(file.path, file.readAsStringSync()));
     }
     expect(
       naked,
@@ -247,8 +209,11 @@ void main() {
     // does not exist. A guard that names something imaginary is one people learn
     // to disbelieve, which is the same failure as the detector this file used to
     // carry. Found by trying it.
+    // The same tree the scan walks. A subclass declared in `lib/state/` would
+    // be as invisible to the scan as one in `lib/obd/`, and the roster is the
+    // only thing that can see either.
     final sources = {
-      for (final f in _transportSources())
+      for (final f in _identifierSources())
         f.path: codeOnly(f.readAsStringSync()),
     };
 
@@ -302,6 +267,56 @@ void main() {
             'held by the scan rather than by this roster',
       );
     }
+  });
+
+  test('the scan itself: a planted offender is reported, by line', () {
+    // The scan above is a loop over files that are supposed to be clean, so a
+    // green run is what it gives whether it is working or broken. Every other
+    // check in this file has a fixture proving what it sees; this one had
+    // none, and it is the check the slice exists for.
+    const planted =
+        "class X {\n"
+        "  void f() {\n"
+        "    throw const TransportException('尚未連線', issue: null);\n"
+        "  }\n"
+        "}\n";
+    expect(
+      _nakedIssues('lib/state/planted.dart', planted),
+      ['lib/state/planted.dart:3 — issue: null'],
+      reason: 'a throw with no identifier must be named, with its line',
+    );
+  });
+
+  test('the scan itself: an identifier satisfies it, and its absence does not',
+      () {
+    // A clean fixture proves nothing on its own -- a scan that reads nothing
+    // is also clean. So the same text is asserted twice: once with the
+    // identifier, where it must be silent, and once with `null` in its place,
+    // where it must speak. Only the pair says the fixture was reachable.
+    const clean =
+        "throw const TransportException('尚未連線', "
+        "issue: TransportIssue.notConnected);";
+    expect(_nakedIssues('lib/state/x.dart', clean), isEmpty);
+    expect(
+      _nakedIssues('lib/state/x.dart', clean.replaceAll(
+        'TransportIssue.notConnected',
+        'null',
+      )),
+      isNotEmpty,
+      reason: 'the control: the same fixture, one identifier short',
+    );
+  });
+
+  test('the scan itself: a construction inside a comment is not an offender',
+      () {
+    // The failure mode a substring search has, and the reason this repo
+    // parses. Its sentinel is the same offender text as the positive fixture,
+    // so a reader that stopped honouring comments would report this line and
+    // the expectation names exactly what it would say.
+    const commented =
+        "// throw const TransportException('尚未連線', issue: null);\n"
+        "throw const TransportException('x', issue: TransportIssue.cancelled);";
+    expect(_nakedIssues('lib/state/x.dart', commented), isEmpty);
   });
 
   test('the reader itself: what counts as code', () {
@@ -689,12 +704,86 @@ void main() {
   });
 }
 
-/// Every Dart file the transports live in.
+/// Every `TransportException` construction in [src] that carries no usable
+/// identifier, reported as `path:line — why`.
 ///
-/// Recursive, and shared by the scan and the roster so they cannot disagree
-/// about what "the transport directory" means -- the roster used to read one
-/// file while the scan walked the tree.
-List<File> _transportSources() => Directory('lib/obd')
+/// A function rather than a loop body so the fixtures below can drive the same
+/// code the real scan runs. The scan used to be inline, which meant nothing
+/// proved it reports anything: a version that silently found nothing would
+/// have produced the same green run as a clean tree. `the scan itself: a
+/// planted offender is reported` is what separates those two.
+List<String> _nakedIssues(String path, String src) {
+  final naked = <String>[];
+  final mask = codeMask(src);
+
+  for (final match in RegExp(r'\bTransportException\(').allMatches(src)) {
+    final line = '\n'.allMatches(src.substring(0, match.start)).length + 1;
+    if (!mask[match.start]) continue; // named inside a string or a comment
+    final args = topLevelArgs(src, mask, match.end - 1);
+    if (args == null) {
+      // Not `continue`. An unreadable call used to be dropped in silence,
+      // which turns ANY future desync -- whatever the vector -- into a green
+      // run. Reporting it means the reader can still be wrong, but it cannot
+      // be quiet about it.
+      naked.add('$path:$line — could not be read');
+      continue;
+    }
+    // The declaration itself, and only it. `args.any(contains)` also
+    // matched a throw that passed a field named `message` -- review wrote
+    // one: a transport with `final String message` and
+    // `TransportException(this.message, issue: null)` passed the guard.
+    if (path.endsWith('obd_transport.dart') &&
+        args.isNotEmpty &&
+        args.first.trim() == 'this.message') {
+      continue;
+    }
+    final trimmed = args.map((a) => a.trim()).toList(growable: false);
+    final issue = trimmed.firstWhere(
+      (a) => a.startsWith('issue:'),
+      orElse: () => '',
+    );
+    if (issue.isEmpty || issue.contains('null')) {
+      naked.add('$path:$line — ${issue.isEmpty ? "no issue: argument" : issue}');
+      continue;
+    }
+    final named = _interpolating.where(issue.contains);
+    if (named.isNotEmpty) {
+      // Present *and* not null, exactly as the `issue:` arm above. The
+      // first version asked only whether the argument was written, and
+      // review showed what that is worth: `issueDetail: null` at
+      // `elm327_client.dart:1501` left this green while the sentence it
+      // guards rendered with a hole where the header address goes. An
+      // argument that is spelled but says nothing is the same defect as one
+      // that was never spelled, and it looks more finished.
+      final detail = trimmed.firstWhere(
+        (a) => a.startsWith('issueDetail:'),
+        orElse: () => '',
+      );
+      if (detail.isEmpty || detail.contains('null')) {
+        naked.add(
+          '$path:$line — ${named.first} '
+          '${detail.isEmpty ? "without issueDetail:" : detail}',
+        );
+      }
+    }
+  }
+  return naked;
+}
+
+/// Every Dart file a `TransportException` may be constructed in.
+///
+/// `lib/obd/` is the engine. `lib/state/` is here because `obd_session.dart`
+/// constructs one too, and while it did not have to name an identifier this
+/// scan could not see it. Recursive, and shared by the scan and the roster so
+/// they cannot disagree about what "the source" means -- the roster used to
+/// read one file while the scan walked the tree, and the narrower of the two
+/// was the one that stayed green.
+List<File> _identifierSources() => [
+  ..._dartFilesUnder('lib/obd'),
+  ..._dartFilesUnder('lib/state'),
+];
+
+List<File> _dartFilesUnder(String dir) => Directory(dir)
     .listSync(recursive: true)
     .whereType<File>()
     .where((f) => f.path.endsWith('.dart'))

@@ -303,10 +303,18 @@ class TransportException implements Exception {
   /// showed that the identifier had gone into the wrong slot. Found by review,
   /// by doing it.
   ///
-  /// Required rather than defaulted because the throws that have no identifier
-  /// yet should have to write `issue: null` and mean it. Eight of the original
-  /// fourteen were `elm327_client.dart`'s and now carry one; the six left are
-  /// in `lib/state/obd_session.dart`. See ImL1s/telltale#45.
+  /// Required rather than defaulted because a throw with no identifier should
+  /// have to write `issue: null` and mean it.
+  ///
+  /// Where that is still allowed is a mechanical question, not a number. The
+  /// scan in `test/l10n/transport_issue_guard_test.dart` walks `lib/obd/` and
+  /// `lib/state/` and fails any direct construction that settles for null;
+  /// what it cannot see is the three subclasses below, which bake it into
+  /// their own constructors and are held by a written roster in the same file.
+  ///
+  /// This sentence used to carry a count of the throws still to be migrated.
+  /// It drifted three times — fourteen, then eight, then six — and is now
+  /// zero, which is exactly how long a number in a doc comment stays true.
   const TransportException(
     this.message, {
     this.cause,

@@ -437,6 +437,49 @@ void main() {
     },
   );
 
+  test('a probe with nothing connected names that, and only that', () async {
+    // The third of the session's own refusal identifiers, and the one no other
+    // case here reaches: every test below connects first. Without it the
+    // identifier exists, has copy in three languages, is unique, differs
+    // between languages -- and nothing shows a single condition producing it.
+    //
+    // It matters which one it is. The screen used to answer all three with
+    // `powertrainProbeDidNotFinish`, so a driver who had simply not connected
+    // read the same sentence as one whose adapter failed mid-read.
+    final container = await _container({
+      'powertrain_battery_experiments_enabled_v1': true,
+    });
+    addTearDown(container.dispose);
+    final snapshot = await PowertrainBatteryCatalogAsset.load();
+    final profile = snapshot.catalog.profiles.singleWhere(
+      (profile) => profile.id == 'mg-zs-ev-au-2021',
+    );
+    final command = profile.commands.singleWhere(
+      (command) => command.modeAndIdentifier == '22B046',
+    );
+    final session = container.read(obdSessionProvider.notifier);
+    expect(container.read(obdSessionProvider).isConnected, isFalse);
+
+    await expectLater(
+      session.probePowertrainBatteryCommand(
+        snapshot: snapshot,
+        profileId: profile.id,
+        commandKey: command.wireKey,
+        vehicleYear: 2021,
+      ),
+      throwsA(
+        isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.notConnectedOrNotInForeground,
+        ),
+      ),
+      reason: 'not the authorization refusal: the lease is never even asked '
+          'for, and telling somebody their authorization expired when they '
+          'are not connected sends them to the wrong screen',
+    );
+  });
+
   test(
     'transport refusal is one-shot, consumes consent, and does not quarantine',
     () async {
@@ -498,7 +541,11 @@ void main() {
           commandKey: command.wireKey,
           vehicleYear: 2021,
         ),
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.noLiveAuthorization,
+        )),
       );
       expect(
         adapter.commandLog.where((wire) => wire == command.modeAndIdentifier),
@@ -552,7 +599,11 @@ void main() {
           commandKey: command.wireKey,
           vehicleYear: 2020,
         ),
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.noLiveAuthorization,
+        )),
       );
 
       expect(
@@ -661,7 +712,11 @@ void main() {
           commandKey: command.wireKey,
           vehicleYear: 2020,
         ),
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.noLiveAuthorization,
+        )),
       );
       expect(
         adapter.commandLog.where((wire) => wire == command.modeAndIdentifier),
@@ -814,7 +869,11 @@ void main() {
     );
     expect(disableCompleted, isFalse);
 
-    await expectLater(pending, throwsA(isA<TransportException>()));
+    await expectLater(pending, throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        )));
     expect(disableCompleted, isFalse);
     persistence.complete(true);
     await disabling;
@@ -911,7 +970,11 @@ void main() {
     binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
     binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
-    await expectLater(pending, throwsA(isA<TransportException>()));
+    await expectLater(pending, throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        )));
     expect(
       container.read(powertrainExperimentalProbeConsentsProvider),
       isEmpty,
@@ -966,7 +1029,11 @@ void main() {
       );
       final pendingRefusal = expectLater(
         pending,
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        )),
       );
       await _waitForCommand(firstAdapter, command.modeAndIdentifier);
 
@@ -1038,7 +1105,11 @@ void main() {
       );
       final pendingRefusal = expectLater(
         pending,
-        throwsA(isA<TransportException>()),
+        throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        )),
       );
       expect(adapter.commandLog, isNot(contains(command.modeAndIdentifier)));
 
@@ -1198,7 +1269,11 @@ void main() {
         commandKey: command.wireKey,
         vehicleYear: 2021,
       );
-      final refusal = expectLater(pending, throwsA(isA<TransportException>()));
+      final refusal = expectLater(pending, throwsA(isA<PowertrainProbeRefusedException>().having(
+          (e) => e.refusal,
+          'refusal',
+          PowertrainProbeRefusal.discardedAtLifecycleBoundary,
+        )));
 
       final access = container.read(
         powertrainBatteryExperimentalAccessProvider.notifier,

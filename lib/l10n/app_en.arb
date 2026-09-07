@@ -1506,6 +1506,18 @@
   "@powertrainRefusedQuarantinedAfterRejectedRead": {
     "description": "Refusal identifier PowertrainProbeRefusal.quarantinedAfterRejectedRead. Which check failed was already shown in the probe result dialog when it happened."
   },
+  "powertrainRefusedNotConnectedOrNotInForeground": "The one-shot read was not started: nothing is connected, or the app was not in the foreground.",
+  "@powertrainRefusedNotConnectedOrNotInForeground": {
+    "description": "Refusal identifier PowertrainProbeRefusal.notConnectedOrNotInForeground. One sentence for both conditions because the engine tests them in one expression and refuses both the same way."
+  },
+  "powertrainRefusedNoLiveAuthorization": "The one-shot read was not started: no single-use authorization is being held. None was given, or it has expired, gone into cooldown, or been quarantined.",
+  "@powertrainRefusedNoLiveAuthorization": {
+    "description": "Refusal identifier PowertrainProbeRefusal.noLiveAuthorization. Which of the four it was is not knowable at this point; the sentence says so rather than picking one."
+  },
+  "powertrainRefusedDiscardedAtLifecycleBoundary": "The connection or the foreground state changed while the one-shot read was running, so its answer was discarded instead of shown. Nothing failed, and nothing was kept.",
+  "@powertrainRefusedDiscardedAtLifecycleBoundary": {
+    "description": "Refusal identifier PowertrainProbeRefusal.discardedAtLifecycleBoundary. It must not read as a failure: a result was deliberately not published, which is the opposite of the sentence this path used to show."
+  },
   "powertrainRefusedQuarantinedAtAttemptCap": "Quarantined for this connection: the same command has already been tried {attemptCap} times. Reconnect before trying again.",
   "@powertrainRefusedQuarantinedAtAttemptCap": {
     "description": "Refusal identifier PowertrainProbeRefusal.quarantinedAtAttemptCap. {attemptCap} is PowertrainExperimentalProbeConsents.maxAttemptsPerCommand, never spelled into the copy.",
@@ -2999,6 +3011,41 @@
   "settingsManualCommandWriteFailed": "The command could not be handed to the adapter's connection. How much of it reached the adapter is not known.",
   "@settingsManualCommandWriteFailed": {
     "description": "TransportIssue.writeFailed. Not a connect failure - it happens on an open link and reaches this panel, not the connect screen. The hedge is load-bearing: a write that failed part way has already put bytes on the wire."
+  },
+  "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
+  "@manualCommandRefusedEmpty": {
+    "description": "ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything."
+  },
+  "manualCommandRefusedMoreThanOneCommand": "This text carries a line break or another control character, which sends more than one command at once. The adapter separates commands by line break, so the second one would skip every check made here \u2014 including the one that refuses to clear fault codes. Send one command at a time.",
+  "@manualCommandRefusedMoreThanOneCommand": {
+    "description": "ManualCommandRefusalReason.moreThanOneCommand. The mechanism is the message: 03\\r04 is two requests and the second one erases the vehicle's fault memory. Saying only 'refused' would leave somebody retrying the same paste."
+  },
+  "manualCommandRefusedAdapterStateWouldChange": "This box accepts questions, not commands that change what the adapter is. \u201c{command}\u201d would change the adapter's state while the app's model of it stayed as it was \u2014 the readings after it could come from a different controller, with nothing on screen to say so.\nQueries you can send: {allowed}.",
+  "@manualCommandRefusedAdapterStateWouldChange": {
+    "description": "ManualCommandRefusalReason.adapterStateWouldChange. {command} is the text as typed and {allowed} is manualCommandAdvertisedAtQueries joined with settingsListSeparator, never a list spelled into the sentence: copy that named seven queries while the set accepted more was a false statement about what this box takes, read by the one person whose command was just refused. No count here: it is what drifted.",
+    "placeholders": {
+      "command": {},
+      "allowed": {}
+    }
+  },
+  "manualCommandRefusedClearHasItsOwnButton": "To clear fault codes, use the Clear button on the fault-code screen. Sent from here it would skip the confirmation, the coverage check and the response validation, and it would reach only the one controller currently selected.",
+  "@manualCommandRefusedClearHasItsOwnButton": {
+    "description": "ManualCommandRefusalReason.clearHasItsOwnButton. Mode 04. It names where to go rather than only refusing, because the thing the person wanted is available and safeguarded a screen away."
+  },
+  "manualCommandRefusedCharactersNoObdCommandHas": "The command \u201c{command}\u201d contains characters an OBD command never has. This box takes hexadecimal service codes and parameters \u2014 0100, 03, 2211A6 \u2014 or an adapter query beginning with AT.",
+  "@manualCommandRefusedCharactersNoObdCommandHas": {
+    "description": "ManualCommandRefusalReason.charactersNoObdCommandHas. A whitelist rather than a list of separators to keep complete: the cost of an incomplete blacklist here is a fault-code clear nobody asked for.",
+    "placeholders": {
+      "command": {}
+    }
+  },
+  "manualCommandRefusedNotAReadOnlyQuery": "\u201c{command}\u201d is not a command this box knows. It takes read-only queries (Mode {allowed}) and adapter queries.",
+  "@manualCommandRefusedNotAReadOnlyQuery": {
+    "description": "ManualCommandRefusalReason.notAReadOnlyQuery. {allowed} is manualCommandAdvertisedServices joined with settingsListSeparator. The list was once written out beside the set and the two had already drifted: Mode 05 was admitted and the sentence still omitted it.",
+    "placeholders": {
+      "command": {},
+      "allowed": {}
+    }
   },
   "commandFailureQueryHeaderRefused": "The adapter refused to aim this request at controller {header}, so it was not sent. Left on whatever address the adapter is really holding, the reply would have come back from a controller nobody asked.",
   "@commandFailureQueryHeaderRefused": {
