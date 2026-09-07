@@ -61,9 +61,18 @@ v1.0.12-beta.1  預發行   沒有那一行
 （`tool/release/require_device_walk.sh`），沒有就擋下正式版 tag。舊的做法是從 tag
 字串推導，什麼都沒驗 —— 那句宣稱只有在「開 tag 的人剛好真的走過」時才成立。
 
-寫那一行之前要做的事，就是這份文件第 5 步本來就要求的：把 release build 裝上手機，
-把 changelog 提到的每條流程走一遍。做完了，在該版本的走查條目裡加上那一行並 commit。
-**一個人、一個下午。**
+寫那一行之前要做的事：本機 `flutter build apk --release --flavor field`，裝上手機，
+把 changelog 提到的每條 user-facing flow 走一遍。做完了，在該版本的走查條目裡寫下
+看到什麼（含**沒過**的部分），加上那一行，commit。**一個人、一個下午。**
+
+**它跟第 5 步是兩件事，不要合併。** 第 5 步是發布**之後**從 GitHub Release 重新下載
+APK 來核對簽章與安裝 —— 那是在驗 CI 產出的那份成品。這裡這一趟是在 tag **之前**，
+驗的是本機建的 release build，簽章不同。兩趟都要走，順序不能對調：佐證那一行必須在
+第 4 步推 tag 之前就在 `main` 上，否則 CI 會擋下來。
+
+（這段原本寫成「就是這份文件第 5 步本來就要求的」。不是 —— 第 5 步在 tag 之後，
+產生不出 tag 之前就要存在的東西。CONTRIBUTING 那條「a comment that names a guard
+must name one that exists」就是這個形狀，而它跟這段是同一個 commit 加的。）
 
 **為什麼是一行欄位而不是從標題認版本號。** 第一版是在日期標題裡找版本號，然後被三個
 輸入打穿，第一個還是明說「沒裝」的句子：
