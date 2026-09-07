@@ -581,6 +581,10 @@ class _StatusStrip extends ConsumerWidget {
 /// second. A poll leaves a reading, a fault, or a non-zero PIDs/s.
 bool _snapshotHasBeenPolled(TelemetrySnapshot snapshot) {
   if (snapshot.capturedAt == null) return false;
+  // BUFFER FULL and a throwing first batch add no reading and no PIDs/s,
+  // but they do withdraw grouping. That is the fallback the help describes.
+  // The idle heartbeat leaves the flag at its default `true`.
+  if (!snapshot.fastModeEnabled) return true;
   return snapshot.readings.isNotEmpty ||
       snapshot.faults.isNotEmpty ||
       snapshot.pidsPerSecond > 0;

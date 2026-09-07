@@ -468,6 +468,24 @@ void main() {
     expect(find.byKey(PollingModePill.pillKey), findsNothing);
   });
 
+  testWidgets('a first batch that withdrew grouping still shows the fallback', (
+    tester,
+  ) async {
+    // BUFFER FULL / a throwing first `_pollBatch` leave no reading and no
+    // PIDs/s, but they do set the scheduler flag false. That is the fallback
+    // the help exists to explain; inferring a poll only from output hid it.
+    await _pumpDashboard(
+      tester,
+      batchingEnabled: false,
+      snapshot: TelemetrySnapshot(
+        capturedAt: DateTime.now(),
+        fastModeEnabled: false,
+      ),
+    );
+    expect(find.byKey(PollingModePill.pillKey), findsOneWidget);
+    expect(find.text(enSingle), findsOneWidget);
+  });
+
   testWidgets('a tap on the pill opens the explanation', (tester) async {
     await _pumpDashboard(tester, batchingEnabled: true);
     expect(find.text(enBatching), findsOneWidget);
