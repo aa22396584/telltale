@@ -13,6 +13,21 @@
 // survives the defect. The table below is typed out by hand, and swapping two
 // arms turns it red. That was run, not assumed.
 //
+// A copy table pins one link of a four-link chain:
+//
+//     condition  ->  identifier  ->  sentence  ->  the values in the sentence
+//
+// Pinning the identifier->sentence link moves the hole rather than closing it.
+// The condition->identifier link is the one this slice *created a boundary
+// across*: before it, the trigger and its words sat on adjacent lines, so a
+// diff reader saw the pair; now the trigger is in `lib/state/` and the words
+// are in `lib/ui/`. A reviewer replaced five arms of `authorize()` with
+// `labClosed` and the whole suite stayed green — a driver refused because
+// their profile is not in the verified catalog was told the laboratory had
+// been switched off. `the engine picks the right identifier` below drives
+// `authorize()` through each condition and names the identifier it must
+// return, so that mutation is red.
+//
 // The two scans are the other half. One holds the engine to identifiers: no
 // refusal may be constructed from a sentence. The other holds
 // `lib/state/powertrain_battery_profiles.dart` to having no Chinese in any
@@ -23,16 +38,61 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_catalog.dart';
+import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_profile.dart';
+import 'package:torque_obd/obd/powertrain_battery/profile_catalog_validator.dart';
+import 'package:torque_obd/obd/powertrain_battery/profile_wire_contract.dart';
+import 'package:torque_obd/state/pid_registry.dart';
+import 'package:torque_obd/state/powertrain_battery_experiments.dart';
 import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/screens/pids/powertrain_battery_copy.dart';
 
 import '../support/cjk.dart';
 import '../support/dart_source_reader.dart';
 
-const _profiles = 'lib/state/powertrain_battery_profiles.dart';
+/// Every file the catalog screen's refusal paths pass through, whose string
+/// literals must therefore hold no Chinese.
+///
+/// It read `_profiles` alone, and that is exactly how a bare
+/// `const kPidMutationLockedMessage = '請先停止並儲存'` in
+/// `lib/state/pid_mutation_lock.dart` — snacked by this very screen, four
+/// lines above the install-failure path this slice was tracing — survived a
+/// slice whose thesis is "no localized frame around unlocalized Chinese".
+/// A guard scoped to one file is honest about its scope and still shaped like
+/// the defect it exists to remove.
+///
+/// Two things on this path are deliberately outside the list, because a guard
+/// that fails on work nobody has done yet gets an exception list rather than a
+/// fix:
+///
+///   * `lib/state/pid_registry.dart` — `PidImportOutcome.describe` composes
+///     the CSV-import snackbar out of Chinese sentence fragments joined with
+///     `、`. That is a real defect of the same family, on the PID import path
+///     rather than this screen's refusal path, and it is a slice of its own.
+///   * `powertrain_battery_catalog_screen.dart:197`'s
+///     `l10n.powertrainInstallFailed(error.message)`, where `error.message` is
+///     English developer prose from `profile_pid_installer.dart` and
+///     `pid_registry.dart`. Mirror image of the same defect — a Chinese reader
+///     gets English — and excluded by this slice's brief. It is not a Chinese
+///     literal, so this scan would not see it either way; it is named here so
+///     the exclusion is a decision rather than an oversight.
+const _refusalPath = <String>[
+  'lib/state/powertrain_battery_profiles.dart',
+  'lib/state/pid_mutation_lock.dart',
+  'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart',
+  'lib/ui/screens/pids/powertrain_battery_copy.dart',
+  'lib/ui/screens/pids/pid_mutation_copy.dart',
+];
+
+/// How many `PowertrainExperimentalConsentDecision.refused(` constructions the
+/// scan below must still find: the constructor's own declaration, plus the six
+/// `return`s in `authorize()`.
+const _refusalConstructionSites = 7;
 
 /// The attempt cap the hand-typed table below was written against.
 ///
@@ -90,6 +150,8 @@ const Map<PowertrainProbeRefusal, (String, String)> _expected = {
 };
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   final en = lookupAppLocalizations(englishLocale);
   final zh = lookupAppLocalizations(traditionalChineseLocale);
 
@@ -106,7 +168,8 @@ void main() {
       expect(
         _expected.keys.toSet(),
         PowertrainProbeRefusal.values.toSet(),
-        reason: 'a refusal identifier was added or removed without a '
+        reason:
+            'a refusal identifier was added or removed without a '
             'hand-typed expectation',
       );
     });
@@ -146,7 +209,8 @@ void main() {
         expect(
           chinese.hasMatch(rendered),
           isFalse,
-          reason: '$refusal still shows ${chineseIn(rendered)} to an English '
+          reason:
+              '$refusal still shows ${chineseIn(rendered)} to an English '
               'reader',
         );
       }
@@ -161,7 +225,8 @@ void main() {
           expect(
             clash,
             isNull,
-            reason: '$name: $refusal and $clash render the same sentence:\n'
+            reason:
+                '$name: $refusal and $clash render the same sentence:\n'
                 '$rendered',
           );
           seen[rendered] = refusal;
@@ -189,6 +254,220 @@ void main() {
         PowertrainProbeRefusal.quarantinedAtAttemptCap,
         PowertrainProbeRefusal.quarantinedAfterRejectedRead,
       });
+    });
+  });
+
+  group('the engine picks the right identifier for each condition', () {
+    // The link the copy table above cannot reach. Every case here drives the
+    // real `authorize()` and asserts `.refusal`, never `.accepted` alone:
+    // `accepted == false` is preserved by every transposition, which is how
+    // five arms collapsed into one and stayed green.
+    late ProviderContainer container;
+    late PowertrainBatteryCatalogSnapshot snapshot;
+
+    Future<PowertrainExperimentalProbeConsents> consents({
+      bool laboratoryOn = true,
+    }) async {
+      if (laboratoryOn) {
+        await container
+            .read(powertrainBatteryExperimentalAccessProvider.notifier)
+            .setEnabled(true);
+      }
+      return container.read(
+        powertrainExperimentalProbeConsentsProvider.notifier,
+      );
+    }
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+      snapshot = await PowertrainBatteryCatalogAsset.load();
+    });
+
+    /// A community profile the one-shot laboratory may actually read.
+    PowertrainBatteryProfile probeable() => snapshot.catalog.profiles
+        .singleWhere((profile) => profile.id == 'mg-zs-ev-au-2021');
+
+    /// A catalog entry that is structurally clean and still not probeable:
+    /// `researchOnly` carries no commands, so `canProbe` is false with an
+    /// empty issue list. That empty list is the whole distinction between
+    /// `profileNotProbeable` and `profileFailedValidation`.
+    PowertrainBatteryProfile notProbeable() => snapshot.catalog.profiles
+        .singleWhere((profile) => profile.id == 'bmw-i3-bev-2013-2016');
+
+    test('the laboratory being off is labClosed', () async {
+      final probe = await consents(laboratoryOn: false);
+      final profile = probeable();
+      expect(
+        probe
+            .authorize(
+              snapshot: snapshot,
+              profileId: profile.id,
+              commandKey: profile.commands.first.wireKey,
+              vehicleYear: 2021,
+              connectionGeneration: 1,
+            )
+            .refusal,
+        PowertrainProbeRefusal.labClosed,
+      );
+    });
+
+    test('an id no verified profile has is profileNotInCatalog', () async {
+      final probe = await consents();
+      expect(
+        probe
+            .authorize(
+              snapshot: snapshot,
+              profileId: 'no-such-profile-in-any-catalog',
+              commandKey: '22B046',
+              vehicleYear: 2021,
+              connectionGeneration: 1,
+            )
+            .refusal,
+        PowertrainProbeRefusal.profileNotInCatalog,
+      );
+    });
+
+    test('a clean profile of a tier that cannot be read once is '
+        'profileNotProbeable', () async {
+      final probe = await consents();
+      final profile = notProbeable();
+      // The precondition the identifier is about, asserted rather than
+      // assumed: no issues, and still not probeable.
+      final validation = const PowertrainBatteryProfileCatalogValidator()
+          .validateProfile(profile, vehicleYear: 2015);
+      expect(validation.issues, isEmpty);
+      expect(validation.canProbe, isFalse);
+      expect(
+        probe
+            .authorize(
+              snapshot: snapshot,
+              profileId: profile.id,
+              commandKey: '22B046',
+              vehicleYear: 2015,
+              connectionGeneration: 1,
+            )
+            .refusal,
+        PowertrainProbeRefusal.profileNotProbeable,
+      );
+    });
+
+    test(
+      'a model year outside the profile is profileFailedValidation',
+      () async {
+        final probe = await consents();
+        final profile = probeable();
+        final validation = const PowertrainBatteryProfileCatalogValidator()
+            .validateProfile(profile, vehicleYear: 2035);
+        expect(validation.issues, isNotEmpty);
+        expect(
+          probe
+              .authorize(
+                snapshot: snapshot,
+                profileId: profile.id,
+                commandKey: profile.commands.first.wireKey,
+                vehicleYear: 2035,
+                connectionGeneration: 1,
+              )
+              .refusal,
+          PowertrainProbeRefusal.profileFailedValidation,
+        );
+      },
+    );
+
+    test('a command the profile does not own is commandNotInProfile', () async {
+      final probe = await consents();
+      final profile = probeable();
+      expect(
+        profile.commands.any((command) => command.wireKey == '22FFFF'),
+        isFalse,
+        reason: 'the fixture command must genuinely not be in this profile',
+      );
+      expect(
+        probe
+            .authorize(
+              snapshot: snapshot,
+              profileId: profile.id,
+              commandKey: '22FFFF',
+              vehicleYear: 2021,
+              connectionGeneration: 1,
+            )
+            .refusal,
+        PowertrainProbeRefusal.commandNotInProfile,
+      );
+    });
+
+    test('a standing quarantine is reported as the cause that recorded it', () async {
+      // Both quarantine arms come back through one `return`, so the identifier
+      // has to be the one that was stored. A tap that reports the wrong one
+      // sends the driver to reconnect for a reason that did not happen.
+      for (final cause in kPowertrainQuarantineRefusals) {
+        final probe = await consents();
+        final profile = probeable();
+        probe.quarantine(profile.id, cause);
+        expect(
+          probe
+              .authorize(
+                snapshot: snapshot,
+                profileId: profile.id,
+                commandKey: profile.commands.first.wireKey,
+                vehicleYear: 2021,
+                connectionGeneration: 1,
+              )
+              .refusal,
+          cause,
+        );
+        probe.invalidateForVehicleBoundary();
+      }
+    });
+
+    test('the accepted path still accepts, and names no refusal', () async {
+      // Vacuity: every assertion above is about a refusal, so an `authorize`
+      // that refused everything would satisfy all of them.
+      final probe = await consents();
+      final profile = probeable();
+      final decision = probe.authorize(
+        snapshot: snapshot,
+        profileId: profile.id,
+        commandKey: profile.commands.first.wireKey,
+        vehicleYear: 2021,
+        connectionGeneration: 1,
+      );
+      expect(decision.accepted, isTrue);
+      expect(decision.refusal, isNull);
+    });
+
+    test('catalogHashInvalid is a backstop no snapshot can reach', () async {
+      // The one arm the cases above cannot drive, said plainly rather than
+      // left looking covered. `PowertrainBatteryCatalogSnapshot` is a final
+      // class with a private constructor, and the only way in --
+      // `fromStrings` -- refuses a manifest whose `sha256` is not a lowercase
+      // 64-hex digest before a snapshot exists. So `authorize`'s hash check
+      // cannot fail for anything this app can construct.
+      //
+      // This test is what makes that claim checkable. If the manifest gate is
+      // ever loosened, the arm becomes reachable and nothing else in this file
+      // is watching it -- so this goes red first and says to write the case.
+      expect(isPowertrainCatalogSha256(snapshot.catalogSha256), isTrue);
+      expect(
+        () => PowertrainBatteryCatalogAsset.fromStrings(
+          manifestJson:
+              '{"schema_version":3,'
+              '"catalog_file":"powertrain_battery_catalog.json",'
+              '"sha256":"not-a-digest","size_bytes":0,"profile_count":0,'
+              '"signal_count":0,"counts_by_powertrain":{}}',
+          catalogJson: '{"schema_version":3,"profiles":[]}',
+        ),
+        throwsA(isA<PowertrainBatteryCatalogAssetException>()),
+        reason:
+            'if a snapshot can be built with a hash that is not a '
+            'lowercase 64-hex digest, PowertrainProbeRefusal.catalogHashInvalid '
+            'is reachable and needs a case of its own above',
+      );
     });
   });
 
@@ -236,26 +515,58 @@ void main() {
           }
         }
       }
-      expect(calls, greaterThan(0), reason: 'the scan found no refusals at '
-          'all; it has stopped looking at anything');
+      // Not `greaterThan(0)`: presence is not coverage. Deleting six of the
+      // seven construction sites left that green, so the scan would have gone
+      // on reporting success while watching one line. The number is the
+      // constructor declaration plus the six `return`s in `authorize`; raise
+      // it deliberately when a seventh refusal path is written.
+      expect(
+        calls,
+        greaterThanOrEqualTo(_refusalConstructionSites),
+        reason:
+            'the scan found $calls of the $_refusalConstructionSites '
+            'refusal constructions it expects. Either a refusal path was '
+            'deleted, or the scan has stopped seeing them',
+      );
       expect(
         offenders,
         isEmpty,
-        reason: 'a refusal reaches the screen carrying a sentence instead of '
+        reason:
+            'a refusal reaches the screen carrying a sentence instead of '
             'an identifier the screen can translate:\n${offenders.join('\n')}',
       );
     });
 
-    test('no string literal in the profiles notifier is Chinese', () {
-      final src = File(_profiles).readAsStringSync();
-      final offenders = _chineseStringLiterals(src)
-          .map((hit) => '$_profiles:${_lineAt(src, hit.$1)} — ${hit.$2}')
-          .toList();
+    test('every file on the refusal path still exists', () {
+      // A guard aimed at a renamed path passes by reading nothing, which is
+      // this project's most familiar failure.
+      for (final path in _refusalPath) {
+        expect(
+          File(path).existsSync(),
+          isTrue,
+          reason:
+              '$path was moved or deleted. Point this guard at wherever '
+              'the refusal path lives now; do not delete the entry.',
+        );
+      }
+    });
+
+    test('no string literal anywhere on the refusal path is Chinese', () {
+      final offenders = <String>[];
+      for (final path in _refusalPath) {
+        final src = File(path).readAsStringSync();
+        offenders.addAll(
+          _chineseStringLiterals(src)
+              .map((hit) => '$path:${_lineAt(src, hit.$1)} — ${hit.$2}'),
+        );
+      }
       expect(
         offenders,
         isEmpty,
-        reason: 'these are engine strings that reach a screen through the '
-            'refusal path; give the screen an identifier instead:\n'
+        reason:
+            'these are words a screen renders on the refusal path with no '
+            'identifier behind them; give the screen an identifier and put '
+            'the sentence in all three ARB files instead:\n'
             '${offenders.join('\n')}',
       );
     });
@@ -312,8 +623,9 @@ List<(int, String)> _chineseStringLiterals(String src) {
 int _lineAt(String src, int offset) =>
     '\n'.allMatches(src.substring(0, offset)).length + 1;
 
-List<File> _libSources() => Directory('lib')
-    .listSync(recursive: true)
-    .whereType<File>()
-    .where((f) => f.path.endsWith('.dart'))
-    .toList();
+List<File> _libSources() =>
+    Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .toList();

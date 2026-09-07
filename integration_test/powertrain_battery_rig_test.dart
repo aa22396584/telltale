@@ -204,7 +204,11 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(pendingDecision.accepted, isTrue, reason: '${pendingDecision.refusal}');
+      expect(
+        pendingDecision.accepted,
+        isTrue,
+        reason: '${pendingDecision.refusal}',
+      );
       expect(
         container.read(powertrainExperimentalProbeConsentsProvider),
         isNotEmpty,

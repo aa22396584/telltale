@@ -715,9 +715,9 @@ void main() {
 
     expect(result.failure, PowertrainBatteryProbeFailure.responderMismatch);
     expect(
-    consents.quarantineReason(profile.id),
-    PowertrainProbeRefusal.quarantinedAfterRejectedRead,
-  );
+      consents.quarantineReason(profile.id),
+      PowertrainProbeRefusal.quarantinedAfterRejectedRead,
+    );
     expect(
       consents
           .authorize(

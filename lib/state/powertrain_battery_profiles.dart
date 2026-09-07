@@ -207,9 +207,16 @@ final class PowertrainExperimentalConsentDecision {
 
   /// The per-command attempt cap this decision was judged against.
   ///
-  /// Only [PowertrainProbeRefusal.quarantinedAtAttemptCap] renders it, but
-  /// every decision carries it so no caller has to supply a default for a
-  /// number the policy already owns.
+  /// Today this is always [PowertrainExperimentalProbeConsents
+  /// .maxAttemptsPerCommand] — nothing constructs a decision with any other
+  /// value, and the screen's other refusal path reads that same constant
+  /// directly. Said here rather than left to be inferred, because a field that
+  /// cannot vary invites the next reader to believe it does and to write a
+  /// caller that depends on it varying.
+  ///
+  /// It is carried rather than looked up at the render site so the number the
+  /// sentence names and the number [take] enforces cannot drift: raising the
+  /// constant must not leave three translations claiming the old one.
   final int attemptCap;
 }
 
