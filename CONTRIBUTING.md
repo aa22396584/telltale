@@ -280,6 +280,29 @@ produced a bug that survived a green test suite.
   swap of two table rows in a shell heredoc reported green here because shell
   quoting ate the escaped backticks and the file was never edited. Assert the
   anchor exists before replacing it, and diff the file afterwards.
+- **Two blind checkers do not compose into one that sees.** When a check is
+  deliberately kept simple — a `grep` rather than a parser, because the parser
+  would run somewhere it must not fail — the guards written to cover what it
+  cannot see must not be simple in the *same* way. Three of them here shared
+  one line-anchored regex, so a fenced worked example in the documentation
+  satisfied all three at once:
+
+  | the check | why the example satisfied it |
+  |---|---|
+  | the release gate | `^Device walk attested: 1.0.13$` matched |
+  | one version, one attestation | there was exactly one, inside the fence |
+  | every attestation belongs to a dated entry | the example brought its **own** heading |
+
+  The third is the sharp one: the corroborating heading was meant to be
+  evidence that a person wrote an entry, and inside a fence it is evidence that
+  the example is complete. A release of a version nobody had walked would have
+  published, green.
+
+  Two consequences worth keeping. Put the parsing where it only has to be right
+  about a committed file, not where it runs during a release. And prefer an
+  assertion that two readings **agree** — what the machine sees versus what a
+  person sees — over one that enumerates the concealment shapes you happened to
+  think of.
 
 `docs/protocol-deviations.zh-TW.md` records where this app deliberately departs from the
 specification it was derived from, and why. Three of those departures fix
