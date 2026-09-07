@@ -49,39 +49,58 @@ if [ ! -f "$EVIDENCE" ]; then
   echo "::error::$EVIDENCE does not exist, so no walk can be recorded in it"
   exit 1
 fi
+# Checked separately from existence because the `|| true` below cannot tell a
+# grep that found nothing (exit 1) from a grep that could not read (exit 2).
+# Both refuse -- the gate fails closed either way -- but a maintainer told
+# "there is no entry for 1.0.12" when the entry is right there and the file is
+# merely unreadable will go and write a second one.
+if [ ! -r "$EVIDENCE" ]; then
+  echo "::error::$EVIDENCE exists but cannot be read"
+  exit 1
+fi
 
-# Two things are checked, and both have bitten a version-matching guard before.
+# The attestation is one line, in one shape, and the version is the whole of
+# what follows the colon:
 #
-# The heading must be *dated*. This file also carries undated section headings
-# ("## The three links exercised", "## Round 9, with the wire visible") that
-# describe rig work rather than a walk of a shipped version. Accepting any
-# heading would let a prose section satisfy a release gate.
+#     Device walk attested: 1.0.12
 #
-# The version must be a whole token. A substring match reads 1.0.12 as present
-# in "1.0.121", and reads 1.0.1 as present in every 1.0.1x entry the file has
-# -- which is the exact shape of a guard that passes on the release where it
-# matters. The character classes on both sides are what make it a token; the
-# escaped dots are what stop "1.0.12" from matching "1a0b12".
+# Searching a dated heading for the version anywhere in it was the first
+# attempt, and a reviewer defeated it with inputs nobody has to be dishonest to
+# write. All three of these cleared the gate for 1.0.12:
+#
+#     ## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed
+#     ## 2026-09-07 — x1.0.12oops
+#     ## 2026-09-07 — 1.0.12-rc.1 planned, no walk
+#
+# A sentence that mentions a version is not a sentence that attests it, and the
+# first of those actively denies the thing the gate read it as confirming. A
+# prose heading cannot carry a claim a machine reads; a field can. This line
+# takes a deliberate keystroke and cannot appear inside a sentence that means
+# something else.
+#
+# The version must still be a whole token even here: anchored at both ends, so
+# "1.0.121" is not 1.0.12 and a trailing "(partial)" does not count. The escaped
+# dots are what stop "1.0.12" from matching "1a0b12".
 escaped=$(printf '%s' "$version" | sed 's/\./\\./g')
-dated='^## [0-9]{4}-[0-9]{2}-[0-9]{2}'
-token="(^|[^0-9.])${escaped}([^0-9.]|$)"
+attestation="^Device walk attested: ${escaped}[[:space:]]*$"
 
-# Read into a variable and match with a here-string rather than piping into
-# `grep -q`. The pipeline form is a size-dependent false refusal, and it was
-# reproduced rather than reasoned about: `grep -q` exits on its first match, the
-# upstream grep takes SIGPIPE, and `set -o pipefail` then reports the whole
-# pipeline as failed -- so a heading that IS present is read as absent. With
-# today's file the output fits the pipe buffer and it passes; at 200k headings
-# the same match returns 1. This file grows by one entry every release.
-dated_headings=$(grep -E "$dated" "$EVIDENCE" || true)
-
-if grep -qE "$token" <<< "$dated_headings"; then
-  echo "device walk recorded for $version in $EVIDENCE"
+# Matched with grep -q against the file directly -- no pipeline. Piping into
+# `grep -q` is a size-dependent false refusal: it exits on its first match, the
+# upstream process takes SIGPIPE, and `set -o pipefail` then reports the whole
+# pipeline as failed, so a line that IS present is read as absent. Reproduced
+# with a 20,000-line file; today's fits the pipe buffer and passes, and this
+# file gains an entry every release.
+if grep -qE "$attestation" "$EVIDENCE"; then
+  echo "device walk attested for $version in $EVIDENCE"
   exit 0
 fi
 
 echo "::error::Full release $TAG claims a device walk, but $EVIDENCE has no"
-echo "::error::dated heading naming $version. Either walk a release build of"
-echo "::error::this commit and record it there, or cut the tag with a"
-echo "::error::pre-release suffix (${TAG}-beta.1), which claims no walk."
+echo "::error::line reading exactly:"
+echo "::error::"
+echo "::error::    Device walk attested: $version"
+echo "::error::"
+echo "::error::Walk a release build, record what you saw, add that line, or cut"
+echo "::error::the tag with a pre-release suffix (${TAG}-beta.1), which claims"
+echo "::error::no walk."
 exit 1

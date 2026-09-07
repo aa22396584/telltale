@@ -22,20 +22,20 @@
 # GitHub pre-release. The flag means exactly one thing, and it is a thing one
 # person can settle in an afternoon:
 #
-#   pre-release  =  no walk of this version is recorded in
-#                   docs/verification/device-verification.md
-#   full release =  a release build of this commit was walked on a phone, and
-#                   that walk is recorded there under this version
+#   pre-release  =  this tag neither requires nor attests a device walk
+#   full release =  docs/verification/device-verification.md carries the line
+#                   `Device walk attested: <version>` for this version
 #
 # CI enforces it rather than trusting the tag: tool/release/require_device_walk.sh
-# refuses a full-release tag whose version has no dated entry in that file. The
+# refuses a full-release tag without that line, before it builds anything. The
 # flag used to be derived from the tag string alone and validated nothing, so
 # "walked" was true only when whoever cut the tag happened to have done it.
 #
-# What the full release does NOT claim, and says so in its own notes: that the
-# published APK is the walked one. The walk is done on a locally signed release
-# build of the same commit; this workflow signs with the community key. Same
-# source, same commit, different signature.
+# Two things the full release does NOT claim, and says so in its own notes.
+# It attests the VERSION, not the commit -- nothing checks that the code walked
+# is byte-for-byte the code tagged. And the walked build is not the published
+# APK: the walk runs on a locally signed build, this workflow signs with the
+# community key.
 #
 # It used to mean something else, and that is why every release from v1.0.7 to
 # v1.0.11 was a pre-release and GitHub's Latest badge sat on v1.0.6 for nine
@@ -367,7 +367,7 @@ jobs:
           gh release create "$TAG" "telltale-${TAG}.apk" SHA256SUMS \
             --title "Telltale ${TAG}" \
             --notes-file notes.md \
-            --verify-tag "${release_args[@]}"
+            --verify-tag ${release_args[@]+"${release_args[@]}"}
 
       - name: Shred the signing material
         if: always()

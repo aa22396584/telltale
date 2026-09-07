@@ -17,7 +17,33 @@ Round 9 added a proxy in that socket that logs every byte and can hold a reply
 back, which is how the timing findings were tested and how one of them was
 found to have been testing nothing at all.
 
+## The one line a machine reads
+
+A release build that was installed on a phone and walked through carries, in
+its entry, a line of exactly this shape:
+
+```
+Device walk attested: 1.0.12
+```
+
+`.github/workflows/release.yml` refuses a full-release tag whose version has no
+such line, before it builds anything. That is the whole of the gate: it does
+not read the prose, and the prose is still what the entry is for.
+
+It is a separate line rather than something parsed out of a heading because a
+heading is a sentence, and sentences mention versions without attesting them.
+`## 2026-09-07 — 1.0.11 walk; 1.0.12 not installed` cleared an earlier version
+of this gate for 1.0.12 — a line that says the opposite of what it was read as
+saying. A field takes a deliberate keystroke; a mention does not.
+
+**The line attests the version, not the commit.** Nothing checks that the code
+walked is byte-for-byte the code tagged, and the release notes say so rather
+than implying otherwise. Neither does it attest the published APK: the walked
+build is signed locally, CI signs with the community key.
+
 ## 2026-09-07 — 1.0.12 release APK, English walk-through on the phone
+
+Device walk attested: 1.0.12
 
 Samsung `R5CX10VFFBA`. Built `app-field-release.apk` from `release/1.0.12` with
 `-PallowUnsignedRelease=true` — the Gradle guard refuses a release build with no
@@ -69,6 +95,8 @@ the screens; it says nothing about the protocol layer that the rigs and the one
 GT86 observation cover.
 
 ## 2026-09-06 — 1.0.8 release APK, OBDBLE still unpowered
+
+Device walk attested: 1.0.8
 
 Samsung `R5CX10VFFBA`: installed Play-upload-key `app-field-release.apk`
 (`com.cbstudio.telltale` 1.0.8 / versionCode 9). Connect screen remembered

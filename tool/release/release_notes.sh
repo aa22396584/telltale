@@ -50,37 +50,51 @@ esac
 : "${APK_FINGERPRINT:?APK_FINGERPRINT is required}"
 
 # Exactly one of these two prints, and each states only what its own gate
-# checks. The pre-release sentence used to say "this exact binary has not been
-# walked on a phone", whose opposite -- the claim a full release then made --
-# was false: what gets walked is a locally signed release build, and what gets
-# published is CI's build of the same commit under the community key. A release
-# note is the wrong place to be approximately right, so the full-release
-# paragraph names that gap itself instead of glossing it.
+# checks -- which took three passes to get right, each time because the prose
+# claimed one notch more than the check.
+#
+# "This exact binary has not been walked on a phone" was the first: its
+# opposite, the claim a full release then made, was false, because what gets
+# walked is a locally signed build and what gets published is CI's. "A release
+# build of this commit was walked" was the second: the gate reads an
+# attestation naming a *version*, and nothing stops the code changing under an
+# unchanged version. So the full-release paragraph now names both gaps rather
+# than closing over them. A release note is the wrong place to be approximately
+# right.
+#
+# The pre-release paragraph said "no walk of this version is recorded", which
+# the pre-release path never checks -- it returns before reading the file, so
+# re-cutting a beta after a walk printed a statement the record contradicted.
+# It now says what is actually true of that path: it does not ask.
 if is_prerelease; then
   cat <<'PRE'
-> **Pre-release.** No walk of this version is recorded in
-> `docs/verification/device-verification.md`. A full release has one.
+> **Pre-release.** This tag neither requires nor attests a recorded device
+> walk. A full release does: CI refuses a full-release tag whose version has no
+> walk recorded in `docs/verification/device-verification.md`.
 >
-> **預發行版本。** `docs/verification/device-verification.md` 裡沒有這個版本的
-> 實機走查紀錄。正式版有。
+> **預發行版本。** 這個 tag 既不要求、也不宣稱有實機走查紀錄。正式版才有：CI 會
+> 拒絕一個在 `docs/verification/device-verification.md` 裡找不到該版本走查紀錄的
+> 正式版 tag。
 
 PRE
 else
   cat <<'FULL'
-> **Full release.** A release build of this commit was installed on a phone and
-> walked through, and `docs/verification/device-verification.md` records that
-> walk under this version — CI refuses a full-release tag without that entry.
+> **Full release.** `docs/verification/device-verification.md` records a device
+> walk for this version — a release build installed on a phone and walked
+> through — and CI refuses a full-release tag without that record.
 >
-> One thing that sentence does not cover: the walked build is not this APK. It
-> is a release build of the same commit, signed with a different key; the APK
-> below is CI's, signed with the community key. Same source, same commit,
-> different signature.
+> Two things it does not claim. It attests the **version**, not the commit:
+> nothing checks that the code walked is byte-for-byte the code tagged. And the
+> walked build is not this APK — that one is signed locally, while the APK below
+> is CI's, signed with the community key.
 >
-> **正式版。** 這個 commit 的 release build 已裝上實機走過一遍，走查紀錄記在
-> `docs/verification/device-verification.md` 這個版本底下 —— 沒有那筆紀錄，CI 會
-> 拒絕正式版 tag。這句話沒有涵蓋的一件事：走查的那一份不是下面這份 APK —— 它是同一個
-> commit 的 release build，但用另一把金鑰簽；下面這份是 CI 用社群金鑰簽的。
-> 原始碼相同、commit 相同、簽章不同。
+> **正式版。** `docs/verification/device-verification.md` 裡有這個版本的實機走查
+> 紀錄 —— 一份裝上手機、逐個畫面走過的 release build —— 沒有那筆紀錄，CI 會拒絕
+> 正式版 tag。
+>
+> 兩件它沒有宣稱的事。它佐證的是**版本**，不是 commit：沒有任何檢查確認走查的
+> 程式碼與打 tag 的程式碼逐位元組相同。而且走查的那一份不是下面這份 APK ——
+> 那一份是本機簽的，下面這份是 CI 用社群金鑰簽的。
 
 FULL
 fi
