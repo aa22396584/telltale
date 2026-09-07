@@ -512,6 +512,244 @@ void main() {
     });
   });
 
+  // condition -> identifier, for every value the group above does not reach.
+  //
+  // The group above pins the *values* a refusal carries and, incidentally, the
+  // seven identifiers those seven inputs happen to produce. The other twelve
+  // had nothing driving them: the reviewer transposed
+  // `divisionByZero`/`moduloByZero`, `baroNotYetMeasured`/`baroMeasurementStale`,
+  // `emptyFormula`->`emptySubExpression` and
+  // `functionNestingTooDeep`->`parenthesisNestingTooDeep` at the throw sites
+  // and the whole suite stayed green at +2096 ~16. Each of those ships a
+  // fluent, correct-looking English sentence about a formula the reader did
+  // not write: `A/0` told to look for a `%`, an ambient pressure that was
+  // never read called out of date — the enum's own doc calls that pair "a
+  // different fact with a different remedy".
+  //
+  // A table, because the input is the whole assertion: each row drives the
+  // real engine and names the identifier that condition must produce. Nothing
+  // here reads the identifier back off the exception.
+  group('a condition produces its own identifier', () {
+    FormulaException thrownBy(void Function() body) {
+      try {
+        body();
+      } on FormulaException catch (e) {
+        return e;
+      }
+      fail('expected a FormulaException');
+    }
+
+    void expectIssue(
+      String label,
+      FormulaIssue issue,
+      void Function() body,
+    ) {
+      test(label, () => expect(thrownBy(body).issue, issue));
+    }
+
+    expectIssue(
+      'nothing typed at all is an empty formula, not an empty part of one',
+      FormulaIssue.emptyFormula,
+      () => engine.evaluateBytes('', const [1]),
+    );
+
+    expectIssue(
+      'whitespace alone is still nothing typed',
+      FormulaIssue.emptyFormula,
+      () => engine.evaluateBytes('   ', const [1]),
+    );
+
+    expectIssue(
+      'an operator with nothing after it is an empty part, not an empty '
+      'formula',
+      // The remedy is to finish the operator. Told "the formula is empty"
+      // about a field with `A*` in it, the reader is looking at a
+      // contradiction of what is in front of them.
+      FormulaIssue.emptySubExpression,
+      () => engine.evaluateBytes('A*', const [1]),
+    );
+
+    expectIssue(
+      'a bracket that never closes is unbalanced',
+      FormulaIssue.unbalancedParentheses,
+      () => engine.evaluateBytes('(A+1', const [1]),
+    );
+
+    expectIssue(
+      'a closing bracket before its opener is unbalanced too',
+      FormulaIssue.unbalancedParentheses,
+      () => engine.evaluateBytes('A)+(1', const [1]),
+    );
+
+    // Four throw sites, two identifiers, and every one of them separately
+    // transposable. The pair differs only in which construct the sentence
+    // tells the author to simplify, so naming the wrong one sends somebody
+    // through a formula counting the thing that is not the problem. All four
+    // are reachable — that was probed, not assumed — so all four are pinned.
+    expectIssue(
+      'the innermost-call pass names the functions',
+      FormulaIssue.functionNestingTooDeep,
+      () => engine.evaluateBytes(
+        '${'ABS(' * 65}A${')' * 65}',
+        const [1],
+      ),
+    );
+
+    expectIssue(
+      'the alternating outer pass names the functions too',
+      // `ABS((A))` is the shape the ordinary pass cannot see, so it goes round
+      // the outer ABS/LOG10 loop instead and trips that guard rather than the
+      // one above.
+      FormulaIssue.functionNestingTooDeep,
+      () => engine.evaluateBytes(
+        '${'ABS((' * 65}A${'))' * 65}',
+        const [1],
+      ),
+    );
+
+    expectIssue(
+      'brackets nested past the limit name the brackets',
+      FormulaIssue.parenthesisNestingTooDeep,
+      () => engine.evaluateBytes(
+        '${'(' * 257}A${')' * 257}',
+        const [1],
+      ),
+    );
+
+    expectIssue(
+      'the parenthesised-argument unwrapper names the brackets',
+      // Sixty-five `ABS((1))` side by side rather than nested: the unwrapper
+      // takes one per turn, so it is the count and not the depth that trips
+      // it. Still the bracket sentence, because brackets are what it is
+      // undoing.
+      FormulaIssue.parenthesisNestingTooDeep,
+      () => engine.evaluateBytes(
+        List.filled(65, 'ABS((1))').join('+'),
+        const [1],
+      ),
+    );
+
+    expectIssue(
+      'dividing by zero names the division',
+      // The character the author has to find is `/`, in a formula that has no
+      // `%` anywhere in it.
+      FormulaIssue.divisionByZero,
+      () => engine.evaluateBytes('A/0', const [1]),
+    );
+
+    expectIssue(
+      'a remainder modulo zero names the remainder',
+      FormulaIssue.moduloByZero,
+      () => engine.evaluateBytes('A%0', const [1]),
+    );
+
+    expectIssue(
+      'a top-level NaN is a result that is not a number',
+      // `(-1)^0.5` reduces to NaN and reaches the final check in
+      // `evaluateBytes`.
+      FormulaIssue.resultNotFinite,
+      () => engine.evaluateBytes('(-1)^0.5', const [1]),
+    );
+
+    expectIssue(
+      'a NaN part-way through is the same fact at a different throw site',
+      // `_format` refuses to splice a non-finite intermediate back into the
+      // string — which is why `((-1)^0.5)+90` cannot quietly collapse to 90.
+      // Two sites, one identifier: pinning only the first would let this one
+      // be renamed.
+      FormulaIssue.resultNotFinite,
+      () => engine.evaluateBytes('((-1)^0.5)+90', const [1]),
+    );
+
+    expectIssue(
+      'BARO with nobody asking cannot say whose controller is meant',
+      FormulaIssue.baroControllerUnknown,
+      () => engine.evaluateBytes('A-BARO', const [120]),
+    );
+
+    expectIssue(
+      'ambient pressure that was never read has not been read yet',
+      // Not stale. The remedy is to wait; nothing is wrong with the formula,
+      // and nothing has stopped answering.
+      FormulaIssue.baroNotYetMeasured,
+      () => engine.evaluateBytes(
+        'A-BARO',
+        const [120],
+        requester: FormulaEngine.probePid('0000'),
+        now: DateTime(2026, 8, 15),
+      ),
+    );
+
+    test('ambient pressure older than the cache window is stale, not absent',
+        () {
+      // The other half of that pair, and the one whose remedy is the opposite:
+      // a source that has stopped answering. `maxCacheAge` is 5s, so 6 is past
+      // it and the reading exists.
+      final measuredAt = DateTime(2026, 8, 15);
+      final probe = FormulaEngine.probePid('0000');
+      engine.setBaroPressure(probe, 99.5, measuredAt);
+      final e = thrownBy(
+        () => engine.evaluateBytes(
+          'A-BARO',
+          const [120],
+          requester: probe,
+          now: measuredAt.add(const Duration(seconds: 6)),
+        ),
+      );
+      expect(e.issue, FormulaIssue.baroMeasurementStale);
+
+      // And inside the window it is neither: the staleness rule is what
+      // separates the two, so a test that never evaluates successfully would
+      // pass with the window set to zero.
+      expect(
+        engine.evaluateBytes(
+          'A-BARO',
+          const [120],
+          requester: probe,
+          now: measuredAt.add(const Duration(seconds: 4)),
+        ),
+        closeTo(20.5, 0.001),
+      );
+    });
+
+    test('two authors of one controller ambient pressure is ambiguity, not '
+        'absence', () {
+      // `_writersDisagree` needs a different equation *and* a different value,
+      // which is what a second definition of the same measurement actually
+      // looks like — a custom `0133` as `A*10` polled beside the built-in `A`.
+      final now = DateTime(2026, 8, 15);
+      const first = Pid(
+        name: 'baro', shortName: 'baro', modeAndPid: '0133', equation: 'A',
+        minValue: 0, maxValue: 255, units: 'kPa', header: '7E0',
+      );
+      const second = Pid(
+        name: 'baro x10', shortName: 'baro10', modeAndPid: '0133',
+        equation: 'A*10', minValue: 0, maxValue: 2550, units: 'kPa',
+        header: '7E0', variant: 'x10',
+      );
+      const asking = Pid(
+        name: 'boost', shortName: 'boost', modeAndPid: '010B',
+        equation: 'A-BARO', minValue: -100, maxValue: 300, units: 'kPa',
+        header: '7E0',
+      );
+      engine.setBaroPressure(first, 99.5, now);
+      engine.setBaroPressure(second, 995, now);
+
+      final e = thrownBy(
+        () => engine.evaluateBytes(
+          'A-BARO',
+          const [120],
+          requester: asking,
+          now: now,
+        ),
+      );
+      // Not `baroNotYetMeasured`: the value exists twice and the app is
+      // declining to choose, so telling the author to wait sends them to look
+      // for a fault in a vehicle that is answering perfectly.
+      expect(e.issue, FormulaIssue.baroTwoDefinitions);
+    });
+  });
+
   group('failure handling', () {
     test('rejects an empty formula', () {
       expect(() => engine.evaluateBytes('', const [1]), throwsA(isA<FormulaException>()));

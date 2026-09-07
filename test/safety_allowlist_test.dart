@@ -18,6 +18,37 @@ import 'support/fake_elm327.dart';
 
 void main() {
   group('which services may be polled', () {
+    // The membership itself, typed out here by hand.
+    //
+    // Nothing pinned it. Every other assertion in this file asks the allowlist
+    // a question and checks the answer, which is exactly what a wider
+    // allowlist keeps answering correctly: adding `'34'` to
+    // `PollableServices.allowed` and `'34': 2` to `_identifierBytes` left the
+    // whole suite green, and `isPollable('341234')` was then true. `34` is ISO
+    // 14229 RequestDownload, and the scheduler would transmit it over and over
+    // for as long as a gauge sat on the dashboard.
+    //
+    // Round two's `allowedServices == PollableServices.allowed.toList()` looks
+    // like it covers this and does not: it reads the value back out of the
+    // same expression that produced it, so the two agree however the set
+    // changes. The list below cannot agree with a changed set. Changing it is
+    // a decision about what this app will put on a vehicle's bus — take it
+    // deliberately, in a diff a reviewer can see, and not as a typo.
+    test('the allowlist holds exactly the four read-only services', () {
+      expect(
+        PollableServices.allowed,
+        equals(const {'01', '02', '09', '22'}),
+        reason: 'a service added here is transmitted repeatedly at the '
+            'polling cadence; that is a safety decision, not a typo',
+      );
+      // The claim the set exists to make, stated as behaviour rather than as
+      // membership: the envelope table has to refuse an unlisted service too,
+      // because a service can only be reached when both agree.
+      expect(PollableServices.isPollable('341234'), isFalse); // RequestDownload
+      expect(PollableServices.isPollable('2E1234'), isFalse); // WriteDataByIdent
+      expect(PollableServices.isPollable('1101'), isFalse); // ECUReset
+    });
+
     test('the read-only ones are allowed', () {
       expect(PollableServices.isPollable('010C'), isTrue); // current data
       expect(PollableServices.isPollable('020500'), isTrue); // freeze frame
@@ -46,6 +77,45 @@ void main() {
       expect(PollableServices.isPollable('2211'), isFalse);
       expect(PollableServices.isPollable('21'), isFalse);
       expect(PollableServices.isPollable('210102'), isFalse);
+      // Which refusal, not just that there is one. `2211` and `01ZZ` are both
+      // rejected, and the two identifiers name different remedies — one is a
+      // width that is nearly right, the other is not hex at all. Replacing
+      // `identifierNeedsTwoBytes` here with `freezeFrameNeedsFrame` offers a
+      // mode 22 author an example with a frame number that mode 22 does not
+      // have, and no assertion above notices.
+      expect(
+        PollableServices.rejectionReason('2211')?.issue,
+        PidRejection.identifierNeedsTwoBytes,
+      );
+      expect(
+        PollableServices.rejectionReason('01ZZ')?.issue,
+        PidRejection.malformedModeAndPid,
+        reason: 'not hex is a different fact from the wrong width',
+      );
+      expect(
+        PollableServices.rejectionReason('010')?.issue,
+        PidRejection.malformedModeAndPid,
+        reason: 'an odd number of hex digits is not a whole byte pair',
+      );
+      // The same two through the definition rule, which delegates to the one
+      // above — so a caller that stopped delegating and re-derived its own
+      // answer is visible here rather than only on the screen.
+      PidRejectionReason? definition(String modeAndPid) =>
+          PidDefinition.rejectionReason(
+            name: 'x',
+            modeAndPid: modeAndPid,
+            header: '7E0',
+            minText: '0',
+            maxText: '100',
+          );
+      expect(
+        definition('2211')?.issue,
+        PidRejection.identifierNeedsTwoBytes,
+      );
+      expect(
+        definition('01ZZ')?.issue,
+        PidRejection.malformedModeAndPid,
+      );
 
       // And the well-formed versions still pass, so this is a shape check
       // rather than a blanket refusal.

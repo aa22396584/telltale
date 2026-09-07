@@ -143,6 +143,73 @@ void main() {
       expect(PidCsv.parse('').errors, isNotEmpty);
     });
 
+    test('each way of importing nothing says which way it was', () {
+      // condition -> identifier for the file-level arms. `isNotEmpty` above is
+      // satisfied by any of them, and the reviewer transposed
+      // `noRows` and `nothingImportable` at their two throw sites with the
+      // whole suite still green: an empty file was then reported as "has rows
+      // but none of them is a PID", which sends the reader looking through a
+      // file that has nothing in it.
+      expect(
+        PidCsv.parse('').errors.single.issue,
+        PidCsvIssue.noRows,
+        reason: 'no rows at all is not the same as rows that yielded nothing',
+      );
+
+      // Rows were read — the header — and produced no definition.
+      expect(
+        PidCsv.parse('Name,ShortName,ModeAndPID,Equation\r\n')
+            .errors
+            .single
+            .issue,
+        PidCsvIssue.nothingImportable,
+      );
+
+      // A row with fewer cells than the four that are always needed, refused
+      // before any of them is looked at. Not `rowEmptyEquation`: there is no
+      // equation *cell*, which is a different thing from an empty one, and the
+      // remedy is to add columns rather than to fill one in.
+      final short = PidCsv.parse(
+        'Name,ShortName,ModeAndPID,Equation\r\nTrans,T\r\n',
+      );
+      expect(short.errors.single.issue, PidCsvIssue.rowTooFewColumns);
+      expect(short.errors.single.lineNumber, 2);
+
+      // And the empty-cell case really is the other one, so the two are told
+      // apart by input rather than by which happens to be checked first.
+      final blankEquation = PidCsv.parse(
+        'Name,ShortName,ModeAndPID,Equation\r\nTrans,T,2211A6,\r\n',
+      );
+      expect(blankEquation.errors.single.issue, PidCsvIssue.rowEmptyEquation);
+    });
+
+    test('malformedCsv is unreachable with the decoder this app ships', () {
+      // Stated rather than left as a gap. `PidCsvIssue.malformedCsv` is the
+      // arm for a `FormatException` out of `Csv().decode`, and `csv` 8.0.0
+      // never throws one: its only `throw` is an assertion in the decoder's
+      // constructor over the quote/escape characters, which this file does not
+      // configure. Every shape that ought to be malformed comes back as rows.
+      //
+      // So the copy for it cannot be exercised through `PidCsv.parse`, and a
+      // test claiming to drive it would be driving something else. What is
+      // pinned instead is the reason: if a decoder upgrade starts throwing,
+      // these expectations change and whoever changes them is looking straight
+      // at the arm that becomes live.
+      for (final malformed in const [
+        '"unterminated',
+        'a,"b\r\n',
+        '"a"x,b\r\n',
+      ]) {
+        final result = PidCsv.parse(malformed);
+        expect(
+          result.errors.map((e) => e.issue),
+          isNot(contains(PidCsvIssue.malformedCsv)),
+          reason: 'csv 8.0.0 does not throw FormatException; if it now does, '
+              'pin the malformedCsv arm here for real',
+        );
+      }
+    });
+
     test('imported definitions are namespaced away from the built-ins', () {
       // A stock Torque file contains 010C. It must not take over the shipped
       // Engine RPM definition, which the physics engine depends on.
@@ -315,6 +382,67 @@ void _strictParsingTests() {
       expect(redline?.text, 'red');
     });
 
+    test('each way of being inadmissible names itself', () {
+      // condition -> identifier for the arms nothing else in this suite
+      // reaches. Each of these was transposable in silence: the reviewer
+      // pointed `nameRequired` at `boundsRequired` (a blank name answered with
+      // "Fill in both ends of the gauge range") and swapped
+      // `minNotFinite`/`maxNotFinite` (the sentence pointing at the field that
+      // is fine), and the whole suite stayed green both times.
+      //
+      // The fixtures differ in exactly one field from an admissible
+      // definition, so nothing here can be satisfied by the wrong arm.
+      PidRejectionReason? reason({
+        String name = 'x',
+        String modeAndPid = '010C',
+        String header = '7E0',
+        String minText = '0',
+        String maxText = '100',
+        String? redlineText,
+        bool requireBounds = false,
+      }) =>
+          PidDefinition.rejectionReason(
+            name: name,
+            modeAndPid: modeAndPid,
+            header: header,
+            minText: minText,
+            maxText: maxText,
+            redlineText: redlineText,
+            requireBounds: requireBounds,
+          );
+
+      // Whitespace only, not empty: the rule trims, and a name of spaces is
+      // the shape a spreadsheet actually produces.
+      expect(reason(name: '   ')?.issue, PidRejection.nameRequired);
+
+      // Blank bounds, and only because this caller is the editor. The
+      // importer's own answer for the same input is null, which the
+      // blank-bounds test below pins — so this arm is about `requireBounds`
+      // and cannot be reached by a name or a range problem.
+      expect(
+        reason(minText: '', maxText: '', requireBounds: true)?.issue,
+        PidRejection.boundsRequired,
+      );
+
+      // `double.tryParse` accepts these, so they are *numbers* — the arm is
+      // not `minNotANumber`, and the remedy is different: NaN pins the needle
+      // at full scale and wedges `jsonEncode` on save.
+      expect(reason(minText: 'NaN')?.issue, PidRejection.minNotFinite);
+      expect(reason(maxText: 'Infinity')?.issue, PidRejection.maxNotFinite);
+      // The transposable pair, from opposite sides: a lower bound of
+      // -Infinity with a perfectly ordinary upper one, and the reverse.
+      expect(reason(minText: '-Infinity')?.issue, PidRejection.minNotFinite);
+      expect(reason(maxText: 'NaN')?.issue, PidRejection.maxNotFinite);
+
+      expect(
+        reason(redlineText: 'NaN')?.issue,
+        PidRejection.redlineNotFinite,
+      );
+      // And the finite redline still passes, so the arm above is about the
+      // value rather than about the field being present.
+      expect(reason(redlineText: '90'), isNull);
+    });
+
     test('the editor and the importer still agree on the blank-bounds rule',
         () {
 
@@ -399,7 +527,29 @@ void _reorderedColumns() {
       // Spelled as a spreadsheet spells it. The importer compares column names
       // with case and spaces removed, and reporting `modeandpid` sends the
       // reader looking for a column that is not in their file under that name.
-      expect(result.errors.single.columns, contains('ModeAndPID'));
+      //
+      // Both lists, in full and in order — not `contains('ModeAndPID')`, which
+      // the *required* list also satisfies. The two arguments are adjacent, the
+      // same type and the same shape, so swapping them compiles and every
+      // assertion that only looked for one name went on passing: the file has
+      // `Name` and lacks the other two, and the sentence then told the reader
+      // that `Name` was missing — the one column they did supply.
+      expect(
+        result.errors.single.columns,
+        orderedEquals(const ['ModeAndPID', 'Equation']),
+        reason: 'the missing list must name only what the file does not have',
+      );
+      expect(
+        result.errors.single.requiredColumns,
+        orderedEquals(const ['Name', 'ModeAndPID', 'Equation']),
+        reason: 'the required list is the full set, whatever the file has',
+      );
+      expect(
+        result.errors.single.columns,
+        isNot(contains('Name')),
+        reason: 'the file supplies Name; saying otherwise sends the reader to '
+            'fix the one column that is already right',
+      );
     });
 
     test('no header row still means positional, as it always did', () {

@@ -58,6 +58,20 @@ String pidCsvDiagnosticText(
           ? ''
           : pidRejectionText(l10n, diagnostic.rejection!),
     ),
+    // **Reaches no reader today, and that is a deliberate hold rather than an
+    // oversight.** `rowRangeDefaulted` is only ever a warning;
+    // `lib/ui/screens/pids/pid_manager_screen.dart` renders `errors.first` and
+    // passes `warnings.length` into `PidImportOutcome.describe`, so the line
+    // number and the substituted bounds this arm formats never reach a screen.
+    //
+    // The arm cannot simply be deleted: the switch is exhaustive with no
+    // default, and `PidCsvIssue.rowRangeDefaulted` is a value the parser
+    // really produces (`test/pid_csv_test.dart` drives it). Wiring it in is
+    // the other option and is worse *in this slice*: `PidImportOutcome.describe`
+    // is still Traditional Chinese, so appending a translated per-row clause
+    // to it ships a half-English snackbar — a regression that is real, traded
+    // for one that is only unrealised copy. Both halves move together, in the
+    // slice that translates `describe`.
     PidCsvIssue.rowRangeDefaulted => l10n.pidImportRowRangeDefaulted(
       diagnostic.lineNumber ?? 0,
       diagnostic.minValue ?? 0,
