@@ -13,18 +13,21 @@ typedef OpenRecommendedPurchase = Future<bool> Function(Uri uri);
 
 /// The storefront's own name, in a script the reader can read.
 ///
-/// The catalog entry carries 蝦皮, which is the right word in Chinese and an
-/// unreadable one in English — Shopee publishes under both names, so both
-/// ship. An entry this function does not recognise falls back to the catalog's
-/// own label rather than inventing a name for a store nobody has localized:
-/// showing a store's real name in the wrong script is a smaller failure than
-/// sending somebody to a store that is not the one named.
+/// The catalog names the store by identifier; the name lives in the ARBs.
+/// Shopee publishes as 蝦皮 in Taiwan and as Shopee elsewhere, so both ship,
+/// and neither is stored next to the URL where a compiler cannot see it.
+///
+/// The switch is exhaustive, which is what replaced the fallback this function
+/// used to carry. That fallback rendered an unrecognised label as itself,
+/// because showing a store's real name in the wrong script is a smaller
+/// failure than sending somebody to a store that is not the one named — and
+/// with a [RecommendedStore] there is no unrecognised case: a second storefront
+/// does not compile until this switch says what it is called.
 String recommendedStoreLabel(
   AppLocalizations l10n,
   RecommendedPurchase purchase,
-) => switch (purchase.storeLabel) {
-  '蝦皮' => l10n.recommendedPurchaseStoreShopee,
-  _ => purchase.storeLabel,
+) => switch (purchase.store) {
+  RecommendedStore.shopee => l10n.recommendedPurchaseStoreShopee,
 };
 
 Future<void> _openPurchase(

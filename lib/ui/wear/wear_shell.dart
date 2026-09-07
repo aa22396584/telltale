@@ -37,6 +37,7 @@ import '../../state/obd_session.dart';
 import '../../state/pid_registry.dart';
 import '../../state/powertrain_battery_profiles.dart';
 import '../widgets/gauges/dial_gauge.dart';
+import 'wear_permission_copy.dart';
 
 class WearShell extends ConsumerStatefulWidget {
   const WearShell({super.key});
@@ -129,22 +130,6 @@ class _WearShellState extends ConsumerState<WearShell> {
   }
 }
 
-/// Names the permission the user refused, in the reader's language.
-///
-/// `BlePermissionResult.deniedLabel` is a display string, and the module that
-/// produces it (`lib/core/ble_scan_permissions.dart`) writes it in Traditional
-/// Chinese. Interpolating it straight into a sentence put 「藍牙」 inside the
-/// English build. Mapping it back onto localized copy here keeps that fix
-/// inside this file; the proper repair is an enum on `BlePermissionResult`,
-/// which belongs to a change that owns that file. A label this does not
-/// recognise — including `null`, which is what the old `?? '藍牙'` handled —
-/// falls to Bluetooth, so the behaviour is unchanged for every case that
-/// reaches it today.
-String _permissionName(AppLocalizations l10n, String? deniedLabel) =>
-    deniedLabel == '位置'
-    ? l10n.wearPermissionLocation
-    : l10n.wearPermissionBluetooth;
-
 class _DemoBadge extends StatelessWidget {
   const _DemoBadge();
 
@@ -190,7 +175,11 @@ class _WearConnectPageState extends ConsumerState<_WearConnectPage> {
     final permission = await ensureBluetoothPermissions(forScanning: true);
     if (!mounted) return;
     if (!permission.granted) {
-      final what = _permissionName(l10n, permission.deniedLabel);
+      // Non-null on every path that reaches here: `.refused` takes a
+      // non-nullable `BlePermissionKind`, so a refusal without one does not
+      // compile. The nullability is the grant case, which `granted` has
+      // already taken.
+      final what = blePermissionName(l10n, permission.deniedKind!);
       setState(
         () => _note =
             permission.outcome == BlePermissionOutcome.permanentlyDenied

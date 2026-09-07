@@ -29,7 +29,7 @@ void main() {
   test('catalog currently has the Shopee listing used in hardware docs', () {
     expect(RecommendedPurchases.entries, hasLength(1));
     final purchase = RecommendedPurchases.entries.single;
-    expect(purchase.storeLabel, '蝦皮');
+    expect(purchase.store, RecommendedStore.shopee);
     expect(purchase.model, 'CL-OBDII-M25B');
     expect(purchase.radioApproval, 'CCAH22LP5300T8');
     expect(purchase.url, 'https://s.shopee.tw/3LQPiOY7uv');

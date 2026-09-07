@@ -547,8 +547,15 @@ void main() {
         _renderedText(tester, find.byType(RecommendedPurchasePanel)),
         where: 'the recommended purchase panel',
       );
-      // The catalog's own label is 蝦皮; the panel resolves it to the name the
-      // same storefront publishes in English rather than passing it through.
+      // A literal, on purpose. The catalog carries no label of its own any
+      // more — it says `store: RecommendedStore.shopee`, and
+      // `recommendedStoreLabel` switches that to the name the same storefront
+      // publishes in each language. A finder that asked
+      // `AppLocalizations` what that name is would agree with the switch
+      // however the switch is wired; typing 'Shopee' out here is what turns an
+      // arm pointed at the wrong ARB entry red. Not "transposed" — the enum
+      // has one value today, so there is nothing to transpose it with; the
+      // mutation this catches is `shopee` wired to somebody else's entry.
       expect(find.textContaining('Shopee'), findsWidgets);
     });
 
@@ -580,21 +587,71 @@ void main() {
       expect(find.textContaining('推廣分潤'), findsOneWidget);
     });
 
-    test(
-      'an unlocalized storefront keeps its own name rather than a guess',
-      () {
-        const invented = RecommendedPurchase(
-          id: 'example',
-          storeLabel: 'Example Store',
+    test('every storefront in the enum has a name in both languages', () {
+      // This replaced 'an unlocalized storefront keeps its own name rather
+      // than a guess', which built a `RecommendedPurchase` with
+      // `storeLabel: 'Example Store'` and checked that the panel echoed it
+      // back. That fallback was protecting against one thing — a store
+      // rendered under another store's name — and it cannot happen any more:
+      // `RecommendedStore` is an enum and `recommendedStoreLabel` switches on
+      // it exhaustively, so a second storefront does not compile until the
+      // switch names it. What the compiler still cannot see is a name that is
+      // empty, or two stores pointed at the same ARB entry, so that is what is
+      // asserted here.
+      //
+      // One enum value is enough for the switch to be exhaustive and for this
+      // loop to run zero times, so the emptiness check is not ceremony: with a
+      // hypothetical empty enum every assertion below is satisfied by nothing
+      // existing, and a green run would mean the catalog had lost its stores
+      // rather than that their names are sound.
+      expect(
+        RecommendedStore.values,
+        isNotEmpty,
+        reason: 'with no storefronts the loop below asserts nothing, and this '
+            'test would report success for an app that can no longer name a '
+            'shop at all',
+      );
+      // Per language, not English only. An earlier version kept one map keyed
+      // on the English name and justified it with "the two languages are
+      // allowed to agree on a store that publishes one name worldwide" — which
+      // is about one store's `en` matching its own `zh`, and says nothing about
+      // whether two *different* stores collide. They can collide in one
+      // language and not the other: 蝦皮 and momo are separate shops in Taiwan
+      // whose ARB entries are separate strings, and a Chinese-only clash sends
+      // a Chinese reader to the wrong shop while the English build looks fine.
+      final seen = <String, Map<String, RecommendedStore>>{
+        'English': {},
+        'Chinese': {},
+      };
+      for (final store in RecommendedStore.values) {
+        final purchase = RecommendedPurchase(
+          id: 'probe',
+          store: store,
           productLabel: 'Example',
           url: 'https://example.test/',
           model: 'X',
           radioApproval: 'Y',
         );
-        expect(recommendedStoreLabel(en, invented), 'Example Store');
-        expect(recommendedStoreLabel(zh, invented), 'Example Store');
-      },
-    );
+        for (final (language, l10n) in [('English', en), ('Chinese', zh)]) {
+          final name = recommendedStoreLabel(l10n, purchase);
+          expect(
+            name.trim(),
+            isNotEmpty,
+            reason: '$store has no $language name, so the store CTA reads '
+                '"View on " with nothing after it',
+          );
+          final clash = seen[language]![name];
+          expect(
+            clash,
+            isNull,
+            reason: '$store and $clash both render as "$name" in $language, so '
+                'that reader is told to buy from a shop that is not the one '
+                'the link opens',
+          );
+          seen[language]![name] = store;
+        }
+      }
+    });
   });
 
   group('language picker', () {

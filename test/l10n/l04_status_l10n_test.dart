@@ -20,6 +20,17 @@
 //
 // No widget pumps. Every mapper takes an `AppLocalizations` parameter rather
 // than a `BuildContext`, which is what lets this file walk both locales.
+//
+// "Still Chinese" comes from `test/support/cjk.dart`, not from a `RegExp`
+// written here. This file used to hold its own — `[㐀-鿿豈-﫿]`, Han
+// ideographs and nothing else — which is the ninth copy of a detector eight
+// of whose versions had that same blind spot, and the blind spot has shipped:
+// the powertrain catalogue joined signal names with `、` and eighteen commands
+// rendered "Battery temperature 1、Battery temperature 2" to an English reader
+// past every green test. `chinese` covers the punctuation too, so it is
+// strictly stronger than what it replaced here rather than a rename: put a `、`
+// in an English ARB entry these mappers read and this file now fails on it,
+// where the Han-only version passed.
 library;
 
 import 'dart:async';
@@ -38,7 +49,8 @@ import 'package:torque_obd/state/vehicle_identity.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 
-final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
+import '../support/cjk.dart';
+import '../support/dart_source_reader.dart';
 
 void main() {
   final en = lookupAppLocalizations(englishLocale);
@@ -67,7 +79,7 @@ void main() {
           reason: '$value fell back to the English template',
         );
         expect(
-          _cjk.hasMatch(label(en, value)),
+          chinese.hasMatch(label(en, value)),
           isFalse,
           reason: '$value carries Chinese in the English build',
         );
@@ -350,7 +362,7 @@ void main() {
         );
         final text = datumReasonText(en, status);
         expect(text, isNotNull, reason: '$fault');
-        expect(_cjk.hasMatch(text!), isFalse, reason: '$fault -> $text');
+        expect(chinese.hasMatch(text!), isFalse, reason: '$fault -> $text');
       }
     });
 
@@ -362,7 +374,7 @@ void main() {
       expect(status.gaps, contains(DatumGap.vinNotRead));
       expect(status.gaps, contains(DatumGap.noCatalogMatch));
       final text = datumReasonText(en, status)!;
-      expect(_cjk.hasMatch(text), isFalse);
+      expect(chinese.hasMatch(text), isFalse);
       // VIN is on docs/i18n/do-not-translate.md and survives in both.
       expect(text, contains('VIN'));
       expect(datumReasonText(zh, status), contains('VIN'));
@@ -386,7 +398,7 @@ void main() {
           reason: entry.key,
         );
       }
-      expect(_cjk.hasMatch(datumBadgeText(en, status)), isFalse);
+      expect(chinese.hasMatch(datumBadgeText(en, status)), isFalse);
     });
   });
 
@@ -447,7 +459,7 @@ void main() {
           reason: '${step.command} fell back to the English template',
         );
         expect(
-          _cjk.hasMatch(initStepPurposeLabel(en, step.command)),
+          chinese.hasMatch(initStepPurposeLabel(en, step.command)),
           isFalse,
           reason: '${step.command} en',
         );
@@ -473,7 +485,7 @@ void main() {
           isNot(initNoteLabel(zh, note)),
           reason: '$note fell back to the English template',
         );
-        expect(_cjk.hasMatch(initNoteLabel(en, note)), isFalse, reason: '$note');
+        expect(chinese.hasMatch(initNoteLabel(en, note)), isFalse, reason: '$note');
       }
     });
 
@@ -496,7 +508,7 @@ void main() {
           reason: '$code fell back to the English template',
         );
         expect(
-          _cjk.hasMatch(adapterErrorLabel(en, code)),
+          chinese.hasMatch(adapterErrorLabel(en, code)),
           isFalse,
           reason: '$code en',
         );
@@ -553,7 +565,7 @@ void main() {
         );
         expect(progress.detail, initNoteText(note), reason: '$note');
         expect(initProgressLine(en, progress), initNoteLabel(en, note));
-        expect(_cjk.hasMatch(initProgressLine(en, progress)), isFalse);
+        expect(chinese.hasMatch(initProgressLine(en, progress)), isFalse);
       }
       expect(initNoteText(InitNote.aborted), '已中止');
       expect(initNoteText(InitNote.timedOut), '逾時');
@@ -627,7 +639,7 @@ void main() {
           reason: '$issue fell back to the English template',
         );
         expect(
-          _cjk.hasMatch(connectionIssueText(en, state)!),
+          chinese.hasMatch(connectionIssueText(en, state)!),
           isFalse,
           reason: '$issue en',
         );
@@ -640,7 +652,7 @@ void main() {
           phase: ConnectionPhase.connecting,
           activity: activity,
         );
-        expect(_cjk.hasMatch(connectionActivityText(en, state)!), isFalse);
+        expect(chinese.hasMatch(connectionActivityText(en, state)!), isFalse);
         expect(
           connectionActivityText(en, state),
           isNot(connectionActivityText(zh, state)),
@@ -754,12 +766,15 @@ void main() {
     for (final directory in ['lib/obd', 'lib/diagnostics']) {
       for (final entity in Directory(directory).listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
-        // Comments may name the rule; code may not import it.
-        final code = entity
-            .readAsStringSync()
-            .split('\n')
-            .where((line) => !line.trimLeft().startsWith('//'))
-            .join('\n');
+        // Comments may name the rule; code may not import it. Through the
+        // shared reader rather than a line-prefix test, because a comment does
+        // not have to start the line: `const x = 1; // AppLocalizations` was
+        // read as code and this guard accused the file that documented its own
+        // rule. Not `codeOnly` either — the thing it forbids is
+        // `import 'package:flutter/material.dart'`, which is a string literal,
+        // and blanking literals would leave the scan seeing nothing while
+        // still reporting success.
+        final code = withoutComments(entity.readAsStringSync());
         if (banned.hasMatch(code)) offenders.add(entity.path);
       }
     }
