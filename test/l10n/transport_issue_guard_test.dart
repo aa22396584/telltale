@@ -449,6 +449,27 @@ void main() {
       );
     });
 
+    // The nesting-DEPTH axis, which every case above misses: they all put the
+    // raw literal at depth 0 or 1, so nothing required that a `${` two
+    // literals deep still opens an interpolation at all.
+    //
+    // `!(frames.last.raw || frames.length > 1)` over-suppresses exactly there,
+    // passes all six reader tests, and makes a real `TransportException(`
+    // stop being code:
+    //
+    //   fix codeOnly: "final s =    a(   TransportException(   , ...)  )  ;"
+    //   bug codeOnly: "final s =    a(                       y        )  ;"
+    //
+    // A silent false negative in the guard, found by review after the four
+    // raw forms were already in place.
+    expect(
+      callsFound(
+        "final s = '\${a('\${TransportException('y', issue: null)}')}';",
+      ),
+      1,
+      reason: 'a `\${` two literals deep still opens an interpolation',
+    );
+
     // The triple form, in each shape it actually takes.
     expect(
       callsFound(
