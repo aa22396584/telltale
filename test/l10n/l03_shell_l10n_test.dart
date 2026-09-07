@@ -547,8 +547,13 @@ void main() {
         _renderedText(tester, find.byType(RecommendedPurchasePanel)),
         where: 'the recommended purchase panel',
       );
-      // The catalog's own label is 蝦皮; the panel resolves it to the name the
-      // same storefront publishes in English rather than passing it through.
+      // A literal, on purpose. The catalog carries no label of its own any
+      // more — it says `store: RecommendedStore.shopee`, and
+      // `recommendedStoreLabel` switches that to the name the same storefront
+      // publishes in each language. A finder that asked
+      // `AppLocalizations` what that name is would agree with the switch
+      // however the switch is wired; typing 'Shopee' out here is what turns a
+      // transposed arm red.
       expect(find.textContaining('Shopee'), findsWidgets);
     });
 
