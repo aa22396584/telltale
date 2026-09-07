@@ -199,6 +199,23 @@ void main() {
             'independently, on two branches that had each just extracted this '
             'reader',
       );
+      // The frame that decides is the INNERMOST one. Asking the outermost
+      // instead survives every desync-based fixture, because a desync is only
+      // visible when the quotes after it fail to pair, and the outer literal
+      // always brings its own closing quote to pair with. Two attempts at
+      // catching it that way both resynchronised.
+      //
+      // Asserting the classification directly does not depend on that luck:
+      // the guarded word is inside a raw literal that is inside an
+      // interpolation that is inside a non-raw literal. Consult the outermost
+      // frame and the raw literal's `${` opens an interpolation, so 測試
+      // becomes code, `stringLiteralsOnly` drops it, and the guard is handed a
+      // file with the string taken out.
+      expect(
+        found("const a = '\${ r\"\${測試}\" }';"),
+        1,
+        reason: 'the innermost frame decides whether `\${` is interpolation',
+      );
       expect(
         found("const a = '// 測試';"),
         1,

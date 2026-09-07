@@ -407,13 +407,40 @@ void main() {
       1,
       reason: 'a raw string has no escapes, so its backslash is content',
     );
-    expect(
-      callsFound(
-        "const s = r'\${x}';\nthrow TransportException('y', issue: null);",
-      ),
-      1,
-      reason: 'a raw string has no interpolation either, so `\${x}` is content',
-    );
+    // Raw strings, same trap -- and the same reason the case above needed an
+    // UNBALANCED quote. `r'${x}'` resynchronises whether or not the reader
+    // knows raw strings have no interpolation, so the fixture written for this
+    // bug stayed green under the very mutation it was added to catch. Found by
+    // review, not by running it; the PR that added it claimed otherwise.
+    //
+    // Each of these puts an unbalanced quote where an interpolation would be.
+    // Read as interpolation, that quote opens a literal which swallows the
+    // rest of the source, and the call on the next line stops being code. Read
+    // as content -- which is what Dart does -- the call is found.
+    //
+    // All four raw forms plus one nesting, because two wrong implementations
+    // pass when only the first is here: one that gates on `'` alone, and one
+    // that asks the OUTERMOST frame whether it is raw instead of the innermost.
+    const rawForms = <String, String>{
+      'single-quoted': "final d = r'\${don\"t}';\n",
+      'double-quoted': 'final d = r"\${don\'t}";\n',
+      'triple single-quoted': 'final d = r\'\'\'\${don"t}\'\'\';\n',
+      'triple double-quoted': 'final d = r"""\${don\'t}""";\n',
+      // The outer literal must be DOUBLE-quoted and the injected quote a
+      // double quote, or the apostrophe pairs with the outer closing quote and
+      // the whole thing resynchronises -- which is how the first attempt at
+      // this case passed under the mutation it was written for.
+      'raw inside an interpolation inside a non-raw literal':
+          'final d = "\${ r\'\${don"t}\' }";\n',
+    };
+    rawForms.forEach((label, prefix) {
+      expect(
+        callsFound('${prefix}throw TransportException(\'y\', issue: null);'),
+        1,
+        reason: 'a raw string has no interpolation, so the quote inside the '
+            '$label form is content and must not open a literal',
+      );
+    });
 
     // The triple form, in each shape it actually takes.
     expect(
