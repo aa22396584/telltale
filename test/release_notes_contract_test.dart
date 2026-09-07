@@ -84,6 +84,80 @@ String _body(String tag) {
   return r.stdout as String;
 }
 
+/// [md] with fenced code blocks and HTML comments blanked, line for line.
+///
+/// The gate is deliberately Markdown-blind: `grep -qE '^Device walk attested:
+/// X$'` on a file, no state machine in bash. The cost is that an attestation
+/// inside a fence or an HTML comment satisfies it while being, to a reader,
+/// an example or an invisible line.
+///
+/// Two test-side guards were meant to cover that and did not, for a reason
+/// worth writing down: they were written with the same line-anchored regexes
+/// as the gate. **Two Markdown-blind checkers do not compose into a
+/// Markdown-aware one.** A fenced worked entry — the most natural doc edit
+/// there is, "here is what a finished entry looks like" — carries its own
+/// dated heading, so `every attestation belongs to a dated entry` was
+/// satisfied by the example's own corroboration, and `one version, one
+/// attestation` saw exactly one. Gate exit 0, suite green, no walk.
+///
+/// So the parsing lives here instead: four lines of Dart that only have to be
+/// right about the file that is committed, rather than a state machine in a
+/// shell script that runs during a release.
+String _proseOnly(String md) {
+  final out = <String>[];
+  var fence = '';
+  var inComment = false;
+  for (final line in md.split('\n')) {
+    var keep = line;
+
+    if (inComment) {
+      final end = keep.indexOf('-->');
+      if (end < 0) {
+        out.add('');
+        continue;
+      }
+      keep = keep.substring(end + 3);
+      inComment = false;
+    }
+    while (true) {
+      final start = keep.indexOf('<!--');
+      if (start < 0) break;
+      final end = keep.indexOf('-->', start + 4);
+      if (end < 0) {
+        keep = keep.substring(0, start);
+        inComment = true;
+        break;
+      }
+      keep = keep.substring(0, start) + keep.substring(end + 3);
+    }
+
+    final trimmed = keep.trimLeft();
+    final run = RegExp(r'^(`{3,}|~{3,})').firstMatch(trimmed)?.group(1);
+    if (fence.isNotEmpty) {
+      // CommonMark: the closing fence is the same character and at least as
+      // long. Matching on "starts with ```" instead lets a three-backtick
+      // line close a four-backtick block, which is exactly how a nested
+      // example survives being stripped.
+      if (run != null && run[0] == fence[0] && run.length >= fence.length) {
+        fence = '';
+      }
+      out.add('');
+      continue;
+    }
+    if (run != null) {
+      fence = run;
+      out.add('');
+      continue;
+    }
+    out.add(keep);
+  }
+  // Joined rather than written line by line: `split('\n')` yields a trailing
+  // empty element for a file ending in a newline, and `writeln` on it added a
+  // line the original did not have. Caught by the line-count assertion below,
+  // which is the only reason it is safe to report line numbers against this.
+  return out.join('\n');
+}
+
 void main() {
   setUpAll(() {
     // A test that silently skips because it cannot find what it tests is the
@@ -257,6 +331,18 @@ void main() {
       'docs/privacy.html',
       'docs/.nojekyll',
     ];
+    // Absence needs a second, independent witness, or "all of them vanished"
+    // is indistinguishable from "we are the mirror" and the coupling checks
+    // below quietly stop running. A reviewer proved that: deleting the whole
+    // publish-only set from the PUBLIC checkout left all 38 tests green.
+    //
+    // The private mirror keeps the app under `app/`, beside the reverse
+    // engineering spec that is the reason that repository is private. The
+    // public repository's root IS the app root, so nothing sits above it.
+    // That is a structural fact about the two layouts, not a marker file
+    // somebody has to remember to maintain.
+    const privateMirrorWitness = '../torque_architecture_spec.md';
+
     late final List<String> present =
         publishOnly.where((p) => File(p).existsSync()).toList();
     late final bool isPublicCheckout = present.length == publishOnly.length;
@@ -265,6 +351,20 @@ void main() {
       expect(present.length, anyOf(0, publishOnly.length),
           reason: 'publish-only files are all present (the public repo) or all '
               'absent (the private mirror). Present here: $present');
+      if (present.isEmpty) {
+        expect(File(privateMirrorWitness).existsSync(), isTrue,
+            reason: 'every publish-only file is missing, which is normal in the '
+                'private mirror and a catastrophe in the public repository. '
+                '$privateMirrorWitness is what says which one this is, and it '
+                'is not here.');
+      } else {
+        // The other direction, so the witness cannot rot unnoticed: if the
+        // spec ever appeared above a checkout that also has the publish-only
+        // set, the discriminator would be meaningless and this says so.
+        expect(File(privateMirrorWitness).existsSync(), isFalse,
+            reason: 'the publish-only set is present, so this is the public '
+                'repository, and $privateMirrorWitness must not be above it');
+      }
     });
 
     String publishStepOrSkipReason() {
@@ -634,6 +734,52 @@ void main() {
       }
     });
 
+    test('the gate and a Markdown-aware reading of the file agree', () {
+      // The one that closes concealment, and the shape that makes it work: the
+      // gate reads the file raw, this reads it as a person does, and the two
+      // must name the same versions. Anything that is an attestation to grep
+      // and an example to a reader shows up here as a disagreement.
+      //
+      // Reproduced before it was written. A fenced "here is what a finished
+      // entry looks like" block naming 1.0.13 gave `require_device_walk.sh
+      // v1.0.13` exit 0 and left all 38 tests green, because the two guards
+      // meant to stop it used the same line-anchored regexes the gate does.
+      final raw = File(_evidence).readAsStringSync();
+      final attestation = RegExp(
+          r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
+          multiLine: true);
+      Set<String> versionsIn(String text) =>
+          attestation.allMatches(text).map((m) => m.group(1)!).toSet();
+
+      final asGrepSeesIt = versionsIn(raw);
+      final asAReaderSeesIt = versionsIn(_proseOnly(raw));
+      expect(asAReaderSeesIt, equals(asGrepSeesIt),
+          reason: 'these versions are attested to the gate but not to a '
+              'reader: ${asGrepSeesIt.difference(asAReaderSeesIt)}. An '
+              'attestation inside a fenced block or an HTML comment is an '
+              'example or an invisible line, and the gate cannot tell.');
+    });
+
+    test('the prose reader actually removes what it claims to', () {
+      // Without this, the test above passes by both sides being blind in the
+      // same way -- which is exactly the failure it exists to fix.
+      const fenced = 'intro\n\n```markdown\nDevice walk attested: 9.9.9\n```\n';
+      const nested = 'intro\n\n````\n```\nDevice walk attested: 9.9.8\n```\n````\n';
+      const commented = 'intro\n\n<!--\nDevice walk attested: 9.9.7\n-->\n';
+      const inline = 'a <!-- Device walk attested: 9.9.6 --> b\n';
+      const kept = '## 2026-09-07 — 1.0.0 walk\n\nDevice walk attested: 1.0.0\n';
+      for (final concealed in [fenced, nested, commented, inline]) {
+        expect(_proseOnly(concealed), isNot(contains('Device walk attested')),
+            reason: 'concealed: ${concealed.replaceAll('\n', '\\n')}');
+      }
+      expect(_proseOnly(kept), contains('Device walk attested: 1.0.0'));
+      // Line count preserved, so a line number reported against the stripped
+      // text still points at the right line of the original.
+      for (final s in [fenced, nested, commented, inline, kept]) {
+        expect(_proseOnly(s).split('\n').length, s.split('\n').length);
+      }
+    });
+
     test('one version, one attestation', () {
       // A second line attesting the same version is not a second walk; it is
       // something that is not an entry. That is how the gate's own
@@ -649,7 +795,7 @@ void main() {
       final counts = <String, int>{};
       for (final m in RegExp(r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
               multiLine: true)
-          .allMatches(File(_evidence).readAsStringSync())) {
+          .allMatches(_proseOnly(File(_evidence).readAsStringSync()))) {
         counts.update(m.group(1)!, (n) => n + 1, ifAbsent: () => 1);
       }
       expect(counts, isNotEmpty);
@@ -676,7 +822,9 @@ void main() {
       // `1.0.11 walk; 1.0.12 not installed` clear a full release, so the
       // heading is only ever asked "does an entry for this version exist",
       // never "was it walked".
-      final text = File(_evidence).readAsStringSync();
+      // Prose only, both sides: a dated heading inside a fenced example is
+      // the example's own corroboration, not evidence a walk happened.
+      final text = _proseOnly(File(_evidence).readAsStringSync());
       final headings = RegExp(r'^## \d{4}-\d{2}-\d{2}.*$', multiLine: true)
           .allMatches(text)
           .map((m) => m.group(0)!)
