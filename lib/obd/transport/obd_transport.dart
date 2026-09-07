@@ -171,17 +171,22 @@ enum TransportIssue {
   /// A write failed on an already-open link.
   ///
   /// Not a connect failure. The screen it reaches is the settings manual
-  /// command panel, which is the one place a command failure is rendered as
-  /// prose; `lib/ui/screens/settings/manual_command_copy.dart` says it.
+  /// command panel; `lib/ui/screens/settings/manual_command_copy.dart` says it.
+  /// That file is no longer the settings panel's alone -- the fault-code screen
+  /// renders command failures through the same table -- but this identifier is
+  /// thrown from `write()` and the manual panel is where it arrives.
   writeFailed,
 
   // ------- the command path: failures of a link that is already open -------
   //
   // Everything above happens while a link is being established and is rendered
   // by the connect screen. Everything below happens to a command, on a link
-  // that came up, and is rendered by the manual command panel. The split is
-  // not stylistic: a connect failure is answered by trying again, and a
-  // command failure is answered by reading what the adapter did.
+  // that came up, and is rendered by the command-failure table in
+  // `lib/ui/screens/settings/manual_command_copy.dart` -- from the manual
+  // command panel, and from the fault-code screen for the three that a scan,
+  // a clear or a VIN read can raise. The split is not stylistic: a connect
+  // failure is answered by trying again, and a command failure is answered by
+  // reading what the adapter did.
 
   /// The transport reported that the link went away without being asked to.
   ///
