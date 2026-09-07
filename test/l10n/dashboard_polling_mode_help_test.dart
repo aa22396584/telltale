@@ -565,6 +565,55 @@ void main() {
     expect(find.textContaining('併成一次交握'), findsOneWidget);
   });
 
+  testWidgets('the padded part of the target is what opens the explanation', (
+    tester,
+  ) async {
+    // The geometry group asserts a SIZE. Everything a driver does with that
+    // size is an assumption on top of it: that `InkResponse` hit-tests its
+    // whole box rather than deferring to the child it draws. It does, but the
+    // assertion above cannot see the difference, and a later change of
+    // behaviour would leave a 48dp box with a 26dp target and a green suite.
+    //
+    // So this taps a point that is inside the box and demonstrably not on
+    // anything drawn.
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await _pumpDashboard(tester, batchingEnabled: true);
+
+    final target = tester.getRect(find.byKey(PollingModePill.pillKey));
+    final drawn = tester.getRect(
+      find.descendant(
+        of: find.byKey(PollingModePill.pillKey),
+        matching: find.byType(StatusPill),
+      ),
+    );
+
+    // One pixel inside the top edge of the target.
+    final point = Offset(target.center.dx, target.top + 1);
+    expect(
+      drawn.top - point.dy,
+      greaterThanOrEqualTo(10.0),
+      reason:
+          'the tap point has to be clear of the decoration, or this is the '
+          'tap test again with extra arithmetic',
+    );
+    expect(target.contains(point), isTrue);
+
+    expect(find.text(enTitle), findsNothing);
+    await tester.tapAt(point);
+    await _openHelpPump(tester);
+    expect(
+      find.text(enTitle),
+      findsOneWidget,
+      reason:
+          'the padding is part of the box but not part of the target: the '
+          'control is 48dp to a ruler and 26dp to a finger',
+    );
+  });
+
   group('the pill and its explanation survive the hard geometries', () {
     // 320dp is the narrowest width this project supports, landscape is the
     // windscreen-mount case, and 200% is the largest step Android's display
@@ -634,26 +683,32 @@ void main() {
           expect(rect.right, lessThanOrEqualTo(size.width + 0.5));
 
           // A finger, in a car, over a bump. The pill's own decoration is
-          // about 26dp tall, so the interactive region has to be padded out
-          // rather than inherit it — asserted at every geometry because the
-          // one that would lose it is the narrow one, where something has to
-          // give.
+          // shorter than the target, so the interactive region has to be
+          // padded out rather than inherit it — asserted at every geometry
+          // because the one that would lose it is the narrow one, where
+          // something has to give.
+          //
+          // Height only. The width was asserted here too and could not fail:
+          // the label is a multi-word localized string, so the pill is several
+          // times the target wide wherever this suite renders it. Pushing the
+          // widget's constant down fired this message at most geometries and
+          // the width one at none, which is how an assertion that reads like
+          // protection turns out to be decoration.
           //
           // 48 is typed here, not read from `PollingModePill.minTapTarget`.
           // Reading the widget's own constant would make this agree with
           // whatever the widget currently says: set that constant to 24 and
-          // every assertion below would still pass while the target halved.
-          // That is the shape this repo has been bitten by — a test compared
-          // against a copy of the code that produced it.
+          // this would still pass while the target halved. That is the shape
+          // this repo has been bitten by — a test compared against a copy of
+          // the code that produced it.
+          //
+          // A size is not an activation. That they coincide is a property of
+          // `InkResponse`, which hit-tests opaquely across its whole box; the
+          // test below taps the padding to observe it rather than trust it.
           expect(
             rect.height,
             greaterThanOrEqualTo(48.0),
             reason: 'the tap target shrank below 48dp at ${entry.key}',
-          );
-          expect(
-            rect.width,
-            greaterThanOrEqualTo(48.0),
-            reason: 'the tap target narrowed below 48dp at ${entry.key}',
           );
 
           final opening = await _renderErrors(tester, () async {

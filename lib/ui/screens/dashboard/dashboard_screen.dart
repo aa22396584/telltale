@@ -626,11 +626,19 @@ class PollingModePill extends StatelessWidget {
 
   static const Key pillKey = Key('dashboardPollingModePill');
 
-  /// The minimum square a finger gets, in a car, over a bump.
+  /// The minimum height a finger gets, in a car, over a bump.
   ///
   /// The decoration stays the size it was: this pads the interactive region
   /// out to the target, it does not inflate the pill. At large text the pill
   /// is already taller than this and the constraint stops mattering.
+  ///
+  /// Height only. A `minWidth` was here too and never bound: the label is a
+  /// multi-word localized string, so the pill is several times the target wide
+  /// in every geometry the suite renders, and the assertion that guarded it
+  /// could not fail — pushing this constant down fired the height message at
+  /// most of the geometries and the width message at none of them. A
+  /// constraint that cannot bind and a check that cannot fail are both worse
+  /// than their absence, because the next reader counts them as protection.
   ///
   /// Material's own constant rather than another bare `48` typed into this
   /// file, which several other controls in `lib/ui` still are. The test does
@@ -659,10 +667,7 @@ class PollingModePill extends StatelessWidget {
           borderRadius: BorderRadius.circular(Radii.pill),
           onTap: () => showPollingModeHelp(context),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minWidth: minTapTarget,
-              minHeight: minTapTarget,
-            ),
+            constraints: const BoxConstraints(minHeight: minTapTarget),
             // Sizes to the pill, then the constraint above grows the box
             // around it rather than stretching it.
             child: Center(
