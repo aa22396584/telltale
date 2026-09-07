@@ -13,19 +13,51 @@
 // So this file pins the pairing. Three legs, none of which reads its expected
 // value back from the thing it is testing:
 //
-//   * [_pairs] is hand-typed: every [DatumReason] and the Traditional Chinese
-//     sentence the engine exports beside it.
-//   * the ARB leg asserts `datumReasonLabel` in zh-Hant returns exactly that,
-//     so the table is pinned to shipped copy rather than to itself.
+//   * [_exported] and [_screen] are hand-typed: every [DatumReason] with the
+//     sentence the engine writes into the file, and the sentence a Traditional
+//     Chinese reader sees on the phone.
+//   * the ARB leg asserts `datumReasonLabel` in zh-Hant returns [_screen], so
+//     the table is pinned to shipped copy rather than to itself.
 //   * the producer leg walks every real [AvailabilityPolicy] producer and
-//     asserts its `reason` is the sentence [_pairs] gives for its `reasonCode`.
+//     asserts its `reason` is the sentence [_exported] gives for its
+//     `reasonCode`.
 //
-// The zh-Hant ARB entries happen to be byte-identical to the exported
-// sentences today, which is what makes this cheap. It is not a rule — the two
-// are allowed to diverge, and the day they do, [_pairs] gains the exported
-// wording and the ARB leg is what says so. The two producers whose reason is
-// legitimately NOT a `DatumReason` sentence — a recorded telemetry status and
-// the session gap list — are pinned explicitly below rather than skipped.
+//   * the wording leg asserts the two tables agree, except where a code is
+//     named in [_wordingDivergesOnPurpose].
+//
+// It used to be one table serving both legs, and the header said the two were
+// free to diverge while a single edit turned both of them red. A rewording had
+// nowhere to go at all: put the new wording in and the producer leg failed,
+// leave it out and the ARB leg did. That is a contract that cannot be met
+// rather than one that was broken.
+//
+// Splitting the table fixed that and, on the first attempt, quietly threw away
+// something else. While one table served both legs, `producer.reason ==
+// datumReasonLabel(zhHant, code)` came free by transitivity. Two tables removed
+// the bridge, and nothing else replaces it: [DatumStatus.exportFields] writes
+// `reason` — the sentence — and no code beside it, and nothing anywhere writes
+// `reasonCode` into an export. **The sentence is the only join key a person
+// comparing an evidence file against a phone has.** Reword
+// `lib/diagnostics/availability.dart` and `_exported` together and the file
+// would have said 車輛匯流排通訊錯誤 while the phone said 匯流排錯誤, with
+// nothing to match them by and every test green.
+//
+// So the equality is a leg now rather than an accident. It is not the single
+// table coming back: `_screen` is still pinned to the shipped ARB and
+// `_exported` still to the producers, each against its own source, and a
+// wording that is *meant* to diverge has somewhere to go — one entry in
+// [_wordingDivergesOnPurpose], which shows up in a diff and has to be argued
+// for. That is the difference between a rule with an exception and a rule with
+// no way to say no.
+//
+// The gap-list leg below has asserted exactly this kind of export-to-screen
+// equality all along. It has no exception set of its own, and does not need
+// one: its exported sentence is three gap labels joined together, so there is
+// no per-item wording that could be reworded on its own.
+//
+// The two producers whose reason is legitimately NOT a `DatumReason` sentence
+// — a recorded telemetry status and the session gap list — are pinned
+// explicitly below rather than skipped.
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -40,11 +72,35 @@ import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 import 'package:torque_obd/ui/widgets/telemetry/telemetry_status_copy.dart';
 
-/// Every [DatumReason] and the exported sentence that belongs beside it.
+/// Every [DatumReason] and the sentence the engine writes beside it into an
+/// export file.
 ///
 /// Typed out by hand. Reading either side back from the code under test would
 /// produce a table that agrees with any transposition.
-const _pairs = <DatumReason, String>{
+const _exported = <DatumReason, String>{
+  DatumReason.malformedPacket: '壞封包，只可查看原文',
+  DatumReason.nonFiniteValue: '非有限數值',
+  DatumReason.outOfReferenceRangeKept: '超出一般參考範圍，已保留',
+  DatumReason.unsafeServiceStopped: '此服務不是唯讀查詢，已停止發送',
+  DatumReason.unsafeService: '此服務不是唯讀查詢',
+  DatumReason.pidUnsupported: '此車輛不支援這個 PID',
+  DatumReason.noAnswer: '無回應，稍後重試',
+  DatumReason.busError: '匯流排錯誤',
+  DatumReason.formulaError: '公式錯誤',
+  DatumReason.headerNotOnThisBus: '標頭不符本車匯流排',
+  DatumReason.noReadingYet: '尚無讀值',
+  DatumReason.horsepowerEstimateMissingInputs: '馬力缺少必要輸入',
+  DatumReason.fuelEstimateMissingInputs: '油耗缺少必要輸入',
+  DatumReason.assumptionsUnconfirmed: '假設尚未確認，仍可估算',
+};
+
+/// Every [DatumReason] and the sentence a Traditional Chinese reader sees.
+///
+/// Also typed out by hand, and identical to [_exported] today — the export
+/// wording was written first and the ARB took it verbatim. Copying it rather
+/// than deriving it is the point: a screen sentence that reworded would be one
+/// edit here, and the export sentence beside it would not move.
+const _screen = <DatumReason, String>{
   DatumReason.malformedPacket: '壞封包，只可查看原文',
   DatumReason.nonFiniteValue: '非有限數值',
   DatumReason.outOfReferenceRangeKept: '超出一般參考範圍，已保留',
@@ -70,6 +126,20 @@ const _pairs = <DatumReason, String>{
 /// pre-existing and not this slice's to change; pinned so that a producer
 /// gaining or losing it is a failing test rather than a silent drift.
 const _unreachable = {DatumReason.unsafeService};
+
+/// Codes whose screen wording is deliberately not the exported wording.
+///
+/// Empty today, and an empty set is the honest state rather than a mechanism
+/// with no users: the wording leg reads it on every run, so the day one is
+/// added the entry is what carries the argument. The single table this file
+/// used to have could not offer even that — a rewording had nowhere to go.
+///
+/// An entry is a decision about two wordings that differ, and the wording leg
+/// holds every entry to that: a code named here whose two wordings are equal
+/// again fails the run. Without that the reverse path is silent — open an
+/// exception, let the wording be brought back into line later, and the entry
+/// stays behind exempting that code from the wording leg for good.
+const _wordingDivergesOnPurpose = <DatumReason>{};
 
 /// One status and a label saying which producer made it.
 typedef _Produced = ({String label, DatumStatus status});
@@ -204,16 +274,59 @@ List<_Produced> _producers() => [
 void main() {
   final zhHant = lookupAppLocalizations(traditionalChineseLocale);
 
-  test('every reason code renders the sentence it is exported beside', () {
+  test('every reason code renders the sentence the screen table names', () {
     // A code with no entry, or an entry for a code that no longer exists, is
-    // the table going stale rather than the app being right.
-    expect(_pairs.keys.toSet(), DatumReason.values.toSet());
-    for (final entry in _pairs.entries) {
+    // the table going stale rather than the app being right. Both tables, not
+    // one: the coverage check was written when there was only [_exported], and
+    // a [_screen] that quietly lost a code would leave that code unpinned on
+    // the side this test is named for.
+    expect(_exported.keys.toSet(), DatumReason.values.toSet());
+    expect(_screen.keys.toSet(), DatumReason.values.toSet());
+    for (final entry in _screen.entries) {
       expect(
         datumReasonLabel(zhHant, entry.key),
         entry.value,
-        reason: '${entry.key} exports "${entry.value}" and must not render '
-            'something else to a Traditional Chinese reader',
+        reason: '${entry.key} renders "${entry.value}" to a Traditional '
+            'Chinese reader and must not render something else',
+      );
+    }
+  });
+
+  test('a reader sees one sentence in the file and on the phone', () {
+    // The export carries no code: [DatumStatus.exportFields] writes `reason`
+    // and nothing that says which reason it is. So the sentence itself is the
+    // join key — two people comparing an evidence file against a phone have
+    // only the wording to match on, and the moment the two wordings differ
+    // without a decision behind it, they cannot tell they are looking at the
+    // same fact.
+    //
+    // While one table served both legs this came free by transitivity. It does
+    // not any more, so it is written down.
+    for (final code in DatumReason.values) {
+      if (_wordingDivergesOnPurpose.contains(code)) continue;
+      expect(
+        _screen[code],
+        _exported[code],
+        reason: '$code is exported as "${_exported[code]}" and rendered as '
+            '"${_screen[code]}"; the export carries nothing else to match '
+            'them by, so a reader comparing the two cannot tell it is one '
+            'fact. If the difference is deliberate, name the code in '
+            '_wordingDivergesOnPurpose.',
+      );
+    }
+    // The exception is held to its own claim. A code named in the set whose
+    // wordings have quietly reconverged is not an exception any more, it is a
+    // hole: the ARB leg and the producer leg each keep passing against their
+    // own table, and the next accidental divergence for that code goes
+    // unseen. Whether a name in the set is a real code needs no check — the
+    // set is typed, and deleting the enum constant fails at compile time.
+    for (final code in _wordingDivergesOnPurpose) {
+      expect(
+        _screen[code],
+        isNot(_exported[code]),
+        reason: '$code is named in _wordingDivergesOnPurpose but its screen '
+            'and export wordings are equal again; the entry is exempting it '
+            'from the wording leg for no reason. Remove it.',
       );
     }
   });
@@ -234,9 +347,9 @@ void main() {
       );
       expect(
         status.reason,
-        _pairs[code],
+        _exported[code],
         reason: '${produced.label} exports "${status.reason}" while the '
-            'screen shows $code — "${_pairs[code]}"',
+            'code beside it is $code — "${_exported[code]}"',
       );
     }
     // The walk seeing nothing must not read as success.
