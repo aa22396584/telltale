@@ -38,6 +38,8 @@ import 'package:torque_obd/state/vehicle_identity.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 
+import '../support/dart_source_regions.dart';
+
 final _cjk = RegExp(r'[㐀-鿿豈-﫿]');
 
 void main() {
@@ -754,12 +756,15 @@ void main() {
     for (final directory in ['lib/obd', 'lib/diagnostics']) {
       for (final entity in Directory(directory).listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
-        // Comments may name the rule; code may not import it.
-        final code = entity
-            .readAsStringSync()
-            .split('\n')
-            .where((line) => !line.trimLeft().startsWith('//'))
-            .join('\n');
+        // Comments may name the rule; code may not import it. Through the
+        // shared reader rather than a line-prefix test, because a comment does
+        // not have to start the line: `const x = 1; // AppLocalizations` was
+        // read as code and this guard accused the file that documented its own
+        // rule. Not `codeOnly` either — the thing it forbids is
+        // `import 'package:flutter/material.dart'`, which is a string literal,
+        // and blanking literals would leave the scan seeing nothing while
+        // still reporting success.
+        final code = withoutComments(entity.readAsStringSync());
         if (banned.hasMatch(code)) offenders.add(entity.path);
       }
     }

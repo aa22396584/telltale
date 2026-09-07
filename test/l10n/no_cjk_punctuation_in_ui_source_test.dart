@@ -24,6 +24,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/cjk.dart';
+import '../support/dart_source_regions.dart';
 
 /// Deliberate CJK punctuation that is data or a self-name, not copy. Matched by
 /// exact line content so a new one has to be added here on purpose.
@@ -68,48 +69,38 @@ Iterable<File> get _scanned sync* {
   }
 }
 
-/// The line with any trailing `//` comment removed.
+/// [src] with its comments blanked, line for line.
 ///
-/// Naive, and deliberately so: matching Dart's real lexer would be a parser,
-/// and a parser is a second thing to get wrong.
+/// This used to be `line.indexOf('//')` and a substring, which was defended in
+/// a long comment as the right trade: it truncated at the `//` of a URL, so it
+/// could miss, and in one arrangement — CJK punctuation before the URL and
+/// every Han character after it, `const note = '「https://example.com/x」的說明'`
+/// — it could also accuse a line that was fine.
 ///
-/// The cost is that a `//` inside a string literal — a URL, a path — truncates
-/// the line early. In the ordinary shape, Chinese words before a URL, that can
-/// only cause a miss. It can also produce a **false positive**, in the one
-/// arrangement where CJK punctuation sits before the `//` and every Han
-/// character after it:
-///
-///     const note = '「https://example.com/x」的說明';
-///
-/// leaves `const note = '「https:` — punctuation present, and the 的說明 that
-/// would have excused it gone with the tail. A reviewer found that; the first
-/// version of this comment claimed a false positive was impossible, which was
-/// not true.
-///
-/// It is still the right trade. A false positive is loud and diagnosable at a
-/// glance, which is the opposite of the silent miss the truncation was added to
-/// fix, and the test below asserts that no line in these directories puts a
-/// `//` inside a string at all.
-String _code(String line) {
-  final at = line.indexOf('//');
-  return at < 0 ? line : line.substring(0, at);
-}
+/// Neither cost was worth paying, because the parser the comment did not want
+/// to write already exists: `test/support/dart_source_regions.dart`, shared
+/// with the transport guard and the identifier guard, with fixtures pinning
+/// the two bugs it has actually had. String literals are kept deliberately —
+/// see the scan below on why this is a whole-line check and not a literal one.
+List<String> _codeLines(String source) => withoutComments(source).split('\n');
 
 void main() {
   test('no CJK punctuation is hardcoded in a lib/ui string literal', () {
     final offenders = <String>[];
     for (final entity in _scanned) {
-      final lines = entity.readAsLinesSync();
+      final source = entity.readAsStringSync();
+      final lines = source.split('\n');
+      // A trailing Chinese comment is not Chinese copy, and leaving it in
+      // masked the whole check: this codebase writes `// 以頓號分隔清單` at
+      // the end of lines constantly, and a reviewer proved that adding
+      // `xs.join('、'); // 以頓號分隔清單` to panel.dart passed the scan.
+      // A whole comment line goes blank the same way, so there is no prefix
+      // test here any more.
+      final stripped = _codeLines(source);
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
-        final trimmed = line.trimLeft();
-        if (trimmed.startsWith('//') || trimmed.startsWith('///')) continue;
         if (_allowed.contains(line)) continue;
-        // A trailing Chinese comment is not Chinese copy, and leaving it in
-        // masked the whole check: this codebase writes `// 以頓號分隔清單` at
-        // the end of lines constantly, and a reviewer proved that adding
-        // `xs.join('、'); // 以頓號分隔清單` to panel.dart passed the scan.
-        final code = _code(line);
+        final code = stripped[i];
         if (!cjkPunctuation.hasMatch(code)) continue;
         // A line of Chinese copy carries Chinese punctuation, and that is
         // correct. What this catches is punctuation with no Chinese word
@@ -136,40 +127,52 @@ void main() {
     );
   });
 
-  test('nothing hides CJK punctuation behind a // inside a string', () {
-    // `_code` cuts at the first `//`, which is not how Dart lexes a line: a
-    // `//` inside a string literal — a URL, a path — would truncate it early
-    // and hide anything after. I argued in `_code`'s doc that this can only
-    // cause a miss, never a false accusation, and that no line in these
-    // directories does it today. The second half of that is a fact about
-    // today's tree, so it is asserted rather than asserted-in-a-comment.
+  test('the reader: a `//` inside a string does not truncate the line', () {
+    // This replaced a test that asserted no line in these directories put a
+    // `//` inside a string literal. That was not a property of the code — it
+    // was a precondition of the naive `indexOf('//')` stripper, and its own
+    // comment said so: "if this ever fails, `_code` needs to become
+    // quote-aware." It is quote-aware now, so the precondition is gone and
+    // asserting it would forbid a URL for no reason.
     //
-    // If this ever fails, `_code` needs to become quote-aware. Deleting the
-    // test instead restores the blind spot.
-    final risky = <String>[];
-    for (final entity in _scanned) {
-      final lines = entity.readAsLinesSync();
-      for (var i = 0; i < lines.length; i++) {
-        final line = lines[i];
-        if (line.trimLeft().startsWith('//')) continue;
-        final at = line.indexOf('//');
-        if (at < 0) continue;
-        final before = line.substring(0, at);
-        final singles = "'".allMatches(before).length -
-            r"\'".allMatches(before).length;
-        final doubles = '"'.allMatches(before).length;
-        if (singles.isOdd || doubles.isOdd) {
-          risky.add('${entity.path}:${i + 1}  ${line.trim()}');
-        }
-      }
-    }
+    // What has to hold instead is that the reader itself survives the shapes
+    // the old stripper did not. Fixtures, not the real sources: the real
+    // sources are supposed to be clean, so a green run over them proves the
+    // scan found nothing rather than that it could have.
+    List<String> codeOf(String src) => _codeLines(src);
+
     expect(
-      risky,
-      isEmpty,
-      reason:
-          'These lines put a `//` inside a string literal, so the scan above '
-          'stops reading them early and would miss CJK punctuation after '
-          'it:\n${risky.join('\n')}',
+      codeOf("final u = 'https://a/、b';").single,
+      contains('、'),
+      reason: 'the `//` of a URL is inside a literal and starts no comment — '
+          'truncating there is how a real separator stayed invisible',
+    );
+    expect(
+      codeOf("final x = 1; // 以頓號分隔清單、二").single,
+      isNot(contains('、')),
+      reason: 'a trailing comment is still a comment',
+    );
+    final wholeLine = codeOf("// 、\nfinal y = 2;");
+    expect(wholeLine, hasLength(2));
+    expect(
+      wholeLine.first,
+      isNot(contains('、')),
+      reason: 'a whole comment line blanks',
+    );
+    expect(
+      wholeLine.last,
+      'final y = 2;',
+      reason: 'and it does not eat the line after it',
+    );
+    expect(
+      codeOf("/* 、\n、 */\nfinal z = 3;").last,
+      'final z = 3;',
+      reason: 'a block comment spans lines and stops at its close',
+    );
+    expect(
+      codeOf("final q = 'it\\'s、';").single,
+      contains('、'),
+      reason: 'an escaped quote does not close the literal early',
     );
   });
 
@@ -189,7 +192,7 @@ void main() {
         problems.add('gone from the source, delete it: $line');
         continue;
       }
-      final code = _code(line);
+      final code = _codeLines(line).single;
       if (!cjkPunctuation.hasMatch(code) || han.hasMatch(code)) {
         problems.add('excuses nothing — the scan skips it anyway: $line');
       }

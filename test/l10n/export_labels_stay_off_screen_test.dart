@@ -21,6 +21,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/dart_source_regions.dart';
+
 /// Symbols that exist to be written into an export and must not be read by the
 /// interface, with what to use instead.
 const _exportOnly = <String, String>{
@@ -59,11 +61,6 @@ const _allowed = <String, Set<String>>{
   'lib/ui/widgets/status/datum_status_copy.dart': {'.formula', '.assumptions'},
 };
 
-/// The export-only doc comments name these on purpose, and a doc comment is
-/// where the rule belongs. Only `//` lines are stripped before the scan, so a
-/// `///` line naming the symbol would read as a violation.
-const _docCommentPrefix = '///';
-
 void main() {
   test('lib/ui never reads a string that was written for an export file', () {
     final offences = <String>[];
@@ -72,14 +69,18 @@ void main() {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       final allowedHere = _allowed[entity.path] ?? const <String>{};
 
-      final lines = entity.readAsLinesSync();
+      // The export-only doc comments name these symbols on purpose, and a
+      // doc comment is where the rule belongs, so comments are removed before
+      // the scan — through the shared reader rather than `split('//').first`,
+      // which cut the line at the `//` of any URL and hid every symbol after
+      // it. String literals are kept: what this looks for is a member access,
+      // but a line can hold both.
+      final source = entity.readAsStringSync();
+      final lines = source.split('\n');
+      final stripped = withoutComments(source).split('\n');
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
-        final trimmed = line.trimLeft();
-        final code =
-            trimmed.startsWith('//') || trimmed.startsWith(_docCommentPrefix)
-            ? ''
-            : line.split('//').first;
+        final code = stripped[i];
         for (final entry in _exportOnly.entries) {
           if (allowedHere.contains(entry.key)) continue;
           if (!code.contains(entry.key)) continue;

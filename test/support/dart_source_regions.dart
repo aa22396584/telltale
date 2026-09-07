@@ -169,6 +169,32 @@ String onlyRegion(String src, SourceRegion region) {
 /// [src] with every string and comment character replaced by a space.
 String codeOnly(String src) => onlyRegion(src, SourceRegion.code);
 
+/// [src] with only its comments replaced by spaces — code and string literals
+/// both survive.
+///
+/// The view a whole-line guard needs, and the reason it is not [codeOnly]:
+/// several guards here match text that legitimately lives inside a literal —
+/// an `import 'package:flutter/material.dart'` is a string, and so is a
+/// `join('、')` separator — so blanking literals would leave those guards
+/// reading nothing and reporting success. What they actually want removed is
+/// the comment, because this repo names its own rules in comments and a guard
+/// that cannot tell `// AppLocalizations` from an import accuses the file that
+/// documents the rule.
+///
+/// The naive form of this — `line.split('//').first` — truncates at the `//`
+/// of a URL, which silently hides everything after it on that line. That is
+/// the failure three separate guards carried a copy of.
+String withoutComments(String src) {
+  final regions = sourceRegions(src);
+  final out = StringBuffer();
+  for (var i = 0; i < src.length; i++) {
+    out.write(
+      regions[i] == SourceRegion.comment ? (src[i] == '\n' ? '\n' : ' ') : src[i],
+    );
+  }
+  return out.toString();
+}
+
 /// [src] with everything that is not string-literal content replaced by a
 /// space — the inverse view, for guards that police what the strings say.
 String stringLiteralsOnly(String src) => onlyRegion(src, SourceRegion.string);
