@@ -61,6 +61,33 @@ const _guarded = <String>[
   'lib/core/affiliate/recommended_purchases.dart',
 ];
 
+/// What each [BlePermissionKind] is called on screen, typed out by hand.
+///
+/// Every character on the right of this map was written here, and nothing on
+/// that side may ever be read back from [AppLocalizations], from an ARB file,
+/// or from `blePermissionName` itself. That is not fastidiousness: the test
+/// this table replaced walked the switch and asserted only that each name was
+/// non-empty and that no two kinds shared one, and a reviewer swapped the two
+/// arms of `blePermissionName` —
+///
+///     BlePermissionKind.bluetooth => l10n.wearPermissionLocation,
+///     BlePermissionKind.location  => l10n.wearPermissionBluetooth,
+///
+/// — and the whole suite stayed green, because a transposition preserves both
+/// of those properties exactly. An expected value derived from the production
+/// switch transposes with it; only one written down independently does not.
+///
+/// The storefront half of the branch has this shape already, by accident:
+/// `find.textContaining('Shopee')` and `find.textContaining('蝦皮')` in
+/// test/l10n/l03_shell_l10n_test.dart are literals nobody generated, so
+/// mutating a `RecommendedStore` arm goes red in nine tests. This is the same
+/// anchoring on the permission side, on purpose.
+const _expectedPermissionName =
+    <BlePermissionKind, ({String english, String chinese})>{
+  BlePermissionKind.bluetooth: (english: 'Bluetooth', chinese: '藍牙'),
+  BlePermissionKind.location: (english: 'Location', chinese: '位置'),
+};
+
 /// Every `file:line  offending characters  line text` in [source]'s string
 /// literals, using the shared reader so a comment cannot be mistaken for one.
 List<String> _chineseLiterals(String path, String source) {
@@ -195,6 +222,40 @@ void main() {
   group('the identifiers the two files now carry have copy in both languages', () {
     final en = lookupAppLocalizations(englishLocale);
     final zh = lookupAppLocalizations(traditionalChineseLocale);
+
+    // A row per kind, checked before the loop that reads them. A kind added
+    // to the enum without a row here would otherwise be tested by nothing:
+    // the loop below iterates the table, so the new kind simply would not
+    // appear, and the suite would report success for a build whose wear shell
+    // names an untested permission. The set comparison also catches the other
+    // direction — a row left behind for a kind that has been removed.
+    test('every BlePermissionKind has a row in the expected-name table', () {
+      expect(
+        _expectedPermissionName.keys.toSet(),
+        BlePermissionKind.values.toSet(),
+        reason: 'the table and the enum have drifted. Write the new kind\'s '
+            'two sentences out by hand; do not read them from '
+            'AppLocalizations, or the row transposes with the switch it is '
+            'supposed to be checking.',
+      );
+    });
+
+    test('each BlePermissionKind renders the sentence written down here', () {
+      _expectedPermissionName.forEach((kind, want) {
+        expect(
+          blePermissionName(en, kind),
+          want.english,
+          reason: '$kind renders the wrong English name. If the arms of '
+              'blePermissionName are transposed, the wear shell tells a user '
+              'who refused one permission to go and grant the other.',
+        );
+        expect(
+          blePermissionName(zh, kind),
+          want.chinese,
+          reason: '$kind renders the wrong Chinese name',
+        );
+      });
+    });
 
     // The storefront half of this lives in
     // test/l10n/l03_shell_l10n_test.dart, next to the panel's other copy
