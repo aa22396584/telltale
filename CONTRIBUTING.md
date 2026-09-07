@@ -280,6 +280,37 @@ produced a bug that survived a green test suite.
   swap of two table rows in a shell heredoc reported green here because shell
   quoting ate the escaped backticks and the file was never edited. Assert the
   anchor exists before replacing it, and diff the file afterwards.
+- **A mutation that does report failure has two explanations as well, and a
+  count is the first thing that separates them, not the last.** Four rounds
+  here printed `Some tests failed` and named a failing test while
+  `flutter test` had loaded nothing at all: three paths went in as one quoted
+  argument, so the sole failure was the runner not finding a file — and the
+  line naming it is shaped exactly like a real one. Take the test total from
+  an unmutated control run first, and void any round whose pass + fail does
+  not equal it. A matching total is necessary and not sufficient: an unrelated
+  setup or runtime failure can keep the total intact, so also check that the
+  test that went red is the one naming what you broke.
+
+  Take that control over the handful of files the change is about, not the
+  whole suite. A whole-suite count is not a property of the change: it is the
+  red the change caused plus the red the base already carried, and the second
+  term moves when the base does. The same sentence in the same commit message
+  here was true on the tree it was measured on and false after a rebase, and a
+  reader cannot tell from the number which term moved. A scoped total is a
+  property of those files.
+
+  (A reviewer also saw one mutant produce 4 red, then 9, then 9 across three
+  whole-suite runs in one worktree, and replaying the sequence did not
+  reproduce the 4. That is recorded because it happened, not as a reason —
+  an unexplained observation is not evidence for a rule, and treating it as
+  one is the same move this section exists to stop.)
+
+  Keep the restore out of the round's own control flow, too: that same script
+  aborted under `set -u` one line before restoring, because bash reads the
+  full-width `）` in `"$BASE）"` as part of the variable name. The mutant
+  stayed on disk, and the next round's `cp` then saved *it* as the backup. A
+  backup a later round can overwrite is not a backup — take one read-only copy
+  and restore from it in a `trap`.
 - **Two blind checkers do not compose into one that sees.** When a check is
   deliberately kept simple — a `grep` rather than a parser, because the parser
   would run somewhere it must not fail — the guards written to cover what it

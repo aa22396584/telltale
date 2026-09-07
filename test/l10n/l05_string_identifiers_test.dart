@@ -165,6 +165,19 @@ void main() {
       expect(found("// 位置\n"), 0, reason: 'a line comment is not a literal');
       expect(found("/// 位置\n"), 0, reason: 'nor a doc comment');
       expect(found("/* 位置 */\n"), 0, reason: 'nor a block comment');
+      // Nested, and this is the direction that costs. Read as ending at the
+      // first `*/`, 測試 lands in *code*, `stringLiteralsOnly` removes it, and
+      // this guard reports no Chinese in a file that has some — in green.
+      // ImL1s/telltale#109. The comment is the one from the compiled premise
+      // in `test/support/dart_source_reader_test.dart`; this fixture is the
+      // fragment a guard reads, not a program, so it declares 測試 rather than
+      // printing it.
+      expect(
+        found("/* /* */ don't\n*/\nconst a = '測試';"),
+        1,
+        reason: 'a nested block comment ends at its matching close, so the '
+            'literal after it is still a literal',
+      );
       expect(
         found("/// the old `?? '藍牙'` fallback\n"),
         0,

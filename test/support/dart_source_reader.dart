@@ -13,10 +13,20 @@
 /// already say what happens to two copies of the same rule: they drift apart,
 /// and the weaker one is the one that stays green. The transport guard's
 /// "the reader itself: what counts as code" test still drives this code, so the
-/// fixtures that pin the two bugs it has actually had — an escape check that
+/// fixtures that pin the bugs it has actually had — an escape check that
 /// compared one character against the two-character string `r'\\'` and was
 /// therefore always false, and raw strings like `r'C:\'` where a backslash is
-/// content rather than an escape — keep holding it.
+/// content rather than an escape — keep holding it. How many there have been
+/// is left out on purpose: the sentence said "two" until the next one was
+/// found, and a number in a comment goes stale without anything failing.
+///
+/// `dart_source_reader_test.dart`, beside this file, is the other half: the
+/// fixtures for where a comment ends — nested block comments, and the line
+/// terminators that end a `//` — which assert the classification of every
+/// character rather than a consequence of it. Both are needed. The
+/// transport guard measures what a guard SEES, which is the failure that
+/// matters; a region map measures what the reader SAYS, which is the only
+/// thing an injected quote cannot resynchronise away from.
 ///
 /// [SourceRegion] is a three-way answer rather than the original bool mask
 /// because "not code" was not specific enough: a guard that forbids Chinese in
@@ -108,17 +118,72 @@ List<SourceRegion> sourceRegions(String src) {
 
     if (c == '/' && i + 1 < src.length && src[i + 1] == '/') {
       final start = i;
-      while (i < src.length && src[i] != '\n') {
+      // A bare CR ends a line comment too. Dart's NEWLINE is CR, LF or CRLF,
+      // and `// comment\rconst a = '測試';` compiles and prints 測試 — run,
+      // not read. Stopping only at LF swallowed that declaration into the
+      // comment, so a guard asking what the strings say saw no string at all:
+      // the same shape as the nested-comment bug below, one branch over.
+      // Found by review, not by the fixtures; no `.dart` file in this repo
+      // has a CR today, so it was latent.
+      //
+      // The terminator itself stays outside the comment, which is what this
+      // branch already did with LF — so after this, a CR inside a `//` line is
+      // code, and `withoutComments` leaves it in place rather than blanking
+      // it. That REMOVES an inconsistency rather than adding one: before, a
+      // `\r` was swallowed into the comment on a line that had one and left
+      // alone on a line that did not, so two line endings in one file were
+      // treated differently depending on a comment. Review checked the two
+      // `multiLine` guards that could care; both anchor on `^`, which still
+      // matches after the `\n`, and no guard here anchors on `$`.
+      //
+      // One asymmetry does remain, and it is in [onlyRegion] rather than here:
+      // its blanking special-cases `\n` only, so a `\r` outside the chosen
+      // region becomes a space. Offsets still line up, so nothing reads it
+      // wrong — but the next person tracing a line ending through this file
+      // should not have to find that out twice.
+      while (i < src.length && src[i] != '\n' && src[i] != '\r') {
         i++;
       }
       mark(start, i, SourceRegion.comment);
       continue;
     }
     if (c == '/' && i + 1 < src.length && src[i + 1] == '*') {
-      final close = src.indexOf('*/', i + 2);
-      final end = close == -1 ? src.length : close + 2;
-      mark(i, end, SourceRegion.comment);
-      i = end;
+      // Dart block comments NEST, so the end is the matching `*/` and not the
+      // first one. `indexOf('*/', i + 2)` was the reader's fourth silent bug:
+      // in `/* /* */ don't\n*/\nconst a = '測試';` — a file that compiles and
+      // prints 測試 — it ended the comment at the inner close, the apostrophe
+      // in `don't` opened a phantom literal, and 測試 came out as *code*.
+      // `stringLiteralsOnly` drops code, so a guard asking what the strings
+      // say was handed the file with the string taken out, and answered no.
+      //
+      // No string handling inside this loop, deliberately: a comment has no
+      // string literals in it. `/* " /* " */ */` compiles, which it could not
+      // if the quotes hid the inner `/*` — the trailing `*/` would then be a
+      // stray. Verified by compiling it, not by reading the grammar.
+      //
+      // `j += 2` on both arms for the same reason `indexOf` started at
+      // `i + 2`: the `*` of an inner `/*` must not be reused as the `*` of a
+      // close. `/* /*/ */` is unterminated in Dart, and resuming one character
+      // on reads it as balanced.
+      var depth = 1;
+      var j = i + 2;
+      while (j < src.length && depth > 0) {
+        if (src[j] == '/' && j + 1 < src.length && src[j + 1] == '*') {
+          depth++;
+          j += 2;
+        } else if (src[j] == '*' && j + 1 < src.length && src[j + 1] == '/') {
+          depth--;
+          j += 2;
+        } else {
+          j++;
+        }
+      }
+      // Depth still open means there is no close: the rest of the file is
+      // comment. That was already this branch's behaviour for `close == -1`,
+      // and it is the safe direction — the alternative invents a literal out
+      // of whatever punctuation follows.
+      mark(i, j, SourceRegion.comment);
+      i = j;
       continue;
     }
     if (c == "'" || c == '"') {

@@ -321,6 +321,21 @@ void main() {
         reason: 'a line comment is not code');
     expect(callsFound("/* TransportException('x', issue: null); */"), 0,
         reason: 'a block comment is not code');
+    // And a NESTED one, because that is a shape a block comment may take.
+    // The comment here is the one from the compiled premise in
+    // `test/support/dart_source_reader_test.dart`; what follows it is this
+    // guard's own construction rather than that file's `const`, so the fixture
+    // is a fragment and not a program — nothing here claims it runs. What is
+    // measured is whether the reader still calls the throw code. Ended at the
+    // FIRST `*/`, the apostrophe in `don't` opens a phantom literal which
+    // swallows that line, and this guard stops seeing a construction it exists
+    // to find — ImL1s/telltale#109.
+    expect(
+      callsFound("/* /* */ don't\n*/\nthrow TransportException('y', issue: null);"),
+      1,
+      reason: 'a nested block comment ends at its matching close, not the '
+          'first one',
+    );
     expect(callsFound("final s = 'TransportException(';"), 0,
         reason: 'a string literal is not code');
     expect(callsFound(r"""final s = 'TransportException(';"""), 0,
