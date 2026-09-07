@@ -27,6 +27,22 @@ const _workflow = '.github/workflows/release.yml';
 const _evidence = 'docs/verification/device-verification.md';
 const _changelog = 'CHANGELOG.md';
 
+/// One list, two consumers. `release_notes.sh` and `require_device_walk.sh`
+/// each answer "is this a pre-release" from their own `case "$TAG" in *-*)`,
+/// and the suite used to feed them different tags -- five forms to the notes,
+/// three to the gate. Narrowing the gate's arm to `*-beta*|*-rc*|*-0*` then
+/// passed everything while refusing a legitimate `-alpha` tag with a message
+/// naming the wrong reason.
+const _prereleaseTags = [
+  'v1.0.12-beta.1',
+  'v1.0.12-rc1',
+  'v1.0.12-rc.1',
+  'v1.0.12-0',
+  'v1.0.12-alpha',
+  'v1.0.12-alpha.2+build.7',
+];
+const _fullTags = ['v1.0.12', 'v2.0.0', 'v10.20.30'];
+
 /// `version: X.Y.Z+N` from pubspec.yaml — the one place the version is
 /// declared, so every check below derives from it rather than restating it.
 ({String name, String code}) _pubspecVersion() {
@@ -79,19 +95,13 @@ void main() {
 
   group('the flag and the prose come from one reading of the tag', () {
     test('a SemVer pre-release suffix is the only thing that sets the flag', () {
-      for (final tag in ['v1.0.12', 'v2.0.0', 'v10.20.30']) {
+      for (final tag in _fullTags) {
         expect(_flag(tag), 'full', reason: '$tag has no pre-release identifier');
       }
       // Not only `-beta.N`. SemVer allows any identifier after the first
       // hyphen, and narrowing the match to beta would block a legitimate
       // `-rc1` or `-0` while reading as correct.
-      for (final tag in [
-        'v1.0.12-beta.1',
-        'v1.0.12-rc1',
-        'v1.0.12-rc.1',
-        'v1.0.12-0',
-        'v1.0.12-alpha',
-      ]) {
+      for (final tag in _prereleaseTags) {
         expect(_flag(tag), 'prerelease',
             reason: '$tag has a pre-release identifier');
       }
@@ -299,7 +309,33 @@ void main() {
       expect(publishStep, contains('--verify-tag'));
 
       final yaml = File(_workflow).readAsStringSync();
-      expect(yaml, contains('bash $_gateScript "\$TAG"'));
+      // The gate step read as a WHOLE BLOCK, not as a substring anywhere in
+      // the file. Three mutations passed when this only grepped for the run
+      // line, and all three leave a workflow that never refuses anything:
+      //
+      //   continue-on-error: true      the gate becomes advisory
+      //   ... "$TAG" || true           same, one line lower
+      //   TAG: ${{ ... }}-skip         the gate sees a hyphen and takes the
+      //                                pre-release exit, so it is never asked
+      //
+      // The third is the one worth staring at: the script is untouched and
+      // correct, and it publishes a full release with no attestation, because
+      // the question it was handed was a different question.
+      final gateStart = yaml.indexOf('- name: Require a recorded device walk');
+      expect(gateStart, greaterThan(0));
+      final gateEnd = yaml.indexOf('      - name: ', gateStart + 10);
+      expect(gateEnd, greaterThan(gateStart));
+      final gateStep = yaml.substring(gateStart, gateEnd);
+      expect(
+        gateStep.trimRight(),
+        '- name: Require a recorded device walk for a full release\n'
+            '        env:\n'
+            '          TAG: \${{ steps.release_tag.outputs.tag }}\n'
+            '        run: bash $_gateScript "\$TAG"',
+        reason: 'the gate step must be exactly this: the tag it is handed is '
+            'the tag being published, and nothing may make its failure '
+            'non-fatal',
+      );
       // Before the build, not after it: a 40-minute wait for a refusal that
       // could have been issued in a second is its own kind of stall.
       expect(yaml.indexOf('bash $_gateScript'),
@@ -385,11 +421,25 @@ void main() {
     });
 
     test('any pre-release suffix needs no attestation, and says so', () {
-      for (final tag in ['v1.0.13-beta.1', 'v1.0.13-rc1', 'v1.0.13-0']) {
+      // The SAME list the flag test uses. Two lists is how the gate came to
+      // accept three forms while the notes accepted five.
+      for (final tag in _prereleaseTags) {
         final f = fixture('# nothing here\n');
         final r = gate(tag, f);
         expect(r.exitCode, 0, reason: '$tag: ${r.stdout}');
         expect(r.stdout, contains('no device-walk entry required'));
+      }
+    });
+
+    test('a full tag is a full tag to both scripts', () {
+      // The other direction of the same disagreement: a tag the notes call
+      // full must be one the gate actually interrogates.
+      for (final tag in _fullTags) {
+        expect(_flag(tag), 'full');
+        final r = gate(tag, fixture('# nothing here\n'));
+        expect(r.exitCode, 1,
+            reason: '$tag claims a walk, so an empty file must refuse it');
+        expect(r.stdout, isNot(contains('no device-walk entry required')));
       }
     });
 
@@ -413,6 +463,37 @@ void main() {
           expect(gate('v1.0.12', fixture('$line\n')).exitCode, 1);
         });
       }
+    });
+
+    test('a near miss is named as a near miss', () {
+      // Every one of these refuses, correctly. The problem is the message: it
+      // prints the line to add, and the maintainer is looking at a line that
+      // appears identical. The full-width colon is the realistic one — this
+      // file is bilingual and a CJK input method produces U+FF1A.
+      const nearMisses = {
+        'full-width colon': 'Device walk attested： 1.0.12',
+        'list bullet': '- Device walk attested: 1.0.12',
+        'bold markers': '**Device walk attested:** 1.0.12',
+        'leading v': 'Device walk attested: v1.0.12',
+        'trailing period': 'Device walk attested: 1.0.12.',
+        'two spaces': 'Device walk attested:  1.0.12',
+      };
+      nearMisses.forEach((label, line) {
+        final r = gate('v1.0.12',
+            fixture('## 2026-09-07 — 1.0.12 walk\n\n$line\n'));
+        expect(r.exitCode, 1, reason: '$label must not count as an attestation');
+        expect(r.stdout, contains('IS present and does not'),
+            reason: '$label must be reported as a near miss, not as absence');
+        expect(r.stdout, contains(line),
+            reason: 'the offending line must be quoted back');
+      });
+    });
+
+    test('absence is not reported as a near miss', () {
+      final r = gate('v1.0.12', fixture('# nothing here at all\n'));
+      expect(r.exitCode, 1);
+      expect(r.stdout, isNot(contains('IS present')),
+          reason: 'a file with no mention must not be described as having one');
     });
 
     test('the attested version is the whole of what follows the colon', () {

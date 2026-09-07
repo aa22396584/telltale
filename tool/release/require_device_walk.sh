@@ -3,20 +3,28 @@
 # The gate that makes "full release" mean something a reader can check.
 #
 # A release tag with no SemVer pre-release suffix claims, in its notes, that a
-# release build of this commit was walked on a phone. Before this script that
+# release build of this VERSION was walked on a phone. Before this script that
 # claim was derived from the tag string alone: the flag validated nothing, so
 # the sentence was true only when the person cutting the tag happened to have
 # done the walk. A claim that cannot be wrong is not a claim.
 #
-# So the flag now consumes an attestation. The walk is recorded in
-# docs/verification/device-verification.md as a dated heading naming the
-# version, and a full-release tag is refused unless that heading exists. The
-# maintainer clears it by committing the evidence entry before tagging -- which
-# the project's release checklist already requires -- and nobody else has to be
-# available for it. That distinction is the whole point: the previous rule
-# ("never run against a real car") needed a second adapter and another vehicle,
-# so it could never be cleared, so every release for nine days was a
+# So the flag now consumes an attestation: one line, in one shape, anywhere in
+# docs/verification/device-verification.md.
+#
+#     Device walk attested: 1.0.12
+#
+# A full-release tag is refused unless that line is there. The maintainer
+# clears it by committing the evidence entry before tagging -- which
+# docs/maintainers/release.md step 3 requires and names -- and nobody else has
+# to be available for it. That distinction is the whole point: the previous
+# rule ("never run against a real car") needed a second adapter and another
+# vehicle, so it could never be cleared, so every release for nine days was a
 # pre-release and GitHub's Latest badge sat on a build from weeks earlier.
+#
+# This header said "a dated heading naming the version" until 2026-09-07,
+# describing the design this replaced while the body described the one that
+# shipped. Two contradictory accounts in one file, and the header is the one a
+# reader hits first.
 #
 # Usage:
 #   require_device_walk.sh <tag> [evidence-file]
@@ -103,4 +111,21 @@ echo "::error::"
 echo "::error::Walk a release build, record what you saw, add that line, or cut"
 echo "::error::the tag with a pre-release suffix (${TAG}-beta.1), which claims"
 echo "::error::no walk."
+
+# A near miss is worth naming. The shape is exact, and this file is bilingual:
+# a CJK input method produces a full-width colon (U+FF1A) that looks identical
+# next to the required line, and so do a leading "- ", surrounding "**", a
+# no-break space, a "v" before the number and a trailing period. Every one of
+# those refuses -- correctly, the gate fails closed -- but a refusal that
+# prints the line you believe you already wrote is a confusing half hour. Say
+# which of the two situations this is.
+if grep -qi 'device walk attested' "$EVIDENCE"; then
+  echo "::error::"
+  echo "::error::A line mentioning \"Device walk attested\" IS present and does not"
+  echo "::error::match. The shape is exact: nothing before it on the line, an"
+  echo "::error::ASCII colon, one ASCII space, then the version and nothing else."
+  echo "::error::Full-width colons, list bullets, bold markers, a leading v and a"
+  echo "::error::trailing period all read as different lines. Present:"
+  grep -in 'device walk attested' "$EVIDENCE" | sed 's/^/::error::    /'
+fi
 exit 1

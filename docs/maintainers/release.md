@@ -30,8 +30,11 @@ GitHub APK 發布順序：
    `docs/verification/device-verification.md` 的走查條目裡加上這一行並 commit：
 
    ```
-   Device walk attested: 1.0.12
+   Device walk attested: <版本>
    ```
+
+   （`<版本>` 寫成佔位符是刻意的：這份文件不是閘門掃描的對象，但它是下一筆走查條目
+   的複製來源，而**證據檔自己**的說明段落曾經因為範例寫成真實版本號而滿足了閘門。）
 
    CI 會在 build 之前查它，沒有就拒絕正式版 tag。走查前要發，就帶後綴
    （`v1.0.12-beta.1`）—— 那個後綴既不要求、也不宣稱走查過。
