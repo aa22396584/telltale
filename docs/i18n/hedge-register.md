@@ -12,8 +12,10 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-49 entries. Every entry that names a **Shipped as** key is checked against the shipped
+59 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
+That count is read by the same file and compared with the headings below, because a number
+in prose that nothing verifies goes stale, and this one had.
 **Why exact, and not something cleverer.** Three guards were written for the
 sentences below before this file was used for them, and each was defeated in a
 way the previous one had not anticipated:
@@ -30,17 +32,91 @@ way the previous one had not anticipated:
 
 Order, split-points and word lists are heuristics, and heuristics against
 translation are an arms race that the translation wins, because there are more
-ways to say a thing than to check it. Recording the sentence and comparing it
-character for character ends the game: every edit fails, including the correct
-ones, and updating this file is the moment a person is looking at the sentence
-anyway. That cost is the feature.
+ways to say a thing than to check it. Recording the sentence and comparing the
+whole of it ends the game: every edit fails, including the correct ones, and
+updating this file is the moment a person is looking at the sentence anyway.
+That cost is the feature.
 
-The comparison is **exact** by default. An entry may write `**English (clause)**` to record
-only the load-bearing fragment of a longer shipped sentence, and the guard then checks that
-the fragment survives and that the shipped string has not grown by more than one sentence
-around it — because a hedge is just as dead when a translation keeps it and appends
-'…but this is usually fine' as when it deletes it. Prefer recording the whole sentence; no
-entry needs the clause form today.
+The comparison is **exact after whitespace folding**, and there is no opt-out. Both
+sides have U+00A0 folded to a space and runs of whitespace collapsed, because a Markdown
+file picks those up from editors without anybody deciding to. The consequence is stated
+rather than hidden: whitespace-only drift in an ARB is invisible to this guard, and it is
+*not* invisible on screen — Flutter's `Text` does not collapse runs the way Markdown does,
+and a U+00A0 changes where a line breaks. One other thing is folded, on the register side
+only: `**bold**` here is compared as `bold`, because emphasis belongs to this Markdown file
+and not to the string the app ships. So bolding a word inside a recorded English sentence
+is invisible to the guard too — and a shipped string that really does contain `**` is not,
+because the folding is one-sided and a separate check names it. Everything else is compared
+whole. There used to be an opt-out: an entry could
+write `**English (clause)**` and record only the load-bearing fragment of a longer shipped
+sentence, bounded by 'the shipped string may not have grown by more than one sentence'.
+That bound counts sentence terminators, so punctuation that does not terminate carried as
+much reversing text as anybody cared to add — *This scan did not read a freeze frame — that
+does not mean the vehicle has none, but on most vehicles clearing now is safe.* satisfies
+it against entry 11's clause, one sentence against one. No entry ever used the form, so it
+was removed rather than repaired: an unused feature with a known hole is worse than no
+feature. Writing it now fails by name.
+
+Three rules about the shape of an entry, enforced by the same file. They are stated here
+because this is where somebody about to break one is looking.
+
+- **One key per Shipped-as line.** A second key on the same line reads as guarded and is
+  not; entries 42, 43 and 44 exist because of three that were. The count control cannot see
+  it either, because the line still parses and still counts once. A second key belongs in
+  its own entry.
+- **Every backticked span on a Shipped-as line is that key or a repository path.** Anything
+  else — `l10n.someKey`, a snippet, a fragment of prose — looks like a key to a reader and
+  is not one the parser took. A path has to look like one here: a `/` under `lib`, `test`,
+  `docs` or a sibling, so that `dtcMilOff/dtcMilUnknown` and `dtcMilOff.arb` fall through
+  and are reported rather than waved past.
+- **A key written without backticks fails the same way.** Both forms are caught: the
+  qualified `l10n.someKey`, and a bare identifier that `lib/l10n/app_en.arb` actually
+  declares. Membership in the shipped key set is how the second one is recognised, so an
+  identifier that is *not* a shipped key is not detectable — do not use one to name a key.
+  It cuts the other way too, and only because of a naming convention: the prose on these
+  lines contains ordinary words like *clear*, *panel*, *frame* and *dialog*, and the scan is
+  quiet about them only because no ARB key is spelled like an ordinary English word. Every
+  key this app ships is `<domain>CamelCase` with an internal capital, and the guard now pins
+  that, so adding a key called `clear` fails there and says why rather than accusing two
+  entries of hiding keys they do not hide.
+- **An entry whose recorded sentence is verbatim a string this app ships must name its
+  key.** Otherwise the entry reads as guarded and nothing checks it.
+
+An entry is `proposed` when, and only when, it carries the line
+
+    **Status** — proposed
+
+on its own, shaped like the **Shipped as** line beside it. That is the single exemption
+from the third rule, so it is the one thing here that must not be writable by accident.
+It used to be a mention — `**proposed**` searched for anywhere in the entry, or the words
+`NO PROJECT ENGLISH` opening the **English** line — and a reviewer wrote *A reviewer once
+**proposed** softening this.* into a Why paragraph and watched an entry leave the census.
+These paragraphs narrate what reviewers did on almost every page, so that sentence is
+house style, not a contrivance. An attestation is a field, not a sentence.
+
+Prose about a proposal stays prose, and entry 27 still ends with one. Where the **English**
+line also opens `NO PROJECT ENGLISH`, that is for a person to read; the two readings are
+required to agree, so writing it without the field fails rather than quietly leaving the
+entry in the census.
+
+**A proposed entry may not also carry a Shipped as line.** The field says the English is not
+established and the key says the app ships it, and the exact comparison would be passing
+against that same key on the same run — so one of the two is wrong, and while both stand the
+entry is exempt from the third rule for copy that demonstrably ships. That is the state
+entries 16, 18, 25 and 26 were in before this file was made executable, arrived at from the
+other direction. When a proposal ships, delete the field and add the key. The three entries
+that carry the field today — 12, 17 and 27 — name no key on a **Shipped as** line; entry 27
+names two in its prose, which is a citation and not a declaration, and settling whether its
+English should become one of them is a maintainer's wording decision rather than a
+mechanical one.
+
+Two further shapes are checked because the parsers here are line-anchored and simple. The
+headings must be numbered exactly 1..n in order — the numbers are how every fault message
+and half the prose in this file refer to an entry — and the register must contain no fenced
+blocks in either fence character, ``` or `~~~`, because a `### 5.` or a `60 entries.` inside
+one would be read as real while rendering as an example. An indented code block is fine and
+is used above: it renders as code and is invisible to every parser here, because all of them
+are anchored at the start of a line.
 
 ### 1. 一個看起來合理的錯數字，比沒有數字更糟。
 
@@ -138,6 +214,8 @@ entry needs the clause form today.
 
 **English** — NO PROJECT ENGLISH — proposed: This controller has stored no freeze frame — the code may have reappeared after a clear, or been reported by a module that does not record freeze frames.
 
+**Status** — proposed
+
 **Why it is load-bearing.** lib/obd/freeze_frame.dart:125-126, which as of the
 engine-layer l10n wave is an unused constant — no screen reads it, so this hedge is
 currently a rule about a sentence the app does not ship. Wiring it up means giving it an
@@ -177,9 +255,11 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **繁體中文** — 此車輛不支援這個 PID
 
-**English** — NO PROJECT ENGLISH — proposed: This vehicle does not support this PID
+**English** — This vehicle does not support this PID.
 
-**Why it is load-bearing.** lib/diagnostics/availability.dart:312 (PidFault.unsupported). Deliberately an assertion ABOUT THE CAR, which is why lib/obd/telemetry.dart:75,88 and lib/obd/polling_engine.dart:838,927,3743 all warn against reaching it on thin evidence — docs/protocol-deviations.zh-TW.md:117-119 records that ATAT2 would make one missed window read as 此車輛不支援 for the whole session. Must stay distinguishable from PidFault.noAnswer ('無回應，稍後重試', availability.dart:313), which is temporary.
+**Shipped as** `datumReasonPidUnsupported` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:85` (`DatumReason.pidUnsupported`). This entry was written when the string lived on `lib/diagnostics/availability.dart:312` with no ARB key, and the note saying there was no project English outlived the wave that gave it one — an entry that says it is unguarded is read as harmlessly stale, which is why it stayed. Deliberately an assertion ABOUT THE CAR, which is why lib/obd/telemetry.dart:75,88 and lib/obd/polling_engine.dart:838,927,3743 all warn against reaching it on thin evidence — docs/protocol-deviations.zh-TW.md:117-119 records that ATAT2 would make one missed window read as 此車輛不支援 for the whole session. Must stay distinguishable from `datumReasonNoAnswer` (`datum_status_copy.dart:86`), which is temporary.
 
 ### 17. 另有 N 個項目在這份凍結幀裡，本 App 沒有對應的換算公式
 
@@ -187,15 +267,19 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **English** — NO PROJECT ENGLISH — proposed: N further items in this freeze frame have no conversion formula in this app
 
+**Status** — proposed
+
 **Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:941. docs/field-guide.zh-TW.md:229-233 contrasts it with '有 N 個項目這次沒有讀回來' (dtc_screen.dart:955): the first is an APP limitation that rescanning will not change, the second is a READ FAILURE that rescanning usually fixes. '這兩句話意思不一樣：前者重掃也不會變，後者會。' Merging them destroys the user's next action.
 
 ### 18. 假設尚未確認，仍可估算
 
 **繁體中文** — 假設尚未確認，仍可估算
 
-**English** — NO PROJECT ENGLISH — proposed: Assumption unconfirmed — an estimate is still shown
+**English** — The assumptions are unconfirmed; an estimate is still shown.
 
-**Why it is load-bearing.** lib/diagnostics/availability.dart:518. The fail-closed derived-value label: raw PIDs stay visible but profile-derived horsepower/torque/fuel are marked as resting on unconfirmed inputs (README.md:76-79 ↔ README.zh-TW.md:66-68). Both halves are required — 尚未確認 alone reads as an error, 仍可估算 alone reads as a validated number.
+**Shipped as** `datumReasonAssumptionsUnconfirmed` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:96`, written when the string lived on `lib/diagnostics/availability.dart:518` and had no English. The fail-closed derived-value label: raw PIDs stay visible but profile-derived horsepower/torque/fuel are marked as resting on unconfirmed inputs (README.md:76-79 ↔ README.zh-TW.md:66-68). Both halves are required — 尚未確認 alone reads as an error, 仍可估算 alone reads as a validated number.
 
 ### 19. 無法確認車輛已停止；請先中斷連線
 
@@ -221,7 +305,9 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **English** — Local share cache or telemetry records could not be confirmed. Fully quit and reopen Telltale so the wrong file is not overwritten, deleted, or shared.
 
-**Why it is load-bearing.** lib/l10n/app_en.arb:23 startupRestartHint ↔ lib/l10n/app_zh_Hant.arb:17 (T1). States the consequence (wrong file overwritten/deleted/SHARED) as the reason for the demand. The three-verb enumeration is the hedge — 'so nothing goes wrong' would delete the privacy half.
+**Shipped as** `startupRestartHint` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/app.dart:267`; lib/l10n/app_en.arb:1951 ↔ lib/l10n/app_zh_Hant.arb:563 (T1). States the consequence (wrong file overwritten/deleted/SHARED) as the reason for the demand. The three-verb enumeration is the hedge — 'so nothing goes wrong' would delete the privacy half.
 
 ### 22. 無法儲存語言設定，請再試一次。
 
@@ -229,7 +315,9 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **English** — Could not save the language. Try again.
 
-**Why it is load-bearing.** lib/l10n/app_en.arb:24 languageSaveFailed ↔ lib/l10n/app_zh_Hant.arb:18 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
+**Shipped as** `languageSaveFailed` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/language_picker.dart:69`; lib/l10n/app_en.arb:884 ↔ lib/l10n/app_zh_Hant.arb:249 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
 
 ### 23. 不確定要選哪一個？
 
@@ -255,17 +343,21 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **繁體中文** — 尚無讀值
 
-**English** — NO PROJECT ENGLISH — proposed: No reading yet
+**English** — No reading yet.
 
-**Why it is load-bearing.** lib/diagnostics/availability.dart:318 (the null PidFault arm). 'Not yet read' — explicitly NOT 'zero' and NOT 'unsupported'. This is the app's baseline refusal to print a number it does not have; rendering it as '0' or '--' without the words reintroduces exactly the failure the tagline forbids.
+**Shipped as** `datumReasonNoReadingYet` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:90`, the null `PidFault` arm, formerly `lib/diagnostics/availability.dart:318`. 'Not yet read' — explicitly NOT 'zero' and NOT 'unsupported'. This is the app's baseline refusal to print a number it does not have; rendering it as '0' or '--' without the words reintroduces exactly the failure the tagline forbids.
 
 ### 26. 未知監控項目
 
 **繁體中文** — 未知監控項目
 
-**English** — NO PROJECT ENGLISH — proposed: Unknown monitor
+**English** — Unknown monitor
 
-**Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:1083 and :1091 (the readiness chip label). Explained at docs/field-guide.zh-TW.md:243-245: the vehicle reported a readiness monitor this app has no name for, and '它照樣會算進「還有 N 項沒有完成」—— 叫不出名字不等於可以當作已完成。' The hedge is that an UNNAMED monitor is still counted as INCOMPLETE; a translation that renders it 'N/A' or 'other' invites the reader to discount it.
+**Shipped as** `dtcUnknownMonitor` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/dtc/dtc_screen.dart:1161` and `:1169`, the readiness chip label. Explained at docs/field-guide.zh-TW.md:243-245: the vehicle reported a readiness monitor this app has no name for, and '它照樣會算進「還有 N 項沒有完成」—— 叫不出名字不等於可以當作已完成。' The hedge is that an UNNAMED monitor is still counted as INCOMPLETE; a translation that renders it 'N/A' or 'other' invites the reader to discount it.
 
 ### 27. 永久故障碼（Mode 0A）無法清除。
 
@@ -273,6 +365,8 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **English** — Permanent codes (Mode 0A) cannot be cleared. The vehicle has to complete a
 fresh round of self-diagnosis before it will pass an inspection.
+
+**Status** — proposed
 
 **Why it is load-bearing.** `dtcKindPermanentExplanation`
 (`lib/l10n/app_en.arb:2172` ↔ `lib/l10n/app_zh_Hant.arb:638`) defines the category as
@@ -505,3 +599,103 @@ maintainer.
 **Shipped as** `adapterConcernNoIdentityDetail` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** This one is a verdict, and it is allowed to be one only because `IdentityProbe.refused` now gates it — a refusal is the device speaking about itself, where an absence was the link speaking about the moment. If the trigger is ever loosened back to an absence, this wording becomes a clone accusation assembled out of a dropped packet, so the two have to move together.
+
+### 50. 已確認本次連線的設定。修改任一項或重新連線後都要再確認。
+
+**繁體中文** — 已確認本次連線的設定。修改任一項或重新連線後都要再確認。
+
+**English** — The profile is confirmed for this connection. Changing any value, or reconnecting, means confirming again.
+
+**Shipped as** `settingsProfileConfirmedDetail` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/settings/settings_screen.dart:1238`, under the vehicle-profile confirmation. The scope is the hedge: the confirmation covers one connection, and two ordinary actions void it. Everything the app derives from these parameters — horsepower, torque, fuel use — is gated on their being confirmed for *this* vehicle on *this* connection, so a translation that renders it as 'the profile is confirmed' turns an expiring acknowledgement into a permanent one and the next session's estimates rest on numbers nobody looked at. Both voiding conditions must survive; 重新連線 / 'or reconnecting' is the easier half to lose and the one that matters when the adapter is moved to another car.
+
+### 51. 馬力、扭力與油耗都是由這些參數推算出來的，填得越接近實車，推算值才越有意義。
+
+**繁體中文** — 馬力、扭力與油耗都是由這些參數推算出來的，填得越接近實車，推算值才越有意義。
+
+**English** — Horsepower, torque and fuel use are estimated from these parameters; the closer they are to the actual vehicle, the more the estimates mean.
+
+**Shipped as** `settingsProfileEstimatesIntro` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/settings/settings_screen.dart:388`, above the fields a user types their car into. Its own ARB description states the rule: 推算 / 'estimated' is load-bearing because these numbers are never measured. This is the only place that tells a reader the power figure on the dial is arithmetic over what they typed rather than something the vehicle reported. 'Calculated from' and 'based on' both read as derivation from measurement. The second clause, which puts the accuracy on the person filling the form, is what stops a careless entry producing a confident wrong number.
+
+### 52. 請先連線；實驗授權不會跨連線保留。
+
+**繁體中文** — 請先連線；實驗授權不會跨連線保留。
+
+**English** — Connect first; experimental authorization is never kept across connections.
+
+**Shipped as** `powertrainConnectFirst` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/pids/powertrain_battery_catalog_screen.dart:81`, shown when the battery catalogue is opened with nothing connected. Two statements, and the second is the hedge: consent to send manufacturer-specific commands to a high-voltage battery controller expires with the connection. Entry 6 records the same boundary for the Settings switch that reveals the laboratory. A translation that keeps only the imperative — 'Connect first' — leaves a user believing an authorisation granted once is still in force, which is the opposite of what the code does.
+
+### 53. 完整性驗證沒有通過，因此沒有顯示或安裝任何車型資料。
+
+**繁體中文** — 完整性驗證沒有通過，因此沒有顯示或安裝任何車型資料。
+
+**English** — Integrity verification did not pass, so no vehicle data is shown or installed.
+
+**Shipped as** `powertrainCatalogLoadFailedBody` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/pids/powertrain_battery_catalog_screen.dart:572`. Its ARB description states the rule: fail-closed, say what did NOT happen, never soften to 'try again later'. The sentence names the cause and then the consequence, and the consequence is the half a reader needs — nothing shown and nothing installed, so there is no partly-loaded catalogue to wonder about. 'Could not load the catalogue' says the same thing about the app and nothing about the state of the device.
+
+### 54. 車輛電池訊號待確認
+
+**繁體中文** — 車輛電池訊號待確認
+
+**English** — Vehicle battery signals await confirmation
+
+**Shipped as** `powertrainConfirmTitle` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/powertrain_profile_confirm_banner.dart:68`, the banner that sits above decoded high-voltage battery values. 待確認 / 'await confirmation' is a status about the signals, not an instruction to the reader: it says the decode is unconfirmed while the numbers are already on screen. Rendered as 'Confirm vehicle battery signals' it becomes a task, and a banner read as a to-do is one somebody clears without changing anything it was warning about.
+
+### 55. 標頭不符本車匯流排
+
+**繁體中文** — 標頭不符本車匯流排
+
+**English** — The header does not match the bus this vehicle uses.
+
+**Shipped as** `datumReasonHeaderNotOnThisBus` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:89` (`DatumReason.headerNotOnThisBus`). Its ARB description says why it is kept apart from entry 16: this one is a statement about the PID DEFINITION, which the user can edit, and that one is a statement about the car, which they cannot. Merging them sends somebody looking at their vehicle for a problem that is in a field on their own screen. The subject of the sentence — the header, not the vehicle — is the entire content.
+
+### 56. 非有限數值
+
+**繁體中文** — 非有限數值
+
+**English** — Not a finite number.
+
+**Shipped as** `datumReasonNonFiniteValue` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:80` (`DatumReason.nonFiniteValue`). The formula produced a NaN or an infinity, so there is no value, and this sentence stands where the value would have been. It is entry 1 in its narrowest form: a NaN rendered as 0, as '--', or as the last good reading is exactly a plausible wrong number. Softened to 'value unavailable' it loses the fact that an answer arrived and was rejected — which is what tells a reader to look at the PID definition rather than at the connection.
+
+### 57. 直接送一條指令給轉接器，例如 ATI、ATDPN、0100。會排在一般輪詢的同一條佇列上，不會插隊。
+
+**繁體中文** — 直接送一條指令給轉接器，例如 ATI、ATDPN、0100。會排在一般輪詢的同一條佇列上，不會插隊。
+
+**English** — Send one command straight to the adapter — for example ATI, ATDPN, 0100. It joins the same queue as normal polling and does not jump ahead.
+
+**Shipped as** `settingsManualCommandBody` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/settings/settings_screen.dart:611`, under the manual-command box. Two rules in one sentence. ATI, ATDPN and 0100 are wire commands and stay byte-identical in every language — its ARB description says so, and a translated or full-width form would be sent and refused. The queueing clause is the hedge: a user who believes a manual command pre-empts polling will read whatever the adapter says next as the answer to it, and attribute a reply belonging to a queued PID to the command just typed. 不會插隊 / 'does not jump ahead' is what prevents that.
+
+### 58. 最多選擇 {limit} 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。
+
+**繁體中文** — 最多選擇 {limit} 項。這只會改變圖表，不會改變 PID 輪詢或正在進行的紀錄。
+
+**English** — Choose at most {limit}. This only changes the chart, not PID polling or a recording in progress.
+
+**Shipped as** `trendSheetBody` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/widgets/telemetry/telemetry_lane_selector.dart:193`. It separates a view change from a data change, and both halves of that separation carry weight. A reader who takes lane selection for polling will believe deselecting a signal stopped it being read; one who takes it for recording will believe an export covers only the lanes left on. Both beliefs are wrong in the direction that matters — the recording is more complete than they think and the chart is less — and either produces confident conclusions from a file they have misread. `{limit}` is a placeholder and has to survive as one.
+
+### 59. 清除故障碼？
+
+**繁體中文** — 清除故障碼？
+
+**English** — Clear fault codes?
+
+**Shipped as** `dtcClearDialogTitle` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/dtc/dtc_screen.dart:117`, the title of the dialog entries 11 and 27 are both about. It must not gain scope: 'Clear all fault codes?' or 「清除所有故障碼？」 over-claims, because permanent codes (Mode 0A) are not cleared and `dtcClearDialogBody` says so a few lines below — a title is read first and remembered, and one that promises what the body withdraws is where entry 27's mistranslation gets its start. It must stay a question, and it must name what is destroyed: 'Clear?' or 'Reset' leaves the reader to guess whether the thing at the point of no return is the codes, the readiness monitors, or the recording.
