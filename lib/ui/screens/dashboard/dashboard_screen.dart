@@ -708,7 +708,6 @@ class _DerivedStrip extends ConsumerWidget {
           profile: profile,
           value: estimatedFuel,
           formula: AvailabilityPolicy.fuelEstimateFormula,
-          quantity: '油耗',
           kind: EstimateKind.fuel,
         );
         return _MeasuredFuelStrip(
@@ -744,7 +743,6 @@ class _DerivedStrip extends ConsumerWidget {
       profile: profile,
       value: metrics.engineHorsepower,
       formula: AvailabilityPolicy.horsepowerFormula,
-      quantity: '馬力',
       kind: EstimateKind.horsepower,
     );
     final fuelStatus = metrics.fuelSource == FuelSource.measured
@@ -753,7 +751,6 @@ class _DerivedStrip extends ConsumerWidget {
             profile: profile,
             value: metrics.fuelRateLPerHour,
             formula: AvailabilityPolicy.fuelEstimateFormula,
-            quantity: '油耗',
             kind: EstimateKind.fuel,
           );
 

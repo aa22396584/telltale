@@ -18,7 +18,7 @@ void main() {
       profile: const VehicleProfile(massKg: 1500),
       value: 145,
       formula: AvailabilityPolicy.horsepowerFormula,
-      quantity: '馬力',
+      kind: EstimateKind.horsepower,
     );
     await tester.pumpWidget(
       localizedMaterialApp(

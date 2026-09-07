@@ -33,20 +33,30 @@ const _exportOnly = <String, String>{
   '.formula':
       'datumFormulaText(l10n, status) in '
           'lib/ui/widgets/status/datum_status_copy.dart',
+  '.reason':
+      'DatumStatus.reasonCode, .statusReason or .gaps, which '
+          'datumReasonText(l10n, status) already reads in that order',
   'exportSummary':
       'adapterConcernSummary(l10n, concern) in '
           'lib/ui/screens/settings/adapter_concern_copy.dart',
 };
 
-/// Where an export-only symbol is legitimately named.
+/// Where an export-only symbol is legitimately named, and *which* one.
 ///
-/// Listed as exact `path:line-content` pairs rather than whole files, so a file
-/// that gains a real violation is not excused by an unrelated mention it
-/// already had.
-const _allowed = <String>{
-  // datum_status_copy is the boundary itself: it reads the frozen strings so
-  // that nothing else has to.
-  'lib/ui/widgets/status/datum_status_copy.dart',
+/// Per symbol, not per file. It was per file, and the file it excused is the
+/// one place in `lib/ui` that reads any of these — so a single entry silently
+/// covered every symbol in [_exportOnly], including ones added later. That is
+/// how `.reason` could have been added to the map above and changed nothing:
+/// the only file that read it was already excused wholesale.
+///
+/// `datum_status_copy` is the boundary itself, so it does read two of the
+/// frozen strings — but only the two below, and only where there is no
+/// identifier to render instead. `.reason` is deliberately not among them:
+/// every `DatumStatus` that carries one also carries a `reasonCode`, a
+/// `statusReason` or `gaps`, which is what `datum_reason_guard_test.dart`
+/// enforces.
+const _allowed = <String, Set<String>>{
+  'lib/ui/widgets/status/datum_status_copy.dart': {'.formula', '.assumptions'},
 };
 
 /// The export-only doc comments name these on purpose, and a doc comment is
@@ -60,7 +70,7 @@ void main() {
 
     for (final entity in Directory('lib/ui').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (_allowed.contains(entity.path)) continue;
+      final allowedHere = _allowed[entity.path] ?? const <String>{};
 
       final lines = entity.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
@@ -71,6 +81,7 @@ void main() {
             ? ''
             : line.split('//').first;
         for (final entry in _exportOnly.entries) {
+          if (allowedHere.contains(entry.key)) continue;
           if (!code.contains(entry.key)) continue;
           // `.formula` and `.assumptions` also appear inside longer names —
           // `TelemetryStatus.formulaError` is an enum value, not a read off a
@@ -108,8 +119,18 @@ void main() {
   test('the allowance still names a file that exists', () {
     // An allowance that outlives its file is an allowance nobody notices is
     // excusing nothing — and the next person widens it rather than deleting it.
-    for (final path in _allowed) {
-      expect(File(path).existsSync(), isTrue, reason: '$path is gone');
+    for (final entry in _allowed.entries) {
+      expect(File(entry.key).existsSync(), isTrue, reason: '${entry.key} is gone');
+      // And still names symbols the scan actually looks for. An allowance for
+      // a symbol that left `_exportOnly` excuses nothing and reads as though it
+      // does.
+      for (final symbol in entry.value) {
+        expect(
+          _exportOnly.keys,
+          contains(symbol),
+          reason: '${entry.key} is excused for $symbol, which is not scanned',
+        );
+      }
     }
   });
 }

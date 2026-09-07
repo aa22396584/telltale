@@ -20,6 +20,13 @@
 /// [DatumStatus.reasonCode], [DatumStatus.formulaCode] and
 /// [DatumStatus.assumptionFields] are what the screen renders, and the exported
 /// sentences are left alone.
+///
+/// [DatumStatus.reason] is no longer read here at all. It was, as
+/// [datumReasonText]'s last resort, which is why
+/// `test/l10n/export_labels_stay_off_screen_test.dart` did not list `.reason`
+/// among the symbols `lib/ui` may not touch. It does now, and this file's
+/// allowance names only `.formula` and `.assumptions` — the two that are still
+/// deliberately quoted, and only when there is no identifier to render instead.
 library;
 
 import '../../../diagnostics/availability.dart';
@@ -100,9 +107,19 @@ String datumNextStepLabel(AppLocalizations l10n, DatumNextStep step) =>
 
 /// What the details dialog shows above the formula.
 ///
-/// The gaps come first because a status that has them has no other reason, and
-/// [DatumStatus.reason] is the last resort: it is the exported sentence, so
-/// reaching it means some producer has not been given a code yet.
+/// The gaps come first because a status that has them has no other reason.
+/// Three sources, all of them identifiers, and nothing after them: this used to
+/// end in `return status.reason` — the exported Traditional Chinese sentence,
+/// rendered straight onto an English screen. It was reachable in principle from
+/// any producer that set [DatumStatus.reason] without a code, and the safety
+/// net is what made forgetting one cost nothing.
+///
+/// Returning null when no identifier is set is the honest answer:
+/// `datum_status_badge.dart` drops the line, and the reason is still in the
+/// export where it was written to be. Two things keep that from being a silent
+/// hole — [DatumStatus.reasonCode] is a required argument, so a new producer is
+/// asked, and `test/l10n/datum_reason_guard_test.dart` refuses a `reason:` with
+/// no screen-readable companion.
 String? datumReasonText(AppLocalizations l10n, DatumStatus status) {
   if (status.gaps.isNotEmpty) {
     return status.gaps.map((gap) => datumGapLabel(l10n, gap)).join(' · ');
@@ -111,7 +128,7 @@ String? datumReasonText(AppLocalizations l10n, DatumStatus status) {
   if (code != null) return datumReasonLabel(l10n, code);
   final recorded = status.statusReason;
   if (recorded != null) return telemetryStatusLabel(l10n, recorded);
-  return status.reason;
+  return null;
 }
 
 /// The formula shown above the assumptions.

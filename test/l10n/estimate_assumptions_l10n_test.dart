@@ -303,6 +303,7 @@ void main() {
         compatibility: Compatibility.unknown,
         quality: DatumQuality.valid,
         operationRisk: OperationRisk.display,
+        reasonCode: null,
         assumptions: '估算使用記錄當下的車輛設定',
         assumptionNote: DatumAssumptionNote.recordedVehicleSettings,
       );
@@ -323,6 +324,7 @@ void main() {
         compatibility: Compatibility.unknown,
         quality: DatumQuality.valid,
         operationRisk: OperationRisk.display,
+        reasonCode: null,
         assumptions: '車重 1450 kg（手動輸入）；Cd 0.31（原廠資料）',
       );
       expect(
@@ -341,6 +343,7 @@ void main() {
         compatibility: Compatibility.unknown,
         quality: DatumQuality.valid,
         operationRisk: OperationRisk.display,
+        reasonCode: null,
         formula: 'x = y',
         assumptions: '估算使用記錄當下的車輛設定',
       );
