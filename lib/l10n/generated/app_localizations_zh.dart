@@ -3237,6 +3237,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectTransportSerialDroppedOnOpen => '序列埠開啟後立刻又關閉了。';
+
+  @override
+  String get settingsManualCommandNotConnected => '目前沒有連線，這條指令沒有送出。';
+
+  @override
+  String get settingsManualCommandLinkDropped =>
+      '這條指令還在等待回應時，與轉接器的連線中斷了，所以沒有任何回應。轉接器是否收到這條指令並不確定。';
+
+  @override
+  String get settingsManualCommandDisconnectedByApp =>
+      '這條指令還在等待回應時，App 主動關閉了連線，所以沒有任何回應。轉接器與車輛都沒有問題。';
+
+  @override
+  String get settingsManualCommandAdapterSilentOnResync =>
+      '轉接器的回應已經和送出的指令對不上，而它也沒有回應用來重新對齊的檢查，所以連線已中斷。請重新連線後再試一次。';
+
+  @override
+  String get settingsManualCommandLinkStoppedResponding =>
+      '轉接器安靜得夠久，連線已被中斷。它可能仍有電；能確定的只有這段沉默。';
+
+  @override
+  String get settingsManualCommandWriteFailed =>
+      '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return '轉接器拒絕將這條要求對準到控制器 $header，因此它沒有送出。如果留在轉接器實際持有的位址上，回應會來自沒有人詢問的控制器。';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return '轉接器拒絕切換到 $address 這個位址，而向全車提出的問題必須從它送出。沒有它，回應就無法對應到送出它們的控制器，因此這個要求沒有送出。';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6471,4 +6509,42 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectTransportSerialDroppedOnOpen => '序列埠開啟後立刻又關閉了。';
+
+  @override
+  String get settingsManualCommandNotConnected => '目前沒有連線，這條指令沒有送出。';
+
+  @override
+  String get settingsManualCommandLinkDropped =>
+      '這條指令還在等待回應時，與轉接器的連線中斷了，所以沒有任何回應。轉接器是否收到這條指令並不確定。';
+
+  @override
+  String get settingsManualCommandDisconnectedByApp =>
+      '這條指令還在等待回應時，App 主動關閉了連線，所以沒有任何回應。轉接器與車輛都沒有問題。';
+
+  @override
+  String get settingsManualCommandAdapterSilentOnResync =>
+      '轉接器的回應已經和送出的指令對不上，而它也沒有回應用來重新對齊的檢查，所以連線已中斷。請重新連線後再試一次。';
+
+  @override
+  String get settingsManualCommandLinkStoppedResponding =>
+      '轉接器安靜得夠久，連線已被中斷。它可能仍有電；能確定的只有這段沉默。';
+
+  @override
+  String get settingsManualCommandWriteFailed =>
+      '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return '轉接器拒絕將這條要求對準到控制器 $header，因此它沒有送出。如果留在轉接器實際持有的位址上，回應會來自沒有人詢問的控制器。';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return '轉接器拒絕切換到 $address 這個位址，而向全車提出的問題必須從它送出。沒有它，回應就無法對應到送出它們的控制器，因此這個要求沒有送出。';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
+  }
 }

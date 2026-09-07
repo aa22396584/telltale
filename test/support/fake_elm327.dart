@@ -170,6 +170,7 @@ class AdapterFaults {
     this.lieAboutHeaders = false,
     this.refuseHeaders = false,
     this.refuseHeadersOff = false,
+    this.refuseHeaderSwitch = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -235,6 +236,17 @@ class AdapterFaults {
   /// Answers `AT PPS` with [unknownAtReply], as an adapter that predates the
   /// command — or a clone that never implemented it — does.
   final bool refusePpSummary;
+
+  /// Answers `?` to every `ATSH`, whatever the width.
+  ///
+  /// Distinct from a header of the wrong width, which this fake already
+  /// refuses: that is the app asking for something meaningless on the bus, and
+  /// this is an adapter that will not take a header the bus *can* carry. Clones
+  /// do it, and the app's answer has to be to abandon the request — proceeding
+  /// past it sends the question on whatever address the adapter really holds,
+  /// and the reply comes back from a controller nobody asked, looking exactly
+  /// like the right one.
+  final bool refuseHeaderSwitch;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -759,6 +771,7 @@ class FakeElm327 extends BaseObdTransport {
     }
 
     if (command.startsWith('ATSH')) {
+      if (faults.refuseHeaderSwitch) return '?\r>';
       final value = command.substring(4);
       // A real adapter rejects a header whose width does not suit the bus. This
       // is what makes [C-01] visible: `ATSH 7E0` on ISO 9141 is not a valid

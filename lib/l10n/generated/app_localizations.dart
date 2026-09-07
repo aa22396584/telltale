@@ -5858,6 +5858,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The serial port opened and closed again immediately.'**
   String get connectTransportSerialDroppedOnOpen;
+
+  /// TransportIssue.notConnected. Refused before any byte left the app, which is the one case where "not sent" is a fact rather than an inference, so it is stated flatly.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is connected, so the command was not sent.'**
+  String get settingsManualCommandNotConnected;
+
+  /// TransportIssue.linkDroppedMidSession. The link went away without being asked to. It must not claim the command was not sent: the bytes may already have left, and a manual command can be one that changes something.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to the adapter dropped while this command was in flight, so nothing answered it. Whether the adapter received the command is not known.'**
+  String get settingsManualCommandLinkDropped;
+
+  /// TransportIssue.disconnectedByApp. Carries the same Chinese sentence in the engine as linkDroppedMidSession and must not read like it: told that their connection dropped when they closed it themselves, somebody goes looking for a fault in a car that has none.
+  ///
+  /// In en, this message translates to:
+  /// **'The app closed the connection while this command was in flight, so nothing answered it. Nothing is wrong with the adapter or the vehicle.'**
+  String get settingsManualCommandDisconnectedByApp;
+
+  /// TransportIssue.adapterSilentOnResync. Says what the app could no longer do - tell which reply belongs to which command - rather than diagnosing the adapter. Carrying on would have attributed answers to the wrong questions, which is the failure this app is arranged against.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter\'s replies had fallen out of step with the commands sent to it, and it did not answer the check that would have put them back in step, so the connection was dropped. Connect again before retrying.'**
+  String get settingsManualCommandAdapterSilentOnResync;
+
+  /// TransportIssue.linkStoppedResponding. A watchdog timeout establishes silence and nothing else, so it must not read as a verdict on the adapter. Distinct from linkDroppedMidSession, where the transport itself reported the link gone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing arrived from the adapter for long enough that the connection was dropped. It may still have power; what is known is the silence.'**
+  String get settingsManualCommandLinkStoppedResponding;
+
+  /// TransportIssue.writeFailed. Not a connect failure - it happens on an open link and reaches this panel, not the connect screen. The hedge is load-bearing: a write that failed part way has already put bytes on the wire.
+  ///
+  /// In en, this message translates to:
+  /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
+  String get settingsManualCommandWriteFailed;
+
+  /// TransportIssue.queryHeaderRefused. The adapter answered ATSH with '?'. It must not read as a failure of the vehicle: nothing was asked of the vehicle at all. The address is interpolated because a reader who cannot see which controller was meant has nothing to act on.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to aim this request at controller {header}, so it was not sent. Left on whatever address the adapter is really holding, the reply would have come back from a controller nobody asked.'**
+  String commandFailureQueryHeaderRefused(Object header);
+
+  /// TransportIssue.wholeVehicleHeaderRefused. Separate from queryHeaderRefused because what is lost differs: a scan, a clear or a VIN read is answered by the whole emissions system, and an unattributable answer to it cannot be shown as a whole-vehicle result. Says what could not be established, not that the adapter is broken.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to switch to address {address}, which is what a question asked of the whole vehicle has to go out on. Without it, replies cannot be matched to the controllers that sent them, so the request was not made.'**
+  String commandFailureWholeVehicleHeaderRefused(Object address);
+
+  /// TransportIssue.legacyScanWouldBePartial. Nothing failed - the app refused. The sentence has to say that the result would have looked clean and complete, because a partial scan presented as a whole-vehicle one is the failure this app is arranged against.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller {installed}. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.'**
+  String commandFailureLegacyScanWouldBePartial(Object installed);
 }
 
 class _AppLocalizationsDelegate

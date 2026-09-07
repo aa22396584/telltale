@@ -3638,4 +3638,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectTransportSerialDroppedOnOpen =>
       'The serial port opened and closed again immediately.';
+
+  @override
+  String get settingsManualCommandNotConnected =>
+      'Nothing is connected, so the command was not sent.';
+
+  @override
+  String get settingsManualCommandLinkDropped =>
+      'The connection to the adapter dropped while this command was in flight, so nothing answered it. Whether the adapter received the command is not known.';
+
+  @override
+  String get settingsManualCommandDisconnectedByApp =>
+      'The app closed the connection while this command was in flight, so nothing answered it. Nothing is wrong with the adapter or the vehicle.';
+
+  @override
+  String get settingsManualCommandAdapterSilentOnResync =>
+      'The adapter\'s replies had fallen out of step with the commands sent to it, and it did not answer the check that would have put them back in step, so the connection was dropped. Connect again before retrying.';
+
+  @override
+  String get settingsManualCommandLinkStoppedResponding =>
+      'Nothing arrived from the adapter for long enough that the connection was dropped. It may still have power; what is known is the silence.';
+
+  @override
+  String get settingsManualCommandWriteFailed =>
+      'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return 'The adapter refused to aim this request at controller $header, so it was not sent. Left on whatever address the adapter is really holding, the reply would have come back from a controller nobody asked.';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return 'The adapter refused to switch to address $address, which is what a question asked of the whole vehicle has to go out on. Without it, replies cannot be matched to the controllers that sent them, so the request was not made.';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return 'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller $installed. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.';
+  }
 }
