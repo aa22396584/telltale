@@ -223,6 +223,28 @@ void main() {
       expect(gate('v1.0.12', f).exitCode, 1);
     });
 
+    test('the verdict does not depend on how long the file is', () {
+      // A `grep ... | grep -q` pipeline is a size-dependent false refusal:
+      // `grep -q` exits on its first match, the upstream grep takes SIGPIPE,
+      // and `set -o pipefail` reports the whole pipeline as failed -- so a
+      // heading that IS present is read as absent. Today's file fits the pipe
+      // buffer and passes; it gains an entry every release.
+      //
+      // The match is deliberately the FIRST line, so a refusal here cannot be
+      // read as "the entry was not found" -- it was found and then discarded.
+      final buffer = StringBuffer('## 2026-09-07 — 1.0.12 release APK, walk\n');
+      for (var i = 0; i < 20000; i++) {
+        buffer.writeln('## 2026-01-01 — 9.9.${i % 1000} filler heading with '
+            'padding to fill the pipe buffer');
+      }
+      final f = fixture(buffer.toString());
+      expect(gate('v1.0.12', f).exitCode, 0,
+          reason: 'the entry is on line 1 of a 1.5MB file');
+      // The same file must still refuse a version it does not name, or the
+      // test above would pass on a gate that says yes to everything.
+      expect(gate('v1.0.13', f).exitCode, 1);
+    });
+
     test('a missing evidence file is a failure, not an empty pass', () {
       final r = gate('v1.0.12', '${tmp.path}/nope.md');
       expect(r.exitCode, 1);

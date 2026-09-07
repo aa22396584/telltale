@@ -66,7 +66,16 @@ escaped=$(printf '%s' "$version" | sed 's/\./\\./g')
 dated='^## [0-9]{4}-[0-9]{2}-[0-9]{2}'
 token="(^|[^0-9.])${escaped}([^0-9.]|$)"
 
-if grep -E "$dated" "$EVIDENCE" | grep -qE "$token"; then
+# Read into a variable and match with a here-string rather than piping into
+# `grep -q`. The pipeline form is a size-dependent false refusal, and it was
+# reproduced rather than reasoned about: `grep -q` exits on its first match, the
+# upstream grep takes SIGPIPE, and `set -o pipefail` then reports the whole
+# pipeline as failed -- so a heading that IS present is read as absent. With
+# today's file the output fits the pipe buffer and it passes; at 200k headings
+# the same match returns 1. This file grows by one entry every release.
+dated_headings=$(grep -E "$dated" "$EVIDENCE" || true)
+
+if grep -qE "$token" <<< "$dated_headings"; then
   echo "device walk recorded for $version in $EVIDENCE"
   exit 0
 fi
