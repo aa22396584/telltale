@@ -25,25 +25,15 @@ GitHub APK 發布順序：
    單向同步到公開 repo；不得 force-push。
 2. 確認公開 `main` 的 exact-head CI 通過，而且 `pubspec.yaml` 的
    `versionName` 與 tag 主版號一致。
-3. 決定 tag 帶不帶預發行後綴。**正式版的條件只有一個，而且一個人清得掉：**
-   把 release build 裝上手機走過一遍，在
-   `docs/verification/device-verification.md` 的走查條目裡加上這一行並 commit：
+3. 依 §0.1 決定 tag 帶不帶預發行後綴。要發正式版，先把
 
    ```
    Device walk attested: <版本>
    ```
 
-   （`<版本>` 寫成佔位符是刻意的：這份文件不是閘門掃描的對象，但它是下一筆走查條目
-   的複製來源，而**證據檔自己**的說明段落曾經因為範例寫成真實版本號而滿足了閘門。）
-
-   CI 會在 build 之前查它，沒有就拒絕正式版 tag。走查前要發，就帶後綴
-   （`v1.0.12-beta.1`）—— 那個後綴既不要求、也不宣稱走查過。
-
-   這裡原本寫的是「尚未完成購買轉接器／實車驗證時使用預發行 tag」。那個條件
-   一個人永遠清不掉（買不完轉接器、開不完車型），於是每一版都是 beta，
-   GitHub 的 Latest 徽章在 v1.0.6 上停了九天。轉接器與車輛的界線沒有消失，
-   它每一版都印在 release notes 的證據段落裡，不分正式或預發行 —— 它是要
-   **說明**的事，不是要**擋**發布的閘門。
+   這一行加進 `docs/verification/device-verification.md` 的走查條目裡並 commit ——
+   `tool/release/require_device_walk.sh` 會在 build 之前查它，沒有就擋下 tag。
+   完整規則、以及那一行**沒有**宣稱的兩件事，見 §0.1。
 4. 推送 annotated tag，等 Release workflow 自己測試、建置、簽章與上傳：
 
    ```bash
@@ -58,6 +48,37 @@ GitHub APK 發布順序：
 
 這些步驟只宣告 GitHub community APK 發布。它不等於 Google Play
 production、不等於實車驗證，也不等於公開上架已可在每個區域下載。
+
+### 0.1 預發行後綴的意思，只有一個
+
+```
+v1.0.12         正式版   這份 binary 在實機上走過一遍
+v1.0.12-beta.1  預發行   還沒走
+```
+
+**就這一件事，沒有第二件。** 一個人買不完所有轉接器、開不完所有車型，
+所以那些永遠不該擋著發布。它們每一版都印在 release notes 的邊界段落裡
+（`release.yml` 現在不分正式／預發行都印），寫清楚哪些跑過、哪些沒跑過，
+讓讀的人自己判斷。
+
+**旗標管你控制得了的；文字說你控制不了的。**
+
+這條規則是 2026-09-07 改的，因為舊規則寫的是「尚未完成購買轉接器／實車驗證
+時使用預發行 tag」。那件事沒有終點 —— 幾台車才算夠？於是 v1.0.7 到 v1.0.11
+全部是預發行，而 GitHub 的 `Latest` 標籤不給預發行版，**整整九天釘在
+2026-08-29 的 v1.0.6**，而同一份 commit 那時已經在 Play production 100% 推送。
+
+更糟的是 `release.yml` 只在預發行時才印那段誠實的邊界說明，所以「發一個
+使用者找得到的版本」字面上等於「刪掉那段話」。沒有人會那樣做，於是沒有人發。
+
+**一道維護者過不了的門，不是標準，是卡住。**
+
+實機走一遍的定義見 §5，那是硬性閘門。走完了就是正式版，不用等一台你買不起的車。
+
+同一天，那段邊界說明自己也被發現過期了九天：它寫著購買的轉接器與真車尚未
+驗證，而 `docs/verification/device-verification.md` 早就記著一次 CARLZS LAB
+`CL-OBDII-M25B` 透過 BLE 連上 Toyota GT86。**一段沒人更新的誠實聲明，
+會從誠實變成另一種錯誤**，而且因為它讀起來很謹慎，沒有人會去查它。
 
 **iOS App Store：延到 2027。** 今年不要走 TestFlight 或正式送審。
 `DEVELOPMENT_TEAM` `ABHJVZBWQN` 是 Personal Team；付費 team `ZAZT4JZ625` 的

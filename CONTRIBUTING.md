@@ -194,6 +194,44 @@ produced a bug that survived a green test suite.
 - **The adapter's self-report is a claim, not a fact.** Clones report v1.5 and
   behave like v1.3. State is committed only when the adapter literally answers
   `OK`.
+- **A check that cannot fail is not a check.** Every guard is proved by
+  mutation: break the thing it guards, run it, watch it go red, restore. Not by
+  reading it. Guards in this repository have been silent no-ops for a `continue`
+  on an unparseable construct, an anchor that never matched the real source, a
+  one-character value compared against a two-character string so no escape was
+  ever honoured, a test compared against a copy of the code that produced it,
+  and a wait whose condition was satisfied by "nothing exists". Every one of
+  them was green.
+- **A test that measures shape does not measure content.** Uniqueness,
+  non-emptiness, presence in both languages and absence of Chinese are all
+  invariant under swapping two arms of a switch. Three parallel branches shipped
+  exactly those four assertions in one week, and in each the transposition
+  passed the entire suite: an adapter yanked mid-command read *"Nothing is
+  connected, so the command was not sent"*; a fuel estimate wrote
+  `馬力缺少必要輸入` into the evidence export; a refused Location permission told
+  the user to turn on Bluetooth. If you add an identifier→sentence table, add a
+  **hand-typed** expectation table beside it — you type the expected string, it
+  is not read back from the ARB, from `AppLocalizations`, or from the function
+  under test — and prove it by transposing two arms and watching it fail.
+- **An identifier migration has five links, and pinning one moves the hole.**
+
+  ```
+  condition → identifier → sentence → the values in the sentence → the render site
+  ```
+
+  Each needs its own mutation. Reviews of the same branch broke it at a
+  different link three rounds running: the copy table was pinned, so corrupting
+  the carried values stayed green (*"the formula refers to byte Z, but the reply
+  carried only 0 bytes"*); those were pinned, so collapsing five refusal
+  conditions onto one identifier stayed green; that was pinned, so collapsing
+  the two render sites stayed green, because no test in the repository ever
+  rendered a refusal through a widget. The chain is only as pinned as its
+  loosest link, and the loosest one is usually the one nearest the reader.
+- **A comment that names a guard must name one that exists.** A pointer to a
+  test file that was renamed is how the next person comes to believe a guard is
+  there. Comments claiming a reachability property the code contradicts are the
+  same defect: one branch's header said a screen's permission refusal "is always
+  the Bluetooth one" while line 555 of that same file asked for location.
 
 `docs/protocol-deviations.zh-TW.md` records where this app deliberately departs from the
 specification it was derived from, and why. Three of those departures fix
