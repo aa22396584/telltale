@@ -575,24 +575,31 @@ class _StatusStrip extends ConsumerWidget {
 /// `PriorityScheduler.fastModeEnabled` is `true` before any request goes out,
 /// and `PollingEngine.start` resets it to `true` for every new connection, so
 /// a `true` here is permission rather than a record. Even with it set,
-/// `PriorityScheduler.nextBatch` only groups a request when the member PID is
-/// confirmed batchable and more than one is queued. "Enabled" is therefore the
+/// `PriorityScheduler.popBatch` only groups a request when `canBatch` says the
+/// detected bus takes multi-PID requests, the member PID is confirmed
+/// batchable, and more than one is queued. "Enabled" is therefore the
 /// strongest true thing to print; "active", "batched" or "verified" would all
 /// be claims this state cannot make.
 ///
 /// `false` is different, and stronger. It is only ever set by
-/// `PriorityScheduler.handleCorruptionEvent`, and while it is down `nextBatch`
-/// returns exactly one request, so single-request polling is what is happening
-/// rather than what is allowed.
+/// `PriorityScheduler.handleCorruptionEvent`, and while it is down `popBatch`
+/// stops grouping Mode 01 PIDs, so single-request polling is what is happening
+/// rather than what is allowed. Not *everything* stops: a powertrain profile
+/// response is drained as one batch either way, because those PIDs share a
+/// single reply by construction and `buildCommand` sends them as one command
+/// in both modes. Mode 01 is what this pill is next to and what the copy
+/// speaks about.
 ///
-/// No line numbers here on purpose: nothing in the suite holds a `file:line`
-/// in a comment to the line it names, so one goes stale the next time either
-/// file is edited and nothing turns red. The symbols are checkable; the
-/// numbers are in the change's own report.
+/// Symbols rather than line numbers, because nothing in the suite holds a
+/// `file:line` written in a comment to the line it names. Symbols are not free
+/// either — review found `nextBatch` here, a method that has never existed —
+/// so they are worth exactly what a `grep` for them is worth.
 ///
-/// The whole pill is the button. It opens a dialog and touches nothing else:
-/// no provider is written, no command is queued, and the transport is not
-/// reachable from here.
+/// The whole pill is the button, and what it opens touches nothing else: no
+/// provider is written and no command is queued. That is a statement about
+/// what this code does, not about what it could do — the session, and through
+/// it the transport, is reachable from this `context` like any other provider.
+/// The guarantee is behavioural, and the zero-traffic test is what holds it.
 class PollingModePill extends StatelessWidget {
   const PollingModePill({required this.batchingEnabled, super.key});
 

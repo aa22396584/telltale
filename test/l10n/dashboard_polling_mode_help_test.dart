@@ -14,8 +14,11 @@
 //     member PID is confirmed batchable and more than one is queued. So the
 //     enabled side may say "enabled" and may not say "active", "batched" or
 //     "verified". The disabled side is the stronger of the two: it is only set
-//     by `handleCorruptionEvent`, and while it is down `nextBatch` returns
-//     exactly one request, so single-request polling is observed.
+//     by `PriorityScheduler.handleCorruptionEvent`, and while it is down
+//     `popBatch` stops grouping Mode 01 PIDs, so single-request polling is
+//     observed. (It does not stop a powertrain profile response, whose PIDs
+//     share one reply by construction in either mode. Mode 01 is what this
+//     pill sits beside.)
 //
 // The expectations below are HAND-TYPED, in both languages, per this repo's
 // rule: a test that reads its expectation back from `AppLocalizations` agrees
@@ -24,10 +27,26 @@
 //
 // What the widget tests here do NOT cover: they render `DashboardScreen` under
 // a real `ProviderScope` and the app's own localization root, not through the
-// router from `ConnectScreen`. Route-level wiring is `demo_connect_journey_test
-// .dart`'s subject. And the zero-traffic test measures writes across
-// zero-duration pumps only — a timer-driven write across elapsed time is not
-// attributable to a tap, so it is deliberately outside what that test claims.
+// router from `ConnectScreen`. Route-level wiring is
+// `demo_connect_journey_test.dart`'s subject.
+//
+// The zero-traffic test is on its second instrument, because the first one
+// could not fail in the way that mattered. It measured across zero-duration
+// pumps, which froze the ENGINE along with the polling loop — every await in
+// the engine is a real-zone timer the fake clock never advances. Review
+// injected `engine.readVin()` into the help handler; every open of the dialog
+// put `0902` on the bus and the file stayed green at the full control total.
+// A raw `transport.write` was the only shape it could see, and no
+// implementation of this feature would ever write that way.
+//
+// It now parks the polling loop with `PollingEngine.stop()`, keeping the
+// connection, and measures across windows of REAL elapsed time. A command the
+// tap routes through the engine has time to reach the transport and be
+// counted. What that still cannot attribute is a write from something on a
+// real timer longer than the window — the client's five-second stall watchdog,
+// for one. The quiescence precondition is what bounds it: with the loop parked
+// the same window adds nothing, and with the loop running it adds dozens, so
+// the precondition is a measurement rather than a restatement.
 library;
 
 import 'dart:convert';
@@ -140,6 +159,17 @@ TelemetrySnapshot _polled({required bool batchingEnabled}) => TelemetrySnapshot(
   pidsPerSecond: 12,
   fastModeEnabled: batchingEnabled,
   capturedAt: DateTime.now(),
+);
+
+/// A window of real elapsed time, long enough for a command the UI just routed
+/// through the engine to reach the transport.
+///
+/// The engine's awaits are real-zone timers. Advancing the fake clock does not
+/// move them, which is exactly how an injected `engine.readVin()` in the help
+/// handler went unseen by an earlier version of this file. Anything the
+/// measurement wants to be able to catch has to be given real milliseconds.
+Future<void> _realWindow(WidgetTester tester) => tester.runAsync(
+  () => Future<void>.delayed(const Duration(milliseconds: 300)),
 );
 
 /// Every render-time error raised while [body] runs, not just the first.
@@ -270,6 +300,15 @@ void main() {
       expect(en.dashboardPollingModeHelpBatching, contains('permission'));
       expect(zh.dashboardPollingModeHelpBatching, contains('併成一次交握'));
       expect(zh.dashboardPollingModeHelpBatching, contains('這是授權，不是量測'));
+      // The bus is the condition that is easiest to forget and the one that
+      // holds for a whole session: `canBatch` is set from the detected
+      // protocol, so on a non-CAN vehicle the flag can be true start to finish
+      // with nothing ever grouped.
+      expect(
+        en.dashboardPollingModeHelpBatching,
+        contains('the bus this vehicle uses'),
+      );
+      expect(zh.dashboardPollingModeHelpBatching, contains('這輛車用的匯流排'));
 
       // The fallback continues to update, and is not by itself a lost link.
       expect(en.dashboardPollingModeHelpSingle, contains('each PID is read on its own'));
@@ -281,6 +320,34 @@ void main() {
       expect(zh.dashboardPollingModeHelpSingle, contains('每個 PID 各自讀取'));
       expect(zh.dashboardPollingModeHelpSingle, contains('讀數仍會持續更新'));
       expect(zh.dashboardPollingModeHelpSingle, contains('不等於連線失敗'));
+
+      // All three ways into `handleCorruptionEvent`, because naming one of
+      // them is how this sentence was wrong. A batch answered `NO DATA` is
+      // silence, and telling a driver on a partial-map vehicle that their
+      // adapter returned something garbled describes a cause nothing observed.
+      for (final cause in ['truncated', 'buffer full', 'unanswered']) {
+        expect(
+          en.dashboardPollingModeHelpSingle,
+          contains(cause),
+          reason: 'the fallback sentence stopped covering "$cause"',
+        );
+      }
+      for (final cause in ['被截斷', '緩衝區已滿', '沒有回應']) {
+        expect(
+          zh.dashboardPollingModeHelpSingle,
+          contains(cause),
+          reason: 'the Chinese fallback sentence stopped covering "$cause"',
+        );
+      }
+      // And the wording that named only one of the three does not come back.
+      expect(
+        en.dashboardPollingModeHelpSingle,
+        isNot(contains('short or garbled')),
+      );
+      expect(
+        zh.dashboardPollingModeHelpSingle,
+        isNot(contains('過短或錯亂')),
+      );
 
       // The rate is observed, and depends on six named things.
       expect(en.dashboardPollingModeHelpRate, contains('observed over the last second'));
@@ -333,7 +400,7 @@ void main() {
     expect(find.text(enBatching), findsNothing);
   });
 
-  testWidgets('the explanation is reachable from the keyboard alone', (
+  testWidgets('the explanation activates from the keyboard once the pill has focus', (
     tester,
   ) async {
     await _pumpDashboard(tester, batchingEnabled: true);
@@ -341,6 +408,10 @@ void main() {
     // Focus without touching the widget, then activate. A `tap` here would
     // make this a second copy of the tap test; the point is that the InkWell's
     // ActivateIntent handler exists, which a GestureDetector does not have.
+    //
+    // Named for what it does. It focuses the node directly rather than walking
+    // there with Tab, so it proves activation, not reachability by traversal —
+    // the earlier name claimed the second and tested the first.
     final inkWell = tester.widget<InkWell>(
       find.byKey(PollingModePill.pillKey),
     );
@@ -547,16 +618,20 @@ void main() {
       ),
     );
 
-    // The handshake and the first polls need real elapsed time. Everything
-    // after this runs on the fake clock, where a `Future.delayed` scheduled in
-    // the real zone cannot fire — which is what makes the counts below
-    // attributable to the taps rather than to the loop.
+    // Connect and poll for real, then park the polling loop while keeping the
+    // connection. `stop()` ends the loop, not the session: the engine, the
+    // client and the transport are all still live, so anything the UI routes
+    // through them during a measured window below still reaches the wire and
+    // is still counted. What stops is the one thing that would otherwise make
+    // every count move on its own.
     await tester.runAsync(() async {
       expect(
         await session.connectForTest(transport, TransportKind.demo),
         isTrue,
       );
       await Future<void>.delayed(const Duration(milliseconds: 500));
+      await session.engine!.stop();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -572,22 +647,26 @@ void main() {
       reason: 'nothing was ever written, so a count of zero proves nothing',
     );
 
-    // Quiescence, established rather than assumed: two consecutive
-    // zero-duration pumps that add no command.
-    await tester.pump();
-    final settled = transport.written.length;
-    await tester.pump();
+    // Quiescence, and this one can fail. A window of real elapsed time with
+    // nothing touched: parked, it adds nothing; running, the same window adds
+    // dozens of commands, which is how the change's report proves this line is
+    // a measurement and not a restatement of a stopped clock.
+    final quiet = transport.written.length;
+    await _realWindow(tester);
     expect(
       transport.written.length,
-      settled,
-      reason: 'the loop was still writing; the baseline would be meaningless',
+      quiet,
+      reason:
+          'the loop is still writing, so no later count could be attributed '
+          'to a tap: ${transport.written.skip(quiet).toList()}',
     );
 
     final generation = session.connectionGeneration;
     final baseline = transport.written.length;
 
     await tester.tap(find.byKey(PollingModePill.pillKey));
-    await tester.pump();
+    await _openHelpPump(tester);
+    await _realWindow(tester);
     await tester.pump();
     expect(find.text(enTitle), findsOneWidget);
     expect(
@@ -602,6 +681,7 @@ void main() {
         .read(localePreferenceProvider.notifier)
         .set(LocalePreference.traditionalChinese);
     await tester.pump();
+    await _realWindow(tester);
     await tester.pump();
     expect(find.text(zhTitle), findsOneWidget);
     expect(
