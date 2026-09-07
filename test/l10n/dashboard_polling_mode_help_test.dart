@@ -637,14 +637,21 @@ void main() {
           // rather than inherit it — asserted at every geometry because the
           // one that would lose it is the narrow one, where something has to
           // give.
+          //
+          // 48 is typed here, not read from `PollingModePill.minTapTarget`.
+          // Reading the widget's own constant would make this agree with
+          // whatever the widget currently says: set that constant to 24 and
+          // every assertion below would still pass while the target halved.
+          // That is the shape this repo has been bitten by — a test compared
+          // against a copy of the code that produced it.
           expect(
             rect.height,
-            greaterThanOrEqualTo(PollingModePill.minTapTarget),
+            greaterThanOrEqualTo(48.0),
             reason: 'the tap target shrank below 48dp at ${entry.key}',
           );
           expect(
             rect.width,
-            greaterThanOrEqualTo(PollingModePill.minTapTarget),
+            greaterThanOrEqualTo(48.0),
             reason: 'the tap target narrowed below 48dp at ${entry.key}',
           );
 
