@@ -138,20 +138,79 @@ final class PowertrainExperimentalProbeConsent {
   String get key => '$profileId\u0000$commandKey';
 }
 
+/// Why a one-shot experimental probe was refused, as an identifier.
+///
+/// The engine names the refusal; `lib/ui/screens/pids/powertrain_battery_copy.dart`
+/// owns the words. Until this became an enum the notifier returned a
+/// Traditional Chinese sentence and the screen wrapped it in a localized
+/// frame, so an English reader was refused with
+/// `Not authorized: 目錄完整性雜湊無效` — a localized frame around a sentence
+/// no localization could reach.
+///
+/// The two quarantine arms report a decision taken *earlier*: the quarantine
+/// itself was recorded when the attempt cap was hit or when a probe answer was
+/// rejected, and this is the tap that runs into it.
+enum PowertrainProbeRefusal {
+  /// The laboratory was switched off between the screen's check and this one.
+  labClosed,
+
+  /// The snapshot carries no verified catalog SHA-256.
+  catalogHashInvalid,
+
+  /// No profile in the verified catalog has this id.
+  profileNotInCatalog,
+
+  /// The profile is structurally clean but its tier is not probe-eligible.
+  profileNotProbeable,
+
+  /// The profile did not pass validation against the chosen model year.
+  profileFailedValidation,
+
+  /// The command is not one of the verified profile's own commands.
+  commandNotInProfile,
+
+  /// Quarantined because the same command reached its per-connection cap.
+  quarantinedAtAttemptCap,
+
+  /// Quarantined because an earlier answer failed its structural checks.
+  quarantinedAfterRejectedRead,
+}
+
+/// The refusals that may be *recorded* as a per-connection quarantine.
+///
+/// A quarantine outlives the tap that caused it, so the record has to name
+/// which of the two it was. Nothing else may be stored as one: a quarantine
+/// saying `labClosed` would survive turning the laboratory back on.
+const Set<PowertrainProbeRefusal> kPowertrainQuarantineRefusals = {
+  PowertrainProbeRefusal.quarantinedAtAttemptCap,
+  PowertrainProbeRefusal.quarantinedAfterRejectedRead,
+};
+
 final class PowertrainExperimentalConsentDecision {
-  const PowertrainExperimentalConsentDecision._({
-    required this.accepted,
-    required this.reason,
-  });
-
   const PowertrainExperimentalConsentDecision.accepted()
-    : this._(accepted: true, reason: '');
+    : accepted = true,
+      refusal = null,
+      attemptCap = PowertrainExperimentalProbeConsents.maxAttemptsPerCommand;
 
-  const PowertrainExperimentalConsentDecision.refused(String reason)
-    : this._(accepted: false, reason: reason);
+  /// Every refusal names its identifier. There is no constructor that omits
+  /// one, so a refusal path added later cannot reach the screen carrying
+  /// nothing the screen can translate.
+  const PowertrainExperimentalConsentDecision.refused(
+    PowertrainProbeRefusal this.refusal, {
+    this.attemptCap = PowertrainExperimentalProbeConsents.maxAttemptsPerCommand,
+  }) : accepted = false;
 
   final bool accepted;
-  final String reason;
+
+  /// Null exactly when [accepted].
+  final PowertrainProbeRefusal? refusal;
+
+  /// The per-command attempt cap this decision was judged against.
+  ///
+  /// Only [PowertrainProbeRefusal.quarantinedAtAttemptCap] renders it, but
+  /// every decision carries it so no caller has to supply a default for a
+  /// number the policy already owns.
+  final int attemptCap;
 }
 
 final class PowertrainExperimentalProbeLease {
@@ -167,7 +226,7 @@ class PowertrainExperimentalProbeConsents
   static const Duration commandCooldown = Duration(seconds: 5);
   static const int maxAttemptsPerCommand = 3;
 
-  final Map<String, String> _quarantineReasons = {};
+  final Map<String, PowertrainProbeRefusal> _quarantines = {};
   final Map<String, int> _attempts = {};
   final Map<String, DateTime> _lastAttemptAt = {};
   PowertrainExperimentalProbeLease? _inFlightLease;
@@ -185,34 +244,45 @@ class PowertrainExperimentalProbeConsents
   }) {
     if (!ref.read(powertrainBatteryExperimentalAccessProvider)) {
       return const PowertrainExperimentalConsentDecision.refused(
-        '大電池證據實驗室尚未開啟',
+        PowertrainProbeRefusal.labClosed,
       );
     }
     if (!isPowertrainCatalogSha256(snapshot.catalogSha256)) {
-      return const PowertrainExperimentalConsentDecision.refused('目錄完整性雜湊無效');
+      return const PowertrainExperimentalConsentDecision.refused(
+        PowertrainProbeRefusal.catalogHashInvalid,
+      );
     }
     final profile = snapshot.catalog.profiles
         .where((candidate) => candidate.id == profileId)
         .firstOrNull;
     if (profile == null) {
-      return const PowertrainExperimentalConsentDecision.refused('設定檔不在已驗證目錄中');
+      return const PowertrainExperimentalConsentDecision.refused(
+        PowertrainProbeRefusal.profileNotInCatalog,
+      );
     }
     final validation = const PowertrainBatteryProfileCatalogValidator()
         .validateProfile(profile, vehicleYear: vehicleYear);
     if (!validation.canProbe) {
+      // Two different refusals, and they used to be one. An empty issue list
+      // means the profile is structurally clean and simply not a probe-
+      // eligible tier; a non-empty one used to put the validator's own
+      // English developer diagnostic on the screen. That diagnostic names a
+      // JSON path, which is worth nothing to a driver and is not copy anyone
+      // could translate.
       return PowertrainExperimentalConsentDecision.refused(
         validation.issues.isEmpty
-            ? '這不是可單次探測的實驗設定檔'
-            : validation.issues.first.message,
+            ? PowertrainProbeRefusal.profileNotProbeable
+            : PowertrainProbeRefusal.profileFailedValidation,
       );
     }
     if (!profile.commands.any((command) => command.wireKey == commandKey)) {
-      return const PowertrainExperimentalConsentDecision.refused('指令不在已驗證設定檔中');
-    }
-    if (_quarantineReasons.containsKey(profileId)) {
-      return PowertrainExperimentalConsentDecision.refused(
-        '本次連線已隔離：${_quarantineReasons[profileId]}',
+      return const PowertrainExperimentalConsentDecision.refused(
+        PowertrainProbeRefusal.commandNotInProfile,
       );
+    }
+    final quarantine = _quarantines[profileId];
+    if (quarantine != null) {
+      return PowertrainExperimentalConsentDecision.refused(quarantine);
     }
 
     final issuedAt = (now ?? DateTime.now()).toUtc();
@@ -240,7 +310,7 @@ class PowertrainExperimentalProbeConsents
   }) {
     if (!ref.read(powertrainBatteryExperimentalAccessProvider) ||
         _inFlightLease != null ||
-        _quarantineReasons.containsKey(profileId)) {
+        _quarantines.containsKey(profileId)) {
       return null;
     }
     final key = '$profileId\u0000$commandKey';
@@ -269,7 +339,7 @@ class PowertrainExperimentalProbeConsents
     }
     final attempts = _attempts[key] ?? 0;
     if (attempts >= maxAttemptsPerCommand) {
-      quarantine(profileId, '同一指令本次連線已達 $maxAttemptsPerCommand 次上限');
+      quarantine(profileId, PowertrainProbeRefusal.quarantinedAtAttemptCap);
       return null;
     }
     final last = _lastAttemptAt[key];
@@ -283,29 +353,49 @@ class PowertrainExperimentalProbeConsents
     return lease;
   }
 
+  /// Ends the in-flight lease, quarantining the profile when the probe's own
+  /// failure policy says the answer makes it unsafe to try again.
+  ///
+  /// A bool, not a string. It used to take the probe's `detail` — English
+  /// developer prose such as `decoder invariant failed; this profile is
+  /// quarantined`, falling back to the raw enum name — and that text was then
+  /// rendered to the driver as the reason. Which failure it was is already on
+  /// screen in the probe result dialog at the moment it happens; what a later
+  /// tap needs to know is only that this connection has stopped trusting the
+  /// profile.
   void complete(
     PowertrainExperimentalProbeLease lease, {
-    String? quarantineReason,
+    bool quarantineProfile = false,
   }) {
     if (!identical(_inFlightLease, lease)) return;
     _inFlightLease = null;
-    if (quarantineReason != null && quarantineReason.trim().isNotEmpty) {
-      quarantine(lease.consent.profileId, quarantineReason);
+    if (quarantineProfile) {
+      quarantine(
+        lease.consent.profileId,
+        PowertrainProbeRefusal.quarantinedAfterRejectedRead,
+      );
     }
   }
 
-  void quarantine(String profileId, String reason) {
-    _quarantineReasons[profileId] = reason;
+  void quarantine(String profileId, PowertrainProbeRefusal cause) {
+    assert(
+      kPowertrainQuarantineRefusals.contains(cause),
+      'a quarantine outlives the tap that caused it, so only the two '
+      'quarantine refusals may be recorded as one',
+    );
+    _quarantines[profileId] = cause;
     final next = {...state}
       ..removeWhere((_, consent) => consent.profileId == profileId);
     state = Map.unmodifiable(next);
   }
 
-  String? quarantineReason(String profileId) => _quarantineReasons[profileId];
+  /// Why this profile is quarantined for this connection, or null.
+  PowertrainProbeRefusal? quarantineReason(String profileId) =>
+      _quarantines[profileId];
 
   void invalidateForVehicleBoundary() {
     state = const {};
-    _quarantineReasons.clear();
+    _quarantines.clear();
     _attempts.clear();
     _lastAttemptAt.clear();
     _inFlightLease = null;

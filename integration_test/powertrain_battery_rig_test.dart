@@ -128,7 +128,7 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(decision.accepted, isTrue, reason: decision.reason);
+      expect(decision.accepted, isTrue, reason: '${decision.refusal}');
 
       final result = await session.probePowertrainBatteryCommand(
         snapshot: snapshot,
@@ -204,7 +204,7 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(pendingDecision.accepted, isTrue, reason: pendingDecision.reason);
+      expect(pendingDecision.accepted, isTrue, reason: '${pendingDecision.refusal}');
       expect(
         container.read(powertrainExperimentalProbeConsentsProvider),
         isNotEmpty,

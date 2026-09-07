@@ -90,7 +90,7 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(decision.accepted, isTrue, reason: decision.reason);
+      expect(decision.accepted, isTrue, reason: '${decision.refusal}');
 
       final result = await session.probePowertrainBatteryCommand(
         snapshot: snapshot,

@@ -1623,11 +1623,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powertrainNoMatchTitle => 'No matching vehicle';
 
   @override
-  String powertrainNotAuthorized(String reason) {
-    return 'Not authorized: $reason';
-  }
-
-  @override
   String get powertrainNotInstallableInThisRelease =>
       'Not installable in this release';
 
@@ -1688,8 +1683,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powertrainQuarantinedPill => 'Quarantined · reconnect';
 
   @override
-  String powertrainQuarantinedSnack(String reason) {
-    return 'Quarantined for this connection: $reason';
+  String get powertrainRefusedCatalogHashInvalid =>
+      'Not authorized: the catalog\'s integrity hash is not valid, so nothing in it can be read.';
+
+  @override
+  String get powertrainRefusedCommandNotInProfile =>
+      'Not authorized: that command is not one of this verified profile\'s own commands.';
+
+  @override
+  String get powertrainRefusedLabClosed =>
+      'The experimental battery laboratory was switched off before this read could be authorized.';
+
+  @override
+  String get powertrainRefusedProfileFailedValidation =>
+      'Not authorized: this profile did not pass catalog validation with the model year you chose.';
+
+  @override
+  String get powertrainRefusedProfileNotInCatalog =>
+      'Not authorized: this profile is not in the verified catalog.';
+
+  @override
+  String get powertrainRefusedProfileNotProbeable =>
+      'Not authorized: this profile is not one that can be read once experimentally.';
+
+  @override
+  String get powertrainRefusedQuarantinedAfterRejectedRead =>
+      'Quarantined for this connection: an earlier one-shot read did not pass its structural checks. Reconnect before trying again.';
+
+  @override
+  String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
+    return 'Quarantined for this connection: the same command has already been tried $attemptCap times. Reconnect before trying again.';
   }
 
   @override

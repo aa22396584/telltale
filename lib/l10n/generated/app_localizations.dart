@@ -2697,12 +2697,6 @@ abstract class AppLocalizations {
   /// **'No matching vehicle'**
   String get powertrainNoMatchTitle;
 
-  /// No description provided for @powertrainNotAuthorized.
-  ///
-  /// In en, this message translates to:
-  /// **'Not authorized: {reason}'**
-  String powertrainNotAuthorized(String reason);
-
   /// No description provided for @powertrainNotInstallableInThisRelease.
   ///
   /// In en, this message translates to:
@@ -2805,11 +2799,53 @@ abstract class AppLocalizations {
   /// **'Quarantined · reconnect'**
   String get powertrainQuarantinedPill;
 
-  /// {reason} is produced by the consent notifier, not by this screen.
+  /// Refusal identifier PowertrainProbeRefusal.catalogHashInvalid. One whole sentence: this used to be a localized frame around an untranslated one.
   ///
   /// In en, this message translates to:
-  /// **'Quarantined for this connection: {reason}'**
-  String powertrainQuarantinedSnack(String reason);
+  /// **'Not authorized: the catalog\'s integrity hash is not valid, so nothing in it can be read.'**
+  String get powertrainRefusedCatalogHashInvalid;
+
+  /// Refusal identifier PowertrainProbeRefusal.commandNotInProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized: that command is not one of this verified profile\'s own commands.'**
+  String get powertrainRefusedCommandNotInProfile;
+
+  /// Refusal identifier PowertrainProbeRefusal.labClosed. Reached only when the laboratory is turned off between the screen's check and the authorization, so it says what changed rather than repeating powertrainEnableLabInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'The experimental battery laboratory was switched off before this read could be authorized.'**
+  String get powertrainRefusedLabClosed;
+
+  /// Refusal identifier PowertrainProbeRefusal.profileFailedValidation. It replaces the validator's own English developer diagnostic, which named a JSON path.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized: this profile did not pass catalog validation with the model year you chose.'**
+  String get powertrainRefusedProfileFailedValidation;
+
+  /// Refusal identifier PowertrainProbeRefusal.profileNotInCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized: this profile is not in the verified catalog.'**
+  String get powertrainRefusedProfileNotInCatalog;
+
+  /// Refusal identifier PowertrainProbeRefusal.profileNotProbeable. The profile is structurally sound; its review tier is what refuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized: this profile is not one that can be read once experimentally.'**
+  String get powertrainRefusedProfileNotProbeable;
+
+  /// Refusal identifier PowertrainProbeRefusal.quarantinedAfterRejectedRead. Which check failed was already shown in the probe result dialog when it happened.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarantined for this connection: an earlier one-shot read did not pass its structural checks. Reconnect before trying again.'**
+  String get powertrainRefusedQuarantinedAfterRejectedRead;
+
+  /// Refusal identifier PowertrainProbeRefusal.quarantinedAtAttemptCap. {attemptCap} is PowertrainExperimentalProbeConsents.maxAttemptsPerCommand, never spelled into the copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarantined for this connection: the same command has already been tried {attemptCap} times. Reconnect before trying again.'**
+  String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap);
 
   /// The permanently disabled button on a researchOnly row. It states a refusal, not a temporary unavailability.
   ///

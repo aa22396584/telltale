@@ -17,6 +17,7 @@ import '../../../state/pid_registry.dart';
 import '../../../state/powertrain_battery_profiles.dart';
 import '../../../state/powertrain_battery_experiments.dart';
 import '../../widgets/panel.dart';
+import 'powertrain_battery_copy.dart';
 
 class PowertrainBatteryCatalogScreen extends ConsumerStatefulWidget {
   const PowertrainBatteryCatalogScreen({super.key});
@@ -84,7 +85,17 @@ class _PowertrainBatteryCatalogScreenState
         .read(powertrainExperimentalProbeConsentsProvider.notifier)
         .quarantineReason(profile.id);
     if (quarantine != null) {
-      _snack(l10n.powertrainQuarantinedSnack(quarantine));
+      _snack(
+        powertrainProbeRefusalText(
+          l10n,
+          quarantine,
+          // The same constant the decision below carries: the cap that
+          // recorded the quarantine and the cap named in the sentence must
+          // come from one place.
+          attemptCap:
+              PowertrainExperimentalProbeConsents.maxAttemptsPerCommand,
+        ),
+      );
       return;
     }
 
@@ -103,8 +114,15 @@ class _PowertrainBatteryCatalogScreenState
           vehicleYear: year,
           connectionGeneration: session.connectionGeneration,
         );
-    if (!decision.accepted) {
-      _snack(l10n.powertrainNotAuthorized(decision.reason));
+    final refusal = decision.refusal;
+    if (refusal != null) {
+      _snack(
+        powertrainProbeRefusalText(
+          l10n,
+          refusal,
+          attemptCap: decision.attemptCap,
+        ),
+      );
       return;
     }
 

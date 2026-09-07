@@ -211,28 +211,43 @@ String stringLiteralsOnly(String src) => onlyRegion(src, SourceRegion.string);
 /// The top-level arguments of the call whose `(` is at [open], read through
 /// [mask] so string and comment content cannot look like syntax.
 List<String>? topLevelArgs(String src, List<bool> mask, int open) {
-  final args = <String>[];
-  final cur = StringBuffer();
+  final spans = topLevelArgSpans(src, mask, open);
+  if (spans == null) return null;
+  return [for (final (start, end) in spans) src.substring(start, end)];
+}
+
+/// The same arguments as [topLevelArgs], as `(start, end)` offsets into [src].
+///
+/// Offsets rather than text, so a caller can ask what an argument IS as well as
+/// what it says — whether any of it is string-literal content, for instance,
+/// which is invisible once the argument has been copied into a new string.
+/// [topLevelArgs] is this function plus `substring`, so the two cannot disagree
+/// about where an argument begins.
+List<(int, int)>? topLevelArgSpans(String src, List<bool> mask, int open) {
+  final spans = <(int, int)>[];
+  var start = -1;
   var depth = 0;
   for (var i = open; i < src.length; i++) {
     final c = src[i];
     if (mask[i]) {
       if (c == '(' || c == '[' || c == '{') {
         depth++;
-        if (depth == 1) continue;
+        if (depth == 1) {
+          start = i + 1;
+          continue;
+        }
       } else if (c == ')' || c == ']' || c == '}') {
         depth--;
         if (depth == 0) {
-          if (cur.toString().trim().isNotEmpty) args.add(cur.toString());
-          return args;
+          if (src.substring(start, i).trim().isNotEmpty) spans.add((start, i));
+          return spans;
         }
       } else if (c == ',' && depth == 1) {
-        args.add(cur.toString());
-        cur.clear();
+        spans.add((start, i));
+        start = i + 1;
         continue;
       }
     }
-    cur.write(c);
   }
   return null;
 }
