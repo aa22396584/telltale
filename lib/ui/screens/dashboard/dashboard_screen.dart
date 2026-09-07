@@ -543,21 +543,11 @@ class _StatusStrip extends ConsumerWidget {
               //
               // The flag defaults to on, and an empty snapshot is published
               // verbatim when the app connects while backgrounded — so the
-              // pill read fastMode, in good tone, before a single request had
-              // gone out. It describes observed behaviour and must not be the
-              // first thing on screen.
+              // pill spoke about polling, in good tone, before a single
+              // request had gone out. It describes a live session and must
+              // not be the first thing on screen.
               if (snapshot.capturedAt != null)
-                StatusPill(
-                  label: snapshot.fastModeEnabled
-                      ? 'fastMode'
-                      : l10n.dashboardSingleRequestMode,
-                  icon: snapshot.fastModeEnabled
-                      ? Icons.fast_forward
-                      : Icons.slow_motion_video,
-                  tone: snapshot.fastModeEnabled
-                      ? StatusTone.good
-                      : StatusTone.warn,
-                ),
+                PollingModePill(batchingEnabled: snapshot.fastModeEnabled),
               // Shown even when unknown. Hiding the pill would make "the
               // adapter stopped reporting voltage" look identical to "this
               // screen has no voltage pill", and the whole point of ageing the
@@ -577,6 +567,104 @@ class _StatusStrip extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The polling-mode pill, and the explanation behind it.
+///
+/// What the label may say is fixed by what the flag on the snapshot proves.
+/// `PriorityScheduler.fastModeEnabled` (priority_scheduler.dart:66) starts
+/// `true` before any request goes out, and `PollingEngine.start`
+/// (polling_engine.dart:3517) resets it to `true` for every new connection, so
+/// a `true` here is permission rather than a record. Even with it set, a
+/// request is only grouped when the member PID is confirmed batchable and more
+/// than one is queued (priority_scheduler.dart:144 and :243). "Enabled" is
+/// therefore the strongest true thing to print; "active", "batched" or
+/// "verified" would all be claims this state cannot make.
+///
+/// `false` is different, and stronger. It is only ever set by
+/// `handleCorruptionEvent` (priority_scheduler.dart:263), and while it is down
+/// `nextBatch` returns exactly one request, so single-request polling is what
+/// is happening rather than what is allowed.
+///
+/// The whole pill is the button. It opens a dialog and touches nothing else:
+/// no provider is written, no command is queued, and the transport is not
+/// reachable from here.
+class PollingModePill extends StatelessWidget {
+  const PollingModePill({required this.batchingEnabled, super.key});
+
+  /// `TelemetrySnapshot.fastModeEnabled`, carried verbatim from the scheduler.
+  final bool batchingEnabled;
+
+  static const Key pillKey = Key('dashboardPollingModePill');
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final label = batchingEnabled
+        ? l10n.dashboardBatchingEnabled
+        : l10n.dashboardSingleRequestMode;
+    // Merged rather than excluded: the InkWell contributes the focus and tap
+    // semantics a keyboard user needs, and the pill contributes the state.
+    // Excluding the subtree would have made the node read cleanly in a test
+    // while dropping both.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        label: l10n.dashboardPollingModeHelpAction,
+        child: InkWell(
+          key: pillKey,
+          borderRadius: BorderRadius.circular(Radii.pill),
+          onTap: () => showPollingModeHelp(context),
+          child: StatusPill(
+            label: label,
+            icon: batchingEnabled
+                ? Icons.fast_forward
+                : Icons.slow_motion_video,
+            tone: batchingEnabled ? StatusTone.good : StatusTone.warn,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What batching is, what the fallback means, and what the rate is not.
+///
+/// A dialog rather than a tooltip because three paragraphs have to survive
+/// 200% text on a 320dp screen, and `AlertDialog`'s scroll view is what makes
+/// that a scroll instead of an overflow.
+Future<void> showPollingModeHelp(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    // Read inside the builder, not captured outside it. A dialog that closed
+    // over the localizations of the screen that opened it keeps speaking the
+    // old language after the user changes it underneath.
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return AlertDialog(
+        title: Text(l10n.dashboardPollingModeHelpTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.dashboardPollingModeHelpBatching),
+              const SizedBox(height: Spacing.md),
+              Text(l10n.dashboardPollingModeHelpSingle),
+              const SizedBox(height: Spacing.md),
+              Text(l10n.dashboardPollingModeHelpRate),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.datumStatusClose),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _LiveDot extends StatefulWidget {

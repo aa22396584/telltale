@@ -248,6 +248,10 @@
       }
     }
   },
+  "dashboardBatchingEnabled": "Batching enabled",
+  "@dashboardBatchingEnabled": {
+    "description": "Pill label while PriorityScheduler.fastModeEnabled is true. That flag is permission to group PID requests, not a record that any exchange grouped one: batching also needs the PID confirmed batchable and more than one request queued. Says enabled, never active or verified."
+  },
   "dashboardChoosePids": "Choose PIDs",
   "dashboardEmptyBody": "Pick the signals you want to watch on the PID page and they will appear here.",
   "dashboardEmptyTitle": "The dashboard is empty",
@@ -257,9 +261,29 @@
   "@dashboardNotConnected": {
     "description": "Stands in for an adapter name before anything is connected. A real device name is passed through untranslated."
   },
+  "dashboardPollingModeHelpAction": "About polling mode",
+  "@dashboardPollingModeHelpAction": {
+    "description": "Accessible name of the button the polling-mode pill sits inside. It opens an explanation and sends nothing to the adapter."
+  },
+  "dashboardPollingModeHelpBatching": "Batching enabled means Telltale is allowed to group PID requests into one exchange, to cut the number of round trips. It is permission rather than a measurement: whether a given exchange grouped anything also depends on which PIDs this vehicle has confirmed.",
+  "@dashboardPollingModeHelpBatching": {
+    "description": "Explains the enabled side of the pill. Must not claim that grouping was observed."
+  },
+  "dashboardPollingModeHelpRate": "PIDs/s is a rate observed over the last second, not a promise about latency, freshness or accuracy. It moves with the adapter, the bus, the ECU, the PIDs you selected, how large each reply is, and any errors.",
+  "@dashboardPollingModeHelpRate": {
+    "description": "Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages."
+  },
+  "dashboardPollingModeHelpSingle": "Single request mode means each PID is read on its own. Telltale falls back to it when a grouped reply comes back short or garbled, and readings carry on updating. On its own it is not a connection failure.",
+  "@dashboardPollingModeHelpSingle": {
+    "description": "Explains the fallback side of the pill, including that the fallback is not by itself a lost connection."
+  },
+  "dashboardPollingModeHelpTitle": "Polling mode",
+  "@dashboardPollingModeHelpTitle": {
+    "description": "Title of the dialog behind the polling-mode pill."
+  },
   "dashboardSingleRequestMode": "Single request mode",
   "@dashboardSingleRequestMode": {
-    "description": "The other side of this pill reads the literal 'fastMode', an adapter behaviour name that stays untranslated."
+    "description": "Pill label while PriorityScheduler.fastModeEnabled is false. With the flag down the scheduler returns exactly one request per cycle, so single-request is what the state proves. The other side of the pill is dashboardBatchingEnabled; the raw fastMode identifier stays in logs and code and is no longer rendered."
   },
   "dashboardVinRead": "VIN read",
   "dashboardWorkspaceGauges": "Gauges",

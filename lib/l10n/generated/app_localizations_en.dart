@@ -347,6 +347,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchingEnabled => 'Batching enabled';
+
+  @override
   String get dashboardChoosePids => 'Choose PIDs';
 
   @override
@@ -364,6 +367,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardNotConnected => 'Not connected';
+
+  @override
+  String get dashboardPollingModeHelpAction => 'About polling mode';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      'Batching enabled means Telltale is allowed to group PID requests into one exchange, to cut the number of round trips. It is permission rather than a measurement: whether a given exchange grouped anything also depends on which PIDs this vehicle has confirmed.';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s is a rate observed over the last second, not a promise about latency, freshness or accuracy. It moves with the adapter, the bus, the ECU, the PIDs you selected, how large each reply is, and any errors.';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      'Single request mode means each PID is read on its own. Telltale falls back to it when a grouped reply comes back short or garbled, and readings carry on updating. On its own it is not a connection failure.';
+
+  @override
+  String get dashboardPollingModeHelpTitle => 'Polling mode';
 
   @override
   String get dashboardSingleRequestMode => 'Single request mode';

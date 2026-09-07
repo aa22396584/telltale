@@ -325,6 +325,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchingEnabled => '已啟用批次';
+
+  @override
   String get dashboardChoosePids => '選擇 PID';
 
   @override
@@ -341,6 +344,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardPollingModeHelpAction => '關於讀取模式';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      '「已啟用批次」代表 Telltale 獲准把多個 PID 請求併成一次交握，以減少來回次數。這是授權，不是量測：某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID。';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s 是過去一秒觀測到的速率，不是對延遲、新鮮度或準確度的保證。它會隨轉接器、匯流排、ECU、你選的 PID、每次回覆的大小以及錯誤而變動。';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      '「單筆模式」代表每個 PID 各自讀取。併批的回覆過短或錯亂時，Telltale 會退回這個模式，讀數仍會持續更新。它本身不等於連線失敗。';
+
+  @override
+  String get dashboardPollingModeHelpTitle => '讀取模式';
 
   @override
   String get dashboardSingleRequestMode => '單筆模式';
@@ -3833,6 +3854,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get dashboardBatchingEnabled => '已啟用批次';
+
+  @override
   String get dashboardChoosePids => '選擇 PID';
 
   @override
@@ -3849,6 +3873,24 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardPollingModeHelpAction => '關於讀取模式';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      '「已啟用批次」代表 Telltale 獲准把多個 PID 請求併成一次交握，以減少來回次數。這是授權，不是量測：某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID。';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s 是過去一秒觀測到的速率，不是對延遲、新鮮度或準確度的保證。它會隨轉接器、匯流排、ECU、你選的 PID、每次回覆的大小以及錯誤而變動。';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      '「單筆模式」代表每個 PID 各自讀取。併批的回覆過短或錯亂時，Telltale 會退回這個模式，讀數仍會持續更新。它本身不等於連線失敗。';
+
+  @override
+  String get dashboardPollingModeHelpTitle => '讀取模式';
 
   @override
   String get dashboardSingleRequestMode => '單筆模式';
