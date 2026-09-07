@@ -15,6 +15,41 @@
 //
 // It deliberately does NOT judge translation quality. It answers one question a machine can
 // answer honestly: is the evidence still where the glossary says it is?
+//
+// Its holes were structural rather than accidental. Only the Evidence column was
+// parsed, so a citation written in the Note column was never opened at all; and
+// `cited.any(...)` passed a row as soon as ONE of its citations held, so a second
+// citation on the same row could drift with nothing going red. Both columns are parsed
+// now, and every citation is judged on its own.
+//
+// The rule is per-citation and language-aware. A citation into an English source must
+// still hold the English term, one into a Chinese source the Chinese term, and one into
+// a Dart source either of them, because T3 evidence is an English identifier sitting
+// beside a Chinese label. `_sourceLanguage` is where a file is classified, and a cited
+// file it does not classify fails rather than defaulting to a language.
+//
+// A citation is not always made for the row's own term. A Note names the place a
+// DIFFERENT word is used, and an Evidence cell cites a document's own heading in order
+// to say it differs from the table label. Cells like those quote what they claim is
+// there, so a quoted or backticked string from the same cell also satisfies that cell's
+// citations. What that does not do is bind a quote to one citation: a cell with several
+// quotes accepts any of them at any of its own citations, so a citation that has drifted
+// can still be excused by a sibling's quote. The rule without the quotes was measured
+// against this glossary before it was written, and it failed rows whose citations are
+// honest — which would have meant rewriting the glossary to suit the checker.
+//
+// A citation does not have to be a full path. Cells write `; :86` for another line of
+// the file just named, `README.md:99,212` for a second line after a comma, and
+// `README.md:21/README.zh-TW.md:20` for two citations joined by a slash. Each of those
+// is read and held to the same rule as a full path, and the fixtures below say which
+// shapes those are. A bare line number resolves to the file its cell named most
+// recently, and fails if the cell named none.
+//
+// The shape that is still not read is a SHORT file name, written like `field-guide:211`
+// or `app_zh_Hant.arb:9`. Those are held to nothing, and resolving them against the last
+// full path in the cell is exactly the wrong repair — `app_zh_Hant.arb:9` would be
+// checked against README.zh-TW.md. Write the full
+// path to have one checked.
 library;
 
 import 'dart:io';
@@ -56,36 +91,118 @@ class _Term {
   String toString() => 'glossary.md:$line  $zh / $en';
 }
 
-/// A file path in an Evidence cell, with the line span it points at.
+/// A cited file, with the line span it points at and the shape it was written in.
+///
+/// [form] is carried so a failure can say which shape it read. A bare line number that
+/// resolved to the wrong file and a full path that drifted look identical otherwise.
 class _Citation {
-  _Citation(this.path, this.from, this.to);
+  _Citation(this.path, this.from, this.to, this.form);
   final String path;
   final int? from;
   final int? to;
+  final String form;
   bool get hasSpan => from != null;
   @override
   String toString() => hasSpan ? '$path:$from${to != from ? "-$to" : ""}' : path;
 }
 
+/// What a bare line number resolves to when its cell named no file before it.
+///
+/// A path no file system can answer, so the citation is reported by the test below
+/// rather than silently skipped as a file that does not exist.
+const _noFileNamedYet = '<no file named earlier in this cell>';
+
+/// A full path, optionally with a line, a span, and a comma-separated tail.
+///
+/// The leading guard admits a path after a `/` only when a digit precedes that `/`.
+/// `README.md:21/README.zh-TW.md:20` joins two citations with no space between them,
+/// and the second was invisible; `docs/README.md` is one path whose tail must not be
+/// read as a second citation, and there the character before the `/` is a letter.
 final _citation = RegExp(
-  r'(?<![\w/.])'
+  r'(?:(?<![\w/.])|(?<=\d/))'
   r'((?:lib|test|tool|docs|android|ios|integration_test|store)/[\w./-]+\.\w+'
   r'|README(?:\.zh-TW)?\.md|CONTRIBUTING\.md|PRIVACY\.md|SECURITY\.md|CHANGELOG\.md'
   r'|CODE_OF_CONDUCT\.md|THIRD_PARTY_NOTICES_POWERTRAIN_BATTERY\.md'
   r'|pubspec\.yaml|l10n\.yaml)'
-  r'(?::(\d+)(?:\s*[-–]\s*(\d+))?)?',
+  r'(?::(\d+)(?:\s*[-–]\s*(\d+))?((?:\s*,\s*\d+(?:\s*[-–]\s*\d+)?)*))?',
 );
 
-List<_Citation> _citations(String evidence) => _citation
-    .allMatches(evidence)
-    .map((m) => _Citation(
-          m.group(1)!,
-          m.group(2) == null ? null : int.parse(m.group(2)!),
-          m.group(3) == null
-              ? (m.group(2) == null ? null : int.parse(m.group(2)!))
-              : int.parse(m.group(3)!),
-        ))
-    .toList();
+/// `:86` standing alone, meaning another line of the file the cell last named.
+///
+/// The required space in front is the whole rule, and it is what keeps this from
+/// attributing a line to the wrong file. Cells write `; :86 busBusy` for a second line
+/// of the file just cited, and `app_zh_Hant.arb:9` or `field-guide:211` for a file named
+/// in short. Resolving the second shape against the last full path would turn
+/// `app_zh_Hant.arb:9` into `README.zh-TW.md:9` — a citation checked against a file its
+/// author never named. Short file names are therefore still not citations at all; they
+/// are named in the header as a shape this does not read.
+final _sameFileLine = RegExp(r'(?<=\s):(\d+)(?:\s*[-–]\s*(\d+))?');
+
+/// The `,212` in `README.md:99,212`: further lines of the path just matched.
+final _sameFileExtra = RegExp(r'(\d+)(?:\s*[-–]\s*(\d+))?');
+
+/// Where a cell's quoted and backticked claims sit, as character ranges.
+///
+/// A bare line number inside one of them belongs to the quotation:
+/// `README.md:56 'the error is 錯誤 :404 here'` would otherwise invent README.md:404
+/// and check a window nobody cited. That can only ADD a citation, so it invents
+/// failures rather than hiding them — except through the pairing test, where an
+/// invented window can supply a term the row does not really have evidence for.
+/// Nothing in the glossary trips it today, and excluding it keeps that true by
+/// construction rather than by luck.
+///
+/// Full paths are deliberately NOT excluded this way. A path written inside quotes is
+/// still a file somebody named, and the census tests should see it. A path with no
+/// line is still parsed — otherwise the census could not name it — and then named,
+/// because a whole file is not a window this file can judge.
+List<({int from, int to})> _claimSpans(String cell) => [
+      ..._quotedClaim.allMatches(cell),
+      ..._backtickedClaim.allMatches(cell),
+    ].map((m) => (from: m.start, to: m.end)).toList();
+
+List<_Citation> _citations(String cell) {
+  final cited = <_Citation>[];
+  final namedAt = <int, String>{};
+  for (final m in _citation.allMatches(cell)) {
+    final path = m.group(1)!;
+    namedAt[m.start] = path;
+    final from = m.group(2) == null ? null : int.parse(m.group(2)!);
+    final to = m.group(3) == null ? from : int.parse(m.group(3)!);
+    cited.add(_Citation(path, from, to, 'a path'));
+    final more = m.group(4);
+    if (more == null || more.isEmpty) continue;
+    for (final extra in _sameFileExtra.allMatches(more)) {
+      final line = int.parse(extra.group(1)!);
+      cited.add(_Citation(
+        path,
+        line,
+        extra.group(2) == null ? line : int.parse(extra.group(2)!),
+        'a further line after a comma',
+      ));
+    }
+  }
+  final quoted = _claimSpans(cell);
+  for (final m in _sameFileLine.allMatches(cell)) {
+    // Inside a quotation, `:404` is part of what is being quoted, not a citation.
+    if (quoted.any((span) => m.start >= span.from && m.start < span.to)) continue;
+    var path = _noFileNamedYet;
+    var nearest = -1;
+    namedAt.forEach((start, named) {
+      if (start < m.start && start > nearest) {
+        nearest = start;
+        path = named;
+      }
+    });
+    final line = int.parse(m.group(1)!);
+    cited.add(_Citation(
+      path,
+      line,
+      m.group(2) == null ? line : int.parse(m.group(2)!),
+      'a bare line number',
+    ));
+  }
+  return cited;
+}
 
 /// Directories that exist only in the public repository.
 ///
@@ -142,6 +259,20 @@ const _publishOnlyArtefacts = [
 /// review signal -- and it would exempt a typo like `store/READM.md` on exactly
 /// the same terms. Holding the computed set equal to this one means a sixth row
 /// joining it has to be written here, where somebody reads it.
+/// Every publish-only PATH the glossary cites, written down.
+///
+/// `_isPublishOnly` is a shape — `store/`, and the Pages HTML — and a shape cannot tell
+/// `store/README.md` from `store/READM.md`. In the private checkout neither is present,
+/// so an exemption keyed on the shape skips both, and the typo is invisible there: the
+/// citation is skipped as publish-only and then skipped again as a file that cannot be
+/// opened. It only surfaces once somebody mirrors the row here.
+///
+/// The roster below this one pins ROWS, which is what the Evidence column needs. This
+/// pins paths, which is what a Note needs: a Note may cite a publish-only file on a row
+/// whose evidence is not publish-only at all, so no row-level roster can see it.
+/// Computed in both checkouts, so the typo fails in the one where the file is absent.
+const _publishOnlyCited = {'store/README.md'};
+
 const _exemptedInPrivate = {
   '主打圖片（feature graphic）',
   '性能量測',
@@ -193,10 +324,16 @@ bool _containsChinese(String haystack, String needle) =>
 /// "header not on this bus" and `displacementL` as "displacement l".
 ///
 /// T3 evidence is a Dart identifier beside a Chinese label, and the English term is usually
-/// a segment of that identifier rather than a standalone word. Splitting the haystack keeps
-/// whole-word matching honest: `gated` has no case boundary, so it still does not evidence
-/// `gate` — which was a real fabricated-row experiment against an earlier version of this
-/// file.
+/// a segment of that identifier rather than a standalone word. Splitting the haystack is
+/// what lets `oxygenSensor` evidence "oxygen sensor" without loosening the phrase match,
+/// and it creates no boundary inside `gated`.
+///
+/// It does not follow that `gated` fails to evidence the TERM `gate`: `_matchesBounded`
+/// below admits `-d` as an inflection, so it does. An earlier version of this comment said
+/// otherwise, which was a claim about a guard the code did not make. Inflection is allowed
+/// for a term, which the glossary lists in its base form; it is refused for a quoted claim,
+/// which is a quotation and is checked as written. `_holdsClaim` is where that split
+/// lives, and the fixtures beside it pin both halves.
 String _decamelize(String s) => s
     .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}')
     .replaceAllMapped(RegExp(r'([A-Z]+)([A-Z][a-z])'), (m) => '${m[1]} ${m[2]}')
@@ -256,6 +393,130 @@ bool _areTranslationPair(String a, String b) {
   if (arbs.contains(a) && arbs.contains(b)) return true;
   String stem(String p) => p.replaceAll('.zh-TW.md', '.md');
   return stem(a) == stem(b);
+}
+
+/// The language a cited file is written in, or null when nothing has classified it.
+///
+/// The rule below asks an English source for the English term and a Chinese source for
+/// the Chinese one, so it has to know which a file is. Returning null rather than a
+/// default is the point: a file nobody has classified would otherwise be asked for
+/// whichever term the default names, and the failure would read as a stale citation
+/// rather than as the unanswered question it is. The test below turns null into that
+/// question.
+///
+/// Dart sources are [_either] because T3 evidence is an English identifier beside a
+/// Chinese label; this rule does not decide which of the two a given line carries.
+const _english = 'English';
+const _chinese = 'Chinese';
+const _either = 'bilingual';
+
+String? _sourceLanguage(String path) {
+  if (path.endsWith('.dart')) return _either;
+  if (path.endsWith('.zh-TW.md')) return _chinese;
+  if (path.startsWith('lib/l10n/app_zh')) return _chinese;
+  if (path == 'lib/l10n/app_en.arb') return _english;
+  if (path == 'README.md') return _english;
+  // Chinese prose whose tables carry English filenames. The listing copy itself lives
+  // under store/en-US and store/zh-TW, which nothing in the glossary cites.
+  if (path == 'store/README.md') return _chinese;
+  if (path == 'docs/verification/review-log.md') return _chinese;
+  return null;
+}
+
+/// The strings a cell puts in quotes or backticks: its own account of what it will find
+/// at the lines it cites.
+///
+/// The opening quote may not follow a letter or a digit, so the apostrophe in "the zh
+/// doc's own H1" does not open one. Pairing from it would swallow the real quote that
+/// follows and lose the claim entirely.
+final _quotedClaim = RegExp(r"(?<![A-Za-z0-9])'([^']+)'(?![A-Za-z0-9])");
+final _backtickedClaim = RegExp(r'`([^`]+)`');
+
+List<String> _claims(String cell) => [
+      ..._quotedClaim.allMatches(cell).map((m) => m.group(1)!),
+      ..._backtickedClaim.allMatches(cell).map((m) => m.group(1)!),
+    ].map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+
+/// Any Han character, which is what routes a claim to the Chinese rule.
+final _hasHan = RegExp(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]');
+
+/// A quoted claim, held to the rules of the language it is written in.
+///
+/// Both halves matter and the first was wrong. `_containsChinese` is plain containment,
+/// which is right for Chinese — no word spaces, no inflection — and asked of an English
+/// claim it is the substring rule this file exists to refuse: `gate` was "present" in
+/// `aggregate`, and `match` in `mismatched`. An English claim now needs word boundaries.
+///
+/// It needs them WITHOUT the inflection the terms get. A term is the glossary's base form
+/// and the prose around it is inflected, so `_matchesBounded` allows `-s`, `-ed` and the
+/// rest. A claim is a quotation of the cited line, so it is checked as quoted: `'gate'`
+/// does not read `gated`. That is stricter than the term rule on purpose.
+///
+/// A claim carrying any Han character keeps containment and is matched whole, so its
+/// English half cannot drift on its own.
+///
+/// Claims are read from single quotes and backticks. One written in double quotes is not
+/// read at all, which can make a citation harder to satisfy and never easier.
+bool _holdsClaim(String excerpt, String claim) {
+  if (_hasHan.hasMatch(claim)) return _containsChinese(excerpt, claim);
+  final body =
+      '${_unwrap(excerpt.toLowerCase())}\n${_unwrap(_decamelize(excerpt))}';
+  final phrase = RegExp.escape(_unwrap(claim.toLowerCase()));
+  return RegExp('(?<![a-z0-9])$phrase(?![a-z0-9])').hasMatch(body);
+}
+
+/// Every line-numbered citation into a source of [language], each judged alone.
+///
+/// There is no `proposed` exemption here: a `proposed` row's citations are held to the
+/// same rule as every other row's.
+///
+/// That is not a detector for an invented English term, and an earlier version of this
+/// comment said it was. This fires when a term is ABSENT from a cited window. The
+/// anomaly `proposed` describes — an English form nobody confirmed that turns out to be
+/// sitting at the cited line — makes nothing here go red.
+List<String> _driftedCitations(List<_Term> terms, String language) {
+  final drifted = <String>[];
+  for (final term in terms) {
+    for (final (column, cell) in [
+      ('Evidence', term.evidence),
+      ('Note', term.note),
+    ]) {
+      final claims = _claims(cell);
+      for (final citation in _citations(cell)) {
+        if (!citation.hasSpan) {
+          drifted.add(
+            '$term — the $column cell cites $citation (${citation.form}) with no '
+            'line number, so nothing is held to it. A path without a line is '
+            'not a citation this file can judge.',
+          );
+          continue;
+        }
+        if (!File(citation.path).existsSync()) continue;
+        if (_sourceLanguage(citation.path) != language) continue;
+        final excerpt = _excerpt(citation);
+        final held = switch (language) {
+          _chinese => _containsChinese(excerpt, term.zh),
+          _english => _containsEnglish(excerpt, term.en),
+          _ => _containsChinese(excerpt, term.zh) ||
+              _containsEnglish(excerpt, term.en),
+        };
+        if (held) continue;
+        if (claims.any((claim) => _holdsClaim(excerpt, claim))) continue;
+        final wanted = switch (language) {
+          _chinese => '"${term.zh}"',
+          _english => '"${term.en}"',
+          _ => '"${term.zh}" or "${term.en}"',
+        };
+        drifted.add(
+          '$term — the $column cell cites $citation ($language source, written as '
+          '${citation.form}), but $wanted is '
+          'not within $_window lines of it, and neither is anything that cell quotes '
+          '($claims). Either the text moved, or the citation names the wrong place.',
+        );
+      }
+    }
+  }
+  return drifted;
 }
 
 ({List<_Term> terms, int tableRows}) _parseGlossary(File file) {
@@ -344,6 +605,71 @@ void main() {
     expect(broken, isEmpty, reason: broken.join('\n'));
   });
 
+  test('every parsed citation carries a line, including the notes column', () {
+    // The row-level check above only looks at Evidence and is satisfied by one
+    // spanned citation on the row. A path-only mention in the same cell, or in
+    // Note, was then skipped by every content check — judged by nothing, while
+    // still looking like a citation. Each parsed citation is held to a window
+    // or named here.
+    final broken = <String>[];
+    for (final term in terms) {
+      for (final (column, cell) in [
+        ('Evidence', term.evidence),
+        ('Note', term.note),
+      ]) {
+        for (final citation in _citations(cell)) {
+          if (citation.path == _noFileNamedYet) continue;
+          if (citation.hasSpan) continue;
+          broken.add(
+            '$term — the $column cell cites $citation with no line number',
+          );
+        }
+      }
+    }
+    expect(broken, isEmpty, reason: broken.join('\n'));
+  });
+
+  test('a path without a line is a content-check fault, not a skip', () {
+    // The two live cases were Note `lib/l10n/app_zh_Hant.arb` and Evidence
+    // `lib/obd/addressing.dart`. Restoring `if (!citation.hasSpan) continue`
+    // makes this green on a cell the census would still see as a citation.
+    final term = _Term(
+      zh: '定址',
+      en: 'addressing',
+      status: 'evidenced',
+      evidence: 'lib/obd/addressing.dart',
+      note: '',
+      line: 0,
+    );
+    final drifted = _driftedCitations([term], _either);
+    expect(drifted, hasLength(1));
+    expect(drifted.single, contains('no line number'));
+    expect(drifted.single, contains('lib/obd/addressing.dart'));
+  });
+
+  test('every publish-only path the glossary cites is on the written roster', () {
+    // Paths, not rows, and computed in both checkouts. The row roster below cannot see a
+    // publish-only citation that sits in a Note on an otherwise ordinary row, and the
+    // shape test cannot see a typo inside `store/`.
+    final cited = <String>{};
+    for (final term in terms) {
+      for (final cell in [term.evidence, term.note]) {
+        for (final citation in _citations(cell)) {
+          if (_isPublishOnly(citation.path)) cited.add(citation.path);
+        }
+      }
+    }
+    expect(
+      cited,
+      _publishOnlyCited,
+      reason: 'a publish-only path was added, removed or mistyped. In the private '
+          'checkout none of these files exist, so a citation naming one is skipped '
+          'twice over and a typo like store/READM.md reports nothing there. Update '
+          '_publishOnlyCited, and say in review why the new path has no evidence '
+          'inside app/.',
+    );
+  });
+
   test('the publish-only exemption matches its written roster', () {
     // Computed the same way the exemption is, and in both repositories -- so a
     // sixth row, or a typo like `store/READM.md`, fails here even in the
@@ -383,36 +709,197 @@ void main() {
                 'them the store-vocabulary rows stop being verified anywhere.');
   });
 
-  test('the Chinese term is still at the cited line', () {
-    final stale = <String>[];
+  test('every citation names a file that exists', () {
+    // Every one, in both columns — not "at least one of this row's", which is all the
+    // test above asks and all this one used to ask of a Note. An earlier version of this
+    // comment claimed the Evidence column had been held to per-citation existence since
+    // the first version; it had not, and the gap that left is the reason this covers both
+    // columns now.
+    //
+    // A second Evidence citation whose path is a typo survives the row-level test on the
+    // strength of the first, is still classified by `_sourceLanguage` — a nonexistent
+    // `*.dart` is bilingual all the same — and is then SKIPPED by `_driftedCitations`,
+    // which continues on a file it cannot open. On an `inferred` or `proposed` row the
+    // pairing test does not look either, so nothing at all checks that citation while the
+    // suite stays green.
+    final missing = <String>[];
     for (final term in terms) {
-      final cited = _citations(term.evidence)
-          .where((c) => File(c.path).existsSync() && c.hasSpan)
-          .toList();
-      if (cited.isEmpty) continue; // reported above
-      if (!cited.any((c) => _containsChinese(_excerpt(c), term.zh))) {
-        stale.add(
-          '$term — "${term.zh}" is not within $_window lines of $cited. Either the label '
-          'moved or was renamed without updating the glossary, or the citation is wrong.',
-        );
+      for (final (column, cell) in [
+        ('Evidence', term.evidence),
+        ('Note', term.note),
+      ]) {
+        for (final citation in _citations(cell)) {
+          // Reported by the resolution test, which says what actually went wrong.
+          if (citation.path == _noFileNamedYet) continue;
+          if (File(citation.path).existsSync()) continue;
+          // The written roster, not the publish-only SHAPE, so a mistyped `store/` path
+          // is not skipped here; the roster test names it.
+          if (_isPrivateCheckout && _publishOnlyCited.contains(citation.path)) continue;
+          missing.add(
+            '$term — the $column cell cites ${citation.path} (written as '
+            '${citation.form}), which is not in this checkout. Each citation is judged '
+            'on its own, so one that cannot be opened is judged by nothing.',
+          );
+        }
       }
     }
-    expect(stale, isEmpty, reason: stale.join('\n'));
+    expect(missing, isEmpty, reason: missing.join('\n'));
   });
 
-  test('the English term is still at the cited line', () {
-    final stale = <String>[];
+  test('every bare line number resolves to a file named earlier in its cell', () {
+    // A bare `:86` is only a citation because something before it named a file. If
+    // nothing did, it resolves to a path no file system answers, and the language checks
+    // below would SKIP it the way they skip a file that is not in this checkout — a
+    // citation that reads as checked and is not.
+    final unresolved = <String>[];
     for (final term in terms) {
-      if (term.isProposed) continue; // declares it has no source in the tree
-      final cited = _citations(term.evidence)
-          .where((c) => File(c.path).existsSync() && c.hasSpan)
-          .toList();
-      if (cited.isEmpty) continue;
-      if (!cited.any((c) => _containsEnglish(_excerpt(c), term.en))) {
-        stale.add('$term — "${term.en}" is not within $_window lines of $cited');
+      for (final (column, cell) in [
+        ('Evidence', term.evidence),
+        ('Note', term.note),
+      ]) {
+        for (final citation in _citations(cell)) {
+          if (citation.path != _noFileNamedYet) continue;
+          unresolved.add(
+            '$term — the $column cell writes a bare line number :${citation.from} with '
+            'no file named before it. Write the path, or move the citation after one.',
+          );
+        }
       }
     }
-    expect(stale, isEmpty, reason: stale.join('\n'));
+    expect(unresolved, isEmpty, reason: unresolved.join('\n'));
+  });
+
+  test('the citation shapes the cells actually use all parse', () {
+    // Hand-typed expectations against hand-typed cells, so this fails if the parser
+    // stops reading a shape or starts inventing one.
+    String read(String cell) => _citations(cell).map((c) => '$c').join(' ');
+
+    // A path with no line still parses. The census above names it; if the
+    // parser dropped it, that census would have nothing to say.
+    expect(read('docs/i18n/glossary.md'), 'docs/i18n/glossary.md');
+
+    // A slash joins two citations when a digit precedes it...
+    expect(read('README.md:21/README.zh-TW.md:20'),
+        'README.md:21 README.zh-TW.md:20');
+    // ...and is part of one path when a letter does. The same path must not
+    // also read as a second citation `i18n/glossary.md`.
+    expect(read('docs/i18n/glossary.md'), 'docs/i18n/glossary.md');
+
+    // A bare line number takes the file the cell named last.
+    expect(read('lib/obd/elm327_client.dart:82 canError; :86 busBusy'),
+        'lib/obd/elm327_client.dart:82 lib/obd/elm327_client.dart:86');
+    // A comma tail takes it too, however many follow.
+    expect(read('docs/field-guide.zh-TW.md:59,145,146'),
+        'docs/field-guide.zh-TW.md:59 docs/field-guide.zh-TW.md:145 '
+        'docs/field-guide.zh-TW.md:146');
+    // Spans survive both shapes.
+    expect(read('docs/field-guide.zh-TW.md:240,243-245'),
+        'docs/field-guide.zh-TW.md:240 docs/field-guide.zh-TW.md:243-245');
+    // A comma tail ends at its digits, whether prose follows it or a bracket closes it.
+    // Both of these are written in the glossary as they appear here.
+    expect(read('docs/field-guide.zh-TW.md:122,289 UI path 設定 → 診斷紀錄'),
+        'docs/field-guide.zh-TW.md:122 docs/field-guide.zh-TW.md:289');
+    expect(read('(README.zh-TW.md:126,150).'),
+        'README.zh-TW.md:126 README.zh-TW.md:150');
+
+    // A SHORT file name is not a citation, and its line number must not attach to the
+    // full path before it. Reading `:9` here as README.zh-TW.md:9 would check a line
+    // against a file the author never named.
+    expect(read('README.zh-TW.md:103 and app_zh_Hant.arb:9'), 'README.zh-TW.md:103');
+
+    // A bare line number inside a quotation is part of the quotation. Without this the
+    // cell below would invent README.md:404 and check a window nobody cited.
+    expect(read("README.md:56 'the error is 錯誤 :404 here'"), 'README.md:56');
+
+    // A bare line number with nothing before it resolves to a path nothing answers,
+    // which the test above reports rather than skipping.
+    expect(read('see :86 for the rest'), '$_noFileNamedYet:86');
+  });
+
+  test('a quoted claim is matched in the language it is written in', () {
+    // Fixtures, hand-typed, not read back from the glossary. The defect this pins is that
+    // a claim used to go through plain containment whatever language it was in, so an
+    // English claim was satisfied by any longer word holding it.
+    // The live case a reviewer built out of this glossary, and the first thing checked
+    // here so that it is the assertion that speaks when this test goes red: `rig` hides
+    // inside `triggered`, so plain containment accepted README.md:57 — a line about
+    // transcript export — as evidence for 隔離 / quarantine, with every test green.
+    expect(
+      _holdsClaim('  user-triggered diagnostic transcript export', 'rig'),
+      isFalse,
+      reason: 'the claim `rig` was found inside `triggered`, which is the fabricated '
+          'stale citation this split exists to refuse',
+    );
+    expect(
+      _holdsClaim(
+          'is the real-use application; the isolated `rig` flavor is test '
+          'infrastructure.',
+          'rig'),
+      isTrue,
+      reason: 'a standalone `rig` is the live rescue at README.md:148 and must survive',
+    );
+
+    expect(_holdsClaim('the aggregate total', 'gate'), isFalse);
+    expect(_holdsClaim('a gatekeeper stands here', 'gate'), isFalse);
+    expect(_holdsClaim('a mismatched header', 'match'), isFalse);
+    expect(_holdsClaim('the gate is closed', 'gate'), isTrue);
+
+    // A quotation is checked as quoted, so the inflection a TERM is allowed is refused
+    // here. `_containsEnglish('the gated branch', 'gate')` is true and this is not.
+    expect(_holdsClaim('the gated branch', 'gate'), isFalse);
+    expect(_containsEnglish('the gated branch', 'gate'), isTrue);
+
+    // An identifier claim still reads, because the haystack is split as well as matched.
+    expect(_holdsClaim("'volumetricEfficiency' => '容積效率',", 'volumetricEfficiency'),
+        isTrue);
+
+    // Chinese keeps containment: 閘門 has no boundary to look for, and 閘門判斷 is not a
+    // longer word in the sense that aggregate is.
+    expect(_holdsClaim('這是閘門判斷', '閘門'), isTrue);
+    expect(_holdsClaim('這是判斷', '閘門'), isFalse);
+
+    // A claim carrying Han text is matched whole, so its English half cannot drift alone.
+    expect(_holdsClaim('# Telltale 實車證據 v2', '# Telltale 實車證據 v1'), isFalse);
+  });
+
+  test('every cited file has a declared language', () {
+    final undeclared = <String>{};
+    for (final term in terms) {
+      for (final cell in [term.evidence, term.note]) {
+        for (final citation in _citations(cell)) {
+          // Reported by the resolution test above; it is not a file anybody named.
+          if (citation.path == _noFileNamedYet) continue;
+          if (_sourceLanguage(citation.path) == null) undeclared.add(citation.path);
+        }
+      }
+    }
+    expect(
+      undeclared,
+      isEmpty,
+      reason:
+          'the language checks below ask an English source for the English term and a '
+          'Chinese source for the Chinese one, and can ask nothing at all of a file '
+          'whose language nobody has written down. Classify it in _sourceLanguage: '
+          '$undeclared',
+    );
+  });
+
+  test('every citation into an English source still holds the English term or what its '
+      'cell quotes', () {
+    final drifted = _driftedCitations(terms, _english);
+    expect(drifted, isEmpty, reason: drifted.join('\n'));
+  });
+
+  test('every citation into a Chinese source still holds the Chinese term or what its '
+      'cell quotes', () {
+    final drifted = _driftedCitations(terms, _chinese);
+    expect(drifted, isEmpty, reason: drifted.join('\n'));
+  });
+
+  test('every citation into a bilingual source still holds one of the two terms or what '
+      'its cell quotes', () {
+    final drifted = _driftedCitations(terms, _either);
+    expect(drifted, isEmpty, reason: drifted.join('\n'));
   });
 
   test('an evidenced pairing was actually written down together', () {
