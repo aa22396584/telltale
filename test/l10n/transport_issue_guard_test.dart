@@ -407,6 +407,68 @@ void main() {
       1,
       reason: 'a raw string has no escapes, so its backslash is content',
     );
+    // Raw strings, same trap -- and the same reason the case above needed an
+    // UNBALANCED quote. `r'${x}'` resynchronises whether or not the reader
+    // knows raw strings have no interpolation, so the fixture written for this
+    // bug stayed green under the very mutation it was added to catch. Found by
+    // review, not by running it; the PR that added it claimed otherwise.
+    //
+    // Each of these puts an unbalanced quote where an interpolation would be.
+    // Read as interpolation, that quote opens a literal which swallows the
+    // rest of the source, and the call on the next line stops being code. Read
+    // as content -- which is what Dart does -- the call is found.
+    //
+    // All four raw forms plus one nesting, because two wrong implementations
+    // pass when only the first is here: one that gates on `'` alone, and one
+    // that asks the OUTERMOST frame whether it is raw instead of the innermost.
+    const rawForms = <String, String>{
+      'single-quoted': "final d = r'\${don\"t}';\n",
+      'double-quoted': 'final d = r"\${don\'t}";\n',
+      'triple single-quoted': 'final d = r\'\'\'\${don"t}\'\'\';\n',
+      'triple double-quoted': 'final d = r"""\${don\'t}""";\n',
+    };
+    // Nesting -- a raw literal inside an interpolation inside a non-raw one --
+    // is NOT here, and that is the second thing this fixture had to learn.
+    // Three attempts sat in this map, and all three passed with the raw gate
+    // removed entirely. `codeMask` cannot see a nesting mistake through a
+    // desync: whatever quote is injected, the enclosing literal brings its own
+    // closing quote of the same type to pair with it, and the source
+    // resynchronises before the call on the next line. Adding a second
+    // injected quote does not help; that was tried too.
+    //
+    // The nesting case is pinned in l05_string_identifiers_test.dart instead,
+    // by asserting the classification directly rather than a consequence of
+    // it: `found("const a = '\${ r\"\${測試}\" }';")`. Consulting the
+    // outermost frame instead of the innermost reddens that and nothing here.
+    rawForms.forEach((label, prefix) {
+      expect(
+        callsFound('${prefix}throw TransportException(\'y\', issue: null);'),
+        1,
+        reason: 'a raw string has no interpolation, so the quote inside the '
+            '$label form is content and must not open a literal',
+      );
+    });
+
+    // The nesting-DEPTH axis, which every case above misses: they all put the
+    // raw literal at depth 0 or 1, so nothing required that a `${` two
+    // literals deep still opens an interpolation at all.
+    //
+    // `!(frames.last.raw || frames.length > 1)` over-suppresses exactly there,
+    // passes all six reader tests, and makes a real `TransportException(`
+    // stop being code:
+    //
+    //   fix codeOnly: "final s =    a(   TransportException(   , ...)  )  ;"
+    //   bug codeOnly: "final s =    a(                       y        )  ;"
+    //
+    // A silent false negative in the guard, found by review after the four
+    // raw forms were already in place.
+    expect(
+      callsFound(
+        "final s = '\${a('\${TransportException('y', issue: null)}')}';",
+      ),
+      1,
+      reason: 'a `\${` two literals deep still opens an interpolation',
+    );
 
     // The triple form, in each shape it actually takes.
     expect(
