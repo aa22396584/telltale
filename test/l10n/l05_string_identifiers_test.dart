@@ -31,10 +31,25 @@
 // trailing comment and to a `//` inside a literal. They are gone.
 // `no_cjk_punctuation_in_ui_source_test.dart`,
 // `export_labels_stay_off_screen_test.dart` and `l04_status_l10n_test.dart`
-// now read through `withoutComments` in the shared reader, and each of them
-// changed verdict when they did: the first two had been missing a real symbol
-// hidden behind the `//` of a URL, and the third had been accusing any engine
-// file that named `AppLocalizations` in a trailing comment.
+// now read through `withoutComments` in the shared reader.
+//
+// Not one of the three changed verdict when it did, and an earlier draft of
+// this header claimed all three had. Checked: `grep -rn '://' lib/ui` matches
+// nothing, so no stripper had a URL to truncate at; and the only two mentions
+// of `AppLocalizations` under `lib/obd` and `lib/diagnostics`
+// (`elm327_client.dart:331`, `availability.dart:302`) are line-leading `///`,
+// which the prefix skip already handled. Checked out the merge-base copies of
+// the three, ran them against today's `lib/`, and got `+47: All tests passed!`
+// — the same tally the versions in this branch produce.
+//
+// Which is the accurate claim, and a weaker-sounding one that is worth more:
+// the naive strippers were not wrong about this tree, they were wrong in a
+// way this tree happens not to exercise. One URL in a `lib/ui` literal, or
+// one trailing `// ... AppLocalizations ...`, and they start reporting on a
+// line that is not the line they think they are reading. Where that gap is
+// actually demonstrated is the fixture test below — 'the reader: comments are
+// skipped, every string form is not' — which feeds the constructions in
+// rather than waiting for the tree to grow one.
 library;
 
 import 'dart:io';
