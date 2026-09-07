@@ -5912,6 +5912,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller {installed}. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.'**
   String commandFailureLegacyScanWouldBePartial(Object installed);
+
+  /// FormulaIssue.emptyFormula. Nothing was typed at all.
+  ///
+  /// In en, this message translates to:
+  /// **'The formula is empty.'**
+  String get pidFormulaEmpty;
+
+  /// FormulaIssue.emptySubExpression. Not the same as an empty formula: something was typed, and the remedy is to finish it rather than to write one.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the formula is empty — an operator with nothing after it, or brackets with nothing in them.'**
+  String get pidFormulaEmptySubExpression;
+
+  /// FormulaIssue.unbalancedParentheses. The bracket characters are formula syntax and are the same in both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'The brackets do not match: every ( needs a closing ).'**
+  String get pidFormulaUnbalancedParentheses;
+
+  /// FormulaIssue.unparsableTerm. {term} is the fragment the reducer stopped on, quoted back exactly as it stands in the formula so the author can find it.
+  ///
+  /// In en, this message translates to:
+  /// **'“{term}” is not a number, an operator, or a name this editor understands.'**
+  String pidFormulaUnparsableTerm(String term);
+
+  /// FormulaIssue.functionNestingTooDeep. Names the construct to simplify; the bracket depth limit has its own message.
+  ///
+  /// In en, this message translates to:
+  /// **'ABS() and LOG10() are nested too deeply to evaluate. Simplify the formula.'**
+  String get pidFormulaFunctionNestingTooDeep;
+
+  /// FormulaIssue.parenthesisNestingTooDeep. A different construct from the function limit, so a different sentence: the author has to find a different thing.
+  ///
+  /// In en, this message translates to:
+  /// **'The brackets are nested too deeply to evaluate. Simplify the formula.'**
+  String get pidFormulaParenthesisNestingTooDeep;
+
+  /// FormulaIssue.divisionByZero. Separate from the modulo case: the character to look for is a different one.
+  ///
+  /// In en, this message translates to:
+  /// **'The formula divides by zero.'**
+  String get pidFormulaDivisionByZero;
+
+  /// FormulaIssue.moduloByZero.
+  ///
+  /// In en, this message translates to:
+  /// **'The formula takes a remainder modulo zero.'**
+  String get pidFormulaModuloByZero;
+
+  /// FormulaIssue.log10NonPositiveArgument. {argument} is the value the argument reduced to, never spelled into the sentence. Answering 0 for an impossible input is what this refusal exists to avoid.
+  ///
+  /// In en, this message translates to:
+  /// **'LOG10 needs an argument greater than 0, and this one came out as {argument}.'**
+  String pidFormulaLog10NonPositiveArgument(double argument);
+
+  /// FormulaIssue.resultNotFinite. Covers a non-finite intermediate as well as a non-finite result: both mean there is no reading, and rendering either as 0 is the failure this app is arranged against.
+  ///
+  /// In en, this message translates to:
+  /// **'The arithmetic produced no usable number, so there is no reading to show.'**
+  String get pidFormulaResultNotFinite;
+
+  /// FormulaIssue.byteBeyondResponse. {letter} is A..N and is formula syntax, not a word. Substituting 0 for a byte the ECU did not send produces a confident wrong number, which is why this is a refusal.
+  ///
+  /// In en, this message translates to:
+  /// **'The formula refers to byte {letter}, but the reply carried only {count} bytes.'**
+  String pidFormulaByteBeyondResponse(String letter, int count);
+
+  /// FormulaIssue.baroControllerUnknown. BARO is formula syntax and stays as written.
+  ///
+  /// In en, this message translates to:
+  /// **'BARO cannot be used here, because which controller’s ambient pressure is meant is not known.'**
+  String get pidFormulaBaroControllerUnknown;
+
+  /// FormulaIssue.baroTwoDefinitions. The controller is known and it is the definitions that are ambiguous, which is why this is not the “which controller” message.
+  ///
+  /// In en, this message translates to:
+  /// **'Two definitions both supply ambient pressure, so the value could be either one and neither can be used. Remove one of the gauges that measures ambient pressure.'**
+  String get pidFormulaBaroTwoDefinitions;
+
+  /// FormulaIssue.baroNotYetMeasured. Absent ambient pressure is not sea level; refusing is what turns “wrong by the altitude” into “unavailable”.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient pressure has not been read yet, so this cannot be calculated.'**
+  String get pidFormulaBaroNotYetMeasured;
+
+  /// FormulaIssue.baroMeasurementStale. A different fact from never having read one, with a different remedy: the source has stopped answering rather than not yet started.
+  ///
+  /// In en, this message translates to:
+  /// **'The ambient pressure reading is out of date, so this cannot be calculated.'**
+  String get pidFormulaBaroMeasurementStale;
+
+  /// FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} cannot be resolved here, because which controller that PID belongs to is not known.'**
+  String pidFormulaDependencyControllerUnknown(String reference);
+
+  /// FormulaIssue.dependencyTwoDefinitions. The last sentence is load-bearing and must not be dropped: “remove one of the gauges” is advice that can be followed exactly and change nothing, because PollingEngine merges the physics inputs into the active set whatever is on the dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Two definitions both decode {key}, so the value could be either one and neither can be used. Change one of them to a different mode+PID. Note: the PIDs the estimates need (010B, 010C, 010D) are always read, so taking a gauge off the dashboard does not stop them.'**
+  String pidFormulaDependencyTwoDefinitions(String key);
+
+  /// FormulaIssue.dependencyNotYetMeasured. Covers never-read and gone-stale alike; either way substituting zero would turn a boost formula into raw manifold pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable value has been read for {key} yet.'**
+  String pidFormulaDependencyNotYetMeasured(String key);
+
+  /// PidRejection.malformedModeAndPid. Deleting every non-hex character would turn a typo into a different, perfectly valid request, so this is a refusal rather than a repair.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a valid mode+PID: hexadecimal characters only, in whole byte pairs.'**
+  String get pidRejectionMalformedModeAndPid;
+
+  /// PidRejection.serviceNotReadOnly. {services} is PollableServices.allowed joined with pidListSeparator, never a list spelled into the sentence: the allowlist is a vehicle-safety boundary somebody may add to, and copy naming four services while the set holds five is a false statement about what this app transmits.
+  ///
+  /// In en, this message translates to:
+  /// **'Service {service} is not a read-only query and must not be sent to the vehicle over and over. Only {services} are allowed — current data, freeze frame, vehicle information and ReadDataByIdentifier.'**
+  String pidRejectionServiceNotReadOnly(String service, String services);
+
+  /// PidRejection.freezeFrameNeedsFrame. The missing byte is a frame index rather than another PID byte, which is why this is not the generic wrong-length message.
+  ///
+  /// In en, this message translates to:
+  /// **'A freeze-frame query needs two bytes, the PID and the frame number — for example 020500 (PID 05, frame 0).'**
+  String get pidRejectionFreezeFrameNeedsFrame;
+
+  /// PidRejection.identifierNeedsTwoBytes. ReadDataByIdentifier is the service’s name in ISO 14229 and stays in English in both.
+  ///
+  /// In en, this message translates to:
+  /// **'ReadDataByIdentifier needs a two-byte identifier — for example 221101.'**
+  String get pidRejectionIdentifierNeedsTwoBytes;
+
+  /// PidRejection.identifierWrongLength. The fallback arm for an allowed service with no example of its own; unreachable while the allowlist is 01/02/09/22, and kept because that set can grow.
+  ///
+  /// In en, this message translates to:
+  /// **'A service {service} query needs a {bytes}-byte identifier.'**
+  String pidRejectionIdentifierWrongLength(String service, int bytes);
+
+  /// PidRejection.nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get pidRejectionNameRequired;
+
+  /// PidRejection.invalidHeader. {text} is what the author typed, quoted back unchanged. The three widths are bus facts, not preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'“{text}” is not a valid header: 3 digits for 11-bit CAN, 6 for the legacy protocols, 8 for 29-bit CAN.'**
+  String pidRejectionInvalidHeader(String text);
+
+  /// PidRejection.boundsRequired. The editor requires both; the importer treats a blank column as a default, which is the one place the two callers legitimately differ.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in both ends of the gauge range.'**
+  String get pidRejectionBoundsRequired;
+
+  /// PidRejection.minNotANumber.
+  ///
+  /// In en, this message translates to:
+  /// **'The lower bound “{text}” is not a valid number.'**
+  String pidRejectionMinNotANumber(String text);
+
+  /// PidRejection.maxNotANumber.
+  ///
+  /// In en, this message translates to:
+  /// **'The upper bound “{text}” is not a valid number.'**
+  String pidRejectionMaxNotANumber(String text);
+
+  /// PidRejection.minNotFinite. Distinct from “not a number”: double.tryParse accepts NaN and Infinity, and a NaN bound pins the needle at full scale and then wedges jsonEncode on save.
+  ///
+  /// In en, this message translates to:
+  /// **'The lower bound has to be a finite number.'**
+  String get pidRejectionMinNotFinite;
+
+  /// PidRejection.maxNotFinite.
+  ///
+  /// In en, this message translates to:
+  /// **'The upper bound has to be a finite number.'**
+  String get pidRejectionMaxNotFinite;
+
+  /// PidRejection.redlineNotANumber. The redline has no field in the editor and arrives from an imported definition, so the value is quoted back.
+  ///
+  /// In en, this message translates to:
+  /// **'The redline start “{text}” is not a valid number.'**
+  String pidRejectionRedlineNotANumber(String text);
+
+  /// PidRejection.redlineNotFinite.
+  ///
+  /// In en, this message translates to:
+  /// **'The redline start has to be a finite number.'**
+  String get pidRejectionRedlineNotFinite;
+
+  /// PidRejection.maxNotAboveMin.
+  ///
+  /// In en, this message translates to:
+  /// **'The upper bound has to be greater than the lower bound.'**
+  String get pidRejectionMaxNotAboveMin;
+
+  /// PidCsvIssue.malformedCsv. {detail} is the CSV decoder’s own complaint and is not translated; it names an offset in the file, which is what somebody needs to find the damage.
+  ///
+  /// In en, this message translates to:
+  /// **'This file could not be read as CSV: {detail}'**
+  String pidImportMalformedCsv(String detail);
+
+  /// PidCsvIssue.noRows. The file parsed and is empty, which is not the same as parsing to rows that yield nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'The file has no rows in it.'**
+  String get pidImportNoRows;
+
+  /// PidCsvIssue.duplicateHeaderColumns. {columns} is joined with pidListSeparator and spelled as the file spells them — somebody has to find the column in a spreadsheet. Taking the first occurrence would be a silent choice between two columns that both claim to be the equation.
+  ///
+  /// In en, this message translates to:
+  /// **'The header row names the same column twice: {columns}. There is no way to tell which one to use, so fix the file first.'**
+  String pidImportDuplicateHeaderColumns(String columns);
+
+  /// PidCsvIssue.missingRequiredColumns. Both lists are joined with pidListSeparator and carried as data: {required} comes from PidCsv, so it cannot go stale against the importer the way a list written into this sentence would.
+  ///
+  /// In en, this message translates to:
+  /// **'The header row is missing required columns: {columns}. {required} are all needed.'**
+  String pidImportMissingRequiredColumns(String columns, String required);
+
+  /// PidCsvIssue.rowTooFewColumns. {line} is the 1-based line as a spreadsheet numbers it. A row number is data; never spell one into the sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: not enough cells — name, short name, PID and formula are the minimum.'**
+  String pidImportRowTooFewColumns(int line);
+
+  /// PidCsvIssue.rowInvalidModeAndPid. Quotes the offending cell back, which is what the bare PidRejection.malformedModeAndPid cannot do and why the importer keeps its own message here.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: “{text}” is not a valid mode+PID (hexadecimal characters only, in whole byte pairs).'**
+  String pidImportRowInvalidModeAndPid(int line, String text);
+
+  /// PidCsvIssue.rowEmptyEquation.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: the formula cell is empty.'**
+  String pidImportRowEmptyEquation(int line);
+
+  /// PidCsvIssue.rowDefinitionRejected. {reason} is a PidRejection already rendered by pid_rejection_copy.dart, so both halves are translated. The two call sites in pid_csv.dart differ only in which validator reached the row first.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: {reason}'**
+  String pidImportRowRejected(int line, String reason);
+
+  /// PidCsvIssue.rowRangeDefaulted. A warning, not a rejection: the row is in, drawn against a scale nobody chose, and a needle reads as authoritative against whatever bounds it is drawn on.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: the gauge range was blank, so {min}–{max} was applied. Check that this scale suits this sensor.'**
+  String pidImportRowRangeDefaulted(int line, double min, double max);
+
+  /// PidCsvIssue.nothingImportable. Distinct from an empty file: there was content, and it produced nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'The file has rows in it, but none of them is a PID definition.'**
+  String get pidImportNothingImportable;
 }
 
 class _AppLocalizationsDelegate

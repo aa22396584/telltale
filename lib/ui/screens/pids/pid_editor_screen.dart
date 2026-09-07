@@ -19,6 +19,8 @@ import '../../../obd/pid/priority_tier.dart';
 import '../../../state/pid_mutation_lock.dart';
 import '../../../state/pid_registry.dart';
 import '../../widgets/gauges/linear_gauge.dart';
+import 'pid_formula_copy.dart';
+import 'pid_rejection_copy.dart';
 import '../../widgets/panel.dart';
 
 class PidEditorScreen extends ConsumerStatefulWidget {
@@ -157,7 +159,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// PIDs this formula depends on via `VAL{...}`.
   Iterable<String> get _dependencies => FormulaEngine.valReferences(_equation.text);
 
-  ({double? value, String? error}) get _preview {
+  ({double? value, String? error}) _previewFor(AppLocalizations l10n) {
     try {
       final engine = FormulaEngine();
       // At runtime an unresolved `VAL{}` is an error — substituting zero would
@@ -175,7 +177,13 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       );
       return (value: value, error: null);
     } on FormulaException catch (e) {
-      return (value: null, error: e.message);
+      // `e.message` is the engine's own Traditional Chinese, kept for the
+      // diagnostics that read it and unreachable here: every throw in
+      // `formula_engine.dart` names a `FormulaIssue`, and
+      // `test/l10n/pid_reason_guard_test.dart` reads the source to keep it
+      // that way. If one ever did not, an untranslated reason under a field
+      // that is refusing to save still beats no reason at all.
+      return (value: null, error: formulaIssueText(l10n, e) ?? e.message);
     } on Object catch (e) {
       return (value: null, error: '$e');
     }
@@ -193,8 +201,12 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// dashboard, so a write or control service typed in here would be
   /// transmitted repeatedly — `2F` actuates outputs, `2E` writes ECU
   /// configuration, `31` starts routines.
-  String? get _serviceRejection =>
-      PollableServices.rejectionReason(_modeAndPid.text.trim().toUpperCase());
+  String? _serviceRejection(AppLocalizations l10n) {
+    final reason = PollableServices.rejectionReason(
+      _modeAndPid.text.trim().toUpperCase(),
+    );
+    return reason == null ? null : pidRejectionText(l10n, reason);
+  }
 
   /// Why the definition cannot be saved, or null.
   ///
@@ -202,19 +214,22 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// header while this screen accepted both — and then substituted `0`/`100`
   /// for bounds it could not parse, giving a gauge a scale nobody chose.
   ///
-  /// `PidDefinition.rejectionReason` returns its own wording, which still lives
-  /// in `lib/obd/pid/pid.dart` and is shared with the CSV importer; only the
-  /// collision reason below belongs to this screen.
-  String? _definitionRejection(AppLocalizations l10n) =>
-      PidDefinition.rejectionReason(
-        name: _name.text,
-        modeAndPid: PollableServices.normalise(_modeAndPid.text),
-        header: _header.text,
-        minText: _min.text,
-        maxText: _max.text,
-        requireBounds: true,
-      ) ??
-      _collision(l10n);
+  /// `PidDefinition.rejectionReason` returns an identifier, which the CSV
+  /// importer renders too — `pid_rejection_copy.dart` is the one place those
+  /// words live. Only the collision reason below belongs to this screen.
+  String? _definitionRejection(AppLocalizations l10n) {
+    final reason = PidDefinition.rejectionReason(
+      name: _name.text,
+      modeAndPid: PollableServices.normalise(_modeAndPid.text),
+      header: _header.text,
+      minText: _min.text,
+      maxText: _max.text,
+      requireBounds: true,
+    );
+    return reason == null
+        ? _collision(l10n)
+        : pidRejectionText(l10n, reason);
+  }
 
   /// Whether the edited identity already belongs to a different custom PID.
   ///
@@ -337,7 +352,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final preview = _preview;
+    final preview = _previewFor(l10n);
     final definitionRejection = _definitionRejection(l10n);
     final canSave =
         _modeAndPid.text.trim().length >= 4 &&
@@ -420,12 +435,12 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
                   style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
                   decoration: InputDecoration(
                     labelText: l10n.pidEditorFieldModeAndPid,
-                    // `_serviceRejection` is `PollableServices`' own wording in
-                    // lib/obd/pid/pid.dart. It says which service was refused
-                    // and why polling it is unsafe; keeping that reason is the
-                    // point, so it is passed through rather than replaced.
+                    // `PollableServices` says which service was refused and
+                    // why polling it is unsafe; keeping that reason is the
+                    // point, so the identifier is rendered rather than
+                    // replaced with something vaguer.
                     errorText: _modeAndPid.text.trim().length >= 4
-                        ? _serviceRejection
+                        ? _serviceRejection(l10n)
                         : null,
                     errorMaxLines: 3,
                     helperText: l10n.pidEditorModeAndPidHelper,
@@ -455,7 +470,8 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
             style: AppTypography.code(palette, size: 15, color: palette.textPrimary),
             decoration: InputDecoration(
               labelText: l10n.pidEditorFieldEquation,
-              // `FormulaEngine`'s own wording, from lib/obd/pid/formula_engine.dart.
+              // `FormulaEngine`'s identifier, rendered by
+              // lib/ui/screens/pids/pid_formula_copy.dart.
               errorText: preview.error,
               // The literal `VAL{PID}` is passed in rather than written into
               // the ARB: braces are placeholder syntax there, and this token is

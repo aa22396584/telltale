@@ -96,11 +96,118 @@ void main() {
       final result = PidCsv.parse(wire);
       expect(result.pids, hasLength(1));
       expect(result.errors, hasLength(2));
-      expect(result.errors.first, contains('2'));
+      // The row, by number rather than by a substring that any digit anywhere
+      // in the sentence would have satisfied.
+      expect(result.errors.first.lineNumber, 2);
+      expect(result.errors.first.issue, PidCsvIssue.rowInvalidModeAndPid);
+      // And the cell it choked on, not just that it choked. The importer
+      // deliberately refuses rather than repairs — `22-11O1` with a letter O
+      // must not become the valid-and-different `22111` — so the reader has to
+      // see the characters they wrote. `text: cell(2)` is a second copy of
+      // that value now the sentence no longer interpolates it at the throw;
+      // replacing it with `'ZZZ'` left the suite green.
+      expect(result.errors.first.text, 'ZZ');
+      expect(result.errors.last.lineNumber, 3);
+      expect(result.errors.last.issue, PidCsvIssue.rowEmptyEquation);
+    });
+
+    test('a defaulted range reports the bounds that were actually applied', () {
+      // The warning exists because a substituted scale is invisible: a needle
+      // reads as authoritative against whatever bounds it is drawn on, whoever
+      // picked them. Which makes the two numbers the whole content of it —
+      // `999`/`999` substituted at the construction is a warning about a scale
+      // that was never applied, and the suite did not notice.
+      const columns =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,'
+          'Units,Header\r\n';
+
+      final bothBlank =
+          PidCsv.parse('${columns}Trans,T,2211A6,A-40,,,C,7E0\r\n');
+      expect(bothBlank.errors, isEmpty);
+      expect(bothBlank.warnings.single.issue, PidCsvIssue.rowRangeDefaulted);
+      expect(bothBlank.warnings.single.lineNumber, 2);
+      expect(bothBlank.warnings.single.minValue, 0);
+      expect(bothBlank.warnings.single.maxValue, 100);
+
+      // A lower bound that parsed is kept, and the upper one is derived from
+      // it — so the two fields are not interchangeable and a value taken from
+      // the wrong one shows up here.
+      final maxBlank =
+          PidCsv.parse('${columns}Trans,T,2211A6,A-40,50,,C,7E0\r\n');
+      expect(maxBlank.errors, isEmpty);
+      expect(maxBlank.warnings.single.minValue, 50);
+      expect(maxBlank.warnings.single.maxValue, 150);
     });
 
     test('an empty file reports why nothing was imported', () {
       expect(PidCsv.parse('').errors, isNotEmpty);
+    });
+
+    test('each way of importing nothing says which way it was', () {
+      // condition -> identifier for the file-level arms. `isNotEmpty` above is
+      // satisfied by any of them, and the reviewer transposed
+      // `noRows` and `nothingImportable` at their two throw sites with the
+      // whole suite still green: an empty file was then reported as "has rows
+      // but none of them is a PID", which sends the reader looking through a
+      // file that has nothing in it.
+      expect(
+        PidCsv.parse('').errors.single.issue,
+        PidCsvIssue.noRows,
+        reason: 'no rows at all is not the same as rows that yielded nothing',
+      );
+
+      // Rows were read — the header — and produced no definition.
+      expect(
+        PidCsv.parse('Name,ShortName,ModeAndPID,Equation\r\n')
+            .errors
+            .single
+            .issue,
+        PidCsvIssue.nothingImportable,
+      );
+
+      // A row with fewer cells than the four that are always needed, refused
+      // before any of them is looked at. Not `rowEmptyEquation`: there is no
+      // equation *cell*, which is a different thing from an empty one, and the
+      // remedy is to add columns rather than to fill one in.
+      final short = PidCsv.parse(
+        'Name,ShortName,ModeAndPID,Equation\r\nTrans,T\r\n',
+      );
+      expect(short.errors.single.issue, PidCsvIssue.rowTooFewColumns);
+      expect(short.errors.single.lineNumber, 2);
+
+      // And the empty-cell case really is the other one, so the two are told
+      // apart by input rather than by which happens to be checked first.
+      final blankEquation = PidCsv.parse(
+        'Name,ShortName,ModeAndPID,Equation\r\nTrans,T,2211A6,\r\n',
+      );
+      expect(blankEquation.errors.single.issue, PidCsvIssue.rowEmptyEquation);
+    });
+
+    test('malformedCsv is unreachable with the decoder this app ships', () {
+      // Stated rather than left as a gap. `PidCsvIssue.malformedCsv` is the
+      // arm for a `FormatException` out of `Csv().decode`, and `csv` 8.0.0
+      // never throws one: its only `throw` is an assertion in the decoder's
+      // constructor over the quote/escape characters, which this file does not
+      // configure. Every shape that ought to be malformed comes back as rows.
+      //
+      // So the copy for it cannot be exercised through `PidCsv.parse`, and a
+      // test claiming to drive it would be driving something else. What is
+      // pinned instead is the reason: if a decoder upgrade starts throwing,
+      // these expectations change and whoever changes them is looking straight
+      // at the arm that becomes live.
+      for (final malformed in const [
+        '"unterminated',
+        'a,"b\r\n',
+        '"a"x,b\r\n',
+      ]) {
+        final result = PidCsv.parse(malformed);
+        expect(
+          result.errors.map((e) => e.issue),
+          isNot(contains(PidCsvIssue.malformedCsv)),
+          reason: 'csv 8.0.0 does not throw FormatException; if it now does, '
+              'pin the malformedCsv arm here for real',
+        );
+      }
     });
 
     test('imported definitions are namespaced away from the built-ins', () {
@@ -119,6 +226,55 @@ void main() {
       );
       expect(imported.id, isNot(builtIn.id));
     });
+    test('a row refused by the DEFINITION rule names that rule and its value',
+        () {
+      // `rowDefinitionRejected` has two producers, and only one of them was
+      // reachable from any test: the unsafe-service branch, which
+      // safety_allowlist_test.dart covers. Its sibling — the branch fed by
+      // `PidDefinition.rejectionReason` — had nothing standing on it, so
+      // swapping its issue to `rowEmptyEquation` passed the whole suite while
+      // a row rejected for a malformed header rendered
+      // "Row 2: the formula cell is empty." Fluent, English, and wrong about
+      // the file in front of the reader.
+      //
+      // The mode+PID here is deliberately VALID (`010C` is a read-only
+      // current-data query), so the unsafe-service branch cannot fire and this
+      // can only be reaching the definition branch. `7EG` is not hex.
+      const wire =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Engine RPM,RPM,010C,((A*256)+B)/4,0,8000,rpm,7EG\r\n';
+      final result = PidCsv.parse(wire);
+
+      expect(result.pids, isEmpty);
+      final error = result.errors.single;
+      expect(error.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(error.lineNumber, 2, reason: 'the data row, not the header row');
+
+      // The nested reason, which nothing in the repository read before. The
+      // sentence the importer shows quotes `text`, so an identifier without
+      // its value renders `The CAN header "" is not…`.
+      expect(error.rejection, isNotNull);
+      expect(error.rejection!.issue, PidRejection.invalidHeader);
+      expect(error.rejection!.text, '7EG');
+    });
+
+    test('the two producers of rowDefinitionRejected stay distinguishable', () {
+      // Same issue code, different reasons. A change that routed the unsafe
+      // service through the definition branch, or the reverse, would be
+      // invisible to a test that only checked `issue`.
+      const unsafe =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Actuate,ACT,2F01,A,0,100,x,7E0\r\n';
+      const malformed =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Engine RPM,RPM,010C,((A*256)+B)/4,0,8000,rpm,7EG\r\n';
+
+      expect(PidCsv.parse(unsafe).errors.single.rejection!.issue,
+          PidRejection.serviceNotReadOnly);
+      expect(PidCsv.parse(malformed).errors.single.rejection!.issue,
+          PidRejection.invalidHeader);
+    });
+
   });
 }
 
@@ -198,8 +354,8 @@ void _strictParsingTests() {
           header: '7EG',
           minText: '0',
           maxText: '100',
-        ),
-        contains('標頭'),
+        )?.issue,
+        PidRejection.invalidHeader,
       );
       expect(
         PidDefinition.rejectionReason(
@@ -208,8 +364,8 @@ void _strictParsingTests() {
           header: '7E0',
           minText: '100',
           maxText: '10',
-        ),
-        contains('上限'),
+        )?.issue,
+        PidRejection.maxNotAboveMin,
       );
       expect(
         PidDefinition.rejectionReason(
@@ -218,9 +374,126 @@ void _strictParsingTests() {
           header: '7E0',
           minText: 'abc',
           maxText: '100',
-        ),
-        contains('下限'),
+        )?.issue,
+        PidRejection.minNotANumber,
       );
+    });
+
+    test('a refusal quotes back what was actually typed', () {
+      // The four arms that carry `text`. Before the identifier migration the
+      // typed value was interpolated into the sentence at the return, so there
+      // was one copy of it; now the screen reads `reason.text` and nothing
+      // compared the two. Substituting `'ZZZ'` at all three of the sites
+      // below left the whole suite green and told the reader that a header
+      // they never typed was the invalid one.
+      //
+      // Distinct fixtures per arm on purpose: a value copied from the wrong
+      // field would otherwise pass.
+      final header = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7EG',
+        minText: '0',
+        maxText: '100',
+      );
+      expect(header?.issue, PidRejection.invalidHeader);
+      expect(header?.text, '7EG');
+
+      final min = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: 'lo',
+        maxText: '100',
+      );
+      expect(min?.issue, PidRejection.minNotANumber);
+      expect(min?.text, 'lo');
+
+      final max = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: '0',
+        maxText: 'hi',
+      );
+      expect(max?.issue, PidRejection.maxNotANumber);
+      expect(max?.text, 'hi');
+
+      final redline = PidDefinition.rejectionReason(
+        name: 'x',
+        modeAndPid: '010C',
+        header: '7E0',
+        minText: '0',
+        maxText: '100',
+        redlineText: 'red',
+      );
+      expect(redline?.issue, PidRejection.redlineNotANumber);
+      expect(redline?.text, 'red');
+    });
+
+    test('each way of being inadmissible names itself', () {
+      // condition -> identifier for the arms nothing else in this suite
+      // reaches. Each of these was transposable in silence: the reviewer
+      // pointed `nameRequired` at `boundsRequired` (a blank name answered with
+      // "Fill in both ends of the gauge range") and swapped
+      // `minNotFinite`/`maxNotFinite` (the sentence pointing at the field that
+      // is fine), and the whole suite stayed green both times.
+      //
+      // The fixtures differ in exactly one field from an admissible
+      // definition, so nothing here can be satisfied by the wrong arm.
+      PidRejectionReason? reason({
+        String name = 'x',
+        String modeAndPid = '010C',
+        String header = '7E0',
+        String minText = '0',
+        String maxText = '100',
+        String? redlineText,
+        bool requireBounds = false,
+      }) =>
+          PidDefinition.rejectionReason(
+            name: name,
+            modeAndPid: modeAndPid,
+            header: header,
+            minText: minText,
+            maxText: maxText,
+            redlineText: redlineText,
+            requireBounds: requireBounds,
+          );
+
+      // Whitespace only, not empty: the rule trims, and a name of spaces is
+      // the shape a spreadsheet actually produces.
+      expect(reason(name: '   ')?.issue, PidRejection.nameRequired);
+
+      // Blank bounds, and only because this caller is the editor. The
+      // importer's own answer for the same input is null, which the
+      // blank-bounds test below pins — so this arm is about `requireBounds`
+      // and cannot be reached by a name or a range problem.
+      expect(
+        reason(minText: '', maxText: '', requireBounds: true)?.issue,
+        PidRejection.boundsRequired,
+      );
+
+      // `double.tryParse` accepts these, so they are *numbers* — the arm is
+      // not `minNotANumber`, and the remedy is different: NaN pins the needle
+      // at full scale and wedges `jsonEncode` on save.
+      expect(reason(minText: 'NaN')?.issue, PidRejection.minNotFinite);
+      expect(reason(maxText: 'Infinity')?.issue, PidRejection.maxNotFinite);
+      // The transposable pair, from opposite sides: a lower bound of
+      // -Infinity with a perfectly ordinary upper one, and the reverse.
+      expect(reason(minText: '-Infinity')?.issue, PidRejection.minNotFinite);
+      expect(reason(maxText: 'NaN')?.issue, PidRejection.maxNotFinite);
+
+      expect(
+        reason(redlineText: 'NaN')?.issue,
+        PidRejection.redlineNotFinite,
+      );
+      // And the finite redline still passes, so the arm above is about the
+      // value rather than about the field being present.
+      expect(reason(redlineText: '90'), isNull);
+    });
+
+    test('the editor and the importer still agree on the blank-bounds rule',
+        () {
 
       // Blank bounds are a spreadsheet's business and not the editor's, which
       // is the one place the two callers legitimately differ.
@@ -299,7 +572,33 @@ void _reorderedColumns() {
       const csv = 'Name,Units\r\nTrans Temp,°C\r\n';
       final result = PidCsv.parse(csv);
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('ModeAndPID'));
+      expect(result.errors.single.issue, PidCsvIssue.missingRequiredColumns);
+      // Spelled as a spreadsheet spells it. The importer compares column names
+      // with case and spaces removed, and reporting `modeandpid` sends the
+      // reader looking for a column that is not in their file under that name.
+      //
+      // Both lists, in full and in order — not `contains('ModeAndPID')`, which
+      // the *required* list also satisfies. The two arguments are adjacent, the
+      // same type and the same shape, so swapping them compiles and every
+      // assertion that only looked for one name went on passing: the file has
+      // `Name` and lacks the other two, and the sentence then told the reader
+      // that `Name` was missing — the one column they did supply.
+      expect(
+        result.errors.single.columns,
+        orderedEquals(const ['ModeAndPID', 'Equation']),
+        reason: 'the missing list must name only what the file does not have',
+      );
+      expect(
+        result.errors.single.requiredColumns,
+        orderedEquals(const ['Name', 'ModeAndPID', 'Equation']),
+        reason: 'the required list is the full set, whatever the file has',
+      );
+      expect(
+        result.errors.single.columns,
+        isNot(contains('Name')),
+        reason: 'the file supplies Name; saying otherwise sends the reader to '
+            'fix the one column that is already right',
+      );
     });
 
     test('no header row still means positional, as it always did', () {
@@ -322,8 +621,8 @@ void _reorderedColumns() {
           'Trans Temp,2211A6,A-40,A*100/255\r\n';
       final result = PidCsv.parse(csv);
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('Equation'));
-      expect(result.errors.single, contains('重複'));
+      expect(result.errors.single.issue, PidCsvIssue.duplicateHeaderColumns);
+      expect(result.errors.single.columns, contains('Equation'));
     });
 
     test(

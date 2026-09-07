@@ -13,13 +13,101 @@ import '../addressing.dart';
 import 'pid.dart';
 import 'priority_tier.dart';
 
+/// Why a row, or a whole file, could not be imported as written.
+///
+/// Identifiers rather than sentences. The importer runs in `lib/obd/`, which
+/// carries no language; the words live in
+/// `lib/ui/screens/pids/pid_import_copy.dart`. Line numbers, column names and
+/// substituted bounds travel as data on [PidCsvDiagnostic] and reach the ARB
+/// as placeholders — a row number is not prose.
+enum PidCsvIssue {
+  /// The file is not CSV at all. Carries the decoder's own complaint.
+  malformedCsv,
+
+  /// The file parsed, and has no rows in it.
+  noRows,
+
+  /// Two columns in the header row claim the same name. Carries them.
+  duplicateHeaderColumns,
+
+  /// The header row does not name every column the importer needs. Carries
+  /// which are missing and which are required.
+  missingRequiredColumns,
+
+  /// A row has fewer cells than the four that are always needed.
+  rowTooFewColumns,
+
+  /// A row's mode+PID is not hex byte pairs. Carries the cell as written.
+  ///
+  /// Distinct from a [PidRejection.malformedModeAndPid] arriving through
+  /// [rowDefinitionRejected]: this one quotes the offending cell back, which
+  /// is what somebody needs to find it in a spreadsheet of 200 rows.
+  rowInvalidModeAndPid,
+
+  /// A row's equation cell is empty.
+  rowEmptyEquation,
+
+  /// A row was refused by the rule the editor also applies. Carries the
+  /// [PidRejectionReason], which is where the actual fact is; the two call
+  /// sites in this file differ only in which validator reached it first, and
+  /// would otherwise render the same sentence twice under two names.
+  rowDefinitionRejected,
+
+  /// A row imported with bounds the file did not supply. A warning: the row is
+  /// in, drawn against a scale nobody chose. Carries the substituted pair.
+  rowRangeDefaulted,
+
+  /// Rows were read, none of them yielded a definition, and no row said why.
+  /// Not [noRows]: there was content, and it produced nothing.
+  nothingImportable,
+}
+
+/// One [PidCsvIssue] with whatever the sentence for it names.
+class PidCsvDiagnostic {
+  const PidCsvDiagnostic(
+    this.issue, {
+    this.lineNumber,
+    this.text,
+    this.columns,
+    this.requiredColumns,
+    this.rejection,
+    this.minValue,
+    this.maxValue,
+  });
+
+  final PidCsvIssue issue;
+
+  /// The 1-based line in the file, as a spreadsheet numbers it.
+  final int? lineNumber;
+
+  /// A cell, or a decoder message, quoted back as written.
+  final String? text;
+
+  /// Column names, spelled as this app spells them.
+  final List<String>? columns;
+
+  /// The columns the importer cannot do without.
+  final List<String>? requiredColumns;
+
+  /// The shared definition rule's own answer, for
+  /// [PidCsvIssue.rowDefinitionRejected].
+  final PidRejectionReason? rejection;
+
+  /// The bounds that were substituted, for [PidCsvIssue.rowRangeDefaulted].
+  final double? minValue;
+  final double? maxValue;
+}
+
 class PidCsvResult {
   final List<Pid> pids;
 
   /// One entry per row that could not be parsed, with the reason. Surfaced to
   /// the user rather than swallowed: a silently-skipped row looks identical to
   /// a successful import that happened to be short.
-  final List<String> errors;
+  ///
+  /// The screen renders `errors.first`, and only when nothing imported at all;
+  /// otherwise it shows how many rows were skipped.
+  final List<PidCsvDiagnostic> errors;
 
   /// Rows that were imported, but not exactly as written.
   ///
@@ -27,7 +115,22 @@ class PidCsvResult {
   /// a choice on the author's behalf — and the one that matters is a
   /// substituted scale, because a needle reads as authoritative against
   /// whatever bounds it is drawn on, whoever picked them.
-  final List<String> warnings;
+  ///
+  /// **Counted, not quoted.** `pid_manager_screen.dart` passes
+  /// `warnings.length` into `PidImportOutcome.describe(defaultedRanges:)` and
+  /// nothing else reads them, so the line number and the substituted bounds
+  /// each entry carries do not currently reach a reader. This comment used to
+  /// say they were "surfaced to the user", which is how a reviewer comes to
+  /// believe a diagnostic is doing work it is not.
+  ///
+  /// The per-row sentence (`pidImportRowRangeDefaulted`) is built and pinned
+  /// anyway, because [PidCsvIssue] is switched over exhaustively and the arm
+  /// has to exist. It is deliberately not wired into the snackbar in this
+  /// slice: `PidImportOutcome.describe` is still Traditional Chinese, so
+  /// appending a translated clause to it would produce a half-English
+  /// snackbar — a regression that is real, traded for one that is only
+  /// unrealised copy.
+  final List<PidCsvDiagnostic> warnings;
 
   const PidCsvResult({
     required this.pids,
@@ -53,6 +156,13 @@ abstract final class PidCsv {
   /// otherwise fine.
   static String _key(String name) =>
       name.trim().toLowerCase().replaceAll(RegExp(r'[\s_]'), '');
+
+  /// A normalised column key, spelled the way [header] spells it.
+  ///
+  /// Falls back to the key itself for a name that is not one of ours, which
+  /// cannot happen for [_required] and is not worth a separate failure mode.
+  static String _canonical(String key) =>
+      header.firstWhere((h) => _key(h) == key, orElse: () => key);
 
   /// The same column under another tool's name.
   ///
@@ -136,8 +246,8 @@ abstract final class PidCsv {
   /// tools and often carry extra columns, missing headers, or a stray BOM.
   static PidCsvResult parse(String contents) {
     final pids = <Pid>[];
-    final errors = <String>[];
-    final warnings = <String>[];
+    final errors = <PidCsvDiagnostic>[];
+    final warnings = <PidCsvDiagnostic>[];
 
     // Strip a UTF-8 BOM: Excel writes one, and it would otherwise become part
     // of the first column's name.
@@ -147,10 +257,16 @@ abstract final class PidCsv {
     try {
       rows = Csv().decode(cleaned);
     } on FormatException catch (e) {
-      return PidCsvResult(pids: const [], errors: ['CSV 格式錯誤：${e.message}']);
+      return PidCsvResult(
+        pids: const [],
+        errors: [PidCsvDiagnostic(PidCsvIssue.malformedCsv, text: e.message)],
+      );
     }
     if (rows.isEmpty) {
-      return const PidCsvResult(pids: [], errors: ['檔案沒有任何資料列。']);
+      return const PidCsvResult(
+        pids: [],
+        errors: [PidCsvDiagnostic(PidCsvIssue.noRows)],
+      );
     }
 
     var startIndex = 0;
@@ -213,8 +329,10 @@ abstract final class PidCsv {
         return PidCsvResult(
           pids: const [],
           errors: [
-            '標題列有重複的欄位名稱：${duplicated.join('、')}。'
-                '無法判斷該用哪一欄，請先修正檔案。',
+            PidCsvDiagnostic(
+              PidCsvIssue.duplicateHeaderColumns,
+              columns: duplicated.toList(),
+            ),
           ],
         );
       }
@@ -223,8 +341,14 @@ abstract final class PidCsv {
         return PidCsvResult(
           pids: const [],
           errors: [
-            '標題列缺少必要欄位：${missing.join('、')}。'
-                '需要 Name、ModeAndPID、Equation。',
+            PidCsvDiagnostic(
+              PidCsvIssue.missingRequiredColumns,
+              // Spelled as this app spells them, not as `_key` normalises
+              // them. `modeandpid` is not a column name anybody can search a
+              // spreadsheet for.
+              columns: missing.map(_canonical).toList(),
+              requiredColumns: _required.map(_canonical).toList(),
+            ),
           ],
         );
       }
@@ -237,7 +361,12 @@ abstract final class PidCsv {
       if (row.every((c) => c.toString().trim().isEmpty)) continue;
 
       if (row.length < 4) {
-        errors.add('第 $lineNumber 行：欄位不足，至少需要名稱、簡稱、PID、公式。');
+        errors.add(
+          PidCsvDiagnostic(
+            PidCsvIssue.rowTooFewColumns,
+            lineNumber: lineNumber,
+          ),
+        );
         continue;
       }
 
@@ -255,8 +384,11 @@ abstract final class PidCsv {
       final modeAndPid = PollableServices.normalise(cell(2));
       if (!_hexCommand.hasMatch(modeAndPid) || modeAndPid.length < 4) {
         errors.add(
-          '第 $lineNumber 行：「${cell(2)}」不是有效的模式+PID'
-          '（只接受十六進位字元，且位元組須成對）。',
+          PidCsvDiagnostic(
+            PidCsvIssue.rowInvalidModeAndPid,
+            lineNumber: lineNumber,
+            text: cell(2),
+          ),
         );
         continue;
       }
@@ -265,13 +397,24 @@ abstract final class PidCsv {
       // on screen.
       final unsafe = PollableServices.rejectionReason(modeAndPid);
       if (unsafe != null) {
-        errors.add('第 $lineNumber 行：$unsafe');
+        errors.add(
+          PidCsvDiagnostic(
+            PidCsvIssue.rowDefinitionRejected,
+            lineNumber: lineNumber,
+            rejection: unsafe,
+          ),
+        );
         continue;
       }
 
       final equation = cell(3);
       if (equation.isEmpty) {
-        errors.add('第 $lineNumber 行：公式為空。');
+        errors.add(
+          PidCsvDiagnostic(
+            PidCsvIssue.rowEmptyEquation,
+            lineNumber: lineNumber,
+          ),
+        );
         continue;
       }
 
@@ -294,7 +437,13 @@ abstract final class PidCsv {
         redlineText: cell(9),
       );
       if (rejection != null) {
-        errors.add('第 $lineNumber 行：$rejection');
+        errors.add(
+          PidCsvDiagnostic(
+            PidCsvIssue.rowDefinitionRejected,
+            lineNumber: lineNumber,
+            rejection: rejection,
+          ),
+        );
         continue;
       }
 
@@ -305,9 +454,12 @@ abstract final class PidCsv {
       // importer says so rather than letting the difference be invisible.
       if (min == null || max == null) {
         warnings.add(
-          '第 $lineNumber 行：量程留空，已套用預設 '
-          '${min ?? 0}–${max ?? (min ?? 0) + 100}。'
-          '請確認這個刻度適合這個感測器。',
+          PidCsvDiagnostic(
+            PidCsvIssue.rowRangeDefaulted,
+            lineNumber: lineNumber,
+            minValue: min ?? 0,
+            maxValue: max ?? (min ?? 0) + 100,
+          ),
         );
       }
       pids.add(
@@ -329,7 +481,7 @@ abstract final class PidCsv {
     }
 
     if (pids.isEmpty && errors.isEmpty) {
-      errors.add('檔案中沒有可匯入的 PID 定義。');
+      errors.add(const PidCsvDiagnostic(PidCsvIssue.nothingImportable));
     }
     return PidCsvResult(pids: pids, errors: errors, warnings: warnings);
   }

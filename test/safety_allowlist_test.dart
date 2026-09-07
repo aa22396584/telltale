@@ -18,6 +18,37 @@ import 'support/fake_elm327.dart';
 
 void main() {
   group('which services may be polled', () {
+    // The membership itself, typed out here by hand.
+    //
+    // Nothing pinned it. Every other assertion in this file asks the allowlist
+    // a question and checks the answer, which is exactly what a wider
+    // allowlist keeps answering correctly: adding `'34'` to
+    // `PollableServices.allowed` and `'34': 2` to `_identifierBytes` left the
+    // whole suite green, and `isPollable('341234')` was then true. `34` is ISO
+    // 14229 RequestDownload, and the scheduler would transmit it over and over
+    // for as long as a gauge sat on the dashboard.
+    //
+    // Round two's `allowedServices == PollableServices.allowed.toList()` looks
+    // like it covers this and does not: it reads the value back out of the
+    // same expression that produced it, so the two agree however the set
+    // changes. The list below cannot agree with a changed set. Changing it is
+    // a decision about what this app will put on a vehicle's bus — take it
+    // deliberately, in a diff a reviewer can see, and not as a typo.
+    test('the allowlist holds exactly the four read-only services', () {
+      expect(
+        PollableServices.allowed,
+        equals(const {'01', '02', '09', '22'}),
+        reason: 'a service added here is transmitted repeatedly at the '
+            'polling cadence; that is a safety decision, not a typo',
+      );
+      // The claim the set exists to make, stated as behaviour rather than as
+      // membership: the envelope table has to refuse an unlisted service too,
+      // because a service can only be reached when both agree.
+      expect(PollableServices.isPollable('341234'), isFalse); // RequestDownload
+      expect(PollableServices.isPollable('2E1234'), isFalse); // WriteDataByIdent
+      expect(PollableServices.isPollable('1101'), isFalse); // ECUReset
+    });
+
     test('the read-only ones are allowed', () {
       expect(PollableServices.isPollable('010C'), isTrue); // current data
       expect(PollableServices.isPollable('020500'), isTrue); // freeze frame
@@ -37,12 +68,54 @@ void main() {
       // user supplied, `A` bound to the frame index `00`, and `A-40` displayed
       // -40 °C where the real reading was 83 °C.
       expect(PollableServices.isPollable('0205'), isFalse);
-      expect(PollableServices.rejectionReason('0205'), contains('幀編號'));
+      expect(
+        PollableServices.rejectionReason('0205')?.issue,
+        PidRejection.freezeFrameNeedsFrame,
+      );
 
       // Mode 22 identifiers are two bytes; one is not a shorter form of it.
       expect(PollableServices.isPollable('2211'), isFalse);
       expect(PollableServices.isPollable('21'), isFalse);
       expect(PollableServices.isPollable('210102'), isFalse);
+      // Which refusal, not just that there is one. `2211` and `01ZZ` are both
+      // rejected, and the two identifiers name different remedies — one is a
+      // width that is nearly right, the other is not hex at all. Replacing
+      // `identifierNeedsTwoBytes` here with `freezeFrameNeedsFrame` offers a
+      // mode 22 author an example with a frame number that mode 22 does not
+      // have, and no assertion above notices.
+      expect(
+        PollableServices.rejectionReason('2211')?.issue,
+        PidRejection.identifierNeedsTwoBytes,
+      );
+      expect(
+        PollableServices.rejectionReason('01ZZ')?.issue,
+        PidRejection.malformedModeAndPid,
+        reason: 'not hex is a different fact from the wrong width',
+      );
+      expect(
+        PollableServices.rejectionReason('010')?.issue,
+        PidRejection.malformedModeAndPid,
+        reason: 'an odd number of hex digits is not a whole byte pair',
+      );
+      // The same two through the definition rule, which delegates to the one
+      // above — so a caller that stopped delegating and re-derived its own
+      // answer is visible here rather than only on the screen.
+      PidRejectionReason? definition(String modeAndPid) =>
+          PidDefinition.rejectionReason(
+            name: 'x',
+            modeAndPid: modeAndPid,
+            header: '7E0',
+            minText: '0',
+            maxText: '100',
+          );
+      expect(
+        definition('2211')?.issue,
+        PidRejection.identifierNeedsTwoBytes,
+      );
+      expect(
+        definition('01ZZ')?.issue,
+        PidRejection.malformedModeAndPid,
+      );
 
       // And the well-formed versions still pass, so this is a shape check
       // rather than a blanket refusal.
@@ -52,19 +125,56 @@ void main() {
 
     test('Mode 21 is reserved for the experimental one-shot probe', () {
       expect(PollableServices.isPollable('2101'), isFalse);
-      expect(PollableServices.rejectionReason('2101'), contains('服務 21'));
+      final refusal = PollableServices.rejectionReason('2101');
+      expect(refusal?.issue, PidRejection.serviceNotReadOnly);
+      // The service byte travels as data, so the sentence does not have one
+      // spelled into it and this assertion is about the identifier the screen
+      // is handed rather than about wording.
+      expect(refusal?.service, '21');
+      // The allowlist itself, compared against the set rather than against a
+      // list typed out here. It is the sharpest of these: `pid.dart` carries
+      // it as data precisely so the sentence cannot name four services while
+      // the set holds five, and substituting `const ['99']` at the
+      // construction ships "Only 99 are allowed" — a false statement about
+      // what this app will transmit, in fluent English, with every test green.
+      expect(refusal?.allowedServices, PollableServices.allowed.toList());
       expect(PollableServices.identifierLength('2101'), isNull);
-      expect(
-        PidDefinition.rejectionReason(
-          name: 'Local battery',
-          modeAndPid: '2101',
-          header: '7E0',
-          minText: '0',
-          maxText: '100',
-          requireBounds: true,
-        ),
-        contains('服務 21'),
+
+      final definitionRefusal = PidDefinition.rejectionReason(
+        name: 'Local battery',
+        modeAndPid: '2101',
+        header: '7E0',
+        minText: '0',
+        maxText: '100',
+        requireBounds: true,
       );
+      expect(definitionRefusal?.issue, PidRejection.serviceNotReadOnly);
+      // This line was `contains('服務 21')` before the identifier migration,
+      // which pinned the interpolated byte on this second path. Reducing it to
+      // the identifier alone moved the hole rather than closing it: the byte
+      // now travels as data, so it is the data that has to be checked.
+      expect(definitionRefusal?.service, '21');
+      expect(
+        definitionRefusal?.allowedServices,
+        PollableServices.allowed.toList(),
+      );
+    });
+
+    test('an allowed service with a wrong-width identifier says which and how '
+        'wide', () {
+      // Reachable, contrary to what `PidRejection.identifierWrongLength` used
+      // to claim about itself. The two arms above it belong to `02` and `22`,
+      // so `01` and `09` fall straight through to this one — and both are
+      // typeable in the editor's mode+PID field.
+      final overlongMode01 = PollableServices.rejectionReason('010C0D');
+      expect(overlongMode01?.issue, PidRejection.identifierWrongLength);
+      expect(overlongMode01?.service, '01');
+      expect(overlongMode01?.expectedBytes, 1);
+
+      final overlongMode09 = PollableServices.rejectionReason('0902AA');
+      expect(overlongMode09?.issue, PidRejection.identifierWrongLength);
+      expect(overlongMode09?.service, '09');
+      expect(overlongMode09?.expectedBytes, 1);
     });
 
     test('anything that writes, controls or resets is refused', () {
@@ -104,7 +214,12 @@ void main() {
         '${columns}Actuate,ACT,2F011203,A,0,100,x,7E0\r\n',
       );
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('2F'));
+      expect(result.errors.single.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(
+        result.errors.single.rejection?.issue,
+        PidRejection.serviceNotReadOnly,
+      );
+      expect(result.errors.single.rejection?.service, '2F');
     });
 
     test('refuses Mode 21 from the ordinary custom PID path', () {
@@ -112,7 +227,12 @@ void main() {
         '${columns}Local battery,LOCAL,2101,A,0,100,%,7E0\r\n',
       );
       expect(result.pids, isEmpty);
-      expect(result.errors.single, contains('服務 21'));
+      expect(result.errors.single.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(
+        result.errors.single.rejection?.issue,
+        PidRejection.serviceNotReadOnly,
+      );
+      expect(result.errors.single.rejection?.service, '21');
     });
 
     test('still accepts an ordinary ReadDataByIdentifier row', () {

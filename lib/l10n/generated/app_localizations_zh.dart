@@ -3275,6 +3275,181 @@ class AppLocalizationsZh extends AppLocalizations {
   String commandFailureLegacyScanWouldBePartial(Object installed) {
     return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
   }
+
+  @override
+  String get pidFormulaEmpty => '公式是空的。';
+
+  @override
+  String get pidFormulaEmptySubExpression => '公式有一段是空的 —— 運算子後面沒有東西，或括號裡沒有內容。';
+
+  @override
+  String get pidFormulaUnbalancedParentheses => '括號沒有配對：每一個 ( 都需要一個對應的 )。';
+
+  @override
+  String pidFormulaUnparsableTerm(String term) {
+    return '「$term」不是數值、運算子，也不是這個編輯器認得的名稱。';
+  }
+
+  @override
+  String get pidFormulaFunctionNestingTooDeep =>
+      'ABS() 與 LOG10() 巢狀太深，無法求值。請簡化公式。';
+
+  @override
+  String get pidFormulaParenthesisNestingTooDeep => '括號巢狀太深，無法求值。請簡化公式。';
+
+  @override
+  String get pidFormulaDivisionByZero => '公式除以零。';
+
+  @override
+  String get pidFormulaModuloByZero => '公式對零取餘數。';
+
+  @override
+  String pidFormulaLog10NonPositiveArgument(double argument) {
+    return 'LOG10 的引數必須大於 0，這裡算出來的是 $argument。';
+  }
+
+  @override
+  String get pidFormulaResultNotFinite => '這串運算沒有得出可用的數值，因此沒有讀數可顯示。';
+
+  @override
+  String pidFormulaByteBeyondResponse(String letter, int count) {
+    return '公式參照位元組 $letter，但回應只有 $count 個位元組。';
+  }
+
+  @override
+  String get pidFormulaBaroControllerUnknown =>
+      '這裡無法使用 BARO，因為無法判斷指的是哪一個控制器的大氣壓力。';
+
+  @override
+  String get pidFormulaBaroTwoDefinitions =>
+      '有兩個定義同時提供大氣壓力，數值可能是其中任何一個，因此無法採用。請移除其中一個測量大氣壓力的錶。';
+
+  @override
+  String get pidFormulaBaroNotYetMeasured => '尚未取得大氣壓力量測值，無法計算。';
+
+  @override
+  String get pidFormulaBaroMeasurementStale => '大氣壓力量測值已過期，無法計算。';
+
+  @override
+  String pidFormulaDependencyControllerUnknown(String reference) {
+    return '這裡無法解析 $reference，因為無法判斷那個 PID 屬於哪一個控制器。';
+  }
+
+  @override
+  String pidFormulaDependencyTwoDefinitions(String key) {
+    return '有兩個定義同時解讀 $key，數值可能是其中任何一個，因此無法採用。請讓其中一個改用不同的模式+PID。注意：推算數值需要的 PID（010B、010C、010D）本 App 一定會讀取，把面板上的錶移掉不會停止讀取它們。';
+  }
+
+  @override
+  String pidFormulaDependencyNotYetMeasured(String key) {
+    return '尚未取得相依 PID $key 的有效數值。';
+  }
+
+  @override
+  String get pidRejectionMalformedModeAndPid =>
+      '不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。';
+
+  @override
+  String pidRejectionServiceNotReadOnly(String service, String services) {
+    return '服務 $service 不是唯讀查詢，不能週期性發送到車上。只允許 $services（現值、凍結幀、車輛資訊、ReadDataByIdentifier）。';
+  }
+
+  @override
+  String get pidRejectionFreezeFrameNeedsFrame =>
+      '凍結幀查詢需要 PID 與幀編號兩個位元組，例如 020500（PID 05、第 0 幀）。';
+
+  @override
+  String get pidRejectionIdentifierNeedsTwoBytes =>
+      'ReadDataByIdentifier 需要兩個位元組的識別碼，例如 221101。';
+
+  @override
+  String pidRejectionIdentifierWrongLength(String service, int bytes) {
+    return '服務 $service 的查詢需要 $bytes 個位元組的識別碼。';
+  }
+
+  @override
+  String get pidRejectionNameRequired => '請輸入名稱。';
+
+  @override
+  String pidRejectionInvalidHeader(String text) {
+    return '「$text」不是有效的標頭（11-bit CAN 為 3 碼、舊協定為 6 碼、29-bit CAN 為 8 碼）。';
+  }
+
+  @override
+  String get pidRejectionBoundsRequired => '請填寫量程的上下限。';
+
+  @override
+  String pidRejectionMinNotANumber(String text) {
+    return '量程下限「$text」不是有效的數值。';
+  }
+
+  @override
+  String pidRejectionMaxNotANumber(String text) {
+    return '量程上限「$text」不是有效的數值。';
+  }
+
+  @override
+  String get pidRejectionMinNotFinite => '量程下限必須是有限的數值。';
+
+  @override
+  String get pidRejectionMaxNotFinite => '量程上限必須是有限的數值。';
+
+  @override
+  String pidRejectionRedlineNotANumber(String text) {
+    return '紅線起點「$text」不是有效的數值。';
+  }
+
+  @override
+  String get pidRejectionRedlineNotFinite => '紅線起點必須是有限的數值。';
+
+  @override
+  String get pidRejectionMaxNotAboveMin => '量程上限必須大於下限。';
+
+  @override
+  String pidImportMalformedCsv(String detail) {
+    return '這個檔案無法以 CSV 讀取：$detail';
+  }
+
+  @override
+  String get pidImportNoRows => '檔案沒有任何資料列。';
+
+  @override
+  String pidImportDuplicateHeaderColumns(String columns) {
+    return '標題列有重複的欄位名稱：$columns。無法判斷該用哪一欄，請先修正檔案。';
+  }
+
+  @override
+  String pidImportMissingRequiredColumns(String columns, String required) {
+    return '標題列缺少必要欄位：$columns。$required 都是必要的。';
+  }
+
+  @override
+  String pidImportRowTooFewColumns(int line) {
+    return '第 $line 行：欄位不足，至少需要名稱、簡稱、PID、公式。';
+  }
+
+  @override
+  String pidImportRowInvalidModeAndPid(int line, String text) {
+    return '第 $line 行：「$text」不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。';
+  }
+
+  @override
+  String pidImportRowEmptyEquation(int line) {
+    return '第 $line 行：公式為空。';
+  }
+
+  @override
+  String pidImportRowRejected(int line, String reason) {
+    return '第 $line 行：$reason';
+  }
+
+  @override
+  String pidImportRowRangeDefaulted(int line, double min, double max) {
+    return '第 $line 行：量程留空，已套用預設 $min–$max。請確認這個刻度適合這個感測器。';
+  }
+
+  @override
+  String get pidImportNothingImportable => '檔案裡有資料列，但沒有任何一列是 PID 定義。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6547,4 +6722,179 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String commandFailureLegacyScanWouldBePartial(Object installed) {
     return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
   }
+
+  @override
+  String get pidFormulaEmpty => '公式是空的。';
+
+  @override
+  String get pidFormulaEmptySubExpression => '公式有一段是空的 —— 運算子後面沒有東西，或括號裡沒有內容。';
+
+  @override
+  String get pidFormulaUnbalancedParentheses => '括號沒有配對：每一個 ( 都需要一個對應的 )。';
+
+  @override
+  String pidFormulaUnparsableTerm(String term) {
+    return '「$term」不是數值、運算子，也不是這個編輯器認得的名稱。';
+  }
+
+  @override
+  String get pidFormulaFunctionNestingTooDeep =>
+      'ABS() 與 LOG10() 巢狀太深，無法求值。請簡化公式。';
+
+  @override
+  String get pidFormulaParenthesisNestingTooDeep => '括號巢狀太深，無法求值。請簡化公式。';
+
+  @override
+  String get pidFormulaDivisionByZero => '公式除以零。';
+
+  @override
+  String get pidFormulaModuloByZero => '公式對零取餘數。';
+
+  @override
+  String pidFormulaLog10NonPositiveArgument(double argument) {
+    return 'LOG10 的引數必須大於 0，這裡算出來的是 $argument。';
+  }
+
+  @override
+  String get pidFormulaResultNotFinite => '這串運算沒有得出可用的數值，因此沒有讀數可顯示。';
+
+  @override
+  String pidFormulaByteBeyondResponse(String letter, int count) {
+    return '公式參照位元組 $letter，但回應只有 $count 個位元組。';
+  }
+
+  @override
+  String get pidFormulaBaroControllerUnknown =>
+      '這裡無法使用 BARO，因為無法判斷指的是哪一個控制器的大氣壓力。';
+
+  @override
+  String get pidFormulaBaroTwoDefinitions =>
+      '有兩個定義同時提供大氣壓力，數值可能是其中任何一個，因此無法採用。請移除其中一個測量大氣壓力的錶。';
+
+  @override
+  String get pidFormulaBaroNotYetMeasured => '尚未取得大氣壓力量測值，無法計算。';
+
+  @override
+  String get pidFormulaBaroMeasurementStale => '大氣壓力量測值已過期，無法計算。';
+
+  @override
+  String pidFormulaDependencyControllerUnknown(String reference) {
+    return '這裡無法解析 $reference，因為無法判斷那個 PID 屬於哪一個控制器。';
+  }
+
+  @override
+  String pidFormulaDependencyTwoDefinitions(String key) {
+    return '有兩個定義同時解讀 $key，數值可能是其中任何一個，因此無法採用。請讓其中一個改用不同的模式+PID。注意：推算數值需要的 PID（010B、010C、010D）本 App 一定會讀取，把面板上的錶移掉不會停止讀取它們。';
+  }
+
+  @override
+  String pidFormulaDependencyNotYetMeasured(String key) {
+    return '尚未取得相依 PID $key 的有效數值。';
+  }
+
+  @override
+  String get pidRejectionMalformedModeAndPid =>
+      '不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。';
+
+  @override
+  String pidRejectionServiceNotReadOnly(String service, String services) {
+    return '服務 $service 不是唯讀查詢，不能週期性發送到車上。只允許 $services（現值、凍結幀、車輛資訊、ReadDataByIdentifier）。';
+  }
+
+  @override
+  String get pidRejectionFreezeFrameNeedsFrame =>
+      '凍結幀查詢需要 PID 與幀編號兩個位元組，例如 020500（PID 05、第 0 幀）。';
+
+  @override
+  String get pidRejectionIdentifierNeedsTwoBytes =>
+      'ReadDataByIdentifier 需要兩個位元組的識別碼，例如 221101。';
+
+  @override
+  String pidRejectionIdentifierWrongLength(String service, int bytes) {
+    return '服務 $service 的查詢需要 $bytes 個位元組的識別碼。';
+  }
+
+  @override
+  String get pidRejectionNameRequired => '請輸入名稱。';
+
+  @override
+  String pidRejectionInvalidHeader(String text) {
+    return '「$text」不是有效的標頭（11-bit CAN 為 3 碼、舊協定為 6 碼、29-bit CAN 為 8 碼）。';
+  }
+
+  @override
+  String get pidRejectionBoundsRequired => '請填寫量程的上下限。';
+
+  @override
+  String pidRejectionMinNotANumber(String text) {
+    return '量程下限「$text」不是有效的數值。';
+  }
+
+  @override
+  String pidRejectionMaxNotANumber(String text) {
+    return '量程上限「$text」不是有效的數值。';
+  }
+
+  @override
+  String get pidRejectionMinNotFinite => '量程下限必須是有限的數值。';
+
+  @override
+  String get pidRejectionMaxNotFinite => '量程上限必須是有限的數值。';
+
+  @override
+  String pidRejectionRedlineNotANumber(String text) {
+    return '紅線起點「$text」不是有效的數值。';
+  }
+
+  @override
+  String get pidRejectionRedlineNotFinite => '紅線起點必須是有限的數值。';
+
+  @override
+  String get pidRejectionMaxNotAboveMin => '量程上限必須大於下限。';
+
+  @override
+  String pidImportMalformedCsv(String detail) {
+    return '這個檔案無法以 CSV 讀取：$detail';
+  }
+
+  @override
+  String get pidImportNoRows => '檔案沒有任何資料列。';
+
+  @override
+  String pidImportDuplicateHeaderColumns(String columns) {
+    return '標題列有重複的欄位名稱：$columns。無法判斷該用哪一欄，請先修正檔案。';
+  }
+
+  @override
+  String pidImportMissingRequiredColumns(String columns, String required) {
+    return '標題列缺少必要欄位：$columns。$required 都是必要的。';
+  }
+
+  @override
+  String pidImportRowTooFewColumns(int line) {
+    return '第 $line 行：欄位不足，至少需要名稱、簡稱、PID、公式。';
+  }
+
+  @override
+  String pidImportRowInvalidModeAndPid(int line, String text) {
+    return '第 $line 行：「$text」不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。';
+  }
+
+  @override
+  String pidImportRowEmptyEquation(int line) {
+    return '第 $line 行：公式為空。';
+  }
+
+  @override
+  String pidImportRowRejected(int line, String reason) {
+    return '第 $line 行：$reason';
+  }
+
+  @override
+  String pidImportRowRangeDefaulted(int line, double min, double max) {
+    return '第 $line 行：量程留空，已套用預設 $min–$max。請確認這個刻度適合這個感測器。';
+  }
+
+  @override
+  String get pidImportNothingImportable => '檔案裡有資料列，但沒有任何一列是 PID 定義。';
 }
