@@ -121,7 +121,6 @@ void main() {
         profile: profile,
         value: 145,
         formula: AvailabilityPolicy.horsepowerFormula,
-        quantity: '馬力',
       );
       expect(status.isNumericSuccess, isTrue);
       expect(status.origin, DatumOrigin.calculated);
@@ -137,7 +136,6 @@ void main() {
         profile: const VehicleProfile(massKg: 1280, isConfirmed: false),
         value: 4.2,
         formula: AvailabilityPolicy.fuelEstimateFormula,
-        quantity: '油耗',
         kind: EstimateKind.fuel,
       );
       expect(fuel.assumptions, contains('AFR'));
@@ -153,7 +151,6 @@ void main() {
         profile: profile,
         value: 150,
         formula: AvailabilityPolicy.fuelEstimateFormula,
-        quantity: '油耗',
         kind: EstimateKind.fuel,
       );
       expect(fuelOutlier.quality, DatumQuality.outOfReferenceRange);
@@ -162,14 +159,12 @@ void main() {
         profile: profile,
         value: 1500,
         formula: AvailabilityPolicy.horsepowerFormula,
-        quantity: '馬力',
       );
       expect(hpInRange.quality, DatumQuality.valid);
       final hpOutlier = AvailabilityPolicy.forEstimate(
         profile: profile,
         value: 2500,
         formula: AvailabilityPolicy.horsepowerFormula,
-        quantity: '馬力',
       );
       expect(hpOutlier.quality, DatumQuality.outOfReferenceRange);
     });

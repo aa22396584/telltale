@@ -224,8 +224,8 @@ class DatumStatus {
     required this.compatibility,
     required this.quality,
     required this.operationRisk,
+    required this.reasonCode,
     this.reason,
-    this.reasonCode,
     this.statusReason,
     this.gaps = const [],
     this.nextStep,
@@ -250,6 +250,17 @@ class DatumStatus {
   final String? reason;
 
   /// The same fact as [reason], as an identifier the UI can translate.
+  ///
+  /// Required rather than optional, on the pattern `TransportException.issue`
+  /// set: still nullable, but `null` has to be written out. A producer that has
+  /// no code for its reason now says so where a reader can see it, instead of
+  /// leaving the field off and letting the screen fall back to [reason] — the
+  /// exported Traditional Chinese sentence, on an English phone. There is no
+  /// fallback left to catch it, so the omission has to be loud.
+  ///
+  /// `null` is correct only when the reason travels some other way the screen
+  /// can read: [statusReason] or [gaps]. `test/l10n/datum_reason_guard_test.dart`
+  /// holds that.
   final DatumReason? reasonCode;
 
   /// Set instead of [reasonCode] when the reason *is* a recorded telemetry
@@ -422,6 +433,9 @@ abstract final class AvailabilityPolicy {
       quality: DatumQuality.valid,
       operationRisk: OperationRisk.boundedRead,
       reason: gaps.isEmpty ? null : gaps.map(_gapText).join(' · '),
+      // The screen reads [DatumStatus.gaps] and names each one itself, so the
+      // composed sentence here is export-only and needs no code of its own.
+      reasonCode: null,
       gaps: gaps,
       nextStep: DatumNextStep.genericObdContinues,
     );
@@ -572,7 +586,6 @@ abstract final class AvailabilityPolicy {
     required VehicleProfile profile,
     required double? value,
     required String formula,
-    String quantity = '估算',
     EstimateKind kind = EstimateKind.horsepower,
   }) {
     final assumptions = formatAssumptionsForExport(profile, kind);
@@ -589,7 +602,7 @@ abstract final class AvailabilityPolicy {
         compatibility: Compatibility.unknown,
         quality: DatumQuality.partial,
         operationRisk: OperationRisk.display,
-        reason: '$quantity缺少必要輸入',
+        reason: '${_estimateExportName(kind)}缺少必要輸入',
         reasonCode: switch (kind) {
           EstimateKind.horsepower =>
             DatumReason.horsepowerEstimateMissingInputs,
@@ -919,6 +932,7 @@ abstract final class AvailabilityPolicy {
         // [statusReason] instead so a recorded `noAnswer` never renders to a
         // driver as an untranslated identifier.
         reason: event.status?.wireName,
+        reasonCode: null,
         statusReason: event.status,
         nextStep: DatumNextStep.otherReadingsUnaffected,
       );
@@ -975,6 +989,22 @@ abstract final class AvailabilityPolicy {
     }
     return null;
   }
+
+  /// The exported name of the quantity an estimate reports.
+  ///
+  /// It used to arrive as a `quantity` argument, and all three call sites were
+  /// in `lib/ui` — so the one string in this class's exported sentences that a
+  /// screen could change was the one naming what the reading is. Export wording
+  /// has to be decided here, next to [_gapText] and [_originLabel], for the
+  /// same reason those are: an evidence file two people compare cannot have
+  /// been worded by whichever widget happened to ask.
+  ///
+  /// Every call site already passed the matching [EstimateKind] beside its
+  /// `quantity`, so no exported sentence changes a byte.
+  static String _estimateExportName(EstimateKind kind) => switch (kind) {
+    EstimateKind.horsepower => '馬力',
+    EstimateKind.fuel => '油耗',
+  };
 
   /// The exported wording for a gap. Screens read [DatumStatus.gaps].
   static String _gapText(DatumGap gap) => switch (gap) {

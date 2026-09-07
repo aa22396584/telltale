@@ -365,7 +365,12 @@ void main() {
       compatibility: Compatibility.exact,
       quality: DatumQuality.valid,
       operationRisk: OperationRisk.display,
+      // The exported sentence with no code beside it: exactly the shape
+      // `datumReasonText` used to render verbatim. Kept ASCII so the
+      // no-Chinese assertion below cannot be what catches it — the dialog is
+      // asserted not to contain it at all.
       reason: 'ASCII reason',
+      reasonCode: null,
       formula: '(A*256+B)/4',
       assumptions: 'ASCII assumption',
       nextStep: DatumNextStep.otherReadingsUnaffected,
@@ -395,6 +400,15 @@ void main() {
       final rendered = _renderedText(tester, find.byType(AlertDialog));
       expect(rendered, isNotEmpty);
       _expectNoChinese(rendered, where: 'the datum status dialog');
+      // The exported sentence is not shown, whatever language it happens to be
+      // written in. `datumReasonText` used to return it when no identifier was
+      // set; an ASCII one would have slipped past the check above, which is why
+      // this fixture's reason is ASCII and this line exists.
+      expect(
+        rendered,
+        isNot(contains('ASCII reason')),
+        reason: 'DatumStatus.reason is export-only and must not be rendered',
+      );
     });
 
     test('the no-badge line never claims the value is good', () {

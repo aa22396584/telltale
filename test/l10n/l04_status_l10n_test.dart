@@ -217,6 +217,7 @@ void main() {
               compatibility: Compatibility.unknown,
               quality: quality,
               operationRisk: OperationRisk.display,
+              reasonCode: null,
             ).badges,
             contains(DatumBadge.demo),
             reason: '$evidence/$quality',
