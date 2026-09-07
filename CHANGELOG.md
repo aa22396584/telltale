@@ -8,6 +8,45 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+## 1.0.12 — 2026-09-07
+
+Google Play production target `1.0.12` / versionCode 13. GitHub community
+release `v1.0.12` — the first one without a pre-release suffix since
+`v1.0.6`, and the reason is below.
+
+### Fixed
+
+- When a command failed on the adapter, the manual command box in Settings
+  printed the engine's Traditional Chinese whatever language the app was in.
+  So did the estimate details dialog — an English screen rendering
+  `質量 1500 kg（通用預設值）` — and a scan refused on an older bus.
+- Refusing a permission could name the wrong one: the screen said Bluetooth
+  when the switch the user had declined was Location.
+- The affiliate line on the connect screen read 蝦皮 in an English build.
+
+### Known, and not fixed here
+
+- The manual command box's *own* refusals are still Traditional Chinese in an
+  English build — the sentence it prints when it declines to send a command at
+  all, as opposed to relaying what the adapter said. Found on the phone during
+  the walk for this release, after the changelog had already been written from
+  the diff and claimed otherwise.
+
+### Changed
+
+- A GitHub release is marked pre-release when
+  `docs/verification/device-verification.md` carries no `Device walk attested:`
+  line for its version, and a full release when it does. That is the whole of
+  the flag, and CI refuses a full-release tag without the line.
+
+  It used to carry a second claim as well — "never run against a real car" —
+  which one person cannot clear, so every release from `v1.0.7` to `v1.0.11`
+  was a pre-release and GitHub's Latest badge sat on `v1.0.6` for nine days
+  while the same commit was on Play production at 100%. The adapter and
+  vehicle boundary has not gone away; it now prints in the release notes of
+  **every** build, full or pre-release, where it is something to state rather
+  than something to block on.
+
 ## 1.0.11 — 2026-09-07
 
 Google Play production target `1.0.11` / versionCode 12. GitHub community

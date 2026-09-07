@@ -25,6 +25,16 @@ const _notesScript = 'tool/release/release_notes.sh';
 const _gateScript = 'tool/release/require_device_walk.sh';
 const _workflow = '.github/workflows/release.yml';
 const _evidence = 'docs/verification/device-verification.md';
+const _changelog = 'CHANGELOG.md';
+
+/// `version: X.Y.Z+N` from pubspec.yaml — the one place the version is
+/// declared, so every check below derives from it rather than restating it.
+({String name, String code}) _pubspecVersion() {
+  final m = RegExp(r'^version:\s*(\d+\.\d+\.\d+)\+(\d+)$', multiLine: true)
+      .firstMatch(File('pubspec.yaml').readAsStringSync());
+  expect(m, isNotNull, reason: 'pubspec.yaml must carry version: X.Y.Z+N');
+  return (name: m!.group(1)!, code: m.group(2)!);
+}
 
 /// Enough to fill the table; the values themselves are opaque to the script.
 const _sha = 'b1946ac92492d2347c6235b4d2611184b1946ac92492d2347c6235b4d2611184';
@@ -297,6 +307,46 @@ void main() {
     });
   });
 
+  group('the version is declared once and agrees everywhere', () {
+    test('CHANGELOG.md has a section for the version being shipped', () {
+      // Nothing checked this, so it drifted: at the 1.0.12 bump the changelog's
+      // newest released section was still 1.0.11, while README.md links to that
+      // file as the version history. A reader following the link would have
+      // been told the latest release was the previous one.
+      final version = _pubspecVersion().name;
+      final sections = RegExp(r'^## (\d+\.\d+\.\d+)', multiLine: true)
+          .allMatches(File(_changelog).readAsStringSync())
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(sections, isNotEmpty, reason: '$_changelog has no released '
+          'sections at all, so this test asserts nothing');
+      expect(sections.first, version,
+          reason: 'pubspec is at $version; $_changelog leads with '
+              '${sections.first}. The newest section is what a reader takes '
+              'as the current release.');
+    });
+
+    test('the store changelog exists for this versionCode, within Play\'s '
+        'limit', () {
+      // store/ is publish-only, so it is absent in the private mirror. Absence
+      // is checked wholesale by the group above; here, if the directory is
+      // present it must be complete.
+      if (!Directory('store/metadata').existsSync()) return;
+      final code = _pubspecVersion().code;
+      for (final locale in ['en-US', 'zh-TW']) {
+        final f = File('store/metadata/$locale/changelogs/$code.txt');
+        expect(f.existsSync(), isTrue,
+            reason: 'versionCode $code needs ${f.path}; Play shows the last '
+                'one it has, so a missing file ships the previous release\'s '
+                'notes rather than nothing');
+        final bytes = f.readAsBytesSync().length;
+        expect(bytes, lessThanOrEqualTo(500),
+            reason: '${f.path} is $bytes bytes; Play rejects over 500');
+        expect(f.readAsStringSync().trim(), isNotEmpty);
+      }
+    });
+  });
+
   group('a full-release tag must consume a device-walk attestation', () {
     late Directory tmp;
 
@@ -454,11 +504,7 @@ void main() {
       // the window in which cutting a beta is the correct move. That is the
       // stall this rule was written to remove; reintroducing it one layer
       // down, where nobody looks, is the same mistake.
-      final version = RegExp(r'^version:\s*(\d+\.\d+\.\d+)\+\d+$',
-              multiLine: true)
-          .firstMatch(File('pubspec.yaml').readAsStringSync())
-          ?.group(1);
-      expect(version, isNotNull, reason: 'pubspec.yaml must carry X.Y.Z+N');
+      final version = _pubspecVersion().name;
       final r = gate('v$version');
       expect(r.stderr, isEmpty, reason: 'the real file must parse cleanly');
       expect(r.exitCode, anyOf(0, 1), reason: 'a decision, not a crash');
