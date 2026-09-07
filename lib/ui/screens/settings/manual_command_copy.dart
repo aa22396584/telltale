@@ -2,77 +2,81 @@
 ///
 /// `handshake_copy.dart` says the failures of *getting* connected. This file
 /// says the failures of a command sent afterwards, which is a different set of
-/// facts reaching a different screen: the manual command panel in settings
-/// renders the result of one typed command as prose, and it used to render
-/// `TransportException.message` — a Traditional Chinese sentence — verbatim, in
-/// every language the app ships.
+/// facts: the settings manual command panel renders the result of one typed
+/// command as prose, and it used to render `TransportException.message` — a
+/// Traditional Chinese sentence — verbatim, in every language the app ships.
+///
+/// Two screens, not one. The settings panel asks [commandFailureText] with the
+/// exception it caught; the fault-code screen reaches the same table through
+/// [commandIssueText], because a scan, a clear or a VIN read is a command on an
+/// open link too and its failures are the same failures. This file therefore
+/// lives under `settings/` for history rather than for ownership, and the name
+/// that matters is `commandFailure`, not `settingsManualCommand`.
 ///
 /// Like the other copy tables it takes an `AppLocalizations` parameter rather
 /// than a `BuildContext`, so a test can walk both languages with no widget
 /// pump.
 ///
-/// Three of the command-path identifiers deliberately have no copy here, and
-/// that is a finding rather than an omission; [commandFailureNotRenderedYet]
-/// says why.
+/// There is no roster of identifiers this file declines to answer. There was
+/// one — three command-path identifiers whose sentences name a controller
+/// address carried no copy, on the reasoning that nothing rendered them yet —
+/// and it was an exception list in shipped code that the tests then had to skip
+/// on. The identifiers are carried through `DtcReadException` now and every one
+/// of them is answered below.
 library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/transport/obd_transport.dart';
 import '../connect/handshake_copy.dart';
 
-/// The command-path identifiers that no screen can render yet.
-///
-/// Not an allowance. Each of these is thrown and two of them do reach a
-/// screen — but not this one, and the files that would have to change are
-/// owned by an unmerged branch:
-///
-///   * [TransportIssue.wholeVehicleHeaderRefused] and
-///     [TransportIssue.legacyScanWouldBePartial] are thrown inside
-///     `Elm327Client.sendGlobal`. `polling_engine.dart:1650` catches them and
-///     rethrows `DtcReadException(e.message)`, dropping the identifier; the
-///     fault-code screen then renders that Chinese message. Restoring it needs
-///     two optional fields on `DtcReadException`, one line in
-///     `polling_engine.dart` and two in `dtc_screen.dart`, all of which
-///     `feat/l04-dtc-labels` currently owns.
-///   * [TransportIssue.queryHeaderRefused] is thrown inside
-///     `Elm327Client.sendOnHeader`, which the polling loop reaches through
-///     `sendAddressed`. The loop treats a `TransportException` as a retryable
-///     timeout, so this one is not rendered as prose anywhere at all.
-///
-/// Writing English for them here would put entries in the ARB files that no
-/// screen can reach, which `dtc_screen.dart:848` already refuses by name: "an
-/// ARB entry no screen can render is one a translator has to guess at". So
-/// they carry an identifier — the guard requires that, and the identifier plus
-/// `TransportException.issueDetail` is exactly what the follow-up routes — and
-/// no sentence.
-const commandFailureNotRenderedYet = <TransportIssue>{
-  TransportIssue.queryHeaderRefused,
-  TransportIssue.wholeVehicleHeaderRefused,
-  TransportIssue.legacyScanWouldBePartial,
-};
-
 /// What a failed command reads like, or null when nothing here can say it.
 ///
-/// Null has two causes and they are not the same: an exception carrying no
-/// identifier at all (the six in `lib/state/obd_session.dart`, still to be
-/// migrated — ImL1s/telltale#45), and one whose identifier is in
-/// [commandFailureNotRenderedYet]. Both fall back to the Chinese sentence at
-/// the call site, which is the behaviour this file exists to remove and has
-/// removed for everything else.
+/// Null means one thing only: an exception carrying no identifier at all (the
+/// six in `lib/state/obd_session.dart`, still to be migrated —
+/// ImL1s/telltale#45). Those fall back to the Chinese sentence at the call
+/// site, which is the behaviour this file exists to remove and has removed for
+/// everything else.
+String? commandFailureText(AppLocalizations l10n, TransportException error) {
+  final issue = error.issue;
+  if (issue == null) return null;
+  return commandIssueText(l10n, issue, detail: error.issueDetail);
+}
+
+/// The same table, reached by an identifier rather than by an exception.
+///
+/// The fault-code screen needs this shape: what it holds is a
+/// `DtcReadException` that carried the identifier out of the transport, not the
+/// `TransportException` itself.
+///
+/// [detail] is the one value a sentence may have to name — the header the
+/// adapter refused, or the one it is stuck on. Three identifiers interpolate
+/// it; the guard in `test/l10n/transport_issue_guard_test.dart` is what stops a
+/// throw naming one of those three without passing it. Empty rather than null
+/// where it is missing, because a sentence with a hole in it is still a
+/// sentence and an exception thrown while rendering an error is not.
 ///
 /// Connect-path identifiers are answered by delegating to [transportIssueText]
-/// rather than by returning null. One cannot arrive here — this panel only
-/// exists while connected — but returning null for them would be a silent
-/// route back to the raw sentence, and this file is what that route was
+/// rather than by returning null. One cannot arrive from the settings panel —
+/// it only exists while connected — but returning null for them would be a
+/// silent route back to the raw sentence, and this file is what that route was
 /// replaced with.
+///
+/// The nullable return is that delegation's type and nothing else: every arm
+/// below answers, and `transportIssueText` returns null only for the identifier
+/// it hands back here. A `!` would turn a future gap into an exception raised
+/// while rendering an error message, which is the one place a crash is least
+/// affordable, so the guard asserts non-null for every identifier instead.
 ///
 /// The switch is written out in full, with no `_` arm. A default would take a
 /// new [TransportIssue] and quietly hand it to the connect screen's table,
 /// which is where the last such identifier came from and the reason this file
 /// exists.
-String? commandFailureText(AppLocalizations l10n, TransportException error) {
-  final issue = error.issue;
-  if (issue == null) return null;
+String? commandIssueText(
+  AppLocalizations l10n,
+  TransportIssue issue, {
+  String? detail,
+}) {
+  final named = detail ?? '';
   return switch (issue) {
     TransportIssue.notConnected => l10n.settingsManualCommandNotConnected,
     TransportIssue.linkDroppedMidSession =>
@@ -85,10 +89,13 @@ String? commandFailureText(AppLocalizations l10n, TransportException error) {
       l10n.settingsManualCommandLinkStoppedResponding,
     TransportIssue.writeFailed => l10n.settingsManualCommandWriteFailed,
 
-    // See [commandFailureNotRenderedYet].
-    TransportIssue.queryHeaderRefused ||
-    TransportIssue.wholeVehicleHeaderRefused ||
-    TransportIssue.legacyScanWouldBePartial => null,
+    // The three whose sentence names an address.
+    TransportIssue.queryHeaderRefused =>
+      l10n.commandFailureQueryHeaderRefused(named),
+    TransportIssue.wholeVehicleHeaderRefused =>
+      l10n.commandFailureWholeVehicleHeaderRefused(named),
+    TransportIssue.legacyScanWouldBePartial =>
+      l10n.commandFailureLegacyScanWouldBePartial(named),
 
     // The connect screen's half, delegated rather than duplicated.
     TransportIssue.cancelled ||

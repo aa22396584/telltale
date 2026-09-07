@@ -3260,6 +3260,21 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get settingsManualCommandWriteFailed =>
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return '轉接器拒絕將這條要求對準到控制器 $header，因此它沒有送出。如果留在轉接器實際持有的位址上，回應會來自沒有人詢問的控制器。';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return '轉接器拒絕切換到 $address 這個位址，而向全車提出的問題必須從它送出。沒有它，回應就無法對應到送出它們的控制器，因此這個要求沒有送出。';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6517,4 +6532,19 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandWriteFailed =>
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return '轉接器拒絕將這條要求對準到控制器 $header，因此它沒有送出。如果留在轉接器實際持有的位址上，回應會來自沒有人詢問的控制器。';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return '轉接器拒絕切換到 $address 這個位址，而向全車提出的問題必須從它送出。沒有它，回應就無法對應到送出它們的控制器，因此這個要求沒有送出。';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return '這輛車使用的舊式匯流排沒有能觸及每個控制器的標準位址，而轉接器目前指定在控制器 $installed。掃描只會涵蓋那一個控制器，卻會被當成全車結果呈現，因此沒有送出。請重新連線後再掃描一次。';
+  }
 }

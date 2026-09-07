@@ -3662,4 +3662,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsManualCommandWriteFailed =>
       'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
+
+  @override
+  String commandFailureQueryHeaderRefused(Object header) {
+    return 'The adapter refused to aim this request at controller $header, so it was not sent. Left on whatever address the adapter is really holding, the reply would have come back from a controller nobody asked.';
+  }
+
+  @override
+  String commandFailureWholeVehicleHeaderRefused(Object address) {
+    return 'The adapter refused to switch to address $address, which is what a question asked of the whole vehicle has to go out on. Without it, replies cannot be matched to the controllers that sent them, so the request was not made.';
+  }
+
+  @override
+  String commandFailureLegacyScanWouldBePartial(Object installed) {
+    return 'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller $installed. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.';
+  }
 }

@@ -16,6 +16,7 @@
 library;
 
 import '../addressing.dart';
+import '../transport/obd_transport.dart';
 
 /// The system a code belongs to, read off the two high bits of its first byte.
 ///
@@ -661,10 +662,35 @@ class DtcReadException implements Exception {
     this.heardAboutService = const {},
     this.silentSources = const {},
     this.repeatWouldHarm = false,
+    this.transportIssue,
+    this.issueDetail,
   });
 
   final String message;
   final DtcReadFailure kind;
+
+  /// The transport's own identifier, where this failure came from one.
+  ///
+  /// [message] is Traditional Chinese and stays that way, for the reason the
+  /// whole codebase gives: a transcript whose language follows a phone setting
+  /// is one nobody can compare with anybody else's. That is fine for the
+  /// transcript and wrong for the screen, and until this field existed the
+  /// screen was the only reader. `polling_engine` caught a `TransportException`
+  /// around the fault-code exchange and rethrew `DtcReadException(e.message)`,
+  /// which threw the identifier away — so an adapter that refused the header a
+  /// whole-vehicle scan needs reached an English reader as
+  /// 轉接器拒絕切換為功能定址 7DF.
+  ///
+  /// Null for every failure the engine diagnoses itself. Those already carry
+  /// their own Chinese sentence and are inventoried in ImL1s/telltale#45; this
+  /// field is not a second place to put them.
+  final TransportIssue? transportIssue;
+
+  /// The one value [transportIssue]'s sentence may have to name, carried as
+  /// data — the controller address the adapter refused, or the one it is stuck
+  /// on. `TransportException.issueDetail` says why it travels beside the
+  /// identifier rather than inside it.
+  final String? issueDetail;
 
   /// Whether re-issuing the operation that failed would damage something.
   ///

@@ -52,10 +52,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/obd/dtc/dtc.dart';
+import 'package:torque_obd/obd/elm327_client.dart';
+import 'package:torque_obd/obd/polling_engine.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
+import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
+import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
 import 'package:torque_obd/ui/screens/settings/manual_command_copy.dart';
+
+import '../support/cjk.dart';
+import '../support/fake_elm327.dart';
 
 /// Which of the two copy tables owns each identifier, written by hand.
 ///
@@ -182,11 +190,24 @@ void main() {
           continue;
         }
         final named = _interpolating.where(issue.contains);
-        if (named.isNotEmpty &&
-            !trimmed.any((a) => a.startsWith('issueDetail:'))) {
-          naked.add(
-            '${file.path}:$line — ${named.first} without issueDetail:',
+        if (named.isNotEmpty) {
+          // Present *and* not null, exactly as the `issue:` arm above. The
+          // first version asked only whether the argument was written, and
+          // review showed what that is worth: `issueDetail: null` at
+          // `elm327_client.dart:1501` left this green while the sentence it
+          // guards rendered with a hole where the header address goes. An
+          // argument that is spelled but says nothing is the same defect as one
+          // that was never spelled, and it looks more finished.
+          final detail = trimmed.firstWhere(
+            (a) => a.startsWith('issueDetail:'),
+            orElse: () => '',
           );
+          if (detail.isEmpty || detail.contains('null')) {
+            naked.add(
+              '${file.path}:$line — ${named.first} '
+              '${detail.isEmpty ? "without issueDetail:" : detail}',
+            );
+          }
         }
       }
     }
@@ -450,15 +471,16 @@ void main() {
         );
       }
       // The command table delegates connect identifiers rather than returning
-      // null for them, so "answers" is not the discriminator on that side. Only
-      // the roster of identifiers nothing renders yet may leave it silent.
-      final expectedSilent =
-          onCommandPath && commandFailureNotRenderedYet.contains(issue);
-      if ((command == null) != expectedSilent) {
+      // null for them, so on that side the discriminator is not "answers" but
+      // "answers at all". Nothing may be silent. There used to be a roster of
+      // three identifiers excused from this -- an exception list living in
+      // shipped `lib/` code that these tests then skipped on -- and it is gone:
+      // the identifiers travel through `DtcReadException` now and the
+      // fault-code screen renders them.
+      if (command == null) {
         wrong.add(
-          '$issue: the command table ${command == null ? "does not answer" : "answers"} '
-          'it, against a roster that says it should '
-          '${expectedSilent ? "not" : ""}',
+          '$issue: the command table does not answer it, so a reader gets the '
+          'exception\'s own Traditional Chinese back',
         );
       }
       if (!onCommandPath && command != connect) {
@@ -471,59 +493,85 @@ void main() {
     expect(wrong, isEmpty, reason: wrong.join('\n'));
   });
 
-  test('the not-rendered-yet roster is exactly the command path with no copy', () {
-    // Membership of that roster is a claim about the tree, not a preference.
-    // Every one of them has to be a command-path identifier -- a connect one
-    // would simply be missing copy -- and the file that holds it has to say
-    // which line drops it.
-    expect(
-      commandFailureNotRenderedYet.difference(_commandPath),
-      isEmpty,
-      reason: 'only a command-path identifier can be on that roster',
-    );
-    expect(
-      commandFailureNotRenderedYet,
-      isNotEmpty,
-      reason: 'if it is empty, delete it rather than leaving an empty '
-          'allowance for the next person to add to',
-    );
-    // And the condition the roster exists for is still in the tree.
+  test('a refused whole-vehicle header reaches the fault-code screen translated',
+      () async {
+    // What used to stand here was a 400-character regular expression pinning
+    // the *source text* of `polling_engine.dart` -- `on TransportException
+    // catch (e)` followed within 400 characters by `throw
+    // DtcReadException(e.message)`. It existed to assert that the identifier
+    // was still being discarded, so that fixing the discard would fail it. It
+    // was also breakable by adding a comment between those two lines, which is
+    // not a defect anybody should be told about, and it said nothing at all
+    // about what a reader ends up seeing.
     //
-    // Checking that the roster's own doc comment names a line number would pass
-    // for as long as nobody edits the doc, and would go on passing after the
-    // discard is fixed -- which is the direction it has to fail in. So this
-    // reads the code instead. When `polling_engine` stops throwing away the
-    // identifier, two of these three get a screen and this test says so.
-    final engine = _codeOnly(
-      File('lib/obd/polling_engine.dart').readAsStringSync(),
+    // This drives the whole path instead: an adapter that refuses `ATSH`, the
+    // real client, the real engine, the real `DtcReadException`, and the real
+    // function the fault-code screen renders its detail line with. It fails if
+    // the identifier is dropped anywhere along it -- including inside the
+    // retry loop, which rebuilds `DtcReadException`s of its own.
+    final transport = FakeElm327(
+      protocol: BusProtocol.can11,
+      ecus: [
+        FakeEcu(
+          name: 'ECM',
+          requestId: '7E0',
+          responseId: '7E8',
+          responses: const {
+            '0100': [0x41, 0x00, 0xBE, 0x1F, 0xA8, 0x13],
+            '03': [0x43, 0x01, 0x43],
+          },
+        ),
+      ],
+      faults: const AdapterFaults(refuseHeaderSwitch: true),
+    );
+    final client = Elm327Client(transport);
+    expect(await client.connect(), isTrue);
+
+    Object? thrown;
+    try {
+      await PollingEngine(client).readDtcs(DtcKind.stored);
+    } on Object catch (e) {
+      thrown = e;
+    }
+    expect(
+      thrown,
+      isA<DtcReadException>(),
+      reason: 'the scan has to fail: nothing may present a one-controller '
+          'answer as a whole-vehicle result',
+    );
+    final failure = thrown! as DtcReadException;
+    expect(
+      failure.transportIssue,
+      TransportIssue.wholeVehicleHeaderRefused,
+      reason: 'the identifier was dropped between sendGlobal and the screen, '
+          'which is what left an English reader reading '
+          '轉接器拒絕切換為功能定址 7DF',
     );
     expect(
-      RegExp(
-        r'on TransportException catch \(e\)'
-        r'[\s\S]{0,400}?throw DtcReadException\(e\.message\)',
-      ).hasMatch(engine),
-      isTrue,
-      reason:
-          'polling_engine no longer rethrows a TransportException as '
-          'DtcReadException(e.message), so the identifier is not discarded any '
-          'more. Take wholeVehicleHeaderRefused and legacyScanWouldBePartial '
-          'off commandFailureNotRenderedYet, give them ARB copy, and render it '
-          'on the fault-code screen.',
+      failure.issueDetail,
+      '7DF',
+      reason: 'the address the adapter refused; a sentence that cannot name it '
+          'is one nobody can act on',
+    );
+
+    // And the screen's own function, in the reader's language.
+    final wording = unansweredCategoryWording(
+      l10n: en,
+      kind: DtcKind.stored,
+      result: DtcCategoryResult.failed(failure),
+      storedAnswered: false,
+    );
+    expect(wording.detail, contains('7DF'));
+    expect(
+      containsChinese(wording.detail),
+      isFalse,
+      reason: 'the English build still renders the engine sentence: '
+          '${wording.detail}',
     );
   });
 
   test('every issue a screen can reach has copy in both languages', () {
     for (final issue in TransportIssue.values) {
-      if (commandFailureNotRenderedYet.contains(issue)) {
-        expect(
-          _text(en, issue),
-          isNull,
-          reason: '$issue is on the roster of identifiers no screen renders '
-              'yet; if a screen now renders it, take it off that roster '
-              'rather than adding copy nothing reaches',
-        );
-        continue;
-      }
       for (final (name, l10n) in [('en', en), ('zh-Hant', zh)]) {
         final text = _text(l10n, issue);
         expect(text, isNotNull, reason: '$issue has no $name copy');
@@ -538,7 +586,6 @@ void main() {
     for (final (name, l10n) in [('en', en), ('zh-Hant', zh)]) {
       final seen = <String, TransportIssue>{};
       for (final issue in TransportIssue.values) {
-        if (commandFailureNotRenderedYet.contains(issue)) continue;
         final text = _text(l10n, issue)!;
         final clash = seen[text];
         expect(
@@ -555,7 +602,6 @@ void main() {
     // Catches a key added to app_en.arb and copied verbatim into the Chinese
     // ones, which is how an untranslated string passes every other check here.
     for (final issue in TransportIssue.values) {
-      if (commandFailureNotRenderedYet.contains(issue)) continue;
       expect(
         _text(en, issue),
         isNot(equals(_text(zh, issue))),

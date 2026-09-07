@@ -1522,6 +1522,15 @@ class PollingEngine {
             pendingSources: Set.unmodifiable(owed),
             terminalSources: Set.unmodifiable(finished),
             heardAboutService: Set.unmodifiable(heardOfService),
+            // The second place the identifier was dropped, and the one a
+            // source-text check on the catch above would never have found.
+            // This clause is on the only path out of a failed read, so
+            // rebuilding without the identifier undid the pass-through
+            // completely: `_readDtcsOnce` carried it, this threw it away one
+            // frame later, and the fault-code screen went on rendering the
+            // engine's Traditional Chinese in every language.
+            transportIssue: e.transportIssue,
+            issueDetail: e.issueDetail,
           );
         }
         await Future<void>.delayed(pendingRetryDelay);
@@ -1647,7 +1656,20 @@ class PollingEngine {
       // could be attributed. That is a diagnosable condition with a specific
       // remedy, so it reaches the screen as a message rather than as a bare
       // exception the UI renders generically.
-      throw DtcReadException(e.message);
+      //
+      // The identifier travels with it, and used not to. `DtcReadException(
+      // e.message)` kept the Traditional Chinese sentence and dropped the one
+      // thing the screen can translate, so `wholeVehicleHeaderRefused` and
+      // `legacyScanWouldBePartial` — both thrown a few frames up in
+      // `sendGlobal` — reached an English reader in Chinese, on the screen
+      // whose whole subject is whether a scan may be believed. The sentence
+      // still goes with them, because the transcript keeps it and because a
+      // failure carrying no identifier still needs something to show.
+      throw DtcReadException(
+        e.message,
+        transportIssue: e.issue,
+        issueDetail: e.issueDetail,
+      );
     }
     // Before the outcome is judged, and by disposition.
     //

@@ -5894,6 +5894,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
   String get settingsManualCommandWriteFailed;
+
+  /// TransportIssue.queryHeaderRefused. The adapter answered ATSH with '?'. It must not read as a failure of the vehicle: nothing was asked of the vehicle at all. The address is interpolated because a reader who cannot see which controller was meant has nothing to act on.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to aim this request at controller {header}, so it was not sent. Left on whatever address the adapter is really holding, the reply would have come back from a controller nobody asked.'**
+  String commandFailureQueryHeaderRefused(Object header);
+
+  /// TransportIssue.wholeVehicleHeaderRefused. Separate from queryHeaderRefused because what is lost differs: a scan, a clear or a VIN read is answered by the whole emissions system, and an unattributable answer to it cannot be shown as a whole-vehicle result. Says what could not be established, not that the adapter is broken.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to switch to address {address}, which is what a question asked of the whole vehicle has to go out on. Without it, replies cannot be matched to the controllers that sent them, so the request was not made.'**
+  String commandFailureWholeVehicleHeaderRefused(Object address);
+
+  /// TransportIssue.legacyScanWouldBePartial. Nothing failed - the app refused. The sentence has to say that the result would have looked clean and complete, because a partial scan presented as a whole-vehicle one is the failure this app is arranged against.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle uses an older bus with no standard address that reaches every controller, and the adapter is currently set to controller {installed}. A scan would have covered that one controller alone while being presented as the whole vehicle, so it was not sent. Reconnect, then scan again.'**
+  String commandFailureLegacyScanWouldBePartial(Object installed);
 }
 
 class _AppLocalizationsDelegate

@@ -17,6 +17,7 @@ import '../../../obd/readiness.dart';
 import '../../../state/dtc_scan.dart';
 import '../../../state/obd_session.dart';
 import '../../widgets/panel.dart';
+import '../settings/manual_command_copy.dart';
 import 'dtc_copy.dart';
 import 'readiness_copy.dart';
 
@@ -790,6 +791,28 @@ class UnansweredCategoryWording {
   final bool ordinarySilence;
 }
 
+/// What the failure says, in the language the reader chose.
+///
+/// [DtcReadException.message] is Traditional Chinese and stays that way: it is
+/// what the session transcript keeps, and an exported record whose wording
+/// follows a phone setting is one two people cannot compare. The screen is a
+/// different reader. Where the failure came out of the transport it now carries
+/// that transport's identifier, so this asks the command-failure table for it
+/// and falls back to the sentence only for the failures the engine diagnoses
+/// itself — those still have no identifier, and they are ImL1s/telltale#45.
+///
+/// Null when there is no failure at all; each call site says what it puts there
+/// instead, because "nothing went wrong" and "we cannot name what did" are not
+/// the same thing to write on this screen.
+String? _failureSentence(AppLocalizations l10n, DtcCategoryResult result) {
+  final failure = result.failure;
+  if (failure == null) return null;
+  final issue = failure.transportIssue;
+  if (issue == null) return failure.message;
+  return commandIssueText(l10n, issue, detail: failure.issueDetail) ??
+      failure.message;
+}
+
 UnansweredCategoryWording unansweredCategoryWording({
   required AppLocalizations l10n,
   required DtcKind kind,
@@ -855,7 +878,9 @@ UnansweredCategoryWording unansweredCategoryWording({
     } else if (!answeredByNobody) {
       // Some controllers answered and some did not. Saying the vehicle did not
       // respond is false, and so is saying Mode 03 was silent.
-      detail = l10n.dtcPartiallyAnsweredDetail(result.failure?.message ?? '');
+      detail = l10n.dtcPartiallyAnsweredDetail(
+        _failureSentence(l10n, result) ?? '',
+      );
     } else {
       detail = l10n.dtcBothSilentDetail(kind.mode);
     }
@@ -863,7 +888,7 @@ UnansweredCategoryWording unansweredCategoryWording({
     detail = l10n.dtcReadFailureDetail(
       dtcKindLabel(l10n, kind),
       kind.mode,
-      result.failure?.message ?? l10n.dtcUnknownError,
+      _failureSentence(l10n, result) ?? l10n.dtcUnknownError,
     );
   }
 
