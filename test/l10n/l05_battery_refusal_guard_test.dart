@@ -618,6 +618,74 @@ void main() {
       expect(found("const a = 'Not authorized：x';"), contains('：'));
     });
   });
+
+  test('every render site for these two families is one this suite knows '
+      'about', () {
+    // Slice F, this branch's sibling, pinned its render sites BY NAME: round 3
+    // wrote "the render site", singular, and there were four. Mutating the
+    // three it missed left 2157 tests green while the screen printed
+    // `serviceNotReadOnly` at a reader.
+    //
+    // This branch happens to be complete — all seven sites below are driven by
+    // a test, confirmed by mutating each family and watching the tests that
+    // NAME the behaviour go red. But "happens to be" is not a property. What
+    // was missing is the mechanism that says so when an eighth appears.
+    //
+    // The rule is the same as the throw-site guards use: a render site is a
+    // call, in code, to a function declared in one of this feature's
+    // `*_copy.dart` files, from a file that is not that copy file. Counted per
+    // call site rather than per (file, function), because two of these files
+    // call the same function twice and a pair-keyed roster hides one of them.
+    const copyFiles = [
+      'lib/ui/screens/pids/powertrain_battery_copy.dart',
+      'lib/ui/screens/pids/pid_mutation_copy.dart',
+    ];
+
+    final exported = <String>{};
+    for (final path in copyFiles) {
+      final file = File(path);
+      expect(file.existsSync(), isTrue, reason: '$path is the census input');
+      for (final m in RegExp(r'^String\??\s+(\w+)\s*\(', multiLine: true)
+          .allMatches(codeOnly(file.readAsStringSync()))) {
+        exported.add(m.group(1)!);
+      }
+    }
+    expect(exported, {'powertrainProbeRefusalText', 'pidMutationFailureText'},
+        reason: 'a copy function was added or renamed');
+
+    final sites = <String>{};
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (copyFiles.contains(entity.path)) continue;
+      final code = codeOnly(entity.readAsStringSync());
+      for (final name in exported) {
+        final n = RegExp('\\b$name\\s*\\(').allMatches(code).length;
+        if (n > 0) sites.add('${entity.path} -> $name x$n');
+      }
+    }
+
+    const known = {
+      // the quarantine refusal before the tap, and the one recorded while the
+      // consent dialog sat open — both rendered in
+      // powertrain_battery_catalog_ui_test.dart, both locales
+      'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
+          '-> powertrainProbeRefusalText x2',
+      // the recording lock refusing a catalog install — same file, both locales
+      'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
+          '-> pidMutationFailureText x2',
+      // the recording lock on save and on confirmed delete —
+      // pid_editor_test.dart
+      'lib/ui/screens/pids/pid_editor_screen.dart -> pidMutationFailureText x1',
+      // the recording lock on the dashboard toggle, and on the manager's own
+      // mutation path — pid_manager_lock_test.dart
+      'lib/ui/screens/pids/pid_manager_screen.dart -> pidMutationFailureText x2',
+    };
+    expect(sites, equals(known),
+        reason: 'a render site appeared or moved. Each one turns an identifier '
+            'into a sentence somebody reads. Drive it from a test, watch the '
+            'test that names the behaviour go red under a mutation, then add '
+            'the line here.');
+  });
 }
 
 /// Every `(offset, character)` where a string literal in [src] holds CJK.
@@ -630,6 +698,7 @@ List<(int, String)> _chineseStringLiterals(String src) {
     hits.add((i, src[i]));
   }
   return hits;
+
 }
 
 int _lineAt(String src, int offset) =>
