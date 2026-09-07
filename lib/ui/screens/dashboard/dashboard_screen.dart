@@ -632,12 +632,11 @@ class PollingModePill extends StatelessWidget {
   /// out to the target, it does not inflate the pill. At large text the pill
   /// is already taller than this and the constraint stops mattering.
   ///
-  /// Material's own constant rather than a seventh `48` typed into this file.
-  /// The workspace switcher above, the recorder panel and strip, the lane
-  /// selector and the history entry each hard-code it; that is the drift this
-  /// does not add to. The test does not read this constant back — it types 48
-  /// itself, so shrinking the target here turns the geometry cases red instead
-  /// of moving the goalposts with them.
+  /// Material's own constant rather than another bare `48` typed into this
+  /// file, which several other controls in `lib/ui` still are. The test does
+  /// not read this constant back — it types 48 itself, so shrinking the target
+  /// here turns the geometry cases red instead of moving the goalposts with
+  /// them.
   static const double minTapTarget = kMinInteractiveDimension;
 
   @override

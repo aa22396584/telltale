@@ -1979,6 +1979,16 @@ const Duration kTelemetryHeartbeat = Duration(seconds: 1);
 /// re-read on every snapshot, which is the same cadence as the widget that
 /// consumes it, so the two cannot describe different moments by more than one
 /// frame.
+///
+/// **Watch it; do not read it cold.** Like any `Provider` it caches, and its
+/// dependency on [telemetryProvider] only invalidates it while something is
+/// listening. A bare `container.read` before anything watches computes once
+/// against `engine == null`, answers `false`, and can go on answering `false`
+/// after a CAN session has come up — measured, on a Demo session whose
+/// `canBatch` was `true` at the time. Under `ref.watch` in a widget the value
+/// tracks the engine correctly, which is the only way production uses it. A
+/// test that wants the live value must hold a listener open, and the tests for
+/// this provider assert through the rendered label for that reason.
 final busGroupsRequestsProvider = Provider<bool>((ref) {
   ref.watch(telemetryProvider);
   final session = ref.watch(obdSessionProvider.notifier);

@@ -82,6 +82,7 @@ import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:torque_obd/ui/widgets/panel.dart';
 
 import '../support/dart_source_reader.dart';
+import '../support/fake_elm327.dart';
 
 /// Every command the app put on the wire, in order.
 ///
@@ -703,6 +704,106 @@ void main() {
     }
   });
 
+  /// A vehicle that answers, on a bus that cannot group.
+  ///
+  /// The blocks chain 0100 -> 0120 -> 0140 so discovery verifies them the way a
+  /// real car does, which is the half of `canBatch` that is *not* the
+  /// addressing — otherwise a false here would be false for the wrong reason.
+  FakeElm327 legacyVehicle() => FakeElm327(
+    protocol: BusProtocol.iso9141,
+    ecus: [
+      FakeEcu(
+        name: 'ECM',
+        requestId: '6810F1',
+        responseId: '486BF1',
+        responses: {
+          '0100': [0x41, 0x00, 0xBE, 0x3F, 0xA8, 0x13],
+          '0120': [0x41, 0x20, 0x80, 0x00, 0x00, 0x01],
+          '0140': [0x41, 0x40, 0x40, 0x00, 0x00, 0x00],
+          '0104': [0x41, 0x04, 0x40],
+          '0105': [0x41, 0x05, 0x5A],
+          '010B': [0x41, 0x0B, 0x64],
+          '010C': [0x41, 0x0C, 0x1A, 0xF8],
+          '010D': [0x41, 0x0D, 0x3C],
+          '010F': [0x41, 0x0F, 0x50],
+          '0110': [0x41, 0x10, 0x0A, 0xF0],
+          '0111': [0x41, 0x11, 0x30],
+        },
+      ),
+    ],
+  );
+
+  testWidgets('a real non-CAN session renders the fallback label', (
+    tester,
+  ) async {
+    // The one test that runs the real `busGroupsRequestsProvider` on the
+    // branch that matters. Everything else overrides it, so inverting the
+    // provider outright used to leave the file green with the over-claim
+    // restored wholesale.
+    //
+    // It asserts through the rendered label rather than `container.read`.
+    // Reading a `Provider` nobody is listening to returns whatever it computed
+    // first — `false`, against `engine == null` — and goes on returning it; the
+    // widget is the only place the value is watched, so the widget is where it
+    // can be observed alive.
+    SharedPreferences.setMockInitialValues({
+      kLocalePreferenceKey: localePreferenceToStored(LocalePreference.english),
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        telemetryRecorderProgressProvider.overrideWith(_FixedProgress.new),
+      ],
+    );
+    final session = container.read(obdSessionProvider.notifier);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const _LocaleRoot(home: DashboardScreen()),
+      ),
+    );
+    await tester.runAsync(() async {
+      expect(
+        await session.connectForTest(legacyVehicle(), TransportKind.wifi),
+        isTrue,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await session.engine!.stop();
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // The state, from the engine rather than from the fixture's intent.
+    final scheduler = session.engine!.scheduler;
+    expect(
+      session.engine!.client.addressing.isCan,
+      isFalse,
+      reason: 'the fixture stopped being a non-CAN bus, so this proves nothing',
+    );
+    expect(
+      scheduler.fastModeEnabled,
+      isTrue,
+      reason:
+          'nothing went wrong on this bus, so the scheduler flag is still set '
+          '— which is exactly the state that used to read "Batching enabled"',
+    );
+    expect(scheduler.canBatch, isFalse);
+
+    // And the screen says the provable thing.
+    expect(find.text(enSingle), findsOneWidget);
+    expect(
+      find.text(enBatching),
+      findsNothing,
+      reason: 'a bus that cannot group was told the driver it was grouping',
+    );
+
+    await tester.runAsync(session.disconnect);
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
+
   testWidgets('opening the help and changing language put nothing on the wire', (
     tester,
   ) async {
@@ -755,6 +856,20 @@ void main() {
       isNotEmpty,
       reason: 'nothing was ever written, so a count of zero proves nothing',
     );
+
+    // The other branch of `busGroupsRequestsProvider`, on a real CAN session.
+    // The dashboard above is watching it, so this read is the live value and
+    // not the cold-read `false` the provider's own comment warns about.
+    final scheduler = session.engine!.scheduler;
+    expect(
+      scheduler.canBatch,
+      isTrue,
+      reason:
+          'the Demo bus is CAN and discovery has run, so if this is false the '
+          'assertion below is true for the wrong reason',
+    );
+    expect(container.read(busGroupsRequestsProvider), scheduler.canBatch);
+    expect(find.text(enBatching), findsOneWidget);
 
     // Quiescence, and this one can fail. A window of real elapsed time with
     // nothing touched: parked, it adds nothing; running, the same window adds
