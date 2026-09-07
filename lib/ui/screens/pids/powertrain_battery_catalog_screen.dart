@@ -12,11 +12,12 @@ import '../../../obd/powertrain_battery/powertrain_battery_probe.dart';
 import '../../../obd/powertrain_battery/profile_catalog_validator.dart';
 import '../../../obd/powertrain_battery/profile_pid_installer.dart';
 import '../../../state/obd_session.dart';
-import '../../../state/pid_mutation_lock.dart';
 import '../../../state/pid_registry.dart';
 import '../../../state/powertrain_battery_profiles.dart';
 import '../../../state/powertrain_battery_experiments.dart';
 import '../../widgets/panel.dart';
+import 'pid_mutation_copy.dart';
+import 'powertrain_battery_copy.dart';
 
 class PowertrainBatteryCatalogScreen extends ConsumerStatefulWidget {
   const PowertrainBatteryCatalogScreen({super.key});
@@ -84,7 +85,17 @@ class _PowertrainBatteryCatalogScreenState
         .read(powertrainExperimentalProbeConsentsProvider.notifier)
         .quarantineReason(profile.id);
     if (quarantine != null) {
-      _snack(l10n.powertrainQuarantinedSnack(quarantine));
+      _snack(
+        powertrainProbeRefusalText(
+          l10n,
+          quarantine,
+          // The same constant the decision below carries: the cap that
+          // recorded the quarantine and the cap named in the sentence must
+          // come from one place.
+          attemptCap:
+              PowertrainExperimentalProbeConsents.maxAttemptsPerCommand,
+        ),
+      );
       return;
     }
 
@@ -103,8 +114,15 @@ class _PowertrainBatteryCatalogScreenState
           vehicleYear: year,
           connectionGeneration: session.connectionGeneration,
         );
-    if (!decision.accepted) {
-      _snack(l10n.powertrainNotAuthorized(decision.reason));
+    final refusal = decision.refusal;
+    if (refusal != null) {
+      _snack(
+        powertrainProbeRefusalText(
+          l10n,
+          refusal,
+          attemptCap: decision.attemptCap,
+        ),
+      );
       return;
     }
 
@@ -171,8 +189,9 @@ class _PowertrainBatteryCatalogScreenState
       final outcome = await ref
           .read(pidRegistryProvider.notifier)
           .installPowertrainProfile(snapshot, profile.id, vehicleYear: year);
-      if (outcome.isLocked) {
-        _snack(kPidMutationLockedMessage);
+      final failure = outcome.failure;
+      if (failure != null) {
+        _snack(pidMutationFailureText(l10n, failure));
         return;
       }
     } on PowertrainProfileInstallException catch (error) {
@@ -207,8 +226,9 @@ class _PowertrainBatteryCatalogScreenState
     final outcome = await ref
         .read(pidRegistryProvider.notifier)
         .uninstallPowertrainProfile(profile.id);
-    if (outcome.isLocked) {
-      _snack(kPidMutationLockedMessage);
+    final failure = outcome.failure;
+    if (failure != null) {
+      _snack(pidMutationFailureText(l10n, failure));
       return;
     }
     ref

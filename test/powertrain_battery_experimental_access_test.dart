@@ -302,7 +302,10 @@ void main() {
 
       authorize(start.add(const Duration(seconds: 15)));
       expect(take(start.add(const Duration(seconds: 15))), isNull);
-      expect(consents.quarantineReason(profile.id), contains('3 次上限'));
+      expect(
+        consents.quarantineReason(profile.id),
+        PowertrainProbeRefusal.quarantinedAtAttemptCap,
+      );
       expect(
         container.read(powertrainExperimentalProbeConsentsProvider),
         isEmpty,
@@ -324,7 +327,7 @@ void main() {
       consents.revokeAll();
       expect(
         consents.quarantineReason(profile.id),
-        contains('3 次上限'),
+        PowertrainProbeRefusal.quarantinedAtAttemptCap,
         reason: 'lifecycle and opt-out revocation must not reset per-connection quarantine',
       );
       expect(
@@ -534,7 +537,7 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(decision.accepted, isTrue, reason: decision.reason);
+      expect(decision.accepted, isTrue, reason: '${decision.refusal}');
       final before = adapter.commandLog
           .where((wire) => wire == command.modeAndIdentifier)
           .length;
@@ -577,7 +580,7 @@ void main() {
         vehicleYear: 2021,
         connectionGeneration: session.connectionGeneration,
       );
-      expect(replacement.accepted, isTrue, reason: replacement.reason);
+      expect(replacement.accepted, isTrue, reason: '${replacement.refusal}');
       final result = await session.probePowertrainBatteryCommand(
         snapshot: snapshot,
         profileId: profile.id,
@@ -711,7 +714,10 @@ void main() {
     );
 
     expect(result.failure, PowertrainBatteryProbeFailure.responderMismatch);
-    expect(consents.quarantineReason(profile.id), isNotNull);
+    expect(
+      consents.quarantineReason(profile.id),
+      PowertrainProbeRefusal.quarantinedAfterRejectedRead,
+    );
     expect(
       consents
           .authorize(
@@ -732,7 +738,7 @@ void main() {
     binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     expect(
       consents.quarantineReason(profile.id),
-      isNotNull,
+      PowertrainProbeRefusal.quarantinedAfterRejectedRead,
       reason: 'backgrounding is not a new vehicle boundary',
     );
     expect(

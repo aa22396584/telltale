@@ -1662,10 +1662,10 @@ class ObdSession extends Notifier<ObdConnectionState> {
       return result;
     } finally {
       final failure = result?.failure;
-      final quarantine = failure?.requiresConnectionQuarantine ?? false
-          ? result?.detail ?? failure?.name
-          : null;
-      consents.complete(lease, quarantineReason: quarantine);
+      consents.complete(
+        lease,
+        quarantineProfile: failure?.requiresConnectionQuarantine ?? false,
+      );
     }
   }
 

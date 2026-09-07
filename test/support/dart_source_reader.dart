@@ -211,28 +211,59 @@ String stringLiteralsOnly(String src) => onlyRegion(src, SourceRegion.string);
 /// The top-level arguments of the call whose `(` is at [open], read through
 /// [mask] so string and comment content cannot look like syntax.
 List<String>? topLevelArgs(String src, List<bool> mask, int open) {
-  final args = <String>[];
-  final cur = StringBuffer();
+  final spans = topLevelArgSpans(src, mask, open);
+  if (spans == null) return null;
+  return [for (final (start, end) in spans) src.substring(start, end)];
+}
+
+/// The same arguments as [topLevelArgs], as `(start, end)` offsets into [src].
+///
+/// Offsets rather than text, so a caller can ask what an argument IS as well as
+/// what it says — whether any of it is string-literal content, for instance,
+/// which is invisible once the argument has been copied into a new string.
+/// [topLevelArgs] is this function plus `substring`, so the two cannot disagree
+/// about where an argument begins.
+///
+/// **[open] must be the offset of a `(` that [mask] says is code.** Every
+/// caller already ensures that — two skip a match whose start is masked out,
+/// and the third matches against `codeOnly`, where a `(` inside a comment or a
+/// string is a space. Outside that contract the two implementations differ:
+/// review measured 1392 offsets across `lib/`, `test/` and `integration_test/`
+/// where the old accumulator swept up the text between [open] and the first
+/// real `(` into the first argument, and this one returns it empty. None is
+/// reachable, which is why the difference is documented rather than
+/// reconciled — but the contract was implicit before, and an implicit contract
+/// is one the next caller does not know it is breaking.
+///
+/// `start` cannot be read while still `-1`: reaching the read requires `depth`
+/// to be 1, and the only transition from 0 to 1 is the `(` that sets it.
+/// Verified rather than argued — the same review diffed every offset of every
+/// file, exceptions included, and found no `RangeError` path.
+List<(int, int)>? topLevelArgSpans(String src, List<bool> mask, int open) {
+  final spans = <(int, int)>[];
+  var start = -1;
   var depth = 0;
   for (var i = open; i < src.length; i++) {
     final c = src[i];
     if (mask[i]) {
       if (c == '(' || c == '[' || c == '{') {
         depth++;
-        if (depth == 1) continue;
+        if (depth == 1) {
+          start = i + 1;
+          continue;
+        }
       } else if (c == ')' || c == ']' || c == '}') {
         depth--;
         if (depth == 0) {
-          if (cur.toString().trim().isNotEmpty) args.add(cur.toString());
-          return args;
+          if (src.substring(start, i).trim().isNotEmpty) spans.add((start, i));
+          return spans;
         }
       } else if (c == ',' && depth == 1) {
-        args.add(cur.toString());
-        cur.clear();
+        spans.add((start, i));
+        start = i + 1;
         continue;
       }
     }
-    cur.write(c);
   }
   return null;
 }

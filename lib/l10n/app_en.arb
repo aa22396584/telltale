@@ -1438,14 +1438,6 @@
   },
   "powertrainNoMatchBody": "Try a make or model name, or switch to another powertrain type.",
   "powertrainNoMatchTitle": "No matching vehicle",
-  "powertrainNotAuthorized": "Not authorized: {reason}",
-  "@powertrainNotAuthorized": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "powertrainNotInstallableInThisRelease": "Not installable in this release",
   "powertrainPrimarySource": "Primary source: {name} ({license})",
   "@powertrainPrimarySource": {
@@ -1486,12 +1478,40 @@
   "@powertrainQuarantinedPill": {
     "description": "Scoped to this connection, not permanent, and reconnecting is what lifts it. Kept to the pill width at 360dp: 'Quarantined for this connection' overflowed the card header row."
   },
-  "powertrainQuarantinedSnack": "Quarantined for this connection: {reason}",
-  "@powertrainQuarantinedSnack": {
-    "description": "{reason} is produced by the consent notifier, not by this screen.",
+  "powertrainRefusedCatalogHashInvalid": "Not authorized: the catalog's integrity hash is not valid, so nothing in it can be read.",
+  "@powertrainRefusedCatalogHashInvalid": {
+    "description": "Refusal identifier PowertrainProbeRefusal.catalogHashInvalid. One whole sentence: this used to be a localized frame around an untranslated one."
+  },
+  "powertrainRefusedCommandNotInProfile": "Not authorized: that command is not one of this verified profile's own commands.",
+  "@powertrainRefusedCommandNotInProfile": {
+    "description": "Refusal identifier PowertrainProbeRefusal.commandNotInProfile."
+  },
+  "powertrainRefusedLabClosed": "The experimental battery laboratory was switched off before this read could be authorized.",
+  "@powertrainRefusedLabClosed": {
+    "description": "Refusal identifier PowertrainProbeRefusal.labClosed. Reached only when the laboratory is turned off between the screen's check and the authorization, so it says what changed rather than repeating powertrainEnableLabInSettings."
+  },
+  "powertrainRefusedProfileFailedValidation": "Not authorized: this profile did not pass catalog validation with the model year you chose.",
+  "@powertrainRefusedProfileFailedValidation": {
+    "description": "Refusal identifier PowertrainProbeRefusal.profileFailedValidation. It replaces the validator's own English developer diagnostic, which named a JSON path."
+  },
+  "powertrainRefusedProfileNotInCatalog": "Not authorized: this profile is not in the verified catalog.",
+  "@powertrainRefusedProfileNotInCatalog": {
+    "description": "Refusal identifier PowertrainProbeRefusal.profileNotInCatalog."
+  },
+  "powertrainRefusedProfileNotProbeable": "Not authorized: this profile is not one that can be read once experimentally.",
+  "@powertrainRefusedProfileNotProbeable": {
+    "description": "Refusal identifier PowertrainProbeRefusal.profileNotProbeable. The profile is structurally sound; its review tier is what refuses."
+  },
+  "powertrainRefusedQuarantinedAfterRejectedRead": "Quarantined for this connection: an earlier one-shot read did not pass its structural checks. Reconnect before trying again.",
+  "@powertrainRefusedQuarantinedAfterRejectedRead": {
+    "description": "Refusal identifier PowertrainProbeRefusal.quarantinedAfterRejectedRead. Which check failed was already shown in the probe result dialog when it happened."
+  },
+  "powertrainRefusedQuarantinedAtAttemptCap": "Quarantined for this connection: the same command has already been tried {attemptCap} times. Reconnect before trying again.",
+  "@powertrainRefusedQuarantinedAtAttemptCap": {
+    "description": "Refusal identifier PowertrainProbeRefusal.quarantinedAtAttemptCap. {attemptCap} is PowertrainExperimentalProbeConsents.maxAttemptsPerCommand, never spelled into the copy.",
     "placeholders": {
-      "reason": {
-        "type": "String"
+      "attemptCap": {
+        "type": "int"
       }
     }
   },

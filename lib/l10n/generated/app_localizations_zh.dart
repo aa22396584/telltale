@@ -1474,11 +1474,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get powertrainNoMatchTitle => '沒有符合的車型';
 
   @override
-  String powertrainNotAuthorized(String reason) {
-    return '未授權：$reason';
-  }
-
-  @override
   String get powertrainNotInstallableInThisRelease => '此版本不可安裝';
 
   @override
@@ -1533,8 +1528,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get powertrainQuarantinedPill => '本次連線已隔離';
 
   @override
-  String powertrainQuarantinedSnack(String reason) {
-    return '本次連線已隔離：$reason';
+  String get powertrainRefusedCatalogHashInvalid =>
+      '未授權：目錄的完整性雜湊無效，因此其中任何內容都不能讀取。';
+
+  @override
+  String get powertrainRefusedCommandNotInProfile =>
+      '未授權：這個指令不屬於這份已驗證設定檔本身的指令。';
+
+  @override
+  String get powertrainRefusedLabClosed => '在這次讀取取得授權之前，大電池證據實驗室已被關閉。';
+
+  @override
+  String get powertrainRefusedProfileFailedValidation =>
+      '未授權：這個設定檔沒有通過你所選車輛年份的目錄驗證。';
+
+  @override
+  String get powertrainRefusedProfileNotInCatalog => '未授權：這個設定檔不在已驗證的目錄中。';
+
+  @override
+  String get powertrainRefusedProfileNotProbeable => '未授權：這個設定檔不是可以單次實驗讀取的設定檔。';
+
+  @override
+  String get powertrainRefusedQuarantinedAfterRejectedRead =>
+      '本次連線已隔離：先前一次單次讀取沒有通過結構檢查。請重新連線後再試。';
+
+  @override
+  String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
+    return '本次連線已隔離：同一個指令已經嘗試 $attemptCap 次。請重新連線後再試。';
   }
 
   @override
@@ -4921,11 +4941,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get powertrainNoMatchTitle => '沒有符合的車型';
 
   @override
-  String powertrainNotAuthorized(String reason) {
-    return '未授權：$reason';
-  }
-
-  @override
   String get powertrainNotInstallableInThisRelease => '此版本不可安裝';
 
   @override
@@ -4980,8 +4995,33 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get powertrainQuarantinedPill => '本次連線已隔離';
 
   @override
-  String powertrainQuarantinedSnack(String reason) {
-    return '本次連線已隔離：$reason';
+  String get powertrainRefusedCatalogHashInvalid =>
+      '未授權：目錄的完整性雜湊無效，因此其中任何內容都不能讀取。';
+
+  @override
+  String get powertrainRefusedCommandNotInProfile =>
+      '未授權：這個指令不屬於這份已驗證設定檔本身的指令。';
+
+  @override
+  String get powertrainRefusedLabClosed => '在這次讀取取得授權之前，大電池證據實驗室已被關閉。';
+
+  @override
+  String get powertrainRefusedProfileFailedValidation =>
+      '未授權：這個設定檔沒有通過你所選車輛年份的目錄驗證。';
+
+  @override
+  String get powertrainRefusedProfileNotInCatalog => '未授權：這個設定檔不在已驗證的目錄中。';
+
+  @override
+  String get powertrainRefusedProfileNotProbeable => '未授權：這個設定檔不是可以單次實驗讀取的設定檔。';
+
+  @override
+  String get powertrainRefusedQuarantinedAfterRejectedRead =>
+      '本次連線已隔離：先前一次單次讀取沒有通過結構檢查。請重新連線後再試。';
+
+  @override
+  String powertrainRefusedQuarantinedAtAttemptCap(int attemptCap) {
+    return '本次連線已隔離：同一個指令已經嘗試 $attemptCap 次。請重新連線後再試。';
   }
 
   @override

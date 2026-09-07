@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Why a PID mutation was refused.
+///
+/// The words live in `lib/ui/screens/pids/pid_mutation_copy.dart`. This file
+/// used to carry them: `const kPidMutationLockedMessage = '請先停止並儲存'`,
+/// snacked raw by the powertrain-battery catalog screen, so an English driver
+/// was refused in Traditional Chinese.
 enum PidMutationFailure { locked }
-
-const kPidMutationLockedMessage = '請先停止並儲存';
 
 class PidMutationOutcome {
   const PidMutationOutcome._({required this.applied, this.failure});
