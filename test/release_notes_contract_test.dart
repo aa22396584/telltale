@@ -579,6 +579,42 @@ void main() {
       });
     });
 
+    test('every attestation belongs to a dated entry', () {
+      // The gate reads one anchored line and nothing else, deliberately: a
+      // shell script that parses Markdown is a state machine that can be wrong
+      // in its own right. The consequence is that the line counts wherever it
+      // appears, including inside a fenced code block or an HTML comment.
+      //
+      // That is how the gate's own documentation came to satisfy it. Counting
+      // catches the duplicate case; this catches the other one -- an example
+      // written for a version that has no entry at all, which is a single
+      // occurrence and passes the count.
+      //
+      // The dated heading is corroboration here, NOT the attestation. Reading
+      // the version out of a heading is exactly what let
+      // `1.0.11 walk; 1.0.12 not installed` clear a full release, so the
+      // heading is only ever asked "does an entry for this version exist",
+      // never "was it walked".
+      final text = File(_evidence).readAsStringSync();
+      final headings = RegExp(r'^## \d{4}-\d{2}-\d{2}.*$', multiLine: true)
+          .allMatches(text)
+          .map((m) => m.group(0)!)
+          .toList();
+      expect(headings, isNotEmpty);
+      final attested = RegExp(r'^Device walk attested: (\d+\.\d+\.\d+)\s*$',
+              multiLine: true)
+          .allMatches(text)
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(attested, isNotEmpty);
+      for (final v in attested) {
+        final token = RegExp('(^|[^0-9.])${RegExp.escape(v)}([^0-9.]|\$)');
+        expect(headings.any(token.hasMatch), isTrue,
+            reason: '$_evidence attests $v but has no dated heading naming it, '
+                'so the line is not attached to an entry someone can read');
+      }
+    });
+
     test('every attestation the real file already carries is one the gate '
         'accepts', () {
       // The false-refusal direction, and the one that actually costs
