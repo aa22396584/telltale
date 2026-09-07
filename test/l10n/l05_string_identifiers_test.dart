@@ -189,6 +189,17 @@ void main() {
         reason: 'a literal nested inside an interpolation',
       );
       expect(
+        found("const a = r'\${測試}';"),
+        1,
+        reason: 'a raw string has no interpolation, so this is six literal '
+            'characters and the guarded word is one of them. Missing this '
+            'classified 測試 as *code*, and a guard that asks what is inside '
+            'the string literals was handed the file with the string taken '
+            'out. It answered no, in green. Found by review on #101 and #103, '
+            'independently, on two branches that had each just extracted this '
+            'reader',
+      );
+      expect(
         found("const a = '// 測試';"),
         1,
         reason: 'a comment marker inside a string does not start a comment',

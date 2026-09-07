@@ -79,7 +79,16 @@ List<SourceRegion> sourceRegions(String src) {
         i += 2;
         continue;
       }
-      if (c == r'$' && i + 1 < src.length && src[i + 1] == '{') {
+      // `raw` here for the same reason it is on the escape above, and found
+      // the same way -- by a reviewer, not by the fixtures. Dart reads
+      // `r'${x}'` as six literal characters, so entering an interpolation
+      // frame classifies `x` as *code*. `stringLiteralsOnly` then drops it,
+      // and a guard asking "is there Chinese in a string literal here" is
+      // handed a file with the string removed. It answers no, in green.
+      if (c == r'$' &&
+          !frames.last.raw &&
+          i + 1 < src.length &&
+          src[i + 1] == '{') {
         braces++;
         frames.add(_Frame.interpolation(braces));
         mark(i, i + 2, SourceRegion.string);

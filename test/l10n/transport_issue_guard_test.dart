@@ -407,6 +407,13 @@ void main() {
       1,
       reason: 'a raw string has no escapes, so its backslash is content',
     );
+    expect(
+      callsFound(
+        "const s = r'\${x}';\nthrow TransportException('y', issue: null);",
+      ),
+      1,
+      reason: 'a raw string has no interpolation either, so `\${x}` is content',
+    );
 
     // The triple form, in each shape it actually takes.
     expect(
