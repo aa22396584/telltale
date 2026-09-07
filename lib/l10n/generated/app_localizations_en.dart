@@ -373,7 +373,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpBatching =>
-      'Batching enabled means Telltale is allowed to group PID requests into one exchange, to cut the number of round trips. It is permission rather than a measurement: whether a given exchange grouped anything also depends on which PIDs this vehicle has confirmed.';
+      'Batching enabled means Telltale is allowed to group PID requests into one exchange, to cut the number of round trips. It is permission rather than a measurement: whether a given exchange grouped anything also depends on the bus this vehicle uses and on which PIDs it has confirmed.';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -381,7 +381,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpSingle =>
-      'Single request mode means each PID is read on its own. Telltale falls back to it when a grouped reply comes back short or garbled, and readings carry on updating. On its own it is not a connection failure.';
+      'Single request mode means each PID is read on its own. Telltale falls back to it when a grouped request does not come back in a form it can split apart again: truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.';
 
   @override
   String get dashboardPollingModeHelpTitle => 'Polling mode';
