@@ -37,7 +37,7 @@
 // this header claimed all three had. Checked: `grep -rn '://' lib/ui` matches
 // nothing, so no stripper had a URL to truncate at; and the only two mentions
 // of `AppLocalizations` under `lib/obd` and `lib/diagnostics`
-// (`elm327_client.dart:331`, `availability.dart:302`) are line-leading `///`,
+// (in `elm327_client.dart` and `availability.dart`) are line-leading `///`,
 // which the prefix skip already handled. Checked out the merge-base copies of
 // the three, ran them against today's `lib/`, and got `+47: All tests passed!`
 // — the same tally the versions in this branch produce.
@@ -81,9 +81,10 @@ const _guarded = <String>[
 /// Every character on the right of this map was written here, and nothing on
 /// that side may ever be read back from [AppLocalizations], from an ARB file,
 /// or from `blePermissionName` itself. That is not fastidiousness: the test
-/// this table replaced walked the switch and asserted only that each name was
-/// non-empty and that no two kinds shared one, and a reviewer swapped the two
-/// arms of `blePermissionName` —
+/// this table sits beside — 'every BlePermissionKind is named, and no two the
+/// same', still below and still worth having — walks the switch and asserts
+/// only that each name is non-empty and that no two kinds share one. A
+/// reviewer swapped the two arms of `blePermissionName` —
 ///
 ///     BlePermissionKind.bluetooth => l10n.wearPermissionLocation,
 ///     BlePermissionKind.location  => l10n.wearPermissionBluetooth,
@@ -255,7 +256,7 @@ void main() {
       );
     });
 
-    test('each BlePermissionKind renders the sentence written down here', () {
+    test('each BlePermissionKind renders the name written down here', () {
       _expectedPermissionName.forEach((kind, want) {
         expect(
           blePermissionName(en, kind),

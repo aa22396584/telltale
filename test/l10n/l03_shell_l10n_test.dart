@@ -552,8 +552,10 @@ void main() {
       // `recommendedStoreLabel` switches that to the name the same storefront
       // publishes in each language. A finder that asked
       // `AppLocalizations` what that name is would agree with the switch
-      // however the switch is wired; typing 'Shopee' out here is what turns a
-      // transposed arm red.
+      // however the switch is wired; typing 'Shopee' out here is what turns an
+      // arm pointed at the wrong ARB entry red. Not "transposed" — the enum
+      // has one value today, so there is nothing to transpose it with; the
+      // mutation this catches is `shopee` wired to somebody else's entry.
       expect(find.textContaining('Shopee'), findsWidgets);
     });
 
