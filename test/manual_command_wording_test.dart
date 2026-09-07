@@ -16,12 +16,21 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 
-String _shown(Object error) => SettingsScreen.describeManualFailure(error);
+/// Traditional Chinese, because every case below is a refusal that still
+/// carries `issue: null` and therefore still renders its own sentence. What an
+/// English reader gets for the failures that DO carry an identifier is
+/// `test/l10n/manual_command_copy_test.dart`.
+final _l10n = lookupAppLocalizations(traditionalChineseLocale);
+
+String _shown(Object error) =>
+    SettingsScreen.describeManualFailure(_l10n, error);
 
 void main() {
   test('every refusal shows its sentence, not its Dart type', () {

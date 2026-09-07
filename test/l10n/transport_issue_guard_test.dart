@@ -22,10 +22,18 @@
 // not allowed to use it. A remedy that cannot work reads exactly like one that
 // can.
 //
-// This file holds three things that would otherwise drift apart: that no direct
-// `TransportException` in `lib/obd/transport/` settles for `issue: null`, that
-// every identifier a screen can reach has copy in both languages, and that no
-// two of them say the same thing.
+// This file holds four things that would otherwise drift apart: that no direct
+// `TransportException` anywhere in `lib/obd/` settles for `issue: null`, that
+// each identifier is answered by exactly one of the two copy tables, that every
+// identifier a screen can reach has copy in both languages, and that no two of
+// them say the same thing.
+//
+// The scan used to read `lib/obd/transport/` alone, which was the whole story
+// only while `elm327_client.dart`'s eight throws had no identifier to carry.
+// They have one now, so the directory that has to stay clean is `lib/obd/`.
+// `lib/state/obd_session.dart` is deliberately still outside it: its six are a
+// separate change (ImL1s/telltale#45), and widening this far now would fail on
+// work nobody has done yet, which is how a guard gets an exception list.
 //
 // "Direct" is doing work in that sentence. Three subclasses bake `issue: null`
 // into their own constructors, so the scan never sees them; they are held by a
@@ -47,15 +55,64 @@ import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
+import 'package:torque_obd/ui/screens/settings/manual_command_copy.dart';
 
-/// The one identifier with no copy, and why.
+/// Which of the two copy tables owns each identifier, written by hand.
 ///
-/// A write failure is not a connect failure: it happens on an already-open link
-/// and reaches the user by a different path. Giving it a sentence here would add
-/// copy nothing can render, which no test could then hold to anything.
-const _notOnAScreen = {TransportIssue.writeFailed};
+/// Everything not listed here is a connect failure and is said by
+/// `handshake_copy.dart`. Everything listed is a failure of a command on a link
+/// that already came up, and is said by `manual_command_copy.dart`.
+///
+/// `writeFailed` used to be excused from having any copy at all, on the
+/// reasoning that it "reaches the user by a different path". The different path
+/// turned out to be a screen: `SerialTransport.write` throws it, `_sendNow`
+/// does not catch it, and `ObdSession.sendManualCommand` hands it to the
+/// settings panel. So it is on the command path with the rest, and the
+/// exemption it used to have is gone rather than widened.
+const _commandPath = <TransportIssue>{
+  TransportIssue.writeFailed,
+  TransportIssue.linkDroppedMidSession,
+  TransportIssue.disconnectedByApp,
+  TransportIssue.notConnected,
+  TransportIssue.adapterSilentOnResync,
+  TransportIssue.queryHeaderRefused,
+  TransportIssue.wholeVehicleHeaderRefused,
+  TransportIssue.legacyScanWouldBePartial,
+  TransportIssue.linkStoppedResponding,
+};
 
+/// The identifiers whose throw must also carry the address its sentence names.
+///
+/// Written as source text because that is what the scan reads. An identifier
+/// per header would be an unbounded enum and interpolating the address into
+/// `message` would put it only in the Chinese sentence, so it travels beside
+/// the identifier -- and "travels beside it" is worth nothing unless a throw
+/// that forgets it fails.
+const _interpolating = <String>{
+  'TransportIssue.queryHeaderRefused',
+  'TransportIssue.wholeVehicleHeaderRefused',
+  'TransportIssue.legacyScanWouldBePartial',
+};
+
+/// What a reader is shown for [issue], from whichever table owns it.
+///
+/// Both are asked, in the order a screen would ask them, so the invariants
+/// below cover the command path as well as the connect one. A `??` rather than
+/// a roster lookup on purpose: if both tables ever answer, the connect one wins
+/// here and `the two tables do not overlap` is what fails, by name.
 String? _text(AppLocalizations l10n, TransportIssue issue) =>
+    _connectText(l10n, issue) ??
+    commandFailureText(
+      l10n,
+      TransportException(
+        'the transcript keeps this one',
+        issue: issue,
+        issueDetail: '7E1',
+      ),
+    );
+
+/// The connect screen's answer, reached the way the screen reaches it.
+String? _connectText(AppLocalizations l10n, TransportIssue issue) =>
     connectionIssueText(
       l10n,
       ObdConnectionState(
@@ -72,7 +129,13 @@ void main() {
   test('every transport failure names a real issue, not null', () {
     // The constructor makes `issue:` required, so the compiler already refuses
     // a throw that omits it. What it cannot refuse is `issue: null`, which is
-    // correct in `elm327_client.dart` and `obd_session.dart` and wrong here.
+    // correct in `lib/state/obd_session.dart` -- for now, and for six throws --
+    // and wrong anywhere under `lib/obd/`.
+    //
+    // It also cannot refuse an identifier whose sentence names an address,
+    // thrown without the address. That reads as a complete failure, analyses
+    // clean, and renders a sentence with a hole in it, so the same pass checks
+    // for it.
     //
     // Parsed rather than grepped. Two things fooled the first version: a
     // `TransportIssue.` written inside a comment satisfied a substring search,
@@ -106,21 +169,34 @@ void main() {
             args.first.trim() == 'this.message') {
           continue;
         }
-        final issue = args
-            .map((a) => a.trim())
-            .firstWhere((a) => a.startsWith('issue:'), orElse: () => '');
-        if (issue.isNotEmpty && !issue.contains('null')) continue;
-        naked.add(
-          '${file.path}:$line — ${issue.isEmpty ? "no issue: argument" : issue}',
+        final trimmed = args.map((a) => a.trim()).toList(growable: false);
+        final issue = trimmed.firstWhere(
+          (a) => a.startsWith('issue:'),
+          orElse: () => '',
         );
+        if (issue.isEmpty || issue.contains('null')) {
+          naked.add(
+            '${file.path}:$line — '
+            '${issue.isEmpty ? "no issue: argument" : issue}',
+          );
+          continue;
+        }
+        final named = _interpolating.where(issue.contains);
+        if (named.isNotEmpty &&
+            !trimmed.any((a) => a.startsWith('issueDetail:'))) {
+          naked.add(
+            '${file.path}:$line — ${named.first} without issueDetail:',
+          );
+        }
       }
     }
     expect(
       naked,
       isEmpty,
       reason:
-          'these reach the connect screen with a Traditional Chinese sentence '
-          'and nothing the screen can translate:\n${naked.join('\n')}',
+          'these reach a screen with a Traditional Chinese sentence and '
+          'nothing the screen can translate, or name an address their copy '
+          'cannot print:\n${naked.join('\n')}',
     );
   });
 
@@ -350,13 +426,101 @@ void main() {
     );
   });
 
+  test('the two tables do not overlap, and between them cover everything', () {
+    // The split is the point of the change this file guards, and it is the one
+    // part no compiler checks: both switches are exhaustive, so an identifier
+    // answered by both -- or by neither -- compiles. Answered by both, a
+    // reader gets whichever screen they happen to be on to explain a failure
+    // that only happens on the other; answered by neither, they get the
+    // Chinese sentence back.
+    final wrong = <String>[];
+    for (final issue in TransportIssue.values) {
+      final connect = _connectText(en, issue);
+      final command = commandFailureText(
+        en,
+        TransportException('sentinel', issue: issue, issueDetail: '7E1'),
+      );
+      final onCommandPath = _commandPath.contains(issue);
+
+      if ((connect != null) == onCommandPath) {
+        wrong.add(
+          '$issue: the connect table ${connect == null ? "does not answer" : "answers"} '
+          'it, and the roster says it is ${onCommandPath ? "" : "not "}a '
+          'command-path failure',
+        );
+      }
+      // The command table delegates connect identifiers rather than returning
+      // null for them, so "answers" is not the discriminator on that side. Only
+      // the roster of identifiers nothing renders yet may leave it silent.
+      final expectedSilent =
+          onCommandPath && commandFailureNotRenderedYet.contains(issue);
+      if ((command == null) != expectedSilent) {
+        wrong.add(
+          '$issue: the command table ${command == null ? "does not answer" : "answers"} '
+          'it, against a roster that says it should '
+          '${expectedSilent ? "not" : ""}',
+        );
+      }
+      if (!onCommandPath && command != connect) {
+        wrong.add(
+          '$issue: a connect identifier reaching the settings panel must be '
+          'delegated verbatim, not re-worded',
+        );
+      }
+    }
+    expect(wrong, isEmpty, reason: wrong.join('\n'));
+  });
+
+  test('the not-rendered-yet roster is exactly the command path with no copy', () {
+    // Membership of that roster is a claim about the tree, not a preference.
+    // Every one of them has to be a command-path identifier -- a connect one
+    // would simply be missing copy -- and the file that holds it has to say
+    // which line drops it.
+    expect(
+      commandFailureNotRenderedYet.difference(_commandPath),
+      isEmpty,
+      reason: 'only a command-path identifier can be on that roster',
+    );
+    expect(
+      commandFailureNotRenderedYet,
+      isNotEmpty,
+      reason: 'if it is empty, delete it rather than leaving an empty '
+          'allowance for the next person to add to',
+    );
+    // And the condition the roster exists for is still in the tree.
+    //
+    // Checking that the roster's own doc comment names a line number would pass
+    // for as long as nobody edits the doc, and would go on passing after the
+    // discard is fixed -- which is the direction it has to fail in. So this
+    // reads the code instead. When `polling_engine` stops throwing away the
+    // identifier, two of these three get a screen and this test says so.
+    final engine = _codeOnly(
+      File('lib/obd/polling_engine.dart').readAsStringSync(),
+    );
+    expect(
+      RegExp(
+        r'on TransportException catch \(e\)'
+        r'[\s\S]{0,400}?throw DtcReadException\(e\.message\)',
+      ).hasMatch(engine),
+      isTrue,
+      reason:
+          'polling_engine no longer rethrows a TransportException as '
+          'DtcReadException(e.message), so the identifier is not discarded any '
+          'more. Take wholeVehicleHeaderRefused and legacyScanWouldBePartial '
+          'off commandFailureNotRenderedYet, give them ARB copy, and render it '
+          'on the fault-code screen.',
+    );
+  });
+
   test('every issue a screen can reach has copy in both languages', () {
     for (final issue in TransportIssue.values) {
-      if (_notOnAScreen.contains(issue)) {
+      if (commandFailureNotRenderedYet.contains(issue)) {
         expect(
           _text(en, issue),
           isNull,
-          reason: '$issue is not a screen state',
+          reason: '$issue is on the roster of identifiers no screen renders '
+              'yet; if a screen now renders it, take it off that roster '
+              'rather than adding copy nothing reaches',
         );
         continue;
       }
@@ -374,7 +538,7 @@ void main() {
     for (final (name, l10n) in [('en', en), ('zh-Hant', zh)]) {
       final seen = <String, TransportIssue>{};
       for (final issue in TransportIssue.values) {
-        if (_notOnAScreen.contains(issue)) continue;
+        if (commandFailureNotRenderedYet.contains(issue)) continue;
         final text = _text(l10n, issue)!;
         final clash = seen[text];
         expect(
@@ -391,7 +555,7 @@ void main() {
     // Catches a key added to app_en.arb and copied verbatim into the Chinese
     // ones, which is how an untranslated string passes every other check here.
     for (final issue in TransportIssue.values) {
-      if (_notOnAScreen.contains(issue)) continue;
+      if (commandFailureNotRenderedYet.contains(issue)) continue;
       expect(
         _text(en, issue),
         isNot(equals(_text(zh, issue))),
@@ -419,7 +583,7 @@ String _codeOnly(String src) {
 /// Recursive, and shared by the scan and the roster so they cannot disagree
 /// about what "the transport directory" means -- the roster used to read one
 /// file while the scan walked the tree.
-List<File> _transportSources() => Directory('lib/obd/transport')
+List<File> _transportSources() => Directory('lib/obd')
     .listSync(recursive: true)
     .whereType<File>()
     .where((f) => f.path.endsWith('.dart'))

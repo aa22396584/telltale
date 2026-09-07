@@ -32,6 +32,7 @@ import '../connect/connect_screen.dart';
 import 'gauge_skin_copy.dart';
 import 'vehicle_profile_copy.dart';
 import 'adapter_concern_copy.dart';
+import 'manual_command_copy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -51,6 +52,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// The app fixed exactly this once before for handshake failures; the manual
   /// box was the copy that got missed.
   ///
+  /// Then it was still the *Chinese* sentence, in every language the app
+  /// ships. `TransportException.message` is authored in Traditional Chinese
+  /// and goes to the transcript verbatim, on purpose; this panel was reading
+  /// the same string and putting it on the screen. So the identifier is asked
+  /// first, through [commandFailureText], and the sentence is what is left
+  /// when there is no identifier to ask.
+  ///
+  /// That remainder is not decoration. Six throws in
+  /// `lib/state/obd_session.dart` — every refusal this box produces for a
+  /// command it will not send — still pass `issue: null`, and they are a
+  /// separate change (ImL1s/telltale#45). Until then their Chinese is what a
+  /// reader gets, and dropping the fallback would replace it with nothing at
+  /// all.
+  ///
   /// A function rather than two catch clauses so it can be tested. The panel
   /// it renders into only exists while connected, and a connected session
   /// cannot be driven from `testWidgets` — the fake-async clock never advances
@@ -58,8 +73,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// Anything that is not one of ours keeps its `toString`, because an
   /// unexpected type is exactly when the identifier is the useful part.
   @visibleForTesting
-  static String describeManualFailure(Object error) =>
-      error is TransportException ? error.message : '$error';
+  static String describeManualFailure(AppLocalizations l10n, Object error) {
+    if (error is! TransportException) return '$error';
+    return commandFailureText(l10n, error) ?? error.message;
+  }
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -100,7 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Shown rather than thrown. This screen exists for the case where things
       // are already going wrong; an exception escaping it would be the one
       // place a diagnostic tool goes quiet.
-      result = SettingsScreen.describeManualFailure(e);
+      result = SettingsScreen.describeManualFailure(l10n, e);
     }
     if (!mounted) return;
     setState(() {

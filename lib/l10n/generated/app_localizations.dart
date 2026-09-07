@@ -5858,6 +5858,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The serial port opened and closed again immediately.'**
   String get connectTransportSerialDroppedOnOpen;
+
+  /// TransportIssue.notConnected. Refused before any byte left the app, which is the one case where "not sent" is a fact rather than an inference, so it is stated flatly.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is connected, so the command was not sent.'**
+  String get settingsManualCommandNotConnected;
+
+  /// TransportIssue.linkDroppedMidSession. The link went away without being asked to. It must not claim the command was not sent: the bytes may already have left, and a manual command can be one that changes something.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to the adapter dropped while this command was in flight, so nothing answered it. Whether the adapter received the command is not known.'**
+  String get settingsManualCommandLinkDropped;
+
+  /// TransportIssue.disconnectedByApp. Carries the same Chinese sentence in the engine as linkDroppedMidSession and must not read like it: told that their connection dropped when they closed it themselves, somebody goes looking for a fault in a car that has none.
+  ///
+  /// In en, this message translates to:
+  /// **'The app closed the connection while this command was in flight, so nothing answered it. Nothing is wrong with the adapter or the vehicle.'**
+  String get settingsManualCommandDisconnectedByApp;
+
+  /// TransportIssue.adapterSilentOnResync. Says what the app could no longer do - tell which reply belongs to which command - rather than diagnosing the adapter. Carrying on would have attributed answers to the wrong questions, which is the failure this app is arranged against.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter\'s replies had fallen out of step with the commands sent to it, and it did not answer the check that would have put them back in step, so the connection was dropped. Connect again before retrying.'**
+  String get settingsManualCommandAdapterSilentOnResync;
+
+  /// TransportIssue.linkStoppedResponding. A watchdog timeout establishes silence and nothing else, so it must not read as a verdict on the adapter. Distinct from linkDroppedMidSession, where the transport itself reported the link gone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing arrived from the adapter for long enough that the connection was dropped. It may still have power; what is known is the silence.'**
+  String get settingsManualCommandLinkStoppedResponding;
+
+  /// TransportIssue.writeFailed. Not a connect failure - it happens on an open link and reaches this panel, not the connect screen. The hedge is load-bearing: a write that failed part way has already put bytes on the wire.
+  ///
+  /// In en, this message translates to:
+  /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
+  String get settingsManualCommandWriteFailed;
 }
 
 class _AppLocalizationsDelegate

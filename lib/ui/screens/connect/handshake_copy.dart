@@ -129,20 +129,25 @@ String _failureReason(AppLocalizations l10n, InitProgress? step) {
 ///
 /// That fallback is kept, but do not read it as a licence. An earlier version of
 /// this comment claimed it was live because `elm327_client` and `obd_session`
-/// still throw `TransportException` without an identifier. Review traced it: all
-/// eight `elm327_client` throws are reachable only inside `send()`, whose three
-/// callers each catch `on Object`, so none escapes `connect()`; the six in
-/// `obd_session` are on the raw-terminal and experimental-probe paths, not this
-/// screen. `connectExceptionIssue` is non-nullable, so the generic catch always
-/// supplies one. On the connect screen the fallback is now effectively dead.
+/// still throw `TransportException` without an identifier. Review traced it: the
+/// eight `elm327_client` throws are reachable only inside `send()`,
+/// `sendOnHeader()` and `sendGlobal()`, whose callers each catch `on Object`, so
+/// none escapes `connect()`; the six in `obd_session` are on the raw-terminal
+/// and experimental-probe paths, not this screen. `connectExceptionIssue` is
+/// non-nullable, so the generic catch always supplies one. On the connect screen
+/// the fallback is now effectively dead.
+///
+/// Those eight now carry identifiers of their own, which is why this table has
+/// arms that answer null: they are command-path failures and are read on the
+/// settings manual-command panel. Six of `obd_session`'s remain — see
+/// ImL1s/telltale#45.
 ///
 /// Which is why the guard exists: the next identifier-less throw on this path
 /// would land here silently, and a comment saying "the fallback handles it" is
-/// how that stops being noticed. See `test/l10n/transport_issue_guard_test.dart`
-/// and ImL1s/telltale#45 for the fourteen throws still to be given identifiers.
+/// how that stops being noticed. See `test/l10n/transport_issue_guard_test.dart`.
 String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
   final issue = state.issue;
-  if (issue == null) return _transportIssueText(l10n, state.transportIssue);
+  if (issue == null) return transportIssueText(l10n, state.transportIssue);
   final step = state.issueStep;
   return switch (issue) {
     ObdConnectionIssue.handshakeIncomplete => l10n.connectIssueHandshakeIncomplete,
@@ -167,10 +172,20 @@ String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
 
 /// The transports' half of [connectionIssueText].
 ///
-/// `writeFailed` is deliberately absent from the mapping: it is not a connect
-/// failure and never reaches this screen, so giving it a string here would add
-/// copy that nothing can ever render and no test could hold to anything.
-String? _transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
+/// Every command-path identifier returns null here, and that is the whole
+/// shape of the split: those failures happen to a command on a link that is
+/// already up, so this screen is not where they are read. Their copy is in
+/// `lib/ui/screens/settings/manual_command_copy.dart`, and
+/// `test/l10n/transport_issue_guard_test.dart` holds a written roster of which
+/// identifier belongs to which of the two — so an identifier answered by both
+/// tables, or by neither, fails rather than falling back to the Chinese
+/// sentence on whichever screen it reaches.
+///
+/// Public because that manual-command table delegates back to it. A
+/// connect-path identifier cannot reach the settings panel, but returning null
+/// for it there would restore exactly the silent fallback both files exist to
+/// remove.
+String? transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
     switch (issue) {
       null => null,
       TransportIssue.cancelled => l10n.connectTransportCancelled,
@@ -199,7 +214,17 @@ String? _transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
         l10n.connectTransportSerialPortOpenFailed,
       TransportIssue.serialDroppedOnOpen =>
         l10n.connectTransportSerialDroppedOnOpen,
-      TransportIssue.writeFailed => null,
+
+      // The command path. Read on the settings manual-command panel, not here.
+      TransportIssue.writeFailed ||
+      TransportIssue.linkDroppedMidSession ||
+      TransportIssue.disconnectedByApp ||
+      TransportIssue.notConnected ||
+      TransportIssue.adapterSilentOnResync ||
+      TransportIssue.queryHeaderRefused ||
+      TransportIssue.wholeVehicleHeaderRefused ||
+      TransportIssue.legacyScanWouldBePartial ||
+      TransportIssue.linkStoppedResponding => null,
     };
 
 /// The line under a busy spinner, or null when there is nothing to say.

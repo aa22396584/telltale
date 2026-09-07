@@ -168,20 +168,100 @@ enum TransportIssue {
   /// The serial port opened and dropped straight away.
   serialDroppedOnOpen,
 
-  /// A write failed on an already-open link. Not a connect failure -- it
-  /// reaches the screen by a different path -- but it is a `TransportException`
-  /// like the rest, and leaving one construction without an identifier is how
-  /// the guard below stops meaning anything.
+  /// A write failed on an already-open link.
+  ///
+  /// Not a connect failure. The screen it reaches is the settings manual
+  /// command panel, which is the one place a command failure is rendered as
+  /// prose; `lib/ui/screens/settings/manual_command_copy.dart` says it.
   writeFailed,
+
+  // ------- the command path: failures of a link that is already open -------
+  //
+  // Everything above happens while a link is being established and is rendered
+  // by the connect screen. Everything below happens to a command, on a link
+  // that came up, and is rendered by the manual command panel. The split is
+  // not stylistic: a connect failure is answered by trying again, and a
+  // command failure is answered by reading what the adapter did.
+
+  /// The transport reported that the link went away without being asked to.
+  ///
+  /// An adapter pulled out of the OBD socket, or a radio that dropped. The
+  /// command in flight is failed because nothing is going to answer it.
+  ///
+  /// Deliberately not the same identifier as [disconnectedByApp], which
+  /// carries the same sentence today. One says something happened to the
+  /// adapter; the other says the app closed the link on purpose. Told the
+  /// first when the second is true, a reader goes looking for a fault in a car
+  /// that has none.
+  linkDroppedMidSession,
+
+  /// The app closed the link itself, so a command still in flight was failed.
+  ///
+  /// The outcome of the command is unknown -- it may have been transmitted --
+  /// but nothing is wrong with the link or the vehicle.
+  disconnectedByApp,
+
+  /// A command was refused before any byte left the app, because no link is
+  /// open. Provably unsent: the adapter owes nothing.
+  notConnected,
+
+  /// The adapter never answered the resynchronisation probe.
+  ///
+  /// The client had lost track of which reply belongs to which command, could
+  /// not recover the alignment, and tore the link down rather than go on
+  /// attributing answers it cannot attribute.
+  adapterSilentOnResync,
+
+  /// The adapter refused `ATSH` while aiming one query at one controller.
+  ///
+  /// `?` is how an ELM327 declines a header the current bus cannot take. The
+  /// query is not sent: on whatever header the adapter really holds, the reply
+  /// would come back from a controller nobody asked.
+  ///
+  /// Named for the method that was refused rather than for the kind of
+  /// address, because `sendGlobal` also installs a physical header on its
+  /// per-controller retry -- so "physical" would not separate the two.
+  queryHeaderRefused,
+
+  /// The adapter refused the `ATSH` a request *about the vehicle* needed.
+  ///
+  /// Separate from [queryHeaderRefused] because what is lost is different: a
+  /// fault-code scan, a clear or a VIN read is a question the whole emissions
+  /// system answers, and without the header its replies cannot be attributed
+  /// to the controllers that sent them. One unavailable sensor reading and an
+  /// unattributable whole-vehicle answer are not the same failure.
+  ///
+  /// The address is not always the functional broadcast one: the same code
+  /// path pursues a named controller when the scan retries the ones that
+  /// stayed silent. The Chinese message still says 功能定址 in both cases,
+  /// which is pre-existing and inaccurate on the retry; the identifier does
+  /// not repeat the claim.
+  wholeVehicleHeaderRefused,
+
+  /// A whole-vehicle scan was deliberately abandoned before it was sent.
+  ///
+  /// The bus is a legacy one, which has no single documented broadcast address
+  /// for OBD, and a physical header is currently installed. The scan would
+  /// therefore have gone to exactly one controller while the screen presented
+  /// the answer as the whole vehicle -- a clean result for a car nobody
+  /// finished checking. Nothing failed; the app refused.
+  legacyScanWouldBePartial,
+
+  /// Nothing arrived from the adapter within the watchdog's budget, so the
+  /// link was torn down. Distinct from [linkDroppedMidSession]: the transport
+  /// still believes it is connected, and the silence is what is known.
+  linkStoppedResponding,
 }
 
 /// Raised for link-level failures.
 ///
 /// [message] is Traditional Chinese and goes to the transcript verbatim.
 /// [issue] is what the screen renders, through
-/// `lib/ui/screens/connect/handshake_copy.dart`. Both describe the same
-/// failure; the guard in `test/l10n/transport_issue_guard_test.dart` is what
-/// keeps a new throw from carrying only one of them.
+/// `lib/ui/screens/connect/handshake_copy.dart` for a connect failure and
+/// `lib/ui/screens/settings/manual_command_copy.dart` for a command failure.
+/// Both describe the same failure; the guard in
+/// `test/l10n/transport_issue_guard_test.dart` is what keeps a new throw from
+/// carrying only one of them.
 class TransportException implements Exception {
   final String message;
   final Object? cause;
@@ -189,6 +269,23 @@ class TransportException implements Exception {
   /// Null only where the failure cannot reach a screen. The guard names the
   /// files where it may not be null.
   final TransportIssue? issue;
+
+  /// The one value the identifier's sentence has to name, carried as data.
+  ///
+  /// Three of the identifiers are about a specific address -- the header the
+  /// adapter refused, or the one it is stuck on -- and a sentence that cannot
+  /// say which one is a sentence nobody can act on. The value therefore has to
+  /// travel beside the identifier rather than inside it: an identifier per
+  /// header would be an unbounded enum, and interpolating it into [message]
+  /// would put it only in the Chinese sentence the screen no longer renders.
+  ///
+  /// A plain `String?` rather than a payload class, because there is exactly
+  /// one such value per failure and every one of them so far is a header
+  /// address. What keeps it honest is not the type but the guard: the scan in
+  /// `test/l10n/transport_issue_guard_test.dart` fails a throw that names one
+  /// of those three identifiers without also passing this. A payload class
+  /// would need the same guard and buy nothing else.
+  final String? issueDetail;
 
   /// Both named, and [issue] required.
   ///
@@ -200,10 +297,16 @@ class TransportException implements Exception {
   /// showed that the identifier had gone into the wrong slot. Found by review,
   /// by doing it.
   ///
-  /// Required rather than defaulted because the fourteen throws in
-  /// `elm327_client.dart` and `obd_session.dart` that have no identifier yet
-  /// should have to write `issue: null` and mean it. See ImL1s/telltale#45.
-  const TransportException(this.message, {this.cause, required this.issue});
+  /// Required rather than defaulted because the throws that have no identifier
+  /// yet should have to write `issue: null` and mean it. Eight of the original
+  /// fourteen were `elm327_client.dart`'s and now carry one; the six left are
+  /// in `lib/state/obd_session.dart`. See ImL1s/telltale#45.
+  const TransportException(
+    this.message, {
+    this.cause,
+    required this.issue,
+    this.issueDetail,
+  });
 
   @override
   String toString() => 'TransportException: $message';

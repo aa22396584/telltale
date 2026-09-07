@@ -3638,4 +3638,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectTransportSerialDroppedOnOpen =>
       'The serial port opened and closed again immediately.';
+
+  @override
+  String get settingsManualCommandNotConnected =>
+      'Nothing is connected, so the command was not sent.';
+
+  @override
+  String get settingsManualCommandLinkDropped =>
+      'The connection to the adapter dropped while this command was in flight, so nothing answered it. Whether the adapter received the command is not known.';
+
+  @override
+  String get settingsManualCommandDisconnectedByApp =>
+      'The app closed the connection while this command was in flight, so nothing answered it. Nothing is wrong with the adapter or the vehicle.';
+
+  @override
+  String get settingsManualCommandAdapterSilentOnResync =>
+      'The adapter\'s replies had fallen out of step with the commands sent to it, and it did not answer the check that would have put them back in step, so the connection was dropped. Connect again before retrying.';
+
+  @override
+  String get settingsManualCommandLinkStoppedResponding =>
+      'Nothing arrived from the adapter for long enough that the connection was dropped. It may still have power; what is known is the silence.';
+
+  @override
+  String get settingsManualCommandWriteFailed =>
+      'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
 }

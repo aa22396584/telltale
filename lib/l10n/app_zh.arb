@@ -959,5 +959,11 @@
   "connectTransportClassicAllTiersRefused": "無法連線到轉接器。請先在系統藍牙設定完成配對，並確認它已插上 OBD 埠且電門已開啟。",
   "connectTransportClassicConnectTimeout": "連線到轉接器逾時。它可能仍在回應中 —— 請等幾秒再試，不要立刻重試。",
   "connectTransportSerialPortOpenFailed": "無法開啟序列埠。請確認系統已為這個轉接器建立序列埠（Windows COMx / Linux /dev/rfcomm*），且電門已開啟。",
-  "connectTransportSerialDroppedOnOpen": "序列埠開啟後立刻又關閉了。"
+  "connectTransportSerialDroppedOnOpen": "序列埠開啟後立刻又關閉了。",
+  "settingsManualCommandNotConnected": "目前沒有連線，這條指令沒有送出。",
+  "settingsManualCommandLinkDropped": "這條指令還在等待回應時，與轉接器的連線中斷了，所以沒有任何回應。轉接器是否收到這條指令並不確定。",
+  "settingsManualCommandDisconnectedByApp": "這條指令還在等待回應時，App 主動關閉了連線，所以沒有任何回應。轉接器與車輛都沒有問題。",
+  "settingsManualCommandAdapterSilentOnResync": "轉接器的回應已經和送出的指令對不上，而它也沒有回應用來重新對齊的檢查，所以連線已中斷。請重新連線後再試一次。",
+  "settingsManualCommandLinkStoppedResponding": "轉接器安靜得夠久，連線已被中斷。它可能仍有電；能確定的只有這段沉默。",
+  "settingsManualCommandWriteFailed": "這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。"
 }
