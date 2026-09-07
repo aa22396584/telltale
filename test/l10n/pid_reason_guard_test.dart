@@ -288,4 +288,79 @@ void _pointerTests() {
           '${broken.join('\n')}',
     );
   });
+
+  test('every render site for these three families is one this suite knows '
+      'about', () {
+    // Round 3 of this branch wrote "the render site", singular. There are
+    // four, and mutating the three that were not pinned -- the mode+PID
+    // field, the save gate, and the CSV import snackbar -- left the whole
+    // suite green while every one of them printed a raw identifier at the
+    // reader: `serviceNotReadOnly`, `nameRequired`.
+    //
+    // The defect was not the missing tests. It was that the render sites were
+    // enumerated BY NAME, from whatever was in front of the author, while the
+    // throw sites two tests above are enumerated BY CENSUS -- scanned out of
+    // all of `lib/`. A hand-listed set is correct exactly once.
+    //
+    // So this counts them. The rule is mechanical: a render site is a call, in
+    // code, to a function declared in one of this feature's `*_copy.dart`
+    // files, made from a file that is not that copy file. The roster below is
+    // hand-typed, and the point of it is to fail when a fifth site appears --
+    // at which moment somebody has to write its test or say why not.
+    const copyFiles = [
+      'lib/ui/screens/pids/pid_formula_copy.dart',
+      'lib/ui/screens/pids/pid_rejection_copy.dart',
+      'lib/ui/screens/pids/pid_import_copy.dart',
+    ];
+
+    final exported = <String>{};
+    for (final path in copyFiles) {
+      final file = File(path);
+      expect(file.existsSync(), isTrue, reason: '$path is the census input');
+      for (final m in RegExp(r'^String\??\s+(\w+)\s*\(', multiLine: true)
+          .allMatches(codeOnly(file.readAsStringSync()))) {
+        exported.add(m.group(1)!);
+      }
+    }
+    expect(exported, isNotEmpty,
+        reason: 'no copy functions found, so this test asserts nothing');
+
+    final sites = <String>{};
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (copyFiles.contains(entity.path)) continue;
+      final code = codeOnly(entity.readAsStringSync());
+      for (final name in exported) {
+        // Counted, not merely detected. `pid_editor_screen.dart` calls
+        // `pidRejectionText` TWICE -- the mode+PID field and the save gate --
+        // and a roster keyed on (file, function) collapses them into one
+        // entry, so deleting one of the two would not move it. The count is
+        // what makes each call site individually visible.
+        final n = RegExp('\\b$name\\s*\\(').allMatches(code).length;
+        if (n > 0) sites.add('${entity.path} -> $name x$n');
+      }
+    }
+
+    // Hand-typed, and each line says which test renders it. A site with no
+    // test named beside it is the shape this whole test exists to surface.
+    const known = {
+      // the equation field's errorText — pid_editor_formula_error_test.dart
+      'lib/ui/screens/pids/pid_editor_screen.dart -> formulaIssueText x1',
+      // :208 the mode+PID field's errorText and :231 the save gate's Text,
+      // both rendered and read off the widget in pid_editor_rejection_test.dart
+      'lib/ui/screens/pids/pid_editor_screen.dart -> pidRejectionText x2',
+      // the CSV import snackbar. Its SENTENCE is pinned by the
+      // `pidCsvDiagnosticText` table in pid_reason_copy_test.dart; the render
+      // site itself is behind a file picker, so what stands on it is this
+      // census — replace the call with `issue.name` and the count drops to
+      // zero here. That is weaker than a widget test and is written down as
+      // such rather than left to look equivalent.
+      'lib/ui/screens/pids/pid_manager_screen.dart -> pidCsvDiagnosticText x1',
+    };
+    expect(sites, equals(known),
+        reason: 'a render site appeared or moved. Every one of these turns an '
+            'identifier into a sentence a person reads, and three of them once '
+            'printed the identifier instead with the suite green. Add the '
+            'widget test, then add the line here.');
+  });
 }

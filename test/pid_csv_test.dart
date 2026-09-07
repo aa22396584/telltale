@@ -226,6 +226,55 @@ void main() {
       );
       expect(imported.id, isNot(builtIn.id));
     });
+    test('a row refused by the DEFINITION rule names that rule and its value',
+        () {
+      // `rowDefinitionRejected` has two producers, and only one of them was
+      // reachable from any test: the unsafe-service branch, which
+      // safety_allowlist_test.dart covers. Its sibling — the branch fed by
+      // `PidDefinition.rejectionReason` — had nothing standing on it, so
+      // swapping its issue to `rowEmptyEquation` passed the whole suite while
+      // a row rejected for a malformed header rendered
+      // "Row 2: the formula cell is empty." Fluent, English, and wrong about
+      // the file in front of the reader.
+      //
+      // The mode+PID here is deliberately VALID (`010C` is a read-only
+      // current-data query), so the unsafe-service branch cannot fire and this
+      // can only be reaching the definition branch. `7EG` is not hex.
+      const wire =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Engine RPM,RPM,010C,((A*256)+B)/4,0,8000,rpm,7EG\r\n';
+      final result = PidCsv.parse(wire);
+
+      expect(result.pids, isEmpty);
+      final error = result.errors.single;
+      expect(error.issue, PidCsvIssue.rowDefinitionRejected);
+      expect(error.lineNumber, 2, reason: 'the data row, not the header row');
+
+      // The nested reason, which nothing in the repository read before. The
+      // sentence the importer shows quotes `text`, so an identifier without
+      // its value renders `The CAN header "" is not…`.
+      expect(error.rejection, isNotNull);
+      expect(error.rejection!.issue, PidRejection.invalidHeader);
+      expect(error.rejection!.text, '7EG');
+    });
+
+    test('the two producers of rowDefinitionRejected stay distinguishable', () {
+      // Same issue code, different reasons. A change that routed the unsafe
+      // service through the definition branch, or the reverse, would be
+      // invisible to a test that only checked `issue`.
+      const unsafe =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Actuate,ACT,2F01,A,0,100,x,7E0\r\n';
+      const malformed =
+          'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+          'Engine RPM,RPM,010C,((A*256)+B)/4,0,8000,rpm,7EG\r\n';
+
+      expect(PidCsv.parse(unsafe).errors.single.rejection!.issue,
+          PidRejection.serviceNotReadOnly);
+      expect(PidCsv.parse(malformed).errors.single.rejection!.issue,
+          PidRejection.invalidHeader);
+    });
+
   });
 }
 
