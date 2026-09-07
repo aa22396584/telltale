@@ -203,6 +203,12 @@ clearing DTCs, and do not treat this app as a substitute for professional
 inspection. See [SECURITY.md](SECURITY.md) for private vulnerability reporting
 and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
 
+---
+
+## Support
+
+If this project saved you some time, you can [buy me a coffee](https://buymeacoffee.com/iml1s).
+
 ## Licence and disclaimer
 
 Contributions are welcome under the [contributor guide](CONTRIBUTING.md).
