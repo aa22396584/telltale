@@ -179,13 +179,37 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   /// without offering it, the wizard is a dead end.
   bool _permissionPermanentlyDenied = false;
 
-  // `BlePermissionResult.deniedKind` is deliberately not read here. It is an
-  // identifier now rather than the fixed Chinese word it used to be, so the
-  // reason is no longer that it cannot be localized from this screen — it is
-  // that it would name nothing new: this screen lists bonded adapters with
-  // `forScanning: false`, and that path never requests location, so the
-  // refusal is always the Bluetooth one. The messages below say so outright
-  // instead of interpolating it.
+  // `BlePermissionResult.deniedKind` is deliberately not read here, which is a
+  // narrower statement than it used to be written as. It is an identifier now
+  // rather than the fixed Chinese word it once was, so the reason is no longer
+  // that this screen cannot localize it.
+  //
+  // This screen calls `_ensurePermissions` from two places and they are not
+  // alike. `_loadPairedDevices` below passes `forScanning: false`: on Android
+  // 12 and above the only thing that path can have refused is
+  // `BLUETOOTH_CONNECT`, and on 11 and below it asks for nothing at all, so
+  // the two `connectBluetoothPermission…` messages naming Bluetooth outright
+  // are correct on every release. The BLE tab is the other caller — `_BleBody`
+  // is built with `ensurePermissions: () => _ensurePermissions(forScanning:
+  // true)` — and there the kind is not fixed: on Android 11 and below
+  // `ensureBluetoothPermissions` requests `ACCESS_FINE_LOCATION` and returns
+  // `BlePermissionKind.location`.
+  //
+  // On that path the copy is wrong, and this comment says so rather than
+  // phrasing the screen as if the path did not exist. `_BleBody._startScan`
+  // shows `connectBlePermissionNeeded` / `connectBlePermissionDeniedForever`;
+  // both name Bluetooth, and the second sends the reader into app settings to
+  // find a Bluetooth switch that Android 11 and below does not offer, when
+  // what they refused was Location. `minSdk` is 24 and AndroidManifest.xml
+  // keeps `ACCESS_FINE_LOCATION` at `maxSdkVersion="30"`, so the branch ships.
+  //
+  // That is a separate defect and it is not fixed here: this screen behaves
+  // exactly as it did before `deniedKind` became an enum, because neither
+  // version read it. A fix threads the kind out of `_ensurePermissions` into
+  // `_BleBody` and picks the sentence from it — the wear shell already does
+  // that through `blePermissionName`, so the copy exists. Until then, what
+  // this line records is that nothing here reads `deniedKind`, which is
+  // precisely the thing such a fix has to change.
 
   Future<void> _loadPairedDevices() async {
     // Read before the first await. Every await below can outlive the screen,
