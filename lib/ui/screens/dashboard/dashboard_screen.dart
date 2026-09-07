@@ -248,7 +248,7 @@ class _WorkspaceToolbar extends StatelessWidget {
           children: [
             Expanded(child: switcher),
             const SizedBox(width: Spacing.md),
-            history,
+            Expanded(child: history),
           ],
         );
       },
