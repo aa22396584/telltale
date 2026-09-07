@@ -22,6 +22,7 @@ import '../../widgets/gauges/linear_gauge.dart';
 import 'pid_formula_copy.dart';
 import 'pid_rejection_copy.dart';
 import '../../widgets/panel.dart';
+import 'pid_mutation_copy.dart';
 
 class PidEditorScreen extends ConsumerStatefulWidget {
   const PidEditorScreen({this.pidId, super.key});
@@ -262,10 +263,10 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     return l10n.pidEditorCollision(clash.first.name);
   }
 
-  void _showMutationLocked(AppLocalizations l10n) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.telemetryBlockedByRecorder)));
+  void _showMutationLocked(AppLocalizations l10n, PidMutationFailure failure) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(pidMutationFailureText(l10n, failure))),
+    );
   }
 
   Future<void> _save() async {
@@ -298,12 +299,11 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
 
     final previous = _original;
     final registry = ref.read(pidRegistryProvider.notifier);
-    final locked = previous == null
-        ? (await registry.upsertCustom(pid)).failure ==
-              PidMutationFailure.locked
-        : (await registry.replaceCustom(previous, pid)).isLocked;
-    if (locked) {
-      if (mounted) _showMutationLocked(l10n);
+    final failure = previous == null
+        ? (await registry.upsertCustom(pid)).failure
+        : (await registry.replaceCustom(previous, pid)).failure;
+    if (failure != null) {
+      if (mounted) _showMutationLocked(l10n, failure);
       return;
     }
     if (mounted) context.pop();
@@ -341,8 +341,9 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     final outcome = await ref
         .read(pidRegistryProvider.notifier)
         .removeCustom(pid);
-    if (outcome.isLocked) {
-      if (mounted) _showMutationLocked(l10n);
+    final failure = outcome.failure;
+    if (failure != null) {
+      if (mounted) _showMutationLocked(l10n, failure);
       return;
     }
     if (mounted) context.pop();

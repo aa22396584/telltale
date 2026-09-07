@@ -130,6 +130,7 @@ Future<ProviderContainer> _pump(
   bool experimentalAccess = false,
   bool connected = false,
   bool loadError = false,
+  Locale locale = testUiLocale,
 }) async {
   SharedPreferences.setMockInitialValues({
     if (experimentalAccess) 'powertrain_battery_experiments_enabled_v1': true,
@@ -153,6 +154,7 @@ Future<ProviderContainer> _pump(
       container: container,
       child: localizedMaterialApp(
         theme: AppTheme.dark(),
+        locale: locale,
         home: const PowertrainBatteryCatalogScreen(),
       ),
     ),
@@ -294,13 +296,48 @@ void main() {
       await tester.tap(find.byKey(const Key('powertrain_uninstall_mg-zs-ev')));
       await tester.pumpAndSettle();
 
-      expect(find.text(kPidMutationLockedMessage), findsOneWidget);
+      // Typed out here, not read from AppLocalizations: this sentence was a
+      // `const kPidMutationLockedMessage` in `lib/state/`, and a test that
+      // asked the ARB for it would have gone on passing while the screen
+      // snacked the constant. Its English twin is the test below.
+      expect(find.text('請先停止並儲存'), findsOneWidget);
       expect(
         container
             .read(pidRegistryProvider.notifier)
             .installedPowertrainProfileIds,
         {'mg-zs-ev'},
       );
+      container.read(pidMutationLockProvider).release(token);
+    },
+  );
+
+  testWidgets(
+    'the recording lock refuses an English screen in English',
+    (tester) async {
+      // The half the Chinese assertion above cannot make: the sentence used to
+      // be a `const` in `lib/state/pid_mutation_lock.dart`, so a zh-Hant pump
+      // rendered exactly the right words for exactly the wrong reason. An
+      // English driver got 請先停止並儲存. This is the same tap under an English
+      // locale, and both sentences are typed out here rather than read back
+      // from AppLocalizations.
+      final container = await _pump(tester, locale: const Locale('en'));
+      addTearDown(container.dispose);
+      await container
+          .read(pidRegistryProvider.notifier)
+          .installPowertrainProfile(_snapshot, 'mg-zs-ev', vehicleYear: 2021);
+      await tester.pumpAndSettle();
+
+      final token = container
+          .read(pidMutationLockProvider)
+          .tryAcquire('recording')!;
+      await tester.ensureVisible(
+        find.byKey(const Key('powertrain_uninstall_mg-zs-ev')),
+      );
+      await tester.tap(find.byKey(const Key('powertrain_uninstall_mg-zs-ev')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stop and save the recording first'), findsOneWidget);
+      expect(find.text('請先停止並儲存'), findsNothing);
       container.read(pidMutationLockProvider).release(token);
     },
   );

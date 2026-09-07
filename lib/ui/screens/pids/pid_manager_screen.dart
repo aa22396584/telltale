@@ -24,6 +24,7 @@ import '../../../state/app_share_coordinator.dart';
 import '../../widgets/panel.dart';
 import 'pid_editor_screen.dart';
 import 'pid_import_copy.dart';
+import 'pid_mutation_copy.dart';
 import 'powertrain_battery_catalog_screen.dart';
 
 class PidManagerScreen extends ConsumerStatefulWidget {
@@ -178,7 +179,8 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     // screen when the user tapped, and `context` may not survive the gap.
     final l10n = AppLocalizations.of(context);
     final outcome = await ref.read(activePidsProvider.notifier).toggle(pid);
-    if (outcome.isLocked) _snack(l10n.telemetryBlockedByRecorder);
+    final failure = outcome.failure;
+    if (failure != null) _snack(pidMutationFailureText(l10n, failure));
   }
 
   Future<void> _addConfirmedSupported(
@@ -220,6 +222,9 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         .read(activePidsProvider.notifier)
         .appendPositivelyConfirmed(summary);
     if (outcome.isLocked) {
+      // `SupportedPidSelectionOutcome`, not `PidMutationOutcome`: it carries
+      // its own result enum and no `PidMutationFailure`, so it names the
+      // sentence directly rather than going through the copy switch.
       _snack(l10n.telemetryBlockedByRecorder);
     } else if (outcome.addedCount > 0) {
       _snack(l10n.pidBulkAdded(outcome.addedCount));
@@ -854,10 +859,13 @@ class _ArrangeSheet extends ConsumerWidget {
                           final outcome = await ref
                               .read(activePidsProvider.notifier)
                               .reorder(oldIndex, newIndex);
-                          if (outcome.isLocked && context.mounted) {
+                          final failure = outcome.failure;
+                          if (failure != null && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(l10n.telemetryBlockedByRecorder),
+                                content: Text(
+                                  pidMutationFailureText(l10n, failure),
+                                ),
                               ),
                             );
                           }
