@@ -572,19 +572,23 @@ class _StatusStrip extends ConsumerWidget {
 /// The polling-mode pill, and the explanation behind it.
 ///
 /// What the label may say is fixed by what the flag on the snapshot proves.
-/// `PriorityScheduler.fastModeEnabled` (priority_scheduler.dart:66) starts
-/// `true` before any request goes out, and `PollingEngine.start`
-/// (polling_engine.dart:3517) resets it to `true` for every new connection, so
-/// a `true` here is permission rather than a record. Even with it set, a
-/// request is only grouped when the member PID is confirmed batchable and more
-/// than one is queued (priority_scheduler.dart:144 and :243). "Enabled" is
-/// therefore the strongest true thing to print; "active", "batched" or
-/// "verified" would all be claims this state cannot make.
+/// `PriorityScheduler.fastModeEnabled` is `true` before any request goes out,
+/// and `PollingEngine.start` resets it to `true` for every new connection, so
+/// a `true` here is permission rather than a record. Even with it set,
+/// `PriorityScheduler.nextBatch` only groups a request when the member PID is
+/// confirmed batchable and more than one is queued. "Enabled" is therefore the
+/// strongest true thing to print; "active", "batched" or "verified" would all
+/// be claims this state cannot make.
 ///
 /// `false` is different, and stronger. It is only ever set by
-/// `handleCorruptionEvent` (priority_scheduler.dart:263), and while it is down
-/// `nextBatch` returns exactly one request, so single-request polling is what
-/// is happening rather than what is allowed.
+/// `PriorityScheduler.handleCorruptionEvent`, and while it is down `nextBatch`
+/// returns exactly one request, so single-request polling is what is happening
+/// rather than what is allowed.
+///
+/// No line numbers here on purpose: nothing in the suite holds a `file:line`
+/// in a comment to the line it names, so one goes stale the next time either
+/// file is edited and nothing turns red. The symbols are checkable; the
+/// numbers are in the change's own report.
 ///
 /// The whole pill is the button. It opens a dialog and touches nothing else:
 /// no provider is written, no command is queued, and the transport is not
