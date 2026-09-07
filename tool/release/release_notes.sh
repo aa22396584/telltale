@@ -23,6 +23,12 @@ set -euo pipefail
 MODE=${1:-notes}
 : "${TAG:?TAG is required}"
 
+# Overridable so the contract test can run the real extraction against a
+# fixture instead of the repository's own CHANGELOG -- a test that asserted
+# something about the real file would go red at the next release for being
+# right.
+CHANGELOG_PATH=${CHANGELOG_PATH:-CHANGELOG.md}
+
 # SemVer: everything after the first hyphen is a pre-release identifier.
 # v1.0.1 is a release; v1.0.1-beta.1 is not.
 is_prerelease() {
@@ -32,14 +38,233 @@ is_prerelease() {
   esac
 }
 
+# The version the CHANGELOG heading has to name: the tag without its `v` and
+# without any pre-release identifier, so `v1.0.13-beta.1` looks for `1.0.13`.
+version_from_tag() {
+  local v=${TAG#v}
+  printf '%s' "${v%%-*}"
+}
+
+# The `## <version>` section of the CHANGELOG, heading included, or nothing.
+#
+# Parsed rather than matched with a built regex: the heading is `## 1.0.12 —
+# 2026-09-07` today and was `## 1.0.7+8 — 2026-08-31` before the versionCode
+# came out of the name, so the first token has to lose an optional `+N` before
+# it is compared. Building that comparison as a dynamic regex means escaping a
+# `+` and a `.` through the shell into awk, differently on the two awks this
+# runs under; comparing strings needs no escaping and reads the same on both.
+#
+# `## Unreleased` is a heading like any other and simply does not match, which
+# is the behaviour that matters: an unreleased note must never ship as if it
+# described the build.
+changelog_section() {
+  awk -v want="$1" '
+    # Does this line leave an HTML comment OPEN at its end? Pair off every
+    # complete `<!-- ... -->` from the left and answer about what is left.
+    #
+    # `$0 ~ /<!--/ && $0 !~ /-->/` was the first version and it is order
+    # blind: any `-->` anywhere on the line, INCLUDING one that appears before
+    # the `<!--`, said "this line opens nothing". A reviewer turned that into
+    # a working defeat -- `<span>--></span> <!--` followed by a heading -- and
+    # the gate published a hidden example as the release body. The correct
+    # implementation was already in this repository, in `_proseOnly()` in
+    # `test/release_notes_contract_test.dart`; the shell just had its own,
+    # weaker one. Two parsers of the same file is the recurring defect here.
+    function opens_comment(s,   i, j) {
+      while (1) {
+        i = index(s, "<!--")
+        if (i == 0) return 0
+        s = substr(s, i + 4)
+        j = index(s, "-->")
+        if (j == 0) return 1
+        s = substr(s, j + 3)
+      }
+    }
+    # A `## 1.0.13` inside a fenced block or an HTML comment is an EXAMPLE or
+    # an invisible line, and a scan that cannot tell publishes it as the
+    # release body -- and clears the gate for a version with no section. Not
+    # hypothetical: the device-walk gate shipped with exactly this hole, where
+    # the fenced example in the file it scanned was a live attestation. So a
+    # heading only counts where a reader sees one.
+    {
+      is_heading = 0
+      is_fence = 0
+      if (!incomment) {
+        # CommonMark allows at most three spaces of indent before a fence; at
+        # four it is an indented code block and not a fence at all. `^[ \t]*`
+        # accepted any indent, so an indented block suppressed the next REAL
+        # heading and the gate refused a section that was there.
+        ind = 0
+        while (substr($0, ind + 1, 1) == " ") ind++
+        if (ind <= 3 && match(substr($0, ind + 1), /^(```+|~~~+)/)) {
+          m = substr($0, ind + 1, RLENGTH)
+          c = substr(m, 1, 1)
+          n = length(m)
+          rest = substr($0, ind + 1 + RLENGTH)
+          # The closer is the same character as the opener and at least as
+          # long. Both halves are checked by their own fixture; weakening
+          # either one left every test green until they were written.
+          if (fence == "") {
+            # A backtick opener may not carry a backtick in its info string.
+            # Without this, prose like "``` this ` is not a fence" opened a
+            # block that suppressed the next real heading, and the gate
+            # refused a release that was there.
+            if (c != "`" || index(rest, "`") == 0) { fence = c; flen = n; is_fence = 1 }
+          } else if (c == fence && n >= flen && rest ~ /^[ \t]*$/) {
+            # A CLOSING fence carries nothing but whitespace. Closing on the
+            # marker alone let ```` ```not-a-closing-fence ```` end the block,
+            # which makes the next `## <version>` inside the example live.
+            fence = ""; flen = 0; is_fence = 1
+          }
+        }
+      }
+      # A fence delimiter line is a delimiter in both directions and nothing
+      # else. The case that motivated the closing half no longer reaches it:
+      # ``` followed by `<!--` used to close the block and then open a comment
+      # that swallowed the rest of the file, and a closer carrying trailing
+      # text is not a closer at all now, one branch above. Removing
+      # `is_fence = 1` from the closing arm reddens nothing — measured, not
+      # assumed — so it is symmetry rather than a guard, and saying otherwise
+      # would be one more claim with no check under it.
+      #
+      # Known limit, in the safe direction: a literal `<!--` in prose or in
+      # inline code, with no `-->`, opens comment mode here and the file is
+      # then refused as having an unterminated comment. Telling that apart
+      # from a real comment needs inline-code parsing, which this does not
+      # do. It refuses with a message naming the reason; it does not publish.
+      if (!is_fence && fence == "") {
+        if (incomment) {
+          j = index($0, "-->")
+          if (j > 0) incomment = opens_comment(substr($0, j + 3))
+        } else if (inraw) {
+          # CommonMark HTML block type 1: `<pre>`, `<script>`, `<style>` and
+          # `<textarea>` hold raw text to the matching close, so a line
+          # beginning `## ` inside one renders as preformatted text and is not
+          # a heading. Without this the gate accepted an HTML sample as a
+          # section and published it.
+          if (tolower($0) ~ /<\/(pre|script|style|textarea)>/) inraw = 0
+        } else if (tolower($0) ~ /^[ ]{0,3}<(pre|script|style|textarea)[ \t>]/) {
+          inraw = (tolower($0) ~ /<\/(pre|script|style|textarea)>/) ? 0 : 1
+        } else {
+          if ($0 ~ /^## /) is_heading = 1
+          incomment = opens_comment($0)
+        }
+      }
+    }
+    # The fence lines themselves are still part of a section BODY, so all of
+    # the above suppresses the heading interpretation and not the printing.
+    is_heading {
+      if (inside) inside = 0
+      h = substr($0, 4)
+      sub(/[[:space:]].*$/, "", h)
+      sub(/\+[0-9]+$/, "", h)
+      # `h == want`, not a prefix test: `## 1.0.1+2` sits below `## 1.0.12` in
+      # the real file, and a prefix match hands back the wrong entry.
+      if (h == want) { seen++; inside = 1; print }
+      next
+    }
+    inside { print }
+    # Scanning continues past the section rather than exiting, so these two
+    # can be answered. Both used to be silent, and one of them was worse than
+    # silent: an unterminated fence INSIDE the wanted section swept every
+    # older entry below it into the release body, exit 0, and the workflow
+    # will not overwrite a release once published.
+    END {
+      if (fence != "" || incomment || inraw) exit 3
+      if (seen > 1) exit 4
+    }
+  ' "$CHANGELOG_PATH"
+}
+
+# Fail closed, and say which file and which heading. A release whose notes
+# cannot say what changed is the thing this subcommand exists to stop, so it
+# refuses rather than printing a placeholder -- and it prints NOTHING on
+# stdout when it refuses, because the publish step redirects stdout into the
+# release body.
+require_changelog() {
+  local want section rc visible
+  want=$(version_from_tag)
+  rc=0
+  section=$(changelog_section "$want") || rc=$?
+  case "$rc" in
+    0) ;;
+    3)
+      echo "::error::$CHANGELOG_PATH has an unterminated fenced block or HTML" >&2
+      echo "::error::comment. Everything after it is invisible to a reader and" >&2
+      echo "::error::would be swept into the release body. Close it and re-tag." >&2
+      return 1
+      ;;
+    4)
+      echo "::error::$CHANGELOG_PATH has more than one '## $want' section." >&2
+      echo "::error::Which one is the release? Merge them and re-tag." >&2
+      return 1
+      ;;
+    *)
+      echo "::error::could not read $CHANGELOG_PATH (exit $rc)" >&2
+      return 1
+      ;;
+  esac
+
+  if [ -z "$(printf '%s' "$section" | tr -d '[:space:]')" ]; then
+    echo "::error::$CHANGELOG_PATH has no '## $want' section." >&2
+    echo "::error::A release has to be able to say what changed. Add the" >&2
+    echo "::error::section (an '## Unreleased' heading does not count, and" >&2
+    echo "::error::neither does a heading inside a fenced block or an HTML" >&2
+    echo "::error::comment) and re-tag." >&2
+    return 1
+  fi
+
+  # The heading is not the answer. Matching prints the heading line, so the
+  # emptiness test above can only ever mean "no section at all" -- while the
+  # message under it, and `docs/maintainers/release.md`, both say a release
+  # has to say what CHANGED. A bare `## 1.0.13 — 2026-09-08` with the next
+  # heading straight after it satisfied the first and not the second, and
+  # published one lonely heading as the release body.
+  # Comments stripped first: a body of `<!-- TODO: describe this release -->`
+  # has plenty of non-whitespace bytes and renders as nothing at all, which is
+  # the heading-only failure this check was added to stop, wearing a hat.
+  visible=$(printf '%s\n' "$section" | tail -n +2 | awk '
+    function strip(line,   out, i, j) {
+      out = ""
+      while (length(line) > 0) {
+        if (incomment) {
+          j = index(line, "-->")
+          if (j == 0) return out
+          line = substr(line, j + 3); incomment = 0
+        } else {
+          i = index(line, "<!--")
+          if (i == 0) return out line
+          out = out substr(line, 1, i - 1)
+          line = substr(line, i + 4); incomment = 1
+        }
+      }
+      return out
+    }
+    { print strip($0) }
+  ')
+  if [ -z "$(printf '%s' "$visible" | tr -d '[:space:]')" ]; then
+    echo "::error::$CHANGELOG_PATH has a '## $want' heading with nothing" >&2
+    echo "::error::under it. A heading is not a description of what changed." >&2
+    return 1
+  fi
+
+  printf '%s\n' "$section"
+}
+
 case "$MODE" in
   flag)
     if is_prerelease; then echo prerelease; else echo full; fi
     exit 0
     ;;
+  changelog)
+    # The same extraction the notes use, on its own, so the workflow can run it
+    # BEFORE the forty-minute build instead of discovering the gap at publish.
+    require_changelog
+    exit $?
+    ;;
   notes) ;;
   *)
-    echo "usage: release_notes.sh notes|flag" >&2
+    echo "usage: release_notes.sh notes|flag|changelog" >&2
     exit 2
     ;;
 esac
@@ -48,6 +273,32 @@ esac
 : "${APK_SIZE:?APK_SIZE is required}"
 : "${APK_SHA256:?APK_SHA256 is required}"
 : "${APK_FINGERPRINT:?APK_FINGERPRINT is required}"
+
+# What changed, first, because it is the first thing a reader wants and it was
+# missing entirely from every release before v1.0.13. The three blocks below
+# this one all answer "what is this build NOT" -- who signed it, how far the
+# walk went, what has never been driven -- and they were written during the
+# argument about the pre-release flag, when nobody asked what a reader opens a
+# release page to find out. The answer was in `CHANGELOG.md` the whole time.
+#
+# English only, and said so, because `CHANGELOG.md` is the single source and
+# translating it here would put a second wording of the same claims in a place
+# no reviewer reads. The store listings carry the translated version.
+#
+# On its own line with an explicit `|| exit`, not inlined into `printf`: a
+# failing command substitution inside an argument leaves the exit status of
+# `printf`, so `set -e` would not fire and the release would publish with the
+# refusal on stderr and an empty section in the body. That is the same
+# fail-open shape the release flag had when it was inlined into an `if`.
+changelog_body=$(require_changelog) || exit 1
+printf '%s\n\n' "$changelog_body"
+cat <<'CHANGELOG_NOTE'
+The section above is this release's entry from `CHANGELOG.md`, in English.
+繁體中文版本在 Google Play 的「最新動態」。
+
+---
+
+CHANGELOG_NOTE
 
 # Exactly one of these two prints, and each states only what its own gate
 # checks -- which took three passes to get right, each time because the prose

@@ -57,7 +57,8 @@ const _sha = 'b1946ac92492d2347c6235b4d2611184b1946ac92492d2347c6235b4d2611184';
 const _fingerprint =
     '7e97b3dd0b3f11a9a593cf8d182d49032490022938cecaafde90b53d5825414d';
 
-ProcessResult _notes(String mode, {required String tag}) => Process.runSync(
+ProcessResult _notes(String mode, {required String tag, String? changelog}) =>
+    Process.runSync(
       'bash',
       [_notesScript, mode],
       environment: {
@@ -66,6 +67,7 @@ ProcessResult _notes(String mode, {required String tag}) => Process.runSync(
         'APK_SIZE': '31M',
         'APK_SHA256': _sha,
         'APK_FINGERPRINT': _fingerprint,
+        'CHANGELOG_PATH': ?changelog,
       },
     );
 
@@ -78,8 +80,36 @@ String _flag(String tag) {
   return (r.stdout as String).trim();
 }
 
+/// A CHANGELOG the notes tests own, written once for the whole file.
+///
+/// Without it every test that calls [_body] depends on the live
+/// `CHANGELOG.md` having a section for whatever tag it passes. Renaming the
+/// real `## 1.0.12` heading reddened SEVEN tests, six of them about the
+/// pre-release flag, the evidence boundary and the artifact table — subjects
+/// with no connection to the changelog at all. A reviewer measured that. The
+/// coupling is the thing this file's own comments warn about two hundred
+/// lines down, and it arrived the moment the notes started reading a second
+/// file.
+///
+/// The 1.0.12 entry here is deliberately not the real one: a test that wants
+/// the real file's content should say so by reading the real file.
+final String _fixtureChangelog = () {
+  final dir = Directory.systemTemp.createTempSync('notes_changelog');
+  final f = File('${dir.path}/CHANGELOG.md')
+    ..writeAsStringSync('# Changelog\n'
+        '\n'
+        '## Unreleased\n'
+        '\n'
+        '- UNSHIPPED: this line must never reach a release body.\n'
+        '\n'
+        '## 1.0.12 — 2026-09-07\n'
+        '\n'
+        '- FIXTURE: not the real entry, and not meant to be.\n');
+  return f.path;
+}();
+
 String _body(String tag) {
-  final r = _notes('notes', tag: tag);
+  final r = _notes('notes', tag: tag, changelog: _fixtureChangelog);
   expect(r.exitCode, 0, reason: 'stderr: ${r.stderr}');
   return r.stdout as String;
 }
@@ -441,6 +471,550 @@ void main() {
       expect(yaml.indexOf('bash $_gateScript'),
           lessThan(yaml.indexOf('- name: Restore the community signing key')));
     });
+
+    test('the changelog gate step is fatal, and runs before the build', () {
+      if (!isPublicCheckout) return;
+      final yaml = File(_workflow).readAsStringSync();
+      // The same whole-block comparison, for the same three defeats: a
+      // `continue-on-error: true`, a `|| true`, or a doctored TAG all leave a
+      // step that looks like a gate and refuses nothing. Grepping for the run
+      // line survives all three.
+      final start = yaml.indexOf('- name: Require a CHANGELOG section');
+      expect(start, greaterThan(0));
+      final end = yaml.indexOf('      - name: ', start + 10);
+      expect(end, greaterThan(start));
+      expect(
+        yaml.substring(start, end).trimRight(),
+        '- name: Require a CHANGELOG section for this version\n'
+            '        env:\n'
+            '          TAG: \${{ steps.release_tag.outputs.tag }}\n'
+            '        run: bash $_notesScript changelog > /dev/null',
+        reason: 'the changelog gate must be exactly this: the tag it is handed '
+            'is the tag being published, and nothing may make its failure '
+            'non-fatal',
+      );
+      // `> /dev/null` on purpose: this step is asked whether the section
+      // exists, not to produce the body. The body is composed at publish time
+      // from the same function, so the two cannot disagree about what a
+      // section is.
+      expect(yaml.indexOf('$_notesScript changelog'),
+          lessThan(yaml.indexOf('- name: Restore the community signing key')),
+          reason: 'refusing a tag for a missing changelog after a 40-minute '
+              'build is the stall this gate exists to avoid');
+    });
+  });
+
+  group('the release notes say what changed', () {
+    // Every block the notes printed before v1.0.13 answered "what is this
+    // build NOT" -- who signed it, how far the walk went, what has never been
+    // driven -- and none of them answered "what changed". `CHANGELOG.md` had
+    // the answer the whole time and no path carried it to the release page.
+    // The user reading the release said so; nothing here would have.
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('changelog_notes'));
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    // A fixture rather than the repository's own CHANGELOG. A test asserting
+    // that the real file has a section for the real current version goes red
+    // at the next version bump for being right, and the next person deletes
+    // it. The gate below does that job on the real file, in the workflow,
+    // where being red is the point.
+    /// A CHANGELOG with arbitrary content, for the cases the shared fixture
+    /// would make unreadable.
+    String rawFixture(String contents) {
+      final f = File('${tmp.path}/raw-${contents.hashCode}.md')
+        ..writeAsStringSync(contents);
+      return f.path;
+    }
+
+    String fixture() {
+      final f = File('${tmp.path}/CHANGELOG.md')
+        ..writeAsStringSync('# Changelog\n'
+            '\n'
+            '## Unreleased\n'
+            '\n'
+            '- UNSHIPPED: this line must never reach a release body.\n'
+            '\n'
+            'An example of what a finished entry looks like:\n'
+            '\n'
+            '```markdown\n'
+            '## 9.9.7 — 2025-01-01\n'
+            '\n'
+            '- FENCED: an example, not a release.\n'
+            '```\n'
+            '\n'
+            '<!--\n'
+            '## 9.9.6 — 2024-01-01\n'
+            '\n'
+            '- COMMENTED: not a release either.\n'
+            '-->\n'
+            '\n'
+            '## 9.9.9 — 2026-01-01\n'
+            '\n'
+            '### Fixed\n'
+            '\n'
+            '- The fixture entry for nine.\n'
+            '\n'
+            '## 9.9.8+42 — 2025-12-31\n'
+            '\n'
+            '- OLDER: the previous section, which must not be swept in.\n');
+      return f.path;
+    }
+
+    test('the body leads with this version\'s section, verbatim', () {
+      final r = _notes('notes', tag: 'v9.9.9', changelog: fixture());
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      final body = r.stdout as String;
+      // Hand-typed, including the heading and its date: the section is
+      // reproduced, not summarised, and the heading is what tells a reader
+      // which version they are looking at.
+      expect(
+        body,
+        startsWith('## 9.9.9 — 2026-01-01\n'
+            '\n'
+            '### Fixed\n'
+            '\n'
+            '- The fixture entry for nine.\n'),
+        reason: 'the changelog section must come first -- it is the first '
+            'thing a reader opens a release page for',
+      );
+      // And it is still the notes: the other three blocks did not move out.
+      expect(body, contains('What this build has been run against'));
+      expect(body, contains('signed with the community key'));
+    });
+
+    test('a version with no section is refused, and stdout stays empty', () {
+      // Both halves. A script that prints the refusal and exits 0 publishes a
+      // release with an error message in its body; one that exits 1 after
+      // writing a partial body leaves the workflow's `> notes.md` holding it.
+      final r = _notes('notes', tag: 'v7.7.7', changelog: fixture());
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty,
+          reason: 'the publish step redirects stdout into the release body, '
+              'so a refusal must write nothing there');
+      expect(r.stderr, contains("has no '## 7.7.7' section"));
+    });
+
+    test('the section stops at the next heading, and starts at the right one',
+        () {
+      // Two boundaries, one on each side, and the tokens are hand-matched to
+      // the fixture's own case. The first version of this test asserted
+      // `isNot(contains('the old heading shape'))` against a fixture that says
+      // `The old heading shape` — case-sensitive, so the check could not fail,
+      // and removing awk's stop condition reddened nothing at all. Found by
+      // mutating, in the pull request about claims outrunning checks.
+      final r = _notes('notes', tag: 'v9.9.9', changelog: fixture());
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      final body = r.stdout as String;
+
+      // Below: the next section must not be swept in.
+      expect(body, isNot(contains('OLDER')),
+          reason: 'the scan must stop at the next `## ` heading');
+      expect(body, isNot(contains('9.9.8')));
+
+      // Above: `## Unreleased` is a heading like any other to a naive scan,
+      // and the one heading whose contents are by definition not in the build.
+      expect(body, isNot(contains('UNSHIPPED')),
+          reason: 'an implementation that starts at the FIRST heading rather '
+              'than the matching one ships the unreleased notes');
+
+      // And the assertions above are only worth anything if the fixture puts
+      // those tokens where they can be found. Proven, not assumed.
+      final source = File(fixture()).readAsStringSync();
+      expect(source, contains('OLDER'));
+      expect(source, contains('UNSHIPPED'));
+    });
+
+    test('the old `+N` heading shape still matches', () {
+      // `## 1.0.7+8 — 2026-08-31` is what the headings looked like before the
+      // versionCode came out of the name, and half the file still reads that
+      // way. A version comparison that did not drop `+N` would refuse every
+      // one of them.
+      final r = _notes('changelog', tag: 'v9.9.8', changelog: fixture());
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, startsWith('## 9.9.8+42 — 2025-12-31'));
+    });
+
+    test('a fenced example is not a section', () {
+      // The failure this project has already had once, in the other gate:
+      // `require_device_walk.sh` scanned a file whose own documentation
+      // contained a worked example, written with a real version, and the
+      // example cleared the gate for a release with no walk. A reviewer found
+      // it; the fixtures did not. The same shape is available here — a
+      // CHANGELOG that shows what an entry looks like — and it would both
+      // clear the tag and publish the example, closing fence and all, as the
+      // release body.
+      final r = _notes('changelog', tag: 'v9.9.7', changelog: fixture());
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      // Pinned, because "it refused" and "it refused for THIS reason" are
+      // different claims and only the second is the one in the test's name.
+      // Its sibling below lacked this line, and replacing the refusal message
+      // wholesale left that sibling green. (`isNot(contains('FENCED'))` used
+      // to sit here too; after `isEmpty` it cannot fail on its own, so it read
+      // as a second check and was not one.)
+      expect(r.stderr, contains("has no '## 9.9.7' section"));
+    });
+
+    test('a commented-out heading is not a section', () {
+      // The other half of what a reader does not see. An HTML comment is how a
+      // draft entry gets parked in a Markdown file.
+      final r = _notes('changelog', tag: 'v9.9.6', changelog: fixture());
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains("has no '## 9.9.6' section"),
+          reason: 'without this the test cannot tell "refused because the '
+              'heading is inside a comment" from "refused for any reason at '
+              'all, including the script falling over" — proven: replacing '
+              'the refusal message wholesale left this test green');
+    });
+
+    test('a comment that opens after a stray closer is still a comment', () {
+      // A working defeat, found by review, of the shape `28d6cfe` was written
+      // to close — moved from fences to comments. The detector asked
+      // `$0 ~ /<!--/ && $0 !~ /-->/`, which is order blind: a `-->` anywhere
+      // on the line, including BEFORE the `<!--`, said the line opened
+      // nothing. The heading below is genuinely inside the comment, a reader
+      // sees none of it, and the gate published it as the release body.
+      //
+      // `_proseOnly` in this same file already paired the delimiters off from
+      // the left. The shell had its own weaker copy, which is this project's
+      // most repeated defect.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## Unreleased\n'
+          '\n'
+          '<span>--></span> <!--\n'
+          '## 9.9.9 — 2026-01-01\n'
+          '\n'
+          '- HIDDEN: a reader sees none of this.\n'
+          '-->\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- The real one.\n');
+      final fake = _notes('changelog', tag: 'v9.9.9', changelog: f);
+      expect(fake.exitCode, isNot(0));
+      expect(fake.stdout, isEmpty);
+      expect(fake.stderr, contains("has no '## 9.9.9' section"));
+      final real = _notes('changelog', tag: 'v4.4.4', changelog: f);
+      expect(real.exitCode, 0, reason: real.stderr as String);
+      expect(real.stdout, startsWith('## 4.4.4 — 2026-04-04'));
+    });
+
+    test('an indented block is not a fence', () {
+      // The error in the other direction, and the one a gate must not make
+      // quietly: CommonMark allows at most three spaces before a fence, and
+      // at four it is an indented code block. Accepting any indent let such a
+      // block suppress the next REAL heading, so the gate refused a section
+      // that was there and said it did not exist.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## Unreleased\n'
+          '\n'
+          '    ```\n'
+          '    an indented block, not a fence\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- The real one.\n');
+      final r = _notes('changelog', tag: 'v4.4.4', changelog: f);
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, startsWith('## 4.4.4 — 2026-04-04'));
+    });
+
+    test('a fence line with trailing text does not close, and is refused',
+        () {
+      // This fixture used to assert the opposite, and it was right at the
+      // time: closing on the marker alone, ``` <!-- ended the block and then
+      // opened a comment that swallowed the rest of the file, so the test
+      // pinned "the section below is still found". The Codex review then
+      // showed the closing rule itself was wrong — a CommonMark closer
+      // carries nothing but whitespace — and with that fixed the line is not
+      // a closer at all. The fence runs to the end of the file, which is
+      // exactly what a reader sees, and an unterminated fence is refused.
+      //
+      // The expectation moved because the rule underneath it moved. Kept
+      // rather than deleted, because the input is the one that found the
+      // original asymmetry and it should stay in the file.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 5.0.0 — 2026-05-05\n'
+          '\n'
+          '```\n'
+          'a block\n'
+          '``` <!--\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- Not reachable: the fence above never closes.\n');
+      final r = _notes('changelog', tag: 'v4.4.4', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains('unterminated fenced block'));
+    });
+
+    test('a heading with nothing under it is not a section', () {
+      // The message under the emptiness test says a release has to be able to
+      // say what CHANGED, and the test could only ever mean "there is no
+      // heading" — matching prints the heading, so a section with a heading
+      // and nothing else was indistinguishable from a good one. It published
+      // one lonely heading as the release body. Review found it by reading
+      // what the check could return, not by reading the code.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 9.9.9 — 2026-01-01\n'
+          '\n'
+          '## 9.9.8 — 2025-12-31\n'
+          '\n'
+          '- The older one, which does have content.\n');
+      final r = _notes('changelog', tag: 'v9.9.9', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains("has a '## 9.9.9' heading with nothing"));
+    });
+
+    test('an unterminated fence is refused rather than swept up', () {
+      // The worst of the silent cases: an unterminated fence INSIDE the
+      // wanted section swallowed every older entry below it into the release
+      // body and exited 0. The workflow will not overwrite a release once
+      // published, so that body would have been permanent.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 9.9.9 — 2026-01-01\n'
+          '\n'
+          '```\n'
+          'a block nobody closed\n'
+          '\n'
+          '## 9.9.8 — 2025-12-31\n'
+          '\n'
+          '- SWEPT: an older entry that must not appear.\n');
+      final r = _notes('changelog', tag: 'v9.9.9', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains('unterminated fenced block'));
+    });
+
+    test('two sections for one version are refused, not silently the first',
+        () {
+      // `require_device_walk.sh` has "one version, one attestation" for the
+      // same reason: with two, the file does not say which one is the
+      // release, and picking the first is a guess presented as an answer.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 9.9.9 — 2026-01-01\n'
+          '\n'
+          '- The first one.\n'
+          '\n'
+          '## 9.9.9 — 2025-06-06\n'
+          '\n'
+          '- The second one.\n');
+      final r = _notes('changelog', tag: 'v9.9.9', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains("more than one '## 9.9.9' section"));
+    });
+
+    test('the version is matched exactly, not by prefix', () {
+      // The real file has `## 1.0.1+2` below `## 1.0.12`, so a prefix match
+      // hands back the wrong entry — and nothing pinned the difference:
+      // changing `h == want` to `index(h, want) == 1` left every test green
+      // until this one.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 1.0.12 — 2026-09-07\n'
+          '\n'
+          '- TWELVE: the newer entry.\n'
+          '\n'
+          '## 1.0.1+2 — 2026-01-01\n'
+          '\n'
+          '- ONE: the older entry, whose version is a prefix of the newer.\n');
+      final r = _notes('changelog', tag: 'v1.0.1', changelog: f);
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, startsWith('## 1.0.1+2 — 2026-01-01'));
+      expect(r.stdout, contains('ONE:'));
+      expect(r.stdout, isNot(contains('TWELVE:')));
+    });
+
+    test('a CRLF file matches like any other', () {
+      // `[[:space:]]` covers the `\r`, so the first token of a CRLF heading is
+      // still the version. Nothing pinned it, and the first fixture written
+      // for this did not either: with a date after the version there is a
+      // plain space to cut at, so narrowing the class to a space changed
+      // nothing and the mutation killed no test. The heading has to end at
+      // the version for the `\r` to be the thing being stripped.
+      final f = rawFixture('# Changelog\r\n'
+          '\r\n'
+          '## 9.9.9\r\n'
+          '\r\n'
+          '- CRLF: the entry.\r\n');
+      final r = _notes('changelog', tag: 'v9.9.9', changelog: f);
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, contains('CRLF: the entry.'));
+    });
+
+    test('an extraction that fails refuses; one that succeeds is complete',
+        () {
+      // Codex found the shape, on the commit before the exit codes existed:
+      // one byte awk could not decode made it die mid-file, and `notes`
+      // exited 0 having printed a PARTIAL section followed by the rest of the
+      // boilerplate. The publish step redirects stdout into the release body
+      // and the workflow will not overwrite a published release, so that half
+      // section would have been permanent.
+      //
+      // The invariant is "a failed extraction produces no body", NOT "an
+      // invalid byte fails". Those are different claims and the first
+      // version of this test asserted the second: it passed on macOS, where
+      // BWK awk dies on `\xff`, and failed on CI, where gawk reads it
+      // happily and the extraction simply succeeds. A test that pins one
+      // platform's error behaviour is a test that goes red for being right.
+
+      // Deterministic on both: awk cannot read the file at all.
+      final unreadable = File('${tmp.path}/unreadable.md')
+        ..writeAsStringSync('## 9.9.9\n\n- REAL\n');
+      Process.runSync('chmod', ['000', unreadable.path]);
+      addTearDown(() => Process.runSync('chmod', ['644', unreadable.path]));
+      for (final mode in ['changelog', 'notes']) {
+        final r = _notes(mode, tag: 'v9.9.9', changelog: unreadable.path);
+        expect(r.exitCode, isNot(0), reason: '$mode must refuse');
+        expect(r.stdout, isEmpty,
+            reason: '$mode must not put a partial section in the body');
+      }
+
+      // And Codex's byte, asserted the way it is true on both awks: whichever
+      // branch this awk takes, the body is never half a section.
+      final bad = File('${tmp.path}/badbyte.md')
+        ..writeAsBytesSync([
+          ...'## 9.9.9\n\n- REAL\n'.codeUnits,
+          0xFF,
+          0x0A,
+        ]);
+      for (final mode in ['changelog', 'notes']) {
+        // Byte encodings: the script may echo the offending byte on stderr
+        // and Dart's own decoder throws on it, which would fail this test for
+        // a reason that has nothing to do with the script.
+        final r = Process.runSync(
+          'bash',
+          [_notesScript, mode],
+          environment: {
+            'TAG': 'v9.9.9',
+            'APP_VERSION': '9.9.9+1',
+            'APK_SIZE': '1M',
+            'APK_SHA256': _sha,
+            'APK_FINGERPRINT': _fingerprint,
+            'CHANGELOG_PATH': bad.path,
+          },
+          stdoutEncoding: null,
+          stderrEncoding: null,
+        );
+        final out = r.stdout as List<int>;
+        if (r.exitCode != 0) {
+          expect(out, isEmpty, reason: '$mode refused, so it must print nothing');
+        } else {
+          expect(String.fromCharCodes(out), contains('- REAL'),
+              reason: '$mode accepted the file, so the section must be whole');
+        }
+      }
+    });
+
+    test('a closing fence carries nothing but whitespace', () {
+      // CommonMark: a closer has no info string. Closing on the marker alone
+      // let a line like ```` ```not-a-closing-fence ```` end the block, and
+      // the `## <version>` inside the example became live. Found by the Codex
+      // GitHub review, on top of the two closer-rule halves the Opus review
+      // had already found unchecked.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## Unreleased\n'
+          '\n'
+          '```markdown\n'
+          '```not-a-closing-fence\n'
+          '\n'
+          '## 7.7.7 — 2026-07-07\n'
+          '\n'
+          '- FAKE: still inside the example.\n');
+      final r = _notes('changelog', tag: 'v7.7.7', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+    });
+
+    test('a backtick fence opener may not carry a backtick', () {
+      // The other direction of the same rule, and a false REFUSAL rather than
+      // a false accept: prose containing "``` this ` is not a fence" opened a
+      // block that suppressed the next real heading, so the gate rejected a
+      // release whose section was right there.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## Unreleased\n'
+          '\n'
+          '``` this ` is not a fence\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- The real one.\n');
+      final r = _notes('changelog', tag: 'v4.4.4', changelog: f);
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, startsWith('## 4.4.4 — 2026-04-04'));
+    });
+
+    test('a heading inside a raw HTML block is not a heading', () {
+      // CommonMark HTML block type 1: `<pre>`, `<script>`, `<style>` and
+      // `<textarea>` hold raw text to their close, so a `## ` line inside one
+      // renders as preformatted text. Without this the gate accepted an HTML
+      // sample as a section and published it — the fenced-example hole again,
+      // in a third disguise.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## Unreleased\n'
+          '\n'
+          '<pre>\n'
+          '## 7.7.7 — 2026-07-07\n'
+          '\n'
+          '- FAKE: preformatted sample text.\n'
+          '</pre>\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- The real one.\n');
+      final fake = _notes('changelog', tag: 'v7.7.7', changelog: f);
+      expect(fake.exitCode, isNot(0));
+      expect(fake.stdout, isEmpty);
+      final real = _notes('changelog', tag: 'v4.4.4', changelog: f);
+      expect(real.exitCode, 0, reason: real.stderr as String);
+      expect(real.stdout, startsWith('## 4.4.4 — 2026-04-04'));
+    });
+
+    test('a body of nothing but an HTML comment is not a body', () {
+      // The heading-only rejection, wearing a hat: `<!-- TODO: describe this
+      // release -->` has plenty of non-whitespace bytes and renders as
+      // nothing at all, so the body check passed it. The check reads what a
+      // reader sees now.
+      final f = rawFixture('# Changelog\n'
+          '\n'
+          '## 7.7.7 — 2026-07-07\n'
+          '\n'
+          '<!-- TODO: describe this release -->\n'
+          '\n'
+          '## 4.4.4 — 2026-04-04\n'
+          '\n'
+          '- The real one.\n');
+      final r = _notes('changelog', tag: 'v7.7.7', changelog: f);
+      expect(r.exitCode, isNot(0));
+      expect(r.stdout, isEmpty);
+      expect(r.stderr, contains("has a '## 7.7.7' heading with nothing"));
+    });
+
+    test('a pre-release needs the section too, under its base version', () {
+      // Deliberately unlike the device-walk gate, which exempts pre-releases.
+      // The difference is what each one demands, not how many people it takes:
+      // that gate wants a phone, a car and a walk through every changed
+      // screen, which is exactly what a pre-release exists to go without.
+      // Writing down what changed demands none of that, and a beta with no
+      // notes is exactly as opaque to a reader as a full release with none.
+      final r = _notes('changelog', tag: 'v9.9.9-beta.1', changelog: fixture());
+      expect(r.exitCode, 0, reason: r.stderr as String);
+      expect(r.stdout, startsWith('## 9.9.9 — 2026-01-01'));
+    });
   });
 
   group('the version is declared once and agrees everywhere', () {
@@ -450,8 +1024,15 @@ void main() {
       // file as the version history. A reader following the link would have
       // been told the latest release was the previous one.
       final version = _pubspecVersion().name;
+      // Through `_proseOnly`, because `release_notes.sh` now reads this file
+      // as a reader does — a `## 2.0.0` inside a fenced example is not a
+      // section to it. Left blind, this test would call that example the
+      // newest section and report "the changelog leads with 2.0.0" while the
+      // shell was behaving correctly: a true refusal with the wrong reason
+      // printed, which is how a check teaches people to ignore it. One aware
+      // reader and one blind one is the same defect as two blind ones.
       final sections = RegExp(r'^## (\d+\.\d+\.\d+)', multiLine: true)
-          .allMatches(File(_changelog).readAsStringSync())
+          .allMatches(_proseOnly(File(_changelog).readAsStringSync()))
           .map((m) => m.group(1)!)
           .toList();
       expect(sections, isNotEmpty, reason: '$_changelog has no released '

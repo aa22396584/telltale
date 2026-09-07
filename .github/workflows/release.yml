@@ -162,6 +162,11 @@ jobs:
           TAG: ${{ steps.release_tag.outputs.tag }}
         run: bash tool/release/require_device_walk.sh "$TAG"
 
+      - name: Require a CHANGELOG section for this version
+        env:
+          TAG: ${{ steps.release_tag.outputs.tag }}
+        run: bash tool/release/release_notes.sh changelog > /dev/null
+
       - name: Require successful exact-head main CI
         env:
           GH_TOKEN: ${{ github.token }}
