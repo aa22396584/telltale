@@ -8,15 +8,13 @@ rewrite the real ARB files.
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
 
-# An ICU argument is `{name}` or `{name, plural|select|...}`. A plural
-# branch body like `{No items}` is not an argument: the next character
-# after the identifier must be `}` or `,`.
-_ICU_NAME = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)(?:,|\})")
+_IDENT_START = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
+_IDENT = _IDENT_START | set("0123456789")
+_PLURAL_TYPES = {"plural", "select", "selectordinal"}
 
 
 class ArbError(Exception):
@@ -27,8 +25,117 @@ def _message_keys(data: dict[str, Any]) -> set[str]:
     return {key for key in data if not key.startswith("@")}
 
 
+def _skip_ws(text: str, i: int) -> int:
+    n = len(text)
+    while i < n and text[i].isspace():
+        i += 1
+    return i
+
+
+def _read_ident(text: str, i: int) -> tuple[str, int]:
+    n = len(text)
+    if i >= n or text[i] not in _IDENT_START:
+        return "", i
+    j = i + 1
+    while j < n and text[j] in _IDENT:
+        j += 1
+    return text[i:j], j
+
+
+def _skip_balanced(text: str, i: int) -> int:
+    """Skip until the `}` that closes the current argument, not including it."""
+    n = len(text)
+    depth = 0
+    while i < n:
+        ch = text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            if depth == 0:
+                return i
+            depth -= 1
+        i += 1
+    return i
+
+
+def _parse_message(text: str, i: int, names: set[str], *, stop_on_close: bool) -> int:
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "}" and stop_on_close:
+            return i
+        if ch == "{":
+            i = _parse_argument(text, i, names)
+        else:
+            i += 1
+    return i
+
+
+def _parse_plural_style(text: str, i: int, names: set[str]) -> int:
+    n = len(text)
+    i = _skip_ws(text, i)
+    if text.startswith("offset:", i):
+        i = _skip_ws(text, i + 7)
+        while i < n and (text[i].isdigit() or text[i] in "+-"):
+            i += 1
+        i = _skip_ws(text, i)
+    while i < n and text[i] != "}":
+        i = _skip_ws(text, i)
+        if i >= n or text[i] == "}":
+            break
+        if text[i] == "=":
+            i += 1
+            while i < n and (text[i].isdigit() or text[i] in "+-"):
+                i += 1
+        else:
+            _, nxt = _read_ident(text, i)
+            if nxt == i:
+                break
+            i = nxt
+        i = _skip_ws(text, i)
+        if i < n and text[i] == "{":
+            i = _parse_message(text, i + 1, names, stop_on_close=True)
+            if i < n and text[i] == "}":
+                i += 1
+        else:
+            break
+    return i
+
+
+def _parse_argument(text: str, i: int, names: set[str]) -> int:
+    n = len(text)
+    if i >= n or text[i] != "{":
+        return i + 1
+    start = i
+    i = _skip_ws(text, i + 1)
+    name, i = _read_ident(text, i)
+    if not name:
+        return start + 1
+    i = _skip_ws(text, i)
+    if i < n and text[i] == "}":
+        names.add(name)
+        return i + 1
+    if i >= n or text[i] != ",":
+        return start + 1
+    names.add(name)
+    i = _skip_ws(text, i + 1)
+    arg_type, i = _read_ident(text, i)
+    i = _skip_ws(text, i)
+    if i < n and text[i] == ",":
+        i = _skip_ws(text, i + 1)
+        if arg_type.lower() in _PLURAL_TYPES:
+            i = _parse_plural_style(text, i, names)
+        else:
+            i = _skip_balanced(text, i)
+    if i < n and text[i] == "}":
+        return i + 1
+    return i if i > start else start + 1
+
+
 def _icu_names(text: str) -> set[str]:
-    return set(_ICU_NAME.findall(text))
+    names: set[str] = set()
+    _parse_message(text, 0, names, stop_on_close=False)
+    return names
 
 
 def _placeholders(data: dict[str, Any], key: str) -> dict[str, str]:
@@ -113,12 +220,13 @@ def check_files(paths: list[Path]) -> list[str]:
         )
         template_icu = _icu_names(template_text)
         meta_names = set(expected_meta)
-        if meta_names and template_icu and meta_names != template_icu:
+        has_meta = f"@{key}" in template
+        if has_meta and meta_names != template_icu:
             errors.append(
                 f"{loaded[0][0].name}: placeholder names for {key} "
                 f"text {sorted(template_icu)} != metadata {sorted(meta_names)}"
             )
-        expected_names = meta_names or template_icu
+        expected_names = meta_names if has_meta else template_icu
         for path, data in loaded[1:]:
             value = data.get(key)
             if not isinstance(value, str):

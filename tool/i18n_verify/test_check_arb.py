@@ -191,6 +191,67 @@ class CheckArbTest(unittest.TestCase):
             errors = check_arb.check_files([en, zh])
             self.assertTrue(any("placeholder names" in e and "count" in e for e in errors))
 
+    def test_one_word_plural_branch_is_not_a_placeholder(self) -> None:
+        self.assertEqual(
+            check_arb._icu_names("{count, plural, one{item} other{items}}"),
+            {"count"},
+        )
+        self.assertEqual(
+            check_arb._icu_names(
+                "{gender, select, male{he} female{she} other{they}}"
+            ),
+            {"gender"},
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            payload = {
+                "count": "{count, plural, one{item} other{items}}",
+                "@count": {"placeholders": {"count": {"type": "int"}}},
+            }
+            en = _write(tmp, "app_en.arb", payload)
+            zh = _write(
+                tmp,
+                "app_zh.arb",
+                {"count": "{count, plural, one{項} other{項}}"},
+            )
+            self.assertEqual(check_arb.check_files([en, zh]), [])
+
+    def test_empty_template_metadata_must_still_match_text(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            en = _write(
+                tmp,
+                "app_en.arb",
+                {
+                    "count": "{count} items",
+                    "@count": {"placeholders": {}},
+                },
+            )
+            zh = _write(tmp, "app_zh.arb", {"count": "{count} 項"})
+            errors = check_arb.check_files([en, zh])
+            self.assertTrue(
+                any("text" in e and "metadata" in e for e in errors),
+                errors,
+            )
+
+    def test_plain_template_text_with_placeholder_metadata_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            en = _write(
+                tmp,
+                "app_en.arb",
+                {
+                    "count": "items",
+                    "@count": {"placeholders": {"count": {"type": "int"}}},
+                },
+            )
+            zh = _write(tmp, "app_zh.arb", {"count": "{count}"})
+            errors = check_arb.check_files([en, zh])
+            self.assertTrue(
+                any("text" in e and "metadata" in e for e in errors),
+                errors,
+            )
+
     def test_main_returns_nonzero_on_failure(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
