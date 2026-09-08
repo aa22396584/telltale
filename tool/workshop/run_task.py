@@ -5,12 +5,15 @@ Executes only the already-validated argv allowlist. Does not treat GitHub
 issue or comment text as a shell. Does not reset existing git changes.
 `--isolate` adds a detached worktree at a fixed SHA and runs there; the
 caller's checkout is left untouched. If the isolate path already exists,
-the runner refuses rather than resetting it.
+the runner refuses rather than resetting it. Combined with `--dry-run` it
+does not create a worktree; required evidence is read from git blobs at
+that SHA instead of the caller's dirty tree.
 """
 from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import signal
@@ -148,6 +151,156 @@ def _git_sha(git_root: Path, rev: str) -> str:
     return sha
 
 
+def _git_path_from_app(git_root: Path, app_root: Path, evidence_rel: str) -> str:
+    try:
+        nested = app_root.resolve().relative_to(git_root.resolve())
+    except ValueError as exc:
+        raise RunnerError("plan root is outside the git checkout") from exc
+    posix = evidence_rel.replace("\\", "/")
+    if nested == Path("."):
+        return posix
+    return f"{nested.as_posix()}/{posix}"
+
+
+def _git_tree_entry(git_root: Path, sha: str, rel: str) -> tuple[str, str] | None:
+    completed = subprocess.run(
+        ["git", "-C", str(git_root), "ls-tree", "--full-tree", sha, "--", rel],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    line = (completed.stdout or "").splitlines()
+    if completed.returncode != 0 or not line:
+        return None
+    meta, _tab, _path = line[0].partition("\t")
+    parts = meta.split()
+    if len(parts) < 2:
+        return None
+    return parts[0], parts[1]
+
+
+def _resolve_link_rel(link_rel: str, target: str) -> str | None:
+    text = target.replace("\\", "/")
+    if not text or text.startswith("/") or (len(text) >= 2 and text[1] == ":"):
+        return None
+    parent = Path(link_rel.replace("\\", "/")).parent
+    combined = text if parent == Path(".") else f"{parent.as_posix()}/{text}"
+    parts: list[str] = []
+    for part in combined.replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            if not parts:
+                return None
+            parts.pop()
+            continue
+        parts.append(part)
+    if not parts:
+        return None
+    return "/".join(parts)
+
+
+def _git_cat_blob(
+    git_root: Path, sha: str, rel: str, *, filters: bool = False
+) -> bytes | None:
+    command = ["git", "-C", str(git_root), "cat-file"]
+    if filters:
+        command.extend(["--filters", f"{sha}:{rel}"])
+    else:
+        command.extend(["blob", f"{sha}:{rel}"])
+    completed = subprocess.run(command, capture_output=True, check=False)
+    if completed.returncode != 0:
+        return None
+    return completed.stdout
+
+
+def _git_blob(
+    git_root: Path, sha: str, rel: str, *, depth: int = 0
+) -> bytes | None:
+    if depth > 8:
+        return None
+    parts = [part for part in rel.replace("\\", "/").split("/") if part not in ("", ".")]
+    if not parts:
+        return None
+    prefix = ""
+    for index, part in enumerate(parts):
+        current = part if not prefix else f"{prefix}/{part}"
+        entry = _git_tree_entry(git_root, sha, current)
+        if entry is None:
+            return None
+        mode, kind = entry
+        last = index == len(parts) - 1
+        if mode == "120000":
+            raw = _git_cat_blob(git_root, sha, current, filters=False)
+            if raw is None:
+                return None
+            try:
+                target = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                return None
+            resolved = _resolve_link_rel(current, target)
+            if resolved is None:
+                return None
+            remainder = "/".join(parts[index + 1 :])
+            nxt = resolved if not remainder else f"{resolved}/{remainder}"
+            return _git_blob(git_root, sha, nxt, depth=depth + 1)
+        if last:
+            if kind != "blob" or mode not in {"100644", "100755", "100664"}:
+                return None
+            return _git_cat_blob(git_root, sha, current, filters=True)
+        if kind != "tree":
+            return None
+        prefix = current
+    return None
+
+
+def _check_sha_evidence(
+    data: dict[str, Any],
+    git_root: Path,
+    sha: str,
+    app_root: Path,
+) -> None:
+    errors: list[str] = []
+    for raw in data.get("tasks") or []:
+        if not isinstance(raw, dict):
+            continue
+        ident = raw.get("id") if isinstance(raw.get("id"), str) else "?"
+        evidence = raw.get("required_evidence") or []
+        if not isinstance(evidence, list):
+            errors.append(f"{ident}: required_evidence must be a list")
+            continue
+        for item in evidence:
+            if not isinstance(item, dict):
+                errors.append(f"{ident}: required_evidence entries are objects")
+                continue
+            try:
+                rel = validate_plan._normalize_rel(
+                    validate_plan._as_str(item.get("path"), f"{ident}.evidence.path")
+                )
+            except validate_plan.PlanError as exc:
+                errors.append(str(exc))
+                continue
+            digest = item.get("sha256")
+            required = item.get("required", True)
+            if digest is not None and (
+                not isinstance(digest, str)
+                or not validate_plan.SHA256_RE.fullmatch(digest)
+            ):
+                errors.append(f"{ident}: evidence sha256 must be 64 hex")
+                continue
+            blob = _git_blob(git_root, sha, _git_path_from_app(git_root, app_root, rel))
+            if blob is None:
+                if required:
+                    errors.append(f"{ident}: missing artifact {rel}")
+                continue
+            if digest is not None and hashlib.sha256(blob).hexdigest() != digest:
+                errors.append(f"{ident}: hash mismatch {rel}")
+    if errors:
+        raise RunnerError(
+            "isolated checkout evidence failed: " + "; ".join(errors)
+        )
+
+
 def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
     if dest.exists():
         raise RunnerError(f"worktree path exists, refusing to reset: {dest}")
@@ -258,7 +411,7 @@ def run_task(
     errors, ready = validate_plan.validate_plan(
         data,
         plan_path=plan_path,
-        check_artifacts=not isolate or dry_run,
+        check_artifacts=not isolate,
     )
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
@@ -296,7 +449,9 @@ def run_task(
             head_sha = (
                 _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
             )
-            if not dry_run:
+            if dry_run:
+                _check_sha_evidence(data, git_root, head_sha, original_root)
+            else:
                 worktree_dest = (
                     isolate_dir.expanduser().resolve()
                     if isolate_dir is not None

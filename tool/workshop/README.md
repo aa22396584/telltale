@@ -43,8 +43,8 @@ completed.
 
 `--isolate` adds a detached git worktree at `--base-sha` (or `HEAD`) and runs
 the argv there. Combined with `--dry-run` it does not create a worktree, but
-still rejects a missing `--base-sha`. Required evidence is checked in that
-checkout, not the caller's dirty tree.
+still rejects a missing `--base-sha` and checks required evidence against git
+blobs at that SHA (object type `blob` only), not the caller's dirty tree.
 The default location is `<git-root>/.worktrees/ws-<task>`, outside `docs/`.
 The caller's checkout is not reset. An existing isolate path is a refusal,
 not a `git reset`. Handoff and lease stay under the original
