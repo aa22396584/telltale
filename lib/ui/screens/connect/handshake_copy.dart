@@ -48,8 +48,7 @@ String initNoteLabel(AppLocalizations l10n, InitNote note) => switch (note) {
   InitNote.ecuSilent => l10n.handshakeNoteEcuSilent,
   InitNote.ecuRefusedSupportQuery => l10n.handshakeNoteEcuRefusedSupportQuery,
   InitNote.supportMaskTooShort => l10n.handshakeNoteSupportMaskTooShort,
-  InitNote.notModeOnePositiveReply =>
-    l10n.handshakeNoteNotModeOnePositiveReply,
+  InitNote.notModeOnePositiveReply => l10n.handshakeNoteNotModeOnePositiveReply,
   InitNote.pidEchoMismatch => l10n.handshakeNotePidEchoMismatch,
   InitNote.timedOut => l10n.handshakeNoteTimedOut,
   InitNote.unexpected => l10n.handshakeNoteUnexpected,
@@ -99,6 +98,7 @@ String initProgressLine(AppLocalizations l10n, InitProgress progress) {
   final issue = progress.transportIssue;
   if (issue != null) {
     return transportIssueText(l10n, issue) ??
+        _initReachableCommandPathText(l10n, issue) ??
         initStepPurposeLabel(l10n, progress.step.command);
   }
   final detail = progress.detail;
@@ -121,7 +121,9 @@ String _failureReason(AppLocalizations l10n, InitProgress? step) {
   }
   final issue = step.transportIssue;
   if (issue != null) {
-    return transportIssueText(l10n, issue) ?? l10n.handshakeStepNoReason;
+    return transportIssueText(l10n, issue) ??
+        _initReachableCommandPathText(l10n, issue) ??
+        l10n.handshakeStepNoReason;
   }
   // Adapter data (version, voltage, protocol) can sit in [detail] on a
   // success row. A failed step that reached here with only `'$e'` used to
@@ -164,10 +166,10 @@ String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
   if (issue == null) return transportIssueText(l10n, state.transportIssue);
   final step = state.issueStep;
   return switch (issue) {
-    ObdConnectionIssue.handshakeIncomplete => l10n.connectIssueHandshakeIncomplete,
-    ObdConnectionIssue.adapterSilentOnReset => l10n.connectIssueAdapterSilentOnReset(
-      step?.step.command ?? '',
-    ),
+    ObdConnectionIssue.handshakeIncomplete =>
+      l10n.connectIssueHandshakeIncomplete,
+    ObdConnectionIssue.adapterSilentOnReset =>
+      l10n.connectIssueAdapterSilentOnReset(step?.step.command ?? ''),
     ObdConnectionIssue.handshakeStepFailed =>
       l10n.connectIssueHandshakeStepFailed(
         step?.step.command ?? '',
@@ -209,54 +211,72 @@ String bleScanIssueText(AppLocalizations l10n, BleScanIssue issue) =>
       BleScanIssue.unclassified => l10n.connectBleScanUnclassified,
     };
 
-String? transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
-    switch (issue) {
-      null => null,
-      TransportIssue.cancelled => l10n.connectTransportCancelled,
-      TransportIssue.wifiRouteNoNetwork =>
-        l10n.connectTransportWifiRouteNoNetwork,
-      TransportIssue.wifiRouteAmbiguous =>
-        l10n.connectTransportWifiRouteAmbiguous,
-      TransportIssue.wifiRouteRefused => l10n.connectTransportWifiRouteRefused,
-      TransportIssue.wifiRouteTimeout => l10n.connectTransportWifiRouteTimeout,
-      TransportIssue.wifiRouteUnclassified =>
-        l10n.connectTransportWifiRouteUnclassified,
-      TransportIssue.wifiHostUnreachable =>
-        l10n.connectTransportWifiHostUnreachable,
-      TransportIssue.wifiConnectTimeout =>
-        l10n.connectTransportWifiConnectTimeout,
-      TransportIssue.wifiRouteRestoreFailed =>
-        l10n.connectTransportWifiRouteRestoreFailed,
-      TransportIssue.bleLinkFailed => l10n.connectTransportBleLinkFailed,
-      TransportIssue.bleNoSerialCharacteristic =>
-        l10n.connectTransportBleNoSerialCharacteristic,
-      TransportIssue.classicAllTiersRefused =>
-        l10n.connectTransportClassicAllTiersRefused,
-      TransportIssue.classicConnectTimeout =>
-        l10n.connectTransportClassicConnectTimeout,
-      TransportIssue.serialPortOpenFailed =>
-        l10n.connectTransportSerialPortOpenFailed,
-      TransportIssue.serialDroppedOnOpen =>
-        l10n.connectTransportSerialDroppedOnOpen,
+/// Command-path identifiers that still happen during AT init.
+///
+/// [transportIssueText] returns null for these so the settings panel owns
+/// them. The handshake nevertheless sees `linkDroppedMidSession` and
+/// `writeFailed` when a write is pending, and falling through to the step
+/// purpose or [handshakeStepNoReason] is how an English reader was told
+/// nothing. The sentences live in the same ARB entries the settings panel
+/// uses; this is not a second table.
+String? _initReachableCommandPathText(
+  AppLocalizations l10n,
+  TransportIssue issue,
+) => switch (issue) {
+  TransportIssue.linkDroppedMidSession => l10n.settingsManualCommandLinkDropped,
+  TransportIssue.writeFailed => l10n.settingsManualCommandWriteFailed,
+  _ => null,
+};
 
-      // The command path. Read on the settings manual-command panel, not here.
-      TransportIssue.writeFailed ||
-      TransportIssue.linkDroppedMidSession ||
-      TransportIssue.disconnectedByApp ||
-      TransportIssue.notConnected ||
-      TransportIssue.adapterSilentOnResync ||
-      TransportIssue.queryHeaderRefused ||
-      TransportIssue.wholeVehicleHeaderRefused ||
-      TransportIssue.legacyScanWouldBePartial ||
-      TransportIssue.linkStoppedResponding ||
-      TransportIssue.operationRetired ||
-      TransportIssue.requestUnaddressable => null,
-    };
+String? transportIssueText(
+  AppLocalizations l10n,
+  TransportIssue? issue,
+) => switch (issue) {
+  null => null,
+  TransportIssue.cancelled => l10n.connectTransportCancelled,
+  TransportIssue.wifiRouteNoNetwork => l10n.connectTransportWifiRouteNoNetwork,
+  TransportIssue.wifiRouteAmbiguous => l10n.connectTransportWifiRouteAmbiguous,
+  TransportIssue.wifiRouteRefused => l10n.connectTransportWifiRouteRefused,
+  TransportIssue.wifiRouteTimeout => l10n.connectTransportWifiRouteTimeout,
+  TransportIssue.wifiRouteUnclassified =>
+    l10n.connectTransportWifiRouteUnclassified,
+  TransportIssue.wifiHostUnreachable =>
+    l10n.connectTransportWifiHostUnreachable,
+  TransportIssue.wifiConnectTimeout => l10n.connectTransportWifiConnectTimeout,
+  TransportIssue.wifiRouteRestoreFailed =>
+    l10n.connectTransportWifiRouteRestoreFailed,
+  TransportIssue.bleLinkFailed => l10n.connectTransportBleLinkFailed,
+  TransportIssue.bleNoSerialCharacteristic =>
+    l10n.connectTransportBleNoSerialCharacteristic,
+  TransportIssue.classicAllTiersRefused =>
+    l10n.connectTransportClassicAllTiersRefused,
+  TransportIssue.classicConnectTimeout =>
+    l10n.connectTransportClassicConnectTimeout,
+  TransportIssue.serialPortOpenFailed =>
+    l10n.connectTransportSerialPortOpenFailed,
+  TransportIssue.serialDroppedOnOpen =>
+    l10n.connectTransportSerialDroppedOnOpen,
+
+  // The command path. Read on the settings manual-command panel, not here.
+  TransportIssue.writeFailed ||
+  TransportIssue.linkDroppedMidSession ||
+  TransportIssue.disconnectedByApp ||
+  TransportIssue.notConnected ||
+  TransportIssue.adapterSilentOnResync ||
+  TransportIssue.queryHeaderRefused ||
+  TransportIssue.wholeVehicleHeaderRefused ||
+  TransportIssue.legacyScanWouldBePartial ||
+  TransportIssue.linkStoppedResponding ||
+  TransportIssue.operationRetired ||
+  TransportIssue.requestUnaddressable => null,
+};
 
 /// The line under a busy spinner, or null when there is nothing to say.
-String? connectionActivityText(AppLocalizations l10n, ObdConnectionState state) =>
-    switch (state.activity) {
-      ObdConnectionActivity.abortingPreviousConnection =>
-        l10n.connectActivityAbortingPreviousConnection,
-      null => null,
-    };
+String? connectionActivityText(
+  AppLocalizations l10n,
+  ObdConnectionState state,
+) => switch (state.activity) {
+  ObdConnectionActivity.abortingPreviousConnection =>
+    l10n.connectActivityAbortingPreviousConnection,
+  null => null,
+};
