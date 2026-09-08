@@ -52,6 +52,28 @@ const _other = '{"name":"Other","shortName":"OTH","modeAndPid":"010C",'
 /// `_save` ends in `context.pop()`, so the screen needs a router under it —
 /// and pushing it rather than making it the root means the pop has somewhere
 /// to go.
+Widget _hostNew(ProviderContainer container) {
+  final router = GoRouter(
+    initialLocation: '/edit',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (_, _) => const PidEditorScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+  return UncontrolledProviderScope(
+    container: container,
+    child: localizedMaterialAppRouter(routerConfig: router),
+  );
+}
+
 Widget _host(ProviderContainer container, String pidId) {
   final router = GoRouter(
     initialLocation: '/edit',
@@ -470,5 +492,91 @@ void main() {
       hasLength(1),
     );
     container.read(pidMutationLockProvider).release(token);
+  });
+
+  testWidgets(
+    'a sample-only domain error does not block save',
+    (tester) async {
+      // Preview→atomic commit leftover for #79: `1/(A-1)` is undefined at
+      // A=1 and the preview says so, but CSV preflight still accepts it.
+      _tallViewport(tester);
+      final container = await _container(const <String, Object>{});
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_hostNew(container));
+      await tester.pumpAndSettle();
+
+      await _enter(tester, '名稱', 'Probe domain');
+      await _enter(tester, '模式 + PID', '010C');
+      await _enter(tester, '運算式', '1/(A-1)');
+      await _enter(tester, '測試用回應位元組', '01');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, '儲存'))
+            .onPressed,
+        isNotNull,
+        reason: 'a sample-only domain error is not a commit refusal',
+      );
+      await _save(tester);
+      expect(
+        container.read(pidRegistryProvider).where(
+          (p) => p.isCustom && p.equation == '1/(A-1)',
+        ),
+        hasLength(1),
+      );
+    },
+  );
+
+  testWidgets('a formula that needs unequal bytes can still save',
+      (tester) async {
+    _tallViewport(tester);
+    final container = await _container(const <String, Object>{});
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_hostNew(container));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, '名稱', 'Diff');
+    await _enter(tester, '模式 + PID', '010C');
+    await _enter(tester, '運算式', '1/(A-B)');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '儲存'))
+          .onPressed,
+      isNotNull,
+      reason: 'uniform probes must not reject A-B formulas',
+    );
+    await _save(tester);
+    expect(
+      container.read(pidRegistryProvider).where(
+        (p) => p.isCustom && p.equation == '1/(A-B)',
+      ),
+      hasLength(1),
+    );
+  });
+
+  testWidgets('an always-invalid formula cannot save', (tester) async {
+    _tallViewport(tester);
+    final container = await _container(const <String, Object>{});
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_hostNew(container));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, '名稱', 'Always invalid');
+    await _enter(tester, '模式 + PID', '010D');
+    await _enter(tester, '運算式', 'A/0');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '儲存'))
+          .onPressed,
+      isNull,
+      reason: 'A/0 fails both preflight probes',
+    );
+    expect(
+      container.read(pidRegistryProvider).where((p) => p.isCustom),
+      isEmpty,
+    );
   });
 }

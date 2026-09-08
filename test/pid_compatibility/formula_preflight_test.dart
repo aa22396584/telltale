@@ -94,6 +94,8 @@ void main() {
     // Probe bytes are all 1. `1/(A-1)` is defined for every other A.
     expect(FormulaEngine.preflight('1/(A-1)'), isNull);
     expect(FormulaEngine.preflight('LOG10(A-1)'), isNull);
+    expect(FormulaEngine.preflight('1/(A-B)'), isNull);
+    expect(FormulaEngine.preflight('LOG10(A-B)'), isNull);
     const wire =
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
         'Inv,INV,010C,1/(A-1),0,100,,7E0\r\n';
