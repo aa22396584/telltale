@@ -1007,7 +1007,14 @@ final telemetryRecorderControllerProvider = Provider<RootTelemetryRecorder>((
     acquireRecordingChannels: (pids) {
       final engine = ref.read(obdSessionProvider.notifier).engine;
       if (engine == null) return;
-      lease = RecordingDemandLease(engine)..acquire(pids);
+      final next = RecordingDemandLease(engine);
+      try {
+        next.acquire(pids);
+        lease = next;
+      } on Object {
+        next.release();
+        rethrow;
+      }
     },
     releaseRecordingChannels: () {
       lease?.release();

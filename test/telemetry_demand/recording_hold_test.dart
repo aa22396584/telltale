@@ -159,4 +159,45 @@ void main() {
       );
     },
   );
+
+  test('unauthorized profile PIDs are skipped, ordinary holds stay', () {
+    final transport = FakeElm327(
+      protocol: BusProtocol.can11,
+      ecus: [
+        FakeEcu(
+          name: 'ECM',
+          requestId: '7E0',
+          responseId: '7E8',
+          responses: const {},
+        ),
+      ],
+    );
+    final client = Elm327Client(transport);
+    addTearDown(client.dispose);
+    final engine = PollingEngine(client);
+    addTearDown(engine.dispose);
+    const soc = Pid(
+      name: 'raw-soc',
+      shortName: 'SOC',
+      modeAndPid: '22B046',
+      equation: '(A*256+B)/10',
+      minValue: 0,
+      maxValue: 100,
+      units: '%',
+      header: '781',
+      isCustom: true,
+      ownerProfileId: 'mg-zs-ev-au-2021',
+      sourceSignalId: 'raw-soc',
+    );
+    final lease = RecordingDemandLease(engine);
+    expect(() => lease.acquire(const [_rpm, soc]), returnsNormally);
+    expect(
+      engine.demands.leases.where((d) => d.leaseId == 'recording:${_rpm.id}'),
+      hasLength(1),
+    );
+    expect(
+      engine.demands.leases.where((d) => d.leaseId == 'recording:${soc.id}'),
+      isEmpty,
+    );
+  });
 }

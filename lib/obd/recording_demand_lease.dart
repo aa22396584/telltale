@@ -17,21 +17,34 @@ class RecordingDemandLease {
 
   void acquire(List<Pid> pids) {
     release();
-    for (final pid in pids) {
-      final id = 'recording:${pid.id}';
-      _engine.hold(
-        TelemetryDemand(
-          owner: DemandOwner.recording,
-          leaseId: id,
-          header: pid.header,
-          modeAndPid: pid.modeAndPid,
-          requestedPeriod: pid.priority.targetInterval,
-          priority: pid.priority,
-          definitionId: pid.id,
-        ),
-        pid,
-      );
-      _ids.add(id);
+    final acquired = <String>[];
+    try {
+      for (final pid in pids) {
+        final id = 'recording:${pid.id}';
+        try {
+          _engine.hold(
+            TelemetryDemand(
+              owner: DemandOwner.recording,
+              leaseId: id,
+              header: pid.header,
+              modeAndPid: pid.modeAndPid,
+              requestedPeriod: pid.priority.targetInterval,
+              priority: pid.priority,
+              definitionId: pid.id,
+            ),
+            pid,
+          );
+          acquired.add(id);
+        } on StateError {
+          // Unauthorized profile definition: skip rather than fail Start.
+        }
+      }
+      _ids.addAll(acquired);
+    } on Object {
+      for (final id in acquired) {
+        _engine.releaseHold(id);
+      }
+      rethrow;
     }
   }
 
