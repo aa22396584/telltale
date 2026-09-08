@@ -215,6 +215,26 @@ class GraphAndSchemaTest(unittest.TestCase):
         )
         self.assertTrue(any("allowlist" in error for error in errors))
 
+    def test_absolute_interpreter_path_fails(self) -> None:
+        errors = self._errors(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[
+                        [
+                            "/tmp/python3",
+                            "tool/workshop/validate_plan.py",
+                        ]
+                    ],
+                )
+            ]
+        )
+        self.assertTrue(
+            any("executable path" in error for error in errors),
+            msg=errors,
+        )
+
     def test_python_c_decoy_script_fails(self) -> None:
         errors = self._errors(
             [
