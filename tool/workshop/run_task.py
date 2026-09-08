@@ -162,24 +162,74 @@ def _git_path_from_app(git_root: Path, app_root: Path, evidence_rel: str) -> str
     return f"{nested.as_posix()}/{posix}"
 
 
-def _git_blob(git_root: Path, sha: str, rel: str) -> bytes | None:
-    spec = f"{sha}:{rel}"
-    kind = subprocess.run(
-        ["git", "-C", str(git_root), "cat-file", "-t", spec],
+def _git_tree_entry(git_root: Path, sha: str, rel: str) -> tuple[str, str] | None:
+    completed = subprocess.run(
+        ["git", "-C", str(git_root), "ls-tree", "--full-tree", sha, "--", rel],
         capture_output=True,
         text=True,
         check=False,
     )
-    if kind.returncode != 0 or (kind.stdout or "").strip() != "blob":
+    line = (completed.stdout or "").splitlines()
+    if completed.returncode != 0 or not line:
+        return None
+    meta, _tab, _path = line[0].partition("\t")
+    parts = meta.split()
+    if len(parts) < 2:
+        return None
+    return parts[0], parts[1]
+
+
+def _resolve_link_rel(link_rel: str, target: str) -> str | None:
+    text = target.replace("\\", "/").strip()
+    if not text or text.startswith("/") or (len(text) >= 2 and text[1] == ":"):
+        return None
+    parent = Path(link_rel.replace("\\", "/")).parent
+    combined = target if parent == Path(".") else f"{parent.as_posix()}/{text}"
+    parts: list[str] = []
+    for part in combined.replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            if not parts:
+                return None
+            parts.pop()
+            continue
+        parts.append(part)
+    if not parts:
+        return None
+    return "/".join(parts)
+
+
+def _git_blob(
+    git_root: Path, sha: str, rel: str, *, depth: int = 0
+) -> bytes | None:
+    if depth > 8:
+        return None
+    entry = _git_tree_entry(git_root, sha, rel)
+    if entry is None:
+        return None
+    mode, kind = entry
+    if kind != "blob":
         return None
     completed = subprocess.run(
-        ["git", "-C", str(git_root), "cat-file", "blob", spec],
+        ["git", "-C", str(git_root), "cat-file", "blob", f"{sha}:{rel}"],
         capture_output=True,
         check=False,
     )
     if completed.returncode != 0:
         return None
-    return completed.stdout
+    if mode == "120000":
+        try:
+            target = completed.stdout.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+        resolved = _resolve_link_rel(rel, target)
+        if resolved is None:
+            return None
+        return _git_blob(git_root, sha, resolved, depth=depth + 1)
+    if mode in {"100644", "100755", "100664"}:
+        return completed.stdout
+    return None
 
 
 def _check_sha_evidence(
@@ -210,19 +260,19 @@ def _check_sha_evidence(
                 continue
             digest = item.get("sha256")
             required = item.get("required", True)
+            if digest is not None and (
+                not isinstance(digest, str)
+                or not validate_plan.SHA256_RE.fullmatch(digest)
+            ):
+                errors.append(f"{ident}: evidence sha256 must be 64 hex")
+                continue
             blob = _git_blob(git_root, sha, _git_path_from_app(git_root, app_root, rel))
             if blob is None:
                 if required:
                     errors.append(f"{ident}: missing artifact {rel}")
                 continue
-            if digest is not None:
-                if not isinstance(digest, str) or not validate_plan.SHA256_RE.fullmatch(
-                    digest
-                ):
-                    errors.append(f"{ident}: evidence sha256 must be 64 hex")
-                    continue
-                if hashlib.sha256(blob).hexdigest() != digest:
-                    errors.append(f"{ident}: hash mismatch {rel}")
+            if digest is not None and hashlib.sha256(blob).hexdigest() != digest:
+                errors.append(f"{ident}: hash mismatch {rel}")
     if errors:
         raise RunnerError(
             "isolated checkout evidence failed: " + "; ".join(errors)

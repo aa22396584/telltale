@@ -583,6 +583,100 @@ class RunTaskTest(unittest.TestCase):
             self.assertIn("isolated checkout evidence failed", str(raised.exception))
             self.assertIn("missing artifact", str(raised.exception))
 
+    def test_dry_run_isolate_rejects_malformed_optional_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[
+                    {
+                        "path": "docs/workshop/ws/ws-01/proof.txt",
+                        "sha256": "bad",
+                        "required": False,
+                    }
+                ],
+            )
+            sha = _init_git(repo)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    dry_run=True,
+                    base_sha=sha,
+                )
+            self.assertFalse(worktree.exists())
+            self.assertIn("isolated checkout evidence failed", str(raised.exception))
+            self.assertIn("evidence sha256 must be 64 hex", str(raised.exception))
+
+    def test_dry_run_isolate_follows_symlink_blob_to_file_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof_dir = repo / "docs" / "workshop" / "ws" / "ws-01"
+            proof_dir.mkdir(parents=True)
+            actual = proof_dir / "actual.txt"
+            actual.write_text("committed-proof\n", encoding="utf-8")
+            (proof_dir / "proof.txt").symlink_to("actual.txt")
+            digest = hashlib.sha256(actual.read_bytes()).hexdigest()
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest}],
+            )
+            sha = _init_git(repo)
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan,
+                "WS-01",
+                handoff_path=handoff,
+                timeout=5,
+                isolate=True,
+                isolate_dir=worktree,
+                dry_run=True,
+                base_sha=sha,
+            )
+            self.assertFalse(worktree.exists())
+            self.assertEqual(code, 1)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertEqual(data["head_sha"], sha)
+
+    def test_dry_run_isolate_rejects_dangling_symlink_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof_dir = repo / "docs" / "workshop" / "ws" / "ws-01"
+            proof_dir.mkdir(parents=True)
+            (proof_dir / "proof.txt").symlink_to("missing.txt")
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01/proof.txt"}],
+            )
+            sha = _init_git(repo)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    dry_run=True,
+                    base_sha=sha,
+                )
+            self.assertFalse(worktree.exists())
+            self.assertIn("isolated checkout evidence failed", str(raised.exception))
+            self.assertIn("missing artifact", str(raised.exception))
+
 
 def _init_git(root: Path) -> str:
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
