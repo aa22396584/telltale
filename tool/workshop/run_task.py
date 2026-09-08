@@ -92,17 +92,38 @@ def _dir_lease_path(root: Path, rel: str) -> Path:
     return root / "docs" / "workshop" / "ws" / ".dir-leases" / f"{digest}.lock"
 
 
-def _acquire_lease(path: Path, task_id: str) -> int:
+def _dir_lease_targets(dirs: list[str]) -> list[tuple[str, bool]]:
+    """Map declared dirs to (path, exclusive) locks.
+
+    The leaf is exclusive; every ancestor is shared. Parent ``foo`` and child
+    ``foo/bar`` therefore contend on ``foo``, while sibling ``foo/bar`` and
+    ``foo/baz`` only share the ancestor and can run together.
+    """
+    mode: dict[str, bool] = {}
+    for rel in dirs:
+        parts = [part for part in rel.split("/") if part]
+        if not parts:
+            continue
+        chain = ["/".join(parts[: index + 1]) for index in range(len(parts))]
+        for prefix in chain[:-1]:
+            mode.setdefault(prefix, False)
+        mode[chain[-1]] = True
+    return sorted(mode.items(), key=lambda item: item[0])
+
+
+def _acquire_lease(path: Path, task_id: str, *, exclusive: bool = True) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(str(path), os.O_CREAT | os.O_RDWR, 0o644)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        flag = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+        fcntl.flock(fd, flag | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         os.close(fd)
         raise RunnerError(f"{task_id}: lease held") from exc
-    os.lseek(fd, 0, os.SEEK_SET)
-    os.ftruncate(fd, 0)
-    os.write(fd, json.dumps({"task": task_id, "pid": os.getpid()}).encode("utf-8"))
+    if exclusive:
+        os.lseek(fd, 0, os.SEEK_SET)
+        os.ftruncate(fd, 0)
+        os.write(fd, json.dumps({"task": task_id, "pid": os.getpid()}).encode("utf-8"))
     return fd
 
 
@@ -650,9 +671,11 @@ def run_task(
     try:
         if not dry_run:
             lease_fd = _acquire_lease(lease_path, task_id)
-            for rel in sorted(set(_task_writable_dirs(task))):
+            for rel, exclusive in _dir_lease_targets(_task_writable_dirs(task)):
                 path = _dir_lease_path(original_root, rel)
-                dir_leases.append((_acquire_lease(path, task_id), path))
+                dir_leases.append(
+                    (_acquire_lease(path, task_id, exclusive=exclusive), path)
+                )
         if isolate:
             git_root = _git_toplevel(cwd)
             requested = base_sha or task.get("base_sha")

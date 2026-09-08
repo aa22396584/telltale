@@ -472,6 +472,46 @@ class RunTaskTest(unittest.TestCase):
                 fcntl.flock(fd, fcntl.LOCK_UN)
                 os.close(fd)
 
+    def test_dir_lease_targets_share_ancestors(self) -> None:
+        targets = dict(
+            run_task._dir_lease_targets(["docs/workshop/ws/ws-01/"])
+        )
+        self.assertFalse(targets["docs"])
+        self.assertFalse(targets["docs/workshop"])
+        self.assertFalse(targets["docs/workshop/ws"])
+        self.assertTrue(targets["docs/workshop/ws/ws-01"])
+
+    def test_review_refuses_hierarchical_dir_lease(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"][0]["status"] = "completed"
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            leaf = run_task._task_writable_dirs(data["tasks"][0])[0]
+            parent = leaf.rsplit("/", 1)[0]
+            lease = run_task._dir_lease_path(tmp, parent)
+            lease.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(str(lease), os.O_CREAT | os.O_RDWR, 0o644)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            try:
+                with self.assertRaises(run_task.RunnerError) as ctx:
+                    run_task.run_task(
+                        plan, "WS-01", handoff_path=author, timeout=5, review=True
+                    )
+                self.assertIn("lease held", str(ctx.exception))
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+                os.close(fd)
+
     def test_review_accepts_a_completed_plan_task(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
