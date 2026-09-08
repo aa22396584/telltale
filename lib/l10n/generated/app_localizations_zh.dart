@@ -325,6 +325,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchingEnabled => '已啟用批次';
+
+  @override
   String get dashboardChoosePids => '選擇 PID';
 
   @override
@@ -341,6 +344,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardPollingModeHelpAction => '關於讀取模式';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s 是過去一秒觀測到的速率，不是對延遲、新鮮度或準確度的保證。它會隨轉接器、匯流排、ECU、你選的 PID、每次回覆的大小以及錯誤而變動。';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。三種情況會用到它：匯流排根本不接受併批請求（所有非 CAN 車輛都是如此）；還沒有任何支援區塊回應過，因為把車輛尚未確認的 PID 併起來問，正是回覆會過短的原因；以及併批的請求沒有回來成一份能拆回各 PID 的答覆（被截斷、轉接器回報緩衝區已滿，或根本沒有回應）。讀數仍會持續更新，這本身不等於連線失敗。';
+
+  @override
+  String get dashboardPollingModeHelpTitle => '讀取模式';
 
   @override
   String get dashboardSingleRequestMode => '單筆模式';
@@ -3833,6 +3854,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get dashboardBatchingEnabled => '已啟用批次';
+
+  @override
   String get dashboardChoosePids => '選擇 PID';
 
   @override
@@ -3849,6 +3873,24 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardNotConnected => '未連線';
+
+  @override
+  String get dashboardPollingModeHelpAction => '關於讀取模式';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s 是過去一秒觀測到的速率，不是對延遲、新鮮度或準確度的保證。它會隨轉接器、匯流排、ECU、你選的 PID、每次回覆的大小以及錯誤而變動。';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      '「單筆模式」代表每個 Mode 01 PID 各自讀取。三種情況會用到它：匯流排根本不接受併批請求（所有非 CAN 車輛都是如此）；還沒有任何支援區塊回應過，因為把車輛尚未確認的 PID 併起來問，正是回覆會過短的原因；以及併批的請求沒有回來成一份能拆回各 PID 的答覆（被截斷、轉接器回報緩衝區已滿，或根本沒有回應）。讀數仍會持續更新，這本身不等於連線失敗。';
+
+  @override
+  String get dashboardPollingModeHelpTitle => '讀取模式';
 
   @override
   String get dashboardSingleRequestMode => '單筆模式';

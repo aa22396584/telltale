@@ -541,22 +541,16 @@ class _StatusStrip extends ConsumerWidget {
               ),
               // Only once something has actually been polled.
               //
-              // The flag defaults to on, and an empty snapshot is published
-              // verbatim when the app connects while backgrounded — so the
-              // pill read fastMode, in good tone, before a single request had
-              // gone out. It describes observed behaviour and must not be the
-              // first thing on screen.
-              if (snapshot.capturedAt != null)
-                StatusPill(
-                  label: snapshot.fastModeEnabled
-                      ? 'fastMode'
-                      : l10n.dashboardSingleRequestMode,
-                  icon: snapshot.fastModeEnabled
-                      ? Icons.fast_forward
-                      : Icons.slow_motion_video,
-                  tone: snapshot.fastModeEnabled
-                      ? StatusTone.good
-                      : StatusTone.warn,
+              // `capturedAt` is not that. `PollingEngine.current` stamps it on
+              // every heartbeat, including the 120 ms idle spin when no PID
+              // is selected, so a session that had sent nothing announced
+              // single-request mode after about a second. A poll leaves a
+              // reading, a fault, or a non-zero PIDs/s; the heartbeat leaves
+              // none of those.
+              if (_snapshotHasBeenPolled(snapshot))
+                PollingModePill(
+                  schedulerAllowsGrouping: snapshot.fastModeEnabled,
+                  busAllowsGrouping: ref.watch(busGroupsRequestsProvider),
                 ),
               // Shown even when unknown. Hiding the pill would make "the
               // adapter stopped reporting voltage" look identical to "this
@@ -577,6 +571,188 @@ class _StatusStrip extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// True when [snapshot] is from a polling cycle, not the idle heartbeat.
+///
+/// `PollingEngine.current` stamps `capturedAt` on every read. The loop that
+/// finds `_active` empty delays 120 ms and never calls `_pollBatch`, so a
+/// session with no PIDs selected still gets a non-null stamp after about a
+/// second. A poll leaves a reading, a fault, or a non-zero PIDs/s.
+bool _snapshotHasBeenPolled(TelemetrySnapshot snapshot) {
+  if (snapshot.capturedAt == null) return false;
+  // BUFFER FULL and a throwing first batch add no reading and no PIDs/s,
+  // but they do withdraw grouping. That is the fallback the help describes.
+  // The idle heartbeat leaves the flag at its default `true`.
+  if (!snapshot.fastModeEnabled) return true;
+  return snapshot.readings.isNotEmpty ||
+      snapshot.faults.isNotEmpty ||
+      snapshot.pidsPerSecond > 0;
+}
+
+/// The polling-mode pill, and the explanation behind it.
+///
+/// What the label may say is fixed by what the state proves, and the state has
+/// two halves that have to agree.
+///
+/// [schedulerAllowsGrouping] is `TelemetrySnapshot.fastModeEnabled`, which is
+/// permission the scheduler grants itself: `true` before any request goes out,
+/// reset `true` by `PollingEngine.start` on every connection, and withdrawn
+/// only by `PriorityScheduler.handleCorruptionEvent`. On its own it proves
+/// nothing about the vehicle.
+///
+/// [busAllowsGrouping] is `PriorityScheduler.canBatch`, recomputed before
+/// every command from the detected addressing and the verified support map.
+/// On a non-CAN vehicle it is `false` for the whole session, and on CAN it is
+/// `false` until a support block has answered. Reading the first half alone is
+/// how this pill came to announce grouping in sessions where `popBatch` can
+/// never group anything — review found exactly that.
+///
+/// So "Batching enabled" requires both, and it is still only permission:
+/// `popBatch` also wants the member PID confirmed batchable and more than one
+/// request queued, so "active", "batched" or "verified" remain claims this
+/// state cannot make. When either half is down, every Mode 01 PID is read on
+/// its own, which is what the fallback label says and what the code does.
+///
+/// **The fallback label covers three states and cannot tell them apart.** The
+/// bus is not CAN and never will group; the bus is CAN but no support block
+/// has answered yet, so `canBatch` is still false and grouping is held back on
+/// purpose, because asking about PIDs the vehicle has not confirmed is what
+/// makes a batch come back short; or grouping was withdrawn after a bad reply.
+/// A driver sees one label for all three, and they are not equivalent — the
+/// second resolves itself as discovery lands, the first never does. Two labels
+/// cannot say that, so the explanation behind the pill enumerates all three
+/// rather than the pill implying a single cause.
+///
+/// The one thing neither half stops is a powertrain profile response: those
+/// PIDs share a single reply by construction, `popBatch` drains them as one
+/// batch before it reads either flag, and `buildCommand` sends them as one
+/// command in both modes. The copy says "Mode 01" for that reason.
+///
+/// Symbols rather than line numbers, because nothing in the suite holds a
+/// `file:line` written in a comment to the line it names. Symbols are not free
+/// either — review found `nextBatch` here, a method that has never existed —
+/// so they are worth exactly what a `grep` for them is worth.
+///
+/// The whole pill is the button, and what it opens touches nothing else: no
+/// provider is written and no command is queued. That is a statement about
+/// what this code does, not about what it could do — the session, and through
+/// it the transport, is reachable from this `context` like any other provider.
+/// The guarantee is behavioural, and the zero-traffic test is what holds it.
+class PollingModePill extends StatelessWidget {
+  const PollingModePill({
+    required this.schedulerAllowsGrouping,
+    required this.busAllowsGrouping,
+    super.key,
+  });
+
+  /// `TelemetrySnapshot.fastModeEnabled`, carried verbatim from the scheduler.
+  final bool schedulerAllowsGrouping;
+
+  /// `PriorityScheduler.canBatch`, read through `busGroupsRequestsProvider`.
+  final bool busAllowsGrouping;
+
+  static const Key pillKey = Key('dashboardPollingModePill');
+
+  /// The minimum height a finger gets, in a car, over a bump.
+  ///
+  /// The decoration stays the size it was: this pads the interactive region
+  /// out to the target, it does not inflate the pill. At large text the pill
+  /// is already taller than this and the constraint stops mattering.
+  ///
+  /// Height only. A `minWidth` was here too and never bound: the label is a
+  /// multi-word localized string, so the pill is several times the target wide
+  /// in every geometry the suite renders, and the assertion that guarded it
+  /// could not fail — pushing this constant down fired the height message at
+  /// most of the geometries and the width message at none of them. A
+  /// constraint that cannot bind and a check that cannot fail are both worse
+  /// than their absence, because the next reader counts them as protection.
+  ///
+  /// Material's own constant rather than another bare `48` typed into this
+  /// file, which several other controls in `lib/ui` still are. The test does
+  /// not read this constant back — it types 48 itself, so shrinking the target
+  /// here turns the geometry cases red instead of moving the goalposts with
+  /// them.
+  static const double minTapTarget = kMinInteractiveDimension;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final grouping = schedulerAllowsGrouping && busAllowsGrouping;
+    final label = grouping
+        ? l10n.dashboardBatchingEnabled
+        : l10n.dashboardSingleRequestMode;
+    // Merged rather than excluded: the InkWell contributes the focus and tap
+    // semantics a keyboard user needs, and the pill contributes the state.
+    // Excluding the subtree would have made the node read cleanly in a test
+    // while dropping both.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        label: l10n.dashboardPollingModeHelpAction,
+        child: InkWell(
+          key: pillKey,
+          borderRadius: BorderRadius.circular(Radii.pill),
+          onTap: () => showPollingModeHelp(context),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: minTapTarget),
+            // Sizes to the pill, then the constraint above grows the box
+            // around it rather than stretching it.
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: StatusPill(
+                label: label,
+                icon: grouping
+                    ? Icons.fast_forward
+                    : Icons.slow_motion_video,
+                tone: grouping ? StatusTone.good : StatusTone.warn,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What batching is, what the fallback means, and what the rate is not.
+///
+/// A dialog rather than a tooltip because three paragraphs have to survive
+/// 200% text on a 320dp screen, and `AlertDialog`'s scroll view is what makes
+/// that a scroll instead of an overflow.
+Future<void> showPollingModeHelp(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    // Read inside the builder, not captured outside it. A dialog that closed
+    // over the localizations of the screen that opened it keeps speaking the
+    // old language after the user changes it underneath.
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return AlertDialog(
+        title: Text(l10n.dashboardPollingModeHelpTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.dashboardPollingModeHelpBatching),
+              const SizedBox(height: Spacing.md),
+              Text(l10n.dashboardPollingModeHelpSingle),
+              const SizedBox(height: Spacing.md),
+              Text(l10n.dashboardPollingModeHelpRate),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.datumStatusClose),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _LiveDot extends StatefulWidget {
