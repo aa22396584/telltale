@@ -132,20 +132,23 @@ jobs:
           rm -rf build/app/test-results/testFieldDebugUnitTest
           (cd android && ./gradlew --no-daemon -q :app:testFieldDebugUnitTest)
           python3 - <<'EOF'
-          import glob, sys, xml.etree.ElementTree as ET
+          import glob, sys, xml.etree.ElementTree as ET, re
           files = sorted(glob.glob('build/app/test-results/testFieldDebugUnitTest/TEST-*.xml'))
-          # `tests` counts skipped cases too; only executed ones count here.
-          executed = failed = 0
-          suites = set()
+          # A suite can appear in the XML with every case skipped. `tests`
+          # counts those; only executed cases are a run. Check each required
+          # class on its own so one live suite cannot excuse another that
+          # skipped everything.
+          reports = {}
+          failed = 0
           for f in files:
               r = ET.parse(f).getroot()
-              suites.add(r.get('name'))
-              executed += int(r.get('tests', 0)) - int(r.get('skipped', 0))
+              name = r.get('name')
+              tests = int(r.get('tests', 0))
+              skipped = int(r.get('skipped', 0))
+              executed = tests - skipped
               failed += int(r.get('failures', 0)) + int(r.get('errors', 0))
-              print(f"{r.get('name')}: {r.get('tests')} tests, {r.get('skipped')} skipped, {r.get('failures')} failures, {r.get('errors')} errors")
-          # The suites that must appear are read off the test sources, not
-          # written here, so adding a test class cannot be forgotten by this gate.
-          import re
+              reports[name] = (executed, skipped, tests)
+              print(f"{name}: {tests} tests, {skipped} skipped, {r.get('failures')} failures, {r.get('errors')} errors")
           expected = set()
           for src in glob.glob('android/app/src/test/kotlin/**/*.kt', recursive=True):
               text = open(src, encoding='utf-8').read()
@@ -154,10 +157,14 @@ jobs:
                   expected.add(f"{pkg.group(1)}.{cls}" if pkg else cls)
           if not expected:
               print('::error::no test classes found under android/app/src/test'); sys.exit(1)
-          if executed == 0:
-              print('::error::no JVM unit tests ran'); sys.exit(1)
-          if not expected <= suites:
-              print(f'::error::expected suites did not run: {sorted(expected - suites)}'); sys.exit(1)
+          if not expected <= set(reports):
+              print(f'::error::expected suites did not run: {sorted(expected - set(reports))}'); sys.exit(1)
+          for name in sorted(expected):
+              executed, skipped, tests = reports[name]
+              if executed <= 0:
+                  print(f'::error::{name} executed {executed} of {tests}'); sys.exit(1)
+              if skipped != 0:
+                  print(f'::error::{name} skipped {skipped} of {tests}'); sys.exit(1)
           if failed:
               print(f'::error::{failed} JVM unit test(s) failed'); sys.exit(1)
           EOF
