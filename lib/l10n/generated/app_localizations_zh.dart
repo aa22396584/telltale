@@ -3631,7 +3631,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String dtcClearNrcConditions(String controller) {
-    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，然後再試一次。';
   }
 
   @override
@@ -3641,7 +3641,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String dtcClearNrcBusy(String controller) {
-    return '$controller 目前忙碌中。請稍候再掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 目前忙碌中。請稍候再試一次。';
   }
 
   @override
@@ -3651,12 +3651,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String dtcClearNrcOther(String controller, String code) {
-    return '$controller 拒絕清除（原因碼 $code）。請重新掃描確認還留下什麼。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 拒絕清除（原因碼 $code）。請稍候再試一次。';
   }
 
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
+
+  @override
+  String dtcClearNrcConditionsDoNotRepeat(String controller) {
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+  }
+
+  @override
+  String dtcClearNrcUnsupportedDoNotRepeat(String controller) {
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+  }
+
+  @override
+  String dtcClearNrcBusyDoNotRepeat(String controller) {
+    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+  }
+
+  @override
+  String dtcClearNrcSecurityDoNotRepeat(String controller) {
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+  }
+
+  @override
+  String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
+    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 }
 
@@ -7286,7 +7311,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String dtcClearNrcConditions(String controller) {
-    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，然後再試一次。';
   }
 
   @override
@@ -7296,7 +7321,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String dtcClearNrcBusy(String controller) {
-    return '$controller 目前忙碌中。請稍候再掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 目前忙碌中。請稍候再試一次。';
   }
 
   @override
@@ -7306,11 +7331,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String dtcClearNrcOther(String controller, String code) {
-    return '$controller 拒絕清除（原因碼 $code）。請重新掃描確認還留下什麼。若其他控制器可能已經清除，不要再送一次全車清除。';
+    return '$controller 拒絕清除（原因碼 $code）。請稍候再試一次。';
   }
 
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
+
+  @override
+  String dtcClearNrcConditionsDoNotRepeat(String controller) {
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+  }
+
+  @override
+  String dtcClearNrcUnsupportedDoNotRepeat(String controller) {
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+  }
+
+  @override
+  String dtcClearNrcBusyDoNotRepeat(String controller) {
+    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+  }
+
+  @override
+  String dtcClearNrcSecurityDoNotRepeat(String controller) {
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+  }
+
+  @override
+  String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
+    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 }

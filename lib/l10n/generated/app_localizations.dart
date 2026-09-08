@@ -6474,10 +6474,10 @@ abstract class AppLocalizations {
   /// **'BLE search failed.'**
   String get connectBleScanUnclassified;
 
-  /// ISO 14229 NRC 0x22 on Mode 04. Controller id is issueDetail.
+  /// ISO 14229 NRC 0x22 on Mode 04 when repeatWouldHarm is false. Controller id is the raw sourceId.
   ///
   /// In en, this message translates to:
-  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.'**
+  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then try again.'**
   String dtcClearNrcConditions(String controller);
 
   /// No description provided for @dtcClearNrcUnsupported.
@@ -6489,7 +6489,7 @@ abstract class AppLocalizations {
   /// No description provided for @dtcClearNrcBusy.
   ///
   /// In en, this message translates to:
-  /// **'{controller} is busy. Wait, then rescan. Do not send another global clear if one may already have finished.'**
+  /// **'{controller} is busy. Wait, then try again.'**
   String dtcClearNrcBusy(String controller);
 
   /// No description provided for @dtcClearNrcSecurity.
@@ -6501,7 +6501,7 @@ abstract class AppLocalizations {
   /// No description provided for @dtcClearNrcOther.
   ///
   /// In en, this message translates to:
-  /// **'{controller} refused the clear (reason code {code}). Rescan to see what remains. Do not send another global clear if one may already have finished.'**
+  /// **'{controller} refused the clear (reason code {code}). Wait, then try again.'**
   String dtcClearNrcOther(String controller, String code);
 
   /// No description provided for @dtcClearSilentControllers.
@@ -6509,6 +6509,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} controller(s) did not answer the clear ({controllers}). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.'**
   String dtcClearSilentControllers(int count, String controllers);
+
+  /// ISO 14229 NRC 0x22 on Mode 04 when another controller may already have cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.'**
+  String dtcClearNrcConditionsDoNotRepeat(String controller);
+
+  /// No description provided for @dtcClearNrcUnsupportedDoNotRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  String dtcClearNrcUnsupportedDoNotRepeat(String controller);
+
+  /// No description provided for @dtcClearNrcBusyDoNotRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} is busy. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  String dtcClearNrcBusyDoNotRepeat(String controller);
+
+  /// No description provided for @dtcClearNrcSecurityDoNotRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} requires security access before it will clear. Manufacturer or dealer equipment is required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.'**
+  String dtcClearNrcSecurityDoNotRepeat(String controller);
+
+  /// No description provided for @dtcClearNrcOtherDoNotRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} refused the clear (reason code {code}). Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  String dtcClearNrcOtherDoNotRepeat(String controller, String code);
 }
 
 class _AppLocalizationsDelegate

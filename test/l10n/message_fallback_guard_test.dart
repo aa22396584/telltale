@@ -74,6 +74,17 @@ void main() {
       code.contains(r'e is TransportException ? e.message : e'),
       isFalse,
     );
+    expect(code.contains('negativeResponseCode: e.negativeResponseCode'), isTrue);
+    expect(code.contains('silentSources: Set.unmodifiable(e.silentSources)'), isTrue);
+    expect(code.contains('decodeFailure ??= e.message'), isFalse);
+    expect(code.contains('issueDetail: source'), isFalse);
+    expect(code.contains('issueDetail: frame.sourceId'), isTrue);
+  });
+
+  test('NRC clear copy selects a repeat-safety variant', () {
+    final code = _code('lib/ui/screens/dtc/dtc_copy.dart');
+    expect(code.contains('dtcClearNrcConditionsDoNotRepeat'), isTrue);
+    expect(code.contains('failure.repeatWouldHarm'), isTrue);
   });
 
   test('the BLE scan panel does not interpolate userFacingScanFailure', () {
