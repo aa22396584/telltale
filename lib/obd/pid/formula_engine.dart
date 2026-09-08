@@ -1017,7 +1017,41 @@ class FormulaEngine {
       );
       return null;
     } on FormulaException catch (e) {
-      return e;
+      // Probe bytes are all 1. A formula that is undefined at that stand-in
+      // (1/(A-1), LOG10(A-1)) can still be well-formed for a real reply.
+      switch (e.issue) {
+        case FormulaIssue.divisionByZero:
+        case FormulaIssue.moduloByZero:
+        case FormulaIssue.log10NonPositiveArgument:
+        case FormulaIssue.resultNotFinite:
+          return null;
+        case null:
+        case FormulaIssue.emptyFormula:
+        case FormulaIssue.emptySubExpression:
+        case FormulaIssue.unbalancedParentheses:
+        case FormulaIssue.unparsableTerm:
+        case FormulaIssue.functionNestingTooDeep:
+        case FormulaIssue.parenthesisNestingTooDeep:
+        case FormulaIssue.byteBeyondResponse:
+        case FormulaIssue.baroControllerUnknown:
+        case FormulaIssue.baroTwoDefinitions:
+        case FormulaIssue.baroNotYetMeasured:
+        case FormulaIssue.baroMeasurementStale:
+        case FormulaIssue.dependencyControllerUnknown:
+        case FormulaIssue.dependencyTwoDefinitions:
+        case FormulaIssue.dependencyNotYetMeasured:
+        case FormulaIssue.unsupportedConstruct:
+          return e;
+      }
+    } on Error catch (e) {
+      // `~1e999` hits `Infinity.toInt()` inside the evaluator. Import must
+      // not throw; the row is refused as unparsable.
+      return FormulaException(
+        '公式求值發生未預期的錯誤',
+        equation,
+        issue: FormulaIssue.unparsableTerm,
+        term: e.runtimeType.toString(),
+      );
     }
   }
 

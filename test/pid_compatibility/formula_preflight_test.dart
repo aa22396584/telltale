@@ -80,4 +80,32 @@ void main() {
     expect(result.errors, isEmpty, reason: '${result.errors}');
     expect(result.pids, hasLength(1));
   });
+
+  test('a probe-value domain error is not an import syntax error', () {
+    // Probe bytes are all 1. `1/(A-1)` is defined for every other A.
+    expect(FormulaEngine.preflight('1/(A-1)'), isNull);
+    expect(FormulaEngine.preflight('LOG10(A-1)'), isNull);
+    const wire =
+        'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+        'Inv,INV,010C,1/(A-1),0,100,,7E0\r\n';
+    final result = PidCsv.parse(wire);
+    expect(result.errors, isEmpty, reason: '${result.errors}');
+    expect(result.pids, hasLength(1));
+    expect(result.pids.single.equation, '1/(A-1)');
+  });
+
+  test('an unexpected evaluator Error is contained, not thrown', () {
+    expect(() => FormulaEngine.preflight('~1e999'), returnsNormally);
+    final failure = FormulaEngine.preflight('~1e999');
+    expect(failure, isNotNull);
+    expect(failure!.issue, isNot(FormulaIssue.unsupportedConstruct));
+    const wire =
+        'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+        'Boom,B,010C,~1e999,0,1,,7E0\r\n';
+    expect(() => PidCsv.parse(wire), returnsNormally);
+    final result = PidCsv.parse(wire);
+    expect(result.pids, isEmpty);
+    expect(result.errors, hasLength(1));
+    expect(result.errors.single.issue, PidCsvIssue.rowFormulaRejected);
+  });
 }
