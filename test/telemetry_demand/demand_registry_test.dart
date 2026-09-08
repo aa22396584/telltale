@@ -94,4 +94,44 @@ void main() {
     registry.release('a');
     expect(registry.uniqueWireRequests(), isEmpty);
   });
+
+  test('fastest period and highest priority are kept independently', () {
+    final registry = DemandRegistry()
+      ..acquire(
+        _demand(
+          owner: DemandOwner.dashboard,
+          leaseId: 'fast-medium',
+          period: const Duration(milliseconds: 60),
+          priority: PriorityTier.medium,
+        ),
+      )
+      ..acquire(
+        _demand(
+          owner: DemandOwner.recording,
+          leaseId: 'slow-high',
+          period: const Duration(milliseconds: 250),
+          priority: PriorityTier.high,
+        ),
+      );
+    final wire = registry.uniqueWireRequests().single;
+    expect(wire.requestedPeriod, const Duration(milliseconds: 60));
+    expect(wire.priority, PriorityTier.high);
+  });
+
+  test('internal spaces are not a second adapter address', () {
+    final registry = DemandRegistry()
+      ..acquire(
+        _demand(owner: DemandOwner.dashboard, leaseId: 'a', header: '7E0'),
+      )
+      ..acquire(
+        _demand(
+          owner: DemandOwner.recording,
+          leaseId: 'b',
+          header: '7 E 0',
+          modeAndPid: '01 0C',
+        ),
+      );
+    expect(registry.uniqueWireRequests(), hasLength(1));
+    expect(registry.uniqueWireRequests().single.wireKey, '7E0:010C');
+  });
 }

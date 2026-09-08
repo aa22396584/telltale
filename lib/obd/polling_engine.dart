@@ -22,6 +22,7 @@ import 'pid/pid.dart';
 import 'pid/pid_library.dart';
 import 'pid/priority_scheduler.dart';
 import 'telemetry.dart';
+import 'telemetry_demand.dart';
 import 'transport/obd_transport.dart';
 
 /// What a Mode 04 clear actually achieved.
@@ -271,6 +272,7 @@ class PollingEngine {
   final Elm327Client client;
   final FormulaEngine formula;
   final PriorityScheduler scheduler;
+  final DemandRegistry demands = DemandRegistry();
 
   final _snapshots = StreamController<TelemetrySnapshot>.broadcast();
   final _capabilitySummaries = StreamController<ObdCapabilitySummary>.broadcast(
@@ -490,6 +492,7 @@ class PollingEngine {
     // rest, which is the churn this was written to avoid.
     scheduler.retireQueuedRequests(merged);
     _active = List.unmodifiable(merged.values);
+    _syncDashboardLeases();
 
     // Ambiguity is a property of what is being polled, so it is recomputed
     // with the poll set. Two definitions of one hex on one controller make a
@@ -3668,10 +3671,37 @@ class PollingEngine {
     }
   }
 
+  /// Rebuilds dashboard leases to match [_active]. Recording/trip/alert
+  /// leases are left alone so they can share a wire request with the gauges.
+  void _syncDashboardLeases() {
+    for (final lease in demands.leases
+        .where((demand) => demand.owner == DemandOwner.dashboard)
+        .toList()) {
+      demands.release(lease.leaseId);
+    }
+    for (final pid in _active) {
+      demands.acquire(
+        TelemetryDemand(
+          owner: DemandOwner.dashboard,
+          leaseId: 'dashboard:${pid.id}',
+          header: pid.header,
+          modeAndPid: pid.modeAndPid,
+          requestedPeriod: pid.priority.targetInterval,
+          priority: pid.priority,
+          definitionId: pid.id,
+        ),
+      );
+    }
+  }
+
   /// Tops the queue up with any active PID whose target interval has elapsed.
   void _refillQueue() {
     if (scheduler.isNotEmpty) return;
     final now = DateTime.now();
+    final unionByWire = {
+      for (final demand in demands.uniqueWireRequests()) demand.wireKey: demand,
+    };
+    final seenWire = <String>{};
     for (final pid in _active) {
       // Demoted, not retired.
       //
@@ -3697,10 +3727,59 @@ class PollingEngine {
         if (now.isBefore(retryAt)) continue;
         _retryAfter.remove(pid.id);
       }
-      final last = _readings[pid.id]?.timestamp;
-      final due =
-          last == null || now.difference(last) >= pid.priority.targetInterval;
-      if (due) scheduler.enqueue(pid, pid.priority);
+      final wireKey = TelemetryDemand.wireKeyFor(pid.header, pid.modeAndPid);
+      if (!seenWire.add(wireKey)) continue;
+      final union = unionByWire[wireKey];
+      final period = union?.requestedPeriod ?? pid.priority.targetInterval;
+      final priority = union?.priority ?? pid.priority;
+      DateTime? last;
+      for (final sibling in _active) {
+        if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
+            wireKey) {
+          continue;
+        }
+        final ts = _readings[sibling.id]?.timestamp;
+        if (ts != null && (last == null || ts.isAfter(last))) last = ts;
+      }
+      final due = last == null || now.difference(last) >= period;
+      if (due) scheduler.enqueue(pid, priority);
+    }
+  }
+
+  /// Evaluates every other live definition that shares this wire request.
+  ///
+  /// One adapter exchange, several formulas. Enqueueing each definition
+  /// separately used to send `010C` twice in a cycle.
+  void _applySharedWireSiblings(Pid source, List<int> bytes, DateTime now) {
+    final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
+    for (final sibling in _active) {
+      if (sibling.id == source.id) continue;
+      if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
+          key) {
+        continue;
+      }
+      try {
+        final value = formula.evaluateBytes(
+          sibling.equation,
+          bytes,
+          requester: sibling,
+          now: now,
+        );
+        if (!value.isFinite) {
+          _invalidate(sibling.id, PidFault.formulaError);
+          continue;
+        }
+        formula.cachePidValue(sibling, value, now);
+        _readings[sibling.id] = Reading(
+          pid: sibling,
+          value: value,
+          rawBytes: bytes,
+          timestamp: now,
+        );
+        _faults.remove(sibling.id);
+      } on FormulaException {
+        _invalidate(sibling.id, PidFault.formulaError);
+      }
     }
   }
 
@@ -3957,6 +4036,7 @@ class PollingEngine {
           rawBytes: bytes,
           timestamp: now,
         );
+        _applySharedWireSiblings(request.pid, bytes, now);
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
         }

@@ -43,8 +43,16 @@ class TelemetryDemand {
   final String? definitionId;
 
   /// Wire-request identity. Not [definitionId].
-  String get wireKey =>
-      '${header.trim().toUpperCase()}:${modeAndPid.trim().toUpperCase()}';
+  ///
+  /// Spaces inside a token are not a different adapter address: `7 E 0` and
+  /// `7E0` are one controller. Trim-only left them as two requests.
+  String get wireKey => wireKeyFor(header, modeAndPid);
+
+  static String wireKeyFor(String header, String modeAndPid) =>
+      '${_canonical(header)}:${_canonical(modeAndPid)}';
+
+  static String _canonical(String value) =>
+      value.replaceAll(RegExp(r'\s+'), '').toUpperCase();
 }
 
 /// The union of live leases, keyed for the scheduler as unique wire requests.
@@ -71,16 +79,24 @@ class DemandRegistry {
     }
     final out = <TelemetryDemand>[];
     for (final group in grouped.values) {
-      var tightest = group.first;
+      var representative = group.first;
+      var period = representative.requestedPeriod;
+      var priority = representative.priority;
       for (final demand in group.skip(1)) {
-        if (demand.requestedPeriod < tightest.requestedPeriod) {
-          tightest = demand;
-        } else if (demand.requestedPeriod == tightest.requestedPeriod &&
-            demand.priority.index > tightest.priority.index) {
-          tightest = demand;
-        }
+        if (demand.requestedPeriod < period) period = demand.requestedPeriod;
+        if (demand.priority.index > priority.index) priority = demand.priority;
       }
-      out.add(tightest);
+      out.add(
+        TelemetryDemand(
+          owner: representative.owner,
+          leaseId: representative.leaseId,
+          header: representative.header,
+          modeAndPid: representative.modeAndPid,
+          requestedPeriod: period,
+          priority: priority,
+          definitionId: representative.definitionId,
+        ),
+      );
     }
     return out;
   }
