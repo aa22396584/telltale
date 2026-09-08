@@ -256,7 +256,9 @@ def run_task(
     if not isinstance(data, dict):
         raise RunnerError("plan must be a JSON object")
     errors, ready = validate_plan.validate_plan(
-        data, plan_path=plan_path, check_artifacts=True
+        data,
+        plan_path=plan_path,
+        check_artifacts=not isolate,
     )
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
@@ -288,7 +290,7 @@ def run_task(
     if not dry_run:
         lease_fd = _acquire_lease(lease_path, task_id)
     try:
-        if isolate:
+        if isolate and not dry_run:
             git_root = _git_toplevel(cwd)
             requested = base_sha or task.get("base_sha")
             head_sha = (
@@ -306,6 +308,26 @@ def run_task(
             except ValueError as exc:
                 raise RunnerError("plan root is outside the git checkout") from exc
             cwd = worktree_dest if rel == Path(".") else worktree_dest / rel
+            try:
+                rel_plan = plan_path.resolve().relative_to(original_root.resolve())
+            except ValueError as exc:
+                raise RunnerError("plan path is outside the original root") from exc
+            isolated_plan = cwd / rel_plan
+            try:
+                isolated_data = json.loads(isolated_plan.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise RunnerError(f"cannot read isolated plan: {exc}") from exc
+            if not isinstance(isolated_data, dict):
+                raise RunnerError("isolated plan must be a JSON object")
+            artifact_errors, _ = validate_plan.validate_plan(
+                isolated_data,
+                plan_path=isolated_plan,
+                check_artifacts=True,
+            )
+            if artifact_errors:
+                raise RunnerError(
+                    "isolated checkout evidence failed: " + "; ".join(artifact_errors)
+                )
         child_env = _allowed_env(env if env is not None else os.environ)
         results: list[dict[str, Any]] = []
         failed: list[str] = []
