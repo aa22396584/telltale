@@ -3318,6 +3318,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsManualCommandOperationRetired => '這個工作階段已經結束或退到背景，指令沒有送出。';
 
   @override
+  String get settingsManualCommandRequestUnaddressable =>
+      '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
+
+  @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';
 
   @override
@@ -6848,6 +6852,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsManualCommandOperationRetired => '這個工作階段已經結束或退到背景，指令沒有送出。';
+
+  @override
+  String get settingsManualCommandRequestUnaddressable =>
+      '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
 
   @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';

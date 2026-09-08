@@ -96,6 +96,10 @@ const _expected = <TransportIssue, (String, String)>{
     'This session has ended or gone to the background, so the command was not sent.',
     '這個工作階段已經結束或退到背景，指令沒有送出。',
   ),
+  TransportIssue.requestUnaddressable: (
+    'This request cannot be addressed on the bus this vehicle is using, so it was not sent.',
+    '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。',
+  ),
   TransportIssue.queryHeaderRefused: (
     'refused to aim this request at controller 7E1',
     '拒絕將這條要求對準到控制器 7E1',

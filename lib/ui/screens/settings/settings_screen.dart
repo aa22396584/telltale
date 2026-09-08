@@ -69,13 +69,12 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// A command that was sent and failed is a `TransportException`, answered by
   /// [commandFailureText] through its identifier.
   ///
-  /// `WriteRefusedException` carries `TransportIssue.notConnected` and
+  /// `WriteRefusedException` carries `TransportIssue.notConnected`,
   /// `OperationRetiredException` carries `TransportIssue.operationRetired`,
-  /// so both go through [commandFailureText]. The remaining subclass that
-  /// still bakes `issue: null` is `UnaddressableRequestException`, which the
-  /// polling loop handles structurally and which does not reach this panel.
-  /// There is therefore no `error.message` fallback: that was how an English
-  /// reader still saw Traditional Chinese for the two that do arrive here.
+  /// and `UnaddressableRequestException` carries
+  /// `TransportIssue.requestUnaddressable`, so all three go through
+  /// [commandFailureText]. There is no `error.message` fallback: that was how
+  /// an English reader still saw Traditional Chinese for a typed command.
   ///
   /// A function rather than two catch clauses so it can be tested. The panel
   /// it renders into only exists while connected, and a connected session

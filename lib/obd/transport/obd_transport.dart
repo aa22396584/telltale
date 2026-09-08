@@ -262,6 +262,10 @@ enum TransportIssue {
   /// background, so the bytes never left. Not a failure of the link or the
   /// vehicle: the app stopped asking.
   operationRetired,
+
+  /// The request cannot be addressed on this bus. Retrying will not help:
+  /// there is no header that would reach the controller it names.
+  requestUnaddressable,
 }
 
 /// Raised for link-level failures.
@@ -385,9 +389,12 @@ class OperationRetiredException extends TransportException {
 }
 
 class UnaddressableRequestException extends TransportException {
-  /// No identifier: the polling loop handles this one structurally, and it is
-  /// surfaced by the gauge rather than by the connect screen.
-  const UnaddressableRequestException(super.message) : super(issue: null);
+  /// [TransportIssue.requestUnaddressable]: no header on this bus reaches the
+  /// named controller. The polling loop still keys off the type so it records
+  /// a fault instead of retrying forever; the copy layer keys off the
+  /// identifier if the exception ever reaches a panel.
+  const UnaddressableRequestException(super.message)
+    : super(issue: TransportIssue.requestUnaddressable);
 
   @override
   String toString() => 'UnaddressableRequestException: $message';

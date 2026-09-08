@@ -3724,6 +3724,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This session has ended or gone to the background, so the command was not sent.';
 
   @override
+  String get settingsManualCommandRequestUnaddressable =>
+      'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Nothing was typed, so nothing was sent.';
 

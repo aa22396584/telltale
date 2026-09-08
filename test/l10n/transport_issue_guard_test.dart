@@ -106,6 +106,7 @@ const _commandPath = <TransportIssue>{
   TransportIssue.legacyScanWouldBePartial,
   TransportIssue.linkStoppedResponding,
   TransportIssue.operationRetired,
+  TransportIssue.requestUnaddressable,
 };
 
 /// The identifiers whose throw must also carry the address its sentence names.
@@ -192,11 +193,7 @@ void main() {
     // reaches the connect screen -- but "correct today" is what a roster is for.
     // A fourth subclass doing the same has to be written here, where somebody
     // reads it and says why.
-    const known = {
-      'UnaddressableRequestException': 'handled structurally by the polling '
-          'loop and surfaced by the gauge; does not reach the manual-command '
-          'panel',
-    };
+    const known = <String, String>{};
 
     // Every file in the directory, not just the one the three happen to live
     // in: review declared a fourth in `serial_transport.dart` and threw it from
@@ -246,6 +243,7 @@ void main() {
     const identified = {
       'WriteRefusedException',
       'OperationRetiredException',
+      'UnaddressableRequestException',
     };
     expect(
       declared,
