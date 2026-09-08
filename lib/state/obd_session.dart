@@ -1413,7 +1413,11 @@ class ObdSession extends Notifier<ObdConnectionState> {
     }
 
     final first = failed.first;
-    if (first.index == 0) {
+    // Silence on ATZ is a different diagnosis from an unexpected exception
+    // on ATZ. The latter already has a note the screen can say; calling it
+    // "the adapter did not answer reset" tells the driver the device is not
+    // an ELM327, which is the one thing this path has not established.
+    if (first.index == 0 && first.note != InitNote.unexpected) {
       return (
         message:
             '轉接器沒有回應重置指令（${first.step.command}）。'
