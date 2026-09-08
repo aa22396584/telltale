@@ -42,9 +42,11 @@ variables, and writes `handoff.json`. A failed command cannot be labelled
 completed.
 
 `--isolate` adds a detached git worktree at `--base-sha` (or `HEAD`) and runs
-the argv there. The default location is `<git-root>/.worktrees/ws-<task>`,
-outside `docs/`. The caller's checkout is not reset. An existing isolate path
-is a refusal, not a `git reset`. Handoff and lease stay under the original
+the argv there. Combined with `--dry-run` it does not create a worktree.
+Required evidence is checked in that checkout, not the caller's dirty tree.
+The default location is `<git-root>/.worktrees/ws-<task>`, outside `docs/`.
+The caller's checkout is not reset. An existing isolate path is a refusal,
+not a `git reset`. Handoff and lease stay under the original
 `docs/workshop/ws/<task>/` directory.
 
 ```bash
