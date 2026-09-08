@@ -360,7 +360,11 @@ abstract final class PidCsv {
       final lineNumber = i + 1;
       if (row.every((c) => c.toString().trim().isEmpty)) continue;
 
-      if (row.length < 4) {
+      // Positional files have no names to look up: a short row is missing
+      // cells, not empty ones. Named imports validate the mapped required
+      // values instead — a three-column Name/ModeAndPID/Equation file is a
+      // complete contract even though it is shorter than the legacy layout.
+      if (startIndex == 0 && row.length < 4) {
         errors.add(
           PidCsvDiagnostic(
             PidCsvIssue.rowTooFewColumns,

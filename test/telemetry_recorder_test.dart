@@ -325,7 +325,7 @@ void main() {
         0,
         reason:
             'sourceTimestampUtc after observedAtUtc must not enter the '
-            'canonical stream — isStaleAt treats negative age as fresh',
+            'canonical stream — a negative age is stale, not fresh',
       );
       expect(emitted.where((e) => e.kind == TelemetryEventKind.value), isEmpty);
       expect(recorder.state.statusCount, 1);

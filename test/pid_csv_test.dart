@@ -165,15 +165,29 @@ void main() {
         PidCsvIssue.nothingImportable,
       );
 
-      // A row with fewer cells than the four that are always needed, refused
-      // before any of them is looked at. Not `rowEmptyEquation`: there is no
-      // equation *cell*, which is a different thing from an empty one, and the
-      // remedy is to add columns rather than to fill one in.
-      final short = PidCsv.parse(
+      // A named header with a short data row is missing mapped values, not a
+      // positional cell count. ModeAndPID is empty, so the row is invalid
+      // rather than "too few columns".
+      final shortNamed = PidCsv.parse(
         'Name,ShortName,ModeAndPID,Equation\r\nTrans,T\r\n',
       );
-      expect(short.errors.single.issue, PidCsvIssue.rowTooFewColumns);
-      expect(short.errors.single.lineNumber, 2);
+      expect(shortNamed.errors.single.issue, PidCsvIssue.rowInvalidModeAndPid);
+      expect(shortNamed.errors.single.lineNumber, 2);
+
+      // Headerless positional files still refuse a row shorter than four cells.
+      final shortPositional = PidCsv.parse('Trans,T\r\n');
+      expect(
+        shortPositional.errors.single.issue,
+        PidCsvIssue.rowTooFewColumns,
+      );
+
+      final threeColumn = PidCsv.parse(
+        'Name,ModeAndPID,Equation\r\nCoolant,0105,A-40\r\n',
+      );
+      expect(threeColumn.errors, isEmpty, reason: 'named three-column Torque CSV');
+      expect(threeColumn.pids, hasLength(1));
+      expect(threeColumn.pids.single.modeAndPid, '0105');
+      expect(threeColumn.pids.single.equation, 'A-40');
 
       // And the empty-cell case really is the other one, so the two are told
       // apart by input rather than by which happens to be checked first.

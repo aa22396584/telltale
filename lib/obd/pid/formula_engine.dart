@@ -237,6 +237,13 @@ class FormulaEngine {
   static String _cacheKey(String header, String modeAndPid) =>
       '${header.toUpperCase().trim()}:${modeAndPid.toUpperCase().trim()}';
 
+  /// Elapsed cache age. A backwards clock step is expiry, not freshness:
+  /// `.abs()` used to make an hour-old sample look one hour in the future.
+  static bool _expired(DateTime now, DateTime at, Duration maxAge) {
+    final age = now.difference(at);
+    return age.isNegative || age > maxAge;
+  }
+
   /// Operators grouped into precedence levels, loosest first.
   ///
   /// Grouping matters. Scanning a flat list and splitting on the first symbol
@@ -292,7 +299,7 @@ class FormulaEngine {
   static final RegExp _signedPattern = RegExp(r'SIGNED\(([A-N])\)');
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
-  static final RegExp _nonHex = RegExp('[^0-9A-Fa-f]');
+
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
   /// They must contain no A-N letters of their own, hence control characters.
@@ -358,7 +365,7 @@ class FormulaEngine {
     if (entry == null) return null;
     // A null `now` means the caller has no clock to judge staleness against —
     // the authoring preview. Runtime always passes one.
-    if (now != null && now.difference(entry.at).abs() > maxCacheAge) return null;
+    if (now != null && _expired(now, entry.at, maxCacheAge)) return null;
     return entry.value;
   }
 
@@ -404,7 +411,7 @@ class FormulaEngine {
   }) {
     return evaluateBytes(
       equation,
-      parseUserTypedSampleBytes(payload),
+      parseUserTypedSampleBytes(payload, stripResponsePrefix: true),
       requester: requester,
       now: now,
     );
@@ -477,30 +484,67 @@ class FormulaEngine {
   /// [evaluateBytes]. A companion test asserts that nothing under `lib/obd/`
   /// calls the string-taking overload above, which is the only route from a
   /// response line into this function.
-  static List<int> parseUserTypedSampleBytes(String payload) {
-    final hex = payload.replaceAll(_nonHex, '');
+  static List<int> parseUserTypedSampleBytes(
+    String payload, {
+    bool stripResponsePrefix = false,
+  }) {
+    final trimmed = payload.trim();
+    if (trimmed.isEmpty) return const [];
+    final upper = trimmed.toUpperCase();
+    const refused = <String>[
+      'DATA ERROR',
+      'CAN ERROR',
+      'BUS ERROR',
+      'NO DATA',
+      'STOPPED',
+      'UNABLE TO CONNECT',
+      'SEARCHING',
+      'BUS INIT',
+    ];
+    for (final token in refused) {
+      if (upper.contains(token)) {
+        throw FormulaException(
+          '測試用回應不是十六進位位元組',
+          payload,
+          issue: FormulaIssue.unparsableTerm,
+          term: token,
+        );
+      }
+    }
+    if (RegExp(r'[^0-9A-Fa-f\s,:\-]').hasMatch(trimmed)) {
+      throw FormulaException(
+        '測試用回應含有不是十六進位的字元',
+        payload,
+        issue: FormulaIssue.unparsableTerm,
+        term: trimmed,
+      );
+    }
+    final hex = trimmed.replaceAll(RegExp(r'[\s,:\-]'), '');
+    if (hex.length.isOdd) {
+      throw FormulaException(
+        '測試用回應的十六進位長度是奇數',
+        payload,
+        issue: FormulaIssue.unparsableTerm,
+        term: trimmed,
+      );
+    }
     final all = <int>[];
     for (var i = 0; i + 1 < hex.length; i += 2) {
       final b = int.tryParse(hex.substring(i, i + 2), radix: 16);
-      if (b == null) break;
+      if (b == null) {
+        throw FormulaException(
+          '測試用回應不是十六進位位元組',
+          payload,
+          issue: FormulaIssue.unparsableTerm,
+          term: trimmed,
+        );
+      }
       all.add(b);
     }
-    if (all.length < 2) return all;
+    if (!stripResponsePrefix || all.length < 2) return all;
 
-    // 0x4X = positive response to Mode 0X; 0x62 = positive response to Mode 22.
-    //
-    // The header is stripped only when the whole header is there. `62 1E` is
-    // two bytes and the Mode 22 header is three, so `sublist(3)` threw a raw
-    // `RangeError` — outside this file's `FormulaException` contract, and the
-    // editor showed the user a Dart error object.
-    //
-    // The `0x4X` test is also a guess, and it is stated as one here because it
-    // stays a guess: a user pasting the *data* bytes of a reply whose first
-    // byte happens to be `4A` sees `A` bound to the second byte instead. There
-    // is no way to tell an echoed header from data that looks like one, and
-    // the preview is an authoring aid where being wrong costs a re-read rather
-    // than a wrong gauge. Requiring a plausible PID byte behind it narrows the
-    // guess without pretending to resolve it.
+    // Prefix stripping is opt-in. A data byte that happens to be 0x41 or
+    // 0x62 must not disappear just because it looks like a positive response.
     if (all[0] == 0x62 && all.length >= 4) return all.sublist(3);
     if ((all[0] & 0xF0) == 0x40 && all.length >= 3) return all.sublist(2);
     return all;
@@ -544,7 +588,7 @@ class FormulaEngine {
         );
       }
       // `now == null` is the authoring path, which has no measurements to age.
-      if (now != null && now.difference(baro.at).abs() > maxCacheAge) {
+      if (now != null && _expired(now, baro.at, maxCacheAge)) {
         throw FormulaException(
           '大氣壓力量測值已過期，無法計算',
           equation,

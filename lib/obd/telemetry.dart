@@ -54,7 +54,13 @@ class Reading {
     return slack;
   }
 
-  bool isStaleAt(DateTime now) => now.difference(timestamp) > maxAge;
+  /// Elapsed time, not wall-clock proximity. A clock step *back* makes
+  /// `difference` negative, which used to look fresher than a live sample.
+  bool isStaleAt(DateTime now) {
+    final age = now.difference(timestamp);
+    if (age.isNegative) return true;
+    return age > maxAge;
+  }
 }
 
 /// Why a PID stopped being polled.
@@ -175,23 +181,10 @@ class TelemetrySnapshot {
   /// showing values from before the trouble started. The one case staleness
   /// exists for is exactly the case where nothing is recomputing it.
   ///
-  /// [capturedAt] is still the anchor when it is *ahead* of wall time, which
-  /// happens in tests that construct snapshots with explicit clocks — and, in
-  /// production, if the device clock steps backwards.
-  ///
-  /// `DateTime.now()` is not monotonic. An NTP correction mid-drive can jump
-  /// it forward, which marks every reading stale for one cycle before the next
-  /// publication heals it, or backwards, which puts timestamps in the future
-  /// and takes the branch below. Both are visible for a moment and neither
-  /// fabricates a value, so the trade is accepted: a monotonic clock would have
-  /// to be injected through every constructor and every test, to remove a
-  /// flicker. Worth revisiting if it is ever observed on a real drive.
-  DateTime _reference(DateTime? now) {
-    if (now != null) return now;
-    final wall = DateTime.now();
-    final at = capturedAt;
-    return (at != null && at.isAfter(wall)) ? at : wall;
-  }
+  /// Callers that have an observation clock pass it as [now]. Wall UTC is
+  /// display metadata, not a TTL that can freeze at [capturedAt] when the
+  /// device clock steps backwards.
+  DateTime _reference(DateTime? now) => now ?? DateTime.now();
 
   TelemetrySnapshot copyWith({
     Map<String, Reading>? readings,

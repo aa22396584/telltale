@@ -10,37 +10,64 @@ void main() {
   setUp(() => engine = FormulaEngine());
 
   group('payload byte extraction', () {
-    test('strips the Mode 01 positive-response prefix', () {
-      expect(FormulaEngine.parseUserTypedSampleBytes('41 0C 1A F0'), [0x1A, 0xF0]);
+    test('strips the Mode 01 positive-response prefix when asked', () {
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes(
+          '41 0C 1A F0',
+          stripResponsePrefix: true,
+        ),
+        [0x1A, 0xF0],
+      );
     });
 
-    test('strips the wider Mode 22 prefix', () {
-      expect(FormulaEngine.parseUserTypedSampleBytes('62 1E 1C 02 80'), [0x02, 0x80]);
+    test('strips the wider Mode 22 prefix when asked', () {
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes(
+          '62 1E 1C 02 80',
+          stripResponsePrefix: true,
+        ),
+        [0x02, 0x80],
+      );
     });
 
     test('passes through a payload that carries no prefix', () {
       expect(FormulaEngine.parseUserTypedSampleBytes('1AF0'), [0x1A, 0xF0]);
     });
 
-    test(
-        'turns the error line DATA ERROR into the plausible bytes DA AE — which '
-        'is why no adapter-sourced string may ever reach this function', () {
-      // Not a defect being tolerated: it is the documented cost of accepting
-      // whatever punctuation a person pastes into 測試用回應位元組. The strip is
-      // a blacklist (delete non-hex, concatenate the rest), and this project's
-      // hard rule against blacklists exists because of exactly this result —
-      // two bytes of ordinary magnitude, indistinguishable downstream from a
-      // sensor reading, produced from a line that says the read failed.
-      //
-      // Pinned so the constraint is recorded in something that runs. It held
-      // only by the accident of where the two call sites got their text from,
-      // and nothing anywhere said so.
-      expect(FormulaEngine.parseUserTypedSampleBytes('DATA ERROR'),
-          [0xDA, 0xAE]);
-      // The other lines an ELM327 emits in place of data survive as bytes too,
-      // just fewer of them — still a number where the wire said there is none.
-      expect(FormulaEngine.parseUserTypedSampleBytes('CAN ERROR'), [0xCA]);
-      expect(FormulaEngine.parseUserTypedSampleBytes('BUS INIT: ERROR'), [0xBE]);
+    test('refuses ELM prose instead of turning it into plausible bytes', () {
+      FormulaException dataError() {
+        try {
+          FormulaEngine.parseUserTypedSampleBytes('DATA ERROR');
+        } on FormulaException catch (e) {
+          return e;
+        }
+        throw StateError('DATA ERROR must not parse');
+      }
+
+      expect(dataError().issue, FormulaIssue.unparsableTerm);
+      expect(dataError().term, 'DATA ERROR');
+      expect(
+        () => FormulaEngine.parseUserTypedSampleBytes('CAN ERROR'),
+        throwsA(isA<FormulaException>()),
+      );
+      expect(
+        () => FormulaEngine.parseUserTypedSampleBytes('BUS INIT: ERROR'),
+        throwsA(isA<FormulaException>()),
+      );
+    });
+
+    test('a 0x41 data byte is kept unless prefix stripping is requested', () {
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes('41 0C 1A F0'),
+        [0x41, 0x0C, 0x1A, 0xF0],
+      );
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes(
+          '41 0C 1A F0',
+          stripResponsePrefix: true,
+        ),
+        [0x1A, 0xF0],
+      );
     });
 
     test('nothing under lib/obd/ calls the string-taking evaluator', () {
@@ -856,8 +883,20 @@ void _editorValidation() {
       // threw a raw `RangeError` — outside this file's exception contract, and
       // the editor showed the user a Dart error object.
       expect(FormulaEngine.parseUserTypedSampleBytes('62 1E'), [0x62, 0x1E]);
-      expect(FormulaEngine.parseUserTypedSampleBytes('41 0C 1A F8'), [0x1A, 0xF8]);
-      expect(FormulaEngine.parseUserTypedSampleBytes('62 F1 90 41'), [0x41]);
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes(
+          '41 0C 1A F8',
+          stripResponsePrefix: true,
+        ),
+        [0x1A, 0xF8],
+      );
+      expect(
+        FormulaEngine.parseUserTypedSampleBytes(
+          '62 F1 90 41',
+          stripResponsePrefix: true,
+        ),
+        [0x41],
+      );
       // Two bytes beginning 0x4X are kept: there is no header to remove.
       expect(FormulaEngine.parseUserTypedSampleBytes('4A 20'), [0x4A, 0x20]);
     });
