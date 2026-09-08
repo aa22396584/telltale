@@ -142,6 +142,45 @@ void main() {
     );
   });
 
+  test('a Mode 04 NRC 0x22 is ignition advice, not the engine sentence', () {
+    const failure = DtcReadException(
+      '7E8拒絕清除，因為目前的車輛狀態不允許。',
+      negativeResponseCode: 0x22,
+      issueDetail: '7E8',
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7E8'));
+    expect(text, contains('ignition ON'));
+    expect(text, isNot(contains('拒絕')));
+  });
+
+  test('silent clear controllers are named without the Chinese sentence', () {
+    const failure = DtcReadException(
+      '有 2 個控制器沒有回應清除指令（7E9、7EA）',
+      kind: DtcReadFailure.noAnswer,
+      silentSources: {'7E9', '7EA'},
+      repeatWouldHarm: true,
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7E9'));
+    expect(text, contains('7EA'));
+    expect(text, isNot(contains('沒有回應')));
+  });
+
   test('a clear failure with a transport identifier uses that table, not Chinese',
       () {
     const failure = DtcReadException(

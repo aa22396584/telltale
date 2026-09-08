@@ -282,7 +282,9 @@ class ClassicTransport extends BaseObdTransport {
         : attempt.secure
         ? '加密 SPP'
         : '未加密 SPP';
-    final why = error is BtcException ? error.message : error.toString();
+    final why = error is BtcTimeoutException || error is TimeoutException
+        ? '逾時'
+        : '被拒絕';
     return '$what：$why';
   }
 

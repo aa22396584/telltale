@@ -2343,7 +2343,7 @@ class PollingEngine {
       // Refused before any write — the proof is where the refusal is, and the
       // caller has a type that says so.
       rethrow;
-    } on Object catch (e) {
+    } on Object {
       // Whether a repeat is safe is a question about the wire, not about the
       // Dart type that came back.
       //
@@ -2367,8 +2367,7 @@ class PollingEngine {
             ? '清除指令送出後連線中斷，無法確認車輛是否已清除。'
                   '請重新掃描確認結果，不要直接再清除一次 —— '
                   '如果其實已經清除成功，再清一次會重置排放就緒狀態。'
-            : '清除指令還沒送出就失敗了'
-                  '（${e is TransportException ? e.message : e}）。'
+            : '清除指令還沒送出就失敗了。'
                   '車輛沒有任何變化，可以再試一次。',
         kind: DtcReadFailure.disconnected,
         repeatWouldHarm: reached,
@@ -2585,6 +2584,7 @@ class PollingEngine {
           '已回應的控制器已清除，但其餘控制器的故障碼可能仍在。'
           '請重新掃描確認，不要重複清除。',
           kind: DtcReadFailure.noAnswer,
+          silentSources: Set.unmodifiable(silent),
           repeatWouldHarm: true,
         );
       }
@@ -2761,6 +2761,8 @@ class PollingEngine {
                   : '$why請將電門轉到 ON 但不要發動引擎，然後再試一次。',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
+              issueDetail: source,
+              negativeResponseCode: 0x22,
             );
           case 0x11: // serviceNotSupported
           case 0x12: // subFunctionNotSupported
@@ -2777,12 +2779,16 @@ class PollingEngine {
                         '原廠設備才能清除。',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
+              issueDetail: source,
+              negativeResponseCode: bytes[2],
             );
           case 0x21: // busyRepeatRequest
             throw DtcReadException(
               '$source目前忙碌中。$retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
+              issueDetail: source,
+              negativeResponseCode: 0x21,
             );
           case 0x33: // securityAccessDenied
             // No 請稍候再試一次 here even when nothing was erased: waiting
@@ -2795,6 +2801,8 @@ class PollingEngine {
               '$prohibition',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
+              issueDetail: source,
+              negativeResponseCode: 0x33,
             );
           default:
             // Every other ISO 14229 refusal, including the ones a
@@ -2816,6 +2824,8 @@ class PollingEngine {
               '$retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
+              issueDetail: source,
+              negativeResponseCode: bytes[2],
             );
         }
       }

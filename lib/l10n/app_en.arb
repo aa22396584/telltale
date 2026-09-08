@@ -3480,5 +3480,44 @@
   "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.",
   "connectBleScanUnavailable": "Bluetooth is not usable right now. Wait a moment, then search again.",
   "connectBleScanBluez": "No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.",
-  "connectBleScanUnclassified": "BLE search failed."
+  "connectBleScanUnclassified": "BLE search failed.",
+  "dtcClearNrcConditions": "{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.",
+  "@dtcClearNrcConditions": {
+    "description": "ISO 14229 NRC 0x22 on Mode 04. Controller id is issueDetail.",
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcUnsupported": "{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required.",
+  "@dtcClearNrcUnsupported": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcBusy": "{controller} is busy. Wait, then rescan. Do not send another global clear if one may already have finished.",
+  "@dtcClearNrcBusy": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcSecurity": "{controller} requires security access before it will clear. Manufacturer or dealer equipment is required.",
+  "@dtcClearNrcSecurity": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcOther": "{controller} refused the clear (reason code {code}). Rescan to see what remains. Do not send another global clear if one may already have finished.",
+  "@dtcClearNrcOther": {
+    "placeholders": {
+      "controller": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "dtcClearSilentControllers": "{count} controller(s) did not answer the clear ({controllers}). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.",
+  "@dtcClearSilentControllers": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "controllers": { "type": "String" }
+    }
+  }
 }
