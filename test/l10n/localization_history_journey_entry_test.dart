@@ -29,10 +29,10 @@ void main() {
     expect(source.contains('telemetry-history'), isTrue);
     expect(source.contains('telemetry-open-history'), isFalse);
     expect(source.contains('TelemetrySessionsScreen'), isTrue);
+    expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('.pop()'), isTrue);
     expect(source.contains('locale_english'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
-    expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('await connectDemoRig');
     final historyAt = source.indexOf('await _openHistory');
     final englishAt = source.indexOf('locale_english');

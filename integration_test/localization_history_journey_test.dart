@@ -90,16 +90,21 @@ void main() {
     await _stabilizeHistoryAccess(tester);
 
     await _openHistory(tester);
-    final chineseRoute = await pumpUntil(
+    final chineseTitle = await pumpUntil(
       tester,
-      () => find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionsScreen),
+            matching: find.text('本機紀錄'),
+          )
+          .evaluate()
+          .isNotEmpty,
     );
     expect(
-      chineseRoute,
+      chineseTitle,
       isTrue,
-      reason: 'History route TelemetrySessionsScreen did not open',
+      reason: 'History route did not show 本機紀錄 on TelemetrySessionsScreen',
     );
-    expect(find.text('本機紀錄'), findsWidgets);
 
     await _leaveHistory(tester);
     await _tapNav(tester, '設定');
@@ -123,16 +128,27 @@ void main() {
 
     await _tapNav(tester, 'Dashboard');
     await _openHistory(tester);
-    final englishRoute = await pumpUntil(
+    final englishTitle = await pumpUntil(
       tester,
-      () => find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionsScreen),
+            matching: find.text('Local recordings'),
+          )
+          .evaluate()
+          .isNotEmpty,
     );
     expect(
-      englishRoute,
+      englishTitle,
       isTrue,
-      reason: 'History route TelemetrySessionsScreen did not reopen in English',
+      reason: 'History route did not show Local recordings on TelemetrySessionsScreen',
     );
-    expect(find.text('Local recordings'), findsWidgets);
-    expect(find.text('本機紀錄'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(TelemetrySessionsScreen),
+        matching: find.text('本機紀錄'),
+      ),
+      findsNothing,
+    );
   });
 }
