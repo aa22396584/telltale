@@ -10,6 +10,8 @@ void main() {
   final source = File(
     'integration_test/localization_screenshot_journey_test.dart',
   ).readAsStringSync();
+  final dashboard = File('lib/ui/screens/dashboard/dashboard_screen.dart')
+      .readAsStringSync();
 
   test('the named screenshot journey file exists and is not an empty stub', () {
     expect(source.length, greaterThan(400));
@@ -43,6 +45,29 @@ void main() {
     expect(gaugesAt, greaterThan(demoAt));
     expect(shotAt, greaterThan(gaugesAt));
     expect(englishAt, greaterThan(shotAt));
+  });
+
+  test('the locale hash is the workspace-switch crop, not moving gauges', () {
+    expect(source.contains('RenderRepaintBoundary'), isTrue);
+    expect(source.contains('toImage'), isTrue);
+    expect(source.contains('_switchDigest'), isTrue);
+    expect(source.contains('dashboard-workspace-switch-capture'), isTrue);
+    expect(dashboard.contains('RepaintBoundary'), isTrue);
+    expect(dashboard.contains('dashboard-workspace-switch-capture'), isTrue);
+    final withoutCapture = dashboard.replaceAll(
+      'dashboard-workspace-switch-capture',
+      'CAPTURE',
+    );
+    final captureAt = dashboard.indexOf('dashboard-workspace-switch-capture');
+    final buttonKeyAt = withoutCapture.indexOf(
+      "ValueKey('dashboard-workspace-switch')",
+    );
+    expect(captureAt, greaterThan(0));
+    expect(buttonKeyAt, greaterThan(captureAt));
+    final switchAt = source.indexOf("_switchDigest(tester, 'switch-zh-Hant')");
+    final englishAt = source.indexOf('locale_english');
+    expect(switchAt, greaterThan(0));
+    expect(englishAt, greaterThan(switchAt));
   });
 
   test('the journey does not replace ObdSession with a pre-solved mock', () {
