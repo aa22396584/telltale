@@ -710,6 +710,84 @@ class RunTaskTest(unittest.TestCase):
             data = json.loads(handoff.read_text(encoding="utf-8"))
             self.assertEqual(data["head_sha"], sha)
 
+    def test_dry_run_isolate_follows_symlink_target_with_trailing_space(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof_dir = repo / "docs" / "workshop" / "ws" / "ws-01"
+            proof_dir.mkdir(parents=True)
+            actual = proof_dir / "actual.txt "
+            actual.write_text("committed-proof\n", encoding="utf-8")
+            (proof_dir / "proof.txt").symlink_to("actual.txt ")
+            digest = hashlib.sha256(actual.read_bytes()).hexdigest()
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest}],
+            )
+            sha = _init_git(repo)
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan,
+                "WS-01",
+                handoff_path=handoff,
+                timeout=5,
+                isolate=True,
+                isolate_dir=worktree,
+                dry_run=True,
+                base_sha=sha,
+            )
+            self.assertFalse(worktree.exists())
+            self.assertEqual(code, 1)
+
+    def test_dry_run_isolate_hashes_ident_filtered_checkout_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof = repo / "docs" / "workshop" / "ws" / "ws-01" / "proof.txt"
+            proof.parent.mkdir(parents=True)
+            proof.write_text("$Id$\n", encoding="utf-8")
+            (repo / ".gitattributes").write_text(
+                "docs/workshop/ws/ws-01/proof.txt ident\n", encoding="utf-8"
+            )
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            sha = _init_git(repo)
+            expanded = subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    str(repo),
+                    "cat-file",
+                    "--filters",
+                    f"{sha}:docs/workshop/ws/ws-01/proof.txt",
+                ]
+            )
+            self.assertNotEqual(expanded, b"$Id$\n")
+            digest = hashlib.sha256(expanded).hexdigest()
+            payload = json.loads(plan.read_text(encoding="utf-8"))
+            payload["tasks"][0]["required_evidence"] = [
+                {"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest}
+            ]
+            plan.write_text(json.dumps(payload), encoding="utf-8")
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan,
+                "WS-01",
+                handoff_path=handoff,
+                timeout=5,
+                isolate=True,
+                isolate_dir=worktree,
+                dry_run=True,
+                base_sha=sha,
+            )
+            self.assertFalse(worktree.exists())
+            self.assertEqual(code, 1)
+
 
 def _init_git(root: Path) -> str:
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)

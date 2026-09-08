@@ -180,7 +180,7 @@ def _git_tree_entry(git_root: Path, sha: str, rel: str) -> tuple[str, str] | Non
 
 
 def _resolve_link_rel(link_rel: str, target: str) -> str | None:
-    text = target.replace("\\", "/").strip()
+    text = target.replace("\\", "/")
     if not text or text.startswith("/") or (len(text) >= 2 and text[1] == ":"):
         return None
     parent = Path(link_rel.replace("\\", "/")).parent
@@ -200,12 +200,15 @@ def _resolve_link_rel(link_rel: str, target: str) -> str | None:
     return "/".join(parts)
 
 
-def _git_cat_blob(git_root: Path, sha: str, rel: str) -> bytes | None:
-    completed = subprocess.run(
-        ["git", "-C", str(git_root), "cat-file", "blob", f"{sha}:{rel}"],
-        capture_output=True,
-        check=False,
-    )
+def _git_cat_blob(
+    git_root: Path, sha: str, rel: str, *, filters: bool = False
+) -> bytes | None:
+    command = ["git", "-C", str(git_root), "cat-file"]
+    if filters:
+        command.extend(["--filters", f"{sha}:{rel}"])
+    else:
+        command.extend(["blob", f"{sha}:{rel}"])
+    completed = subprocess.run(command, capture_output=True, check=False)
     if completed.returncode != 0:
         return None
     return completed.stdout
@@ -228,7 +231,7 @@ def _git_blob(
         mode, kind = entry
         last = index == len(parts) - 1
         if mode == "120000":
-            raw = _git_cat_blob(git_root, sha, current)
+            raw = _git_cat_blob(git_root, sha, current, filters=False)
             if raw is None:
                 return None
             try:
@@ -244,7 +247,7 @@ def _git_blob(
         if last:
             if kind != "blob" or mode not in {"100644", "100755", "100664"}:
                 return None
-            return _git_cat_blob(git_root, sha, current)
+            return _git_cat_blob(git_root, sha, current, filters=True)
         if kind != "tree":
             return None
         prefix = current
