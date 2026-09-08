@@ -16,6 +16,7 @@
 library;
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../obd/powertrain_battery/profile_pid_installer.dart';
 import '../../../state/powertrain_battery_profiles.dart';
 
 /// One whole sentence per refusal identifier.
@@ -62,4 +63,23 @@ String powertrainProbeRefusalText(
     l10n.powertrainRefusedNoLiveAuthorization,
   PowertrainProbeRefusal.discardedAtLifecycleBoundary =>
     l10n.powertrainRefusedDiscardedAtLifecycleBoundary,
+};
+
+/// One whole sentence per install refusal. Exhaustive: a new
+/// [PowertrainProfileInstallIssue] must fail to compile here rather than
+/// fall back to `exception.message`.
+String powertrainInstallIssueText(
+  AppLocalizations l10n,
+  PowertrainProfileInstallIssue issue,
+) => switch (issue) {
+  PowertrainProfileInstallIssue.catalogShaMissing =>
+    l10n.powertrainInstallCatalogShaMissing,
+  PowertrainProfileInstallIssue.profileNotInCatalog =>
+    l10n.powertrainInstallProfileNotInCatalog,
+  PowertrainProfileInstallIssue.yearOutOfRange =>
+    l10n.powertrainInstallYearOutOfRange,
+  PowertrainProfileInstallIssue.profileNotInstallable =>
+    l10n.powertrainInstallProfileNotInstallable,
+  PowertrainProfileInstallIssue.persistFailed =>
+    l10n.powertrainInstallPersistFailed,
 };

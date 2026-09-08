@@ -79,8 +79,6 @@ class _FixedSession extends ObdSession {
 /// here so the no-Chinese assertion can subtract it rather than pretend the
 /// screen never shows it.
 const _engineFailureMessage = '有 1 個控制器沒有回應';
-const _engineScanError = '掃描逾時，沒有讀到完整結果';
-const _engineClearMessage = '已有控制器回報清除完成，但其餘控制器無法確認。';
 const _engineDecodeError = '收到的資料不正確';
 
 const _misfire = Dtc(
@@ -158,7 +156,7 @@ Future<void> _pump(
 
 const _notScanned = DtcScanState();
 
-const _readFailed = DtcScanState(error: _engineScanError);
+const _readFailed = DtcScanState(scanBanner: DtcScanBanner.interrupted);
 
 /// Every class answered, by everybody, and nothing was found.
 final _completeClean = DtcScanState(
@@ -207,7 +205,7 @@ final _faultsFound = DtcScanState(
     DtcKind.pending: const DtcCategoryResult.codes([_subsystemOnly]),
     DtcKind.permanent: const DtcCategoryResult.codes([_manufacturer]),
   },
-  clearMessage: _engineClearMessage,
+  clearNotice: const DtcClearNotice(DtcClearNoticeKind.partiallyConfirmed),
 );
 
 final _withFrames = DtcScanState(
@@ -303,8 +301,6 @@ List<String> _engineOwnedStrings() => [
       PidLibrary.engineRpm.name,
       PidLibrary.coolantTemp.name,
       _engineFailureMessage,
-      _engineScanError,
-      _engineClearMessage,
       _engineDecodeError,
     ]..sort((a, b) => b.length.compareTo(a.length));
 

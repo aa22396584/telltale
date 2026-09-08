@@ -75,7 +75,7 @@ void main() {
       expect(after.hasScanned, isFalse,
           reason: 'a scan that spanned an interval nobody owned is not a '
               'result about this car');
-      expect(after.error, contains('中斷'),
+      expect(after.scanBanner, DtcScanBanner.interrupted,
           reason: 'and it says so, rather than going quietly blank');
     });
 

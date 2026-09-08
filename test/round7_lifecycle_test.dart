@@ -240,9 +240,8 @@ void main() {
     expect(state.hasScanned, isFalse,
         reason: 'sanity: the interruption has to be detected at all, or '
             'everything below is about a scan that quietly finished');
-    expect(state.error, isNotNull,
+    expect(state.scanBanner, DtcScanBanner.interrupted,
         reason: 'a scan that was abandoned must name itself; a blank panel '
             'is indistinguishable from never having scanned');
-    expect(state.error, contains('中斷'));
   });
 }

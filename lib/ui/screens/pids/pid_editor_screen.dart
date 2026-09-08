@@ -178,15 +178,15 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       );
       return (value: value, error: null);
     } on FormulaException catch (e) {
-      // `e.message` is the engine's own Traditional Chinese, kept for the
-      // diagnostics that read it and unreachable here: every throw in
-      // `formula_engine.dart` names a `FormulaIssue`, and
-      // `test/l10n/pid_reason_guard_test.dart` reads the source to keep it
-      // that way. If one ever did not, an untranslated reason under a field
-      // that is refusing to save still beats no reason at all.
-      return (value: null, error: formulaIssueText(l10n, e) ?? e.message);
-    } on Object catch (e) {
-      return (value: null, error: '$e');
+      // `e.message` is the engine's own Traditional Chinese, kept for
+      // diagnostics. The editor must not fall back to it: that is how an
+      // English field refusing to save showed Chinese (ImL1s/telltale#45).
+      return (
+        value: null,
+        error: formulaIssueText(l10n, e) ?? l10n.pidFormulaUnidentified,
+      );
+    } on Object {
+      return (value: null, error: l10n.pidFormulaUnidentified);
     }
   }
 
@@ -194,6 +194,22 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// is a plausible kPa/percent/°C value and makes the substitution obvious in
   /// the preview rather than looking like a real measurement.
   static const double _sampleDependencyValue = 100;
+
+  /// Bytes the preview chips bind to `A`..`H`.
+  ///
+  /// Must use the same prefix-stripping `evaluate` uses, and must not throw
+  /// during build: an odd-length sample is what a person types between two
+  /// hex digits, and `_previewFor` already catches that [FormulaException].
+  List<int> _previewSampleBytes() {
+    try {
+      return FormulaEngine.parseUserTypedSampleBytes(
+        _sample.text,
+        stripResponsePrefix: true,
+      );
+    } on FormulaException {
+      return const [];
+    }
+  }
 
   /// Why the current request cannot be polled, or null when it can.
   ///
@@ -499,7 +515,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
             units: _units.text,
             minValue: double.tryParse(_min.text) ?? 0,
             maxValue: double.tryParse(_max.text) ?? 100,
-            sampleBytes: FormulaEngine.parseUserTypedSampleBytes(_sample.text),
+            sampleBytes: _previewSampleBytes(),
           ),
 
           const SizedBox(height: Spacing.xl),

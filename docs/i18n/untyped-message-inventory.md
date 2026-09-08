@@ -20,14 +20,15 @@ transcripts/export are listed only to keep the census honest.
 
 | Site | Kind |
 | --- | --- |
-| `core/network/android_wifi_route_binder.dart` | Chinese UI strings interpolate `e.message` |
-| `obd/transport/wifi_transport.dart` | Chinese connect failure interpolates `e.message` |
-| `ui/screens/pids/powertrain_battery_catalog_screen.dart` | snack uses `error.message` |
-| `ui/screens/pids/pid_editor_screen.dart` | `formulaIssueText(...) ?? e.message` |
-| `state/dtc_scan.dart` | `message = e.message` |
+| ~~`core/network/android_wifi_route_binder.dart`~~ | Native `e.message` is `detail` only; screen maps `WifiRouteFailure`. |
+| ~~`obd/transport/wifi_transport.dart`~~ | No longer interpolates `e.message`; connect screen maps `TransportIssue`. |
+| ~~`ui/screens/pids/powertrain_battery_catalog_screen.dart`~~ | Snack maps `PowertrainProfileInstallIssue`. |
+| ~~`ui/screens/pids/pid_editor_screen.dart`~~ | Falls back to `pidFormulaUnidentified`, not `e.message`. |
+| ~~`state/dtc_scan.dart`~~ | Stores `DtcClearNotice` / `DtcScanBanner`; screen maps them. Category `DtcReadException.message` fallback remains. |
 | `obd/polling_engine.dart` | Chinese status interpolates exception text |
 | `obd/transport/ble_transport.dart`, `classic_transport.dart` | platform `error.message` into connect path |
 | `obd/pid/formula_engine.dart`, `pid_csv.dart` | diagnostic/export, not a locale screen |
+| `ui/screens/dtc/dtc_screen.dart` `_failureSentence` | Category failures with no `transportIssue` still render `failure.message` |
 
 ## Not closed
 

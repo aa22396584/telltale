@@ -18,12 +18,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:torque_obd/core/theme/app_theme.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
+import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
 import 'support/localized_app.dart';
+
+final _zh = lookupAppLocalizations(traditionalChineseLocale);
 
 /// A scan state held still, so the screen can be asked what it renders.
 class _FixedScan extends DtcScanNotifier {
@@ -46,7 +51,7 @@ class _FixedSession extends ObdSession {
 DtcScanState _scanWith({
   required bool clearing,
   required bool repeatWouldHarm,
-  String? message,
+  DtcClearNoticeKind? notice,
 }) =>
     DtcScanState(
       scannedAt: DateTime(2026, 8, 17),
@@ -63,7 +68,7 @@ DtcScanState _scanWith({
       },
       clearing: clearing,
       clearRepeatWouldHarm: repeatWouldHarm,
-      clearMessage: message,
+      clearNotice: notice == null ? null : DtcClearNotice(notice),
     );
 
 Future<void> _pump(WidgetTester tester, DtcScanState scan) async {
@@ -152,7 +157,7 @@ void main() {
       _scanWith(
         clearing: false,
         repeatWouldHarm: true,
-        message: '已有控制器回報清除完成，但其餘控制器無法確認。',
+        notice: DtcClearNoticeKind.partiallyConfirmed,
       ),
     );
     expect(find.text('請先重新掃描'), findsOneWidget);
@@ -175,7 +180,7 @@ void main() {
       _scanWith(
         clearing: false,
         repeatWouldHarm: false,
-        message: '清除失敗，沒有控制器接受指令。可以再試一次。',
+        notice: DtcClearNoticeKind.notAccepted,
       ),
     );
     expect(find.text('清除'), findsOneWidget);
@@ -187,10 +192,17 @@ void main() {
   testWidgets('the outcome stays on screen, and is selectable', (tester) async {
     // These messages name controllers that appear nowhere else in the app, so
     // the text has to be copyable and must not be a four-second SnackBar.
-    const said = '已有控制器回報清除完成，但其餘控制器無法確認。';
+    final said = dtcClearNoticeText(
+      _zh,
+      const DtcClearNotice(DtcClearNoticeKind.partiallyConfirmed),
+    )!;
     await _pump(
       tester,
-      _scanWith(clearing: false, repeatWouldHarm: true, message: said),
+      _scanWith(
+        clearing: false,
+        repeatWouldHarm: true,
+        notice: DtcClearNoticeKind.partiallyConfirmed,
+      ),
     );
     expect(find.text(said), findsOneWidget);
     expect(
@@ -206,8 +218,7 @@ void main() {
       _scanWith(
         clearing: false,
         repeatWouldHarm: true,
-        message: '已有控制器回報清除完成，但其餘控制器無法確認。'
-            '請先重新掃描，確認已儲存、待確認與永久故障碼的最新狀態。',
+        notice: DtcClearNoticeKind.partiallyConfirmed,
       ),
     );
 

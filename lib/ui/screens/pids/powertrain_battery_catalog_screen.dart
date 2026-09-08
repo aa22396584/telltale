@@ -214,7 +214,7 @@ class _PowertrainBatteryCatalogScreenState
         return;
       }
     } on PowertrainProfileInstallException catch (error) {
-      _snack(l10n.powertrainInstallFailed(error.message));
+      _snack(powertrainInstallIssueText(l10n, error.issue));
       return;
     }
 

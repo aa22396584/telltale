@@ -20,6 +20,52 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/dtc/dtc.dart';
+import '../../../state/dtc_scan.dart';
+import '../settings/manual_command_copy.dart';
+
+/// Why a scan that produced no results is showing, in the reader's language.
+String? dtcScanBannerText(AppLocalizations l10n, DtcScanBanner? banner) =>
+    switch (banner) {
+      null => null,
+      DtcScanBanner.interrupted => l10n.dtcScanInterrupted,
+      DtcScanBanner.disconnectedMidScan => l10n.dtcScanDisconnectedMidScan,
+    };
+
+/// What the last clear did, in the reader's language.
+///
+/// [DtcReadException.message] is Traditional Chinese and stays that way for
+/// the transcript. This function must not render it.
+String? dtcClearNoticeText(AppLocalizations l10n, DtcClearNotice? notice) {
+  if (notice == null) return null;
+  return switch (notice.kind) {
+    DtcClearNoticeKind.confirmed => l10n.dtcClearConfirmed,
+    DtcClearNoticeKind.partiallyConfirmed => l10n.dtcClearPartiallyConfirmed,
+    DtcClearNoticeKind.sentUnconfirmed => l10n.dtcClearSentUnconfirmed,
+    DtcClearNoticeKind.notAccepted => l10n.dtcClearNotAccepted,
+    DtcClearNoticeKind.timeout => l10n.dtcClearTimeout,
+    DtcClearNoticeKind.cancelledBeforeSend => l10n.dtcClearCancelledBeforeSend,
+    DtcClearNoticeKind.unexpected => l10n.dtcClearUnexpected,
+    DtcClearNoticeKind.previousConnectionUnconfirmed =>
+      l10n.dtcClearPreviousConnectionUnconfirmed,
+    DtcClearNoticeKind.rescanSettled => l10n.dtcClearRescanSettled,
+    DtcClearNoticeKind.engineFailure => _clearEngineFailureText(l10n, notice),
+  };
+}
+
+String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
+  final failure = notice.failure;
+  if (failure == null) return l10n.dtcClearFailureGeneric;
+  final issue = failure.transportIssue;
+  if (issue != null) {
+    return commandIssueText(l10n, issue, detail: failure.issueDetail) ??
+        (failure.repeatWouldHarm
+            ? l10n.dtcClearFailureDoNotRepeat
+            : l10n.dtcClearFailureGeneric);
+  }
+  return failure.repeatWouldHarm
+      ? l10n.dtcClearFailureDoNotRepeat
+      : l10n.dtcClearFailureGeneric;
+}
 
 /// Stored / pending / permanent. Three classes that must stay three things.
 String dtcKindLabel(AppLocalizations l10n, DtcKind kind) => switch (kind) {
