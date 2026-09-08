@@ -45,6 +45,15 @@ void main() {
       expect(reading.isStaleAt(now.add(const Duration(seconds: 3))), isTrue);
     });
 
+    test('a wall-clock step backwards ages the sample instead of refreshing it',
+        () {
+      final reading = _readingAt(_rpm, now);
+      expect(
+        reading.isStaleAt(now.subtract(const Duration(hours: 1))),
+        isTrue,
+      );
+    });
+
     test('a low-priority signal is given more room', () {
       // A trip signal legitimately updates every few seconds; flagging it as
       // stale at two would flicker the tile for no reason.

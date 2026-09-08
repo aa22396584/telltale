@@ -434,12 +434,15 @@ class Elm327Client {
     this.responsePendingTimeout = const Duration(seconds: 7),
     this.commandTimeout = const Duration(seconds: 5),
     this.writeTimeout = const Duration(seconds: 2),
+    DateTime Function()? clock,
     ObdTranscript? transcript,
-  }) : transcript = transcript ?? ObdTranscript();
+  }) : _clock = clock ?? DateTime.now,
+       transcript = transcript ?? ObdTranscript();
 
   final ObdTransport transport;
   final Duration watchdogTimeout;
   final Duration commandTimeout;
+  final DateTime Function() _clock;
 
   /// How long handing bytes to the transport may take before the link is
   /// considered gone. See the write in [_sendNow].
@@ -665,7 +668,8 @@ class Elm327Client {
   double? get batteryVoltage {
     final at = _batteryVoltageAt;
     if (at == null) return null;
-    if (DateTime.now().difference(at) > voltageMaxAge) return null;
+    final age = _clock().difference(at);
+    if (age.isNegative || age > voltageMaxAge) return null;
     return _batteryVoltage;
   }
 
@@ -675,7 +679,7 @@ class Elm327Client {
   /// still holds; it is evidence that we no longer know.
   void _recordVoltage(double? volts) {
     _batteryVoltage = volts;
-    _batteryVoltageAt = volts == null ? null : DateTime.now();
+    _batteryVoltageAt = volts == null ? null : _clock();
   }
 
   /// Fires when the watchdog gives up, so the app can drop to a disconnected

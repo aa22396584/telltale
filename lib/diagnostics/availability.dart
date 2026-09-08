@@ -508,11 +508,10 @@ abstract final class AvailabilityPolicy {
     PowertrainProfileStatus? catalogStatus,
     bool demo = false,
   }) {
-    final origin = demo
-        ? DatumOrigin.demo
-        : pid.isCustom
-        ? DatumOrigin.userEntered
-        : DatumOrigin.ecuReported;
+    // Acquisition origin is where the *bytes* came from. A user-authored
+    // decoder interpreting an ECU reply is still an ECU observation; `isCustom`
+    // is definition provenance and only selects evidence, never userEntered.
+    final origin = demo ? DatumOrigin.demo : DatumOrigin.ecuReported;
     final resolvedCatalog = catalogStatus ?? _statusFromKind(pid.evidenceKind);
     final evidence = fieldVerified
         ? EvidenceKind.fieldVerified

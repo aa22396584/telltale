@@ -81,7 +81,7 @@ void main() {
         ),
       );
       expect(status.isNumericSuccess, isTrue);
-      expect(status.origin, DatumOrigin.userEntered);
+      expect(status.origin, DatumOrigin.ecuReported);
       expect(status.evidence, EvidenceKind.userSupplied);
       expect(status.badges, contains(DatumBadge.userSupplied));
     });
