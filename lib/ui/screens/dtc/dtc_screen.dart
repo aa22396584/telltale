@@ -878,9 +878,15 @@ UnansweredCategoryWording unansweredCategoryWording({
     } else if (!answeredByNobody) {
       // Some controllers answered and some did not. Saying the vehicle did not
       // respond is false, and so is saying Mode 03 was silent.
-      detail = l10n.dtcPartiallyAnsweredDetail(
-        _failureSentence(l10n, result) ?? '',
-      );
+      //
+      // `DtcReadFailure.noAnswer` maps to "this category did not answer",
+      // which contradicts the surrounding partial-coverage sentence. Keep that
+      // identifier for total silence; here the outer sentence already names
+      // the incomplete set.
+      final inner = result.failure?.kind == DtcReadFailure.noAnswer
+          ? ''
+          : (_failureSentence(l10n, result) ?? '');
+      detail = l10n.dtcPartiallyAnsweredDetail(inner);
     } else {
       detail = l10n.dtcBothSilentDetail(kind.mode);
     }

@@ -592,6 +592,9 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
             context: ErrorDescription('unexpected category read'),
           ),
         );
+        session.client?.transcript.recordNote(
+          '未預期的類別讀取失敗（Mode ${kind.mode}）：$error',
+        );
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException(
             '掃描這個類別時發生未預期的錯誤。',

@@ -19,6 +19,7 @@ import 'package:torque_obd/ui/screens/dtc/dtc_screen.dart';
 /// Traditional Chinese the screen shipped, so the lookup is pinned here
 /// rather than passed in per test.
 final _zh = lookupAppLocalizations(traditionalChineseLocale);
+final _en = lookupAppLocalizations(englishLocale);
 
 DtcCategoryResult _failed({
   required Set<String> answeredBy,
@@ -130,6 +131,20 @@ void main() {
         reason: 'Mode 03 answered; saying otherwise is simply untrue');
     expect(wording.detail, isNot(contains('目前沒有尚未確認的故障')),
         reason: 'and there is no basis for telling anyone there is no fault');
+    expect(wording.detail, isNot(contains('這個類別沒有回應')),
+        reason: 'partial coverage is not total silence');
+  });
+
+  test('English partial coverage does not say the category did not answer', () {
+    final wording = unansweredCategoryWording(
+      l10n: _en,
+      kind: DtcKind.pending,
+      result: _failed(answeredBy: const {'7E8'}),
+      storedAnswered: true,
+    );
+    expect(wording.detail, contains('Only some controllers'));
+    expect(wording.detail, isNot(contains('did not answer')),
+        reason: 'that sentence is for total silence, not a partial set');
   });
 
   test('R17-codex 03: a partial code is not an unprovided category', () {
