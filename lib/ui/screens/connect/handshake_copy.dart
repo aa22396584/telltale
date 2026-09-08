@@ -14,6 +14,7 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/elm327_client.dart';
+import '../../../obd/transport/ble_transport.dart';
 import '../../../obd/transport/obd_transport.dart';
 import '../../../state/obd_session.dart';
 
@@ -186,6 +187,16 @@ String? connectionIssueText(AppLocalizations l10n, ObdConnectionState state) {
 /// connect-path identifier cannot reach the settings panel, but returning null
 /// for it there would restore exactly the silent fallback both files exist to
 /// remove.
+String bleScanIssueText(AppLocalizations l10n, BleScanIssue issue) =>
+    switch (issue) {
+      BleScanIssue.poweredOff => l10n.connectBluetoothOff,
+      BleScanIssue.permissionNeeded => l10n.connectBlePermissionNeeded,
+      BleScanIssue.unsupported => l10n.connectBleUnavailableHost,
+      BleScanIssue.unavailable => l10n.connectBleScanUnavailable,
+      BleScanIssue.bluezUnavailable => l10n.connectBleScanBluez,
+      BleScanIssue.unclassified => l10n.connectBleScanUnclassified,
+    };
+
 String? transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
     switch (issue) {
       null => null,

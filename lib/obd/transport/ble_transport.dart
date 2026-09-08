@@ -106,11 +106,14 @@ class BleTransport extends BaseObdTransport {
 
   static Future<void> stopScan() => UniversalBle.stopScan();
 
-  /// Maps radio / BlueZ / permission failures to copy the connect screen can
-  /// show. Raw `TimeoutException` / D-Bus strings are not actionable at a car.
-  static String userFacingScanFailure(Object error) {
+  /// Maps radio / BlueZ / permission failures to a stable identifier.
+  ///
+  /// The Traditional Chinese [userFacingScanFailure] sentence stays on the
+  /// exception for the transcript. The connect screen must map [BleScanIssue]
+  /// rather than interpolate `$error`.
+  static BleScanIssue scanIssueFor(Object error) {
     if (error is BleRadioUnavailableException) {
-      return error.message;
+      return error.issue;
     }
     final text = '$error';
     final lower = text.toLowerCase();
@@ -118,26 +121,44 @@ class BleTransport extends BaseObdTransport {
         lower.contains('timeout') ||
         lower.contains('poweredoff') ||
         lower.contains('powered off')) {
-      return '藍牙未開啟或尚未就緒。請先在系統設定開啟藍牙後再搜尋。';
+      return BleScanIssue.poweredOff;
     }
     if (lower.contains('unauthorized') ||
         lower.contains('permission') ||
         lower.contains('denied')) {
-      return '需要藍牙權限才能搜尋。請到系統設定允許此 App 使用藍牙。';
+      return BleScanIssue.permissionNeeded;
     }
     if (lower.contains('unsupported') ||
         lower.contains('not available') ||
         lower.contains('missingpluginexception')) {
-      return '這台主機沒有可用的藍牙 LE 實作。';
+      return BleScanIssue.unsupported;
     }
     if (lower.contains('org.bluez') ||
         lower.contains('bluez') ||
         lower.contains('dbus') ||
         lower.contains('failed to connect to socket')) {
-      return '找不到可用的 BlueZ／D-Bus 藍牙服務。'
-          '請確認系統已安裝並啟動 bluetooth 服務後再試。';
+      return BleScanIssue.bluezUnavailable;
     }
-    return 'BLE 搜尋失敗：$error';
+    return BleScanIssue.unclassified;
+  }
+
+  /// Transcript-only Traditional Chinese. Do not put this on the screen.
+  static String userFacingScanFailure(Object error) {
+    if (error is BleRadioUnavailableException) {
+      return error.message;
+    }
+    return switch (scanIssueFor(error)) {
+      BleScanIssue.poweredOff =>
+        '藍牙未開啟或尚未就緒。請先在系統設定開啟藍牙後再搜尋。',
+      BleScanIssue.permissionNeeded =>
+        '需要藍牙權限才能搜尋。請到系統設定允許此 App 使用藍牙。',
+      BleScanIssue.unsupported => '這台主機沒有可用的藍牙 LE 實作。',
+      BleScanIssue.unavailable => '藍牙目前無法使用。請稍後再試。',
+      BleScanIssue.bluezUnavailable =>
+        '找不到可用的 BlueZ／D-Bus 藍牙服務。'
+            '請確認系統已安裝並啟動 bluetooth 服務後再試。',
+      BleScanIssue.unclassified => 'BLE 搜尋失敗。完整錯誤保留在紀錄裡。',
+    };
   }
 
   /// Current radio state, used before starting a scan so powered-off hosts
@@ -467,20 +488,43 @@ class BleTransport extends BaseObdTransport {
 ///
 /// Distinct from an empty scan result: the radio itself refused the work, so
 /// the connect screen should not show the "no adapters found" checklist.
+enum BleScanIssue {
+  poweredOff,
+  permissionNeeded,
+  unsupported,
+  unavailable,
+  bluezUnavailable,
+  unclassified,
+}
+
 final class BleRadioUnavailableException implements Exception {
   BleRadioUnavailableException(AvailabilityState state)
     : state = state,
       cause = null,
+      issue = _issueFor(state),
       message = _messageFor(state);
 
   BleRadioUnavailableException.fromScanError(Object error)
     : state = null,
       cause = error,
+      issue = BleTransport.scanIssueFor(error),
       message = BleTransport.userFacingScanFailure(error);
 
   final AvailabilityState? state;
   final Object? cause;
+  final BleScanIssue issue;
   final String message;
+
+  static BleScanIssue _issueFor(AvailabilityState state) {
+    return switch (state) {
+      AvailabilityState.poweredOff => BleScanIssue.poweredOff,
+      AvailabilityState.unauthorized => BleScanIssue.permissionNeeded,
+      AvailabilityState.unsupported => BleScanIssue.unsupported,
+      AvailabilityState.unknown ||
+      AvailabilityState.resetting ||
+      AvailabilityState.poweredOn => BleScanIssue.unavailable,
+    };
+  }
 
   static String _messageFor(AvailabilityState state) {
     return switch (state) {
@@ -489,7 +533,7 @@ final class BleRadioUnavailableException implements Exception {
       AvailabilityState.unsupported => '這台主機不支援藍牙 LE。',
       AvailabilityState.unknown ||
       AvailabilityState.resetting ||
-      AvailabilityState.poweredOn => '藍牙目前無法使用（$state）。請稍後再試。',
+      AvailabilityState.poweredOn => '藍牙目前無法使用。請稍後再試。',
     };
   }
 

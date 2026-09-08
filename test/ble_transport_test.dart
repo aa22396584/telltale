@@ -616,6 +616,23 @@ void main() {
         ),
         contains('BlueZ'),
       );
+      expect(
+        BleTransport.scanIssueFor(
+          Exception('org.bluez.Error.Failed: Failed to connect to socket'),
+        ),
+        BleScanIssue.bluezUnavailable,
+      );
+    });
+
+    test('unclassified scan failures do not interpolate the native exception', () {
+      expect(
+        BleTransport.userFacingScanFailure(Exception('native socket 0xdead')),
+        isNot(contains('0xdead')),
+      );
+      expect(
+        BleTransport.scanIssueFor(Exception('native socket 0xdead')),
+        BleScanIssue.unclassified,
+      );
     });
   });
 

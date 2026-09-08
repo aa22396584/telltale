@@ -1107,7 +1107,9 @@ class _BleBodyState extends State<_BleBody> {
         },
         onError: (Object e) {
           if (mounted) {
-            setState(() => _error = BleTransport.userFacingScanFailure(e));
+            setState(
+              () => _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
+            );
           }
         },
         onDone: () {
@@ -1122,7 +1124,7 @@ class _BleBodyState extends State<_BleBody> {
     } on Object catch (e) {
       if (mounted) {
         setState(() {
-          _error = BleTransport.userFacingScanFailure(e);
+          _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e));
           _scanning = false;
           _scanned = true;
         });
