@@ -6450,6 +6450,36 @@ abstract class AppLocalizations {
   /// **'Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.'**
   String get dtcCategoryUnattributed;
 
+  /// DtcReadException.silentSources on a category panel. Message stays transcript-only.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} controller(s) did not answer this query ({controllers}). Answers that did come back are valid, but this cannot stand as a whole-vehicle result.'**
+  String dtcCategorySilentControllers(int count, String controllers);
+
+  /// DtcReadException.unresolvedSources on a category panel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} response(s) could not be attributed to a controller ({addresses}). Codes that were read are still valid, but this cannot stand as a whole-vehicle result. Scan again.'**
+  String dtcCategoryUnresolvedSources(int count, String addresses);
+
+  /// DtcReadException.pendingSources with an answered count. Not a refusal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} controller(s) are still working on this request ({answered} already answered). The result is incomplete. Wait, then scan again.'**
+  String dtcCategoryPendingControllers(int count, int answered);
+
+  /// DtcReadException.refusedCount on a category panel.
+  ///
+  /// In en, this message translates to:
+  /// **'{refused} controller(s) refused ({answered} answered). This scan cannot cover the whole vehicle.'**
+  String dtcCategoryRefusedControllers(int refused, int answered);
+
+  /// DtcReadException.unrecognisedCount on a category panel. Does not interpolate the decoder sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} response(s) could not be read ({answered} answered). The rest is still valid, but this scan is incomplete.'**
+  String dtcCategoryUnrecognisedResponses(int count, int answered);
+
   /// No description provided for @connectPairedListFailed.
   ///
   /// In en, this message translates to:
@@ -6509,6 +6539,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} controller(s) did not answer the clear ({controllers}). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.'**
   String dtcClearSilentControllers(int count, String controllers);
+
+  /// Clear refused before send because identities from the scan are still unresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} response(s) from this scan could not be attributed ({addresses}), so it is not known which controllers a clear would reach. Rescan; if that address does not appear again, reconnect before trying.'**
+  String dtcClearUnresolvedSources(int count, String addresses);
+
+  /// Clear reply carried unresolved identities after something may already have erased.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} response(s) in the clear reply could not be attributed ({addresses}). Do not send another clear. Rescan to see which codes remain.'**
+  String dtcClearUnresolvedSourcesDoNotRepeat(int count, String addresses);
 
   /// ISO 14229 NRC 0x22 on Mode 04 when another controller may already have cleared.
   ///

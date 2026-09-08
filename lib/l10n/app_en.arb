@@ -3463,6 +3463,46 @@
     "description": "DtcReadFailure.pending (NRC 0x78). Waiting is the right next step."
   },
   "dtcCategoryUnattributed": "Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.",
+  "dtcCategorySilentControllers": "{count} controller(s) did not answer this query ({controllers}). Answers that did come back are valid, but this cannot stand as a whole-vehicle result.",
+  "@dtcCategorySilentControllers": {
+    "description": "DtcReadException.silentSources on a category panel. Message stays transcript-only.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "controllers": { "type": "String" }
+    }
+  },
+  "dtcCategoryUnresolvedSources": "{count} response(s) could not be attributed to a controller ({addresses}). Codes that were read are still valid, but this cannot stand as a whole-vehicle result. Scan again.",
+  "@dtcCategoryUnresolvedSources": {
+    "description": "DtcReadException.unresolvedSources on a category panel.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "addresses": { "type": "String" }
+    }
+  },
+  "dtcCategoryPendingControllers": "{count} controller(s) are still working on this request ({answered} already answered). The result is incomplete. Wait, then scan again.",
+  "@dtcCategoryPendingControllers": {
+    "description": "DtcReadException.pendingSources with an answered count. Not a refusal.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "answered": { "type": "int" }
+    }
+  },
+  "dtcCategoryRefusedControllers": "{refused} controller(s) refused ({answered} answered). This scan cannot cover the whole vehicle.",
+  "@dtcCategoryRefusedControllers": {
+    "description": "DtcReadException.refusedCount on a category panel.",
+    "placeholders": {
+      "refused": { "type": "int" },
+      "answered": { "type": "int" }
+    }
+  },
+  "dtcCategoryUnrecognisedResponses": "{count} response(s) could not be read ({answered} answered). The rest is still valid, but this scan is incomplete.",
+  "@dtcCategoryUnrecognisedResponses": {
+    "description": "DtcReadException.unrecognisedCount on a category panel. Does not interpolate the decoder sentence.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "answered": { "type": "int" }
+    }
+  },
   "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.",
   "connectBleScanUnavailable": "Bluetooth is not usable right now. Wait a moment, then search again.",
   "connectBleScanBluez": "No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.",
@@ -3504,6 +3544,22 @@
     "placeholders": {
       "count": { "type": "int" },
       "controllers": { "type": "String" }
+    }
+  },
+  "dtcClearUnresolvedSources": "{count} response(s) from this scan could not be attributed ({addresses}), so it is not known which controllers a clear would reach. Rescan; if that address does not appear again, reconnect before trying.",
+  "@dtcClearUnresolvedSources": {
+    "description": "Clear refused before send because identities from the scan are still unresolved.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "addresses": { "type": "String" }
+    }
+  },
+  "dtcClearUnresolvedSourcesDoNotRepeat": "{count} response(s) in the clear reply could not be attributed ({addresses}). Do not send another clear. Rescan to see which codes remain.",
+  "@dtcClearUnresolvedSourcesDoNotRepeat": {
+    "description": "Clear reply carried unresolved identities after something may already have erased.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "addresses": { "type": "String" }
     }
   },
   "dtcClearNrcConditionsDoNotRepeat": "{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared.",

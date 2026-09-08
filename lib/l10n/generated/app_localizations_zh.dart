@@ -3613,6 +3613,31 @@ class AppLocalizationsZh extends AppLocalizations {
       '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
 
   @override
+  String dtcCategorySilentControllers(int count, String controllers) {
+    return '有 $count 個控制器沒有回應這次查詢（$controllers）。已回應的部分仍然有效，但不能當作全車結果。';
+  }
+
+  @override
+  String dtcCategoryUnresolvedSources(int count, String addresses) {
+    return '有 $count 筆回應無法判斷是哪個控制器送出的（$addresses）。已讀到的結果仍然有效，但不能當作全車結果。請重新掃描。';
+  }
+
+  @override
+  String dtcCategoryPendingControllers(int count, int answered) {
+    return '有 $count 個控制器還在處理這次查詢，$answered 個已回應。結果尚不完整，請稍候再掃描一次。';
+  }
+
+  @override
+  String dtcCategoryRefusedControllers(int refused, int answered) {
+    return '有 $refused 個控制器拒絕回答（$answered 個已回應）。這次掃描無法涵蓋全車，結果並不完整。';
+  }
+
+  @override
+  String dtcCategoryUnrecognisedResponses(int count, int answered) {
+    return '有 $count 筆回應無法辨識（$answered 個已回應）。其餘結果仍然有效，但這次掃描並不完整。';
+  }
+
+  @override
   String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。';
 
   @override
@@ -3653,6 +3678,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
+
+  @override
+  String dtcClearUnresolvedSources(int count, String addresses) {
+    return '掃描時有 $count 筆回應無法判斷是哪個控制器送出的（$addresses），因此無法確認清除指令會送到哪些控制器。請重新掃描；若該位址一直沒有再出現，請重新連線後再試。';
+  }
+
+  @override
+  String dtcClearUnresolvedSourcesDoNotRepeat(int count, String addresses) {
+    return '清除指令的回應中有 $count 筆無法判斷來源的資料（$addresses）。不要再送一次清除。請重新掃描確認哪些故障碼還在。';
   }
 
   @override
@@ -7319,6 +7354,31 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
 
   @override
+  String dtcCategorySilentControllers(int count, String controllers) {
+    return '有 $count 個控制器沒有回應這次查詢（$controllers）。已回應的部分仍然有效，但不能當作全車結果。';
+  }
+
+  @override
+  String dtcCategoryUnresolvedSources(int count, String addresses) {
+    return '有 $count 筆回應無法判斷是哪個控制器送出的（$addresses）。已讀到的結果仍然有效，但不能當作全車結果。請重新掃描。';
+  }
+
+  @override
+  String dtcCategoryPendingControllers(int count, int answered) {
+    return '有 $count 個控制器還在處理這次查詢，$answered 個已回應。結果尚不完整，請稍候再掃描一次。';
+  }
+
+  @override
+  String dtcCategoryRefusedControllers(int refused, int answered) {
+    return '有 $refused 個控制器拒絕回答（$answered 個已回應）。這次掃描無法涵蓋全車，結果並不完整。';
+  }
+
+  @override
+  String dtcCategoryUnrecognisedResponses(int count, int answered) {
+    return '有 $count 筆回應無法辨識（$answered 個已回應）。其餘結果仍然有效，但這次掃描並不完整。';
+  }
+
+  @override
   String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。';
 
   @override
@@ -7359,6 +7419,16 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
+
+  @override
+  String dtcClearUnresolvedSources(int count, String addresses) {
+    return '掃描時有 $count 筆回應無法判斷是哪個控制器送出的（$addresses），因此無法確認清除指令會送到哪些控制器。請重新掃描；若該位址一直沒有再出現，請重新連線後再試。';
+  }
+
+  @override
+  String dtcClearUnresolvedSourcesDoNotRepeat(int count, String addresses) {
+    return '清除指令的回應中有 $count 筆無法判斷來源的資料（$addresses）。不要再送一次清除。請重新掃描確認哪些故障碼還在。';
   }
 
   @override

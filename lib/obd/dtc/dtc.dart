@@ -180,7 +180,8 @@ abstract final class DtcDecoder {
     final d3 = (b >> 4) & 0x0F;
     final d4 = b & 0x0F;
 
-    final code = '${category.letter}$d1'
+    final code =
+        '${category.letter}$d1'
         '${d2.toRadixString(16).toUpperCase()}'
         '${d3.toRadixString(16).toUpperCase()}'
         '${d4.toRadixString(16).toUpperCase()}';
@@ -310,7 +311,8 @@ abstract final class DtcDecoder {
   /// returns a single PID's data or an error rather than the batch.
   static bool protocolIsCan(String protocolNumber) {
     final trimmed = _normaliseProtocol(protocolNumber);
-    if (trimmed.isEmpty || trimmed == '0') return false; // undecided: don't batch
+    if (trimmed.isEmpty || trimmed == '0')
+      return false; // undecided: don't batch
     // The same named set. J1939 (`A`) shares the physical layer and none of
     // the framing, so batching J1979 PIDs on it means nothing; `B` and `C`
     // carry whatever PP 2C / PP 2E say they carry, which this API cannot see,
@@ -417,14 +419,17 @@ abstract final class DtcDecoder {
   /// Encodes back to the two raw bytes. Used by tests and by the CSV exporter.
   static (int, int)? encode(String code) {
     if (code.length != 5) return null;
-    final categoryIndex = _categories.indexWhere((c) => c.letter == code[0].toUpperCase());
+    final categoryIndex = _categories.indexWhere(
+      (c) => c.letter == code[0].toUpperCase(),
+    );
     if (categoryIndex < 0) return null;
 
     final d1 = int.tryParse(code[1], radix: 16);
     final d2 = int.tryParse(code[2], radix: 16);
     final d3 = int.tryParse(code[3], radix: 16);
     final d4 = int.tryParse(code[4], radix: 16);
-    if (d1 == null || d2 == null || d3 == null || d4 == null || d1 > 3) return null;
+    if (d1 == null || d2 == null || d3 == null || d4 == null || d1 > 3)
+      return null;
 
     return ((categoryIndex << 6) | (d1 << 4) | d2, (d3 << 4) | d4);
   }
@@ -661,10 +666,14 @@ class DtcReadException implements Exception {
     this.terminalSources = const {},
     this.heardAboutService = const {},
     this.silentSources = const {},
+    this.unresolvedSources = const {},
     this.repeatWouldHarm = false,
     this.transportIssue,
     this.issueDetail,
     this.negativeResponseCode,
+    this.refusedCount = 0,
+    this.answeredCount = 0,
+    this.unrecognisedCount = 0,
   });
 
   final String message;
@@ -732,6 +741,26 @@ class DtcReadException implements Exception {
   /// one module missed is not the same as a module that will not answer, and
   /// on 11-bit CAN the difference is one physically addressed request away.
   final Set<String> silentSources;
+
+  /// Reply tokens that could not be attached to a named controller.
+  ///
+  /// Distinct from [silentSources]: those are modules the census already
+  /// named, and they said nothing. These are identities a reply carried that
+  /// the parser could not resolve, so coverage cannot be claimed even when
+  /// every named module answered. The transcript interpolates the count into
+  /// Chinese; the screen maps this set.
+  final Set<String> unresolvedSources;
+
+  /// How many controllers explicitly refused this request (`7F` with an NRC
+  /// other than 0x78). The transcript interpolates the count; the screen maps
+  /// this field rather than [message].
+  final int refusedCount;
+
+  /// How many controllers gave a terminal answer to this request.
+  final int answeredCount;
+
+  /// How many replies were neither a refusal nor an answer to this service.
+  final int unrecognisedCount;
 
   /// Controllers that gave a *final* answer during the same exchange.
   ///

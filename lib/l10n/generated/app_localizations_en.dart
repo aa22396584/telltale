@@ -4046,6 +4046,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.';
 
   @override
+  String dtcCategorySilentControllers(int count, String controllers) {
+    return '$count controller(s) did not answer this query ($controllers). Answers that did come back are valid, but this cannot stand as a whole-vehicle result.';
+  }
+
+  @override
+  String dtcCategoryUnresolvedSources(int count, String addresses) {
+    return '$count response(s) could not be attributed to a controller ($addresses). Codes that were read are still valid, but this cannot stand as a whole-vehicle result. Scan again.';
+  }
+
+  @override
+  String dtcCategoryPendingControllers(int count, int answered) {
+    return '$count controller(s) are still working on this request ($answered already answered). The result is incomplete. Wait, then scan again.';
+  }
+
+  @override
+  String dtcCategoryRefusedControllers(int refused, int answered) {
+    return '$refused controller(s) refused ($answered answered). This scan cannot cover the whole vehicle.';
+  }
+
+  @override
+  String dtcCategoryUnrecognisedResponses(int count, int answered) {
+    return '$count response(s) could not be read ($answered answered). The rest is still valid, but this scan is incomplete.';
+  }
+
+  @override
   String get connectPairedListFailed =>
       'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.';
 
@@ -4088,6 +4113,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '$count controller(s) did not answer the clear ($controllers). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.';
+  }
+
+  @override
+  String dtcClearUnresolvedSources(int count, String addresses) {
+    return '$count response(s) from this scan could not be attributed ($addresses), so it is not known which controllers a clear would reach. Rescan; if that address does not appear again, reconnect before trying.';
+  }
+
+  @override
+  String dtcClearUnresolvedSourcesDoNotRepeat(int count, String addresses) {
+    return '$count response(s) in the clear reply could not be attributed ($addresses). Do not send another clear. Rescan to see which codes remain.';
   }
 
   @override

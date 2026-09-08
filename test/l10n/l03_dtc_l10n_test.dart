@@ -109,23 +109,25 @@ const _manufacturer = Dtc(
 );
 
 DtcCategoryResult _silent({Set<String> answeredBy = const {}}) =>
-    DtcCategoryResult.failed(DtcReadException(
-      _engineFailureMessage,
-      kind: DtcReadFailure.noAnswer,
-      terminalSources: answeredBy,
-    ));
+    DtcCategoryResult.failed(
+      DtcReadException(
+        _engineFailureMessage,
+        kind: DtcReadFailure.noAnswer,
+        terminalSources: answeredBy,
+      ),
+    );
 
 FreezeFrame _frame({int undecodable = 0, int unread = 0}) => FreezeFrame(
-      source: '7E8',
-      frameNumber: 0,
-      cause: _misfire,
-      readings: const [
-        FreezeReading(pid: PidLibrary.engineRpm, value: 2856, raw: [0x2C, 0xA0]),
-        FreezeReading(pid: PidLibrary.coolantTemp, value: 91, raw: [131]),
-      ],
-      undecodable: undecodable,
-      unread: unread,
-    );
+  source: '7E8',
+  frameNumber: 0,
+  cause: _misfire,
+  readings: const [
+    FreezeReading(pid: PidLibrary.engineRpm, value: 2856, raw: [0x2C, 0xA0]),
+    FreezeReading(pid: PidLibrary.coolantTemp, value: 91, raw: [131]),
+  ],
+  undecodable: undecodable,
+  unread: unread,
+);
 
 Future<void> _pump(
   WidgetTester tester,
@@ -137,8 +139,9 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         dtcScanProvider.overrideWith(() => _FixedScan(scan)),
-        obdSessionProvider
-            .overrideWith(() => _FixedSession(connected: connected)),
+        obdSessionProvider.overrideWith(
+          () => _FixedSession(connected: connected),
+        ),
       ],
       child: localizedMaterialApp(
         theme: AppTheme.dark(),
@@ -192,10 +195,7 @@ final _permanentSilent = DtcScanState(
 /// The mandatory class went unanswered, so there is no scan at all.
 final _storedSilent = DtcScanState(
   scannedAt: DateTime(2026, 8, 17),
-  results: {
-    DtcKind.stored: _silent(),
-    DtcKind.permanent: _silent(),
-  },
+  results: {DtcKind.stored: _silent(), DtcKind.permanent: _silent()},
 );
 
 final _faultsFound = DtcScanState(
@@ -235,16 +235,16 @@ final _withReadiness = DtcScanState(
 );
 
 Map<String, DtcScanState> get _states => {
-      'not scanned': _notScanned,
-      'read failed': _readFailed,
-      'complete clean': _completeClean,
-      'optional gaps': _optionalGaps,
-      'permanent silent': _permanentSilent,
-      'stored silent': _storedSilent,
-      'faults found': _faultsFound,
-      'freeze frames': _withFrames,
-      'readiness': _withReadiness,
-    };
+  'not scanned': _notScanned,
+  'read failed': _readFailed,
+  'complete clean': _completeClean,
+  'optional gaps': _optionalGaps,
+  'permanent silent': _permanentSilent,
+  'stored silent': _storedSilent,
+  'faults found': _faultsFound,
+  'freeze frames': _withFrames,
+  'readiness': _withReadiness,
+};
 
 // ---------------------------------------------------------------------------
 // Reading the screen back
@@ -257,8 +257,9 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
     final span = text.textSpan;
     if (span != null) yield span.toPlainText();
   }
-  for (final text
-      in tester.widgetList<SelectableText>(find.byType(SelectableText))) {
+  for (final text in tester.widgetList<SelectableText>(
+    find.byType(SelectableText),
+  )) {
     final data = text.data;
     if (data != null) yield data;
   }
@@ -266,7 +267,9 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
     final message = tooltip.message;
     if (message != null) yield message;
   }
-  for (final semantics in tester.widgetList<Semantics>(find.byType(Semantics))) {
+  for (final semantics in tester.widgetList<Semantics>(
+    find.byType(Semantics),
+  )) {
     final label = semantics.properties.label;
     if (label != null) yield label;
   }
@@ -286,23 +289,23 @@ Iterable<String> _renderedStrings(WidgetTester tester) sync* {
 /// Keeping the list computed from the enums rather than typed out means a new
 /// engine label cannot quietly widen the hole.
 List<String> _engineOwnedStrings() => [
-      // This list is shrinking, which is the point of computing it from the
-      // engine rather than typing it out.
-      //
-      // The fault-code vocabulary was here — three class labels and their
-      // explanations, four system names, nine J2012 subsystems, every code
-      // description — and so were the readiness monitor names. Both moved into
-      // the ARBs, so the screen renders them in the reader's language and this
-      // has nothing left to subtract for either. `ReadinessMonitor.label` no
-      // longer exists at all, which is how the compiler told us the allowance
-      // was stale.
-      //
-      // What remains is what other lanes still own.
-      PidLibrary.engineRpm.name,
-      PidLibrary.coolantTemp.name,
-      _engineFailureMessage,
-      _engineDecodeError,
-    ]..sort((a, b) => b.length.compareTo(a.length));
+  // This list is shrinking, which is the point of computing it from the
+  // engine rather than typing it out.
+  //
+  // The fault-code vocabulary was here — three class labels and their
+  // explanations, four system names, nine J2012 subsystems, every code
+  // description — and so were the readiness monitor names. Both moved into
+  // the ARBs, so the screen renders them in the reader's language and this
+  // has nothing left to subtract for either. `ReadinessMonitor.label` no
+  // longer exists at all, which is how the compiler told us the allowance
+  // was stale.
+  //
+  // What remains is what other lanes still own.
+  PidLibrary.engineRpm.name,
+  PidLibrary.coolantTemp.name,
+  _engineFailureMessage,
+  _engineDecodeError,
+]..sort((a, b) => b.length.compareTo(a.length));
 
 String _withoutEngineCopy(String value) {
   var stripped = value;
@@ -313,9 +316,9 @@ String _withoutEngineCopy(String value) {
 }
 
 List<String> _chineseLeftInEnglish(WidgetTester tester) => [
-      for (final rendered in _renderedStrings(tester))
-        if (_cjk.hasMatch(_withoutEngineCopy(rendered))) rendered,
-    ];
+  for (final rendered in _renderedStrings(tester))
+    if (_cjk.hasMatch(_withoutEngineCopy(rendered))) rendered,
+];
 
 void main() {
   // -------------------------------------------------------------------------
@@ -326,24 +329,22 @@ void main() {
         expect(
           _chineseLeftInEnglish(tester),
           isEmpty,
-          reason: 'these reach an English-speaking driver in Chinese, and are '
+          reason:
+              'these reach an English-speaking driver in Chinese, and are '
               'not among the engine strings a later wave owns',
         );
       });
     }
 
     testWidgets('not connected', (tester) async {
-      await _pump(
-        tester,
-        _notScanned,
-        locale: englishLocale,
-        connected: false,
-      );
+      await _pump(tester, _notScanned, locale: englishLocale, connected: false);
       expect(_chineseLeftInEnglish(tester), isEmpty);
       expect(find.text(_en.dtcNotConnectedTitle), findsOneWidget);
     });
 
-    testWidgets('the clear confirmation, with all three warnings', (tester) async {
+    testWidgets('the clear confirmation, with all three warnings', (
+      tester,
+    ) async {
       // Frames to destroy, a frame that may exist and was not read, and a
       // category that never answered — the dialog says all three or it is not
       // saying what the decision rests on.
@@ -370,9 +371,13 @@ void main() {
           .widgetList<Text>(find.byType(Text))
           .map((t) => t.data ?? '')
           .firstWhere((t) => t.startsWith(_en.dtcClearDialogBody));
-      expect(dialog, contains('P0301'),
-          reason: 'the frame this clear destroys is named at the point of no '
-              'return');
+      expect(
+        dialog,
+        contains('P0301'),
+        reason:
+            'the frame this clear destroys is named at the point of no '
+            'return',
+      );
       expect(dialog, contains(_en.dtcClearDialogFrameUnread));
 
       await tester.tap(find.text(_en.dtcClearCancel));
@@ -382,14 +387,20 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('the Traditional Chinese hedges survived the move into the ARBs', () {
-    testWidgets('an all-clear is only ever about the controllers that answered',
-        (tester) async {
-      await _pump(tester, _completeClean, locale: traditionalChineseLocale);
-      expect(find.textContaining('已回應的控制器都沒有故障碼'), findsOneWidget);
-      expect(find.textContaining('不代表車上每個模組都已被問到'), findsOneWidget,
-          reason: 'the qualifier is the whole panel; without it this is a '
-              'claim about the vehicle');
-    });
+    testWidgets(
+      'an all-clear is only ever about the controllers that answered',
+      (tester) async {
+        await _pump(tester, _completeClean, locale: traditionalChineseLocale);
+        expect(find.textContaining('已回應的控制器都沒有故障碼'), findsOneWidget);
+        expect(
+          find.textContaining('不代表車上每個模組都已被問到'),
+          findsOneWidget,
+          reason:
+              'the qualifier is the whole panel; without it this is a '
+              'claim about the vehicle',
+        );
+      },
+    );
 
     testWidgets('a missing freeze frame is not an absent one', (tester) async {
       await _pump(tester, _withFrames, locale: traditionalChineseLocale);
@@ -397,16 +408,22 @@ void main() {
       expect(find.textContaining('清除故障碼會一併銷毀'), findsOneWidget);
     });
 
-    testWidgets('an unanswered optional class is not a clean one',
-        (tester) async {
+    testWidgets('an unanswered optional class is not a clean one', (
+      tester,
+    ) async {
       await _pump(tester, _permanentSilent, locale: traditionalChineseLocale);
-      expect(find.textContaining('無法分辨'), findsOneWidget,
-          reason: 'silence cannot tell an unimplemented service from a reply '
-              'that was lost');
+      expect(
+        find.textContaining('無法分辨'),
+        findsOneWidget,
+        reason:
+            'silence cannot tell an unimplemented service from a reply '
+            'that was lost',
+      );
     });
 
-    testWidgets('the clear says permanent codes are not clearable',
-        (tester) async {
+    testWidgets('the clear says permanent codes are not clearable', (
+      tester,
+    ) async {
       await _pump(tester, _faultsFound, locale: traditionalChineseLocale);
       await tester.tap(find.text(_zh.dtcClear));
       await tester.pumpAndSettle();
@@ -424,9 +441,8 @@ void main() {
     final shapes = <String, DtcCategoryResult Function()>{
       'nobody answered': () => _silent(),
       'somebody answered': () => _silent(answeredBy: const {'7E8'}),
-      'a decode error': () => const DtcCategoryResult.failed(
-            DtcReadException(_engineDecodeError),
-          ),
+      'a decode error': () =>
+          const DtcCategoryResult.failed(DtcReadException(_engineDecodeError)),
     };
 
     test('every kind and every failure shape produces copy', () {
@@ -440,13 +456,19 @@ void main() {
                 result: shape.value(),
                 storedAnswered: storedAnswered,
               );
-              expect(wording.headline.trim(), isNotEmpty,
-                  reason: '$kind / ${shape.key} / stored=$storedAnswered');
+              expect(
+                wording.headline.trim(),
+                isNotEmpty,
+                reason: '$kind / ${shape.key} / stored=$storedAnswered',
+              );
               // The one empty arm is unreachable: `ordinarySilence` requires
               // an optional class, so Mode 03 never takes it.
               if (!(kind == DtcKind.stored && wording.ordinarySilence)) {
-                expect(wording.detail.trim(), isNotEmpty,
-                    reason: '$kind / ${shape.key} / stored=$storedAnswered');
+                expect(
+                  wording.detail.trim(),
+                  isNotEmpty,
+                  reason: '$kind / ${shape.key} / stored=$storedAnswered',
+                );
               }
             }
           }
@@ -560,26 +582,29 @@ void main() {
     //
     // What a weakened one costs: a driver reads "no pending faults", drives
     // away, and the fault the ECU had not yet confirmed is still there.
-    test('a category that did not answer is not a category with nothing to say', () {
-      expect(
-        _en.dtcSilentPendingDetail.toLowerCase(),
-        allOf(
-          contains('cannot tell the two apart'),
-          contains('must not be taken to mean there are no pending faults'),
-        ),
-      );
-      expect(
-        _en.dtcSilentPermanentDetail.toLowerCase(),
-        contains('the two cannot be told apart'),
-      );
-      expect(
-        _en.dtcStoredSilentDetail('03').toLowerCase(),
-        allOf(
-          contains('cannot be confirmed'),
-          contains('not the same thing as having no fault codes'),
-        ),
-      );
-    });
+    test(
+      'a category that did not answer is not a category with nothing to say',
+      () {
+        expect(
+          _en.dtcSilentPendingDetail.toLowerCase(),
+          allOf(
+            contains('cannot tell the two apart'),
+            contains('must not be taken to mean there are no pending faults'),
+          ),
+        );
+        expect(
+          _en.dtcSilentPermanentDetail.toLowerCase(),
+          contains('the two cannot be told apart'),
+        );
+        expect(
+          _en.dtcStoredSilentDetail('03').toLowerCase(),
+          allOf(
+            contains('cannot be confirmed'),
+            contains('not the same thing as having no fault codes'),
+          ),
+        );
+      },
+    );
 
     // Hedge register #14 says these two must stay short, distinct, and never
     // merge into one "unknown". Both languages had parity only, so nothing
@@ -604,14 +629,20 @@ void main() {
         _en.dtcFreezeFrameBody('P0301').toLowerCase(),
         contains('destroys this record'),
       );
-      expect(_en.dtcClearDialogBody.toLowerCase(), contains('cannot be cleared'));
+      expect(
+        _en.dtcClearDialogBody.toLowerCase(),
+        contains('cannot be cleared'),
+      );
     });
 
     test('the three code classes stay three things', () {
       for (final l10n in [_en, _zh]) {
         for (final mode in ['Mode 03', 'Mode 07', 'Mode 0A']) {
-          expect(l10n.dtcScanBody, contains(mode),
-              reason: 'the scan describes what it reads by class');
+          expect(
+            l10n.dtcScanBody,
+            contains(mode),
+            reason: 'the scan describes what it reads by class',
+          );
         }
         final headers = {
           for (final kind in DtcKind.values)
@@ -625,22 +656,31 @@ void main() {
       expect(_zh.dtcClearDialogBody, contains('Mode 0A'));
       expect(_zh.dtcClearDialogBody, contains('無法清除'));
       expect(_en.dtcClearDialogBody, contains('Mode 0A'));
-      expect(_en.dtcClearDialogBody.toLowerCase(),
-          contains('cannot be cleared'));
+      expect(
+        _en.dtcClearDialogBody.toLowerCase(),
+        contains('cannot be cleared'),
+      );
     });
 
     test('the clear says the freeze frame does not come back', () {
-      expect(_en.dtcClearDialogFrames('P0301').toLowerCase(),
-          contains('cannot be read back'));
+      expect(
+        _en.dtcClearDialogFrames('P0301').toLowerCase(),
+        contains('cannot be read back'),
+      );
       expect(_zh.dtcClearDialogFrames('P0301'), contains('讀不回來'));
     });
 
     test('"the controllers that answered" is never dropped', () {
-      expect(_en.dtcCompleteCleanTitle.toLowerCase(), contains('that answered'));
+      expect(
+        _en.dtcCompleteCleanTitle.toLowerCase(),
+        contains('that answered'),
+      );
       expect(_en.dtcCompleteCleanBody.toLowerCase(), contains('does not mean'));
-      expect(_en.dtcVerdictCompleteClean.toLowerCase(),
-          contains('that answered'),
-          reason: 'the header is the line a glance lands on');
+      expect(
+        _en.dtcVerdictCompleteClean.toLowerCase(),
+        contains('that answered'),
+        reason: 'the header is the line a glance lands on',
+      );
       expect(_zh.dtcCompleteCleanTitle, contains('已回應'));
       expect(_zh.dtcVerdictCompleteClean, contains('已回應'));
     });
@@ -648,26 +688,35 @@ void main() {
     test('a read failure is not an unsupported service', () {
       // NO DATA cannot tell an unimplemented service from a lost, filtered or
       // late reply, and this headline used to assert the first.
-      expect(_en.dtcSilentCategoryHeadline.toLowerCase(),
-          isNot(contains('not support')));
-      expect(_en.dtcSilentCategoryHeadline.toLowerCase(),
-          isNot(contains('unsupported')));
+      expect(
+        _en.dtcSilentCategoryHeadline.toLowerCase(),
+        isNot(contains('not support')),
+      );
+      expect(
+        _en.dtcSilentCategoryHeadline.toLowerCase(),
+        isNot(contains('unsupported')),
+      );
       expect(_zh.dtcSilentCategoryHeadline, isNot(contains('不支援')));
     });
 
-    test('"no formula here" and "did not come back" ask for different things',
-        () {
+    test('"no formula here" and "did not come back" ask for different things', () {
       // The first is an app limitation a rescan will not change; the second is
       // a read failure a rescan usually fixes. Merging them destroys the
       // user's next action.
       for (final l10n in [_en, _zh]) {
-        expect(l10n.dtcFreezeFrameUndecodable(2),
-            isNot(l10n.dtcFreezeFrameUnreadItems(2)));
+        expect(
+          l10n.dtcFreezeFrameUndecodable(2),
+          isNot(l10n.dtcFreezeFrameUnreadItems(2)),
+        );
       }
-      expect(_en.dtcFreezeFrameUnreadItems(2).toLowerCase(),
-          contains('rescan'));
-      expect(_en.dtcFreezeFrameUndecodable(2).toLowerCase(),
-          isNot(contains('rescan')));
+      expect(
+        _en.dtcFreezeFrameUnreadItems(2).toLowerCase(),
+        contains('rescan'),
+      );
+      expect(
+        _en.dtcFreezeFrameUndecodable(2).toLowerCase(),
+        isNot(contains('rescan')),
+      );
       expect(_zh.dtcFreezeFrameUnreadItems(2), contains('重新掃描'));
       expect(_zh.dtcFreezeFrameUndecodable(2), isNot(contains('重新掃描')));
     });
@@ -677,8 +726,10 @@ void main() {
         expect(l10n.dtcManufacturerSpecific.trim(), isNotEmpty);
         expect(l10n.dtcNoDescriptionForSubsystem('X'), contains('X'));
       }
-      expect(_en.dtcNoDescriptionForSubsystem('X').toLowerCase(),
-          contains('no detailed description'));
+      expect(
+        _en.dtcNoDescriptionForSubsystem('X').toLowerCase(),
+        contains('no detailed description'),
+      );
       expect(_zh.dtcNoDescriptionForSubsystem('X'), contains('沒有這一碼的詳細說明'));
     });
 
@@ -692,10 +743,11 @@ void main() {
     });
 
     test('readiness silence is not readiness', () {
-      expect(_en.dtcReadinessSaysNothing.toLowerCase(),
-          contains('does not mean'));
-      expect(_en.dtcReadinessSaysNothing,
-          isNot(_en.dtcReadinessAllComplete));
+      expect(
+        _en.dtcReadinessSaysNothing.toLowerCase(),
+        contains('does not mean'),
+      );
+      expect(_en.dtcReadinessSaysNothing, isNot(_en.dtcReadinessAllComplete));
       expect(_zh.dtcReadinessSaysNothing, contains('不代表已經就緒'));
     });
 
@@ -716,10 +768,16 @@ void main() {
       ('dtcHeadline', _en.dtcHeadline, _zh.dtcHeadline),
       ('dtcNotScanned', _en.dtcNotScanned, _zh.dtcNotScanned),
       ('dtcTotalCodes', _en.dtcTotalCodes(2), _zh.dtcTotalCodes(2)),
-      ('dtcVerdictCompleteClean', _en.dtcVerdictCompleteClean,
-          _zh.dtcVerdictCompleteClean),
-      ('dtcVerdictPartialClean', _en.dtcVerdictPartialClean,
-          _zh.dtcVerdictPartialClean),
+      (
+        'dtcVerdictCompleteClean',
+        _en.dtcVerdictCompleteClean,
+        _zh.dtcVerdictCompleteClean,
+      ),
+      (
+        'dtcVerdictPartialClean',
+        _en.dtcVerdictPartialClean,
+        _zh.dtcVerdictPartialClean,
+      ),
       ('dtcUnconfirmed', _en.dtcUnconfirmed, _zh.dtcUnconfirmed),
       ('dtcClear', _en.dtcClear, _zh.dtcClear),
       ('dtcClearing', _en.dtcClearing, _zh.dtcClearing),
@@ -727,16 +785,28 @@ void main() {
       ('dtcDismiss', _en.dtcDismiss, _zh.dtcDismiss),
       ('dtcClearDialogTitle', _en.dtcClearDialogTitle, _zh.dtcClearDialogTitle),
       ('dtcClearDialogBody', _en.dtcClearDialogBody, _zh.dtcClearDialogBody),
-      ('dtcClearDialogFrames', _en.dtcClearDialogFrames('P0301'),
-          _zh.dtcClearDialogFrames('P0301')),
-      ('dtcClearDialogFrameUnread', _en.dtcClearDialogFrameUnread,
-          _zh.dtcClearDialogFrameUnread),
-      ('dtcClearDialogUnanswered', _en.dtcClearDialogUnanswered(1, 'x'),
-          _zh.dtcClearDialogUnanswered(1, 'x')),
+      (
+        'dtcClearDialogFrames',
+        _en.dtcClearDialogFrames('P0301'),
+        _zh.dtcClearDialogFrames('P0301'),
+      ),
+      (
+        'dtcClearDialogFrameUnread',
+        _en.dtcClearDialogFrameUnread,
+        _zh.dtcClearDialogFrameUnread,
+      ),
+      (
+        'dtcClearDialogUnanswered',
+        _en.dtcClearDialogUnanswered(1, 'x'),
+        _zh.dtcClearDialogUnanswered(1, 'x'),
+      ),
       ('dtcClearCancel', _en.dtcClearCancel, _zh.dtcClearCancel),
       ('dtcClearConfirm', _en.dtcClearConfirm, _zh.dtcClearConfirm),
-      ('dtcNotConnectedTitle', _en.dtcNotConnectedTitle,
-          _zh.dtcNotConnectedTitle),
+      (
+        'dtcNotConnectedTitle',
+        _en.dtcNotConnectedTitle,
+        _zh.dtcNotConnectedTitle,
+      ),
       ('dtcNotConnectedBody', _en.dtcNotConnectedBody, _zh.dtcNotConnectedBody),
       ('dtcScanTitle', _en.dtcScanTitle, _zh.dtcScanTitle),
       ('dtcScanBody', _en.dtcScanBody, _zh.dtcScanBody),
@@ -744,68 +814,191 @@ void main() {
       ('dtcScanning', _en.dtcScanning, _zh.dtcScanning),
       ('dtcStartScan', _en.dtcStartScan, _zh.dtcStartScan),
       ('dtcRetry', _en.dtcRetry, _zh.dtcRetry),
-      ('dtcFreezeFrameUnreadPanel', _en.dtcFreezeFrameUnreadPanel,
-          _zh.dtcFreezeFrameUnreadPanel),
-      ('dtcCompleteCleanTitle', _en.dtcCompleteCleanTitle,
-          _zh.dtcCompleteCleanTitle),
-      ('dtcCompleteCleanBody', _en.dtcCompleteCleanBody,
-          _zh.dtcCompleteCleanBody),
-      ('dtcPartialCleanTitle', _en.dtcPartialCleanTitle,
-          _zh.dtcPartialCleanTitle),
-      ('dtcPartialCleanOptionalGaps', _en.dtcPartialCleanOptionalGaps(1, '7E9'),
-          _zh.dtcPartialCleanOptionalGaps(1, '7E9')),
-      ('dtcPartialCleanUnanswered', _en.dtcPartialCleanUnanswered('x'),
-          _zh.dtcPartialCleanUnanswered('x')),
-      ('dtcGroupHeader', _en.dtcGroupHeader('x', '03', 1),
-          _zh.dtcGroupHeader('x', '03', 1)),
-      ('dtcManufacturerSpecific', _en.dtcManufacturerSpecific,
-          _zh.dtcManufacturerSpecific),
-      ('dtcNoDescriptionForSubsystem', _en.dtcNoDescriptionForSubsystem('x'),
-          _zh.dtcNoDescriptionForSubsystem('x')),
-      ('dtcCategoryFault', _en.dtcCategoryFault('x'), _zh.dtcCategoryFault('x')),
-      ('dtcControllerLabel', _en.dtcControllerLabel('7E8'),
-          _zh.dtcControllerLabel('7E8')),
-      ('dtcPartialCodesRead', _en.dtcPartialCodesRead(2),
-          _zh.dtcPartialCodesRead(2)),
-      ('dtcSilentCategoryHeadline', _en.dtcSilentCategoryHeadline,
-          _zh.dtcSilentCategoryHeadline),
-      ('dtcSilentPermanentDetail', _en.dtcSilentPermanentDetail,
-          _zh.dtcSilentPermanentDetail),
-      ('dtcSilentPendingDetail', _en.dtcSilentPendingDetail,
-          _zh.dtcSilentPendingDetail),
-      ('dtcStoredSilentDetail', _en.dtcStoredSilentDetail('03'),
-          _zh.dtcStoredSilentDetail('03')),
-      ('dtcPartiallyAnsweredDetail', _en.dtcPartiallyAnsweredDetail(''),
-          _zh.dtcPartiallyAnsweredDetail('')),
-      ('dtcBothSilentDetail', _en.dtcBothSilentDetail('0A'),
-          _zh.dtcBothSilentDetail('0A')),
-      ('dtcReadFailureDetail', _en.dtcReadFailureDetail('x', '03', 'y'),
-          _zh.dtcReadFailureDetail('x', '03', 'y')),
+      (
+        'dtcFreezeFrameUnreadPanel',
+        _en.dtcFreezeFrameUnreadPanel,
+        _zh.dtcFreezeFrameUnreadPanel,
+      ),
+      (
+        'dtcCompleteCleanTitle',
+        _en.dtcCompleteCleanTitle,
+        _zh.dtcCompleteCleanTitle,
+      ),
+      (
+        'dtcCompleteCleanBody',
+        _en.dtcCompleteCleanBody,
+        _zh.dtcCompleteCleanBody,
+      ),
+      (
+        'dtcPartialCleanTitle',
+        _en.dtcPartialCleanTitle,
+        _zh.dtcPartialCleanTitle,
+      ),
+      (
+        'dtcPartialCleanOptionalGaps',
+        _en.dtcPartialCleanOptionalGaps(1, '7E9'),
+        _zh.dtcPartialCleanOptionalGaps(1, '7E9'),
+      ),
+      (
+        'dtcPartialCleanUnanswered',
+        _en.dtcPartialCleanUnanswered('x'),
+        _zh.dtcPartialCleanUnanswered('x'),
+      ),
+      (
+        'dtcGroupHeader',
+        _en.dtcGroupHeader('x', '03', 1),
+        _zh.dtcGroupHeader('x', '03', 1),
+      ),
+      (
+        'dtcManufacturerSpecific',
+        _en.dtcManufacturerSpecific,
+        _zh.dtcManufacturerSpecific,
+      ),
+      (
+        'dtcNoDescriptionForSubsystem',
+        _en.dtcNoDescriptionForSubsystem('x'),
+        _zh.dtcNoDescriptionForSubsystem('x'),
+      ),
+      (
+        'dtcCategoryFault',
+        _en.dtcCategoryFault('x'),
+        _zh.dtcCategoryFault('x'),
+      ),
+      (
+        'dtcControllerLabel',
+        _en.dtcControllerLabel('7E8'),
+        _zh.dtcControllerLabel('7E8'),
+      ),
+      (
+        'dtcPartialCodesRead',
+        _en.dtcPartialCodesRead(2),
+        _zh.dtcPartialCodesRead(2),
+      ),
+      (
+        'dtcSilentCategoryHeadline',
+        _en.dtcSilentCategoryHeadline,
+        _zh.dtcSilentCategoryHeadline,
+      ),
+      (
+        'dtcSilentPermanentDetail',
+        _en.dtcSilentPermanentDetail,
+        _zh.dtcSilentPermanentDetail,
+      ),
+      (
+        'dtcSilentPendingDetail',
+        _en.dtcSilentPendingDetail,
+        _zh.dtcSilentPendingDetail,
+      ),
+      (
+        'dtcStoredSilentDetail',
+        _en.dtcStoredSilentDetail('03'),
+        _zh.dtcStoredSilentDetail('03'),
+      ),
+      (
+        'dtcPartiallyAnsweredDetail',
+        _en.dtcPartiallyAnsweredDetail(''),
+        _zh.dtcPartiallyAnsweredDetail(''),
+      ),
+      (
+        'dtcBothSilentDetail',
+        _en.dtcBothSilentDetail('0A'),
+        _zh.dtcBothSilentDetail('0A'),
+      ),
+      (
+        'dtcReadFailureDetail',
+        _en.dtcReadFailureDetail('x', '03', 'y'),
+        _zh.dtcReadFailureDetail('x', '03', 'y'),
+      ),
       ('dtcUnknownError', _en.dtcUnknownError, _zh.dtcUnknownError),
+      (
+        'dtcCategorySilentControllers',
+        _en.dtcCategorySilentControllers(2, '7E9'),
+        _zh.dtcCategorySilentControllers(2, '7E9'),
+      ),
+      (
+        'dtcCategoryUnresolvedSources',
+        _en.dtcCategoryUnresolvedSources(1, 'BE'),
+        _zh.dtcCategoryUnresolvedSources(1, 'BE'),
+      ),
+      (
+        'dtcCategoryPendingControllers',
+        _en.dtcCategoryPendingControllers(1, 1),
+        _zh.dtcCategoryPendingControllers(1, 1),
+      ),
+      (
+        'dtcCategoryRefusedControllers',
+        _en.dtcCategoryRefusedControllers(1, 1),
+        _zh.dtcCategoryRefusedControllers(1, 1),
+      ),
+      (
+        'dtcCategoryUnrecognisedResponses',
+        _en.dtcCategoryUnrecognisedResponses(2, 1),
+        _zh.dtcCategoryUnrecognisedResponses(2, 1),
+      ),
+      (
+        'dtcClearUnresolvedSources',
+        _en.dtcClearUnresolvedSources(1, 'BE'),
+        _zh.dtcClearUnresolvedSources(1, 'BE'),
+      ),
+      (
+        'dtcClearUnresolvedSourcesDoNotRepeat',
+        _en.dtcClearUnresolvedSourcesDoNotRepeat(1, 'BE'),
+        _zh.dtcClearUnresolvedSourcesDoNotRepeat(1, 'BE'),
+      ),
       ('dtcFreezeFrameTitle', _en.dtcFreezeFrameTitle, _zh.dtcFreezeFrameTitle),
-      ('dtcFreezeFrameBody', _en.dtcFreezeFrameBody('P0301'),
-          _zh.dtcFreezeFrameBody('P0301')),
-      ('dtcFreezeFrameContentsUnknown', _en.dtcFreezeFrameContentsUnknown,
-          _zh.dtcFreezeFrameContentsUnknown),
-      ('dtcFreezeFrameNothingDecodable', _en.dtcFreezeFrameNothingDecodable,
-          _zh.dtcFreezeFrameNothingDecodable),
-      ('dtcFreezeFrameUndecodable', _en.dtcFreezeFrameUndecodable(2),
-          _zh.dtcFreezeFrameUndecodable(2)),
-      ('dtcFreezeFrameUnreadItems', _en.dtcFreezeFrameUnreadItems(2),
-          _zh.dtcFreezeFrameUnreadItems(2)),
+      (
+        'dtcFreezeFrameBody',
+        _en.dtcFreezeFrameBody('P0301'),
+        _zh.dtcFreezeFrameBody('P0301'),
+      ),
+      (
+        'dtcFreezeFrameContentsUnknown',
+        _en.dtcFreezeFrameContentsUnknown,
+        _zh.dtcFreezeFrameContentsUnknown,
+      ),
+      (
+        'dtcFreezeFrameNothingDecodable',
+        _en.dtcFreezeFrameNothingDecodable,
+        _zh.dtcFreezeFrameNothingDecodable,
+      ),
+      (
+        'dtcFreezeFrameUndecodable',
+        _en.dtcFreezeFrameUndecodable(2),
+        _zh.dtcFreezeFrameUndecodable(2),
+      ),
+      (
+        'dtcFreezeFrameUnreadItems',
+        _en.dtcFreezeFrameUnreadItems(2),
+        _zh.dtcFreezeFrameUnreadItems(2),
+      ),
       ('dtcMilOn', _en.dtcMilOn, _zh.dtcMilOn),
       ('dtcMilOff', _en.dtcMilOff, _zh.dtcMilOff),
-      ('dtcSelfReportedCodes', _en.dtcSelfReportedCodes(3),
-          _zh.dtcSelfReportedCodes(3)),
-      ('dtcSelfReportedNoCodes', _en.dtcSelfReportedNoCodes,
-          _zh.dtcSelfReportedNoCodes),
+      (
+        'dtcSelfReportedCodes',
+        _en.dtcSelfReportedCodes(3),
+        _zh.dtcSelfReportedCodes(3),
+      ),
+      (
+        'dtcSelfReportedNoCodes',
+        _en.dtcSelfReportedNoCodes,
+        _zh.dtcSelfReportedNoCodes,
+      ),
       ('dtcReadinessTitle', _en.dtcReadinessTitle, _zh.dtcReadinessTitle),
-      ('dtcReadinessSaysNothing', _en.dtcReadinessSaysNothing,
-          _zh.dtcReadinessSaysNothing),
-      ('dtcReadinessAllComplete', _en.dtcReadinessAllComplete,
-          _zh.dtcReadinessAllComplete),
-      ('dtcReadinessIncomplete', _en.dtcReadinessIncomplete(2),
-          _zh.dtcReadinessIncomplete(2)),
+      (
+        'dtcReadinessSaysNothing',
+        _en.dtcReadinessSaysNothing,
+        _zh.dtcReadinessSaysNothing,
+      ),
+      (
+        'dtcReadinessAllComplete',
+        _en.dtcReadinessAllComplete,
+        _zh.dtcReadinessAllComplete,
+      ),
+      (
+        'dtcReadinessIncomplete',
+        _en.dtcReadinessIncomplete(2),
+        _zh.dtcReadinessIncomplete(2),
+      ),
       ('dtcUnknownMonitor', _en.dtcUnknownMonitor, _zh.dtcUnknownMonitor),
       ('dtcListSeparator', _en.dtcListSeparator, _zh.dtcListSeparator),
     ]) {
@@ -813,8 +1006,11 @@ void main() {
       if (en == zh) same.add(key);
       if (_cjk.hasMatch(en)) same.add('$key (Chinese in the English bundle)');
     }
-    expect(same, isEmpty,
-        reason: 'untranslated or falling back to English: ${same.join(", ")}');
+    expect(
+      same,
+      isEmpty,
+      reason: 'untranslated or falling back to English: ${same.join(", ")}',
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -828,6 +1024,12 @@ void main() {
       expect(l10n.dtcPartialCodesRead(2), contains('2'));
       expect(l10n.dtcClearDialogUnanswered(2, '7E9'), contains('2'));
       expect(l10n.dtcPartialCleanOptionalGaps(2, '7E9'), contains('7E9'));
+      expect(l10n.dtcCategorySilentControllers(2, '7E9'), contains('2'));
+      expect(l10n.dtcCategorySilentControllers(2, '7E9'), contains('7E9'));
+      expect(l10n.dtcCategoryRefusedControllers(3, 1), contains('3'));
+      expect(l10n.dtcCategoryPendingControllers(2, 4), contains('2'));
+      expect(l10n.dtcCategoryPendingControllers(2, 4), contains('4'));
+      expect(l10n.dtcClearUnresolvedSources(1, 'BE'), contains('BE'));
     }
     // English needs the singular to read as English; Chinese has one form.
     expect(_en.dtcTotalCodes(1), isNot(contains('codes')));
