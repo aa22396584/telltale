@@ -4063,4 +4063,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectBleScanUnclassified => 'BLE search failed.';
+
+  @override
+  String dtcClearNrcConditions(String controller) {
+    return '$controller refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.';
+  }
+
+  @override
+  String dtcClearNrcUnsupported(String controller) {
+    return '$controller does not support Mode 04 clear. Manufacturer or dealer equipment may be required.';
+  }
+
+  @override
+  String dtcClearNrcBusy(String controller) {
+    return '$controller is busy. Wait, then rescan. Do not send another global clear if one may already have finished.';
+  }
+
+  @override
+  String dtcClearNrcSecurity(String controller) {
+    return '$controller requires security access before it will clear. Manufacturer or dealer equipment is required.';
+  }
+
+  @override
+  String dtcClearNrcOther(String controller, String code) {
+    return '$controller refused the clear (reason code $code). Rescan to see what remains. Do not send another global clear if one may already have finished.';
+  }
+
+  @override
+  String dtcClearSilentControllers(int count, String controllers) {
+    return '$count controller(s) did not answer the clear ($controllers). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.';
+  }
 }

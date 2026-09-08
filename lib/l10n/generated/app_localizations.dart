@@ -6473,6 +6473,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'BLE search failed.'**
   String get connectBleScanUnclassified;
+
+  /// ISO 14229 NRC 0x22 on Mode 04. Controller id is issueDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.'**
+  String dtcClearNrcConditions(String controller);
+
+  /// No description provided for @dtcClearNrcUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required.'**
+  String dtcClearNrcUnsupported(String controller);
+
+  /// No description provided for @dtcClearNrcBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} is busy. Wait, then rescan. Do not send another global clear if one may already have finished.'**
+  String dtcClearNrcBusy(String controller);
+
+  /// No description provided for @dtcClearNrcSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} requires security access before it will clear. Manufacturer or dealer equipment is required.'**
+  String dtcClearNrcSecurity(String controller);
+
+  /// No description provided for @dtcClearNrcOther.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} refused the clear (reason code {code}). Rescan to see what remains. Do not send another global clear if one may already have finished.'**
+  String dtcClearNrcOther(String controller, String code);
+
+  /// No description provided for @dtcClearSilentControllers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} controller(s) did not answer the clear ({controllers}). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.'**
+  String dtcClearSilentControllers(int count, String controllers);
 }
 
 class _AppLocalizationsDelegate

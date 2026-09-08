@@ -664,6 +664,7 @@ class DtcReadException implements Exception {
     this.repeatWouldHarm = false,
     this.transportIssue,
     this.issueDetail,
+    this.negativeResponseCode,
   });
 
   final String message;
@@ -691,6 +692,11 @@ class DtcReadException implements Exception {
   /// on. `TransportException.issueDetail` says why it travels beside the
   /// identifier rather than inside it.
   final String? issueDetail;
+
+  /// ISO 14229 NRC from a Mode 04 refusal (`7F 04 xx`), when the engine
+  /// diagnosed one. The transcript keeps the Chinese sentence; the screen
+  /// maps this code rather than interpolating [message].
+  final int? negativeResponseCode;
 
   /// Whether re-issuing the operation that failed would damage something.
   ///

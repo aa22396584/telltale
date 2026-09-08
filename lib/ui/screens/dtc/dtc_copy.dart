@@ -83,6 +83,26 @@ String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
             ? l10n.dtcClearFailureDoNotRepeat
             : l10n.dtcClearFailureGeneric);
   }
+  final nrc = failure.negativeResponseCode;
+  if (nrc != null) {
+    final controller = failure.issueDetail ?? '';
+    return switch (nrc) {
+      0x22 => l10n.dtcClearNrcConditions(controller),
+      0x11 || 0x12 => l10n.dtcClearNrcUnsupported(controller),
+      0x21 => l10n.dtcClearNrcBusy(controller),
+      0x33 => l10n.dtcClearNrcSecurity(controller),
+      _ => l10n.dtcClearNrcOther(
+          controller,
+          '0x${nrc.toRadixString(16).toUpperCase().padLeft(2, '0')}',
+        ),
+    };
+  }
+  if (failure.silentSources.isNotEmpty) {
+    return l10n.dtcClearSilentControllers(
+      failure.silentSources.length,
+      failure.silentSources.join(', '),
+    );
+  }
   return failure.repeatWouldHarm
       ? l10n.dtcClearFailureDoNotRepeat
       : l10n.dtcClearFailureGeneric;

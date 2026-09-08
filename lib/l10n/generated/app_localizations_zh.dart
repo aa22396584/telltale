@@ -3628,6 +3628,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectBleScanUnclassified => 'BLE 搜尋失敗。';
+
+  @override
+  String dtcClearNrcConditions(String controller) {
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearNrcUnsupported(String controller) {
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。';
+  }
+
+  @override
+  String dtcClearNrcBusy(String controller) {
+    return '$controller 目前忙碌中。請稍候再掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearNrcSecurity(String controller) {
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。';
+  }
+
+  @override
+  String dtcClearNrcOther(String controller, String code) {
+    return '$controller 拒絕清除（原因碼 $code）。請重新掃描確認還留下什麼。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearSilentControllers(int count, String controllers) {
+    return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7253,4 +7283,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectBleScanUnclassified => 'BLE 搜尋失敗。';
+
+  @override
+  String dtcClearNrcConditions(String controller) {
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearNrcUnsupported(String controller) {
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。';
+  }
+
+  @override
+  String dtcClearNrcBusy(String controller) {
+    return '$controller 目前忙碌中。請稍候再掃描。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearNrcSecurity(String controller) {
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。';
+  }
+
+  @override
+  String dtcClearNrcOther(String controller, String code) {
+    return '$controller 拒絕清除（原因碼 $code）。請重新掃描確認還留下什麼。若其他控制器可能已經清除，不要再送一次全車清除。';
+  }
+
+  @override
+  String dtcClearSilentControllers(int count, String controllers) {
+    return '有 $count 個控制器沒有回應清除指令（$controllers）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。';
+  }
 }

@@ -62,6 +62,20 @@ void main() {
     expect(code.contains(r'_scanError = "$e"'), isFalse);
   });
 
+  test('classic tier notes do not interpolate plugin error.message', () {
+    final code = _code('lib/obd/transport/classic_transport.dart');
+    expect(code.contains('error.message'), isFalse);
+  });
+
+  test('clear disconnect copy does not interpolate TransportException.message',
+      () {
+    final code = _code('lib/obd/polling_engine.dart');
+    expect(
+      code.contains(r'e is TransportException ? e.message : e'),
+      isFalse,
+    );
+  });
+
   test('the BLE scan panel does not interpolate userFacingScanFailure', () {
     final code = _code('lib/ui/screens/connect/connect_screen.dart');
     expect(code.contains('userFacingScanFailure'), isFalse);
