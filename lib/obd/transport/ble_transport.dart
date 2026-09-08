@@ -276,12 +276,13 @@ class BleTransport extends BaseObdTransport {
         // stream to observe it stopping. This deadline is the only thing that
         // ends the scan, so it must be armed unconditionally.
         deadline = Timer(timeout, () => unawaited(close()));
-      } on Object catch (e) {
+      } on Object catch (e, stack) {
         if (!cancelled && !controller.isClosed) {
           controller.addError(
             e is BleRadioUnavailableException
                 ? e
                 : BleRadioUnavailableException.fromScanError(e),
+            stack,
           );
         }
         await close();

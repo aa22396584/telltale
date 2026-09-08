@@ -1116,7 +1116,7 @@ abstract class AppLocalizations {
   /// DtcReadException on the clear path with repeatWouldHarm, when there is no TransportIssue. Names the harm, not the engine's Traditional Chinese sentence.
   ///
   /// In en, this message translates to:
-  /// **'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.'**
+  /// **'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that may already have cleared. Rescan to see what is left.'**
   String get dtcClearFailureDoNotRepeat;
 
   /// DtcReadException on the clear path without repeatWouldHarm and without a TransportIssue. Does not invite a blind retry and does not interpolate the engine sentence.
@@ -6513,31 +6513,31 @@ abstract class AppLocalizations {
   /// ISO 14229 NRC 0x22 on Mode 04 when another controller may already have cleared.
   ///
   /// In en, this message translates to:
-  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.'**
+  /// **'{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared.'**
   String dtcClearNrcConditionsDoNotRepeat(String controller);
 
   /// No description provided for @dtcClearNrcUnsupportedDoNotRepeat.
   ///
   /// In en, this message translates to:
-  /// **'{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  /// **'{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required. Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared. Rescan to see which codes remain.'**
   String dtcClearNrcUnsupportedDoNotRepeat(String controller);
 
   /// No description provided for @dtcClearNrcBusyDoNotRepeat.
   ///
   /// In en, this message translates to:
-  /// **'{controller} is busy. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  /// **'{controller} is busy. Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared. Rescan to see which codes remain.'**
   String dtcClearNrcBusyDoNotRepeat(String controller);
 
   /// No description provided for @dtcClearNrcSecurityDoNotRepeat.
   ///
   /// In en, this message translates to:
-  /// **'{controller} requires security access before it will clear. Manufacturer or dealer equipment is required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.'**
+  /// **'{controller} requires security access before it will clear. Manufacturer or dealer equipment is required. Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared.'**
   String dtcClearNrcSecurityDoNotRepeat(String controller);
 
   /// No description provided for @dtcClearNrcOtherDoNotRepeat.
   ///
   /// In en, this message translates to:
-  /// **'{controller} refused the clear (reason code {code}). Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.'**
+  /// **'{controller} refused the clear (reason code {code}). Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared. Rescan to see which codes remain.'**
   String dtcClearNrcOtherDoNotRepeat(String controller, String code);
 }
 
