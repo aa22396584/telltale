@@ -8,7 +8,8 @@ caller's checkout is left untouched. If the isolate path already exists,
 the runner refuses rather than resetting it. Combined with `--dry-run` it
 does not create a worktree; required evidence is read from git blobs at
 that SHA instead of the caller's dirty tree. `--review` re-runs a completed
-author handoff and writes `review.json`; it cannot be dry-run.
+author handoff and writes `review.json` beside it, or `reviewer.json` when
+the author path is already named `review.json`; it cannot be dry-run.
 """
 from __future__ import annotations
 
@@ -792,7 +793,10 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--review",
         action="store_true",
-        help="re-run a completed author handoff; writes review.json",
+        help=(
+            "re-run a completed author handoff; writes review.json, or "
+            "reviewer.json if the author path is already named review.json"
+        ),
     )
     args = parser.parse_args(argv[1:])
     try:

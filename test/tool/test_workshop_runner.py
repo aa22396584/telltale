@@ -77,6 +77,19 @@ def _plan(
 
 
 class RunTaskTest(unittest.TestCase):
+    def test_review_help_documents_reviewer_json_fallback(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "tool" / "workshop" / "run_task.py"), "-h"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0)
+        self.assertIn("reviewer.json", completed.stdout)
+        self.assertIn("review.json", completed.stdout)
+        readme = (ROOT / "tool" / "workshop" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("reviewer.json", readme)
+
     def test_success_writes_completed_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
