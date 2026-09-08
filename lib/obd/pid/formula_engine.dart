@@ -1012,10 +1012,12 @@ class FormulaEngine {
 
   static FormulaException? _evaluateAuthoring(
     String equation,
-    List<int> sampleBytes,
-  ) {
+    List<int> sampleBytes, {
+    double valStandIn = 1,
+  }) {
     try {
-      final engine = FormulaEngine()..seedForAuthoring(equation);
+      final engine = FormulaEngine()
+        ..seedForAuthoring(equation, sample: valStandIn);
       engine.evaluateBytes(
         equation,
         sampleBytes,
@@ -1046,14 +1048,26 @@ class FormulaEngine {
     // A formula undefined only at a uniform stand-in (`1/(A-1)`, `1/(A-B)`)
     // is still well-formed. `A/0` fails every probe and stays rejected.
     if (sampleBytes != null || !_isProbeDomain(first.issue)) return first;
-    for (final probe in [
+    // Constant 1 is also the VAL{} stand-in. `1/(VAL{010C}-1)` is defined at
+    // 2 and at the editor's preview stand-in of 100. `A/0` fails every pair.
+    const standIns = <double>[1, 2, 100];
+    final probes = <List<int>>[
+      primary,
       List<int>.filled(14, 2),
       List<int>.generate(14, (i) => i + 1),
       List<int>.generate(14, (i) => 14 - i),
-    ]) {
-      final retry = _evaluateAuthoring(equation, probe);
-      if (retry == null) return null;
-      if (!_isProbeDomain(retry.issue)) return retry;
+    ];
+    for (final probe in probes) {
+      for (final standIn in standIns) {
+        if (identical(probe, primary) && standIn == 1) continue;
+        final retry = _evaluateAuthoring(
+          equation,
+          probe,
+          valStandIn: standIn,
+        );
+        if (retry == null) return null;
+        if (!_isProbeDomain(retry.issue)) return retry;
+      }
     }
     return first;
   }
