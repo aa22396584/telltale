@@ -192,24 +192,26 @@ class _WorkspaceToolbar extends StatelessWidget {
         final stack = constraints.maxWidth < 430 || scale > 1.35;
         final switcher = ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
-          child: SegmentedButton<DashboardWorkspaceMode>(
+          child: RepaintBoundary(
             key: const ValueKey('dashboard-workspace-switch'),
-            segments: [
-              ButtonSegment(
-                value: DashboardWorkspaceMode.gauges,
-                icon: const Icon(Icons.speed, size: 18),
-                label: Text(l10n.dashboardWorkspaceGauges),
-              ),
-              ButtonSegment(
-                value: DashboardWorkspaceMode.trends,
-                icon: const Icon(Icons.show_chart, size: 18),
-                label: Text(l10n.dashboardWorkspaceTrends),
-              ),
-            ],
-            selected: {mode},
-            expandedInsets: EdgeInsets.zero,
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) => onModeChanged(selection.first),
+            child: SegmentedButton<DashboardWorkspaceMode>(
+              segments: [
+                ButtonSegment(
+                  value: DashboardWorkspaceMode.gauges,
+                  icon: const Icon(Icons.speed, size: 18),
+                  label: Text(l10n.dashboardWorkspaceGauges),
+                ),
+                ButtonSegment(
+                  value: DashboardWorkspaceMode.trends,
+                  icon: const Icon(Icons.show_chart, size: 18),
+                  label: Text(l10n.dashboardWorkspaceTrends),
+                ),
+              ],
+              selected: {mode},
+              expandedInsets: EdgeInsets.zero,
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) => onModeChanged(selection.first),
+            ),
           ),
         );
         final history = Column(
@@ -345,9 +347,7 @@ String? _gaugeFootnote(
     PidFault.refusedUnsafeService => l10n.telemetryStatusUnsafeServiceRefusal,
     PidFault.unsupported || null => null,
   };
-  final badge = status.badges.isEmpty
-      ? null
-      : datumBadgeText(l10n, status);
+  final badge = status.badges.isEmpty ? null : datumBadgeText(l10n, status);
   if (faultLabel != null && badge != null) return '$badge · $faultLabel';
   return faultLabel ?? badge;
 }
@@ -703,9 +703,7 @@ class PollingModePill extends StatelessWidget {
               heightFactor: 1,
               child: StatusPill(
                 label: label,
-                icon: grouping
-                    ? Icons.fast_forward
-                    : Icons.slow_motion_video,
+                icon: grouping ? Icons.fast_forward : Icons.slow_motion_video,
                 tone: grouping ? StatusTone.good : StatusTone.warn,
               ),
             ),
