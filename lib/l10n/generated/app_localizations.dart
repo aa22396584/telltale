@@ -6647,6 +6647,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This step failed with an unexpected error. The full error is kept in the transcript.'**
   String get handshakeNoteUnexpected;
+
+  /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.
+  ///
+  /// In en, this message translates to:
+  /// **'{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.'**
+  String pidFormulaUnsupportedConstruct(String term);
+
+  /// PidCsvIssue.rowFormulaRejected. {line} is the 1-based spreadsheet line. {reason} is already-rendered formulaIssueText.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: {reason}'**
+  String pidImportRowFormulaRejected(int line, String reason);
 }
 
 class _AppLocalizationsDelegate

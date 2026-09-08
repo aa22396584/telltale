@@ -71,5 +71,8 @@ String? formulaIssueText(AppLocalizations l10n, FormulaException exception) {
       l10n.pidFormulaDependencyTwoDefinitions(exception.pidKey ?? ''),
     FormulaIssue.dependencyNotYetMeasured =>
       l10n.pidFormulaDependencyNotYetMeasured(exception.pidKey ?? ''),
+    FormulaIssue.unsupportedConstruct => l10n.pidFormulaUnsupportedConstruct(
+      exception.term ?? exception.source,
+    ),
   };
 }

@@ -95,6 +95,9 @@ const _formulaEnglish = <FormulaIssue, String>{
       'taking a gauge off the dashboard does not stop them.',
   FormulaIssue.dependencyNotYetMeasured:
       'No usable value has been read for 0133 yet.',
+  FormulaIssue.unsupportedConstruct:
+      'A@B is a Torque function this dialect does not implement, so the '
+      'formula cannot be evaluated here.',
 };
 
 const _formulaChinese = <FormulaIssue, String>{
@@ -120,6 +123,7 @@ const _formulaChinese = <FormulaIssue, String>{
       '有兩個定義同時解讀 0133，數值可能是其中任何一個，因此無法採用。請讓其中一個改用不同的模式+PID。'
       '注意：推算數值需要的 PID（010B、010C、010D）本 App 一定會讀取，把面板上的錶移掉不會停止讀取它們。',
   FormulaIssue.dependencyNotYetMeasured: '尚未取得相依 PID 0133 的有效數值。',
+  FormulaIssue.unsupportedConstruct: 'A@B 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。',
 };
 
 /// The [PidRejectionReason] each [PidRejection] is rendered from.
@@ -156,8 +160,7 @@ const _rejectionEnglish = <PidRejection, String>{
   PidRejection.maxNotFinite: 'The upper bound has to be a finite number.',
   PidRejection.redlineNotANumber:
       'The redline start “7EG” is not a valid number.',
-  PidRejection.redlineNotFinite:
-      'The redline start has to be a finite number.',
+  PidRejection.redlineNotFinite: 'The redline start has to be a finite number.',
   PidRejection.maxNotAboveMin:
       'The upper bound has to be greater than the lower bound.',
 };
@@ -167,11 +170,14 @@ const _rejectionChinese = <PidRejection, String>{
   PidRejection.serviceNotReadOnly:
       '服務 2F 不是唯讀查詢，不能週期性發送到車上。'
       '只允許 01、02、09、22（現值、凍結幀、車輛資訊、ReadDataByIdentifier）。',
-  PidRejection.freezeFrameNeedsFrame: '凍結幀查詢需要 PID 與幀編號兩個位元組，例如 020500（PID 05、第 0 幀）。',
-  PidRejection.identifierNeedsTwoBytes: 'ReadDataByIdentifier 需要兩個位元組的識別碼，例如 221101。',
+  PidRejection.freezeFrameNeedsFrame:
+      '凍結幀查詢需要 PID 與幀編號兩個位元組，例如 020500（PID 05、第 0 幀）。',
+  PidRejection.identifierNeedsTwoBytes:
+      'ReadDataByIdentifier 需要兩個位元組的識別碼，例如 221101。',
   PidRejection.identifierWrongLength: '服務 2F 的查詢需要 1 個位元組的識別碼。',
   PidRejection.nameRequired: '請輸入名稱。',
-  PidRejection.invalidHeader: '「7EG」不是有效的標頭（11-bit CAN 為 3 碼、舊協定為 6 碼、29-bit CAN 為 8 碼）。',
+  PidRejection.invalidHeader:
+      '「7EG」不是有效的標頭（11-bit CAN 為 3 碼、舊協定為 6 碼、29-bit CAN 為 8 碼）。',
   PidRejection.boundsRequired: '請填寫量程的上下限。',
   PidRejection.minNotANumber: '量程下限「7EG」不是有效的數值。',
   PidRejection.maxNotANumber: '量程上限「7EG」不是有效的數值。',
@@ -196,6 +202,7 @@ PidCsvDiagnostic _reported(PidCsvIssue issue) => PidCsvDiagnostic(
   rejection: const PidRejectionReason(PidRejection.nameRequired),
   minValue: 0,
   maxValue: 100,
+  preflight: _thrown(FormulaIssue.unsupportedConstruct),
 );
 
 const _importEnglish = <PidCsvIssue, String>{
@@ -220,20 +227,26 @@ const _importEnglish = <PidCsvIssue, String>{
       'this scale suits this sensor.',
   PidCsvIssue.nothingImportable:
       'The file has rows in it, but none of them is a PID definition.',
+  PidCsvIssue.rowFormulaRejected:
+      'Row 7: A@B is a Torque function this dialect does not implement, so '
+      'the formula cannot be evaluated here.',
 };
 
 const _importChinese = <PidCsvIssue, String>{
   PidCsvIssue.malformedCsv: '這個檔案無法以 CSV 讀取：22-11O1',
   PidCsvIssue.noRows: '檔案沒有任何資料列。',
-  PidCsvIssue.duplicateHeaderColumns: '標題列有重複的欄位名稱：Equation、Header。無法判斷該用哪一欄，請先修正檔案。',
+  PidCsvIssue.duplicateHeaderColumns:
+      '標題列有重複的欄位名稱：Equation、Header。無法判斷該用哪一欄，請先修正檔案。',
   PidCsvIssue.missingRequiredColumns:
       '標題列缺少必要欄位：Equation、Header。Name、ModeAndPID、Equation 都是必要的。',
   PidCsvIssue.rowTooFewColumns: '第 7 行：欄位不足，至少需要名稱、簡稱、PID、公式。',
-  PidCsvIssue.rowInvalidModeAndPid: '第 7 行：「22-11O1」不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。',
+  PidCsvIssue.rowInvalidModeAndPid:
+      '第 7 行：「22-11O1」不是有效的模式+PID（只接受十六進位字元，且位元組須成對）。',
   PidCsvIssue.rowEmptyEquation: '第 7 行：公式為空。',
   PidCsvIssue.rowDefinitionRejected: '第 7 行：請輸入名稱。',
   PidCsvIssue.rowRangeDefaulted: '第 7 行：量程留空，已套用預設 0.0–100.0。請確認這個刻度適合這個感測器。',
   PidCsvIssue.nothingImportable: '檔案裡有資料列，但沒有任何一列是 PID 定義。',
+  PidCsvIssue.rowFormulaRejected: '第 7 行：A@B 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。',
 };
 
 void main() {
@@ -255,7 +268,8 @@ void main() {
       expect(
         expected.keys.toSet(),
         values.toSet(),
-        reason: 'the hand-typed $language table for $what is out of step with '
+        reason:
+            'the hand-typed $language table for $what is out of step with '
             'the enum; a new value needs a sentence typed for it here',
       );
       for (final value in values) {
@@ -271,18 +285,54 @@ void main() {
   String import(AppLocalizations l10n, PidCsvIssue issue) =>
       pidCsvDiagnosticText(l10n, _reported(issue));
 
-  handTyped('formula copy', 'English', en, FormulaIssue.values,
-      _formulaEnglish, formula);
-  handTyped('formula copy', 'Traditional Chinese', zh, FormulaIssue.values,
-      _formulaChinese, formula);
-  handTyped('rejection copy', 'English', en, PidRejection.values,
-      _rejectionEnglish, rejection);
-  handTyped('rejection copy', 'Traditional Chinese', zh, PidRejection.values,
-      _rejectionChinese, rejection);
-  handTyped('import copy', 'English', en, PidCsvIssue.values, _importEnglish,
-      import);
-  handTyped('import copy', 'Traditional Chinese', zh, PidCsvIssue.values,
-      _importChinese, import);
+  handTyped(
+    'formula copy',
+    'English',
+    en,
+    FormulaIssue.values,
+    _formulaEnglish,
+    formula,
+  );
+  handTyped(
+    'formula copy',
+    'Traditional Chinese',
+    zh,
+    FormulaIssue.values,
+    _formulaChinese,
+    formula,
+  );
+  handTyped(
+    'rejection copy',
+    'English',
+    en,
+    PidRejection.values,
+    _rejectionEnglish,
+    rejection,
+  );
+  handTyped(
+    'rejection copy',
+    'Traditional Chinese',
+    zh,
+    PidRejection.values,
+    _rejectionChinese,
+    rejection,
+  );
+  handTyped(
+    'import copy',
+    'English',
+    en,
+    PidCsvIssue.values,
+    _importEnglish,
+    import,
+  );
+  handTyped(
+    'import copy',
+    'Traditional Chinese',
+    zh,
+    PidCsvIssue.values,
+    _importChinese,
+    import,
+  );
 
   test('a null identifier renders nothing rather than the engine sentence', () {
     // The editor maps a null identifier to `pidFormulaUnidentified`, not
@@ -307,7 +357,8 @@ void main() {
         expect(
           chinese.hasMatch(text),
           isFalse,
-          reason: 'left behind while the words around it were translated: '
+          reason:
+              'left behind while the words around it were translated: '
               '${chineseIn(text)} in $text',
         );
       }
@@ -317,7 +368,10 @@ void main() {
       // The defect this repo has already shipped once: every word translated
       // and the separator left as an ideographic comma, so an English reader
       // got `01、02、09、22`.
-      expect(rejection(en, PidRejection.serviceNotReadOnly), contains('01, 02'));
+      expect(
+        rejection(en, PidRejection.serviceNotReadOnly),
+        contains('01, 02'),
+      );
       expect(rejection(zh, PidRejection.serviceNotReadOnly), contains('01、02'));
     });
 
