@@ -80,7 +80,7 @@ class PidCsvDiagnostic {
     this.rejection,
     this.minValue,
     this.maxValue,
-    this.formula,
+    this.preflight,
   });
 
   final PidCsvIssue issue;
@@ -107,7 +107,11 @@ class PidCsvDiagnostic {
 
   /// The shared formula preflight's own answer, for
   /// [PidCsvIssue.rowFormulaRejected].
-  final FormulaException? formula;
+  ///
+  /// Named `preflight`, not `formula`: `lib/ui` is forbidden from reading
+  /// `.formula` because that member on [DatumStatus] is a frozen export
+  /// string. See `test/l10n/export_labels_stay_off_screen_test.dart`.
+  final FormulaException? preflight;
 }
 
 class PidCsvResult {
@@ -469,7 +473,7 @@ abstract final class PidCsv {
           PidCsvDiagnostic(
             PidCsvIssue.rowFormulaRejected,
             lineNumber: lineNumber,
-            formula: formula,
+            preflight: formula,
           ),
         );
         continue;

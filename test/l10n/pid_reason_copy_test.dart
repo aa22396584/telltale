@@ -202,7 +202,7 @@ PidCsvDiagnostic _reported(PidCsvIssue issue) => PidCsvDiagnostic(
   rejection: const PidRejectionReason(PidRejection.nameRequired),
   minValue: 0,
   maxValue: 100,
-  formula: _thrown(FormulaIssue.unsupportedConstruct),
+  preflight: _thrown(FormulaIssue.unsupportedConstruct),
 );
 
 const _importEnglish = <PidCsvIssue, String>{

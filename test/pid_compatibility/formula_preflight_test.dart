@@ -66,10 +66,10 @@ void main() {
     expect(result.errors.single.issue, PidCsvIssue.rowFormulaRejected);
     expect(result.errors.single.lineNumber, 3);
     expect(
-      result.errors.single.formula!.issue,
+      result.errors.single.preflight!.issue,
       FormulaIssue.unsupportedConstruct,
     );
-    expect(result.errors.single.formula!.term, 'LOOKUP');
+    expect(result.errors.single.preflight!.term, 'LOOKUP');
   });
 
   test('a missing live VAL reading is not an import syntax error', () {

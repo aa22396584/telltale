@@ -81,9 +81,9 @@ String pidCsvDiagnosticText(
     PidCsvIssue.nothingImportable => l10n.pidImportNothingImportable,
     PidCsvIssue.rowFormulaRejected => l10n.pidImportRowFormulaRejected(
       diagnostic.lineNumber ?? 0,
-      diagnostic.formula == null
+      diagnostic.preflight == null
           ? l10n.pidFormulaUnidentified
-          : formulaIssueText(l10n, diagnostic.formula!) ??
+          : formulaIssueText(l10n, diagnostic.preflight!) ??
                 l10n.pidFormulaUnidentified,
     ),
   };

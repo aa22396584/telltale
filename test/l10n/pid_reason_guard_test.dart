@@ -105,7 +105,7 @@ const _dataCarried = <String, List<String>>{
   'PidCsvIssue.rowEmptyEquation': ['lineNumber:'],
   'PidCsvIssue.rowDefinitionRejected': ['lineNumber:', 'rejection:'],
   'PidCsvIssue.rowRangeDefaulted': ['lineNumber:', 'minValue:', 'maxValue:'],
-  'PidCsvIssue.rowFormulaRejected': ['lineNumber:', 'formula:'],
+  'PidCsvIssue.rowFormulaRejected': ['lineNumber:', 'preflight:'],
 };
 
 /// One construction found in the source: where it is, and its top-level
