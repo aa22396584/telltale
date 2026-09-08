@@ -282,6 +282,11 @@ class PollingEngine {
   final Map<String, PidFault> _faults = {};
 
   List<Pid> _active = const [];
+
+  /// Definitions retained by recording/trip/alert leases after the dashboard
+  /// set no longer includes them. Dashboard leases are rebuilt from [_active];
+  /// these survive [setActivePids].
+  final Map<String, Pid> _leasedDefinitions = {};
   Set<String>? _supported;
   ObdCapabilityDiscoveryPhase _capabilityPhase =
       ObdCapabilityDiscoveryPhase.notStarted;
@@ -466,11 +471,6 @@ class PollingEngine {
             authorizedProfilePidIds.contains(pid.id))
           pid.id: pid,
     };
-    _authorizedProfileDefinitions = Map.unmodifiable({
-      for (final pid in merged.values)
-        if (pid.ownerProfileId != null) pid.id: pid,
-    });
-
     // Requests already queued were built from the definitions being replaced.
     // Stamping the generation stopped an *in-flight* reply from writing back,
     // and left the queue itself full of work nobody asked for any more — a
@@ -490,9 +490,20 @@ class PollingEngine {
     // dashboard set dropped every queued one of them on each edit — so
     // changing a gauge's name restarted the schedule for speed, MAP and the
     // rest, which is the churn this was written to avoid.
-    scheduler.retireQueuedRequests(merged);
+    //
+    // Held recording/trip/alert definitions are live even when the dashboard
+    // no longer lists them, so retirement and the profile sink guard both
+    // see [_scheduledDefinitions], not the dashboard set alone.
     _active = List.unmodifiable(merged.values);
     _syncDashboardLeases();
+    final live = {
+      for (final pid in _scheduledDefinitions()) pid.id: pid,
+    };
+    _authorizedProfileDefinitions = Map.unmodifiable({
+      for (final pid in live.values)
+        if (pid.ownerProfileId != null) pid.id: pid,
+    });
+    scheduler.retireQueuedRequests(live);
 
     // Ambiguity is a property of what is being polled, so it is recomputed
     // with the poll set. Two definitions of one hex on one controller make a
@@ -502,11 +513,68 @@ class PollingEngine {
     formula.clearCache();
 
     // Drop faults for PIDs no longer polled so re-adding one retries it.
-    final activeIds = {...merged.keys, ...rejectedProfiles.keys};
-    _faults.removeWhere((id, _) => !activeIds.contains(id));
+    final liveIds = {...live.keys, ...rejectedProfiles.keys};
+    _faults.removeWhere((id, _) => !liveIds.contains(id));
     for (final pid in rejectedProfiles.values) {
       _invalidate(pid.id, PidFault.refusedUnsafeService);
     }
+  }
+
+  /// Keeps [definition] scheduled for as long as [demand] is held.
+  ///
+  /// Dashboard leases are rebuilt from [setActivePids]. A recording, trip or
+  /// alert owner can outlive the gauge set; without retaining the Pid object,
+  /// unique-wire union still listed the lease and `_refillQueue` had nothing
+  /// to enqueue.
+  void hold(TelemetryDemand demand, Pid definition) {
+    if (demand.owner == DemandOwner.dashboard) {
+      throw ArgumentError.value(
+        demand.owner,
+        'demand.owner',
+        'dashboard leases are rebuilt from setActivePids',
+      );
+    }
+    if (definition.ownerProfileId != null &&
+        !_authorizedProfileDefinitions.containsKey(definition.id)) {
+      throw StateError(
+        'profile definition is not authorized for this connection',
+      );
+    }
+    final stored = definition.ownerProfileId != null
+        ? _authorizedProfileDefinitions[definition.id]!
+        : definition;
+    _leasedDefinitions[demand.leaseId] = stored;
+    demands.acquire(
+      TelemetryDemand(
+        owner: demand.owner,
+        leaseId: demand.leaseId,
+        header: stored.header,
+        modeAndPid: stored.modeAndPid,
+        requestedPeriod: demand.requestedPeriod,
+        priority: demand.priority,
+        definitionId: demand.definitionId ?? stored.id,
+      ),
+    );
+    _definitions++;
+    formula.clearCache();
+  }
+
+  /// Drops one recording/trip/alert lease. Other owners of the same wire
+  /// request are left in place.
+  void releaseHold(String leaseId) {
+    final removed = _leasedDefinitions.remove(leaseId);
+    demands.release(leaseId);
+    if (removed == null) return;
+    final live = {
+      for (final pid in _scheduledDefinitions()) pid.id: pid,
+    };
+    _authorizedProfileDefinitions = Map.unmodifiable({
+      for (final pid in live.values)
+        if (pid.ownerProfileId != null) pid.id: pid,
+    });
+    scheduler.retireQueuedRequests(live);
+    _definitions++;
+    formula.clearCache();
   }
 
   /// Adds the PIDs that the active formulas reference but nobody polls.
@@ -3593,7 +3661,7 @@ class PollingEngine {
         // `_running` still true, so `isRunning` lies, `start()` no-ops, and the
         // dashboard freezes with no way back short of reconnecting.
         try {
-          if (_active.isEmpty) {
+          if (_active.isEmpty && _leasedDefinitions.isEmpty) {
             await Future<void>.delayed(const Duration(milliseconds: 120));
             continue;
           }
@@ -3694,7 +3762,19 @@ class PollingEngine {
     }
   }
 
-  /// Tops the queue up with any active PID whose target interval has elapsed.
+  /// Dashboard gauges plus any definition a non-dashboard lease is holding.
+  List<Pid> _scheduledDefinitions() {
+    if (_leasedDefinitions.isEmpty) return _active;
+    final byId = <String, Pid>{
+      for (final pid in _active) pid.id: pid,
+    };
+    for (final pid in _leasedDefinitions.values) {
+      byId.putIfAbsent(pid.id, () => pid);
+    }
+    return List<Pid>.unmodifiable(byId.values);
+  }
+
+  /// Tops the queue up with any scheduled PID whose target interval has elapsed.
   void _refillQueue() {
     if (scheduler.isNotEmpty) return;
     final now = DateTime.now();
@@ -3702,7 +3782,8 @@ class PollingEngine {
       for (final demand in demands.uniqueWireRequests()) demand.wireKey: demand,
     };
     final seenWire = <String>{};
-    for (final pid in _active) {
+    final scheduled = _scheduledDefinitions();
+    for (final pid in scheduled) {
       // Demoted, not retired.
       //
       // A PID the mask denies was invalidated and then skipped forever by the
@@ -3733,7 +3814,7 @@ class PollingEngine {
       final period = union?.requestedPeriod ?? pid.priority.targetInterval;
       final priority = union?.priority ?? pid.priority;
       DateTime? last;
-      for (final sibling in _active) {
+      for (final sibling in scheduled) {
         if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
             wireKey) {
           continue;
@@ -3759,7 +3840,7 @@ class PollingEngine {
     DateTime now,
   ) {
     final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
-    for (final sibling in _active) {
+    for (final sibling in _scheduledDefinitions()) {
       if (sibling.id == source.id) continue;
       if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
           key) {
@@ -3801,7 +3882,7 @@ class PollingEngine {
 
   Iterable<Pid> _sharedWireSiblings(Pid source) {
     final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
-    return _active.where(
+    return _scheduledDefinitions().where(
       (pid) =>
           pid.id != source.id &&
           TelemetryDemand.wireKeyFor(pid.header, pid.modeAndPid) == key,
