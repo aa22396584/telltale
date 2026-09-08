@@ -314,7 +314,9 @@ class OracleGuardTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            copied = (evidence / "report.jsonl").read_bytes()
+            digest = hashlib.sha256(copied).hexdigest()
+            self.assertEqual(copied, text.encode("utf-8"))
             self.assertEqual((evidence / "report.sha256").read_text(encoding="utf-8").strip(), digest)
             self.assertEqual((evidence / "runner_exit.txt").read_text(encoding="utf-8").strip(), "0")
             attempt = json.loads((evidence / "attempt.json").read_text(encoding="utf-8"))
@@ -322,6 +324,41 @@ class OracleGuardTest(unittest.TestCase):
             self.assertEqual(attempt["expected"], 6)
             self.assertEqual(attempt["passed"], 6)
             self.assertEqual(attempt["report_sha256"], digest)
+
+    def test_evidence_hash_matches_copied_bytes_for_crlf_and_bom(self) -> None:
+        body = jsonl(visible_successes(6))
+        cases = {
+            "crlf": body.replace("\n", "\r\n").encode("utf-8"),
+            "bom": b"\xef\xbb\xbf" + body.encode("utf-8"),
+        }
+        for name, raw in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                report = Path(tmp) / "report.jsonl"
+                evidence = Path(tmp) / "evidence"
+                report.write_bytes(raw)
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT_PATH),
+                        str(report),
+                        "6",
+                        "--evidence-dir",
+                        str(evidence),
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                copied = (evidence / "report.jsonl").read_bytes()
+                self.assertEqual(copied, raw)
+                digest = hashlib.sha256(raw).hexdigest()
+                self.assertEqual(
+                    (evidence / "report.sha256").read_text(encoding="utf-8").strip(),
+                    digest,
+                )
+                attempt = json.loads((evidence / "attempt.json").read_text(encoding="utf-8"))
+                self.assertEqual(attempt["report_sha256"], digest)
+                self.assertTrue(attempt["ok"])
 
     def test_ci_oracle_job_keeps_flutter_exit_and_extracted_guard(self) -> None:
         if not CI_PATH.is_file():

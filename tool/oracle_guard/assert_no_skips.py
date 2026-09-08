@@ -66,8 +66,11 @@ def assert_oracle_report(
     evidence_dir: Path | None = None,
 ) -> tuple[int, str]:
     """Return (visible_passed, ok_message) or raise GuardError."""
-    text = report.read_text(encoding="utf-8", errors="replace").lstrip("\ufeff")
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    # Hash the file as stored. Text mode would translate CRLF and drop a BOM,
+    # so the digest would not match the bytes `shutil.copyfile` keeps.
+    raw = report.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    text = raw.decode("utf-8-sig", errors="replace")
     passed = 0
     message = ""
     error: GuardError | None = None
