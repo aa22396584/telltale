@@ -28,6 +28,7 @@ void main() {
     expect(source.contains('Local recordings'), isTrue);
     expect(source.contains('telemetry-history'), isTrue);
     expect(source.contains('telemetry-open-history'), isFalse);
+    expect(source.contains('TelemetrySessionsScreen'), isTrue);
     expect(source.contains('.pop()'), isTrue);
     expect(source.contains('locale_english'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);

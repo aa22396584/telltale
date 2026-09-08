@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
+import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
 
 import 'rig_support.dart';
 
@@ -73,11 +74,8 @@ Future<void> _openHistory(WidgetTester tester) async {
 }
 
 Future<void> _leaveHistory(WidgetTester tester) async {
-  final title = find.text('本機紀錄').evaluate().isNotEmpty
-      ? find.text('本機紀錄')
-      : find.text('Local recordings');
-  expect(title, findsWidgets);
-  Navigator.of(tester.element(title.first)).pop();
+  expect(find.byType(TelemetrySessionsScreen), findsOneWidget);
+  Navigator.of(tester.element(find.byType(TelemetrySessionsScreen))).pop();
   await tester.pump();
 }
 
@@ -92,15 +90,16 @@ void main() {
     await _stabilizeHistoryAccess(tester);
 
     await _openHistory(tester);
-    final chineseTitle = await pumpUntil(
+    final chineseRoute = await pumpUntil(
       tester,
-      () => find.text('本機紀錄').evaluate().isNotEmpty,
+      () => find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty,
     );
     expect(
-      chineseTitle,
+      chineseRoute,
       isTrue,
-      reason: 'History did not show 本機紀錄 after Demo connect',
+      reason: 'History route TelemetrySessionsScreen did not open',
     );
+    expect(find.text('本機紀錄'), findsWidgets);
 
     await _leaveHistory(tester);
     await _tapNav(tester, '設定');
@@ -124,15 +123,16 @@ void main() {
 
     await _tapNav(tester, 'Dashboard');
     await _openHistory(tester);
-    final englishTitle = await pumpUntil(
+    final englishRoute = await pumpUntil(
       tester,
-      () => find.text('Local recordings').evaluate().isNotEmpty,
+      () => find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty,
     );
     expect(
-      englishTitle,
+      englishRoute,
       isTrue,
-      reason: 'History did not show Local recordings after switching language',
+      reason: 'History route TelemetrySessionsScreen did not reopen in English',
     );
+    expect(find.text('Local recordings'), findsWidgets);
     expect(find.text('本機紀錄'), findsNothing);
   });
 }
