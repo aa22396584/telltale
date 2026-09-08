@@ -286,6 +286,41 @@ class RunTaskTest(unittest.TestCase):
                 )
             self.assertIn("not ready", str(ctx.exception))
 
+    def test_review_allows_pending_peer_waiting_on_this_task(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"].append(
+                {
+                    "id": "WS-02",
+                    "issue": 2,
+                    "issue_url": "https://github.com/ImL1s/telltale/issues/2",
+                    "priority": "P1",
+                    "status": "pending",
+                    "depends_on": [1],
+                    "writable_dirs": ["docs/workshop/ws/ws-01/"],
+                    "run_commands": [["python3", "tool/workshop/probe.py"]],
+                    "required_evidence": [],
+                    "hardware_or_license_blockers": [],
+                    "reviewer_role": "implementation",
+                    "done_criteria": "named tests pass",
+                }
+            )
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=author, timeout=5, review=True
+            )
+            self.assertEqual(code, 0)
+
     def test_review_accepts_a_completed_plan_task(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

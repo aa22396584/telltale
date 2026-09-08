@@ -344,6 +344,19 @@ def _unfinished_dependencies(data: dict[str, Any], task: dict[str, Any]) -> bool
     )
 
 
+def _peer_eligible_for_lease(data: dict[str, Any], other: dict[str, Any]) -> bool:
+    status = other.get("status")
+    if status == "in_progress":
+        return True
+    if status not in {"pending", "completed"}:
+        return False
+    if other.get("hardware_or_license_blockers"):
+        return False
+    if _unfinished_dependencies(data, other):
+        return False
+    return True
+
+
 def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
     tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
     target = next((item for item in tasks if item.get("id") == task_id), None)
@@ -353,7 +366,7 @@ def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
     for other in tasks:
         if other.get("id") == task_id:
             continue
-        if other.get("status") not in {"pending", "in_progress", "completed"}:
+        if not _peer_eligible_for_lease(data, other):
             continue
         if validate_plan._dirs_conflict(dirs, _task_writable_dirs(other)):
             return True
