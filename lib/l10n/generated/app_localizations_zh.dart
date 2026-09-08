@@ -570,7 +570,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dtcClearFailureDoNotRepeat =>
-      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
+      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
 
   @override
   String get dtcClearFailureGeneric => '清除沒有完成。請先重新掃描，看目前的故障碼，再決定要不要再試。';
@@ -3661,27 +3661,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String dtcClearNrcConditionsDoNotRepeat(String controller) {
-    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。';
   }
 
   @override
   String dtcClearNrcUnsupportedDoNotRepeat(String controller) {
-    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 
   @override
   String dtcClearNrcBusyDoNotRepeat(String controller) {
-    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 
   @override
   String dtcClearNrcSecurityDoNotRepeat(String controller) {
-    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。';
   }
 
   @override
   String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
-    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 }
 
@@ -4250,7 +4250,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dtcClearFailureDoNotRepeat =>
-      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
+      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
 
   @override
   String get dtcClearFailureGeneric => '清除沒有完成。請先重新掃描，看目前的故障碼，再決定要不要再試。';
@@ -7341,26 +7341,26 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String dtcClearNrcConditionsDoNotRepeat(String controller) {
-    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+    return '$controller 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。';
   }
 
   @override
   String dtcClearNrcUnsupportedDoNotRepeat(String controller) {
-    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 
   @override
   String dtcClearNrcBusyDoNotRepeat(String controller) {
-    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 
   @override
   String dtcClearNrcSecurityDoNotRepeat(String controller) {
-    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+    return '$controller 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。';
   }
 
   @override
   String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
-    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
+    return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
 }

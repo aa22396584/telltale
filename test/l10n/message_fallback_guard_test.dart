@@ -96,5 +96,13 @@ void main() {
       greaterThanOrEqualTo(3),
       reason: 'paired list plus both BLE scan failure paths',
     );
+    expect(code.contains('error.cause'), isTrue);
+    expect(code.contains('_bleScanFlutterError'), isTrue);
+  });
+
+  test('BLE startScan failures keep the originating stack', () {
+    final code = _code('lib/obd/transport/ble_transport.dart');
+    expect(code.contains('on Object catch (e, stack)'), isTrue);
+    expect(code.contains('on Object catch (e)'), isFalse);
   });
 }

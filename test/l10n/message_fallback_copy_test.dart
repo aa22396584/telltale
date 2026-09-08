@@ -138,7 +138,7 @@ void main() {
     expect(chinese.hasMatch(text), isFalse);
     expect(
       text,
-      'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.',
+      'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that may already have cleared. Rescan to see what is left.',
     );
   });
 
@@ -181,6 +181,8 @@ void main() {
     expect(text, contains('7E8'));
     expect(text, contains('ignition ON'));
     expect(text.toLowerCase(), contains('do not send another'));
+    expect(text, contains('may already have cleared'));
+    expect(text, isNot(contains('already finished')));
     expect(text, isNot(contains('控制器')));
   });
 
@@ -219,6 +221,8 @@ void main() {
     )!;
     expect(chinese.hasMatch(text), isFalse);
     expect(text.toLowerCase(), contains('do not send another'));
+    expect(text, contains('may already have cleared'));
+    expect(text, isNot(contains('already finished')));
     expect(text, isNot(contains('控制器')));
   });
 

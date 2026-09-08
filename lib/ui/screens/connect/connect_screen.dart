@@ -8,7 +8,8 @@ library;
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show DiagnosticsNode, DiagnosticsProperty, kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1032,6 +1033,24 @@ class _DeviceTile extends StatelessWidget {
   }
 }
 
+/// Native BLE failures arrive wrapped. The wrapper's [Object.toString] is the
+/// screen sentence; FlutterError needs the cause, or the diagnostic is no
+/// more useful than the mapped copy.
+FlutterErrorDetails _bleScanFlutterError(Object error, StackTrace stack) {
+  final cause = error is BleRadioUnavailableException ? error.cause : null;
+  return FlutterErrorDetails(
+    exception: cause ?? error,
+    stack: stack,
+    library: 'connect_screen',
+    context: ErrorDescription('BLE scan'),
+    informationCollector: cause == null
+        ? null
+        : () => <DiagnosticsNode>[
+            DiagnosticsProperty<Object>('wrapper', error),
+          ],
+  );
+}
+
 class _BleBody extends StatefulWidget {
   const _BleBody({
     required this.onConnect,
@@ -1106,14 +1125,7 @@ class _BleBodyState extends State<_BleBody> {
           });
         },
         onError: (Object e, StackTrace stack) {
-          FlutterError.reportError(
-            FlutterErrorDetails(
-              exception: e,
-              stack: stack,
-              library: 'connect_screen',
-              context: ErrorDescription('BLE scan'),
-            ),
-          );
+          FlutterError.reportError(_bleScanFlutterError(e, stack));
           if (mounted) {
             setState(
               () => _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
@@ -1130,14 +1142,7 @@ class _BleBodyState extends State<_BleBody> {
         },
       );
     } on Object catch (e, stack) {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: e,
-          stack: stack,
-          library: 'connect_screen',
-          context: ErrorDescription('BLE scan'),
-        ),
-      );
+      FlutterError.reportError(_bleScanFlutterError(e, stack));
       if (mounted) {
         setState(() {
           _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e));

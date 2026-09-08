@@ -146,7 +146,7 @@
   "dtcClearDialogUnanswered": "這次掃描有 {count} 個類別沒有得到完整回應（{categories}），可能還有你沒看到的故障碼。清除後就再也讀不到了。",
   "dtcClearCancelledBeforeSend": "清除已取消，指令還沒送出到車上。可以重新掃描後再試一次。",
   "dtcClearConfirmed": "已送出清除指令。",
-  "dtcClearFailureDoNotRepeat": "清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。",
+  "dtcClearFailureDoNotRepeat": "清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。",
   "dtcClearFailureGeneric": "清除沒有完成。請先重新掃描，看目前的故障碼，再決定要不要再試。",
   "dtcClearNotAccepted": "清除失敗，沒有控制器接受指令。可以再試一次。",
   "dtcClearPartiallyConfirmed": "已有控制器回報清除完成，但其餘控制器無法確認。不要再送一次清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認結果。",
@@ -1068,9 +1068,9 @@
   "dtcClearNrcSecurity": "{controller} 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。",
   "dtcClearNrcOther": "{controller} 拒絕清除（原因碼 {code}）。請稍候再試一次。",
   "dtcClearSilentControllers": "有 {count} 個控制器沒有回應清除指令（{controllers}）。已回應的控制器已清除，其餘可能仍有故障碼。請重新掃描，不要再送一次清除。",
-  "dtcClearNrcConditionsDoNotRepeat": "{controller} 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。",
-  "dtcClearNrcUnsupportedDoNotRepeat": "{controller} 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
-  "dtcClearNrcBusyDoNotRepeat": "{controller} 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
-  "dtcClearNrcSecurityDoNotRepeat": "{controller} 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。",
-  "dtcClearNrcOtherDoNotRepeat": "{controller} 拒絕清除（原因碼 {code}）。不要再送一次全車清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。"
+  "dtcClearNrcConditionsDoNotRepeat": "{controller} 拒絕清除，因為目前的車輛狀態不允許。多數控制器在引擎運轉時不會清除故障記憶。請將電門轉到 ON 但不要發動引擎，再重新掃描確認哪些故障碼還在。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。",
+  "dtcClearNrcUnsupportedDoNotRepeat": "{controller} 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
+  "dtcClearNrcBusyDoNotRepeat": "{controller} 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
+  "dtcClearNrcSecurityDoNotRepeat": "{controller} 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。",
+  "dtcClearNrcOtherDoNotRepeat": "{controller} 拒絕清除（原因碼 {code}）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。"
 }
