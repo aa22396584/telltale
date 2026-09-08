@@ -69,11 +69,21 @@ void main() {
     await expectLater(
       AndroidWifiRouteBinder().bindForHost('192.168.0.10'),
       throwsA(
-        isA<WifiRouteException>().having(
-          (error) => error.message,
-          'message',
-          allOf(contains('關閉另一個 Wi-Fi'), contains('2 Wi-Fi networks')),
-        ),
+        isA<WifiRouteException>()
+            .having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('關閉另一個 Wi-Fi'),
+                isNot(contains('2 Wi-Fi networks')),
+              ),
+            )
+            .having((error) => error.failure, 'failure', WifiRouteFailure.ambiguous)
+            .having(
+              (error) => error.detail,
+              'detail',
+              contains('2 Wi-Fi networks'),
+            ),
       ),
     );
   });
@@ -112,11 +122,25 @@ void main() {
     await expectLater(
       AndroidWifiRouteBinder().bindForHost('192.168.0.10'),
       throwsA(
-        isA<WifiRouteException>().having(
-          (error) => error.message,
-          'message',
-          contains('something novel'),
-        ),
+        isA<WifiRouteException>()
+            .having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('無法綁定'),
+                isNot(contains('something novel')),
+              ),
+            )
+            .having(
+              (error) => error.failure,
+              'failure',
+              WifiRouteFailure.unclassified,
+            )
+            .having(
+              (error) => error.detail,
+              'detail',
+              contains('something novel'),
+            ),
       ),
     );
   });
@@ -145,11 +169,20 @@ void main() {
     await expectLater(
       lease.release(),
       throwsA(
-        isA<WifiRouteException>().having(
-          (error) => error.message,
-          'message',
-          contains('bindProcessToNetwork(null)'),
-        ),
+        isA<WifiRouteException>()
+            .having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('無法恢復'),
+                isNot(contains('bindProcessToNetwork')),
+              ),
+            )
+            .having(
+              (error) => error.detail,
+              'detail',
+              contains('bindProcessToNetwork(null)'),
+            ),
       ),
     );
   });

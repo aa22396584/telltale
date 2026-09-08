@@ -145,14 +145,14 @@ void main() {
           '7E8': MilSummary(milOn: true, confirmedCount: 1),
         }),
         freezeFrames: const [_frame],
-        clearMessage: '已送出清除指令',
+        clearNotice: const DtcClearNotice(DtcClearNoticeKind.confirmed),
         clearWorked: true,
         clearRepeatWouldHarm: true,
       );
 
       final after = before.withoutClearMessage();
 
-      expect(after.clearMessage, isNull, reason: 'the one thing it removes');
+      expect(after.clearNotice, isNull, reason: 'the one thing it removes');
 
       expect(after.mil, same(before.mil));
       expect(after.freezeFrames, same(before.freezeFrames));

@@ -178,15 +178,15 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       );
       return (value: value, error: null);
     } on FormulaException catch (e) {
-      // `e.message` is the engine's own Traditional Chinese, kept for the
-      // diagnostics that read it and unreachable here: every throw in
-      // `formula_engine.dart` names a `FormulaIssue`, and
-      // `test/l10n/pid_reason_guard_test.dart` reads the source to keep it
-      // that way. If one ever did not, an untranslated reason under a field
-      // that is refusing to save still beats no reason at all.
-      return (value: null, error: formulaIssueText(l10n, e) ?? e.message);
-    } on Object catch (e) {
-      return (value: null, error: '$e');
+      // `e.message` is the engine's own Traditional Chinese, kept for
+      // diagnostics. The editor must not fall back to it: that is how an
+      // English field refusing to save showed Chinese (ImL1s/telltale#45).
+      return (
+        value: null,
+        error: formulaIssueText(l10n, e) ?? l10n.pidFormulaUnidentified,
+      );
+    } on Object {
+      return (value: null, error: l10n.pidFormulaUnidentified);
     }
   }
 

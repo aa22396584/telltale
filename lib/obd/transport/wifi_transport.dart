@@ -86,15 +86,23 @@ TransportIssue transportIssueForRouteFailure(WifiRouteFailure failure) =>
 
 /// A route could not be selected or restored.
 final class WifiRouteException implements Exception {
-  const WifiRouteException(this.message, this.failure);
+  const WifiRouteException(this.message, this.failure, {this.detail});
 
   final String message;
 
   /// What the screen renders. [message] is the transcript's copy.
   final WifiRouteFailure failure;
 
+  /// Native platform prose, when the binder had any. Transcript-only: the
+  /// screen maps [failure], and interpolating this into [message] is how an
+  /// English driver was shown a Chinese sentence wrapping an English
+  /// `PlatformException`.
+  final String? detail;
+
   @override
-  String toString() => 'WifiRouteException: $message';
+  String toString() => detail == null
+      ? 'WifiRouteException($failure): $message'
+      : 'WifiRouteException($failure): $message ($detail)';
 }
 
 class WifiTransport extends BaseObdTransport {
@@ -161,8 +169,7 @@ class WifiTransport extends BaseObdTransport {
       // right for only one of these. The identifier keeps them apart so the
       // screen can stop saying it to the other three.
       throw TransportException(
-        'Wi-Fi 路由設定失敗：${e.message}。無法連往 $host:$port。'
-        '若手機尚未連上轉接器的 Wi-Fi 熱點，請先連上再重試。',
+        'Wi-Fi 路由設定失敗，無法連往 $host:$port。',
         cause: e,
         issue: transportIssueForRouteFailure(e.failure),
       );

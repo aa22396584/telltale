@@ -6,13 +6,32 @@ import '../pid/priority_tier.dart';
 import 'powertrain_battery_profile.dart';
 import 'profile_catalog_validator.dart';
 
+/// Why a catalog profile could not become live PIDs.
+///
+/// [PowertrainProfileInstallException.message] stays developer prose for
+/// diagnostics. The screen maps this identifier; interpolating the message
+/// is how an English driver was shown `Cannot install: catalog snapshot
+/// carries no verified SHA-256` and a Chinese driver the same English blob
+/// inside `無法安裝：…` (ImL1s/telltale#45).
+enum PowertrainProfileInstallIssue {
+  catalogShaMissing,
+  profileNotInCatalog,
+  yearOutOfRange,
+  profileNotInstallable,
+  persistFailed,
+}
+
 final class PowertrainProfileInstallException implements Exception {
-  const PowertrainProfileInstallException(this.message);
+  const PowertrainProfileInstallException(
+    this.message, {
+    required this.issue,
+  });
 
   final String message;
+  final PowertrainProfileInstallIssue issue;
 
   @override
-  String toString() => 'PowertrainProfileInstallException: $message';
+  String toString() => 'PowertrainProfileInstallException($issue): $message';
 }
 
 abstract final class PowertrainProfilePidInstaller {
@@ -54,6 +73,7 @@ abstract final class PowertrainProfilePidInstaller {
           : 'status ${profile.status.name} is not installable';
       throw PowertrainProfileInstallException(
         '${profile.id} cannot be installed: $reason',
+        issue: PowertrainProfileInstallIssue.profileNotInstallable,
       );
     }
 

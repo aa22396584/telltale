@@ -236,7 +236,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
               ),
             ),
             // The clear's own outcome, held until the next one replaces it.
-            if (scan.clearMessage != null)
+            if (scan.clearNotice != null)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -261,7 +261,10 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                         const SizedBox(width: Spacing.md),
                         Expanded(
                           child: SelectableText(
-                            scan.clearMessage!,
+                            dtcClearNoticeText(
+                              l10n,
+                              scan.clearNotice,
+                            )!,
                             style: context.texts.bodySmall,
                           ),
                         ),
@@ -289,11 +292,12 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                     )
                   : !scan.hasScanned
                       ? EmptyState(
-                          icon: scan.error == null ? Icons.search : Icons.error_outline,
-                          title: scan.error == null
+                          icon: scan.scanBanner == null ? Icons.search : Icons.error_outline,
+                          title: scan.scanBanner == null
                               ? l10n.dtcScanTitle
                               : l10n.dtcReadFailed,
-                          message: scan.error ?? l10n.dtcScanBody,
+                          message: dtcScanBannerText(l10n, scan.scanBanner) ??
+                              l10n.dtcScanBody,
                           action: FilledButton.icon(
                             onPressed: scan.loading ? null : _rescan,
                             icon: scan.loading
@@ -306,7 +310,7 @@ class _DtcScreenState extends ConsumerState<DtcScreen> {
                             label: Text(
                               scan.loading
                                   ? l10n.dtcScanning
-                                  : (scan.error == null
+                                  : (scan.scanBanner == null
                                       ? l10n.dtcStartScan
                                       : l10n.dtcRetry),
                             ),

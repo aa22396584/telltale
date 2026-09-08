@@ -285,9 +285,9 @@ void main() {
       _importChinese, import);
 
   test('a null identifier renders nothing rather than the engine sentence', () {
-    // The editor's fallback is `?? e.message`, and it must stay unreachable
-    // for anything the guard can see. What this pins is the shape: the copy
-    // function answers null rather than quietly handing back Chinese itself.
+    // The editor maps a null identifier to `pidFormulaUnidentified`, not
+    // `e.message`. What this pins is the shape: the copy function answers
+    // null rather than quietly handing back Chinese itself.
     expect(
       formulaIssueText(
         en,

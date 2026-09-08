@@ -257,6 +257,7 @@ class PidRegistry extends Notifier<List<Pid>> {
       if (!isPowertrainCatalogSha256(snapshot.catalogSha256)) {
         throw const PowertrainProfileInstallException(
           'catalog snapshot carries no verified SHA-256',
+          issue: PowertrainProfileInstallIssue.catalogShaMissing,
         );
       }
       final profile = snapshot.catalog.profiles
@@ -265,11 +266,13 @@ class PidRegistry extends Notifier<List<Pid>> {
       if (profile == null) {
         throw PowertrainProfileInstallException(
           '$profileId is not in the verified catalog',
+          issue: PowertrainProfileInstallIssue.profileNotInCatalog,
         );
       }
       if (!profile.appliesToYear(vehicleYear)) {
         throw PowertrainProfileInstallException(
           '$vehicleYear is outside ${profile.id}\'s documented year range',
+          issue: PowertrainProfileInstallIssue.yearOutOfRange,
         );
       }
       final pids = PowertrainProfilePidInstaller.build(profile);
@@ -438,6 +441,7 @@ class PidRegistry extends Notifier<List<Pid>> {
     if (!saved) {
       throw const PowertrainProfileInstallException(
         'installed-profile references could not be persisted',
+        issue: PowertrainProfileInstallIssue.persistFailed,
       );
     }
   }

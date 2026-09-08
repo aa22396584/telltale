@@ -1101,11 +1101,89 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One category in this scan did not answer completely} other{{count} categories in this scan did not answer completely}} ({categories}), so there may be fault codes you have not seen. After a clear they can never be read again.'**
   String dtcClearDialogUnanswered(int count, Object categories);
 
+  /// DtcClearNoticeKind.cancelledBeforeSend. The lease retired before the first write; a repeat cannot harm readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear was cancelled before any command left the app. Rescan, then try again if you still want to clear.'**
+  String get dtcClearCancelledBeforeSend;
+
+  /// DtcClearNoticeKind.confirmed / ClearOutcome.confirmed. The only success sentence. Does not claim every controller erased its memory.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear command was sent.'**
+  String get dtcClearConfirmed;
+
+  /// DtcReadException on the clear path with repeatWouldHarm, when there is no TransportIssue. Names the harm, not the engine's Traditional Chinese sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.'**
+  String get dtcClearFailureDoNotRepeat;
+
+  /// DtcReadException on the clear path without repeatWouldHarm and without a TransportIssue. Does not invite a blind retry and does not interpolate the engine sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear did not finish. Rescan to see the current codes before deciding whether to try again.'**
+  String get dtcClearFailureGeneric;
+
+  /// DtcClearNoticeKind.notAccepted / ClearOutcome.notAccepted. Retry is free because nothing was transmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear failed; no controller accepted the command. You can try again.'**
+  String get dtcClearNotAccepted;
+
+  /// DtcClearNoticeKind.partiallyConfirmed / ClearOutcome.partiallyConfirmed. The load-bearing advice is not to send a second global 04.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one controller reported the clear finished, and the rest could not be confirmed. Do not send another clear — repeating it resets emissions readiness on controllers that already finished. Rescan to see the result.'**
+  String get dtcClearPartiallyConfirmed;
+
+  /// DtcClearNoticeKind.previousConnectionUnconfirmed. Survives reconnect so a live Clear is not offered over a controller that may already have erased its memory.
+  ///
+  /// In en, this message translates to:
+  /// **'A previous connection sent a clear whose result was not confirmed. Rescan first, see which codes remain, then decide whether to clear.'**
+  String get dtcClearPreviousConnectionUnconfirmed;
+
+  /// DtcClearNoticeKind.rescanSettled. Replaces the pre-rescan 'do not press Clear' sentence once the button is live again.
+  ///
+  /// In en, this message translates to:
+  /// **'The previous clear could not be fully confirmed. What follows is the actual state after this rescan.'**
+  String get dtcClearRescanSettled;
+
+  /// DtcClearNoticeKind.sentUnconfirmed / ClearOutcome.sentUnconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear command was sent, but the reply was damaged in transit, so it is not known whether the vehicle cleared. Rescan to check; do not send another clear — if it already succeeded, repeating it resets emissions readiness.'**
+  String get dtcClearSentUnconfirmed;
+
+  /// DtcClearNoticeKind.timeout. Conservative: an unknown clear must not invite a blind retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered after the clear was sent, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.'**
+  String get dtcClearTimeout;
+
+  /// DtcClearNoticeKind.unexpected. Must not interpolate a Dart exception into the sentence a driver reads at a car.
+  ///
+  /// In en, this message translates to:
+  /// **'The clear failed, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.'**
+  String get dtcClearUnexpected;
+
   /// No description provided for @dtcClearing.
   ///
   /// In en, this message translates to:
   /// **'Clearing…'**
   String get dtcClearing;
+
+  /// DtcScanBanner.disconnectedMidScan. A failed refresh must not leave a previous all-clear standing.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection dropped during the scan, so this scan did not finish.'**
+  String get dtcScanDisconnectedMidScan;
+
+  /// DtcScanBanner.interrupted. An unnamed absence and a timeout look identical otherwise.
+  ///
+  /// In en, this message translates to:
+  /// **'The scan was interrupted (the app may have been backgrounded, or the connection changed) and did not get a complete result. Scan again.'**
+  String get dtcScanInterrupted;
 
   /// A controller whose reply is lost outright leaves nothing to count as missing, and the app has no inventory of who should have answered.
   ///
@@ -2697,11 +2775,35 @@ abstract class AppLocalizations {
   /// **'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This entry is for research only and should not be installed.'**
   String get powertrainInstallDisclosureResearchOnly;
 
-  /// {reason} is a technical message raised by the installer, not copy this screen owns.
+  /// PowertrainProfileInstallIssue.catalogShaMissing. Whole sentence, not a frame around the exception message.
   ///
   /// In en, this message translates to:
-  /// **'Cannot install: {reason}'**
-  String powertrainInstallFailed(String reason);
+  /// **'Cannot install: this catalog snapshot has no verified SHA-256, so nothing in it can be trusted.'**
+  String get powertrainInstallCatalogShaMissing;
+
+  /// PowertrainProfileInstallIssue.persistFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot install: the list of installed profiles could not be saved. Try again; nothing was added to PID management.'**
+  String get powertrainInstallPersistFailed;
+
+  /// PowertrainProfileInstallIssue.profileNotInCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot install: that profile is not in the verified catalog.'**
+  String get powertrainInstallProfileNotInCatalog;
+
+  /// PowertrainProfileInstallIssue.profileNotInstallable. Validation detail stays on the exception for diagnostics; the screen must not interpolate it.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot install: this profile is not in a state that can become live PIDs.'**
+  String get powertrainInstallProfileNotInstallable;
+
+  /// PowertrainProfileInstallIssue.yearOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot install: that model year is outside this profile\'s documented year range.'**
+  String get powertrainInstallYearOutOfRange;
 
   /// No description provided for @powertrainInstallIdentityAck.
   ///
@@ -6161,6 +6263,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No usable value has been read for {key} yet.'**
   String pidFormulaDependencyNotYetMeasured(String key);
+
+  /// Editor fallback when FormulaException carries no FormulaIssue. Must never fall back to the engine's Traditional Chinese sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'This formula cannot be evaluated, and the editor has no more specific reason for it.'**
+  String get pidFormulaUnidentified;
 
   /// PidRejection.malformedModeAndPid. Deleting every non-hex character would turn a typo into a different, perfectly valid request, so this is a refusal rather than a repair.
   ///

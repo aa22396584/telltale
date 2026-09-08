@@ -73,16 +73,50 @@ class DtcCategoryResult {
       (failure?.heardAboutService.isNotEmpty ?? false);
 }
 
+/// Why a scan that did not produce results is on screen.
+///
+/// The words live in `dtc_copy.dart`. Storing a sentence here is how an
+/// English reader was shown Traditional Chinese after an interrupted scan
+/// (ImL1s/telltale#45).
+enum DtcScanBanner { interrupted, disconnectedMidScan }
+
+/// What the last clear did, as an identifier the screen translates.
+enum DtcClearNoticeKind {
+  confirmed,
+  partiallyConfirmed,
+  sentUnconfirmed,
+  notAccepted,
+  timeout,
+  cancelledBeforeSend,
+  unexpected,
+  previousConnectionUnconfirmed,
+  rescanSettled,
+  engineFailure,
+}
+
+class DtcClearNotice {
+  const DtcClearNotice(this.kind, {this.failure});
+
+  final DtcClearNoticeKind kind;
+
+  /// Present only for [DtcClearNoticeKind.engineFailure]. The screen maps
+  /// [DtcReadException.transportIssue] / [DtcReadException.kind] /
+  /// [DtcReadException.repeatWouldHarm]; it must not render [DtcReadException.message].
+  final DtcReadException? failure;
+
+  bool get isSuccess => kind == DtcClearNoticeKind.confirmed;
+}
+
 class DtcScanState {
   const DtcScanState({
     this.results = const {},
     this.scannedAt,
     this.vin,
-    this.error,
+    this.scanBanner,
     this.loading = false,
     this.optionalNotCovered = const {},
     this.clearing = false,
-    this.clearMessage,
+    this.clearNotice,
     this.clearWorked = false,
     this.clearRepeatWouldHarm = false,
     this.mil,
@@ -98,7 +132,10 @@ class DtcScanState {
   final DateTime? scannedAt;
 
   final String? vin;
-  final String? error;
+
+  /// Why this scan produced no results, or null when that is not why the
+  /// empty state is showing.
+  final DtcScanBanner? scanBanner;
   final bool loading;
 
   bool get hasScanned => scannedAt != null;
@@ -158,9 +195,9 @@ class DtcScanState {
   /// A clear is on the wire right now.
   final bool clearing;
 
-  /// What the last clear did, in the words shown to the user. Null until one
-  /// has been attempted.
-  final String? clearMessage;
+  /// What the last clear did. Null until one has been attempted. The screen
+  /// translates [DtcClearNotice.kind]; this must not be a localized sentence.
+  final DtcClearNotice? clearNotice;
 
   /// Whether that clear may be reported as having worked.
   final bool clearWorked;
@@ -199,27 +236,27 @@ class DtcScanState {
     Map<DtcKind, DtcCategoryResult>? results,
     DateTime? scannedAt,
     String? vin,
-    String? error,
+    DtcScanBanner? scanBanner,
     bool? loading,
     Map<DtcKind, Set<String>>? optionalNotCovered,
     bool? clearing,
-    String? clearMessage,
+    DtcClearNotice? clearNotice,
     bool? clearWorked,
     bool? clearRepeatWouldHarm,
     MilStatus? mil,
     List<FreezeFrame>? freezeFrames,
     bool? freezeFrameUnread,
-    bool dropClearMessage = false,
+    bool dropClearNotice = false,
   }) =>
       DtcScanState(
         results: results ?? this.results,
         scannedAt: scannedAt ?? this.scannedAt,
         vin: vin ?? this.vin,
-        error: error ?? this.error,
+        scanBanner: scanBanner ?? this.scanBanner,
         loading: loading ?? this.loading,
         optionalNotCovered: optionalNotCovered ?? this.optionalNotCovered,
         clearing: clearing ?? this.clearing,
-        clearMessage: dropClearMessage ? null : clearMessage ?? this.clearMessage,
+        clearNotice: dropClearNotice ? null : clearNotice ?? this.clearNotice,
         clearWorked: clearWorked ?? this.clearWorked,
         clearRepeatWouldHarm:
             clearRepeatWouldHarm ?? this.clearRepeatWouldHarm,
@@ -243,17 +280,20 @@ class DtcScanState {
   /// So it is replaced by the part that stays true afterwards.
   ///
   /// A successful clear rescans itself and its lock was never set, so its
-  /// sentence passes through — otherwise 已送出清除指令 would be erased by the
+  /// notice passes through — otherwise confirmed would be erased by the
   /// rescan it triggers before anybody read it.
-  String? get clearMessageAfterRescan => clearRepeatWouldHarm
-      ? '上一次清除的結果無法完全確認，以下是重新掃描後的實際狀況。'
-      : clearMessage;
+  DtcClearNotice? get clearNoticeAfterRescan => clearRepeatWouldHarm
+      ? const DtcClearNotice(DtcClearNoticeKind.rescanSettled)
+      : clearNotice;
 
   /// The same state with the clear's outcome panel dismissed.
   ///
   /// The latch is deliberately not cleared: closing a message is not the same
   /// as learning what happened, and only a rescan is.
-  DtcScanState withoutClearMessage() => copyWith(dropClearMessage: true);
+  DtcScanState withoutClearNotice() => copyWith(dropClearNotice: true);
+
+  /// Kept as the name the tests and the screen already call. Same object.
+  DtcScanState withoutClearMessage() => withoutClearNotice();
 }
 
 class DtcScanNotifier extends Notifier<DtcScanState> {
@@ -301,7 +341,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         // looking at 尚未掃描 with no sign that the vehicle had been changed.
         if (state.hasScanned || state.loading) {
           state = DtcScanState(
-            clearMessage: state.clearMessage,
+            clearNotice: state.clearNotice,
             clearWorked: state.clearWorked,
             clearRepeatWouldHarm: state.clearRepeatWouldHarm,
           );
@@ -332,8 +372,9 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         state = state.clearRepeatWouldHarm
             ? const DtcScanState(
                 clearRepeatWouldHarm: true,
-                clearMessage: '上一次連線送出過清除指令，結果沒有確認。'
-                    '請先重新掃描，確認哪些故障碼還在，再決定要不要清除。',
+                clearNotice: DtcClearNotice(
+                  DtcClearNoticeKind.previousConnectionUnconfirmed,
+                ),
               )
             : const DtcScanState();
       }
@@ -358,9 +399,8 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
   /// settle: 清除 live, no warning, over a controller that had already erased
   /// its memory.
   DtcScanState _interrupted() => DtcScanState(
-        error: '掃描在中途被中斷（可能是切換到其他 App 或連線變更），'
-            '沒有得到完整結果。請重新掃描。',
-        clearMessage: state.clearMessage,
+        scanBanner: DtcScanBanner.interrupted,
+        clearNotice: state.clearNotice,
         clearWorked: state.clearWorked,
         clearRepeatWouldHarm: state.clearRepeatWouldHarm,
       );
@@ -403,7 +443,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
       // a button rather than by itself, and the reword below then had no flag
       // left to key on. A rescan settles the clear when it produces results,
       // not when it begins.
-      clearMessage: state.clearMessage,
+      clearNotice: state.clearNotice,
       clearWorked: state.clearWorked,
       clearRepeatWouldHarm: state.clearRepeatWouldHarm,
     );
@@ -464,7 +504,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
     }
     final results = <DtcKind, DtcCategoryResult>{};
     String? vin;
-    String? fatal;
+    DtcScanBanner? fatal;
 
     // What the vehicle says about itself — asked *before* the categories, not
     // after them.
@@ -534,7 +574,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         );
       } on DtcReadException catch (e) {
         if (e.kind == DtcReadFailure.disconnected) {
-          fatal = '連線在掃描途中中斷，這次掃描沒有完成。';
+          fatal = DtcScanBanner.disconnectedMidScan;
           break;
         }
         results[kind] = DtcCategoryResult.failed(e);
@@ -542,8 +582,13 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException('讀取逾時。請確認轉接器連線穩定、車輛電門已開啟。'),
         );
-      } on Object catch (e) {
-        results[kind] = DtcCategoryResult.failed(DtcReadException('$e'));
+      } on Object {
+        results[kind] = const DtcCategoryResult.failed(
+          DtcReadException(
+            'scan failed',
+            kind: DtcReadFailure.error,
+          ),
+        );
       }
     }
 
@@ -659,10 +704,10 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
       // Keeping the old green panel while the link was down is exactly how a
       // failed refresh looked greener than an honest unknown.
       state = DtcScanState(
-        error: fatal,
+        scanBanner: fatal,
         // A rescan that could not run settles nothing, so the warning and
         // the lock both stand exactly as the clear left them.
-        clearMessage: state.clearMessage,
+        clearNotice: state.clearNotice,
         clearWorked: state.clearWorked,
         clearRepeatWouldHarm: state.clearRepeatWouldHarm,
       );
@@ -716,7 +761,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
       freezeFrames: List.unmodifiable(freezeFrames),
       freezeFrameUnread: freezeFrameUnread,
       scannedAt: DateTime.now(),
-      clearMessage: state.clearMessageAfterRescan,
+      clearNotice: state.clearNoticeAfterRescan,
       clearWorked: state.clearWorked,
           optionalNotCovered: Map.unmodifiable({
         for (final e in (session.engine?.optionalNotCovered ?? const {}).entries)
@@ -776,13 +821,13 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
 
     var worked = false;
     var repeatWouldHarm = false;
-    String message;
+    late final DtcClearNotice notice;
     try {
       final outcome = await ref.read(obdSessionProvider.notifier).clearDtcs();
       worked = outcome.isSuccess;
       repeatWouldHarm = outcome.repeatWouldHarm;
-      message = switch (outcome) {
-        ClearOutcome.confirmed => '已送出清除指令',
+      notice = DtcClearNotice(switch (outcome) {
+        ClearOutcome.confirmed => DtcClearNoticeKind.confirmed,
         // The state a boolean could not express, and the one that matters
         // most: part of the vehicle has already erased its fault memory, so
         // the worst possible advice here is "try again". A second global clear
@@ -790,46 +835,41 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         // monitors a second time — another full drive cycle before the car can
         // pass an emissions test.
         ClearOutcome.partiallyConfirmed =>
-          '已有控制器回報清除完成，但其餘控制器無法確認。'
-              '不要再送一次清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。'
-              '請重新掃描確認結果。',
+          DtcClearNoticeKind.partiallyConfirmed,
         // Transmitted, and the answer never legibly arrived. Not a failure —
         // a controller may have erased its memory and had the reply destroyed
         // on the way back — and not a success either. The rescan is what turns
         // it into something somebody can act on.
-        ClearOutcome.sentUnconfirmed =>
-          '清除指令已送出，但回應在傳輸過程中損毀，無法確認車輛是否已清除。'
-              '請重新掃描確認結果，不要直接再清除一次 —— '
-              '如果其實已經清除成功，再清一次會重置排放就緒狀態。',
-        ClearOutcome.notAccepted => '清除失敗，沒有控制器接受指令。',
-      };
+        ClearOutcome.sentUnconfirmed => DtcClearNoticeKind.sentUnconfirmed,
+        ClearOutcome.notAccepted => DtcClearNoticeKind.notAccepted,
+      });
     } on DtcReadException catch (e) {
       // A diagnosis rather than a failure — most usefully, "accepted but not
       // yet confirmed", where a blind retry would reset readiness monitors a
-      // second time.
-      message = e.message;
+      // second time. The screen maps identifiers on [e]; it must not render
+      // [DtcReadException.message].
+      notice = DtcClearNotice(DtcClearNoticeKind.engineFailure, failure: e);
       repeatWouldHarm = e.repeatWouldHarm;
     } on TimeoutException {
       // Reached only if something outside `clearDtcs` times out, since the
       // engine now classifies its own failures by whether `04` was written.
       // Conservative here because this branch no longer knows: an unknown
       // clear must not invite a blind retry.
-      message = '清除指令送出後沒有回應，無法確認是否已清除。請重新掃描確認。';
+      notice = const DtcClearNotice(DtcClearNoticeKind.timeout);
       repeatWouldHarm = true;
     } on OperationRetiredException {
       // Backgrounding the app between tapping 清除 and the exchange's first
       // write retires the lease, and `_sendNow` throws before anything is
       // transmitted. It reached the branch below and printed its own Dart
       // class name into a sentence a driver reads at a car.
-      message = '清除已取消，指令還沒送出到車上。可以重新掃描後再試一次。';
+      notice = const DtcClearNotice(DtcClearNoticeKind.cancelledBeforeSend);
       repeatWouldHarm = false;
-    } on Object catch (e) {
+    } on Object {
       // Genuinely unexpected: `clearDtcs` classifies everything it can and the
       // retired case is handled above. Conservative for the same reason the
       // timeout is — an unknown clear must not invite a blind retry — and the
-      // detail is kept, because in an unforeseen case it is the only clue, but
-      // it no longer leads the sentence.
-      message = '清除失敗，無法確認車輛是否已清除，請重新掃描確認。（$e）';
+      // Dart exception must not ride in the sentence a driver reads at a car.
+      notice = const DtcClearNotice(DtcClearNoticeKind.unexpected);
       repeatWouldHarm = true;
     }
 
@@ -852,7 +892,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
 
     state = state.copyWith(
       clearing: false,
-      clearMessage: message,
+      clearNotice: notice,
       clearWorked: worked,
       clearRepeatWouldHarm: repeatWouldHarm,
     );

@@ -74,13 +74,10 @@ import '../support/dart_source_reader.dart';
 ///     the CSV-import snackbar out of Chinese sentence fragments joined with
 ///     `、`. That is a real defect of the same family, on the PID import path
 ///     rather than this screen's refusal path, and it is a slice of its own.
-///   * `powertrain_battery_catalog_screen.dart:197`'s
-///     `l10n.powertrainInstallFailed(error.message)`, where `error.message` is
-///     English developer prose from `profile_pid_installer.dart` and
-///     `pid_registry.dart`. Mirror image of the same defect — a Chinese reader
-///     gets English — and excluded by this slice's brief. It is not a Chinese
-///     literal, so this scan would not see it either way; it is named here so
-///     the exclusion is a decision rather than an oversight.
+///   * `powertrain_battery_catalog_screen.dart`'s install catch now maps
+///     `PowertrainProfileInstallIssue` through `powertrainInstallIssueText`.
+///     The previous `l10n.powertrainInstallFailed(error.message)` interpolation
+///     is gone; this comment stays so a revert is a documented regression.
 ///   * `powertrain_battery_catalog_screen.dart:530`'s
 ///     `Text('${result.failure?.name}: ${result.detail}')` in the probe-result
 ///     dialog. Same class as the entry above, same screen, same probe path,
@@ -679,8 +676,15 @@ void main() {
         exported.add(m.group(1)!);
       }
     }
-    expect(exported, {'powertrainProbeRefusalText', 'pidMutationFailureText'},
-        reason: 'a copy function was added or renamed');
+    expect(
+      exported,
+      {
+        'powertrainProbeRefusalText',
+        'powertrainInstallIssueText',
+        'pidMutationFailureText',
+      },
+      reason: 'a copy function was added or renamed',
+    );
 
     final sites = <String>{};
     for (final entity in Directory('lib').listSync(recursive: true)) {
@@ -713,6 +717,10 @@ void main() {
       // the recording lock refusing a catalog install — same file, both locales
       'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
           '-> pidMutationFailureText x2',
+      // install catch maps PowertrainProfileInstallIssue; previously
+      // interpolated error.message. Driven by message_fallback_copy_test.dart.
+      'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
+          '-> powertrainInstallIssueText x1',
       // the recording lock on save and on confirmed delete —
       // pid_editor_test.dart
       'lib/ui/screens/pids/pid_editor_screen.dart -> pidMutationFailureText x1',

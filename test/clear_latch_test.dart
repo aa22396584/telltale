@@ -144,7 +144,7 @@ void main() {
     await scan.scan();
     await scan.clear();
     expect(container.read(dtcScanProvider).clearRepeatWouldHarm, isTrue);
-    final warning = container.read(dtcScanProvider).clearMessage;
+    final warning = container.read(dtcScanProvider).clearNotice;
 
     final rescan = scan.scan();
     _background(binding);
@@ -159,7 +159,7 @@ void main() {
     expect(after.clearRepeatWouldHarm, isTrue,
         reason: 'nothing came back from the car, so nothing was settled and '
             'the lock has not earned its release');
-    expect(after.clearMessage, warning,
+    expect(after.clearNotice, warning,
         reason: 'and the sentence is still the accurate one');
     await session.disconnect();
   });
@@ -194,7 +194,7 @@ void main() {
     await scan.clear();
     final afterClear = container.read(dtcScanProvider);
     expect(afterClear.clearRepeatWouldHarm, isTrue);
-    expect(afterClear.clearMessage, contains('不要'));
+    expect(afterClear.clearNotice?.kind, DtcClearNoticeKind.engineFailure);
 
     await scan.scan();
     final afterRescan = container.read(dtcScanProvider);
@@ -204,10 +204,10 @@ void main() {
     expect(afterRescan.clearRepeatWouldHarm, isFalse,
         reason: 'the rescan is the informed-consent gate; locking forever '
             'strands a car that can still legitimately be cleared');
-    expect(afterRescan.clearMessage, isNotNull,
+    expect(afterRescan.clearNotice, isNotNull,
         reason: 'a partial clear happened and the panel is where that is '
             'recorded');
-    expect(afterRescan.clearMessage, isNot(contains('不要')),
+    expect(afterRescan.clearNotice?.kind, DtcClearNoticeKind.rescanSettled,
         reason: 'the button is live now, so a sentence telling somebody not '
             'to press it is the app contradicting itself on the one screen '
             'where that guess costs a drive cycle');
@@ -248,8 +248,8 @@ void main() {
     await scan.scan();
 
     await scan.clear();
-    expect(container.read(dtcScanProvider).clearMessage,
-        contains('沒有控制器接受指令'));
+    expect(container.read(dtcScanProvider).clearNotice?.kind,
+        DtcClearNoticeKind.notAccepted);
     expect(container.read(dtcScanProvider).clearRepeatWouldHarm, isFalse,
         reason: 'the adapter denied transmitting, so the retry is free — this '
             'is the one outcome from which a second clear can be tapped');
@@ -259,7 +259,7 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     final during = container.read(dtcScanProvider);
     expect(during.clearing, isTrue);
-    expect(during.clearMessage, isNull,
+    expect(during.clearNotice, isNull,
         reason: "the panel describes an attempt that is over; leaving it up "
             'under 清除中… reads as this attempt having already failed');
     await second;
@@ -296,8 +296,8 @@ void main() {
         reason: 'nothing was transmitted, so there is nothing a repeat could '
             'reach — locking the button here strands a car that can still be '
             'cleared');
-    expect(after.clearMessage, isNotNull);
-    expect(after.clearMessage, isNot(contains('Exception')),
+    expect(after.clearNotice?.kind, DtcClearNoticeKind.cancelledBeforeSend);
+    expect(after.clearNotice.toString(), isNot(contains('Exception')),
         reason: 'this sentence is read at a car, not in a stack trace');
     await session.disconnect();
   });
@@ -384,9 +384,9 @@ void main() {
 
     await scan.clear();
     final after = container.read(dtcScanProvider);
-    expect(after.clearMessage, isNotNull,
+    expect(after.clearNotice, isNotNull,
         reason: 'the bytes went out; a blank panel says nothing happened');
-    expect(after.clearMessage, contains('不要'),
+    expect(after.clearNotice?.kind, DtcClearNoticeKind.engineFailure,
         reason: 'this is the sentence docs/field-guide.zh-TW.md promises for this row');
     expect(after.clearRepeatWouldHarm, isTrue,
         reason: 'and the button has to enforce it after the reconnect');
@@ -425,7 +425,7 @@ void main() {
     final offline = container.read(dtcScanProvider);
     expect(offline.hasScanned, isFalse,
         reason: 'the codes belonged to that connection');
-    expect(offline.clearMessage, isNotNull,
+    expect(offline.clearNotice, isNotNull,
         reason: 'the clear happened, and losing the link is not a reason to '
             'stop saying so');
 
@@ -436,7 +436,9 @@ void main() {
     expect(reconnected.clearRepeatWouldHarm, isTrue,
         reason: 'this is the tap that costs a drive cycle, and nothing has '
             'happened since the clear to make it safe');
-    expect(reconnected.clearMessage, contains('上一次連線'),
+    expect(
+        reconnected.clearNotice?.kind,
+        DtcClearNoticeKind.previousConnectionUnconfirmed,
         reason: 'and it says where it came from, rather than claiming to '
             'describe this connection');
     expect(reconnected.hasScanned, isFalse,
@@ -508,7 +510,7 @@ void main() {
       ),
       TransportKind.wifi,
     );
-    expect(container.read(dtcScanProvider).clearMessage, isNull,
+    expect(container.read(dtcScanProvider).clearNotice, isNull,
         reason: '已送出清除指令 over the next car\'s codes reads as a statement '
             'about this car');
     expect(container.read(dtcScanProvider).clearWorked, isFalse);
@@ -516,7 +518,7 @@ void main() {
     await scan.scan();
     final vehicleB = container.read(dtcScanProvider);
     expect(vehicleB.totalCodes, greaterThan(0));
-    expect(vehicleB.clearMessage, isNull);
+    expect(vehicleB.clearNotice, isNull);
     expect(vehicleB.clearRepeatWouldHarm, isFalse,
         reason: "B has never been cleared, so its button must work");
     await session.disconnect();
@@ -576,7 +578,7 @@ void main() {
     await inFlight;
 
     final now = container.read(dtcScanProvider);
-    expect(now.clearMessage, isNull,
+    expect(now.clearNotice, isNull,
         reason: "the outcome describes the car that is no longer there");
     expect(now.clearRepeatWouldHarm, isFalse,
         reason: "and B's button must not be locked by A's clear");
@@ -605,7 +607,7 @@ void main() {
     await scan.scan();
     await scan.clear();
     expect(container.read(dtcScanProvider).clearRepeatWouldHarm, isTrue);
-    final warning = container.read(dtcScanProvider).clearMessage;
+    final warning = container.read(dtcScanProvider).clearNotice;
 
     // Started, not awaited: this is the state the screen renders under the
     // spinner, and the tap that would go out if the lock had been dropped.
@@ -615,7 +617,7 @@ void main() {
     expect(midScan.clearRepeatWouldHarm, isTrue,
         reason: 'nothing has come back from the car yet; a rescan settles the '
             'clear when it produces results, not when it begins');
-    expect(midScan.clearMessage, warning,
+    expect(midScan.clearNotice, warning,
         reason: 'and the sentence is still the accurate one until then');
 
     await running;
@@ -638,7 +640,7 @@ void main() {
     final after = container.read(dtcScanProvider);
     expect(after.clearRepeatWouldHarm, isTrue,
         reason: '7E8 finished; a second global 04 reaches it again');
-    expect(after.clearMessage, contains('不要'),
+    expect(after.clearNotice?.kind, DtcClearNoticeKind.engineFailure,
         reason: 'and the message says so');
 
     // What tapping the tab bar does: the widget goes, the notifier stays.
@@ -665,7 +667,7 @@ void main() {
 
     scan.dismissClearMessage();
     final after = container.read(dtcScanProvider);
-    expect(after.clearMessage, isNull);
+    expect(after.clearNotice, isNull);
     expect(after.clearRepeatWouldHarm, isTrue);
     await session.disconnect();
   });
@@ -689,7 +691,7 @@ void main() {
     // But the sentence stays. A successful clear rescans itself, so wiping it
     // here would erase 已送出清除指令 before anybody read it — which is what
     // moving this state out of the widget briefly did.
-    expect(after.clearMessage, isNotNull,
+    expect(after.clearNotice, isNotNull,
         reason: 'the rescan settles the clear; it does not un-happen it');
     await session.disconnect();
   });
@@ -745,7 +747,7 @@ void main() {
     final confirmed = await outcomeOf({'04': [0x44]});
     expect(confirmed.clearWorked, isTrue);
     expect(confirmed.clearRepeatWouldHarm, isFalse);
-    expect(confirmed.clearMessage, '已送出清除指令');
+    expect(confirmed.clearNotice?.kind, DtcClearNoticeKind.confirmed);
 
     // Sent, unreadable answer: not a success, not a failure, and a repeat
     // could cost a drive cycle.
@@ -755,7 +757,7 @@ void main() {
     );
     expect(unconfirmed.clearWorked, isFalse);
     expect(unconfirmed.clearRepeatWouldHarm, isTrue);
-    expect(unconfirmed.clearMessage, contains('不要直接再清除一次'));
+    expect(unconfirmed.clearNotice?.kind, DtcClearNoticeKind.sentUnconfirmed);
 
     // Nothing transmitted: the adapter said so in its own voice, so trying
     // again is free and the button has to allow it.
@@ -765,15 +767,15 @@ void main() {
     );
     expect(refused.clearWorked, isFalse);
     expect(refused.clearRepeatWouldHarm, isFalse);
-    expect(refused.clearMessage, contains('沒有控制器接受指令'));
+    expect(refused.clearNotice?.kind, DtcClearNoticeKind.notAccepted);
 
     // And every message is distinct, which is the property that makes the
     // screen's copy worth anything.
     expect(
       {
-        confirmed.clearMessage,
-        unconfirmed.clearMessage,
-        refused.clearMessage,
+        confirmed.clearNotice?.kind,
+        unconfirmed.clearNotice?.kind,
+        refused.clearNotice?.kind,
       },
       hasLength(3),
     );

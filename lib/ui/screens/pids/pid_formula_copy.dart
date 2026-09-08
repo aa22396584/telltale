@@ -27,9 +27,9 @@ import '../../../obd/pid/formula_engine.dart';
 /// Null when the exception carries no identifier. That cannot happen from
 /// anything in this tree — `test/l10n/pid_reason_guard_test.dart` reads the
 /// source and refuses a throw that settles for `issue: null` — and the type
-/// still allows it, so the caller has to decide. The editor falls back to the
-/// engine's own sentence, on the grounds that an untranslated reason beats no
-/// reason at all under a field that is refusing to save.
+/// still allows it, so the caller has to decide. The editor maps null to
+/// [AppLocalizations.pidFormulaUnidentified] rather than the engine's
+/// Traditional Chinese sentence.
 String? formulaIssueText(AppLocalizations l10n, FormulaException exception) {
   final issue = exception.issue;
   if (issue == null) return null;

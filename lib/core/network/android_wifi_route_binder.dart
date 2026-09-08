@@ -56,11 +56,10 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
       // refusal. This is a deliberate fail-open, locked in by test.
       return const NoopWifiRouteLease();
     } on PlatformException catch (e) {
-      // These messages reach the screen inside the transport's sentence, so
-      // the known refusals get a sentence a person can act on; the raw
-      // native detail still rides along for the transcript via `toString`.
-      // Sentence and identifier come out of one switch on one code, so the
-      // transcript and the screen cannot end up describing different failures.
+      // Identifier and transcript sentence come out of one switch on one
+      // code. Native detail rides in `detail` / `toString`, never inside the
+      // sentence: interpolating `e.message` is how a localized screen still
+      // showed English platform prose (ImL1s/telltale#45).
       final (message, failure) = switch (e.code) {
         'no_wifi_network' => (
           '手機目前沒有連上任何 Wi-Fi 網路',
@@ -68,19 +67,19 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
         ),
         'ambiguous_wifi_network' => (
           '手機同時連著多個同樣可能的 Wi-Fi，無法判斷哪一個通往轉接器；'
-              '請先關閉另一個 Wi-Fi 連線（${e.message}）',
+              '請先關閉另一個 Wi-Fi 連線',
           WifiRouteFailure.ambiguous,
         ),
         'bind_refused' => (
-          '系統拒絕綁定 Wi-Fi 網路路由（${e.message}）',
+          '系統拒絕綁定 Wi-Fi 網路路由',
           WifiRouteFailure.refused,
         ),
         _ => (
-          e.message ?? '無法綁定 Wi-Fi 網路路由（${e.code}）',
+          '無法綁定 Wi-Fi 網路路由',
           WifiRouteFailure.unclassified,
         ),
       };
-      throw WifiRouteException(message, failure);
+      throw WifiRouteException(message, failure, detail: e.message);
     } on TimeoutException {
       // `Future.timeout` abandons the reply but cannot cancel the queued
       // native call: a platform thread stalled past the timeout will still
@@ -140,8 +139,9 @@ final class _AndroidWifiRouteLease implements WifiRouteLease {
       // and wrong the moment somebody threads it through, which is when a
       // restore failure would start reading "the system refused Wi-Fi".
       throw WifiRouteException(
-        e.message ?? '無法恢復系統網路路由（${e.code}）',
+        '無法恢復系統網路路由',
         WifiRouteFailure.unclassified,
+        detail: e.message,
       );
     } on TimeoutException {
       // Unlike an abandoned bind, an abandoned release needs no compensation:

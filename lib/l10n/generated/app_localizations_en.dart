@@ -608,7 +608,58 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dtcClearCancelledBeforeSend =>
+      'The clear was cancelled before any command left the app. Rescan, then try again if you still want to clear.';
+
+  @override
+  String get dtcClearConfirmed => 'The clear command was sent.';
+
+  @override
+  String get dtcClearFailureDoNotRepeat =>
+      'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.';
+
+  @override
+  String get dtcClearFailureGeneric =>
+      'The clear did not finish. Rescan to see the current codes before deciding whether to try again.';
+
+  @override
+  String get dtcClearNotAccepted =>
+      'The clear failed; no controller accepted the command. You can try again.';
+
+  @override
+  String get dtcClearPartiallyConfirmed =>
+      'At least one controller reported the clear finished, and the rest could not be confirmed. Do not send another clear — repeating it resets emissions readiness on controllers that already finished. Rescan to see the result.';
+
+  @override
+  String get dtcClearPreviousConnectionUnconfirmed =>
+      'A previous connection sent a clear whose result was not confirmed. Rescan first, see which codes remain, then decide whether to clear.';
+
+  @override
+  String get dtcClearRescanSettled =>
+      'The previous clear could not be fully confirmed. What follows is the actual state after this rescan.';
+
+  @override
+  String get dtcClearSentUnconfirmed =>
+      'The clear command was sent, but the reply was damaged in transit, so it is not known whether the vehicle cleared. Rescan to check; do not send another clear — if it already succeeded, repeating it resets emissions readiness.';
+
+  @override
+  String get dtcClearTimeout =>
+      'Nothing answered after the clear was sent, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.';
+
+  @override
+  String get dtcClearUnexpected =>
+      'The clear failed, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.';
+
+  @override
   String get dtcClearing => 'Clearing…';
+
+  @override
+  String get dtcScanDisconnectedMidScan =>
+      'The connection dropped during the scan, so this scan did not finish.';
+
+  @override
+  String get dtcScanInterrupted =>
+      'The scan was interrupted (the app may have been backgrounded, or the connection changed) and did not get a complete result. Scan again.';
 
   @override
   String get dtcCompleteCleanBody =>
@@ -1613,9 +1664,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Installing only adds read-only battery PIDs to PID management. Before any reading starts, every connection asks you to confirm on the dashboard that this car is that model. This entry is for research only and should not be installed.';
 
   @override
-  String powertrainInstallFailed(String reason) {
-    return 'Cannot install: $reason';
-  }
+  String get powertrainInstallCatalogShaMissing =>
+      'Cannot install: this catalog snapshot has no verified SHA-256, so nothing in it can be trusted.';
+
+  @override
+  String get powertrainInstallPersistFailed =>
+      'Cannot install: the list of installed profiles could not be saved. Try again; nothing was added to PID management.';
+
+  @override
+  String get powertrainInstallProfileNotInCatalog =>
+      'Cannot install: that profile is not in the verified catalog.';
+
+  @override
+  String get powertrainInstallProfileNotInstallable =>
+      'Cannot install: this profile is not in a state that can become live PIDs.';
+
+  @override
+  String get powertrainInstallYearOutOfRange =>
+      'Cannot install: that model year is outside this profile\'s documented year range.';
 
   @override
   String get powertrainInstallIdentityAck =>
@@ -3847,6 +3913,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String pidFormulaDependencyNotYetMeasured(String key) {
     return 'No usable value has been read for $key yet.';
   }
+
+  @override
+  String get pidFormulaUnidentified =>
+      'This formula cannot be evaluated, and the editor has no more specific reason for it.';
 
   @override
   String get pidRejectionMalformedModeAndPid =>

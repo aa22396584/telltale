@@ -563,7 +563,51 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dtcClearCancelledBeforeSend => '清除已取消，指令還沒送出到車上。可以重新掃描後再試一次。';
+
+  @override
+  String get dtcClearConfirmed => '已送出清除指令。';
+
+  @override
+  String get dtcClearFailureDoNotRepeat =>
+      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
+
+  @override
+  String get dtcClearFailureGeneric => '清除沒有完成。請先重新掃描，看目前的故障碼，再決定要不要再試。';
+
+  @override
+  String get dtcClearNotAccepted => '清除失敗，沒有控制器接受指令。可以再試一次。';
+
+  @override
+  String get dtcClearPartiallyConfirmed =>
+      '已有控制器回報清除完成，但其餘控制器無法確認。不要再送一次清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認結果。';
+
+  @override
+  String get dtcClearPreviousConnectionUnconfirmed =>
+      '上一次連線送出過清除指令，結果沒有確認。請先重新掃描，確認哪些故障碼還在，再決定要不要清除。';
+
+  @override
+  String get dtcClearRescanSettled => '上一次清除的結果無法完全確認，以下是重新掃描後的實際狀況。';
+
+  @override
+  String get dtcClearSentUnconfirmed =>
+      '清除指令已送出，但回應在傳輸過程中損毀，無法確認車輛是否已清除。請重新掃描確認結果，不要直接再清除一次 —— 如果其實已經清除成功，再清一次會重置排放就緒狀態。';
+
+  @override
+  String get dtcClearTimeout => '清除指令送出後沒有回應，無法確認是否已清除。請重新掃描確認。不要直接再清除一次。';
+
+  @override
+  String get dtcClearUnexpected => '清除失敗，無法確認車輛是否已清除，請重新掃描確認。不要直接再清除一次。';
+
+  @override
   String get dtcClearing => '清除中…';
+
+  @override
+  String get dtcScanDisconnectedMidScan => '連線在掃描途中中斷，這次掃描沒有完成。';
+
+  @override
+  String get dtcScanInterrupted =>
+      '掃描在中途被中斷（可能是切換到其他 App 或連線變更），沒有得到完整結果。請重新掃描。';
 
   @override
   String get dtcCompleteCleanBody => '這代表每個回覆的控制器都回報無故障碼，不代表車上每個模組都已被問到。';
@@ -1473,9 +1517,22 @@ class AppLocalizationsZh extends AppLocalizations {
       '安裝只是把唯讀電池 PID 加進 PID 管理。開始讀取前，每次連線都要在儀表板確認「這台車就是這個車型」。此列僅供研究，不應安裝。';
 
   @override
-  String powertrainInstallFailed(String reason) {
-    return '無法安裝：$reason';
-  }
+  String get powertrainInstallCatalogShaMissing =>
+      '無法安裝：這份目錄快照沒有已驗證的 SHA-256，因此其中任何內容都不能信任。';
+
+  @override
+  String get powertrainInstallPersistFailed =>
+      '無法安裝：已安裝設定檔清單無法寫入。請再試一次；PID 管理沒有新增任何項目。';
+
+  @override
+  String get powertrainInstallProfileNotInCatalog => '無法安裝：這個設定檔不在已驗證的目錄中。';
+
+  @override
+  String get powertrainInstallProfileNotInstallable =>
+      '無法安裝：這個設定檔目前不能變成實際的 PID。';
+
+  @override
+  String get powertrainInstallYearOutOfRange => '無法安裝：該年式不在這個設定檔記載的年份範圍內。';
 
   @override
   String get powertrainInstallIdentityAck => '我的車輛符合上述市場、車型與年式';
@@ -3433,6 +3490,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String pidFormulaDependencyNotYetMeasured(String key) {
     return '尚未取得相依 PID $key 的有效數值。';
   }
+
+  @override
+  String get pidFormulaUnidentified => '這個公式無法求值，而編輯器沒有更具體的原因可顯示。';
 
   @override
   String get pidRejectionMalformedModeAndPid =>
@@ -4099,7 +4159,51 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get dtcClearCancelledBeforeSend => '清除已取消，指令還沒送出到車上。可以重新掃描後再試一次。';
+
+  @override
+  String get dtcClearConfirmed => '已送出清除指令。';
+
+  @override
+  String get dtcClearFailureDoNotRepeat =>
+      '清除指令可能已經送到車上。不要再送一次 —— 第二次全車清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認還剩下什麼。';
+
+  @override
+  String get dtcClearFailureGeneric => '清除沒有完成。請先重新掃描，看目前的故障碼，再決定要不要再試。';
+
+  @override
+  String get dtcClearNotAccepted => '清除失敗，沒有控制器接受指令。可以再試一次。';
+
+  @override
+  String get dtcClearPartiallyConfirmed =>
+      '已有控制器回報清除完成，但其餘控制器無法確認。不要再送一次清除 —— 重複清除會讓已完成的控制器再一次重置排放就緒狀態。請重新掃描確認結果。';
+
+  @override
+  String get dtcClearPreviousConnectionUnconfirmed =>
+      '上一次連線送出過清除指令，結果沒有確認。請先重新掃描，確認哪些故障碼還在，再決定要不要清除。';
+
+  @override
+  String get dtcClearRescanSettled => '上一次清除的結果無法完全確認，以下是重新掃描後的實際狀況。';
+
+  @override
+  String get dtcClearSentUnconfirmed =>
+      '清除指令已送出，但回應在傳輸過程中損毀，無法確認車輛是否已清除。請重新掃描確認結果，不要直接再清除一次 —— 如果其實已經清除成功，再清一次會重置排放就緒狀態。';
+
+  @override
+  String get dtcClearTimeout => '清除指令送出後沒有回應，無法確認是否已清除。請重新掃描確認。不要直接再清除一次。';
+
+  @override
+  String get dtcClearUnexpected => '清除失敗，無法確認車輛是否已清除，請重新掃描確認。不要直接再清除一次。';
+
+  @override
   String get dtcClearing => '清除中…';
+
+  @override
+  String get dtcScanDisconnectedMidScan => '連線在掃描途中中斷，這次掃描沒有完成。';
+
+  @override
+  String get dtcScanInterrupted =>
+      '掃描在中途被中斷（可能是切換到其他 App 或連線變更），沒有得到完整結果。請重新掃描。';
 
   @override
   String get dtcCompleteCleanBody => '這代表每個回覆的控制器都回報無故障碼，不代表車上每個模組都已被問到。';
@@ -5009,9 +5113,22 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '安裝只是把唯讀電池 PID 加進 PID 管理。開始讀取前，每次連線都要在儀表板確認「這台車就是這個車型」。此列僅供研究，不應安裝。';
 
   @override
-  String powertrainInstallFailed(String reason) {
-    return '無法安裝：$reason';
-  }
+  String get powertrainInstallCatalogShaMissing =>
+      '無法安裝：這份目錄快照沒有已驗證的 SHA-256，因此其中任何內容都不能信任。';
+
+  @override
+  String get powertrainInstallPersistFailed =>
+      '無法安裝：已安裝設定檔清單無法寫入。請再試一次；PID 管理沒有新增任何項目。';
+
+  @override
+  String get powertrainInstallProfileNotInCatalog => '無法安裝：這個設定檔不在已驗證的目錄中。';
+
+  @override
+  String get powertrainInstallProfileNotInstallable =>
+      '無法安裝：這個設定檔目前不能變成實際的 PID。';
+
+  @override
+  String get powertrainInstallYearOutOfRange => '無法安裝：該年式不在這個設定檔記載的年份範圍內。';
 
   @override
   String get powertrainInstallIdentityAck => '我的車輛符合上述市場、車型與年式';
@@ -6969,6 +7086,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String pidFormulaDependencyNotYetMeasured(String key) {
     return '尚未取得相依 PID $key 的有效數值。';
   }
+
+  @override
+  String get pidFormulaUnidentified => '這個公式無法求值，而編輯器沒有更具體的原因可顯示。';
 
   @override
   String get pidRejectionMalformedModeAndPid =>

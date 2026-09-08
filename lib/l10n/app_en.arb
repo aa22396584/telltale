@@ -504,7 +504,59 @@
       "categories": {}
     }
   },
+  "dtcClearCancelledBeforeSend": "The clear was cancelled before any command left the app. Rescan, then try again if you still want to clear.",
+  "@dtcClearCancelledBeforeSend": {
+    "description": "DtcClearNoticeKind.cancelledBeforeSend. The lease retired before the first write; a repeat cannot harm readiness."
+  },
+  "dtcClearConfirmed": "The clear command was sent.",
+  "@dtcClearConfirmed": {
+    "description": "DtcClearNoticeKind.confirmed / ClearOutcome.confirmed. The only success sentence. Does not claim every controller erased its memory."
+  },
+  "dtcClearFailureDoNotRepeat": "A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.",
+  "@dtcClearFailureDoNotRepeat": {
+    "description": "DtcReadException on the clear path with repeatWouldHarm, when there is no TransportIssue. Names the harm, not the engine's Traditional Chinese sentence."
+  },
+  "dtcClearFailureGeneric": "The clear did not finish. Rescan to see the current codes before deciding whether to try again.",
+  "@dtcClearFailureGeneric": {
+    "description": "DtcReadException on the clear path without repeatWouldHarm and without a TransportIssue. Does not invite a blind retry and does not interpolate the engine sentence."
+  },
+  "dtcClearNotAccepted": "The clear failed; no controller accepted the command. You can try again.",
+  "@dtcClearNotAccepted": {
+    "description": "DtcClearNoticeKind.notAccepted / ClearOutcome.notAccepted. Retry is free because nothing was transmitted."
+  },
+  "dtcClearPartiallyConfirmed": "At least one controller reported the clear finished, and the rest could not be confirmed. Do not send another clear — repeating it resets emissions readiness on controllers that already finished. Rescan to see the result.",
+  "@dtcClearPartiallyConfirmed": {
+    "description": "DtcClearNoticeKind.partiallyConfirmed / ClearOutcome.partiallyConfirmed. The load-bearing advice is not to send a second global 04."
+  },
+  "dtcClearPreviousConnectionUnconfirmed": "A previous connection sent a clear whose result was not confirmed. Rescan first, see which codes remain, then decide whether to clear.",
+  "@dtcClearPreviousConnectionUnconfirmed": {
+    "description": "DtcClearNoticeKind.previousConnectionUnconfirmed. Survives reconnect so a live Clear is not offered over a controller that may already have erased its memory."
+  },
+  "dtcClearRescanSettled": "The previous clear could not be fully confirmed. What follows is the actual state after this rescan.",
+  "@dtcClearRescanSettled": {
+    "description": "DtcClearNoticeKind.rescanSettled. Replaces the pre-rescan 'do not press Clear' sentence once the button is live again."
+  },
+  "dtcClearSentUnconfirmed": "The clear command was sent, but the reply was damaged in transit, so it is not known whether the vehicle cleared. Rescan to check; do not send another clear — if it already succeeded, repeating it resets emissions readiness.",
+  "@dtcClearSentUnconfirmed": {
+    "description": "DtcClearNoticeKind.sentUnconfirmed / ClearOutcome.sentUnconfirmed."
+  },
+  "dtcClearTimeout": "Nothing answered after the clear was sent, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.",
+  "@dtcClearTimeout": {
+    "description": "DtcClearNoticeKind.timeout. Conservative: an unknown clear must not invite a blind retry."
+  },
+  "dtcClearUnexpected": "The clear failed, so it is not known whether the vehicle cleared. Rescan to check. Do not send another clear blindly.",
+  "@dtcClearUnexpected": {
+    "description": "DtcClearNoticeKind.unexpected. Must not interpolate a Dart exception into the sentence a driver reads at a car."
+  },
   "dtcClearing": "Clearing…",
+  "dtcScanDisconnectedMidScan": "The connection dropped during the scan, so this scan did not finish.",
+  "@dtcScanDisconnectedMidScan": {
+    "description": "DtcScanBanner.disconnectedMidScan. A failed refresh must not leave a previous all-clear standing."
+  },
+  "dtcScanInterrupted": "The scan was interrupted (the app may have been backgrounded, or the connection changed) and did not get a complete result. Scan again.",
+  "@dtcScanInterrupted": {
+    "description": "DtcScanBanner.interrupted. An unnamed absence and a timeout look identical otherwise."
+  },
   "dtcCompleteCleanBody": "That means every controller that replied reported no fault code. It does not mean every module on the vehicle was asked.",
   "@dtcCompleteCleanBody": {
     "description": "A controller whose reply is lost outright leaves nothing to count as missing, and the app has no inventory of who should have answered."
@@ -1440,14 +1492,25 @@
   "@powertrainInstallDisclosureResearchOnly": {
     "description": "PowertrainProfileStatus.researchOnly. Must never read as installable or supported."
   },
-  "powertrainInstallFailed": "Cannot install: {reason}",
-  "@powertrainInstallFailed": {
-    "description": "{reason} is a technical message raised by the installer, not copy this screen owns.",
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
+  "powertrainInstallCatalogShaMissing": "Cannot install: this catalog snapshot has no verified SHA-256, so nothing in it can be trusted.",
+  "@powertrainInstallCatalogShaMissing": {
+    "description": "PowertrainProfileInstallIssue.catalogShaMissing. Whole sentence, not a frame around the exception message."
+  },
+  "powertrainInstallPersistFailed": "Cannot install: the list of installed profiles could not be saved. Try again; nothing was added to PID management.",
+  "@powertrainInstallPersistFailed": {
+    "description": "PowertrainProfileInstallIssue.persistFailed."
+  },
+  "powertrainInstallProfileNotInCatalog": "Cannot install: that profile is not in the verified catalog.",
+  "@powertrainInstallProfileNotInCatalog": {
+    "description": "PowertrainProfileInstallIssue.profileNotInCatalog."
+  },
+  "powertrainInstallProfileNotInstallable": "Cannot install: this profile is not in a state that can become live PIDs.",
+  "@powertrainInstallProfileNotInstallable": {
+    "description": "PowertrainProfileInstallIssue.profileNotInstallable. Validation detail stays on the exception for diagnostics; the screen must not interpolate it."
+  },
+  "powertrainInstallYearOutOfRange": "Cannot install: that model year is outside this profile's documented year range.",
+  "@powertrainInstallYearOutOfRange": {
+    "description": "PowertrainProfileInstallIssue.yearOutOfRange."
   },
   "powertrainInstallIdentityAck": "My vehicle matches the market, model and model year above",
   "powertrainInstalledRemoveButton": "Installed · remove signals",
@@ -3204,6 +3267,10 @@
         "type": "String"
       }
     }
+  },
+  "pidFormulaUnidentified": "This formula cannot be evaluated, and the editor has no more specific reason for it.",
+  "@pidFormulaUnidentified": {
+    "description": "Editor fallback when FormulaException carries no FormulaIssue. Must never fall back to the engine's Traditional Chinese sentence."
   },
   "pidRejectionMalformedModeAndPid": "Not a valid mode+PID: hexadecimal characters only, in whole byte pairs.",
   "@pidRejectionMalformedModeAndPid": {
