@@ -3763,6 +3763,10 @@ class PollingEngine {
   }
 
   /// Dashboard gauges plus any definition a non-dashboard lease is holding.
+  ///
+  /// Held formulas keep their `VAL{}` / `BARO` inputs too. Dashboard
+  /// [setActivePids] already merged those into [_active]; once the gauge is
+  /// gone, only this union still sees the held equation.
   List<Pid> _scheduledDefinitions() {
     if (_leasedDefinitions.isEmpty) return _active;
     final byId = <String, Pid>{
@@ -3771,6 +3775,7 @@ class PollingEngine {
     for (final pid in _leasedDefinitions.values) {
       byId.putIfAbsent(pid.id, () => pid);
     }
+    _scheduleFormulaDependencies(byId);
     return List<Pid>.unmodifiable(byId.values);
   }
 

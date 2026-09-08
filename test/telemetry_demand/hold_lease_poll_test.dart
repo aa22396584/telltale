@@ -5,6 +5,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
+import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/pid/priority_tier.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
 import 'package:torque_obd/obd/telemetry_demand.dart';
@@ -150,7 +151,9 @@ void main() {
 
       final engine = PollingEngine(client)
         ..scheduler.fastModeEnabled = false
-        ..setActivePids(const [], includeProfileDerivedInputs: false);
+        ..setActivePids(const [
+          PidLibrary.vehicleSpeed,
+        ], includeProfileDerivedInputs: false);
       addTearDown(engine.dispose);
 
       engine.hold(_recordingLease(_rpm, leaseId: 'rec-rpm'), _rpm);
@@ -165,9 +168,17 @@ void main() {
         isEmpty,
       );
 
-      await engine.snapshots.take(3).drain<void>();
+      // Speed stays on the dashboard, so the loop still publishes. Bound the
+      // wait: after the last hold, an empty schedule would never emit.
+      await engine.snapshots
+          .take(3)
+          .timeout(const Duration(seconds: 5))
+          .drain<void>();
       final afterRelease = _sends(transport, '010C');
-      await engine.snapshots.take(5).drain<void>();
+      await engine.snapshots
+          .take(5)
+          .timeout(const Duration(seconds: 5))
+          .drain<void>();
       await engine.stop();
       expect(
         _sends(transport, '010C'),
@@ -260,6 +271,49 @@ void main() {
       expect(engine.current.readings[_soc.id]!.value, 50.0);
     },
   );
+
+  test('a held VAL{} formula keeps polling its dependency after the dashboard drops', () async {
+    final transport = FakeElm327(
+      protocol: BusProtocol.can11,
+      ecus: [
+        FakeEcu(
+          name: 'ECM',
+          requestId: '7E0',
+          responseId: '7E8',
+          responses: {
+            '0100': [0x41, 0x00, 0xBE, 0x1F, 0xA8, 0x13],
+            '0120': [0x41, 0x20, 0x80, 0x00, 0x00, 0x01],
+            '010B': [0x41, 0x0B, 0x80],
+            '010D': [0x41, 0x0D, 0x00],
+            '0133': [0x41, 0x33, 0x64],
+          },
+        ),
+      ],
+    );
+    final client = await _connect(transport);
+    addTearDown(client.dispose);
+
+    const boost = PidLibrary.boostPressure;
+    final engine = PollingEngine(client)
+      ..scheduler.fastModeEnabled = false
+      ..setActivePids(const [boost], includeProfileDerivedInputs: false);
+    addTearDown(engine.dispose);
+
+    engine.hold(_recordingLease(boost, leaseId: 'rec-boost'), boost);
+    engine.setActivePids(const [], includeProfileDerivedInputs: false);
+
+    engine.start();
+    await engine.snapshots
+        .firstWhere((snapshot) => snapshot.readings.containsKey(boost.id))
+        .timeout(const Duration(seconds: 5));
+    await engine.stop();
+    expect(
+      _sends(transport, '0133'),
+      greaterThanOrEqualTo(1),
+      reason: 'command log: ${transport.commandLog}',
+    );
+    expect(engine.current.readings[boost.id]!.value, 28);
+  });
 
   test('hold refuses an unauthorized profile definition', () async {
     final transport = _rpmTransport();
