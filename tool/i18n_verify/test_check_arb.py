@@ -141,6 +141,41 @@ class CheckArbTest(unittest.TestCase):
             zh = _write(tmp, "app_zh.arb", {"count": "{n} 項"})
             self.assertEqual(check_arb.check_files([en, zh]), [])
 
+    def test_plural_branch_text_is_not_a_placeholder_name(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            payload = {
+                "count": "{count, plural, =0{No items} other{{count} items}}",
+                "@count": {"placeholders": {"count": {"type": "int"}}},
+            }
+            en = _write(tmp, "app_en.arb", payload)
+            zh = _write(
+                tmp,
+                "app_zh.arb",
+                {
+                    "count": "{count, plural, =0{沒有項目} other{{count} 項}}",
+                },
+            )
+            self.assertEqual(check_arb.check_files([en, zh]), [])
+
+    def test_template_text_must_match_template_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            en = _write(
+                tmp,
+                "app_en.arb",
+                {
+                    "count": "{count} items",
+                    "@count": {"placeholders": {"n": {"type": "int"}}},
+                },
+            )
+            zh = _write(tmp, "app_zh.arb", {"count": "{n} 項"})
+            errors = check_arb.check_files([en, zh])
+            self.assertTrue(
+                any("text" in e and "metadata" in e for e in errors),
+                errors,
+            )
+
     def test_omitted_metadata_still_catches_icu_drift(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

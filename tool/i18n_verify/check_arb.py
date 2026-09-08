@@ -13,7 +13,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-_ICU_NAME = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)")
+# An ICU argument is `{name}` or `{name, plural|select|...}`. A plural
+# branch body like `{No items}` is not an argument: the next character
+# after the identifier must be `}` or `,`.
+_ICU_NAME = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)(?:,|\})")
 
 
 class ArbError(Exception):
@@ -105,9 +108,17 @@ def check_files(paths: list[Path]) -> list[str]:
     template = loaded[0][1]
     for key in sorted(reference_keys):
         expected_meta = _placeholders(template, key)
-        expected_names = set(expected_meta) or _icu_names(
+        template_text = (
             template.get(key) if isinstance(template.get(key), str) else ""
         )
+        template_icu = _icu_names(template_text)
+        meta_names = set(expected_meta)
+        if meta_names and template_icu and meta_names != template_icu:
+            errors.append(
+                f"{loaded[0][0].name}: placeholder names for {key} "
+                f"text {sorted(template_icu)} != metadata {sorted(meta_names)}"
+            )
+        expected_names = meta_names or template_icu
         for path, data in loaded[1:]:
             value = data.get(key)
             if not isinstance(value, str):
