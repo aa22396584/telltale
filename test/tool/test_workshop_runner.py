@@ -490,6 +490,70 @@ class RunTaskTest(unittest.TestCase):
                 _remove_worktree(repo, worktree)
             self.assertIn("isolated checkout evidence failed", str(raised.exception))
 
+    def test_dry_run_isolate_rejects_caller_evidence_missing_from_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            payload = b"caller-only\n"
+            digest = hashlib.sha256(payload).hexdigest()
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest}],
+            )
+            sha = _init_git(repo)
+            proof = repo / "docs" / "workshop" / "ws" / "ws-01" / "proof.txt"
+            proof.parent.mkdir(parents=True)
+            proof.write_bytes(payload)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    dry_run=True,
+                    base_sha=sha,
+                )
+            self.assertFalse(worktree.exists())
+            self.assertIn("isolated checkout evidence failed", str(raised.exception))
+
+    def test_dry_run_isolate_accepts_sha_evidence_missing_from_caller(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof = repo / "docs" / "workshop" / "ws" / "ws-01" / "proof.txt"
+            proof.parent.mkdir(parents=True)
+            proof.write_text("committed-proof\n", encoding="utf-8")
+            digest = hashlib.sha256(proof.read_bytes()).hexdigest()
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest}],
+            )
+            sha = _init_git(repo)
+            proof.unlink()
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan,
+                "WS-01",
+                handoff_path=handoff,
+                timeout=5,
+                isolate=True,
+                isolate_dir=worktree,
+                dry_run=True,
+                base_sha=sha,
+            )
+            self.assertFalse(worktree.exists())
+            self.assertEqual(code, 1)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertEqual(data["head_sha"], sha)
+            self.assertNotIn("worktree", data)
+            self.assertIs(data["completed"], False)
+
 
 def _init_git(root: Path) -> str:
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)

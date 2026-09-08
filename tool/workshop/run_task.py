@@ -5,12 +5,15 @@ Executes only the already-validated argv allowlist. Does not treat GitHub
 issue or comment text as a shell. Does not reset existing git changes.
 `--isolate` adds a detached worktree at a fixed SHA and runs there; the
 caller's checkout is left untouched. If the isolate path already exists,
-the runner refuses rather than resetting it.
+the runner refuses rather than resetting it. Combined with `--dry-run` it
+does not create a worktree; required evidence is read from git blobs at
+that SHA instead of the caller's dirty tree.
 """
 from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import signal
@@ -148,6 +151,75 @@ def _git_sha(git_root: Path, rev: str) -> str:
     return sha
 
 
+def _git_path_from_app(git_root: Path, app_root: Path, evidence_rel: str) -> str:
+    try:
+        nested = app_root.resolve().relative_to(git_root.resolve())
+    except ValueError as exc:
+        raise RunnerError("plan root is outside the git checkout") from exc
+    posix = evidence_rel.replace("\\", "/")
+    if nested == Path("."):
+        return posix
+    return f"{nested.as_posix()}/{posix}"
+
+
+def _git_blob(git_root: Path, sha: str, rel: str) -> bytes | None:
+    completed = subprocess.run(
+        ["git", "-C", str(git_root), "--no-pager", "show", "--no-textconv", f"{sha}:{rel}"],
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return None
+    return completed.stdout
+
+
+def _check_sha_evidence(
+    data: dict[str, Any],
+    git_root: Path,
+    sha: str,
+    app_root: Path,
+) -> None:
+    errors: list[str] = []
+    for raw in data.get("tasks") or []:
+        if not isinstance(raw, dict):
+            continue
+        ident = raw.get("id") if isinstance(raw.get("id"), str) else "?"
+        evidence = raw.get("required_evidence") or []
+        if not isinstance(evidence, list):
+            errors.append(f"{ident}: required_evidence must be a list")
+            continue
+        for item in evidence:
+            if not isinstance(item, dict):
+                errors.append(f"{ident}: required_evidence entries are objects")
+                continue
+            try:
+                rel = validate_plan._normalize_rel(
+                    validate_plan._as_str(item.get("path"), f"{ident}.evidence.path")
+                )
+            except validate_plan.PlanError as exc:
+                errors.append(str(exc))
+                continue
+            digest = item.get("sha256")
+            required = item.get("required", True)
+            blob = _git_blob(git_root, sha, _git_path_from_app(git_root, app_root, rel))
+            if blob is None:
+                if required:
+                    errors.append(f"{ident}: missing artifact {rel}")
+                continue
+            if digest is not None:
+                if not isinstance(digest, str) or not validate_plan.SHA256_RE.fullmatch(
+                    digest
+                ):
+                    errors.append(f"{ident}: evidence sha256 must be 64 hex")
+                    continue
+                if hashlib.sha256(blob).hexdigest() != digest:
+                    errors.append(f"{ident}: hash mismatch {rel}")
+    if errors:
+        raise RunnerError(
+            "isolated checkout evidence failed: " + "; ".join(errors)
+        )
+
+
 def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
     if dest.exists():
         raise RunnerError(f"worktree path exists, refusing to reset: {dest}")
@@ -258,7 +330,7 @@ def run_task(
     errors, ready = validate_plan.validate_plan(
         data,
         plan_path=plan_path,
-        check_artifacts=not isolate or dry_run,
+        check_artifacts=not isolate,
     )
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
@@ -296,7 +368,9 @@ def run_task(
             head_sha = (
                 _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
             )
-            if not dry_run:
+            if dry_run:
+                _check_sha_evidence(data, git_root, head_sha, original_root)
+            else:
                 worktree_dest = (
                     isolate_dir.expanduser().resolve()
                     if isolate_dir is not None
