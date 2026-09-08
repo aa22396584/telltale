@@ -840,7 +840,8 @@ abstract final class AvailabilityPolicy {
   }) {
     if (_isDerivedId(definition.id)) return DatumOrigin.calculated;
     if (source == TelemetrySource.demo) return DatumOrigin.demo;
-    if (definition.isCustom) return DatumOrigin.userEntered;
+    // isCustom is definition provenance, not measurement origin. A recorded
+    // ECU sample decoded by a user formula is still ecuReported.
     return DatumOrigin.ecuReported;
   }
 
