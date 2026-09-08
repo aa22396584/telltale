@@ -86,6 +86,16 @@ Future<void> _leaveReplayToShell(WidgetTester tester) async {
     Navigator.of(tester.element(find.byType(TelemetrySessionsScreen))).pop();
     await tester.pump();
   }
+  expect(
+    await pumpUntil(
+      tester,
+      () =>
+          _navLabel('設定').hitTestable().evaluate().isNotEmpty ||
+          _navLabel('Settings').hitTestable().evaluate().isNotEmpty,
+    ),
+    isTrue,
+    reason: 'shell navigation did not become hit-testable after leaving Replay',
+  );
 }
 
 Future<void> _recordShortDemoSession(WidgetTester tester) async {

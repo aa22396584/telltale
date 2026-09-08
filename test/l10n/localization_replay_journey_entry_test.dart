@@ -29,6 +29,8 @@ void main() {
     expect(source.contains('telemetry-history'), isTrue);
     expect(source.contains('telemetry-open-history'), isFalse);
     expect(source.contains('TelemetrySessionDetailScreen'), isTrue);
+    expect(source.contains('_leaveReplayToShell'), isTrue);
+    expect(source.contains('pumpUntil'), isTrue);
     expect(source.contains('紀錄回放'), isTrue);
     expect(source.contains('Recording replay'), isTrue);
     expect(source.contains('locale_english'), isTrue);
