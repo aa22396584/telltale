@@ -344,20 +344,26 @@ def _unfinished_dependencies(data: dict[str, Any], task: dict[str, Any]) -> bool
     )
 
 
-def _peer_eligible_for_lease(data: dict[str, Any], other: dict[str, Any]) -> bool:
+def _peer_eligible_for_lease(
+    data: dict[str, Any], other: dict[str, Any], ready: list[str]
+) -> bool:
     status = other.get("status")
     if status == "in_progress":
         return True
-    if status not in {"pending", "completed"}:
-        return False
-    if other.get("hardware_or_license_blockers"):
-        return False
-    if _unfinished_dependencies(data, other):
-        return False
-    return True
+    if status == "completed":
+        if other.get("hardware_or_license_blockers"):
+            return False
+        if _unfinished_dependencies(data, other):
+            return False
+        return True
+    if status == "pending":
+        return other.get("id") in ready
+    return False
 
 
-def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
+def _in_progress_lease_conflict(
+    data: dict[str, Any], task_id: str, ready: list[str]
+) -> bool:
     tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
     target = next((item for item in tasks if item.get("id") == task_id), None)
     if target is None:
@@ -366,7 +372,7 @@ def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
     for other in tasks:
         if other.get("id") == task_id:
             continue
-        if not _peer_eligible_for_lease(data, other):
+        if not _peer_eligible_for_lease(data, other, ready):
             continue
         if validate_plan._dirs_conflict(dirs, _task_writable_dirs(other)):
             return True
@@ -596,7 +602,7 @@ def run_task(
     elif (
         task.get("status") not in {"pending", "completed"}
         or _unfinished_dependencies(data, task)
-        or _in_progress_lease_conflict(data, task_id)
+        or _in_progress_lease_conflict(data, task_id, ready)
     ):
         raise RunnerError(
             f"{task_id}: not ready (lease or unfinished dependency)"
@@ -615,10 +621,28 @@ def run_task(
     handoff_dest = handoff_path or (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
     )
+    author_handoff: dict[str, Any] | None = None
     if review:
         author_path = handoff_dest
         handoff_dest = author_path.with_name("review.json")
-        _read_author_handoff(author_path, task_id, task)
+        author_handoff = _read_author_handoff(author_path, task_id, task)
+        author_sha = author_handoff.get("head_sha")
+        if isinstance(author_sha, str) and author_sha:
+            if not isolate:
+                raise RunnerError(
+                    f"{task_id}: review must isolate at the author SHA"
+                )
+            requested = base_sha or task.get("base_sha")
+            if requested and requested != author_sha:
+                raise RunnerError(
+                    f"{task_id}: review SHA {requested} does not match "
+                    f"author SHA {author_sha}"
+                )
+            base_sha = author_sha
+        elif isolate:
+            raise RunnerError(
+                f"{task_id}: review isolate requires an author head_sha"
+            )
     lease_path = (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
     )

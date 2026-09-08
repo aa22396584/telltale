@@ -321,6 +321,40 @@ class RunTaskTest(unittest.TestCase):
             )
             self.assertEqual(code, 0)
 
+    def test_review_allows_non_ready_overlapping_pending_peer(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            extra = [
+                {
+                    "id": "WS-02",
+                    "issue": 2,
+                    "issue_url": "https://github.com/ImL1s/telltale/issues/2",
+                    "priority": "P1",
+                    "status": "pending",
+                    "depends_on": [],
+                    "writable_dirs": ["docs/workshop/ws/ws-01/"],
+                    "run_commands": [["python3", "tool/workshop/probe.py"]],
+                    "required_evidence": [],
+                    "hardware_or_license_blockers": [],
+                    "reviewer_role": "implementation",
+                    "done_criteria": "named tests pass",
+                }
+            ]
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                extra=extra,
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=author, timeout=5, review=True
+            )
+            self.assertEqual(code, 0)
+
     def test_review_accepts_a_completed_plan_task(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
@@ -702,6 +736,133 @@ class RunTaskTest(unittest.TestCase):
                 (repo / "tool" / "workshop" / "probe.py").read_text(encoding="utf-8"),
                 "print('dirty')\n",
             )
+
+    def test_review_isolate_pins_to_author_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            author_wt = tmp / "author-wt"
+            review_wt = tmp / "review-wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('committed')\n", encoding="utf-8"
+            )
+            sha = _init_git(repo)
+            author = tmp / "handoff.json"
+            try:
+                self.assertEqual(
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        isolate=True,
+                        isolate_dir=author_wt,
+                        base_sha=sha,
+                    ),
+                    0,
+                )
+                code = run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=author,
+                    timeout=10,
+                    isolate=True,
+                    isolate_dir=review_wt,
+                    review=True,
+                )
+            finally:
+                _remove_worktree(repo, author_wt)
+                _remove_worktree(repo, review_wt)
+            self.assertEqual(code, 0)
+            review = json.loads(
+                author.with_name("review.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(review["head_sha"], sha)
+
+    def test_review_refuses_when_author_isolated_but_review_is_not(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            author_wt = tmp / "author-wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('committed')\n", encoding="utf-8"
+            )
+            sha = _init_git(repo)
+            author = tmp / "handoff.json"
+            try:
+                self.assertEqual(
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        isolate=True,
+                        isolate_dir=author_wt,
+                        base_sha=sha,
+                    ),
+                    0,
+                )
+                with self.assertRaises(run_task.RunnerError) as ctx:
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        review=True,
+                    )
+            finally:
+                _remove_worktree(repo, author_wt)
+            self.assertIn("must isolate", str(ctx.exception))
+
+    def test_review_refuses_mismatched_isolate_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            author_wt = tmp / "author-wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('committed')\n", encoding="utf-8"
+            )
+            sha = _init_git(repo)
+            author = tmp / "handoff.json"
+            try:
+                self.assertEqual(
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        isolate=True,
+                        isolate_dir=author_wt,
+                        base_sha=sha,
+                    ),
+                    0,
+                )
+                with self.assertRaises(run_task.RunnerError) as ctx:
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        isolate=True,
+                        isolate_dir=tmp / "review-wt",
+                        base_sha="0" * 40,
+                        review=True,
+                    )
+            finally:
+                _remove_worktree(repo, author_wt)
+            self.assertIn("does not match", str(ctx.exception))
 
     def test_isolate_refuses_an_existing_path(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
