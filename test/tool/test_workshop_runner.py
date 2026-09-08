@@ -369,6 +369,31 @@ class RunTaskTest(unittest.TestCase):
             data = json.loads(handoff.read_text(encoding="utf-8"))
             self.assertNotIn("worktree", data)
             self.assertIs(data["completed"], False)
+            self.assertEqual(len(data.get("head_sha") or ""), 40)
+
+    def test_dry_run_isolate_rejects_a_missing_base_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            _init_git(repo)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    dry_run=True,
+                    base_sha="0" * 40,
+                )
+            self.assertFalse(worktree.exists())
+            self.assertIn("stale or missing SHA", str(raised.exception))
 
     def test_isolate_rejects_evidence_missing_from_the_fixed_sha(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
