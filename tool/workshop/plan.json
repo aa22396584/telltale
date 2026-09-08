@@ -1,0 +1,755 @@
+{
+  "schemaVersion": 1,
+  "policy": "USABILITY-R2",
+  "repository": "ImL1s/telltale",
+  "epic": 8,
+  "audited_sha": "fda1dbc9cbab107fe4473643a244f5319d96bb9f",
+  "notes": "Seeded from telltale#11 comment 5549388272. This is #11.A (plan/validator/ready-list/handoff), not the full agent runner (#11.B). BACKLOG-CLEAR R1 issues 45/47/70/79/90/127/128 are tracked on those issues; they are not extra WS ids.",
+  "tasks": [
+    {
+      "id": "WS-01",
+      "issue": 9,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/9",
+      "priority": "P0",
+      "status": "pending",
+      "depends_on": [],
+      "writable_dirs": [
+        "docs/workshop/usability-r2/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-02",
+      "issue": 10,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/10",
+      "priority": "P0",
+      "status": "pending",
+      "depends_on": [],
+      "writable_dirs": [
+        "tool/workshop/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-03",
+      "issue": 11,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/11",
+      "priority": "P0",
+      "status": "pending",
+      "depends_on": [
+        9,
+        10
+      ],
+      "writable_dirs": [
+        "tool/workshop/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "review",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-04",
+      "issue": 12,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/12",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        10
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-04/"
+      ],
+      "run_commands": [],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [
+        "Requires the named bench/field oracle or device lease; absence is a blocker, never a required PASS."
+      ],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-05",
+      "issue": 13,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/13",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-05/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-06",
+      "issue": 14,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/14",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        13
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-06/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-07",
+      "issue": 15,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/15",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-07/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-08",
+      "issue": 16,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/16",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        12,
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-08/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-09",
+      "issue": 17,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/17",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-09/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-10",
+      "issue": 18,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/18",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-10/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-11",
+      "issue": 19,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/19",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-11/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-12",
+      "issue": 20,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/20",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-12/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-13",
+      "issue": 21,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/21",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        14,
+        15,
+        16,
+        17
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-13/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-14",
+      "issue": 22,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/22",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        14,
+        15,
+        16
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-14/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-15",
+      "issue": 23,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/23",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        9,
+        13,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-15/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-16",
+      "issue": 24,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/24",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        9,
+        14,
+        15,
+        18
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-16/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-17",
+      "issue": 25,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/25",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        14,
+        17,
+        21
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-17/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-18",
+      "issue": 26,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/26",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        14,
+        15,
+        20,
+        21,
+        25
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-18/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-19",
+      "issue": 27,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/27",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        12,
+        14,
+        15
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-19/"
+      ],
+      "run_commands": [],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [
+        "Requires the named bench/field oracle or device lease; absence is a blocker, never a required PASS."
+      ],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-20",
+      "issue": 28,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/28",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        12,
+        27
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-20/"
+      ],
+      "run_commands": [],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [
+        "Requires the named bench/field oracle or device lease; absence is a blocker, never a required PASS."
+      ],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-21",
+      "issue": 29,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/29",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        9,
+        15,
+        16
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-21/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-22",
+      "issue": 30,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/30",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        9,
+        15,
+        16
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-22/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-23",
+      "issue": 31,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/31",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        15,
+        16,
+        30
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-23/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-24",
+      "issue": 32,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/32",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        30,
+        31
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-24/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-25",
+      "issue": 34,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/34",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        15,
+        30,
+        31,
+        32,
+        33
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-25/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-26",
+      "issue": 33,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/33",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        15,
+        30
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-26/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-27",
+      "issue": 35,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/35",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        14,
+        16,
+        30,
+        31,
+        32,
+        33
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-27/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-28",
+      "issue": 36,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/36",
+      "priority": "P2",
+      "status": "pending",
+      "depends_on": [
+        9,
+        15,
+        30,
+        31,
+        33
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-28/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    },
+    {
+      "id": "WS-29",
+      "issue": 37,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/37",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [
+        9,
+        11,
+        12,
+        14,
+        15,
+        16
+      ],
+      "writable_dirs": [
+        "docs/workshop/ws/ws-29/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/validate_capabilities.py",
+          "docs/workshop/capabilities.json"
+        ]
+      ],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "Named tests on the shipped path must pass. A skipped required test is a failure. USABILITY-R2: missing catalog/VIN/year does not mark generic reads unavailable."
+    }
+  ]
+}

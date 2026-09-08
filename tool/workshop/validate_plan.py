@@ -1,0 +1,374 @@
+#!/usr/bin/env python3
+"""Validate tool/workshop/plan.json (issue #11.A).
+
+Fail closed on missing dependency, cycle, duplicate id, path escape,
+stale SHA, missing artifact, hash mismatch, and skip-as-required-pass.
+
+Prints a read-only ready list. Does not execute task commands.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+ALLOWED_STATUS = {"pending", "in_progress", "completed", "blocked"}
+ALLOWED_PRIORITY = {"P0", "P1", "P2", "P3"}
+ALLOWED_REVIEWER = {"implementation", "review"}
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+ALLOWED_COMMAND_NAMES = {"python3", "bash"}
+ALLOWED_SCRIPT_PREFIXES = (
+    "tool/workshop/",
+    "test/tool/",
+    "tool/oracle_guard/",
+)
+
+# Issue #11: never treat GitHub issue/comment text as a shell command.
+FORBIDDEN_COMMAND_SUBSTRINGS = ("http://", "https://", "`", "$(", "${")
+
+
+class PlanError(Exception):
+    pass
+
+
+def _as_list(value: Any, name: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise PlanError(f"{name} must be a list")
+    return value
+
+
+def _as_str(value: Any, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise PlanError(f"{name} must be a non-empty string")
+    return value
+
+
+def _repo_root_from_plan(plan_path: Path) -> Path:
+    # plan.json lives at <app-root>/tool/workshop/plan.json
+    return plan_path.resolve().parents[2]
+
+
+def _normalize_rel(path: str) -> str:
+    text = path.replace("\\", "/").strip()
+    if not text:
+        raise PlanError("empty path")
+    if text.startswith("/") or re.match(r"^[a-zA-Z]:", text):
+        raise PlanError(f"path escape (absolute): {path}")
+    parts: list[str] = []
+    for part in text.split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            raise PlanError(f"path escape (..): {path}")
+        parts.append(part)
+    if not parts:
+        raise PlanError(f"path escape (empty): {path}")
+    return "/".join(parts)
+
+
+def _validate_command(argv: list[Any], task_id: str) -> None:
+    if not argv or not all(isinstance(item, str) for item in argv):
+        raise PlanError(f"{task_id}: run command must be a list of strings")
+    joined = " ".join(argv)
+    for forbidden in FORBIDDEN_COMMAND_SUBSTRINGS:
+        if forbidden in joined:
+            raise PlanError(f"{task_id}: command looks like issue/comment text")
+    name = Path(argv[0]).name
+    if name not in ALLOWED_COMMAND_NAMES:
+        raise PlanError(f"{task_id}: command {name!r} is not allowlisted")
+    script = None
+    for item in argv[1:]:
+        if item.endswith(".py") or item.endswith(".sh"):
+            script = item
+            break
+    if script is None:
+        raise PlanError(f"{task_id}: command has no local script path")
+    rel = _normalize_rel(script)
+    if not rel.startswith(ALLOWED_SCRIPT_PREFIXES):
+        raise PlanError(f"{task_id}: script {rel} is outside the workshop allowlist")
+
+
+def _cycles(ids: dict[str, list[str]]) -> list[list[str]]:
+    visiting: set[str] = set()
+    seen: set[str] = set()
+    found: list[list[str]] = []
+    stack: list[str] = []
+
+    def walk(node: str) -> None:
+        if node in seen:
+            return
+        visiting.add(node)
+        stack.append(node)
+        for nxt in ids.get(node, []):
+            if nxt in visiting:
+                cycle_start = stack.index(nxt)
+                found.append(stack[cycle_start:] + [nxt])
+                continue
+            walk(nxt)
+        stack.pop()
+        visiting.remove(node)
+        seen.add(node)
+
+    for ident in ids:
+        walk(ident)
+    return found
+
+
+def validate_plan(
+    data: dict[str, Any],
+    *,
+    plan_path: Path,
+    check_artifacts: bool = True,
+    git_shas: set[str] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Return (errors, ready_task_ids)."""
+    errors: list[str] = []
+
+    def catch(fn) -> None:
+        try:
+            fn()
+        except PlanError as exc:
+            errors.append(str(exc))
+
+    if data.get("schemaVersion") != 1:
+        errors.append("schemaVersion must be 1")
+    if data.get("policy") != "USABILITY-R2":
+        errors.append("policy must be USABILITY-R2")
+    if data.get("repository") != "ImL1s/telltale":
+        errors.append("repository must be ImL1s/telltale")
+
+    tasks = data.get("tasks")
+    if not isinstance(tasks, list) or not tasks:
+        return ["tasks must be a non-empty list"], []
+
+    by_id: dict[str, dict[str, Any]] = {}
+    issue_numbers: set[int] = set()
+    id_to_issue: dict[str, int] = {}
+    issue_to_id: dict[int, str] = {}
+
+    for index, raw in enumerate(tasks):
+        prefix = f"tasks[{index}]"
+        if not isinstance(raw, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        try:
+            ident = _as_str(raw.get("id"), f"{prefix}.id")
+            if ident in by_id:
+                raise PlanError(f"duplicate id: {ident}")
+            issue = raw.get("issue")
+            if not isinstance(issue, int) or issue <= 0:
+                raise PlanError(f"{ident}: issue must be a positive int")
+            if issue in issue_numbers:
+                raise PlanError(f"duplicate issue number: {issue}")
+            issue_numbers.add(issue)
+            url = _as_str(raw.get("issue_url"), f"{ident}.issue_url")
+            expected = f"https://github.com/ImL1s/telltale/issues/{issue}"
+            if url != expected:
+                raise PlanError(f"{ident}: issue_url must be {expected}")
+            if raw.get("priority") not in ALLOWED_PRIORITY:
+                raise PlanError(f"{ident}: priority invalid")
+            status = raw.get("status", "pending")
+            if status not in ALLOWED_STATUS:
+                raise PlanError(f"{ident}: status invalid")
+            depends = _as_list(raw.get("depends_on", []), f"{ident}.depends_on")
+            if not all(isinstance(item, int) for item in depends):
+                raise PlanError(f"{ident}: depends_on must be issue numbers")
+            writable = [
+                _normalize_rel(_as_str(item, f"{ident}.writable_dirs"))
+                for item in _as_list(
+                    raw.get("writable_dirs", []), f"{ident}.writable_dirs"
+                )
+            ]
+            commands = _as_list(raw.get("run_commands", []), f"{ident}.run_commands")
+            blockers = raw.get("hardware_or_license_blockers", [])
+            if not isinstance(blockers, list):
+                raise PlanError(f"{ident}: hardware_or_license_blockers must be a list")
+            if commands:
+                for command in commands:
+                    if not isinstance(command, list):
+                        raise PlanError(f"{ident}: each run_commands entry is argv")
+                    _validate_command(command, ident)
+            elif not blockers:
+                raise PlanError(
+                    f"{ident}: a software task needs run_commands; "
+                    "a blocked task needs hardware_or_license_blockers"
+                )
+            evidence = _as_list(
+                raw.get("required_evidence", []), f"{ident}.required_evidence"
+            )
+            reviewer = raw.get("reviewer_role")
+            if reviewer not in ALLOWED_REVIEWER:
+                raise PlanError(f"{ident}: reviewer_role must be implementation or review")
+            _as_str(raw.get("done_criteria"), f"{ident}.done_criteria")
+            done = raw.get("done_criteria", "")
+            if re.search(
+                r"skip.{0,80}(?:count as pass|counts as pass|"
+                r"as a required pass|still pass)",
+                done,
+                re.I,
+            ):
+                raise PlanError(
+                    f"{ident}: skip must not impersonate a required pass"
+                )
+            sha = raw.get("base_sha")
+            if sha is not None:
+                if not isinstance(sha, str) or not SHA_RE.fullmatch(sha):
+                    raise PlanError(f"{ident}: base_sha must be 40 lowercase hex")
+                if git_shas is not None and sha not in git_shas:
+                    raise PlanError(f"{ident}: stale SHA {sha}")
+            if check_artifacts:
+                root = _repo_root_from_plan(plan_path)
+                for item in evidence:
+                    if not isinstance(item, dict):
+                        raise PlanError(f"{ident}: required_evidence entries are objects")
+                    rel = _normalize_rel(_as_str(item.get("path"), f"{ident}.evidence.path"))
+                    digest = item.get("sha256")
+                    required = item.get("required", True)
+                    target = root / rel
+                    if required and not target.is_file():
+                        raise PlanError(f"{ident}: missing artifact {rel}")
+                    if digest is not None:
+                        if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+                            raise PlanError(f"{ident}: evidence sha256 must be 64 hex")
+                        if target.is_file():
+                            actual = hashlib.sha256(target.read_bytes()).hexdigest()
+                            if actual != digest:
+                                raise PlanError(
+                                    f"{ident}: hash mismatch {rel}"
+                                )
+            by_id[ident] = {
+                **raw,
+                "writable_dirs": writable,
+                "status": status,
+            }
+            id_to_issue[ident] = issue
+            issue_to_id[issue] = ident
+        except PlanError as exc:
+            errors.append(str(exc))
+
+    # Dependency existence + graph
+    adj: dict[str, list[str]] = {ident: [] for ident in by_id}
+    for ident, task in by_id.items():
+        for dep in task.get("depends_on", []):
+            if dep not in issue_to_id:
+                errors.append(f"{ident}: missing dependency issue {dep}")
+                continue
+            dep_id = issue_to_id[dep]
+            if dep_id == ident:
+                errors.append(f"{ident}: depends on itself")
+            adj[ident].append(dep_id)
+
+    for cycle in _cycles(adj):
+        errors.append("cycle: " + " -> ".join(cycle))
+
+    completed_issues = {
+        id_to_issue[ident]
+        for ident, task in by_id.items()
+        if task.get("status") == "completed"
+    }
+    ready: list[str] = []
+    for ident, task in by_id.items():
+        if task.get("status") in {"completed", "blocked"}:
+            continue
+        deps = task.get("depends_on", [])
+        if all(dep in completed_issues for dep in deps):
+            ready.append(ident)
+
+    # Competing shared writable dirs: keep the lower id as parallel-ready,
+    # surface the others as lease-blocked rather than last-writer-wins.
+    dir_owners: dict[str, list[str]] = defaultdict(list)
+    for ident in ready:
+        for directory in by_id[ident].get("writable_dirs", []):
+            dir_owners[directory].append(ident)
+    lease_blocked: set[str] = set()
+    for directory, owners in dir_owners.items():
+        if len(owners) < 2:
+            continue
+        keep = sorted(owners)[0]
+        for ident in owners:
+            if ident != keep:
+                lease_blocked.add(ident)
+    ready = [ident for ident in ready if ident not in lease_blocked]
+    return errors, ready
+
+
+def validate_handoff(data: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = data.get("status")
+    if status not in {"in_progress", "failed", "blocked", "completed"}:
+        errors.append("handoff.status invalid")
+    if data.get("completed") is True and status != "completed":
+        errors.append("unfinished handoff must not be labelled completed")
+    if status == "completed":
+        evidence = data.get("evidence")
+        if not evidence:
+            errors.append("completed handoff requires evidence")
+        unrun = data.get("unrun") or []
+        if unrun:
+            errors.append("completed handoff still has unrun steps")
+    sha = data.get("head_sha")
+    if sha is not None and (not isinstance(sha, str) or not SHA_RE.fullmatch(sha)):
+        errors.append("handoff.head_sha must be 40 lowercase hex")
+    return errors
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("plan")
+    parser.add_argument("--ready", action="store_true")
+    parser.add_argument("--handoff")
+    parser.add_argument("--no-artifacts", action="store_true")
+    parser.add_argument(
+        "--known-sha",
+        action="append",
+        default=[],
+        help="SHA-1 values treated as existing (tests). Repeatable.",
+    )
+    args = parser.parse_args(argv[1:])
+    path = Path(args.plan)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"cannot read plan: {exc}", file=sys.stderr)
+        return 2
+    if not isinstance(data, dict):
+        print("plan must be a JSON object", file=sys.stderr)
+        return 1
+    git_shas = set(args.known_sha) if args.known_sha else None
+    errors, ready = validate_plan(
+        data,
+        plan_path=path,
+        check_artifacts=not args.no_artifacts,
+        git_shas=git_shas,
+    )
+    if args.handoff:
+        try:
+            handoff = json.loads(Path(args.handoff).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"cannot read handoff: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(handoff, dict):
+            print("handoff must be a JSON object", file=sys.stderr)
+            return 1
+        errors.extend(validate_handoff(handoff))
+    if errors:
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1
+    if args.ready:
+        print("READY " + " ".join(ready) if ready else "READY")
+    else:
+        print(f"OK {path} tasks={len(data.get('tasks', []))} ready={len(ready)}")
+        if ready:
+            print("ready: " + ", ".join(ready))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

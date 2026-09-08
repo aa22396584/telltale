@@ -14,3 +14,22 @@ Expected counts come from `count_dart_tests.py`. Reports are judged by
 injected fault and the consumed command prefix. `skip_manifest.json` lists
 `skipUnless` tests that are legitimate-nonapplicable on other platforms;
 undeclared skips fail `assert_skip_manifest.py`.
+
+## Task plan (#11.A)
+
+`plan.json` is the WS-01…WS-29 DAG plus USABILITY-R2 policy. It is not a claim
+that those GitHub issues are finished, and it is not the full agent runner
+(#11.B).
+
+```bash
+python3 tool/workshop/validate_plan.py tool/workshop/plan.json
+python3 tool/workshop/validate_plan.py tool/workshop/plan.json --ready
+python3 -m unittest discover -s test/tool -p '*workshop*plan*.py' -v
+```
+
+The validator refuses missing dependencies, cycles, duplicate ids, path
+escape, stale SHAs, missing artifacts, hash mismatch, and skip-as-required-pass.
+Ready tasks are those whose issue-number dependencies are `completed` and that
+do not share a writable directory with a lower-id peer (lease, not last-writer
+wins). Hardware/license blockers stay visible and never become PASS. Commands
+are an argv allowlist; issue/comment URLs are not shell.
