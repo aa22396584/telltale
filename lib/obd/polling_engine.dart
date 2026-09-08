@@ -1207,9 +1207,8 @@ class PollingEngine {
     // `transcriptLabel`, not screen copy. The transcript is an exported
     // artifact that two people compare weeks apart, so its language must not
     // depend on whose phone produced it.
-    client.transcript.recordNote(
-      '開始讀取${kind.transcriptLabel}故障碼（Mode ${kind.mode}）',
-    );
+    client.transcript
+        .recordNote('開始讀取${kind.transcriptLabel}故障碼（Mode ${kind.mode}）');
     // Captured, not sampled. Re-checked before every attempt, so a retry that
     // slept across an interruption does not resume on the other side of it.
     final owner = lifecycleEpoch?.call();

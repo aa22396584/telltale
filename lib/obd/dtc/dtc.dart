@@ -180,8 +180,7 @@ abstract final class DtcDecoder {
     final d3 = (b >> 4) & 0x0F;
     final d4 = b & 0x0F;
 
-    final code =
-        '${category.letter}$d1'
+    final code = '${category.letter}$d1'
         '${d2.toRadixString(16).toUpperCase()}'
         '${d3.toRadixString(16).toUpperCase()}'
         '${d4.toRadixString(16).toUpperCase()}';
@@ -311,8 +310,7 @@ abstract final class DtcDecoder {
   /// returns a single PID's data or an error rather than the batch.
   static bool protocolIsCan(String protocolNumber) {
     final trimmed = _normaliseProtocol(protocolNumber);
-    if (trimmed.isEmpty || trimmed == '0')
-      return false; // undecided: don't batch
+    if (trimmed.isEmpty || trimmed == '0') return false; // undecided: don't batch
     // The same named set. J1939 (`A`) shares the physical layer and none of
     // the framing, so batching J1979 PIDs on it means nothing; `B` and `C`
     // carry whatever PP 2C / PP 2E say they carry, which this API cannot see,
@@ -419,17 +417,14 @@ abstract final class DtcDecoder {
   /// Encodes back to the two raw bytes. Used by tests and by the CSV exporter.
   static (int, int)? encode(String code) {
     if (code.length != 5) return null;
-    final categoryIndex = _categories.indexWhere(
-      (c) => c.letter == code[0].toUpperCase(),
-    );
+    final categoryIndex = _categories.indexWhere((c) => c.letter == code[0].toUpperCase());
     if (categoryIndex < 0) return null;
 
     final d1 = int.tryParse(code[1], radix: 16);
     final d2 = int.tryParse(code[2], radix: 16);
     final d3 = int.tryParse(code[3], radix: 16);
     final d4 = int.tryParse(code[4], radix: 16);
-    if (d1 == null || d2 == null || d3 == null || d4 == null || d1 > 3)
-      return null;
+    if (d1 == null || d2 == null || d3 == null || d4 == null || d1 > 3) return null;
 
     return ((categoryIndex << 6) | (d1 << 4) | d2, (d3 << 4) | d4);
   }
