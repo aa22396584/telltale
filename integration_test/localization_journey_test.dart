@@ -15,8 +15,20 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:torque_obd/ui/widgets/language_picker.dart';
 
 import 'rig_support.dart';
+
+Future<void> _selectLocale(WidgetTester tester, Key localeKey) async {
+  await tester.tap(find.byKey(const Key('connect_language_entry')));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.tap(find.byKey(localeKey));
+  await tester.pump();
+  final picker = find.byType(LanguagePicker);
+  expect(picker, findsOneWidget);
+  Navigator.of(tester.element(picker)).pop();
+  await tester.pump(const Duration(milliseconds: 500));
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -29,12 +41,10 @@ void main() {
       expect(find.text('選擇連線方式'), findsOneWidget);
       expect(find.text('Choose a connection'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('connect_language_entry')));
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.byKey(const Key('locale_english')));
+      await _selectLocale(tester, const Key('locale_english'));
       final englishHeadline = await pumpUntil(
         tester,
-        () => find.text('Choose a connection').evaluate().isNotEmpty,
+        () => find.text('Choose a connection').hitTestable().evaluate().isNotEmpty,
       );
       expect(
         englishHeadline,
@@ -43,12 +53,10 @@ void main() {
       );
       expect(find.text('選擇連線方式'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('connect_language_entry')));
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.byKey(const Key('locale_traditionalChinese')));
+      await _selectLocale(tester, const Key('locale_traditionalChinese'));
       final chineseHeadline = await pumpUntil(
         tester,
-        () => find.text('選擇連線方式').evaluate().isNotEmpty,
+        () => find.text('選擇連線方式').hitTestable().evaluate().isNotEmpty,
       );
       expect(
         chineseHeadline,

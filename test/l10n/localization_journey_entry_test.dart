@@ -30,10 +30,12 @@ void main() {
     expect(source.contains('Choose a connection'), isTrue);
     expect(source.contains('選擇連線方式'), isTrue);
     expect(source.contains('connectDemoRig'), isTrue);
-    final languageAt = source.indexOf('locale_english');
-    final demoAt = source.indexOf('connectDemoRig');
-    expect(languageAt, greaterThan(0));
-    expect(demoAt, greaterThan(languageAt));
+    expect(source.contains('Navigator.of'), isTrue);
+    expect(source.contains('.pop()'), isTrue);
+    final selectCall = source.indexOf('_selectLocale(tester');
+    final demoCall = source.indexOf('connectDemoRig(tester');
+    expect(selectCall, greaterThan(0));
+    expect(demoCall, greaterThan(selectCall));
   });
 
   test('the journey does not replace ObdSession with a pre-solved mock', () {
