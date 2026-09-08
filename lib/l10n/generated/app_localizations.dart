@@ -6641,6 +6641,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export failed.'**
   String get transcriptExportUnidentified;
+
+  /// InitNote.unexpected. The exception text stays on the transcript; the screen must not interpolate the raw exception.
+  ///
+  /// In en, this message translates to:
+  /// **'This step failed with an unexpected error. The full error is kept in the transcript.'**
+  String get handshakeNoteUnexpected;
 }
 
 class _AppLocalizationsDelegate

@@ -8,10 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
+import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
 import 'package:torque_obd/obd/transport/ble_transport.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
+import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_formula_copy.dart';
@@ -436,4 +438,42 @@ void main() {
       expect(chinese.hasMatch(_en.pidFormulaUnidentified), isFalse);
     },
   );
+
+  test('a handshake TransportException is mapped, not interpolated as Chinese',
+      () {
+    final progress = InitProgress(
+      step: Elm327Client.initSequence.first,
+      index: 0,
+      total: Elm327Client.initSequence.length,
+      status: InitStatus.failed,
+      detail: 'TransportException: 連線已中斷。',
+      transportIssue: TransportIssue.bleLinkFailed,
+    );
+    final state = ObdConnectionState(
+      phase: ConnectionPhase.failed,
+      error: '初始化在 ATZ 失敗（TransportException: 連線已中斷。）',
+      issue: ObdConnectionIssue.handshakeStepFailed,
+      issueStep: progress,
+    );
+    final banner = connectionIssueText(_en, state)!;
+    expect(chinese.hasMatch(banner), isFalse);
+    expect(banner, isNot(contains('連線')));
+    expect(banner, isNot(contains('TransportException')));
+    expect(initProgressLine(_en, progress), _en.connectTransportBleLinkFailed);
+    expect(chinese.hasMatch(initProgressLine(_en, progress)), isFalse);
+  });
+
+  test('an unexpected handshake exception uses the ARB, not \$e', () {
+    final progress = InitProgress(
+      step: Elm327Client.initSequence.first,
+      index: 0,
+      total: Elm327Client.initSequence.length,
+      status: InitStatus.failed,
+      detail: 'StateError: 連線已中斷。',
+      note: InitNote.unexpected,
+    );
+    expect(initProgressLine(_en, progress), _en.handshakeNoteUnexpected);
+    expect(chinese.hasMatch(initProgressLine(_en, progress)), isFalse);
+    expect(initProgressLine(_en, progress), isNot(contains('StateError')));
+  });
 }
