@@ -322,6 +322,31 @@ def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
         )
 
 
+def _task_writable_dirs(task: dict[str, Any]) -> list[str]:
+    raw = task.get("writable_dirs") or []
+    out: list[str] = []
+    for item in raw:
+        if isinstance(item, str):
+            out.append(validate_plan._normalize_rel(item))
+    return out
+
+
+def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
+    tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
+    target = next((item for item in tasks if item.get("id") == task_id), None)
+    if target is None:
+        return False
+    dirs = _task_writable_dirs(target)
+    for other in tasks:
+        if other.get("id") == task_id:
+            continue
+        if other.get("status") != "in_progress":
+            continue
+        if validate_plan._dirs_conflict(dirs, _task_writable_dirs(other)):
+            return True
+    return False
+
+
 def _read_author_handoff(
     path: Path, task_id: str, task: dict[str, Any]
 ) -> dict[str, Any]:
@@ -538,7 +563,11 @@ def run_task(
     if not review:
         if task.get("status") != "pending":
             raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
-    if task_id not in ready:
+        if task_id not in ready:
+            raise RunnerError(
+                f"{task_id}: not ready (lease or unfinished dependency)"
+            )
+    elif _in_progress_lease_conflict(data, task_id):
         raise RunnerError(
             f"{task_id}: not ready (lease or unfinished dependency)"
         )
