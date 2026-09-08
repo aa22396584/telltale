@@ -237,8 +237,9 @@ void main() {
       throwsA(isA<TransportException>()
           .having((e) => e.message, 'message', contains('逾時'))
           .having((e) => e.message, 'message', contains('加密 SPP'))
+          .having((e) => e.message, 'message', contains('被拒絕'))
           .having((e) => e.message, 'message',
-              contains('createRfcommSocket unavailable'))),
+              isNot(contains('createRfcommSocket unavailable')))),
     );
   });
 }
