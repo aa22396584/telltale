@@ -20,6 +20,7 @@ import '../../state/obd_session.dart';
 import '../../state/app_share_entry_controller.dart';
 import '../../state/app_share_coordinator.dart';
 import '../../state/transcript_store_runtime.dart';
+import 'share_copy.dart';
 
 /// How big a stored recording is, in a unit that does not read as "empty".
 ///
@@ -66,9 +67,9 @@ Future<String?> exportTranscript(
           subjectAt: DateTime.now(),
           sharePositionOrigin: sharePositionOrigin,
         );
-    return outcome.userFacingError;
-  } on Object catch (e) {
-    return l10n.transcriptExportFailed('$e');
+    return outcome.error == null ? null : shareErrorText(l10n, outcome.error!);
+  } on Object {
+    return l10n.transcriptExportUnidentified;
   }
 }
 
@@ -180,9 +181,9 @@ Future<String?> exportRecoveredTranscript(
       ref.invalidate(recoveredTranscriptProvider);
       return l10n.transcriptRecoveredChanged;
     }
-    return outcome.userFacingError;
-  } on Object catch (e) {
-    return l10n.transcriptExportFailed('$e');
+    return outcome.error == null ? null : shareErrorText(l10n, outcome.error!);
+  } on Object {
+    return l10n.transcriptExportUnidentified;
   }
 }
 

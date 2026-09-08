@@ -3683,6 +3683,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
     return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
+
+  @override
+  String get sharePolicyDenied => '目前的連線或行車狀態不允許匯出。';
+
+  @override
+  String get shareSafetyChanged => '準備匯出期間狀態已改變，未開啟分享。';
+
+  @override
+  String get shareSizeLimit => '匯出檔超過 32 MiB 上限。';
+
+  @override
+  String get shareStagingBusy => '先前的分享檔仍在保留期內，請稍後再試。';
+
+  @override
+  String get shareCleanupRequired => '分享暫存區需要在重新啟動後檢查。';
+
+  @override
+  String get shareSpaceUnknown => '無法確認分享檔所需的可用空間。';
+
+  @override
+  String get shareNoSpace => '儲存空間不足，無法準備分享檔。';
+
+  @override
+  String get shareHandoffFailed => '檔案已準備完成，但系統分享介面無法開啟。';
+
+  @override
+  String get shareStorageFailure => '準備或記錄分享結果時發生儲存錯誤。';
+
+  @override
+  String get transcriptExportUnidentified => '匯出失敗。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7363,4 +7393,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
     return '$controller 拒絕清除（原因碼 $code）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。';
   }
+
+  @override
+  String get sharePolicyDenied => '目前的連線或行車狀態不允許匯出。';
+
+  @override
+  String get shareSafetyChanged => '準備匯出期間狀態已改變，未開啟分享。';
+
+  @override
+  String get shareSizeLimit => '匯出檔超過 32 MiB 上限。';
+
+  @override
+  String get shareStagingBusy => '先前的分享檔仍在保留期內，請稍後再試。';
+
+  @override
+  String get shareCleanupRequired => '分享暫存區需要在重新啟動後檢查。';
+
+  @override
+  String get shareSpaceUnknown => '無法確認分享檔所需的可用空間。';
+
+  @override
+  String get shareNoSpace => '儲存空間不足，無法準備分享檔。';
+
+  @override
+  String get shareHandoffFailed => '檔案已準備完成，但系統分享介面無法開啟。';
+
+  @override
+  String get shareStorageFailure => '準備或記錄分享結果時發生儲存錯誤。';
+
+  @override
+  String get transcriptExportUnidentified => '匯出失敗。';
 }

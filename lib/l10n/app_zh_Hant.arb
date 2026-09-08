@@ -1072,5 +1072,15 @@
   "dtcClearNrcUnsupportedDoNotRepeat": "{controller} 不支援清除服務（Mode 04）。這輛車的故障碼可能要用原廠或專用診斷設備才能清除。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
   "dtcClearNrcBusyDoNotRepeat": "{controller} 目前忙碌中。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
   "dtcClearNrcSecurityDoNotRepeat": "{controller} 要求先通過安全認證才允許清除，這需要原廠或專用診斷設備。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。",
-  "dtcClearNrcOtherDoNotRepeat": "{controller} 拒絕清除（原因碼 {code}）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。"
+  "dtcClearNrcOtherDoNotRepeat": "{controller} 拒絕清除（原因碼 {code}）。不要再送一次全車清除 —— 重複清除會讓可能已經清除的控制器再一次重置排放就緒狀態。請重新掃描確認哪些故障碼還在。",
+  "sharePolicyDenied": "目前的連線或行車狀態不允許匯出。",
+  "shareSafetyChanged": "準備匯出期間狀態已改變，未開啟分享。",
+  "shareSizeLimit": "匯出檔超過 32 MiB 上限。",
+  "shareStagingBusy": "先前的分享檔仍在保留期內，請稍後再試。",
+  "shareCleanupRequired": "分享暫存區需要在重新啟動後檢查。",
+  "shareSpaceUnknown": "無法確認分享檔所需的可用空間。",
+  "shareNoSpace": "儲存空間不足，無法準備分享檔。",
+  "shareHandoffFailed": "檔案已準備完成，但系統分享介面無法開啟。",
+  "shareStorageFailure": "準備或記錄分享結果時發生儲存錯誤。",
+  "transcriptExportUnidentified": "匯出失敗。"
 }

@@ -6539,6 +6539,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{controller} refused the clear (reason code {code}). Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared. Rescan to see which codes remain.'**
   String dtcClearNrcOtherDoNotRepeat(String controller, String code);
+
+  /// No description provided for @sharePolicyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The current connection or driving state does not allow export.'**
+  String get sharePolicyDenied;
+
+  /// No description provided for @shareSafetyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The state changed while preparing the export, so sharing was not opened.'**
+  String get shareSafetyChanged;
+
+  /// No description provided for @shareSizeLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The export exceeds the 32 MiB limit.'**
+  String get shareSizeLimit;
+
+  /// No description provided for @shareStagingBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'A previous share file is still in its retention period. Try again later.'**
+  String get shareStagingBusy;
+
+  /// No description provided for @shareCleanupRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The share staging area needs to be checked after a restart.'**
+  String get shareCleanupRequired;
+
+  /// No description provided for @shareSpaceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not confirm the free space the share file needs.'**
+  String get shareSpaceUnknown;
+
+  /// No description provided for @shareNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'There is not enough storage to prepare the share file.'**
+  String get shareNoSpace;
+
+  /// No description provided for @shareHandoffFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is ready, but the system share sheet could not be opened.'**
+  String get shareHandoffFailed;
+
+  /// No description provided for @shareStorageFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'A storage error occurred while preparing or recording the share.'**
+  String get shareStorageFailure;
+
+  /// No description provided for @transcriptExportUnidentified.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed.'**
+  String get transcriptExportUnidentified;
 }
 
 class _AppLocalizationsDelegate

@@ -72,10 +72,6 @@ void main() {
       );
       expect(outcome.result, result);
       expect(outcome.error, ShareError.shareHandoffFailed);
-      expect(
-        outcome.userFacingError,
-        '檔案已準備完成，但系統分享介面無法開啟。',
-      );
       expect(File(platform.lastPath!).existsSync(), isTrue);
     }
   });

@@ -17,6 +17,7 @@ import '../telemetry/session/telemetry_session_codec.dart';
 import '../telemetry/session/telemetry_session_reader.dart';
 import '../telemetry/session/telemetry_session_store.dart';
 import '../telemetry/session/timeline_downsampler.dart';
+import '../ui/widgets/share_copy.dart';
 import 'app_share_coordinator.dart';
 import 'app_share_entry_controller.dart';
 import 'artifact_operation_gate.dart';
@@ -338,18 +339,23 @@ enum TelemetrySessionActionFailure {
 final class TelemetrySessionActionResult {
   const TelemetrySessionActionResult.success()
     : failure = null,
-      userFacingMessage = null;
+      userFacingMessage = null,
+      shareError = null;
   const TelemetrySessionActionResult.failure(
     this.failure, {
     this.userFacingMessage,
+    this.shareError,
   });
 
   final TelemetrySessionActionFailure? failure;
   final String? userFacingMessage;
+  final ShareError? shareError;
   bool get isSuccess => failure == null;
 
-  String message(AppLocalizations l10n) =>
-      userFacingMessage ?? telemetrySessionActionFailureLabel(l10n, failure!);
+  String message(AppLocalizations l10n) {
+    if (shareError != null) return shareErrorText(l10n, shareError!);
+    return userFacingMessage ?? telemetrySessionActionFailureLabel(l10n, failure!);
+  }
 }
 
 // Not localized in this wave: unlike the sentences above it exists exactly
@@ -447,7 +453,7 @@ final class TelemetrySessionActions {
     }
     return TelemetrySessionActionResult.failure(
       TelemetrySessionActionFailure.share,
-      userFacingMessage: outcome.userFacingError,
+      shareError: outcome.error,
     );
   }
 
