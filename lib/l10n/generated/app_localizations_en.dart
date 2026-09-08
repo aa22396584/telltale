@@ -1381,14 +1381,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pidImportNothingToImport => 'No definitions to import.';
 
   @override
-  String pidImportPickerFailed(String error) {
-    return 'Could not open the file picker: $error';
-  }
+  String get pidImportPickerFailed => 'Could not open the file picker.';
 
   @override
-  String pidImportReadFailed(String error) {
-    return 'Could not read the file: $error';
-  }
+  String get pidImportReadFailed => 'Could not read the file.';
 
   @override
   String get pidListSeparator => ', ';

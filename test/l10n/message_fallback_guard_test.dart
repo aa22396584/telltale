@@ -105,4 +105,19 @@ void main() {
     expect(code.contains('on Object catch (e, stack)'), isTrue);
     expect(code.contains('on Object catch (e)'), isFalse);
   });
+
+  test('PID import picker/read copy does not interpolate the caught exception',
+      () {
+    // Raw source: codeOnly blanks string literals, so `'$e'` would disappear.
+    final source =
+        File('lib/ui/screens/pids/pid_manager_screen.dart').readAsStringSync();
+    expect(source.contains(r"pidImportPickerFailed('$e')"), isFalse);
+    expect(source.contains(r'pidImportPickerFailed("$e")'), isFalse);
+    expect(source.contains(r"pidImportReadFailed('$e')"), isFalse);
+    expect(source.contains(r'pidImportReadFailed("$e")'), isFalse);
+    expect(
+      'FlutterError.reportError'.allMatches(source).length,
+      greaterThanOrEqualTo(2),
+    );
+  });
 }
