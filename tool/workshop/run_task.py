@@ -7,7 +7,8 @@ issue or comment text as a shell. Does not reset existing git changes.
 caller's checkout is left untouched. If the isolate path already exists,
 the runner refuses rather than resetting it. Combined with `--dry-run` it
 does not create a worktree; required evidence is read from git blobs at
-that SHA instead of the caller's dirty tree.
+that SHA instead of the caller's dirty tree. `--review` re-runs a completed
+author handoff and writes `review.json`; it cannot be dry-run.
 """
 from __future__ import annotations
 
@@ -86,17 +87,43 @@ def _resolve_executable(name: str) -> str:
     raise RunnerError(f"command {name!r} is not allowlisted")
 
 
-def _acquire_lease(path: Path, task_id: str) -> int:
+def _dir_lease_path(root: Path, rel: str) -> Path:
+    digest = hashlib.sha256(rel.encode("utf-8")).hexdigest()[:16]
+    return root / "docs" / "workshop" / "ws" / ".dir-leases" / f"{digest}.lock"
+
+
+def _dir_lease_targets(dirs: list[str]) -> list[tuple[str, bool]]:
+    """Map declared dirs to (path, exclusive) locks.
+
+    The leaf is exclusive; every ancestor is shared. Parent ``foo`` and child
+    ``foo/bar`` therefore contend on ``foo``, while sibling ``foo/bar`` and
+    ``foo/baz`` only share the ancestor and can run together.
+    """
+    mode: dict[str, bool] = {}
+    for rel in dirs:
+        parts = [part for part in rel.split("/") if part]
+        if not parts:
+            continue
+        chain = ["/".join(parts[: index + 1]) for index in range(len(parts))]
+        for prefix in chain[:-1]:
+            mode.setdefault(prefix, False)
+        mode[chain[-1]] = True
+    return sorted(mode.items(), key=lambda item: item[0])
+
+
+def _acquire_lease(path: Path, task_id: str, *, exclusive: bool = True) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(str(path), os.O_CREAT | os.O_RDWR, 0o644)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        flag = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+        fcntl.flock(fd, flag | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         os.close(fd)
         raise RunnerError(f"{task_id}: lease held") from exc
-    os.lseek(fd, 0, os.SEEK_SET)
-    os.ftruncate(fd, 0)
-    os.write(fd, json.dumps({"task": task_id, "pid": os.getpid()}).encode("utf-8"))
+    if exclusive:
+        os.lseek(fd, 0, os.SEEK_SET)
+        os.ftruncate(fd, 0)
+        os.write(fd, json.dumps({"task": task_id, "pid": os.getpid()}).encode("utf-8"))
     return fd
 
 
@@ -321,6 +348,94 @@ def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
         )
 
 
+def _task_writable_dirs(task: dict[str, Any]) -> list[str]:
+    raw = task.get("writable_dirs") or []
+    out: list[str] = []
+    for item in raw:
+        if isinstance(item, str):
+            out.append(validate_plan._normalize_rel(item))
+    return out
+
+
+def _unfinished_dependencies(data: dict[str, Any], task: dict[str, Any]) -> bool:
+    tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
+    completed_issues = {
+        item.get("issue")
+        for item in tasks
+        if item.get("status") == "completed"
+    }
+    deps = task.get("depends_on") or []
+    return any(
+        isinstance(dep, int) and dep not in completed_issues for dep in deps
+    )
+
+
+def _peer_eligible_for_lease(
+    data: dict[str, Any], other: dict[str, Any], ready: list[str]
+) -> bool:
+    status = other.get("status")
+    if status == "in_progress":
+        return True
+    if status == "pending":
+        return other.get("id") in ready
+    return False
+
+
+def _in_progress_lease_conflict(
+    data: dict[str, Any], task_id: str, ready: list[str]
+) -> bool:
+    tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
+    target = next((item for item in tasks if item.get("id") == task_id), None)
+    if target is None:
+        return False
+    dirs = _task_writable_dirs(target)
+    for other in tasks:
+        if other.get("id") == task_id:
+            continue
+        if not _peer_eligible_for_lease(data, other, ready):
+            continue
+        if validate_plan._dirs_conflict(dirs, _task_writable_dirs(other)):
+            return True
+    return False
+
+
+def _read_author_handoff(
+    path: Path, task_id: str, task: dict[str, Any]
+) -> dict[str, Any]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RunnerError(f"cannot read author handoff: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise RunnerError("author handoff must be a JSON object")
+    errors = validate_plan.validate_handoff(raw)
+    if errors:
+        raise RunnerError("invalid author handoff: " + "; ".join(errors))
+    if raw.get("completed") is not True or raw.get("status") != "completed":
+        raise RunnerError("review requires a completed author handoff")
+    if raw.get("task") != task_id:
+        raise RunnerError(
+            f"author handoff task {raw.get('task')!r} does not match {task_id}"
+        )
+    if raw.get("issue") != task.get("issue"):
+        raise RunnerError(
+            f"author handoff issue {raw.get('issue')!r} does not match "
+            f"{task.get('issue')}"
+        )
+    planned = task.get("run_commands") or []
+    results = raw.get("results") or raw.get("evidence") or []
+    if not isinstance(results, list) or len(results) != len(planned):
+        raise RunnerError(
+            "author handoff commands do not match the selected task"
+        )
+    for item, argv in zip(results, planned, strict=True):
+        if not isinstance(item, dict) or item.get("argv") != argv:
+            raise RunnerError(
+                "author handoff commands do not match the selected task"
+            )
+    return raw
+
+
 def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
     errors = validate_plan.validate_handoff(payload)
     if errors:
@@ -476,6 +591,7 @@ def run_task(
     isolate: bool = False,
     isolate_dir: Path | None = None,
     base_sha: str | None = None,
+    review: bool = False,
 ) -> int:
     try:
         data = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -491,9 +607,23 @@ def run_task(
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
     task = _task_by_id(data, task_id)
-    if task.get("status") != "pending":
-        raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
-    if task_id not in ready:
+    if review and dry_run:
+        raise RunnerError(
+            "review cannot be dry-run: that would accept the author handoff "
+            "without re-running"
+        )
+    if not review:
+        if task.get("status") != "pending":
+            raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
+        if task_id not in ready:
+            raise RunnerError(
+                f"{task_id}: not ready (lease or unfinished dependency)"
+            )
+    elif (
+        task.get("status") not in {"pending", "completed"}
+        or _unfinished_dependencies(data, task)
+        or _in_progress_lease_conflict(data, task_id, ready)
+    ):
         raise RunnerError(
             f"{task_id}: not ready (lease or unfinished dependency)"
         )
@@ -511,13 +641,41 @@ def run_task(
     handoff_dest = handoff_path or (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
     )
+    author_handoff: dict[str, Any] | None = None
+    if review:
+        author_path = handoff_dest
+        handoff_dest = author_path.with_name("review.json")
+        author_handoff = _read_author_handoff(author_path, task_id, task)
+        author_sha = author_handoff.get("head_sha")
+        if isinstance(author_sha, str) and author_sha:
+            if not isolate:
+                raise RunnerError(
+                    f"{task_id}: review must isolate at the author SHA"
+                )
+            requested = base_sha or task.get("base_sha")
+            if requested and requested != author_sha:
+                raise RunnerError(
+                    f"{task_id}: review SHA {requested} does not match "
+                    f"author SHA {author_sha}"
+                )
+            base_sha = author_sha
+        elif isolate:
+            raise RunnerError(
+                f"{task_id}: review isolate requires an author head_sha"
+            )
     lease_path = (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
     )
     lease_fd: int | None = None
-    if not dry_run:
-        lease_fd = _acquire_lease(lease_path, task_id)
+    dir_leases: list[tuple[int, Path]] = []
     try:
+        if not dry_run:
+            lease_fd = _acquire_lease(lease_path, task_id)
+            for rel, exclusive in _dir_lease_targets(_task_writable_dirs(task)):
+                path = _dir_lease_path(original_root, rel)
+                dir_leases.append(
+                    (_acquire_lease(path, task_id, exclusive=exclusive), path)
+                )
         if isolate:
             git_root = _git_toplevel(cwd)
             requested = base_sha or task.get("base_sha")
@@ -530,7 +688,13 @@ def run_task(
                 worktree_dest = (
                     isolate_dir.expanduser().resolve()
                     if isolate_dir is not None
-                    else git_root / ".worktrees" / f"ws-{task_id.lower()}"
+                    else git_root
+                    / ".worktrees"
+                    / (
+                        f"ws-{task_id.lower()}-review"
+                        if review
+                        else f"ws-{task_id.lower()}"
+                    )
                 )
                 _add_worktree(git_root, worktree_dest, head_sha)
                 worktree_path = str(worktree_dest)
@@ -588,9 +752,11 @@ def run_task(
             "failed": failed,
             "unrun": unrun,
             "results": results,
-            "reviewer_role": task.get("reviewer_role"),
+            "reviewer_role": "review" if review else task.get("reviewer_role"),
             "next": (
-                "reviewer re-runs the same argv"
+                "review re-ran the same argv"
+                if review and completed
+                else "reviewer re-runs the same argv"
                 if completed
                 else "fix the failed command; do not mark completed"
             ),
@@ -604,6 +770,8 @@ def run_task(
         _write_handoff(handoff_dest, payload)
         return 0 if completed else 1
     finally:
+        for fd, path in reversed(dir_leases):
+            _release_lease(fd, path)
         _release_lease(lease_fd, lease_path)
 
 
@@ -618,6 +786,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--isolate", action="store_true")
     parser.add_argument("--isolate-dir")
     parser.add_argument("--base-sha")
+    parser.add_argument(
+        "--review",
+        action="store_true",
+        help="re-run a completed author handoff; writes review.json",
+    )
     args = parser.parse_args(argv[1:])
     try:
         return run_task(
@@ -630,6 +803,7 @@ def main(argv: list[str]) -> int:
             isolate=args.isolate,
             isolate_dir=Path(args.isolate_dir) if args.isolate_dir else None,
             base_sha=args.base_sha,
+            review=args.review,
         )
     except RunnerError as exc:
         print(str(exc), file=sys.stderr)

@@ -52,10 +52,14 @@ blobs at that SHA (object type `blob` only), not the caller's dirty tree.
 The default location is `<git-root>/.worktrees/ws-<task>`, outside `docs/`.
 The caller's checkout is not reset. An existing isolate path is a refusal,
 not a `git reset`. Handoff and lease stay under the original
-`docs/workshop/ws/<task>/` directory.
+`docs/workshop/ws/<task>/` directory. `--review` re-runs the same argv
+against a completed author `handoff.json` and writes `review.json` beside
+it. It refuses `--dry-run`, so a reviewer cannot accept the author's
+completed flag without executing the commands.
 
 ```bash
 python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --dry-run
 python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --isolate
+python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --review
 python3 -m unittest discover -s test/tool -p 'test_workshop_runner.py' -v
 ```
