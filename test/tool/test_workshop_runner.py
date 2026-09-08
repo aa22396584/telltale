@@ -554,6 +554,35 @@ class RunTaskTest(unittest.TestCase):
             self.assertNotIn("worktree", data)
             self.assertIs(data["completed"], False)
 
+    def test_dry_run_isolate_rejects_tree_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            proof = repo / "docs" / "workshop" / "ws" / "ws-01" / "proof.txt"
+            proof.parent.mkdir(parents=True)
+            proof.write_text("committed-proof\n", encoding="utf-8")
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                evidence=[{"path": "docs/workshop/ws/ws-01"}],
+            )
+            sha = _init_git(repo)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    dry_run=True,
+                    base_sha=sha,
+                )
+            self.assertFalse(worktree.exists())
+            self.assertIn("isolated checkout evidence failed", str(raised.exception))
+            self.assertIn("missing artifact", str(raised.exception))
+
 
 def _init_git(root: Path) -> str:
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)

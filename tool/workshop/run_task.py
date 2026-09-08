@@ -163,8 +163,17 @@ def _git_path_from_app(git_root: Path, app_root: Path, evidence_rel: str) -> str
 
 
 def _git_blob(git_root: Path, sha: str, rel: str) -> bytes | None:
+    spec = f"{sha}:{rel}"
+    kind = subprocess.run(
+        ["git", "-C", str(git_root), "cat-file", "-t", spec],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if kind.returncode != 0 or (kind.stdout or "").strip() != "blob":
+        return None
     completed = subprocess.run(
-        ["git", "-C", str(git_root), "--no-pager", "show", "--no-textconv", f"{sha}:{rel}"],
+        ["git", "-C", str(git_root), "cat-file", "blob", spec],
         capture_output=True,
         check=False,
     )
