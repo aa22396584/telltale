@@ -60,6 +60,45 @@ Finder _settingsVerticalScrollable() {
       .first;
 }
 
+Finder _dashboardVerticalScrollable() {
+  return find
+      .descendant(
+        of: find.byType(DashboardScreen),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.axisDirection == AxisDirection.down,
+        ),
+      )
+      .first;
+}
+
+/// Lazy gauge tiles and the derived strip are not painted until they enter
+/// the viewport. `RenderFlex` only reports overflow while painting, so a
+/// toolbar-only visit would leave `overflows` empty with those sections still
+/// unbuilt.
+Future<void> _revealLazyDashboard(
+  WidgetTester tester,
+  String derivedTitle,
+) async {
+  final target = find.descendant(
+    of: find.byType(DashboardScreen),
+    matching: find.text(derivedTitle),
+  );
+  await tester.scrollUntilVisible(
+    target,
+    400,
+    scrollable: _dashboardVerticalScrollable(),
+  );
+  await tester.pump(const Duration(milliseconds: 50));
+  expect(
+    target.hitTestable(),
+    findsOneWidget,
+    reason:
+        'Dashboard did not reveal $derivedTitle after scrolling lazy content',
+  );
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -104,6 +143,7 @@ void main() {
       await Scrollable.ensureVisible(tester.element(chinese), alignment: 0.5);
       await tester.pump(const Duration(milliseconds: 50));
       expect(chinese.hitTestable(), findsOneWidget);
+      await _revealLazyDashboard(tester, '推算數值');
       await tester.pump(const Duration(milliseconds: 300));
 
       await _tapNav(tester, '設定');
@@ -135,6 +175,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(english.hitTestable(), findsOneWidget);
       expect(_gaugesOnDashboard('儀表'), findsNothing);
+      await _revealLazyDashboard(tester, 'Estimated values');
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
