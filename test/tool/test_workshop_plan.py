@@ -7,6 +7,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,9 +79,20 @@ class BundledPlanTest(unittest.TestCase):
         self.assertEqual(len(issues), len(set(issues)))
         self.assertEqual(len(data["tasks"]), 29)
         self.assertEqual(data["policy"], "USABILITY-R2")
+        ws08 = next(task for task in data["tasks"] if task["id"] == "WS-08")
+        self.assertEqual(ws08["depends_on"], [9])
         ws20 = next(task for task in data["tasks"] if task["id"] == "WS-20")
         self.assertTrue(ws20["hardware_or_license_blockers"])
         self.assertEqual(ws20["run_commands"], [])
+        ws27 = next(task for task in data["tasks"] if task["id"] == "WS-27")
+        writable = [item.rstrip("/") for item in ws27["writable_dirs"]]
+        self.assertIn("lib/ui", writable)
+        self.assertIn("test", writable)
+        flutter = ws27["run_commands"][0]
+        self.assertEqual(Path(flutter[0]).name, "flutter")
+        self.assertEqual(flutter[1], "test")
+        self.assertIn("test/workshop/ui/datum_status_badge_test.dart", flutter)
+        self.assertIn("test/derived_strip_test.dart", flutter)
 
     def test_cli_ok_on_shipped_plan(self) -> None:
         path = ROOT / "tool" / "workshop" / "plan.json"
@@ -203,6 +215,50 @@ class GraphAndSchemaTest(unittest.TestCase):
         )
         self.assertTrue(any("allowlist" in error for error in errors))
 
+    def test_python_c_decoy_script_fails(self) -> None:
+        errors = self._errors(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[
+                        [
+                            "python3",
+                            "-c",
+                            "raise SystemExit('pwned')",
+                            "tool/workshop/validate_plan.py",
+                        ]
+                    ],
+                )
+            ]
+        )
+        self.assertTrue(
+            any("execution flag" in error or "-c" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_python_m_module_fails(self) -> None:
+        errors = self._errors(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[
+                        [
+                            "python3",
+                            "-m",
+                            "http.server",
+                            "tool/workshop/validate_plan.py",
+                        ]
+                    ],
+                )
+            ]
+        )
+        self.assertTrue(
+            any("execution flag" in error or "-m" in error for error in errors),
+            msg=errors,
+        )
+
 
 class ArtifactAndHandoffTest(unittest.TestCase):
     def test_missing_artifact_fails(self) -> None:
@@ -309,6 +365,34 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         )
         self.assertEqual(errors, [])
 
+    def test_completed_handoff_with_false_flag_fails(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": False,
+                "evidence": "log",
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("completed" in error and "true" in error.lower() for error in errors),
+            msg=errors,
+        )
+
+    def test_unfinished_handoff_missing_false_flag_fails(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "in_progress",
+                "unrun": ["analyze"],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("completed" in error and "false" in error.lower() for error in errors),
+            msg=errors,
+        )
+
 
 class ReadyAndLeaseTest(unittest.TestCase):
     def test_two_disjoint_tasks_are_both_ready(self) -> None:
@@ -363,6 +447,85 @@ class ReadyAndLeaseTest(unittest.TestCase):
         task_i = _minimal_task("WS-01", 9, reviewer="implementation")
         task_r = _minimal_task("WS-03", 11, reviewer="review", depends_on=[9])
         self.assertNotEqual(task_i["reviewer_role"], task_r["reviewer_role"])
+
+    def test_in_progress_is_not_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            data = _plan(
+                [
+                    _minimal_task("WS-01", 9, status="in_progress"),
+                    _minimal_task("WS-02", 10, writable=["docs/b/"]),
+                ]
+            )
+            errors, ready = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False
+            )
+            self.assertEqual(errors, [])
+            self.assertEqual(ready, ["WS-02"])
+
+    def test_in_progress_lease_blocks_lower_id_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            data = _plan(
+                [
+                    _minimal_task(
+                        "WS-01", 9, writable=["docs/shared/"]
+                    ),
+                    _minimal_task(
+                        "WS-02",
+                        10,
+                        status="in_progress",
+                        writable=["docs/shared/"],
+                    ),
+                ]
+            )
+            errors, ready = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False
+            )
+            self.assertEqual(errors, [])
+            self.assertEqual(ready, [])
+
+    def test_ancestor_writable_dirs_conflict(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            data = _plan(
+                [
+                    _minimal_task("WS-01", 9, writable=["tool/workshop/"]),
+                    _minimal_task(
+                        "WS-02", 10, writable=["tool/workshop/generated/"]
+                    ),
+                ]
+            )
+            errors, ready = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False
+            )
+            self.assertEqual(errors, [])
+            self.assertEqual(ready, ["WS-01"])
+
+    def test_stale_sha_fails_without_known_set(self) -> None:
+        errors, _ = validate_plan.validate_plan(
+            _plan([_minimal_task("WS-01", 9, sha="0" * 40)]),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+        )
+        self.assertTrue(any("stale SHA" in error for error in errors), msg=errors)
+
+    def test_real_head_sha_is_accepted_without_known_set(self) -> None:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            text=True,
+        ).strip()
+        errors, ready = validate_plan.validate_plan(
+            _plan([_minimal_task("WS-01", 9, sha=sha)]),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(ready, ["WS-01"])
 
 
 if __name__ == "__main__":
