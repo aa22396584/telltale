@@ -290,34 +290,36 @@ def run_task(
     if not dry_run:
         lease_fd = _acquire_lease(lease_path, task_id)
     try:
-        if isolate and not dry_run:
+        if isolate:
             git_root = _git_toplevel(cwd)
             requested = base_sha or task.get("base_sha")
             head_sha = (
                 _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
             )
-            worktree_dest = (
-                isolate_dir.expanduser().resolve()
-                if isolate_dir is not None
-                else git_root / ".worktrees" / f"ws-{task_id.lower()}"
-            )
-            _add_worktree(git_root, worktree_dest, head_sha)
-            worktree_path = str(worktree_dest)
-            try:
-                rel = cwd.resolve().relative_to(git_root.resolve())
-            except ValueError as exc:
-                raise RunnerError("plan root is outside the git checkout") from exc
-            cwd = worktree_dest if rel == Path(".") else worktree_dest / rel
-            isolated_anchor = cwd / "tool" / "workshop" / "plan.json"
-            artifact_errors, _ = validate_plan.validate_plan(
-                data,
-                plan_path=isolated_anchor,
-                check_artifacts=True,
-            )
-            if artifact_errors:
-                raise RunnerError(
-                    "isolated checkout evidence failed: " + "; ".join(artifact_errors)
+            if not dry_run:
+                worktree_dest = (
+                    isolate_dir.expanduser().resolve()
+                    if isolate_dir is not None
+                    else git_root / ".worktrees" / f"ws-{task_id.lower()}"
                 )
+                _add_worktree(git_root, worktree_dest, head_sha)
+                worktree_path = str(worktree_dest)
+                try:
+                    rel = cwd.resolve().relative_to(git_root.resolve())
+                except ValueError as exc:
+                    raise RunnerError("plan root is outside the git checkout") from exc
+                cwd = worktree_dest if rel == Path(".") else worktree_dest / rel
+                isolated_anchor = cwd / "tool" / "workshop" / "plan.json"
+                artifact_errors, _ = validate_plan.validate_plan(
+                    data,
+                    plan_path=isolated_anchor,
+                    check_artifacts=True,
+                )
+                if artifact_errors:
+                    raise RunnerError(
+                        "isolated checkout evidence failed: "
+                        + "; ".join(artifact_errors)
+                    )
         child_env = _allowed_env(env if env is not None else os.environ)
         results: list[dict[str, Any]] = []
         failed: list[str] = []
