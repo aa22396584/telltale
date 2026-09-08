@@ -168,6 +168,7 @@ void main() {
         definition: user.definition,
         event: events[1],
       );
+      expect(userStatus.origin, DatumOrigin.ecuReported);
       expect(userStatus.evidence, EvidenceKind.userSupplied);
       expect(userStatus.compatibility, Compatibility.userSelected);
 
