@@ -163,14 +163,54 @@ if [ "$APPLY" = 1 ]; then
   else
     echo >&2
     # Exit code alone cannot tell "Play refused" from "Play accepted and the
-    # reply was lost". A timeout after a successful commit used to print
-    # "nothing reached the store" and then delete; the delete 404 was then
-    # read as proof of rollback. Keep the three outcomes distinct.
-    case "$commit_out" in
-      *403*|*"does not have permission"*|*400*|*409*|*PERMISSION_DENIED*)
+    # reply was lost". Digits in a timeout ("4000 ms"), an edit id
+    # ("123403999"), or a proxy port (":4090") used to match *400*/*403*/*409*
+    # and print a refusal. Only documented fields from gplay 1.0.0 (5f12cc2)
+    # can prove a refuse:
+    #   * default minified JSON with an `error` object whose `code` is an
+    #     integer or whose `status` is a google.rpc name
+    #   * the googleapi library line `googleapi: Error %d: %s` (also logged
+    #     as `Error: googleapi: Error 400: …` in docs/maintainers/release.md)
+    # Anything else — including that same line with a code that is not a
+    # documented refuse — stays unknown.
+    kind=$(printf '%s' "$commit_out" | python3 -c '
+import json, re, sys
+raw = sys.stdin.read()
+
+def from_err(err):
+    if not isinstance(err, dict):
+        return None
+    status = err.get("status")
+    code = err.get("code")
+    if isinstance(code, bool) or not isinstance(code, int):
+        code = None
+    if status == "PERMISSION_DENIED" or code == 403:
+        return "permission"
+    if status in ("INVALID_ARGUMENT", "FAILED_PRECONDITION") or code in (400, 409):
+        return "refused"
+    return None
+
+kind = "unknown"
+try:
+    obj = json.loads(raw.strip())
+except Exception:
+    obj = None
+if isinstance(obj, dict) and isinstance(obj.get("error"), dict):
+    kind = from_err(obj["error"]) or "unknown"
+if kind == "unknown":
+    m = re.search(r"googleapi: Error (\d+):", raw)
+    if m:
+        code = int(m.group(1))
+        if code == 403:
+            kind = "permission"
+        elif code in (400, 409):
+            kind = "refused"
+print(kind)
+')
+    case "$kind" in
+      permission|refused)
         echo "The commit was refused; this edit did not become the store listing. Discarding the edit." >&2
-        case "$commit_out" in
-          *403*|*"does not have permission"*)
+        if [ "$kind" = permission ]; then
             cat >&2 <<'DIAG'
 
 The pictures and text were accepted into the edit and only the commit was
@@ -185,8 +225,7 @@ BOTH a new-locale text-only edit and an existing-locale images-only edit are
 refused. So it is store presence as a whole, not adding a language.
 See docs/maintainers/release.md section 4.7(c).
 DIAG
-            ;;
-        esac
+        fi
         exit "$status"
         ;;
       *)
