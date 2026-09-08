@@ -322,7 +322,9 @@ def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
         )
 
 
-def _read_author_handoff(path: Path) -> dict[str, Any]:
+def _read_author_handoff(
+    path: Path, task_id: str, task: dict[str, Any]
+) -> dict[str, Any]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -334,6 +336,26 @@ def _read_author_handoff(path: Path) -> dict[str, Any]:
         raise RunnerError("invalid author handoff: " + "; ".join(errors))
     if raw.get("completed") is not True or raw.get("status") != "completed":
         raise RunnerError("review requires a completed author handoff")
+    if raw.get("task") != task_id:
+        raise RunnerError(
+            f"author handoff task {raw.get('task')!r} does not match {task_id}"
+        )
+    if raw.get("issue") != task.get("issue"):
+        raise RunnerError(
+            f"author handoff issue {raw.get('issue')!r} does not match "
+            f"{task.get('issue')}"
+        )
+    planned = task.get("run_commands") or []
+    results = raw.get("results") or raw.get("evidence") or []
+    if not isinstance(results, list) or len(results) != len(planned):
+        raise RunnerError(
+            "author handoff commands do not match the selected task"
+        )
+    for item, argv in zip(results, planned, strict=True):
+        if not isinstance(item, dict) or item.get("argv") != argv:
+            raise RunnerError(
+                "author handoff commands do not match the selected task"
+            )
     return raw
 
 
@@ -516,10 +538,10 @@ def run_task(
     if not review:
         if task.get("status") != "pending":
             raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
-        if task_id not in ready:
-            raise RunnerError(
-                f"{task_id}: not ready (lease or unfinished dependency)"
-            )
+    if task_id not in ready:
+        raise RunnerError(
+            f"{task_id}: not ready (lease or unfinished dependency)"
+        )
     if task.get("hardware_or_license_blockers"):
         raise RunnerError(
             f"{task_id}: hardware/license blocker is visible, not PASS"
@@ -537,7 +559,7 @@ def run_task(
     if review:
         author_path = handoff_dest
         handoff_dest = author_path.with_name("review.json")
-        _read_author_handoff(author_path)
+        _read_author_handoff(author_path, task_id, task)
     lease_path = (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
     )
