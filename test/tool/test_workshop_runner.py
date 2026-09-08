@@ -538,6 +538,38 @@ class RunTaskTest(unittest.TestCase):
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 
+    def test_review_does_not_overwrite_author_handoff_named_review_json(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "review.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"][0]["status"] = "completed"
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            before = author.read_text(encoding="utf-8")
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=author, timeout=5, review=True
+            )
+            self.assertEqual(code, 0)
+            self.assertEqual(author.read_text(encoding="utf-8"), before)
+            author_payload = json.loads(before)
+            self.assertEqual(author_payload["reviewer_role"], "implementation")
+            review = json.loads(
+                author.with_name("reviewer.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(validate_plan.validate_handoff(review), [])
+            self.assertTrue(review["completed"])
+            self.assertEqual(review["reviewer_role"], "review")
+
     def test_review_refuses_unfinished_dependency(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
