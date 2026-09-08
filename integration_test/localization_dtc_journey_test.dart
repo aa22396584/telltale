@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 
 import 'rig_support.dart';
 
@@ -58,10 +59,13 @@ void main() {
       find.byKey(const Key('locale_english')),
       400,
       scrollable: find
-          .byWidgetPredicate(
-            (widget) =>
-                widget is Scrollable &&
-                widget.axisDirection == AxisDirection.down,
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
           )
           .first,
     );

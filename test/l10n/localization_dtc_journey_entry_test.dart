@@ -27,6 +27,8 @@ void main() {
     expect(source.contains('故障碼'), isTrue);
     expect(source.contains('Fault codes'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('SettingsScreen'), isTrue);
+    expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('connectDemoRig');
     final dtcAt = source.indexOf('故障碼');
     final englishAt = source.indexOf('locale_english');
