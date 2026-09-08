@@ -4029,4 +4029,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pidImportNothingImportable =>
       'The file has rows in it, but none of them is a PID definition.';
+
+  @override
+  String get dtcCategoryNoAnswer => 'This category did not answer. Scan again.';
+
+  @override
+  String get dtcCategoryError =>
+      'This category could not be read. The full error is kept in the transcript.';
+
+  @override
+  String get dtcCategoryDisconnected =>
+      'The connection dropped while this category was being read.';
+
+  @override
+  String get dtcCategoryPending =>
+      'A controller received the request and is still working on it. Wait, then scan again — this is not a refusal.';
+
+  @override
+  String get dtcCategoryUnattributed =>
+      'Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.';
+
+  @override
+  String get connectPairedListFailed =>
+      'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.';
 }

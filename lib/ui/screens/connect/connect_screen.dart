@@ -251,8 +251,18 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
       final devices = await ClassicTransport.pairedDevices();
       if (!mounted) return;
       setState(() => _devices = _likelyAdaptersFirst(devices));
-    } on Object catch (e) {
-      if (mounted) setState(() => _scanError = '$e');
+    } on Object catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'connect_screen',
+          context: ErrorDescription('paired Bluetooth list'),
+        ),
+      );
+      if (mounted) {
+        setState(() => _scanError = l10n.connectPairedListFailed);
+      }
     } finally {
       if (mounted) setState(() => _scanning = false);
     }

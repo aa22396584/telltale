@@ -46,5 +46,17 @@ void main() {
     expect(code.contains(r"DtcReadException('$e')"), isFalse);
     expect(code.contains(r'DtcReadException("$e")'), isFalse);
     expect(code.contains(r'（$e）'), isFalse);
+    expect(code.contains("'scan failed'"), isFalse);
+  });
+
+  test('the category panel does not interpolate DtcReadException.message', () {
+    final code = _code('lib/ui/screens/dtc/dtc_screen.dart');
+    expect(code.contains('failure.message'), isFalse);
+  });
+
+  test('the paired-list path does not interpolate the caught exception', () {
+    final code = _code('lib/ui/screens/connect/connect_screen.dart');
+    expect(code.contains(r"_scanError = '$e'"), isFalse);
+    expect(code.contains(r'_scanError = "$e"'), isFalse);
   });
 }

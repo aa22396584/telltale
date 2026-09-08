@@ -52,6 +52,27 @@ String? dtcClearNoticeText(AppLocalizations l10n, DtcClearNotice? notice) {
   };
 }
 
+/// Category-panel failure copy. [DtcReadException.message] stays on the
+/// transcript; the screen maps [DtcReadException.transportIssue] or
+/// [DtcReadException.kind] and never interpolates the engine sentence.
+String dtcCategoryFailureText(
+  AppLocalizations l10n,
+  DtcReadException failure,
+) {
+  final issue = failure.transportIssue;
+  if (issue != null) {
+    return commandIssueText(l10n, issue, detail: failure.issueDetail) ??
+        l10n.dtcCategoryError;
+  }
+  return switch (failure.kind) {
+    DtcReadFailure.noAnswer => l10n.dtcCategoryNoAnswer,
+    DtcReadFailure.error => l10n.dtcCategoryError,
+    DtcReadFailure.disconnected => l10n.dtcCategoryDisconnected,
+    DtcReadFailure.pending => l10n.dtcCategoryPending,
+    DtcReadFailure.unattributed => l10n.dtcCategoryUnattributed,
+  };
+}
+
 String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
   final failure = notice.failure;
   if (failure == null) return l10n.dtcClearFailureGeneric;

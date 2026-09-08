@@ -3599,6 +3599,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pidImportNothingImportable => '檔案裡有資料列，但沒有任何一列是 PID 定義。';
+
+  @override
+  String get dtcCategoryNoAnswer => '這個類別沒有回應。請重新掃描。';
+
+  @override
+  String get dtcCategoryError => '這個類別讀取失敗。完整錯誤保留在紀錄裡。';
+
+  @override
+  String get dtcCategoryDisconnected => '讀取這個類別時連線中斷。';
+
+  @override
+  String get dtcCategoryPending => '控制器已收到請求、仍在處理中。請稍候再掃描一次——這不是拒絕。';
+
+  @override
+  String get dtcCategoryUnattributed =>
+      '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
+
+  @override
+  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。完整錯誤保留在下方紀錄。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7195,4 +7214,23 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pidImportNothingImportable => '檔案裡有資料列，但沒有任何一列是 PID 定義。';
+
+  @override
+  String get dtcCategoryNoAnswer => '這個類別沒有回應。請重新掃描。';
+
+  @override
+  String get dtcCategoryError => '這個類別讀取失敗。完整錯誤保留在紀錄裡。';
+
+  @override
+  String get dtcCategoryDisconnected => '讀取這個類別時連線中斷。';
+
+  @override
+  String get dtcCategoryPending => '控制器已收到請求、仍在處理中。請稍候再掃描一次——這不是拒絕。';
+
+  @override
+  String get dtcCategoryUnattributed =>
+      '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
+
+  @override
+  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。完整錯誤保留在下方紀錄。';
 }

@@ -3462,5 +3462,20 @@
   "pidImportNothingImportable": "The file has rows in it, but none of them is a PID definition.",
   "@pidImportNothingImportable": {
     "description": "PidCsvIssue.nothingImportable. Distinct from an empty file: there was content, and it produced nothing."
-  }
+  },
+  "dtcCategoryNoAnswer": "This category did not answer. Scan again.",
+  "@dtcCategoryNoAnswer": {
+    "description": "DtcReadFailure.noAnswer on a category panel. Not a clean result."
+  },
+  "dtcCategoryError": "This category could not be read. The full error is kept in the transcript.",
+  "@dtcCategoryError": {
+    "description": "DtcReadFailure.error, including unexpected Object catches. Screen must not interpolate failure.message."
+  },
+  "dtcCategoryDisconnected": "The connection dropped while this category was being read.",
+  "dtcCategoryPending": "A controller received the request and is still working on it. Wait, then scan again — this is not a refusal.",
+  "@dtcCategoryPending": {
+    "description": "DtcReadFailure.pending (NRC 0x78). Waiting is the right next step."
+  },
+  "dtcCategoryUnattributed": "Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.",
+  "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below."
 }

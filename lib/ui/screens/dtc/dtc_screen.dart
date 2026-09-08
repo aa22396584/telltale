@@ -17,7 +17,6 @@ import '../../../obd/readiness.dart';
 import '../../../state/dtc_scan.dart';
 import '../../../state/obd_session.dart';
 import '../../widgets/panel.dart';
-import '../settings/manual_command_copy.dart';
 import 'dtc_copy.dart';
 import 'readiness_copy.dart';
 
@@ -811,10 +810,7 @@ class UnansweredCategoryWording {
 String? _failureSentence(AppLocalizations l10n, DtcCategoryResult result) {
   final failure = result.failure;
   if (failure == null) return null;
-  final issue = failure.transportIssue;
-  if (issue == null) return failure.message;
-  return commandIssueText(l10n, issue, detail: failure.issueDetail) ??
-      failure.message;
+  return dtcCategoryFailureText(l10n, failure);
 }
 
 UnansweredCategoryWording unansweredCategoryWording({
