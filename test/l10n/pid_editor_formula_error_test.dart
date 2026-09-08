@@ -207,4 +207,43 @@ void main() {
     container.dispose();
     await tester.pump();
   });
+
+  testWidgets('an incomplete sample nibble does not throw during build',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final container = await _container();
+    await tester.pumpWidget(_host(container, const Locale('en')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(6), '4');
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('is not a number'), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+    await tester.pump();
+  });
+
+  testWidgets('preview chips bind the data bytes, not the Mode 01 prefix',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final container = await _container();
+    await tester.pumpWidget(_host(container, const Locale('en')));
+    await tester.pumpAndSettle();
+
+    // Default sample is `41 00 7B 2C`. Evaluate strips 41 00, so A is 0x7B.
+    expect(find.textContaining('A = 0x7B'), findsOneWidget);
+    expect(find.textContaining('A = 0x41'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+    await tester.pump();
+  });
 }

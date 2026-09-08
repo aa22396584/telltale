@@ -292,6 +292,9 @@ void main() {
       // by exception. Driven in `transport_issue_guard_test.dart`, which walks
       // a refused header from a fake adapter to the rendered sentence.
       'lib/ui/screens/dtc/dtc_screen.dart -> commandIssueText x1',
+      // Clear-notice engine-failure arm maps a TransportIssue through the
+      // same table. Driven in message_fallback_copy_test.dart.
+      'lib/ui/screens/dtc/dtc_copy.dart -> commandIssueText x1',
     };
     expect(
       sites,

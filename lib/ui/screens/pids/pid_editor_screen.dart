@@ -195,6 +195,22 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
   /// the preview rather than looking like a real measurement.
   static const double _sampleDependencyValue = 100;
 
+  /// Bytes the preview chips bind to `A`..`H`.
+  ///
+  /// Must use the same prefix-stripping `evaluate` uses, and must not throw
+  /// during build: an odd-length sample is what a person types between two
+  /// hex digits, and `_previewFor` already catches that [FormulaException].
+  List<int> _previewSampleBytes() {
+    try {
+      return FormulaEngine.parseUserTypedSampleBytes(
+        _sample.text,
+        stripResponsePrefix: true,
+      );
+    } on FormulaException {
+      return const [];
+    }
+  }
+
   /// Why the current request cannot be polled, or null when it can.
   ///
   /// The editor is the other door onto a car's bus, alongside CSV import. A
@@ -499,7 +515,7 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
             units: _units.text,
             minValue: double.tryParse(_min.text) ?? 0,
             maxValue: double.tryParse(_max.text) ?? 100,
-            sampleBytes: FormulaEngine.parseUserTypedSampleBytes(_sample.text),
+            sampleBytes: _previewSampleBytes(),
           ),
 
           const SizedBox(height: Spacing.xl),

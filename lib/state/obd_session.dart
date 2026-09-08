@@ -1271,11 +1271,14 @@ class ObdSession extends Notifier<ObdConnectionState> {
     } on TransportException catch (e) {
       // The sentence still goes to the transcript; the identifier is what the
       // screen renders, so a Wi-Fi route refusal stops being told to connect to
-      // a hotspot it is already on.
+      // a hotspot it is already on. Nested cause/detail (native platform
+      // prose) is transcript-only — interpolating it into [e.message] would
+      // put it back on the screen.
       return _failAttempt(
         generation,
         client,
         e.message,
+        detail: e.cause == null ? e.message : '${e.message} (${e.cause})',
         transportIssue: e.issue,
       );
     } on Object catch (e) {

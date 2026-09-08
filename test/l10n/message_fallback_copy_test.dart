@@ -9,6 +9,7 @@ import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
+import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_formula_copy.dart';
@@ -137,6 +138,25 @@ void main() {
       text,
       'A clear may already have reached the vehicle. Do not send another — a second global clear can reset emissions readiness on a controller that already finished. Rescan to see what is left.',
     );
+  });
+
+  test('a clear failure with a transport identifier uses that table, not Chinese',
+      () {
+    const failure = DtcReadException(
+      '轉接器拒絕切換為功能定址 7DF',
+      transportIssue: TransportIssue.wholeVehicleHeaderRefused,
+      issueDetail: '7DF',
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7DF'));
+    expect(text, isNot(contains('功能定址')));
   });
 
   test('a FormulaException with no identifier does not render the engine sentence',
