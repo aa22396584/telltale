@@ -141,6 +141,21 @@ class CheckArbTest(unittest.TestCase):
             zh = _write(tmp, "app_zh.arb", {"count": "{n} 項"})
             self.assertEqual(check_arb.check_files([en, zh]), [])
 
+    def test_omitted_metadata_still_catches_icu_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            en = _write(
+                tmp,
+                "app_en.arb",
+                {
+                    "count": "{n} items",
+                    "@count": {"placeholders": {"n": {"type": "int"}}},
+                },
+            )
+            zh = _write(tmp, "app_zh.arb", {"count": "{count} 項"})
+            errors = check_arb.check_files([en, zh])
+            self.assertTrue(any("placeholder names" in e and "count" in e for e in errors))
+
     def test_main_returns_nonzero_on_failure(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

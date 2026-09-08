@@ -8,9 +8,12 @@ rewrite the real ARB files.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
+
+_ICU_NAME = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)")
 
 
 class ArbError(Exception):
@@ -19,6 +22,10 @@ class ArbError(Exception):
 
 def _message_keys(data: dict[str, Any]) -> set[str]:
     return {key for key in data if not key.startswith("@")}
+
+
+def _icu_names(text: str) -> set[str]:
+    return set(_ICU_NAME.findall(text))
 
 
 def _placeholders(data: dict[str, Any], key: str) -> dict[str, str]:
@@ -95,24 +102,33 @@ def check_files(paths: list[Path]) -> list[str]:
             value = data.get(key)
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"{path.name}: empty value for {key}")
+    template = loaded[0][1]
     for key in sorted(reference_keys):
-        expected = _placeholders(loaded[0][1], key)
+        expected_meta = _placeholders(template, key)
+        expected_names = set(expected_meta) or _icu_names(
+            template.get(key) if isinstance(template.get(key), str) else ""
+        )
         for path, data in loaded[1:]:
-            # Flutter gen-l10n reads placeholder metadata from the template
-            # locale. A translation file that omits `@key` still inherits
-            # those names; only a present `@key` with a different set is a
-            # mismatch.
-            if f"@{key}" not in data:
+            value = data.get(key)
+            if not isinstance(value, str):
                 continue
-            actual = _placeholders(data, key)
-            if set(expected) != set(actual):
+            actual_names = _icu_names(value)
+            if actual_names != expected_names:
                 errors.append(
                     f"{path.name}: placeholder names for {key} "
-                    f"{sorted(actual)} != {sorted(expected)}"
+                    f"{sorted(actual_names)} != {sorted(expected_names)}"
+                )
+            if f"@{key}" not in data:
+                continue
+            actual_meta = _placeholders(data, key)
+            if set(expected_meta) != set(actual_meta):
+                errors.append(
+                    f"{path.name}: placeholder metadata for {key} "
+                    f"{sorted(actual_meta)} != {sorted(expected_meta)}"
                 )
                 continue
-            for name, expected_type in expected.items():
-                got = actual.get(name, "")
+            for name, expected_type in expected_meta.items():
+                got = actual_meta.get(name, "")
                 if got != expected_type:
                     errors.append(
                         f"{path.name}: placeholder type {key}.{name} "
