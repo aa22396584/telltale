@@ -434,6 +434,37 @@ class RunTaskTest(unittest.TestCase):
             data = json.loads(handoff.read_text(encoding="utf-8"))
             self.assertTrue(data["completed"])
 
+    def test_isolate_uses_the_caller_evidence_spec(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            sha = _init_git(repo)
+            digest = hashlib.sha256(b"required-later\n").hexdigest()
+            payload = json.loads(plan.read_text(encoding="utf-8"))
+            payload["tasks"][0]["required_evidence"] = [
+                {"path": "docs/workshop/ws/ws-01/proof.txt", "sha256": digest},
+            ]
+            plan.write_text(json.dumps(payload), encoding="utf-8")
+            try:
+                with self.assertRaises(run_task.RunnerError) as raised:
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=tmp / "h.json",
+                        timeout=5,
+                        isolate=True,
+                        isolate_dir=worktree,
+                        base_sha=sha,
+                    )
+            finally:
+                _remove_worktree(repo, worktree)
+            self.assertIn("isolated checkout evidence failed", str(raised.exception))
+
 
 def _init_git(root: Path) -> str:
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
