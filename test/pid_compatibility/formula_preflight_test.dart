@@ -81,6 +81,15 @@ void main() {
     expect(result.pids, hasLength(1));
   });
 
+  test('a formula that is always out of domain is still rejected', () {
+    expect(FormulaEngine.preflight('A/0')?.issue, FormulaIssue.divisionByZero);
+    expect(FormulaEngine.preflight('A%0')?.issue, FormulaIssue.moduloByZero);
+    expect(
+      FormulaEngine.preflight('LOG10(-1)')?.issue,
+      FormulaIssue.log10NonPositiveArgument,
+    );
+  });
+
   test('a probe-value domain error is not an import syntax error', () {
     // Probe bytes are all 1. `1/(A-1)` is defined for every other A.
     expect(FormulaEngine.preflight('1/(A-1)'), isNull);
