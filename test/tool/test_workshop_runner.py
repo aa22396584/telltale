@@ -112,6 +112,72 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(data["status"], "failed")
             self.assertTrue(data["failed"])
 
+    def test_review_reruns_argv_instead_of_copying_author_completed(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "handoff.json"
+            code = run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5)
+            self.assertEqual(code, 0)
+            self.assertTrue(json.loads(author.read_text(encoding="utf-8"))["completed"])
+            (tmp / "tool" / "workshop" / "probe.py").write_text(
+                _fail_script(), encoding="utf-8"
+            )
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=author, timeout=5, review=True
+            )
+            self.assertEqual(code, 1)
+            review = author.with_name("review.json")
+            data = json.loads(review.read_text(encoding="utf-8"))
+            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertIs(data["completed"], False)
+            self.assertEqual(data["status"], "failed")
+            self.assertEqual(data["reviewer_role"], "review")
+            self.assertTrue(json.loads(author.read_text(encoding="utf-8"))["completed"])
+
+    def test_review_dry_run_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            with self.assertRaises(run_task.RunnerError) as ctx:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=author,
+                    timeout=5,
+                    review=True,
+                    dry_run=True,
+                )
+            self.assertIn("dry-run", str(ctx.exception))
+
+    def test_review_without_author_handoff_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            with self.assertRaises(run_task.RunnerError) as ctx:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "handoff.json",
+                    timeout=5,
+                    review=True,
+                )
+            self.assertIn("handoff", str(ctx.exception).lower())
+
     def test_not_ready_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

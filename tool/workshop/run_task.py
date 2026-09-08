@@ -7,7 +7,8 @@ issue or comment text as a shell. Does not reset existing git changes.
 caller's checkout is left untouched. If the isolate path already exists,
 the runner refuses rather than resetting it. Combined with `--dry-run` it
 does not create a worktree; required evidence is read from git blobs at
-that SHA instead of the caller's dirty tree.
+that SHA instead of the caller's dirty tree. `--review` re-runs a completed
+author handoff and writes `review.json`; it cannot be dry-run.
 """
 from __future__ import annotations
 
@@ -321,6 +322,21 @@ def _add_worktree(git_root: Path, dest: Path, sha: str) -> None:
         )
 
 
+def _read_author_handoff(path: Path) -> dict[str, Any]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RunnerError(f"cannot read author handoff: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise RunnerError("author handoff must be a JSON object")
+    errors = validate_plan.validate_handoff(raw)
+    if errors:
+        raise RunnerError("invalid author handoff: " + "; ".join(errors))
+    if raw.get("completed") is not True or raw.get("status") != "completed":
+        raise RunnerError("review requires a completed author handoff")
+    return raw
+
+
 def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
     errors = validate_plan.validate_handoff(payload)
     if errors:
@@ -476,6 +492,7 @@ def run_task(
     isolate: bool = False,
     isolate_dir: Path | None = None,
     base_sha: str | None = None,
+    review: bool = False,
 ) -> int:
     try:
         data = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -491,12 +508,18 @@ def run_task(
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
     task = _task_by_id(data, task_id)
-    if task.get("status") != "pending":
-        raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
-    if task_id not in ready:
+    if review and dry_run:
         raise RunnerError(
-            f"{task_id}: not ready (lease or unfinished dependency)"
+            "review cannot be dry-run: that would accept the author handoff "
+            "without re-running"
         )
+    if not review:
+        if task.get("status") != "pending":
+            raise RunnerError(f"{task_id}: status {task.get('status')!r} is not pending")
+        if task_id not in ready:
+            raise RunnerError(
+                f"{task_id}: not ready (lease or unfinished dependency)"
+            )
     if task.get("hardware_or_license_blockers"):
         raise RunnerError(
             f"{task_id}: hardware/license blocker is visible, not PASS"
@@ -511,6 +534,10 @@ def run_task(
     handoff_dest = handoff_path or (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
     )
+    if review:
+        author_path = handoff_dest
+        handoff_dest = author_path.with_name("review.json")
+        _read_author_handoff(author_path)
     lease_path = (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
     )
@@ -588,9 +615,11 @@ def run_task(
             "failed": failed,
             "unrun": unrun,
             "results": results,
-            "reviewer_role": task.get("reviewer_role"),
+            "reviewer_role": "review" if review else task.get("reviewer_role"),
             "next": (
-                "reviewer re-runs the same argv"
+                "review re-ran the same argv"
+                if review and completed
+                else "reviewer re-runs the same argv"
                 if completed
                 else "fix the failed command; do not mark completed"
             ),
@@ -618,6 +647,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--isolate", action="store_true")
     parser.add_argument("--isolate-dir")
     parser.add_argument("--base-sha")
+    parser.add_argument(
+        "--review",
+        action="store_true",
+        help="re-run a completed author handoff; writes review.json",
+    )
     args = parser.parse_args(argv[1:])
     try:
         return run_task(
@@ -630,6 +664,7 @@ def main(argv: list[str]) -> int:
             isolate=args.isolate,
             isolate_dir=Path(args.isolate_dir) if args.isolate_dir else None,
             base_sha=args.base_sha,
+            review=args.review,
         )
     except RunnerError as exc:
         print(str(exc), file=sys.stderr)
