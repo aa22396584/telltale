@@ -547,7 +547,11 @@ class Elm327Client {
   static const int _crByte = 0x0D;
 
   final _buffer = <int>[];
-  final _initProgress = StreamController<InitProgress>.broadcast();
+  // Sync: the session classifies a failed handshake from this list the
+  // moment `connect()` returns. An async broadcast left that list empty for
+  // an ATZ that threw immediately, so the banner said "initialization did
+  // not pass" while the row (once it arrived) already knew it was unexpected.
+  final _initProgress = StreamController<InitProgress>.broadcast(sync: true);
 
   Completer<ObdResponse>? _pending;
   Timer? _pendingTimeout;
