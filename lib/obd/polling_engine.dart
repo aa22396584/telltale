@@ -4021,6 +4021,9 @@ class PollingEngine {
         _invalidate(request.pid.id, PidFault.busError);
         continue;
       }
+      // Siblings share the raw reply, not the representative's formula. A
+      // `VAL{}` miss on the first definition must not skip the rest.
+      _applySharedWireSiblings(request.pid, response, bytes, now);
       try {
         final value = formula.evaluateBytes(
           request.pid.equation,
@@ -4052,7 +4055,6 @@ class PollingEngine {
           rawBytes: bytes,
           timestamp: now,
         );
-        _applySharedWireSiblings(request.pid, response, bytes, now);
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
         }
@@ -4303,7 +4305,9 @@ class PollingEngine {
   }
 
   /// Mode 01 siblings share the source payload. Catalog windows do not:
-  /// each has its own offset into the attributed DID payload.
+  /// each has its own offset into the attributed DID payload. Reusing the
+  /// representative's already-sliced bytes is how pack temperature would
+  /// read SOC (85 instead of 30).
   List<int>? _bytesForSharedSibling(
     Pid sibling,
     ObdResponse response,
