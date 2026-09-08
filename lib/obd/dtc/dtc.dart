@@ -661,10 +661,14 @@ class DtcReadException implements Exception {
     this.terminalSources = const {},
     this.heardAboutService = const {},
     this.silentSources = const {},
+    this.unresolvedSources = const {},
     this.repeatWouldHarm = false,
     this.transportIssue,
     this.issueDetail,
     this.negativeResponseCode,
+    this.refusedCount = 0,
+    this.answeredCount = 0,
+    this.unrecognisedCount = 0,
   });
 
   final String message;
@@ -732,6 +736,26 @@ class DtcReadException implements Exception {
   /// one module missed is not the same as a module that will not answer, and
   /// on 11-bit CAN the difference is one physically addressed request away.
   final Set<String> silentSources;
+
+  /// Reply tokens that could not be attached to a named controller.
+  ///
+  /// Distinct from [silentSources]: those are modules the census already
+  /// named, and they said nothing. These are identities a reply carried that
+  /// the parser could not resolve, so coverage cannot be claimed even when
+  /// every named module answered. The transcript interpolates the count into
+  /// Chinese; the screen maps this set.
+  final Set<String> unresolvedSources;
+
+  /// How many controllers explicitly refused this request (`7F` with an NRC
+  /// other than 0x78). The transcript interpolates the count; the screen maps
+  /// this field rather than [message].
+  final int refusedCount;
+
+  /// How many controllers gave a terminal answer to this request.
+  final int answeredCount;
+
+  /// How many replies were neither a refusal nor an answer to this service.
+  final int unrecognisedCount;
 
   /// Controllers that gave a *final* answer during the same exchange.
   ///

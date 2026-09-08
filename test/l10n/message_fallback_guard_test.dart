@@ -23,9 +23,10 @@ void main() {
     expect(code.contains(r'error: "$e"'), isFalse);
   });
 
-  test('the battery catalog does not snack PowertrainProfileInstallException.message',
-      () {
-    final code = _code('lib/ui/screens/pids/powertrain_battery_catalog_screen.dart');
+  test('the battery catalog does not snack PowertrainProfileInstallException.message', () {
+    final code = _code(
+      'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart',
+    );
     expect(code.contains('error.message'), isFalse);
   });
 
@@ -34,8 +35,7 @@ void main() {
     expect(code.contains('\${e.message}'), isFalse);
   });
 
-  test('the Wi-Fi transport does not wrap the binder sentence in another interpolation',
-      () {
+  test('the Wi-Fi transport does not wrap the binder sentence in another interpolation', () {
     final code = _code('lib/obd/transport/wifi_transport.dart');
     expect(code.contains('\${e.message}'), isFalse);
   });
@@ -67,24 +67,65 @@ void main() {
     expect(code.contains('error.message'), isFalse);
   });
 
-  test('clear disconnect copy does not interpolate TransportException.message',
-      () {
-    final code = _code('lib/obd/polling_engine.dart');
-    expect(
-      code.contains(r'e is TransportException ? e.message : e'),
-      isFalse,
-    );
-    expect(code.contains('negativeResponseCode: e.negativeResponseCode'), isTrue);
-    expect(code.contains('silentSources: Set.unmodifiable(e.silentSources)'), isTrue);
-    expect(code.contains('decodeFailure ??= e.message'), isFalse);
-    expect(code.contains('issueDetail: source'), isFalse);
-    expect(code.contains('issueDetail: frame.sourceId'), isTrue);
-  });
+  test(
+    'clear disconnect copy does not interpolate TransportException.message',
+    () {
+      final code = _code('lib/obd/polling_engine.dart');
+      expect(
+        code.contains(r'e is TransportException ? e.message : e'),
+        isFalse,
+      );
+      expect(
+        code.contains('negativeResponseCode: e.negativeResponseCode'),
+        isTrue,
+      );
+      expect(
+        code.contains('silentSources: Set.unmodifiable(e.silentSources)'),
+        isTrue,
+      );
+      expect(code.contains('decodeFailure ??= e.message'), isFalse);
+      expect(code.contains('issueDetail: source'), isFalse);
+      expect(code.contains('issueDetail: frame.sourceId'), isTrue);
+    },
+  );
 
   test('NRC clear copy selects a repeat-safety variant', () {
     final code = _code('lib/ui/screens/dtc/dtc_copy.dart');
     expect(code.contains('dtcClearNrcConditionsDoNotRepeat'), isTrue);
     expect(code.contains('failure.repeatWouldHarm'), isTrue);
+  });
+
+  test('polling-engine status interpolations carry structured counts', () {
+    final code = _code('lib/obd/polling_engine.dart');
+    expect(
+      code.contains('unresolvedSources: Set.unmodifiable(unresolved)'),
+      isTrue,
+    );
+    expect(
+      code.contains(
+        'unresolvedSources: Set.unmodifiable(openIdentityQuestions)',
+      ),
+      isTrue,
+    );
+    expect(
+      code.contains('unresolvedSources: Set.unmodifiable(e.unresolvedSources)'),
+      isTrue,
+    );
+    expect(code.contains('refusedCount: refused'), isTrue);
+    expect(code.contains('answeredCount: answered'), isTrue);
+    expect(code.contains('unrecognisedCount: unrecognised'), isTrue);
+    expect(code.contains('refusedCount: e.refusedCount'), isTrue);
+  });
+
+  test('category copy maps structured counts before kind fallback', () {
+    final code = _code('lib/ui/screens/dtc/dtc_copy.dart');
+    expect(code.contains('dtcCategorySilentControllers'), isTrue);
+    expect(code.contains('dtcCategoryUnresolvedSources'), isTrue);
+    expect(code.contains('dtcCategoryRefusedControllers'), isTrue);
+    expect(code.contains('dtcCategoryPendingControllers'), isTrue);
+    expect(code.contains('dtcCategoryUnrecognisedResponses'), isTrue);
+    expect(code.contains('dtcClearUnresolvedSourcesDoNotRepeat'), isTrue);
+    expect(code.contains('failure.message'), isFalse);
   });
 
   test('the BLE scan panel does not interpolate userFacingScanFailure', () {
@@ -106,18 +147,20 @@ void main() {
     expect(code.contains('on Object catch (e)'), isFalse);
   });
 
-  test('PID import picker/read copy does not interpolate the caught exception',
-      () {
-    // Raw source: codeOnly blanks string literals, so `'$e'` would disappear.
-    final source =
-        File('lib/ui/screens/pids/pid_manager_screen.dart').readAsStringSync();
-    expect(source.contains(r"pidImportPickerFailed('$e')"), isFalse);
-    expect(source.contains(r'pidImportPickerFailed("$e")'), isFalse);
-    expect(source.contains(r"pidImportReadFailed('$e')"), isFalse);
-    expect(source.contains(r'pidImportReadFailed("$e")'), isFalse);
-    expect(
-      'FlutterError.reportError'.allMatches(source).length,
-      greaterThanOrEqualTo(2),
-    );
-  });
+  test(
+    'PID import picker/read copy does not interpolate the caught exception',
+    () {
+      // Raw source: codeOnly blanks string literals, so `'$e'` would disappear.
+      final source = File('lib/ui/screens/pids/pid_manager_screen.dart')
+          .readAsStringSync();
+      expect(source.contains(r"pidImportPickerFailed('$e')"), isFalse);
+      expect(source.contains(r'pidImportPickerFailed("$e")'), isFalse);
+      expect(source.contains(r"pidImportReadFailed('$e')"), isFalse);
+      expect(source.contains(r'pidImportReadFailed("$e")'), isFalse);
+      expect(
+        'FlutterError.reportError'.allMatches(source).length,
+        greaterThanOrEqualTo(2),
+      );
+    },
+  );
 }

@@ -53,16 +53,47 @@ String? dtcClearNoticeText(AppLocalizations l10n, DtcClearNotice? notice) {
 }
 
 /// Category-panel failure copy. [DtcReadException.message] stays on the
-/// transcript; the screen maps [DtcReadException.transportIssue] or
+/// transcript; the screen maps transport identifiers, structured counts, or
 /// [DtcReadException.kind] and never interpolates the engine sentence.
-String dtcCategoryFailureText(
-  AppLocalizations l10n,
-  DtcReadException failure,
-) {
+String dtcCategoryFailureText(AppLocalizations l10n, DtcReadException failure) {
   final issue = failure.transportIssue;
   if (issue != null) {
     return commandIssueText(l10n, issue, detail: failure.issueDetail) ??
         l10n.dtcCategoryError;
+  }
+  // Same priority the engine uses when it composes the transcript sentence:
+  // a named silence, an unresolvable identity, a refusal, a pending wait,
+  // then an unreadable reply. Kind is the fallback when none of those
+  // counts were carried.
+  if (failure.silentSources.isNotEmpty) {
+    return l10n.dtcCategorySilentControllers(
+      failure.silentSources.length,
+      _controllerList(failure.silentSources),
+    );
+  }
+  if (failure.unresolvedSources.isNotEmpty) {
+    return l10n.dtcCategoryUnresolvedSources(
+      failure.unresolvedSources.length,
+      _controllerList(failure.unresolvedSources),
+    );
+  }
+  if (failure.refusedCount > 0) {
+    return l10n.dtcCategoryRefusedControllers(
+      failure.refusedCount,
+      failure.answeredCount,
+    );
+  }
+  if (failure.pendingSources.isNotEmpty) {
+    return l10n.dtcCategoryPendingControllers(
+      failure.pendingSources.length,
+      failure.answeredCount,
+    );
+  }
+  if (failure.unrecognisedCount > 0) {
+    return l10n.dtcCategoryUnrecognisedResponses(
+      failure.unrecognisedCount,
+      failure.answeredCount,
+    );
   }
   return switch (failure.kind) {
     DtcReadFailure.noAnswer => l10n.dtcCategoryNoAnswer,
@@ -87,35 +118,61 @@ String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
   if (nrc != null) {
     final controller = failure.issueDetail ?? '';
     final harm = failure.repeatWouldHarm;
-    final code =
-        '0x${nrc.toRadixString(16).toUpperCase().padLeft(2, '0')}';
+    final code = '0x${nrc.toRadixString(16).toUpperCase().padLeft(2, '0')}';
     return switch (nrc) {
-      0x22 => harm
-          ? l10n.dtcClearNrcConditionsDoNotRepeat(controller)
-          : l10n.dtcClearNrcConditions(controller),
-      0x11 || 0x12 => harm
-          ? l10n.dtcClearNrcUnsupportedDoNotRepeat(controller)
-          : l10n.dtcClearNrcUnsupported(controller),
-      0x21 => harm
-          ? l10n.dtcClearNrcBusyDoNotRepeat(controller)
-          : l10n.dtcClearNrcBusy(controller),
-      0x33 => harm
-          ? l10n.dtcClearNrcSecurityDoNotRepeat(controller)
-          : l10n.dtcClearNrcSecurity(controller),
-      _ => harm
-          ? l10n.dtcClearNrcOtherDoNotRepeat(controller, code)
-          : l10n.dtcClearNrcOther(controller, code),
+      0x22 =>
+        harm
+            ? l10n.dtcClearNrcConditionsDoNotRepeat(controller)
+            : l10n.dtcClearNrcConditions(controller),
+      0x11 || 0x12 =>
+        harm
+            ? l10n.dtcClearNrcUnsupportedDoNotRepeat(controller)
+            : l10n.dtcClearNrcUnsupported(controller),
+      0x21 =>
+        harm
+            ? l10n.dtcClearNrcBusyDoNotRepeat(controller)
+            : l10n.dtcClearNrcBusy(controller),
+      0x33 =>
+        harm
+            ? l10n.dtcClearNrcSecurityDoNotRepeat(controller)
+            : l10n.dtcClearNrcSecurity(controller),
+      _ =>
+        harm
+            ? l10n.dtcClearNrcOtherDoNotRepeat(controller, code)
+            : l10n.dtcClearNrcOther(controller, code),
     };
   }
   if (failure.silentSources.isNotEmpty) {
     return l10n.dtcClearSilentControllers(
       failure.silentSources.length,
-      failure.silentSources.join(', '),
+      _controllerList(failure.silentSources),
     );
+  }
+  if (failure.unresolvedSources.isNotEmpty) {
+    return failure.repeatWouldHarm
+        ? l10n.dtcClearUnresolvedSourcesDoNotRepeat(
+            failure.unresolvedSources.length,
+            _controllerList(failure.unresolvedSources),
+          )
+        : l10n.dtcClearUnresolvedSources(
+            failure.unresolvedSources.length,
+            _controllerList(failure.unresolvedSources),
+          );
   }
   return failure.repeatWouldHarm
       ? l10n.dtcClearFailureDoNotRepeat
       : l10n.dtcClearFailureGeneric;
+}
+
+/// Source ids in a stable, screen-safe list. Empty tokens are dropped: a
+/// headerless pending frame is stored as `''` and must not punch a hole in
+/// the sentence.
+String _controllerList(Set<String> ids) {
+  final names = [
+    for (final id in ids)
+      if (id.isNotEmpty) id,
+  ]..sort();
+  return names.join(', ');
 }
 
 /// Stored / pending / permanent. Three classes that must stay three things.

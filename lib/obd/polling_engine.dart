@@ -1366,6 +1366,7 @@ class PollingEngine {
           kind: DtcReadFailure.noAnswer,
           partial: result,
           terminalSources: Set.unmodifiable(heard),
+          unresolvedSources: Set.unmodifiable(unresolved),
         );
       }
 
@@ -1441,6 +1442,7 @@ class PollingEngine {
           kind: DtcReadFailure.pending,
           partial: List.unmodifiable(found.values),
           pendingSources: Set.unmodifiable(owed),
+          answeredCount: finished.length,
         );
       } on DtcReadException catch (e) {
         heardOfService.addAll(_lastHeardOfService);
@@ -1523,6 +1525,7 @@ class PollingEngine {
             terminalSources: Set.unmodifiable(finished),
             heardAboutService: Set.unmodifiable(heardOfService),
             silentSources: Set.unmodifiable(e.silentSources),
+            unresolvedSources: Set.unmodifiable(e.unresolvedSources),
             // The second place the identifier was dropped, and the one a
             // source-text check on the catch above would never have found.
             // This clause is on the only path out of a failed read, so
@@ -1534,6 +1537,9 @@ class PollingEngine {
             issueDetail: e.issueDetail,
             negativeResponseCode: e.negativeResponseCode,
             repeatWouldHarm: e.repeatWouldHarm,
+            refusedCount: e.refusedCount,
+            answeredCount: e.answeredCount,
+            unrecognisedCount: e.unrecognisedCount,
           );
         }
         await Future<void>.delayed(pendingRetryDelay);
@@ -1921,6 +1927,9 @@ class PollingEngine {
             : DtcReadFailure.error,
         pendingSources: Set.unmodifiable(pendingSources),
         terminalSources: Set.unmodifiable(terminalSources),
+        refusedCount: refused,
+        answeredCount: answered,
+        unrecognisedCount: unrecognised,
       );
     }
 
@@ -1954,6 +1963,9 @@ class PollingEngine {
         // `_lastTerminalSources` is not updated. Without carrying the
         // controllers that *did* finish, a debt could only ever grow.
         terminalSources: Set.unmodifiable(terminalSources),
+        refusedCount: refused,
+        answeredCount: answered,
+        unrecognisedCount: unrecognised,
       );
     }
     // Silence is not a clean answer.
@@ -2328,6 +2340,7 @@ class PollingEngine {
         '因此無法確認清除指令會送到哪些控制器。'
         '請重新掃描；若該位址一直沒有再出現，請重新連線後再試。',
         kind: DtcReadFailure.noAnswer,
+        unresolvedSources: Set.unmodifiable(unresolved),
       );
     }
     // The gate its read and VIN siblings have had all along, and the one that
@@ -2467,6 +2480,7 @@ class PollingEngine {
         '${someoneFinished ? '已有控制器回報清除完成，但無法確認其餘控制器。' : '沒有任何控制器回報清除完成。'}'
         '請重新掃描確認，不要重複清除。',
         kind: DtcReadFailure.noAnswer,
+        unresolvedSources: Set.unmodifiable(openIdentityQuestions),
         repeatWouldHarm: true,
       );
     }
