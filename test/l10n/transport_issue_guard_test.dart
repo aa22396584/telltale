@@ -105,6 +105,7 @@ const _commandPath = <TransportIssue>{
   TransportIssue.wholeVehicleHeaderRefused,
   TransportIssue.legacyScanWouldBePartial,
   TransportIssue.linkStoppedResponding,
+  TransportIssue.operationRetired,
 };
 
 /// The identifiers whose throw must also carry the address its sentence names.
@@ -156,7 +157,7 @@ void main() {
     // The constructor makes `issue:` required, so the compiler already refuses
     // a throw that omits it. What it cannot refuse is `issue: null`, which is
     // wrong anywhere under `lib/obd/` or `lib/state/`. The only constructions
-    // left carrying one are the three subclasses that bake it into their own
+    // left carrying one are the subclasses that bake it into their own
     // constructors, and the roster below is what holds those.
     //
     // It also cannot refuse an identifier whose sentence names an address,
@@ -184,7 +185,7 @@ void main() {
     );
   });
 
-  test('the subclasses that bake in a null identifier are the written three', () {
+  test('the subclasses that bake in a null identifier are the written roster', () {
     // `WriteRefusedException('...')` never matches `TransportException(`, so
     // the scan above cannot see that it passes `super(issue: null)`. All three
     // are correct today -- every throw of them is inside a `write(...)`, so none
@@ -192,12 +193,9 @@ void main() {
     // A fourth subclass doing the same has to be written here, where somebody
     // reads it and says why.
     const known = {
-      'WriteRefusedException': 'thrown only from write(); read by the clear-DTC '
-          'audit, which cares that nothing was transmitted',
-      'OperationRetiredException': 'the app stopped asking; not a failure to '
-          'report',
       'UnaddressableRequestException': 'handled structurally by the polling '
-          'loop and surfaced by the gauge',
+          'loop and surfaced by the gauge; does not reach the manual-command '
+          'panel',
     };
 
     // Every file in the directory, not just the one the three happen to live
@@ -245,12 +243,17 @@ void main() {
       }
       frontier = found;
     }
+    const identified = {
+      'WriteRefusedException',
+      'OperationRetiredException',
+    };
     expect(
       declared,
-      known.keys.toSet(),
+      known.keys.toSet().union(identified),
       reason: 'a TransportException subclass was added or removed. If it bakes '
-          'in `issue: null`, say here why it can never reach the connect '
-          'screen; the scan cannot see it.',
+          'in `issue: null`, put it on the roster with why it can never reach '
+          'the connect screen; if it carries an identifier, add it to '
+          '`identified` instead.',
     );
 
     // And each of them really does bake it in, rather than taking one.

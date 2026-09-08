@@ -69,34 +69,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
   /// A command that was sent and failed is a `TransportException`, answered by
   /// [commandFailureText] through its identifier.
   ///
-  /// The `?? error.message` after it is not the old fallback for throws that
-  /// forgot an identifier. Every direct `TransportException` construction
-  /// under `lib/obd/` and `lib/state/` now names one, and the scan in
-  /// `test/l10n/transport_issue_guard_test.dart` fails a new one that does
-  /// not. What is left is the closed set that scan cannot see: the subclasses
-  /// which bake `issue: null` into their own constructors, held by a written
-  /// roster in the same file. Two of the three are on the path a typed command
-  /// takes, and how each gets here is written out rather than asserted,
-  /// because a comment claiming a reachability property is one nothing can
-  /// fail on:
-  ///
-  ///   * `WriteRefusedException` — every transport's `write()` opens with a
-  ///     precondition check and throws it when there is no socket,
-  ///     characteristic or connection. `Elm327Client._sendNow` does not
-  ///     convert it, so it arrives here as itself.
-  ///   * `OperationRetiredException` — `_sendNow` refuses at the lifecycle
-  ///     gate when `mayTransmit(owner)` says no. `send()` passes no owner, and
-  ///     `ObdSession`'s `mayTransmit` answers false for a null owner when the
-  ///     connection has been superseded, or when the app is not in the
-  ///     foreground and no resume validation is in flight — that window admits
-  ///     an unleased command deliberately, so the foreground half is not
-  ///     unconditional. A typed command sits on the serialized chain behind
-  ///     the poll loop's traffic, so backgrounding or disconnecting between
-  ///     the tap and the write is all it takes.
-  ///
-  /// Their Traditional Chinese is what an English reader still gets for those
-  /// two, which is a smaller defect than an empty panel and is inventoried as
-  /// its own slice.
+  /// `WriteRefusedException` carries `TransportIssue.notConnected` and
+  /// `OperationRetiredException` carries `TransportIssue.operationRetired`,
+  /// so both go through [commandFailureText]. The remaining subclass that
+  /// still bakes `issue: null` is `UnaddressableRequestException`, which the
+  /// polling loop handles structurally and which does not reach this panel.
+  /// There is therefore no `error.message` fallback: that was how an English
+  /// reader still saw Traditional Chinese for the two that do arrive here.
   ///
   /// A function rather than two catch clauses so it can be tested. The panel
   /// it renders into only exists while connected, and a connected session
@@ -110,7 +89,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
       return manualCommandRefusalText(l10n, error.refusal);
     }
     if (error is! TransportException) return '$error';
-    return commandFailureText(l10n, error) ?? error.message;
+    return commandFailureText(l10n, error) ?? '$error';
   }
 
   @override

@@ -5985,6 +5985,12 @@ abstract class AppLocalizations {
   /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
   String get settingsManualCommandWriteFailed;
 
+  /// TransportIssue.operationRetired. The app stopped asking; nothing is wrong with the adapter or the vehicle. Distinct from notConnected: a link may still exist, but this command's owner expired before any byte left.
+  ///
+  /// In en, this message translates to:
+  /// **'This session has ended or gone to the background, so the command was not sent.'**
+  String get settingsManualCommandOperationRetired;
+
   /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
   ///
   /// In en, this message translates to:

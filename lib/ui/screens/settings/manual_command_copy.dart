@@ -114,6 +114,8 @@ String? commandIssueText(
     TransportIssue.linkStoppedResponding =>
       l10n.settingsManualCommandLinkStoppedResponding,
     TransportIssue.writeFailed => l10n.settingsManualCommandWriteFailed,
+    TransportIssue.operationRetired =>
+      l10n.settingsManualCommandOperationRetired,
 
     // The three whose sentence names an address.
     TransportIssue.queryHeaderRefused =>
