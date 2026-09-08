@@ -40,7 +40,10 @@ are an argv allowlist; issue/comment URLs are not shell.
 validator's argv allowlist, refuses lease conflicts, strips secret environment
 variables, and writes `handoff.json`. A failed command cannot be labelled
 completed. Stdout and stderr are drained while the command runs and kept only
-up to `--output-limit`, so a runaway child cannot fill memory.
+up to `--output-limit`, so a runaway child cannot fill memory. The timeout
+stays in force until both pipes reach EOF; a descendant that inherits them
+after the command exits is killed with the process group rather than waited
+out past the deadline.
 
 `--isolate` adds a detached git worktree at `--base-sha` (or `HEAD`) and runs
 the argv there. Combined with `--dry-run` it does not create a worktree, but

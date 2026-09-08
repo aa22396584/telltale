@@ -332,15 +332,38 @@ def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
 def _drain_pipe(pipe, limit: int) -> bytes:
     chunks: list[bytes] = []
     kept = 0
-    while True:
-        block = pipe.read(65536)
-        if not block:
-            break
-        if kept < limit:
-            take = min(len(block), limit - kept)
-            chunks.append(block[:take])
-            kept += take
+    try:
+        while True:
+            block = pipe.read(65536)
+            if not block:
+                break
+            if kept < limit:
+                take = min(len(block), limit - kept)
+                chunks.append(block[:take])
+                kept += take
+    except (ValueError, OSError):
+        pass
     return b"".join(chunks)
+
+
+def _remaining(deadline: float) -> float:
+    return max(0.0, deadline - time.monotonic())
+
+
+def _join_threads(threads: list[threading.Thread], timeout: float) -> bool:
+    end = time.monotonic() + timeout
+    for thread in threads:
+        thread.join(timeout=_remaining(end))
+    return all(not thread.is_alive() for thread in threads)
+
+
+def _close_pipe(pipe) -> None:
+    if pipe is None:
+        return
+    try:
+        pipe.close()
+    except OSError:
+        pass
 
 
 def _run_command(
@@ -384,6 +407,7 @@ def _run_command(
     timed_out = False
     stdout_holder: list[bytes] = []
     stderr_holder: list[bytes] = []
+    deadline = started + timeout
 
     def collect(pipe, dest: list[bytes]) -> None:
         dest.append(_drain_pipe(pipe, output_limit))
@@ -396,22 +420,36 @@ def _run_command(
     )
     reader_out.start()
     reader_err.start()
+    readers = [reader_out, reader_err]
+    wait_for = _remaining(deadline)
     try:
-        proc.wait(timeout=timeout)
+        if wait_for <= 0:
+            raise subprocess.TimeoutExpired(resolved, timeout)
+        proc.wait(timeout=wait_for)
     except subprocess.TimeoutExpired:
         timed_out = True
         _kill_group(proc.pid, signal.SIGTERM)
         try:
-            proc.wait(timeout=1)
+            proc.wait(timeout=min(1.0, _remaining(deadline) or 0.05))
         except subprocess.TimeoutExpired:
             _kill_group(proc.pid, signal.SIGKILL)
-            proc.wait()
-    reader_out.join(timeout=2)
-    reader_err.join(timeout=2)
-    if proc.stdout is not None:
-        proc.stdout.close()
-    if proc.stderr is not None:
-        proc.stderr.close()
+            try:
+                proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                pass
+    if not _join_threads(readers, _remaining(deadline)):
+        timed_out = True
+        _kill_group(proc.pid, signal.SIGKILL)
+        try:
+            proc.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            pass
+        _close_pipe(proc.stdout)
+        _close_pipe(proc.stderr)
+        _join_threads(readers, 2.0)
+    else:
+        _close_pipe(proc.stdout)
+        _close_pipe(proc.stderr)
     stdout_b = stdout_holder[0] if stdout_holder else b""
     stderr_b = stderr_holder[0] if stderr_holder else b""
     stdout = stdout_b.decode("utf-8", "replace")

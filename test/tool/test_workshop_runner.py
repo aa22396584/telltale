@@ -285,6 +285,34 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(len(data["results"][0]["stdout"]), 50)
             self.assertEqual(data["results"][0]["stdout"], "x" * 50)
 
+    def test_timeout_covers_a_descendant_that_keeps_stdout_open(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (tmp / "tool" / "workshop" / "probe.py").write_text(
+                "import os, sys, time\n"
+                "if os.fork() == 0:\n"
+                "    while True:\n"
+                "        sys.stdout.write('y' * 1024)\n"
+                "        sys.stdout.flush()\n"
+                "        time.sleep(0.05)\n"
+                "os._exit(0)\n",
+                encoding="utf-8",
+            )
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=handoff, timeout=1, output_limit=50
+            )
+            self.assertEqual(code, 1)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            result = data["results"][0]
+            self.assertTrue(result["timed_out"])
+            self.assertLessEqual(len(result["stdout"]), 50)
+            self.assertLess(result["duration_s"], 4)
+
     def test_dry_run_does_not_mark_completed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
