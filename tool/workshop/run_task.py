@@ -353,7 +353,7 @@ def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
     for other in tasks:
         if other.get("id") == task_id:
             continue
-        if other.get("status") != "in_progress":
+        if other.get("status") not in {"pending", "in_progress", "completed"}:
             continue
         if validate_plan._dirs_conflict(dirs, _task_writable_dirs(other)):
             return True
