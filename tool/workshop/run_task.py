@@ -184,7 +184,7 @@ def _resolve_link_rel(link_rel: str, target: str) -> str | None:
     if not text or text.startswith("/") or (len(text) >= 2 and text[1] == ":"):
         return None
     parent = Path(link_rel.replace("\\", "/")).parent
-    combined = target if parent == Path(".") else f"{parent.as_posix()}/{text}"
+    combined = text if parent == Path(".") else f"{parent.as_posix()}/{text}"
     parts: list[str] = []
     for part in combined.replace("\\", "/").split("/"):
         if part in ("", "."):
@@ -200,17 +200,7 @@ def _resolve_link_rel(link_rel: str, target: str) -> str | None:
     return "/".join(parts)
 
 
-def _git_blob(
-    git_root: Path, sha: str, rel: str, *, depth: int = 0
-) -> bytes | None:
-    if depth > 8:
-        return None
-    entry = _git_tree_entry(git_root, sha, rel)
-    if entry is None:
-        return None
-    mode, kind = entry
-    if kind != "blob":
-        return None
+def _git_cat_blob(git_root: Path, sha: str, rel: str) -> bytes | None:
     completed = subprocess.run(
         ["git", "-C", str(git_root), "cat-file", "blob", f"{sha}:{rel}"],
         capture_output=True,
@@ -218,17 +208,46 @@ def _git_blob(
     )
     if completed.returncode != 0:
         return None
-    if mode == "120000":
-        try:
-            target = completed.stdout.decode("utf-8")
-        except UnicodeDecodeError:
+    return completed.stdout
+
+
+def _git_blob(
+    git_root: Path, sha: str, rel: str, *, depth: int = 0
+) -> bytes | None:
+    if depth > 8:
+        return None
+    parts = [part for part in rel.replace("\\", "/").split("/") if part not in ("", ".")]
+    if not parts:
+        return None
+    prefix = ""
+    for index, part in enumerate(parts):
+        current = part if not prefix else f"{prefix}/{part}"
+        entry = _git_tree_entry(git_root, sha, current)
+        if entry is None:
             return None
-        resolved = _resolve_link_rel(rel, target)
-        if resolved is None:
+        mode, kind = entry
+        last = index == len(parts) - 1
+        if mode == "120000":
+            raw = _git_cat_blob(git_root, sha, current)
+            if raw is None:
+                return None
+            try:
+                target = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                return None
+            resolved = _resolve_link_rel(current, target)
+            if resolved is None:
+                return None
+            remainder = "/".join(parts[index + 1 :])
+            nxt = resolved if not remainder else f"{resolved}/{remainder}"
+            return _git_blob(git_root, sha, nxt, depth=depth + 1)
+        if last:
+            if kind != "blob" or mode not in {"100644", "100755", "100664"}:
+                return None
+            return _git_cat_blob(git_root, sha, current)
+        if kind != "tree":
             return None
-        return _git_blob(git_root, sha, resolved, depth=depth + 1)
-    if mode in {"100644", "100755", "100664"}:
-        return completed.stdout
+        prefix = current
     return None
 
 
