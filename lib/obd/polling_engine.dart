@@ -3792,10 +3792,41 @@ class PollingEngine {
           rawBytes: bytes,
           timestamp: now,
         );
-        _faults.remove(sibling.id);
+        _markDirectlyAnswered(sibling);
       } on FormulaException {
         _invalidate(sibling.id, PidFault.formulaError);
       }
+    }
+  }
+
+  Iterable<Pid> _sharedWireSiblings(Pid source) {
+    final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
+    return _active.where(
+      (pid) =>
+          pid.id != source.id &&
+          TelemetryDemand.wireKeyFor(pid.header, pid.modeAndPid) == key,
+    );
+  }
+
+  void _invalidateSharedWire(Pid source, PidFault fault, {DateTime? retryAfter}) {
+    void one(String id) {
+      _invalidate(id, fault);
+      if (retryAfter != null) _retryAfter[id] = retryAfter;
+    }
+
+    one(source.id);
+    for (final sibling in _sharedWireSiblings(source)) {
+      one(sibling.id);
+    }
+  }
+
+  void _markDirectlyAnswered(Pid pid) {
+    _faults.remove(pid.id);
+    _noDataStrikes.remove(pid.id);
+    _formulaStrikes.remove(pid.id);
+    _retryAfter.remove(pid.id);
+    if (_answeredAtLeastOnce.add(pid.id)) {
+      _publishCapabilitySummary();
     }
   }
 
@@ -3843,7 +3874,7 @@ class PollingEngine {
     // out and anything that happened to parse became a number on a gauge.
     if (!client.addressing.supportsObd2) {
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -3917,7 +3948,7 @@ class PollingEngine {
       // that as 此車輛不支援 sent people looking at their vehicle for a problem
       // sitting in a field they can edit.
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.headerNotOnThisBus);
+        _invalidateSharedWire(request.pid, PidFault.headerNotOnThisBus);
       }
       _publish(epoch);
       return;
@@ -3953,7 +3984,7 @@ class PollingEngine {
       // exactly what makes a wrong reading and a missing one hard to tell
       // apart. It is recorded as a fault so the screen can say so.
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -3976,10 +4007,12 @@ class PollingEngine {
     // while retaining the normal finite recheck that lets a later answer win.
     if (batch.length == 1 &&
         _isUnsupportedMode01Negative(response, batch.single.pid)) {
-      final id = batch.single.pid.id;
-      _invalidate(id, PidFault.unsupported);
-      _retryAfter[id] = DateTime.now().add(recheckInterval);
-      _noDataStrikes.remove(id);
+      _invalidateSharedWire(
+        batch.single.pid,
+        PidFault.unsupported,
+        retryAfter: DateTime.now().add(recheckInterval),
+      );
+      _noDataStrikes.remove(batch.single.pid.id);
       _publish(epoch);
       return;
     }
@@ -4002,7 +4035,7 @@ class PollingEngine {
     }
     if (slices.length != batch.length && _isProfileResponseBatch(batch)) {
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -4018,7 +4051,7 @@ class PollingEngine {
         // Skipping it silently was how a gauge kept its last good number:
         // the tile still had a value, the value was plausible, and nothing on
         // screen said the sensor had stopped answering minutes ago.
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
         continue;
       }
       // Siblings share the raw reply, not the representative's formula. A
@@ -4058,16 +4091,9 @@ class PollingEngine {
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
         }
-        _faults.remove(request.pid.id);
-        _noDataStrikes.remove(request.pid.id);
-        _formulaStrikes.remove(request.pid.id);
-        _retryAfter.remove(request.pid.id);
         // Before `_answeredAtLeastOnce`, so the next `_refillQueue` sees a PID
         // with no fault and a vehicle that has just answered it.
-
-        if (_answeredAtLeastOnce.add(request.pid.id)) {
-          _publishCapabilitySummary();
-        }
+        _markDirectlyAnswered(request.pid);
         completed++;
       } on FormulaException {
         _invalidate(request.pid.id, PidFault.formulaError);
@@ -4193,7 +4219,8 @@ class PollingEngine {
       // A batch that returns NO DATA does not say which member was at fault, so
       // only a single-PID request is conclusive. Batches get retried one by one.
       if (batch.length == 1) {
-        final id = batch.first.pid.id;
+        final pid = batch.first.pid;
+        final id = pid.id;
         final strikes = (_noDataStrikes[id] ?? 0) + 1;
         _noDataStrikes[id] = strikes;
 
@@ -4204,7 +4231,7 @@ class PollingEngine {
         // a real gauge went grey for the rest of the session with nothing on
         // screen explaining why, and no way back short of reconnecting.
         if (strikes < _noDataStrikesBeforeUnsupported) {
-          _invalidate(id, PidFault.busError);
+          _invalidateSharedWire(pid, PidFault.busError);
           scheduler.enqueueRequest(batch.first);
           _publish(epoch);
           return;
@@ -4215,8 +4242,11 @@ class PollingEngine {
         // poll set. So this backs off rather than retiring the PID: a slow ECU
         // or a receive filter used to grey a working gauge out for the rest of
         // the session, with nothing on screen explaining why.
-        _invalidate(id, PidFault.noAnswer);
-        _retryAfter[id] = DateTime.now().add(noAnswerBackoff);
+        _invalidateSharedWire(
+          pid,
+          PidFault.noAnswer,
+          retryAfter: DateTime.now().add(noAnswerBackoff),
+        );
         _noDataStrikes.remove(id);
       } else {
         scheduler.handleCorruptionEvent();
@@ -4228,7 +4258,7 @@ class PollingEngine {
       return;
     }
     for (final request in batch) {
-      _invalidate(request.pid.id, PidFault.busError);
+      _invalidateSharedWire(request.pid, PidFault.busError);
     }
     _publish(epoch);
   }
