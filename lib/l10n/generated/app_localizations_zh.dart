@@ -3744,6 +3744,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
+
+  @override
+  String get handshakeNoteUnexpected => '此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7485,4 +7488,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
+
+  @override
+  String get handshakeNoteUnexpected => '此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。';
 }

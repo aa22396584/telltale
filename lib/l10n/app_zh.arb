@@ -1089,5 +1089,6 @@
   "shareNoSpace": "儲存空間不足，無法準備分享檔。",
   "shareHandoffFailed": "檔案已準備完成，但系統分享介面無法開啟。",
   "shareStorageFailure": "準備或記錄分享結果時發生儲存錯誤。",
-  "transcriptExportUnidentified": "匯出失敗。"
+  "transcriptExportUnidentified": "匯出失敗。",
+  "handshakeNoteUnexpected": "此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。"
 }

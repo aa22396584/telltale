@@ -4187,4 +4187,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transcriptExportUnidentified => 'Export failed.';
+
+  @override
+  String get handshakeNoteUnexpected =>
+      'This step failed with an unexpected error. The full error is kept in the transcript.';
 }

@@ -342,6 +342,7 @@ enum InitNote {
   notModeOnePositiveReply,
   pidEchoMismatch,
   timedOut,
+  unexpected,
 }
 
 /// The wording [InitNote] replaced, kept for [InitProgress.detail].
@@ -354,6 +355,7 @@ String initNoteText(InitNote note) => switch (note) {
   InitNote.notModeOnePositiveReply => '回應不是 Mode 01 的正向回覆',
   InitNote.pidEchoMismatch => '回應的 PID 與查詢不符',
   InitNote.timedOut => '逾時',
+  InitNote.unexpected => '此步驟發生未預期的錯誤',
 };
 
 /// Requires the literal `OK` acknowledgement a state-changing AT command owes.
@@ -408,6 +410,15 @@ class InitProgress {
   /// "no response", and something has to carry which of them it was.
   final Elm327ErrorCode? errorCode;
 
+  /// The transport's identifier, when this step died on a [TransportException].
+  ///
+  /// [detail] stays the Traditional Chinese transcript. The screen maps this
+  /// rather than interpolating `'$e'`.
+  final TransportIssue? transportIssue;
+
+  /// The one value [transportIssue]'s sentence may have to name.
+  final String? issueDetail;
+
   /// [detail] defaults to the wording [note] or [errorCode] replaced.
   ///
   /// Derived here rather than at the call site so it cannot be forgotten: the
@@ -422,6 +433,8 @@ class InitProgress {
     String? detail,
     this.note,
     this.errorCode,
+    this.transportIssue,
+    this.issueDetail,
   }) : detail =
            detail ??
            (note != null ? initNoteText(note) : errorCode?.description);
@@ -2013,15 +2026,27 @@ class Elm327Client {
         _emitProgress(step, i, InitStatus.ok, detail: _detailFor(step.command));
       } on Object catch (e) {
         if (step.isCritical) allCriticalPassed = false;
-        // A timeout is a state this app has a word for; anything else is an
-        // exception whose own text is the only thing that identifies it, and
-        // it is shown as it was thrown rather than flattened into "failed".
+        // A timeout is a state this app has a word for. A TransportException
+        // carries an identifier the screen maps. Anything else stays in
+        // [InitProgress.detail] for the transcript and is labelled
+        // [InitNote.unexpected] so the wizard never interpolates `'$e'`.
+        final transport = e is TransportException ? e : null;
         _emitProgress(
           step,
           i,
           step.isCritical ? InitStatus.failed : InitStatus.skipped,
-          detail: e is TimeoutException ? null : '$e',
-          note: e is TimeoutException ? InitNote.timedOut : null,
+          detail: e is TimeoutException
+              ? null
+              : e is TransportException
+              ? e.message
+              : '$e',
+          note: e is TimeoutException
+              ? InitNote.timedOut
+              : transport == null
+              ? InitNote.unexpected
+              : null,
+          transportIssue: transport?.issue,
+          issueDetail: transport?.issueDetail,
         );
       }
     }
@@ -2176,6 +2201,8 @@ class Elm327Client {
     String? detail,
     InitNote? note,
     Elm327ErrorCode? errorCode,
+    TransportIssue? transportIssue,
+    String? issueDetail,
   }) {
     if (_initProgress.isClosed) return;
     _initProgress.add(
@@ -2187,6 +2214,8 @@ class Elm327Client {
         detail: detail,
         note: note,
         errorCode: errorCode,
+        transportIssue: transportIssue,
+        issueDetail: issueDetail,
       ),
     );
   }
