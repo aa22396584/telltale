@@ -22,6 +22,7 @@ import 'pid/pid.dart';
 import 'pid/pid_library.dart';
 import 'pid/priority_scheduler.dart';
 import 'telemetry.dart';
+import 'telemetry_demand.dart';
 import 'transport/obd_transport.dart';
 
 /// What a Mode 04 clear actually achieved.
@@ -271,6 +272,7 @@ class PollingEngine {
   final Elm327Client client;
   final FormulaEngine formula;
   final PriorityScheduler scheduler;
+  final DemandRegistry demands = DemandRegistry();
 
   final _snapshots = StreamController<TelemetrySnapshot>.broadcast();
   final _capabilitySummaries = StreamController<ObdCapabilitySummary>.broadcast(
@@ -490,6 +492,7 @@ class PollingEngine {
     // rest, which is the churn this was written to avoid.
     scheduler.retireQueuedRequests(merged);
     _active = List.unmodifiable(merged.values);
+    _syncDashboardLeases();
 
     // Ambiguity is a property of what is being polled, so it is recomputed
     // with the poll set. Two definitions of one hex on one controller make a
@@ -3668,10 +3671,37 @@ class PollingEngine {
     }
   }
 
+  /// Rebuilds dashboard leases to match [_active]. Recording/trip/alert
+  /// leases are left alone so they can share a wire request with the gauges.
+  void _syncDashboardLeases() {
+    for (final lease in demands.leases
+        .where((demand) => demand.owner == DemandOwner.dashboard)
+        .toList()) {
+      demands.release(lease.leaseId);
+    }
+    for (final pid in _active) {
+      demands.acquire(
+        TelemetryDemand(
+          owner: DemandOwner.dashboard,
+          leaseId: 'dashboard:${pid.id}',
+          header: pid.header,
+          modeAndPid: pid.modeAndPid,
+          requestedPeriod: pid.priority.targetInterval,
+          priority: pid.priority,
+          definitionId: pid.id,
+        ),
+      );
+    }
+  }
+
   /// Tops the queue up with any active PID whose target interval has elapsed.
   void _refillQueue() {
     if (scheduler.isNotEmpty) return;
     final now = DateTime.now();
+    final unionByWire = {
+      for (final demand in demands.uniqueWireRequests()) demand.wireKey: demand,
+    };
+    final seenWire = <String>{};
     for (final pid in _active) {
       // Demoted, not retired.
       //
@@ -3697,10 +3727,106 @@ class PollingEngine {
         if (now.isBefore(retryAt)) continue;
         _retryAfter.remove(pid.id);
       }
-      final last = _readings[pid.id]?.timestamp;
-      final due =
-          last == null || now.difference(last) >= pid.priority.targetInterval;
-      if (due) scheduler.enqueue(pid, pid.priority);
+      final wireKey = TelemetryDemand.wireKeyFor(pid.header, pid.modeAndPid);
+      if (!seenWire.add(wireKey)) continue;
+      final union = unionByWire[wireKey];
+      final period = union?.requestedPeriod ?? pid.priority.targetInterval;
+      final priority = union?.priority ?? pid.priority;
+      DateTime? last;
+      for (final sibling in _active) {
+        if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
+            wireKey) {
+          continue;
+        }
+        final ts = _readings[sibling.id]?.timestamp;
+        if (ts != null && (last == null || ts.isAfter(last))) last = ts;
+      }
+      final due = last == null || now.difference(last) >= period;
+      if (due) scheduler.enqueue(pid, priority);
+    }
+  }
+
+  /// Evaluates every other live definition that shares this wire request.
+  ///
+  /// One adapter exchange, several formulas. Enqueueing each definition
+  /// separately used to send `010C` twice in a cycle. Catalog windows on the
+  /// same DID are the same request with different byte ranges — they must be
+  /// sliced from the attributed payload, not from the source window.
+  void _applySharedWireSiblings(
+    Pid source,
+    ObdResponse response,
+    List<int> sourceBytes,
+    DateTime now,
+  ) {
+    final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
+    for (final sibling in _active) {
+      if (sibling.id == source.id) continue;
+      if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
+          key) {
+        continue;
+      }
+      final bytes = _bytesForSharedSibling(
+        sibling,
+        response,
+        sourceBytes,
+      );
+      if (bytes == null) {
+        _invalidate(sibling.id, PidFault.busError);
+        continue;
+      }
+      try {
+        final value = formula.evaluateBytes(
+          sibling.equation,
+          bytes,
+          requester: sibling,
+          now: now,
+        );
+        if (!value.isFinite) {
+          _invalidate(sibling.id, PidFault.formulaError);
+          continue;
+        }
+        formula.cachePidValue(sibling, value, now);
+        _readings[sibling.id] = Reading(
+          pid: sibling,
+          value: value,
+          rawBytes: bytes,
+          timestamp: now,
+        );
+        _markDirectlyAnswered(sibling);
+      } on FormulaException {
+        _invalidate(sibling.id, PidFault.formulaError);
+      }
+    }
+  }
+
+  Iterable<Pid> _sharedWireSiblings(Pid source) {
+    final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
+    return _active.where(
+      (pid) =>
+          pid.id != source.id &&
+          TelemetryDemand.wireKeyFor(pid.header, pid.modeAndPid) == key,
+    );
+  }
+
+  void _invalidateSharedWire(Pid source, PidFault fault, {DateTime? retryAfter}) {
+    void one(String id) {
+      _invalidate(id, fault);
+      if (retryAfter != null) _retryAfter[id] = retryAfter;
+    }
+
+    one(source.id);
+    for (final sibling in _sharedWireSiblings(source)) {
+      one(sibling.id);
+    }
+  }
+
+  void _markDirectlyAnswered(Pid pid) {
+    _faults.remove(pid.id);
+    _noDataStrikes.remove(pid.id);
+    _formulaStrikes.remove(pid.id);
+    _retryAfter.remove(pid.id);
+    if (_answeredAtLeastOnce.add(pid.id)) {
+      _publishCapabilitySummary();
     }
   }
 
@@ -3748,7 +3874,7 @@ class PollingEngine {
     // out and anything that happened to parse became a number on a gauge.
     if (!client.addressing.supportsObd2) {
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -3822,7 +3948,7 @@ class PollingEngine {
       // that as 此車輛不支援 sent people looking at their vehicle for a problem
       // sitting in a field they can edit.
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.headerNotOnThisBus);
+        _invalidateSharedWire(request.pid, PidFault.headerNotOnThisBus);
       }
       _publish(epoch);
       return;
@@ -3858,7 +3984,7 @@ class PollingEngine {
       // exactly what makes a wrong reading and a missing one hard to tell
       // apart. It is recorded as a fault so the screen can say so.
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -3881,10 +4007,12 @@ class PollingEngine {
     // while retaining the normal finite recheck that lets a later answer win.
     if (batch.length == 1 &&
         _isUnsupportedMode01Negative(response, batch.single.pid)) {
-      final id = batch.single.pid.id;
-      _invalidate(id, PidFault.unsupported);
-      _retryAfter[id] = DateTime.now().add(recheckInterval);
-      _noDataStrikes.remove(id);
+      _invalidateSharedWire(
+        batch.single.pid,
+        PidFault.unsupported,
+        retryAfter: DateTime.now().add(recheckInterval),
+      );
+      _noDataStrikes.remove(batch.single.pid.id);
       _publish(epoch);
       return;
     }
@@ -3907,7 +4035,7 @@ class PollingEngine {
     }
     if (slices.length != batch.length && _isProfileResponseBatch(batch)) {
       for (final request in batch) {
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
       }
       _publish(epoch);
       return;
@@ -3923,9 +4051,12 @@ class PollingEngine {
         // Skipping it silently was how a gauge kept its last good number:
         // the tile still had a value, the value was plausible, and nothing on
         // screen said the sensor had stopped answering minutes ago.
-        _invalidate(request.pid.id, PidFault.busError);
+        _invalidateSharedWire(request.pid, PidFault.busError);
         continue;
       }
+      // Siblings share the raw reply, not the representative's formula. A
+      // `VAL{}` miss on the first definition must not skip the rest.
+      _applySharedWireSiblings(request.pid, response, bytes, now);
       try {
         final value = formula.evaluateBytes(
           request.pid.equation,
@@ -3960,16 +4091,9 @@ class PollingEngine {
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
         }
-        _faults.remove(request.pid.id);
-        _noDataStrikes.remove(request.pid.id);
-        _formulaStrikes.remove(request.pid.id);
-        _retryAfter.remove(request.pid.id);
         // Before `_answeredAtLeastOnce`, so the next `_refillQueue` sees a PID
         // with no fault and a vehicle that has just answered it.
-
-        if (_answeredAtLeastOnce.add(request.pid.id)) {
-          _publishCapabilitySummary();
-        }
+        _markDirectlyAnswered(request.pid);
         completed++;
       } on FormulaException {
         _invalidate(request.pid.id, PidFault.formulaError);
@@ -4095,7 +4219,8 @@ class PollingEngine {
       // A batch that returns NO DATA does not say which member was at fault, so
       // only a single-PID request is conclusive. Batches get retried one by one.
       if (batch.length == 1) {
-        final id = batch.first.pid.id;
+        final pid = batch.first.pid;
+        final id = pid.id;
         final strikes = (_noDataStrikes[id] ?? 0) + 1;
         _noDataStrikes[id] = strikes;
 
@@ -4106,7 +4231,7 @@ class PollingEngine {
         // a real gauge went grey for the rest of the session with nothing on
         // screen explaining why, and no way back short of reconnecting.
         if (strikes < _noDataStrikesBeforeUnsupported) {
-          _invalidate(id, PidFault.busError);
+          _invalidateSharedWire(pid, PidFault.busError);
           scheduler.enqueueRequest(batch.first);
           _publish(epoch);
           return;
@@ -4117,8 +4242,11 @@ class PollingEngine {
         // poll set. So this backs off rather than retiring the PID: a slow ECU
         // or a receive filter used to grey a working gauge out for the rest of
         // the session, with nothing on screen explaining why.
-        _invalidate(id, PidFault.noAnswer);
-        _retryAfter[id] = DateTime.now().add(noAnswerBackoff);
+        _invalidateSharedWire(
+          pid,
+          PidFault.noAnswer,
+          retryAfter: DateTime.now().add(noAnswerBackoff),
+        );
         _noDataStrikes.remove(id);
       } else {
         scheduler.handleCorruptionEvent();
@@ -4130,7 +4258,7 @@ class PollingEngine {
       return;
     }
     for (final request in batch) {
-      _invalidate(request.pid.id, PidFault.busError);
+      _invalidateSharedWire(request.pid, PidFault.busError);
     }
     _publish(epoch);
   }
@@ -4204,6 +4332,27 @@ class PollingEngine {
           request.pid.expectedResponseId == response &&
           request.pid.responseDataLengthBytes == first.responseDataLengthBytes,
     );
+  }
+
+  /// Mode 01 siblings share the source payload. Catalog windows do not:
+  /// each has its own offset into the attributed DID payload. Reusing the
+  /// representative's already-sliced bytes is how pack temperature would
+  /// read SOC (85 instead of 30).
+  List<int>? _bytesForSharedSibling(
+    Pid sibling,
+    ObdResponse response,
+    List<int> sourceBytes,
+  ) {
+    if (sibling.isMode01 ||
+        sibling.ownerProfileId == null ||
+        sibling.ownerProfileId!.isEmpty ||
+        sibling.expectedResponseId == null ||
+        sibling.expectedResponseId!.isEmpty) {
+      return sourceBytes;
+    }
+    final data = _attributedData(response, sibling);
+    if (data == null) return null;
+    return _dataWindow(sibling, data);
   }
 
   /// Applies a catalog signal's byte window after the response envelope has
