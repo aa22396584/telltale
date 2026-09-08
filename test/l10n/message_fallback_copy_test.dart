@@ -203,6 +203,8 @@ void main() {
       bleScanIssueText(_en, BleScanIssue.unclassified),
       isNot(contains('Exception')),
     );
+    expect(_en.connectPairedListFailed.toLowerCase(), isNot(contains('log')));
+    expect(_en.connectBleScanUnclassified.toLowerCase(), isNot(contains('log')));
     for (final issue in BleScanIssue.values) {
       expect(
         chinese.hasMatch(bleScanIssueText(_en, issue)),

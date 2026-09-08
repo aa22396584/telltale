@@ -450,6 +450,10 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
     );
 
     final session = ref.read(obdSessionProvider.notifier);
+    // Captured before any category await. `session.client` after a disconnect
+    // is null or belongs to the next vehicle; unexpected errors must stay on
+    // this scan's transcript.
+    final transcript = session.client?.transcript;
 
     // Captured before the census, not after it.
     //
@@ -592,7 +596,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
             context: ErrorDescription('unexpected category read'),
           ),
         );
-        session.client?.transcript.recordNote(
+        transcript?.recordNote(
           '未預期的類別讀取失敗（Mode ${kind.mode}）：$error',
         );
         results[kind] = const DtcCategoryResult.failed(
