@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -186,6 +187,71 @@ class RunTaskTest(unittest.TestCase):
             self.assertNotIn("secret-token", stdout)
             self.assertNotIn("secret-aws", stdout)
 
+    def test_prefixed_credential_env_is_not_forwarded(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (tmp / "tool" / "workshop" / "probe.py").write_text(
+                "import os, sys\n"
+                "sys.stdout.write('PY=' + os.environ.get('PYTHON_API_TOKEN', '') + '\\n')\n"
+                "sys.stdout.write('AND=' + os.environ.get('ANDROID_KEYSTORE_PASSWORD', '') + '\\n')\n",
+                encoding="utf-8",
+            )
+            handoff = tmp / "handoff.json"
+            env = {
+                "PATH": os.environ.get("PATH", "/usr/bin"),
+                "HOME": os.environ.get("HOME", str(tmp)),
+                "PYTHON_API_TOKEN": "secret-python",
+                "ANDROID_KEYSTORE_PASSWORD": "secret-android",
+            }
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=handoff, timeout=10, env=env
+            )
+            self.assertEqual(code, 0)
+            stdout = json.loads(handoff.read_text(encoding="utf-8"))["results"][0]["stdout"]
+            self.assertIn("PY=\n", stdout)
+            self.assertIn("AND=\n", stdout)
+            self.assertNotIn("secret-python", stdout)
+            self.assertNotIn("secret-android", stdout)
+
+    def test_live_lease_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            handoff = tmp / "handoff.json"
+            (tmp / "lease.json").write_text(
+                json.dumps({"task": "WS-01", "pid": os.getpid()}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=5)
+            self.assertIn("lease held", str(raised.exception))
+
+    def test_missing_executable_writes_failed_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            handoff = tmp / "handoff.json"
+            original = run_task._resolve_executable
+            run_task._resolve_executable = lambda name: "/no/such/workshop-python3"
+            try:
+                code = run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=5)
+            finally:
+                run_task._resolve_executable = original
+            self.assertEqual(code, 1)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertIs(data["completed"], False)
+            self.assertEqual(data["results"][0]["exit"], 127)
+
     def test_dry_run_does_not_mark_completed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
@@ -202,6 +268,102 @@ class RunTaskTest(unittest.TestCase):
             self.assertIs(data["completed"], False)
             self.assertEqual(data["status"], "in_progress")
             self.assertTrue(data["unrun"])
+
+    def test_isolate_runs_at_fixed_sha_and_does_not_reset_caller(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('committed')\n", encoding="utf-8"
+            )
+            sha = _init_git(repo)
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('dirty')\n", encoding="utf-8"
+            )
+            handoff = tmp / "handoff.json"
+            try:
+                code = run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=handoff,
+                    timeout=10,
+                    isolate=True,
+                    isolate_dir=worktree,
+                    base_sha=sha,
+                )
+            finally:
+                _remove_worktree(repo, worktree)
+            self.assertEqual(code, 0)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertEqual(data["head_sha"], sha)
+            self.assertEqual(data["worktree"], str(worktree))
+            self.assertIn("committed", data["results"][0]["stdout"])
+            self.assertNotIn("dirty", data["results"][0]["stdout"])
+            self.assertEqual(
+                (repo / "tool" / "workshop" / "probe.py").read_text(encoding="utf-8"),
+                "print('dirty')\n",
+            )
+
+    def test_isolate_refuses_an_existing_path(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            worktree = tmp / "wt"
+            worktree.mkdir()
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            _init_git(repo)
+            with self.assertRaises(run_task.RunnerError) as raised:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=tmp / "h.json",
+                    timeout=5,
+                    isolate=True,
+                    isolate_dir=worktree,
+                )
+            self.assertIn("refusing to reset", str(raised.exception))
+
+
+def _init_git(root: Path) -> str:
+    subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(root), "config", "user.email", "workshop@example.test"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(root), "config", "user.name", "workshop"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(root), "commit", "-m", "init"],
+        check=True,
+        capture_output=True,
+    )
+    return subprocess.check_output(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+
+
+def _remove_worktree(repo: Path, dest: Path) -> None:
+    if not dest.exists():
+        return
+    subprocess.run(
+        ["git", "-C", str(repo), "worktree", "remove", "--force", str(dest)],
+        capture_output=True,
+        check=False,
+    )
 
 
 if __name__ == "__main__":

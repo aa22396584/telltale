@@ -112,7 +112,10 @@ def _validate_command(argv: list[Any], task_id: str) -> None:
     for forbidden in FORBIDDEN_COMMAND_SUBSTRINGS:
         if forbidden in joined:
             raise PlanError(f"{task_id}: command looks like issue/comment text")
-    name = Path(argv[0]).name
+    executable = argv[0]
+    if "/" in executable or "\\" in executable:
+        raise PlanError(f"{task_id}: executable path is not allowlisted")
+    name = executable
     if name not in ALLOWED_COMMAND_NAMES:
         raise PlanError(f"{task_id}: command {name!r} is not allowlisted")
     if name == "flutter":

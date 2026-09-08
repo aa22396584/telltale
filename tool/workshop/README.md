@@ -34,14 +34,19 @@ do not share a writable directory with a lower-id peer (lease, not last-writer
 wins). Hardware/license blockers stay visible and never become PASS. Commands
 are an argv allowlist; issue/comment URLs are not shell.
 
-## Task runner (#11.B, first slice)
+## Task runner (#11.B)
 
 `run_task.py` executes **one** ready pending task from that plan. It reuses the
 validator's argv allowlist, refuses lease conflicts, strips secret environment
 variables, and writes `handoff.json`. A failed command cannot be labelled
-completed. Worktree isolation remains later 11.B work.
+completed.
+
+`--isolate` adds a detached git worktree at `--base-sha` (or `HEAD`) and runs
+the argv there. The caller's checkout is not reset. An existing isolate path
+is a refusal, not a `git reset`.
 
 ```bash
 python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --dry-run
+python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --isolate
 python3 -m unittest discover -s test/tool -p 'test_workshop_runner.py' -v
 ```
