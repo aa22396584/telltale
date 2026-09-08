@@ -39,7 +39,8 @@ are an argv allowlist; issue/comment URLs are not shell.
 `run_task.py` executes **one** ready pending task from that plan. It reuses the
 validator's argv allowlist, refuses lease conflicts, strips secret environment
 variables, and writes `handoff.json`. A failed command cannot be labelled
-completed.
+completed. Stdout and stderr are drained while the command runs and kept only
+up to `--output-limit`, so a runaway child cannot fill memory.
 
 `--isolate` adds a detached git worktree at `--base-sha` (or `HEAD`) and runs
 the argv there. Combined with `--dry-run` it does not create a worktree, but

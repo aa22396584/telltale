@@ -265,6 +265,26 @@ class RunTaskTest(unittest.TestCase):
             self.assertIs(data["completed"], False)
             self.assertEqual(data["results"][0]["exit"], 127)
 
+    def test_output_is_bounded_while_the_command_is_still_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (tmp / "tool" / "workshop" / "probe.py").write_text(
+                "import sys\nsys.stdout.write('x' * 200000)\n",
+                encoding="utf-8",
+            )
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=handoff, timeout=5, output_limit=50
+            )
+            self.assertEqual(code, 0)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertEqual(len(data["results"][0]["stdout"]), 50)
+            self.assertEqual(data["results"][0]["stdout"], "x" * 50)
+
     def test_dry_run_does_not_mark_completed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

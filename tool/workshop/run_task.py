@@ -19,6 +19,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -328,6 +329,20 @@ def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _drain_pipe(pipe, limit: int) -> bytes:
+    chunks: list[bytes] = []
+    kept = 0
+    while True:
+        block = pipe.read(65536)
+        if not block:
+            break
+        if kept < limit:
+            take = min(len(block), limit - kept)
+            chunks.append(block[:take])
+            kept += take
+    return b"".join(chunks)
+
+
 def _run_command(
     argv: list[str],
     *,
@@ -367,18 +382,40 @@ def _run_command(
             "stderr": str(exc),
         }
     timed_out = False
+    stdout_holder: list[bytes] = []
+    stderr_holder: list[bytes] = []
+
+    def collect(pipe, dest: list[bytes]) -> None:
+        dest.append(_drain_pipe(pipe, output_limit))
+
+    reader_out = threading.Thread(
+        target=collect, args=(proc.stdout, stdout_holder), daemon=True
+    )
+    reader_err = threading.Thread(
+        target=collect, args=(proc.stderr, stderr_holder), daemon=True
+    )
+    reader_out.start()
+    reader_err.start()
     try:
-        stdout_b, stderr_b = proc.communicate(timeout=timeout)
+        proc.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         timed_out = True
         _kill_group(proc.pid, signal.SIGTERM)
         try:
-            stdout_b, stderr_b = proc.communicate(timeout=1)
+            proc.wait(timeout=1)
         except subprocess.TimeoutExpired:
             _kill_group(proc.pid, signal.SIGKILL)
-            stdout_b, stderr_b = proc.communicate()
-    stdout = (stdout_b or b"")[:output_limit].decode("utf-8", "replace")
-    stderr = (stderr_b or b"")[:output_limit].decode("utf-8", "replace")
+            proc.wait()
+    reader_out.join(timeout=2)
+    reader_err.join(timeout=2)
+    if proc.stdout is not None:
+        proc.stdout.close()
+    if proc.stderr is not None:
+        proc.stderr.close()
+    stdout_b = stdout_holder[0] if stdout_holder else b""
+    stderr_b = stderr_holder[0] if stderr_holder else b""
+    stdout = stdout_b.decode("utf-8", "replace")
+    stderr = stderr_b.decode("utf-8", "replace")
     return {
         "argv": argv,
         "exit": None if timed_out else proc.returncode,
