@@ -86,15 +86,25 @@ String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
   final nrc = failure.negativeResponseCode;
   if (nrc != null) {
     final controller = failure.issueDetail ?? '';
+    final harm = failure.repeatWouldHarm;
+    final code =
+        '0x${nrc.toRadixString(16).toUpperCase().padLeft(2, '0')}';
     return switch (nrc) {
-      0x22 => l10n.dtcClearNrcConditions(controller),
-      0x11 || 0x12 => l10n.dtcClearNrcUnsupported(controller),
-      0x21 => l10n.dtcClearNrcBusy(controller),
-      0x33 => l10n.dtcClearNrcSecurity(controller),
-      _ => l10n.dtcClearNrcOther(
-          controller,
-          '0x${nrc.toRadixString(16).toUpperCase().padLeft(2, '0')}',
-        ),
+      0x22 => harm
+          ? l10n.dtcClearNrcConditionsDoNotRepeat(controller)
+          : l10n.dtcClearNrcConditions(controller),
+      0x11 || 0x12 => harm
+          ? l10n.dtcClearNrcUnsupportedDoNotRepeat(controller)
+          : l10n.dtcClearNrcUnsupported(controller),
+      0x21 => harm
+          ? l10n.dtcClearNrcBusyDoNotRepeat(controller)
+          : l10n.dtcClearNrcBusy(controller),
+      0x33 => harm
+          ? l10n.dtcClearNrcSecurityDoNotRepeat(controller)
+          : l10n.dtcClearNrcSecurity(controller),
+      _ => harm
+          ? l10n.dtcClearNrcOtherDoNotRepeat(controller, code)
+          : l10n.dtcClearNrcOther(controller, code),
     };
   }
   if (failure.silentSources.isNotEmpty) {

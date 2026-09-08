@@ -1522,6 +1522,7 @@ class PollingEngine {
             pendingSources: Set.unmodifiable(owed),
             terminalSources: Set.unmodifiable(finished),
             heardAboutService: Set.unmodifiable(heardOfService),
+            silentSources: Set.unmodifiable(e.silentSources),
             // The second place the identifier was dropped, and the one a
             // source-text check on the catch above would never have found.
             // This clause is on the only path out of a failed read, so
@@ -1531,6 +1532,8 @@ class PollingEngine {
             // engine's Traditional Chinese in every language.
             transportIssue: e.transportIssue,
             issueDetail: e.issueDetail,
+            negativeResponseCode: e.negativeResponseCode,
+            repeatWouldHarm: e.repeatWouldHarm,
           );
         }
         await Future<void>.delayed(pendingRetryDelay);
@@ -1878,7 +1881,7 @@ class PollingEngine {
           hasCountByte: hasCountByte,
           sourceId: frame.sourceId,
         );
-      } on StateError catch (e) {
+      } on StateError {
         // The decoder's refusals are diagnoses — a declared count the payload
         // does not honour, data outside that window, an odd remainder.
         //
@@ -1893,7 +1896,7 @@ class PollingEngine {
         // with the message and every code that *was* read carried out. What
         // changes is that the reading continues far enough to find them.
         unrecognised++;
-        decodeFailure ??= e.message;
+        decodeFailure ??= '解碼器拒絕這筆回應';
         continue;
       }
       for (final dtc in decoded) {
@@ -2761,7 +2764,7 @@ class PollingEngine {
                   : '$why請將電門轉到 ON 但不要發動引擎，然後再試一次。',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
-              issueDetail: source,
+              issueDetail: frame.sourceId,
               negativeResponseCode: 0x22,
             );
           case 0x11: // serviceNotSupported
@@ -2779,7 +2782,7 @@ class PollingEngine {
                         '原廠設備才能清除。',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
-              issueDetail: source,
+              issueDetail: frame.sourceId,
               negativeResponseCode: bytes[2],
             );
           case 0x21: // busyRepeatRequest
@@ -2787,7 +2790,7 @@ class PollingEngine {
               '$source目前忙碌中。$retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
-              issueDetail: source,
+              issueDetail: frame.sourceId,
               negativeResponseCode: 0x21,
             );
           case 0x33: // securityAccessDenied
@@ -2801,7 +2804,7 @@ class PollingEngine {
               '$prohibition',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
-              issueDetail: source,
+              issueDetail: frame.sourceId,
               negativeResponseCode: 0x33,
             );
           default:
@@ -2824,7 +2827,7 @@ class PollingEngine {
               '$retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
-              issueDetail: source,
+              issueDetail: frame.sourceId,
               negativeResponseCode: bytes[2],
             );
         }

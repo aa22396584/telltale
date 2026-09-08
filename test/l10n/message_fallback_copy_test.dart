@@ -158,7 +158,68 @@ void main() {
     expect(chinese.hasMatch(text), isFalse);
     expect(text, contains('7E8'));
     expect(text, contains('ignition ON'));
+    expect(text, contains('try again'));
+    expect(text.toLowerCase(), isNot(contains('do not send another')));
     expect(text, isNot(contains('拒絕')));
+  });
+
+  test('a mixed Mode 04 NRC keeps the do-not-repeat warning', () {
+    const failure = DtcReadException(
+      '控制器 7E8 拒絕清除，因為目前的車輛狀態不允許。',
+      negativeResponseCode: 0x22,
+      issueDetail: '7E8',
+      repeatWouldHarm: true,
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7E8'));
+    expect(text, contains('ignition ON'));
+    expect(text.toLowerCase(), contains('do not send another'));
+    expect(text, isNot(contains('控制器')));
+  });
+
+  test('unsupported Mode 04 without harm does not forbid a retry', () {
+    const failure = DtcReadException(
+      '控制器 7E9 不支援清除服務（Mode 04）。',
+      negativeResponseCode: 0x11,
+      issueDetail: '7E9',
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7E9'));
+    expect(text.toLowerCase(), contains('does not support'));
+    expect(text.toLowerCase(), isNot(contains('do not send another')));
+  });
+
+  test('unsupported Mode 04 with harm forbids another global clear', () {
+    const failure = DtcReadException(
+      '控制器 7E9 不支援清除服務（Mode 04）。',
+      negativeResponseCode: 0x11,
+      issueDetail: '7E9',
+      repeatWouldHarm: true,
+    );
+    final text = dtcClearNoticeText(
+      _en,
+      const DtcClearNotice(
+        DtcClearNoticeKind.engineFailure,
+        failure: failure,
+      ),
+    )!;
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text.toLowerCase(), contains('do not send another'));
+    expect(text, isNot(contains('控制器')));
   });
 
   test('silent clear controllers are named without the Chinese sentence', () {

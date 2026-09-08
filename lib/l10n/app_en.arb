@@ -3481,9 +3481,9 @@
   "connectBleScanUnavailable": "Bluetooth is not usable right now. Wait a moment, then search again.",
   "connectBleScanBluez": "No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.",
   "connectBleScanUnclassified": "BLE search failed.",
-  "dtcClearNrcConditions": "{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.",
+  "dtcClearNrcConditions": "{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then try again.",
   "@dtcClearNrcConditions": {
-    "description": "ISO 14229 NRC 0x22 on Mode 04. Controller id is issueDetail.",
+    "description": "ISO 14229 NRC 0x22 on Mode 04 when repeatWouldHarm is false. Controller id is the raw sourceId.",
     "placeholders": {
       "controller": { "type": "String" }
     }
@@ -3494,7 +3494,7 @@
       "controller": { "type": "String" }
     }
   },
-  "dtcClearNrcBusy": "{controller} is busy. Wait, then rescan. Do not send another global clear if one may already have finished.",
+  "dtcClearNrcBusy": "{controller} is busy. Wait, then try again.",
   "@dtcClearNrcBusy": {
     "placeholders": {
       "controller": { "type": "String" }
@@ -3506,7 +3506,7 @@
       "controller": { "type": "String" }
     }
   },
-  "dtcClearNrcOther": "{controller} refused the clear (reason code {code}). Rescan to see what remains. Do not send another global clear if one may already have finished.",
+  "dtcClearNrcOther": "{controller} refused the clear (reason code {code}). Wait, then try again.",
   "@dtcClearNrcOther": {
     "placeholders": {
       "controller": { "type": "String" },
@@ -3518,6 +3518,38 @@
     "placeholders": {
       "count": { "type": "int" },
       "controllers": { "type": "String" }
+    }
+  },
+  "dtcClearNrcConditionsDoNotRepeat": "{controller} refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.",
+  "@dtcClearNrcConditionsDoNotRepeat": {
+    "description": "ISO 14229 NRC 0x22 on Mode 04 when another controller may already have cleared.",
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcUnsupportedDoNotRepeat": "{controller} does not support Mode 04 clear. Manufacturer or dealer equipment may be required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.",
+  "@dtcClearNrcUnsupportedDoNotRepeat": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcBusyDoNotRepeat": "{controller} is busy. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.",
+  "@dtcClearNrcBusyDoNotRepeat": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcSecurityDoNotRepeat": "{controller} requires security access before it will clear. Manufacturer or dealer equipment is required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.",
+  "@dtcClearNrcSecurityDoNotRepeat": {
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcClearNrcOtherDoNotRepeat": "{controller} refused the clear (reason code {code}). Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.",
+  "@dtcClearNrcOtherDoNotRepeat": {
+    "placeholders": {
+      "controller": { "type": "String" },
+      "code": { "type": "String" }
     }
   }
 }

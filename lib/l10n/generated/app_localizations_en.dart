@@ -4066,7 +4066,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dtcClearNrcConditions(String controller) {
-    return '$controller refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan. Do not send another global clear if one may already have finished.';
+    return '$controller refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then try again.';
   }
 
   @override
@@ -4076,7 +4076,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dtcClearNrcBusy(String controller) {
-    return '$controller is busy. Wait, then rescan. Do not send another global clear if one may already have finished.';
+    return '$controller is busy. Wait, then try again.';
   }
 
   @override
@@ -4086,11 +4086,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dtcClearNrcOther(String controller, String code) {
-    return '$controller refused the clear (reason code $code). Rescan to see what remains. Do not send another global clear if one may already have finished.';
+    return '$controller refused the clear (reason code $code). Wait, then try again.';
   }
 
   @override
   String dtcClearSilentControllers(int count, String controllers) {
     return '$count controller(s) did not answer the clear ($controllers). Controllers that answered have cleared; others may still hold codes. Rescan. Do not send another clear.';
+  }
+
+  @override
+  String dtcClearNrcConditionsDoNotRepeat(String controller) {
+    return '$controller refused the clear because the vehicle state does not allow it. Most controllers will not clear with the engine running. Turn the ignition ON with the engine stopped, then rescan to see which codes remain. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.';
+  }
+
+  @override
+  String dtcClearNrcUnsupportedDoNotRepeat(String controller) {
+    return '$controller does not support Mode 04 clear. Manufacturer or dealer equipment may be required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.';
+  }
+
+  @override
+  String dtcClearNrcBusyDoNotRepeat(String controller) {
+    return '$controller is busy. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.';
+  }
+
+  @override
+  String dtcClearNrcSecurityDoNotRepeat(String controller) {
+    return '$controller requires security access before it will clear. Manufacturer or dealer equipment is required. Do not send another global clear — a second one can reset emissions readiness on a controller that already finished.';
+  }
+
+  @override
+  String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
+    return '$controller refused the clear (reason code $code). Do not send another global clear — a second one can reset emissions readiness on a controller that already finished. Rescan to see which codes remain.';
   }
 }
