@@ -3477,8 +3477,8 @@
     "description": "DtcReadFailure.pending (NRC 0x78). Waiting is the right next step."
   },
   "dtcCategoryUnattributed": "Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.",
-  "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.",
+  "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.",
   "connectBleScanUnavailable": "Bluetooth is not usable right now. Wait a moment, then search again.",
   "connectBleScanBluez": "No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.",
-  "connectBleScanUnclassified": "BLE search failed. The full error is kept in the log below."
+  "connectBleScanUnclassified": "BLE search failed."
 }

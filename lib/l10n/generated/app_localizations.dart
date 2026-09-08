@@ -6453,7 +6453,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectPairedListFailed.
   ///
   /// In en, this message translates to:
-  /// **'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.'**
+  /// **'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.'**
   String get connectPairedListFailed;
 
   /// No description provided for @connectBleScanUnavailable.
@@ -6471,7 +6471,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectBleScanUnclassified.
   ///
   /// In en, this message translates to:
-  /// **'BLE search failed. The full error is kept in the log below.'**
+  /// **'BLE search failed.'**
   String get connectBleScanUnclassified;
 }
 

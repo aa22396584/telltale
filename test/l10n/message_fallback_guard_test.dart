@@ -47,7 +47,8 @@ void main() {
     expect(code.contains(r'DtcReadException("$e")'), isFalse);
     expect(code.contains(r'（$e）'), isFalse);
     expect(code.contains("'scan failed'"), isFalse);
-    expect(code.contains('transcript.recordNote'), isTrue);
+    expect(code.contains('transcript?.recordNote'), isTrue);
+    expect(code.contains('session.client?.transcript.recordNote'), isFalse);
   });
 
   test('the category panel does not interpolate DtcReadException.message', () {
@@ -65,5 +66,10 @@ void main() {
     final code = _code('lib/ui/screens/connect/connect_screen.dart');
     expect(code.contains('userFacingScanFailure'), isFalse);
     expect(code.contains(r'BLE 搜尋失敗：$error'), isFalse);
+    expect(
+      'FlutterError.reportError'.allMatches(code).length,
+      greaterThanOrEqualTo(3),
+      reason: 'paired list plus both BLE scan failure paths',
+    );
   });
 }

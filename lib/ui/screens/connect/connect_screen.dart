@@ -1105,7 +1105,15 @@ class _BleBodyState extends State<_BleBody> {
             }
           });
         },
-        onError: (Object e) {
+        onError: (Object e, StackTrace stack) {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: e,
+              stack: stack,
+              library: 'connect_screen',
+              context: ErrorDescription('BLE scan'),
+            ),
+          );
           if (mounted) {
             setState(
               () => _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
@@ -1121,7 +1129,15 @@ class _BleBodyState extends State<_BleBody> {
           }
         },
       );
-    } on Object catch (e) {
+    } on Object catch (e, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: e,
+          stack: stack,
+          library: 'connect_screen',
+          context: ErrorDescription('BLE scan'),
+        ),
+      );
       if (mounted) {
         setState(() {
           _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e));

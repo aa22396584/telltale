@@ -3617,7 +3617,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
 
   @override
-  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。完整錯誤保留在下方紀錄。';
+  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。';
 
   @override
   String get connectBleScanUnavailable => '藍牙目前無法使用。請稍後再搜尋。';
@@ -3627,7 +3627,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '找不到可用的 BlueZ／D-Bus 藍牙服務。請確認系統已安裝並啟動 bluetooth 服務後再試。';
 
   @override
-  String get connectBleScanUnclassified => 'BLE 搜尋失敗。完整錯誤保留在下方紀錄。';
+  String get connectBleScanUnclassified => 'BLE 搜尋失敗。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7242,7 +7242,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '有讀到故障碼，但回應標頭是關閉的，因此不知道是哪些控制器回答。這是部分結果，不是車輛正常。';
 
   @override
-  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。完整錯誤保留在下方紀錄。';
+  String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。';
 
   @override
   String get connectBleScanUnavailable => '藍牙目前無法使用。請稍後再搜尋。';
@@ -7252,5 +7252,5 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '找不到可用的 BlueZ／D-Bus 藍牙服務。請確認系統已安裝並啟動 bluetooth 服務後再試。';
 
   @override
-  String get connectBleScanUnclassified => 'BLE 搜尋失敗。完整錯誤保留在下方紀錄。';
+  String get connectBleScanUnclassified => 'BLE 搜尋失敗。';
 }
