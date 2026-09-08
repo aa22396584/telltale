@@ -2310,14 +2310,14 @@ abstract class AppLocalizations {
   /// No description provided for @pidImportPickerFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not open the file picker: {error}'**
-  String pidImportPickerFailed(String error);
+  /// **'Could not open the file picker.'**
+  String get pidImportPickerFailed;
 
   /// No description provided for @pidImportReadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not read the file: {error}'**
-  String pidImportReadFailed(String error);
+  /// **'Could not read the file.'**
+  String get pidImportReadFailed;
 
   /// Separator for an inline list of machine tokens. English uses a comma and a space; Chinese uses the enumeration comma.
   ///

@@ -1249,14 +1249,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pidImportNothingToImport => '沒有可匯入的定義。';
 
   @override
-  String pidImportPickerFailed(String error) {
-    return '無法開啟檔案選擇器：$error';
-  }
+  String get pidImportPickerFailed => '無法開啟檔案選擇器。';
 
   @override
-  String pidImportReadFailed(String error) {
-    return '讀取檔案失敗：$error';
-  }
+  String get pidImportReadFailed => '讀取檔案失敗。';
 
   @override
   String get pidListSeparator => '、';
@@ -4959,14 +4955,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pidImportNothingToImport => '沒有可匯入的定義。';
 
   @override
-  String pidImportPickerFailed(String error) {
-    return '無法開啟檔案選擇器：$error';
-  }
+  String get pidImportPickerFailed => '無法開啟檔案選擇器。';
 
   @override
-  String pidImportReadFailed(String error) {
-    return '讀取檔案失敗：$error';
-  }
+  String get pidImportReadFailed => '讀取檔案失敗。';
 
   @override
   String get pidListSeparator => '、';

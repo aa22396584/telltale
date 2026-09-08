@@ -1226,22 +1226,8 @@
   },
   "pidExportNoCustomPids": "There are no custom PIDs to export.",
   "pidImportNothingToImport": "No definitions to import.",
-  "pidImportPickerFailed": "Could not open the file picker: {error}",
-  "@pidImportPickerFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "pidImportReadFailed": "Could not read the file: {error}",
-  "@pidImportReadFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "pidImportPickerFailed": "Could not open the file picker.",
+  "pidImportReadFailed": "Could not read the file.",
   "pidListSeparator": ", ",
   "@pidListSeparator": {
     "description": "Separator for an inline list of machine tokens. English uses a comma and a space; Chinese uses the enumeration comma."
