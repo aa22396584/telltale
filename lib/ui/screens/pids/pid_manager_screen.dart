@@ -259,7 +259,15 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         type: FileType.custom,
         allowedExtensions: const ['csv', 'txt'],
       );
-    } on Exception {
+    } on Exception catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'pid_manager_screen',
+          context: ErrorDescription('PID CSV picker'),
+        ),
+      );
       _snack(l10n.pidImportPickerFailed);
       return;
     }
@@ -271,7 +279,15 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
       // files are routinely °C, g/s, N·m, and a byte-wise read would mangle
       // every one of them.
       contents = utf8.decode(await picked.readAsBytes(), allowMalformed: true);
-    } on Exception {
+    } on Exception catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'pid_manager_screen',
+          context: ErrorDescription('PID CSV read'),
+        ),
+      );
       _snack(l10n.pidImportReadFailed);
       return;
     }

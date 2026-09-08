@@ -115,5 +115,9 @@ void main() {
     expect(source.contains(r'pidImportPickerFailed("$e")'), isFalse);
     expect(source.contains(r"pidImportReadFailed('$e')"), isFalse);
     expect(source.contains(r'pidImportReadFailed("$e")'), isFalse);
+    expect(
+      'FlutterError.reportError'.allMatches(source).length,
+      greaterThanOrEqualTo(2),
+    );
   });
 }
