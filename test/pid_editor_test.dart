@@ -528,6 +528,34 @@ void main() {
     },
   );
 
+  testWidgets('a formula that needs unequal bytes can still save',
+      (tester) async {
+    _tallViewport(tester);
+    final container = await _container(const <String, Object>{});
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_hostNew(container));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, '名稱', 'Diff');
+    await _enter(tester, '模式 + PID', '010C');
+    await _enter(tester, '運算式', '1/(A-B)');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '儲存'))
+          .onPressed,
+      isNotNull,
+      reason: 'uniform probes must not reject A-B formulas',
+    );
+    await _save(tester);
+    expect(
+      container.read(pidRegistryProvider).where(
+        (p) => p.isCustom && p.equation == '1/(A-B)',
+      ),
+      hasLength(1),
+    );
+  });
+
   testWidgets('an always-invalid formula cannot save', (tester) async {
     _tallViewport(tester);
     final container = await _container(const <String, Object>{});

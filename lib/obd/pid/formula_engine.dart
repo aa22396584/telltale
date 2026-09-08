@@ -1043,11 +1043,18 @@ class FormulaEngine {
     final primary = sampleBytes ?? List<int>.filled(14, 1);
     final first = _evaluateAuthoring(equation, primary);
     if (first == null) return null;
-    // A formula undefined only at the stand-in of ones (1/(A-1)) is still
-    // well-formed. `A/0` fails a second probe of twos and stays rejected.
+    // A formula undefined only at a uniform stand-in (`1/(A-1)`, `1/(A-B)`)
+    // is still well-formed. `A/0` fails every probe and stays rejected.
     if (sampleBytes != null || !_isProbeDomain(first.issue)) return first;
-    final second = _evaluateAuthoring(equation, List<int>.filled(14, 2));
-    if (second == null) return null;
+    for (final probe in [
+      List<int>.filled(14, 2),
+      List<int>.generate(14, (i) => i + 1),
+      List<int>.generate(14, (i) => 14 - i),
+    ]) {
+      final retry = _evaluateAuthoring(equation, probe);
+      if (retry == null) return null;
+      if (!_isProbeDomain(retry.issue)) return retry;
+    }
     return first;
   }
 
