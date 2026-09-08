@@ -172,9 +172,16 @@ def _load(path: Path) -> tuple[dict[str, Any] | None, list[str]]:
             )
         return out
 
+    def reject_constant(name: str) -> None:
+        raise json.JSONDecodeError(f"non-standard JSON number {name}", name, 0)
+
     try:
         text = path.read_text(encoding="utf-8")
-        data = json.loads(text, object_pairs_hook=hook)
+        data = json.loads(
+            text,
+            object_pairs_hook=hook,
+            parse_constant=reject_constant,
+        )
     except ArbError as exc:
         return None, [str(exc)]
     except json.JSONDecodeError as exc:
@@ -200,6 +207,9 @@ def check_files(paths: list[Path]) -> list[str]:
         return errors
     key_sets = [(path, _message_keys(data)) for path, data in loaded]
     reference_path, reference_keys = key_sets[0]
+    if not reference_keys:
+        errors.append(f"{reference_path.name}: template contains no messages")
+        return errors
     for path, keys in key_sets[1:]:
         missing = sorted(reference_keys - keys)
         extra = sorted(keys - reference_keys)
