@@ -98,7 +98,7 @@ Future<String> _dashboardDigest(
 /// Localized crop: workspace-switch labels, not the moving gauge needles.
 Future<String> _switchDigest(WidgetTester tester, String name) async {
   final boundary = tester.renderObject<RenderRepaintBoundary>(
-    find.byKey(const ValueKey('dashboard-workspace-switch')),
+    find.byKey(const ValueKey('dashboard-workspace-switch-capture')),
   );
   late final String digest;
   await tester.runAsync(() async {

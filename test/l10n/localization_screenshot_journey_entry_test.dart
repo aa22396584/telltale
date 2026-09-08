@@ -51,12 +51,19 @@ void main() {
     expect(source.contains('RenderRepaintBoundary'), isTrue);
     expect(source.contains('toImage'), isTrue);
     expect(source.contains('_switchDigest'), isTrue);
+    expect(source.contains('dashboard-workspace-switch-capture'), isTrue);
     expect(dashboard.contains('RepaintBoundary'), isTrue);
-    final keyAt = dashboard.indexOf("ValueKey('dashboard-workspace-switch')");
-    final boundaryAt = dashboard.lastIndexOf('RepaintBoundary', keyAt + 1);
-    expect(keyAt, greaterThan(0));
-    expect(boundaryAt, greaterThan(0));
-    expect(boundaryAt, lessThan(keyAt));
+    expect(dashboard.contains('dashboard-workspace-switch-capture'), isTrue);
+    final withoutCapture = dashboard.replaceAll(
+      'dashboard-workspace-switch-capture',
+      'CAPTURE',
+    );
+    final captureAt = dashboard.indexOf('dashboard-workspace-switch-capture');
+    final buttonKeyAt = withoutCapture.indexOf(
+      "ValueKey('dashboard-workspace-switch')",
+    );
+    expect(captureAt, greaterThan(0));
+    expect(buttonKeyAt, greaterThan(captureAt));
     final switchAt = source.indexOf("_switchDigest(tester, 'switch-zh-Hant')");
     final englishAt = source.indexOf('locale_english');
     expect(switchAt, greaterThan(0));

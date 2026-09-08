@@ -193,8 +193,9 @@ class _WorkspaceToolbar extends StatelessWidget {
         final switcher = ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
           child: RepaintBoundary(
-            key: const ValueKey('dashboard-workspace-switch'),
+            key: const ValueKey('dashboard-workspace-switch-capture'),
             child: SegmentedButton<DashboardWorkspaceMode>(
+              key: const ValueKey('dashboard-workspace-switch'),
               segments: [
                 ButtonSegment(
                   value: DashboardWorkspaceMode.gauges,
