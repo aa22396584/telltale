@@ -3749,13 +3749,29 @@ class PollingEngine {
   /// Evaluates every other live definition that shares this wire request.
   ///
   /// One adapter exchange, several formulas. Enqueueing each definition
-  /// separately used to send `010C` twice in a cycle.
-  void _applySharedWireSiblings(Pid source, List<int> bytes, DateTime now) {
+  /// separately used to send `010C` twice in a cycle. Catalog windows on the
+  /// same DID are the same request with different byte ranges — they must be
+  /// sliced from the attributed payload, not from the source window.
+  void _applySharedWireSiblings(
+    Pid source,
+    ObdResponse response,
+    List<int> sourceBytes,
+    DateTime now,
+  ) {
     final key = TelemetryDemand.wireKeyFor(source.header, source.modeAndPid);
     for (final sibling in _active) {
       if (sibling.id == source.id) continue;
       if (TelemetryDemand.wireKeyFor(sibling.header, sibling.modeAndPid) !=
           key) {
+        continue;
+      }
+      final bytes = _bytesForSharedSibling(
+        sibling,
+        response,
+        sourceBytes,
+      );
+      if (bytes == null) {
+        _invalidate(sibling.id, PidFault.busError);
         continue;
       }
       try {
@@ -4036,7 +4052,7 @@ class PollingEngine {
           rawBytes: bytes,
           timestamp: now,
         );
-        _applySharedWireSiblings(request.pid, bytes, now);
+        _applySharedWireSiblings(request.pid, response, bytes, now);
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
         }
@@ -4284,6 +4300,25 @@ class PollingEngine {
           request.pid.expectedResponseId == response &&
           request.pid.responseDataLengthBytes == first.responseDataLengthBytes,
     );
+  }
+
+  /// Mode 01 siblings share the source payload. Catalog windows do not:
+  /// each has its own offset into the attributed DID payload.
+  List<int>? _bytesForSharedSibling(
+    Pid sibling,
+    ObdResponse response,
+    List<int> sourceBytes,
+  ) {
+    if (sibling.isMode01 ||
+        sibling.ownerProfileId == null ||
+        sibling.ownerProfileId!.isEmpty ||
+        sibling.expectedResponseId == null ||
+        sibling.expectedResponseId!.isEmpty) {
+      return sourceBytes;
+    }
+    final data = _attributedData(response, sibling);
+    if (data == null) return null;
+    return _dataWindow(sibling, data);
   }
 
   /// Applies a catalog signal's byte window after the response envelope has
