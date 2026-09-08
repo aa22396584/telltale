@@ -127,6 +127,29 @@ class CheckArbTest(unittest.TestCase):
             errors = check_arb.check_files([path, zh])
             self.assertTrue(any("malformed JSON" in e for e in errors))
 
+    def test_nonstandard_json_number_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            path = tmp / "app_en.arb"
+            path.write_text(
+                '{"hello":"Hello","@hello":{"description":NaN}}\n',
+                encoding="utf-8",
+            )
+            zh = _write(tmp, "app_zh.arb", {"hello": "你好"})
+            errors = check_arb.check_files([path, zh])
+            self.assertTrue(any("malformed JSON" in e for e in errors), errors)
+
+    def test_template_with_no_messages_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            en = _write(tmp, "app_en.arb", {"@@locale": "en"})
+            zh = _write(tmp, "app_zh.arb", {"@@locale": "zh"})
+            errors = check_arb.check_files([en, zh])
+            self.assertTrue(
+                any("contains no messages" in e for e in errors),
+                errors,
+            )
+
     def test_omitted_translation_metadata_inherits_template(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
