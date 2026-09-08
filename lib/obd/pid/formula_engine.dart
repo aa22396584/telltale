@@ -1004,21 +1004,51 @@ class FormulaEngine {
   /// do not fail this. CSV import and the editor save gate both call this
   /// rather than each inventing a parser. Returns null when the formula
   /// may be saved.
-  static FormulaException? preflight(
-    String equation, {
-    List<int>? sampleBytes,
-  }) {
+  static bool _isProbeDomain(FormulaIssue? issue) =>
+      issue == FormulaIssue.divisionByZero ||
+      issue == FormulaIssue.moduloByZero ||
+      issue == FormulaIssue.log10NonPositiveArgument ||
+      issue == FormulaIssue.resultNotFinite;
+
+  static FormulaException? _evaluateAuthoring(
+    String equation,
+    List<int> sampleBytes,
+  ) {
     try {
       final engine = FormulaEngine()..seedForAuthoring(equation);
       engine.evaluateBytes(
         equation,
-        sampleBytes ?? List<int>.filled(14, 1),
+        sampleBytes,
         requester: probePid('0000'),
       );
       return null;
     } on FormulaException catch (e) {
       return e;
+    } on Error catch (e) {
+      // `~1e999` hits `Infinity.toInt()` inside the evaluator. Import must
+      // not throw; the row is refused as unparsable.
+      return FormulaException(
+        '公式求值發生未預期的錯誤',
+        equation,
+        issue: FormulaIssue.unparsableTerm,
+        term: e.runtimeType.toString(),
+      );
     }
+  }
+
+  static FormulaException? preflight(
+    String equation, {
+    List<int>? sampleBytes,
+  }) {
+    final primary = sampleBytes ?? List<int>.filled(14, 1);
+    final first = _evaluateAuthoring(equation, primary);
+    if (first == null) return null;
+    // A formula undefined only at the stand-in of ones (1/(A-1)) is still
+    // well-formed. `A/0` fails a second probe of twos and stays rejected.
+    if (sampleBytes != null || !_isProbeDomain(first.issue)) return first;
+    final second = _evaluateAuthoring(equation, List<int>.filled(14, 2));
+    if (second == null) return null;
+    return first;
   }
 
   /// Validates [equation] without live data by evaluating it against a probe
