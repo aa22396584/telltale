@@ -12,8 +12,8 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -22,11 +22,15 @@ ALLOWED_PRIORITY = {"P0", "P1", "P2", "P3"}
 ALLOWED_REVIEWER = {"implementation", "review"}
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-ALLOWED_COMMAND_NAMES = {"python3", "bash"}
+ALLOWED_COMMAND_NAMES = {"python3", "bash", "flutter"}
 ALLOWED_SCRIPT_PREFIXES = (
     "tool/workshop/",
     "test/tool/",
     "tool/oracle_guard/",
+)
+ALLOWED_FLUTTER_TEST_PREFIXES = (
+    "test/",
+    "integration_test/",
 )
 
 # Issue #11: never treat GitHub issue/comment text as a shell command.
@@ -72,6 +76,35 @@ def _normalize_rel(path: str) -> str:
     return "/".join(parts)
 
 
+def _is_execution_mode_flag(arg: str) -> bool:
+    if arg in {"-c", "-m"}:
+        return True
+    if arg.startswith("-c") and not arg.startswith("--"):
+        return True
+    if arg.startswith("-m") and not arg.startswith("--"):
+        return True
+    return False
+
+
+def _validate_flutter_command(argv: list[str], task_id: str) -> None:
+    if len(argv) < 3 or argv[1] != "test":
+        raise PlanError(f"{task_id}: flutter command must be 'flutter test <dart files>'")
+    dart_files = 0
+    for item in argv[2:]:
+        if item.startswith("-"):
+            raise PlanError(
+                f"{task_id}: flutter test option {item!r} is not allowlisted"
+            )
+        if not item.endswith(".dart"):
+            raise PlanError(f"{task_id}: flutter test argument must be a .dart file")
+        rel = _normalize_rel(item)
+        if not rel.startswith(ALLOWED_FLUTTER_TEST_PREFIXES):
+            raise PlanError(f"{task_id}: script {rel} is outside the workshop allowlist")
+        dart_files += 1
+    if dart_files == 0:
+        raise PlanError(f"{task_id}: command has no local script path")
+
+
 def _validate_command(argv: list[Any], task_id: str) -> None:
     if not argv or not all(isinstance(item, str) for item in argv):
         raise PlanError(f"{task_id}: run command must be a list of strings")
@@ -82,16 +115,65 @@ def _validate_command(argv: list[Any], task_id: str) -> None:
     name = Path(argv[0]).name
     if name not in ALLOWED_COMMAND_NAMES:
         raise PlanError(f"{task_id}: command {name!r} is not allowlisted")
-    script = None
-    for item in argv[1:]:
-        if item.endswith(".py") or item.endswith(".sh"):
-            script = item
-            break
-    if script is None:
+    if name == "flutter":
+        _validate_flutter_command(argv, task_id)
+        return
+    index = 1
+    if index < len(argv) and argv[index] == "--":
+        index += 1
+    if index >= len(argv):
+        raise PlanError(f"{task_id}: command has no local script path")
+    lead = argv[index]
+    if lead == "-":
+        raise PlanError(f"{task_id}: interpreter reads stdin instead of a local script")
+    if lead.startswith("-"):
+        if _is_execution_mode_flag(lead):
+            raise PlanError(
+                f"{task_id}: interpreter execution flag {lead!r} is not allowlisted"
+            )
+        raise PlanError(
+            f"{task_id}: interpreter option {lead!r} is not allowlisted"
+        )
+    script = lead
+    if not (script.endswith(".py") or script.endswith(".sh")):
         raise PlanError(f"{task_id}: command has no local script path")
     rel = _normalize_rel(script)
     if not rel.startswith(ALLOWED_SCRIPT_PREFIXES):
         raise PlanError(f"{task_id}: script {rel} is outside the workshop allowlist")
+
+
+def _commit_exists(plan_path: Path, sha: str) -> bool:
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(plan_path.parent),
+                "cat-file",
+                "-e",
+                f"{sha}^{{commit}}",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
+
+
+def _dirs_overlap(left: str, right: str) -> bool:
+    first = left.rstrip("/")
+    second = right.rstrip("/")
+    return (
+        first == second
+        or first.startswith(second + "/")
+        or second.startswith(first + "/")
+    )
+
+
+def _dirs_conflict(left: list[str], right: list[str]) -> bool:
+    return any(_dirs_overlap(item, other) for item in left for other in right)
 
 
 def _cycles(ids: dict[str, list[str]]) -> list[list[str]]:
@@ -220,7 +302,10 @@ def validate_plan(
             if sha is not None:
                 if not isinstance(sha, str) or not SHA_RE.fullmatch(sha):
                     raise PlanError(f"{ident}: base_sha must be 40 lowercase hex")
-                if git_shas is not None and sha not in git_shas:
+                if git_shas is not None:
+                    if sha not in git_shas:
+                        raise PlanError(f"{ident}: stale SHA {sha}")
+                elif not _commit_exists(plan_path, sha):
                     raise PlanError(f"{ident}: stale SHA {sha}")
             if check_artifacts:
                 root = _repo_root_from_plan(plan_path)
@@ -272,29 +357,37 @@ def validate_plan(
         for ident, task in by_id.items()
         if task.get("status") == "completed"
     }
-    ready: list[str] = []
+    occupied_dirs: list[list[str]] = [
+        task.get("writable_dirs", [])
+        for task in by_id.values()
+        if task.get("status") == "in_progress"
+    ]
+    candidates: list[str] = []
     for ident, task in by_id.items():
-        if task.get("status") in {"completed", "blocked"}:
+        if task.get("status") != "pending":
             continue
         deps = task.get("depends_on", [])
         if all(dep in completed_issues for dep in deps):
-            ready.append(ident)
+            candidates.append(ident)
 
-    # Competing shared writable dirs: keep the lower id as parallel-ready,
-    # surface the others as lease-blocked rather than last-writer-wins.
-    dir_owners: dict[str, list[str]] = defaultdict(list)
-    for ident in ready:
-        for directory in by_id[ident].get("writable_dirs", []):
-            dir_owners[directory].append(ident)
     lease_blocked: set[str] = set()
-    for directory, owners in dir_owners.items():
-        if len(owners) < 2:
+    for ident in candidates:
+        dirs = by_id[ident].get("writable_dirs", [])
+        if any(_dirs_conflict(dirs, occupied) for occupied in occupied_dirs):
+            lease_blocked.add(ident)
+    remaining = [ident for ident in candidates if ident not in lease_blocked]
+
+    kept: list[str] = []
+    for ident in sorted(remaining):
+        dirs = by_id[ident].get("writable_dirs", [])
+        if any(
+            _dirs_conflict(dirs, by_id[other].get("writable_dirs", []))
+            for other in kept
+        ):
             continue
-        keep = sorted(owners)[0]
-        for ident in owners:
-            if ident != keep:
-                lease_blocked.add(ident)
-    ready = [ident for ident in ready if ident not in lease_blocked]
+        kept.append(ident)
+    kept_set = set(kept)
+    ready = [ident for ident in remaining if ident in kept_set]
     return errors, ready
 
 
@@ -303,15 +396,21 @@ def validate_handoff(data: dict[str, Any]) -> list[str]:
     status = data.get("status")
     if status not in {"in_progress", "failed", "blocked", "completed"}:
         errors.append("handoff.status invalid")
-    if data.get("completed") is True and status != "completed":
-        errors.append("unfinished handoff must not be labelled completed")
+    completed_flag = data.get("completed")
     if status == "completed":
+        if completed_flag is not True:
+            errors.append("completed handoff requires completed: true")
         evidence = data.get("evidence")
         if not evidence:
             errors.append("completed handoff requires evidence")
         unrun = data.get("unrun") or []
         if unrun:
             errors.append("completed handoff still has unrun steps")
+    elif status in {"in_progress", "failed", "blocked"}:
+        if completed_flag is True:
+            errors.append("unfinished handoff must not be labelled completed")
+        if completed_flag is not False:
+            errors.append("unfinished handoff must set completed: false")
     sha = data.get("head_sha")
     if sha is not None and (not isinstance(sha, str) or not SHA_RE.fullmatch(sha)):
         errors.append("handoff.head_sha must be 40 lowercase hex")

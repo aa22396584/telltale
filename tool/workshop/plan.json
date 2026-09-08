@@ -175,11 +175,7 @@
       "priority": "P1",
       "status": "pending",
       "depends_on": [
-        9,
-        12,
-        13,
-        14,
-        15
+        9
       ],
       "writable_dirs": [
         "docs/workshop/ws/ws-08/"
@@ -680,13 +676,19 @@
         33
       ],
       "writable_dirs": [
+        "lib/ui",
+        "test",
         "docs/workshop/ws/ws-27/"
       ],
       "run_commands": [
         [
-          "python3",
-          "tool/workshop/validate_capabilities.py",
-          "docs/workshop/capabilities.json"
+          "flutter",
+          "test",
+          "test/workshop/ui/datum_status_badge_test.dart",
+          "test/derived_strip_test.dart",
+          "test/derived_provenance_test.dart",
+          "test/vehicle_profile_provenance_ui_test.dart",
+          "test/dtc_screen_button_test.dart"
         ]
       ],
       "required_evidence": [],
