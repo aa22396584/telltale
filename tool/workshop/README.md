@@ -54,8 +54,10 @@ The caller's checkout is not reset. An existing isolate path is a refusal,
 not a `git reset`. Handoff and lease stay under the original
 `docs/workshop/ws/<task>/` directory. `--review` re-runs the same argv
 against a completed author `handoff.json` and writes `review.json` beside
-it. It refuses `--dry-run`, so a reviewer cannot accept the author's
-completed flag without executing the commands.
+it. If the author path is already named `review.json` (custom `--handoff`),
+the reviewer payload goes to `reviewer.json` instead so the author evidence
+is not overwritten. It refuses `--dry-run`, so a reviewer cannot accept the
+author's completed flag without executing the commands.
 
 ```bash
 python3 tool/workshop/run_task.py tool/workshop/plan.json --task WS-01 --dry-run
