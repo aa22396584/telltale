@@ -32,7 +32,6 @@ ALLOWED_FLUTTER_TEST_PREFIXES = (
     "test/",
     "integration_test/",
 )
-GIT_BIN = "/usr/bin/git"
 
 # Issue #11: never treat GitHub issue/comment text as a shell command.
 FORBIDDEN_COMMAND_SUBSTRINGS = ("http://", "https://", "`", "$(", "${")
@@ -120,24 +119,22 @@ def _validate_command(argv: list[Any], task_id: str) -> None:
         _validate_flutter_command(argv, task_id)
         return
     index = 1
-    while index < len(argv):
-        arg = argv[index]
-        if arg == "--":
-            index += 1
-            break
-        if arg == "-":
-            raise PlanError(f"{task_id}: interpreter reads stdin instead of a local script")
-        if arg.startswith("-"):
-            if _is_execution_mode_flag(arg):
-                raise PlanError(
-                    f"{task_id}: interpreter execution flag {arg!r} is not allowlisted"
-                )
-            index += 1
-            continue
-        break
+    if index < len(argv) and argv[index] == "--":
+        index += 1
     if index >= len(argv):
         raise PlanError(f"{task_id}: command has no local script path")
-    script = argv[index]
+    lead = argv[index]
+    if lead == "-":
+        raise PlanError(f"{task_id}: interpreter reads stdin instead of a local script")
+    if lead.startswith("-"):
+        if _is_execution_mode_flag(lead):
+            raise PlanError(
+                f"{task_id}: interpreter execution flag {lead!r} is not allowlisted"
+            )
+        raise PlanError(
+            f"{task_id}: interpreter option {lead!r} is not allowlisted"
+        )
+    script = lead
     if not (script.endswith(".py") or script.endswith(".sh")):
         raise PlanError(f"{task_id}: command has no local script path")
     rel = _normalize_rel(script)
@@ -149,7 +146,7 @@ def _commit_exists(plan_path: Path, sha: str) -> bool:
     try:
         completed = subprocess.run(
             [
-                GIT_BIN,
+                "git",
                 "-C",
                 str(plan_path.parent),
                 "cat-file",

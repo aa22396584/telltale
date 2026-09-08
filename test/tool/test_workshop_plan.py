@@ -237,6 +237,29 @@ class GraphAndSchemaTest(unittest.TestCase):
             msg=errors,
         )
 
+    def test_python_warning_option_operand_cannot_hide_c(self) -> None:
+        errors = self._errors(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[
+                        [
+                            "python3",
+                            "-W",
+                            "tool/workshop/validate_plan.py",
+                            "-c",
+                            "raise SystemExit('pwned')",
+                        ]
+                    ],
+                )
+            ]
+        )
+        self.assertTrue(
+            any("option" in error or "execution flag" in error for error in errors),
+            msg=errors,
+        )
+
     def test_python_m_module_fails(self) -> None:
         errors = self._errors(
             [
