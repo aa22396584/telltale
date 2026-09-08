@@ -10,6 +10,7 @@ the runner refuses rather than resetting it.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import signal
@@ -74,55 +75,35 @@ def _resolve_executable(name: str) -> str:
                 return candidate
         raise RunnerError("trusted bash not found")
     if name == "flutter":
-        for candidate in (
-            Path.home() / "fvm" / "versions" / "3.47.0" / "bin" / "flutter",
-            Path("/usr/local/bin/flutter"),
-            Path("/usr/bin/flutter"),
-        ):
-            if candidate.is_file() and os.access(candidate, os.X_OK):
-                return str(candidate)
+        candidate = Path.home() / "fvm" / "versions" / "3.47.0" / "bin" / "flutter"
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
         raise RunnerError("trusted flutter 3.47.0 not found")
     raise RunnerError(f"command {name!r} is not allowlisted")
 
 
-def _pid_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
-
-
-def _acquire_lease(path: Path, task_id: str) -> None:
+def _acquire_lease(path: Path, task_id: str) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps({"task": task_id, "pid": os.getpid()})
-    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+    fd = os.open(str(path), os.O_CREAT | os.O_RDWR, 0o644)
     try:
-        fd = os.open(str(path), flags, 0o644)
-    except FileExistsError:
-        existing: dict[str, Any] = {}
-        try:
-            existing = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            existing = {}
-        holder = existing.get("pid")
-        if isinstance(holder, int) and _pid_alive(holder):
-            raise RunnerError(f"{task_id}: lease held by pid {holder}")
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
-        try:
-            fd = os.open(str(path), flags, 0o644)
-        except FileExistsError as exc:
-            raise RunnerError(f"{task_id}: lease raced") from exc
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write(payload)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        os.close(fd)
+        raise RunnerError(f"{task_id}: lease held") from exc
+    os.lseek(fd, 0, os.SEEK_SET)
+    os.ftruncate(fd, 0)
+    os.write(fd, json.dumps({"task": task_id, "pid": os.getpid()}).encode("utf-8"))
+    return fd
 
 
-def _release_lease(path: Path) -> None:
+def _release_lease(fd: int | None, path: Path) -> None:
+    if fd is None:
+        return
+    try:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    except OSError:
+        pass
+    os.close(fd)
     try:
         path.unlink()
     except FileNotFoundError:
@@ -296,7 +277,8 @@ def run_task(
     commands = task.get("run_commands") or []
     if not commands:
         raise RunnerError(f"{task_id}: no run_commands")
-    cwd = validate_plan._repo_root_from_plan(plan_path)
+    original_root = validate_plan._repo_root_from_plan(plan_path)
+    cwd = original_root
     worktree_path: str | None = None
     head_sha: str | None = None
     if isolate:
@@ -304,7 +286,7 @@ def run_task(
         requested = base_sha or task.get("base_sha")
         head_sha = _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
         worktree_dest = isolate_dir or (
-            cwd / "docs" / "workshop" / "ws" / task_id.lower() / "worktree"
+            git_root / ".worktrees" / f"ws-{task_id.lower()}"
         )
         _add_worktree(git_root, worktree_dest, head_sha)
         worktree_path = str(worktree_dest)
@@ -318,11 +300,14 @@ def run_task(
     failed: list[str] = []
     unrun: list[str] = []
     handoff_dest = handoff_path or (
-        cwd / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
+        original_root / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
     )
-    lease_path = handoff_dest.parent / "lease.json"
+    lease_path = (
+        original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
+    )
+    lease_fd: int | None = None
     if not dry_run:
-        _acquire_lease(lease_path, task_id)
+        lease_fd = _acquire_lease(lease_path, task_id)
     try:
         if dry_run:
             unrun = [" ".join(cmd) for cmd in commands]
@@ -374,8 +359,7 @@ def run_task(
         _write_handoff(handoff_dest, payload)
         return 0 if completed else 1
     finally:
-        if not dry_run:
-            _release_lease(lease_path)
+        _release_lease(lease_fd, lease_path)
 
 
 def main(argv: list[str]) -> int:

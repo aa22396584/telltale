@@ -2,6 +2,7 @@
 """#11.B: run_task.py executes allowlisted argv and writes an honest handoff."""
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import subprocess
@@ -224,14 +225,18 @@ class RunTaskTest(unittest.TestCase):
                 tmp,
                 commands=[["python3", "tool/workshop/probe.py"]],
             )
-            handoff = tmp / "handoff.json"
-            (tmp / "lease.json").write_text(
-                json.dumps({"task": "WS-01", "pid": os.getpid()}),
-                encoding="utf-8",
-            )
-            with self.assertRaises(run_task.RunnerError) as raised:
-                run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=5)
-            self.assertIn("lease held", str(raised.exception))
+            handoff = tmp / "other" / "handoff.json"
+            lease = tmp / "docs" / "workshop" / "ws" / "ws-01" / "lease.json"
+            lease.parent.mkdir(parents=True)
+            fd = os.open(str(lease), os.O_CREAT | os.O_RDWR, 0o644)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            try:
+                with self.assertRaises(run_task.RunnerError) as raised:
+                    run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=5)
+                self.assertIn("lease held", str(raised.exception))
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+                os.close(fd)
 
     def test_missing_executable_writes_failed_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
