@@ -124,7 +124,7 @@ are anchored at the start of a line.
 
 **English** — A plausible wrong number is worse than no number.
 
-**Why it is load-bearing.** THE TAGLINE. README.zh-TW.md:14 ↔ README.md:15 (T1), both blockquoted and bold; docs/index.html:113 (zh) ↔ :150 (en) carries the same pair on the published site. CONTRIBUTING.md:165 calls it 'the organising principle'; docs/protocol-deviations.zh-TW.md:12 applies it ('把「看起來合理的錯數字」直接印在錶上'), and lib/obd/addressing.dart:216, lib/obd/polling_engine.dart:970 and lib/obd/elm327_client.dart:3117 all invoke it in English as a design constraint. Translate as a standalone aphorism — never soften 更糟/'worse' to 'less useful', and never drop the comparison to *no* number.
+**Why it is load-bearing.** THE TAGLINE. README.zh-TW.md:14 ↔ README.md:15 (T1), both blockquoted and bold; docs/index.html:113 (zh) ↔ :150 (en) carries the same pair on the published site. CONTRIBUTING.md:165 calls it 'the organising principle'; docs/protocol-deviations.zh-TW.md:12 applies it ('把「看起來合理的錯數字」直接印在錶上'), and lib/obd/addressing.dart:216, lib/obd/polling_engine.dart:1038 and lib/obd/elm327_client.dart:3117 all invoke it in English as a design constraint. Translate as a standalone aphorism — never soften 更糟/'worse' to 'less useful', and never drop the comparison to *no* number.
 
 ### 2. 這是該組合的實測證據，不代表所有手機、轉接器或車輛都相容。
 
@@ -206,7 +206,7 @@ are anchored at the start of a line.
 
 **Shipped as** `dtcClearDialogFrameUnread` (lib/l10n/app_en.arb). The panel says more and is entry 45. The sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
 
-**Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3053 '凍結幀沒有讀到 —— 這不代表車上沒有。'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss.
+**Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3177 '凍結幀沒有讀到 —— 這不代表車上沒有。'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss.
 
 ### 12. 這個控制器沒有儲存凍結幀 —— 故障碼可能是清除後重新出現的，或是由不記錄凍結幀的模組所報告。
 
@@ -259,7 +259,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **Shipped as** `datumReasonPidUnsupported` (lib/l10n/app_en.arb).
 
-**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:85` (`DatumReason.pidUnsupported`). This entry was written when the string lived on `lib/diagnostics/availability.dart:312` with no ARB key, and the note saying there was no project English outlived the wave that gave it one — an entry that says it is unguarded is read as harmlessly stale, which is why it stayed. Deliberately an assertion ABOUT THE CAR, which is why lib/obd/telemetry.dart:75,88 and lib/obd/polling_engine.dart:838,927,3743 all warn against reaching it on thin evidence — docs/protocol-deviations.zh-TW.md:117-119 records that ATAT2 would make one missed window read as 此車輛不支援 for the whole session. Must stay distinguishable from `datumReasonNoAnswer` (`datum_status_copy.dart:86`), which is temporary.
+**Why it is load-bearing.** `lib/ui/widgets/status/datum_status_copy.dart:85` (`DatumReason.pidUnsupported`). This entry was written when the string lived on `lib/diagnostics/availability.dart:312` with no ARB key, and the note saying there was no project English outlived the wave that gave it one — an entry that says it is unguarded is read as harmlessly stale, which is why it stayed. Deliberately an assertion ABOUT THE CAR, which is why lib/obd/telemetry.dart:75,88 and lib/obd/polling_engine.dart:907,995,3801 all warn against reaching it on thin evidence — docs/protocol-deviations.zh-TW.md:117-119 records that ATAT2 would make one missed window read as 此車輛不支援 for the whole session. Must stay distinguishable from `datumReasonNoAnswer` (`datum_status_copy.dart:86`), which is temporary.
 
 ### 17. 另有 N 個項目在這份凍結幀裡，本 App 沒有對應的換算公式
 
