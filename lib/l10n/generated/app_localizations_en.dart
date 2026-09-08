@@ -4052,4 +4052,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectPairedListFailed =>
       'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.';
+
+  @override
+  String get connectBleScanUnavailable =>
+      'Bluetooth is not usable right now. Wait a moment, then search again.';
+
+  @override
+  String get connectBleScanBluez =>
+      'No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.';
+
+  @override
+  String get connectBleScanUnclassified =>
+      'BLE search failed. The full error is kept in the log below.';
 }

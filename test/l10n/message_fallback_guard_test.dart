@@ -59,4 +59,10 @@ void main() {
     expect(code.contains(r"_scanError = '$e'"), isFalse);
     expect(code.contains(r'_scanError = "$e"'), isFalse);
   });
+
+  test('the BLE scan panel does not interpolate userFacingScanFailure', () {
+    final code = _code('lib/ui/screens/connect/connect_screen.dart');
+    expect(code.contains('userFacingScanFailure'), isFalse);
+    expect(code.contains(r'BLE 搜尋失敗：$error'), isFalse);
+  });
 }

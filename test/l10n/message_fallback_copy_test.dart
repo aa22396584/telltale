@@ -9,8 +9,10 @@ import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
+import 'package:torque_obd/obd/transport/ble_transport.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
+import 'package:torque_obd/ui/screens/connect/handshake_copy.dart';
 import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_formula_copy.dart';
 import 'package:torque_obd/ui/screens/pids/powertrain_battery_copy.dart';
@@ -190,6 +192,24 @@ void main() {
     expect(chinese.hasMatch(text), isFalse);
     expect(text, contains('7DF'));
     expect(text, isNot(contains('功能定址')));
+  });
+
+  test('BLE scan issues have typed-out English sentences without native text', () {
+    expect(
+      bleScanIssueText(_en, BleScanIssue.bluezUnavailable),
+      _en.connectBleScanBluez,
+    );
+    expect(
+      bleScanIssueText(_en, BleScanIssue.unclassified),
+      isNot(contains('Exception')),
+    );
+    for (final issue in BleScanIssue.values) {
+      expect(
+        chinese.hasMatch(bleScanIssueText(_en, issue)),
+        isFalse,
+        reason: '$issue',
+      );
+    }
   });
 
   test('a FormulaException with no identifier does not render the engine sentence',

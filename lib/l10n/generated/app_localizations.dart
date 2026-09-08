@@ -6455,6 +6455,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.'**
   String get connectPairedListFailed;
+
+  /// No description provided for @connectBleScanUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth is not usable right now. Wait a moment, then search again.'**
+  String get connectBleScanUnavailable;
+
+  /// No description provided for @connectBleScanBluez.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.'**
+  String get connectBleScanBluez;
+
+  /// No description provided for @connectBleScanUnclassified.
+  ///
+  /// In en, this message translates to:
+  /// **'BLE search failed. The full error is kept in the log below.'**
+  String get connectBleScanUnclassified;
 }
 
 class _AppLocalizationsDelegate
