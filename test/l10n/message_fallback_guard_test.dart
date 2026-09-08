@@ -47,6 +47,7 @@ void main() {
     expect(code.contains(r'DtcReadException("$e")'), isFalse);
     expect(code.contains(r'（$e）'), isFalse);
     expect(code.contains("'scan failed'"), isFalse);
+    expect(code.contains('transcript.recordNote'), isTrue);
   });
 
   test('the category panel does not interpolate DtcReadException.message', () {
