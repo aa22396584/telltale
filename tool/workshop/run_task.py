@@ -581,7 +581,7 @@ def run_task(
                 f"{task_id}: not ready (lease or unfinished dependency)"
             )
     elif (
-        task.get("status") == "in_progress"
+        task.get("status") not in {"pending", "completed"}
         or _unfinished_dependencies(data, task)
         or _in_progress_lease_conflict(data, task_id)
     ):
