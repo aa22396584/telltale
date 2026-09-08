@@ -350,12 +350,6 @@ def _peer_eligible_for_lease(
     status = other.get("status")
     if status == "in_progress":
         return True
-    if status == "completed":
-        if other.get("hardware_or_license_blockers"):
-            return False
-        if _unfinished_dependencies(data, other):
-            return False
-        return True
     if status == "pending":
         return other.get("id") in ready
     return False
@@ -662,7 +656,13 @@ def run_task(
                 worktree_dest = (
                     isolate_dir.expanduser().resolve()
                     if isolate_dir is not None
-                    else git_root / ".worktrees" / f"ws-{task_id.lower()}"
+                    else git_root
+                    / ".worktrees"
+                    / (
+                        f"ws-{task_id.lower()}-review"
+                        if review
+                        else f"ws-{task_id.lower()}"
+                    )
                 )
                 _add_worktree(git_root, worktree_dest, head_sha)
                 worktree_path = str(worktree_dest)

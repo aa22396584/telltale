@@ -355,6 +355,43 @@ class RunTaskTest(unittest.TestCase):
             )
             self.assertEqual(code, 0)
 
+    def test_review_allows_idle_completed_overlapping_peer(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            extra = [
+                {
+                    "id": "WS-02",
+                    "issue": 2,
+                    "issue_url": "https://github.com/ImL1s/telltale/issues/2",
+                    "priority": "P1",
+                    "status": "completed",
+                    "depends_on": [],
+                    "writable_dirs": ["docs/workshop/ws/ws-01/"],
+                    "run_commands": [["python3", "tool/workshop/probe.py"]],
+                    "required_evidence": [],
+                    "hardware_or_license_blockers": [],
+                    "reviewer_role": "implementation",
+                    "done_criteria": "named tests pass",
+                }
+            ]
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                extra=extra,
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"][0]["status"] = "completed"
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=author, timeout=5, review=True
+            )
+            self.assertEqual(code, 0)
+
     def test_review_accepts_a_completed_plan_task(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
@@ -782,6 +819,52 @@ class RunTaskTest(unittest.TestCase):
                 author.with_name("review.json").read_text(encoding="utf-8")
             )
             self.assertEqual(review["head_sha"], sha)
+
+    def test_review_isolate_uses_a_distinct_default_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            repo = tmp / "repo"
+            plan = _plan(
+                repo,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (repo / "tool" / "workshop" / "probe.py").write_text(
+                "print('committed')\n", encoding="utf-8"
+            )
+            sha = _init_git(repo)
+            author = tmp / "handoff.json"
+            author_wt = repo / ".worktrees" / "ws-ws-01"
+            review_wt = repo / ".worktrees" / "ws-ws-01-review"
+            try:
+                self.assertEqual(
+                    run_task.run_task(
+                        plan,
+                        "WS-01",
+                        handoff_path=author,
+                        timeout=10,
+                        isolate=True,
+                        base_sha=sha,
+                    ),
+                    0,
+                )
+                self.assertTrue(author_wt.exists())
+                code = run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=author,
+                    timeout=10,
+                    isolate=True,
+                    review=True,
+                )
+            finally:
+                _remove_worktree(repo, author_wt)
+                _remove_worktree(repo, review_wt)
+            self.assertEqual(code, 0)
+            review = json.loads(
+                author.with_name("review.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(review["head_sha"], sha)
+            self.assertEqual(Path(review["worktree"]).resolve(), review_wt.resolve())
 
     def test_review_refuses_when_author_isolated_but_review_is_not(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
