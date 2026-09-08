@@ -3551,5 +3551,15 @@
       "controller": { "type": "String" },
       "code": { "type": "String" }
     }
-  }
+  },
+  "sharePolicyDenied": "The current connection or driving state does not allow export.",
+  "shareSafetyChanged": "The state changed while preparing the export, so sharing was not opened.",
+  "shareSizeLimit": "The export exceeds the 32 MiB limit.",
+  "shareStagingBusy": "A previous share file is still in its retention period. Try again later.",
+  "shareCleanupRequired": "The share staging area needs to be checked after a restart.",
+  "shareSpaceUnknown": "Could not confirm the free space the share file needs.",
+  "shareNoSpace": "There is not enough storage to prepare the share file.",
+  "shareHandoffFailed": "The file is ready, but the system share sheet could not be opened.",
+  "shareStorageFailure": "A storage error occurred while preparing or recording the share.",
+  "transcriptExportUnidentified": "Export failed."
 }

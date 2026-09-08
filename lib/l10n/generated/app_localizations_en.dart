@@ -4118,4 +4118,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String dtcClearNrcOtherDoNotRepeat(String controller, String code) {
     return '$controller refused the clear (reason code $code). Do not send another global clear — a second one can reset emissions readiness on a controller that may already have cleared. Rescan to see which codes remain.';
   }
+
+  @override
+  String get sharePolicyDenied =>
+      'The current connection or driving state does not allow export.';
+
+  @override
+  String get shareSafetyChanged =>
+      'The state changed while preparing the export, so sharing was not opened.';
+
+  @override
+  String get shareSizeLimit => 'The export exceeds the 32 MiB limit.';
+
+  @override
+  String get shareStagingBusy =>
+      'A previous share file is still in its retention period. Try again later.';
+
+  @override
+  String get shareCleanupRequired =>
+      'The share staging area needs to be checked after a restart.';
+
+  @override
+  String get shareSpaceUnknown =>
+      'Could not confirm the free space the share file needs.';
+
+  @override
+  String get shareNoSpace =>
+      'There is not enough storage to prepare the share file.';
+
+  @override
+  String get shareHandoffFailed =>
+      'The file is ready, but the system share sheet could not be opened.';
+
+  @override
+  String get shareStorageFailure =>
+      'A storage error occurred while preparing or recording the share.';
+
+  @override
+  String get transcriptExportUnidentified => 'Export failed.';
 }

@@ -60,10 +60,6 @@ void main() {
 
     expect(outcome.error, ShareError.shareHandoffFailed);
     expect(outcome.result, AppShareResult.failed);
-    expect(
-      outcome.userFacingError,
-      '檔案已準備完成，但系統分享介面無法開啟。',
-    );
     expect(platform.calls, 1);
     expect(platform.lastPath, isNotNull);
     expect(File(platform.lastPath!).existsSync(), isTrue);

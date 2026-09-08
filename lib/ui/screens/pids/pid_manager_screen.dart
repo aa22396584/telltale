@@ -20,8 +20,8 @@ import '../../../state/obd_session.dart';
 import '../../../state/pid_mutation_lock.dart';
 import '../../../state/pid_registry.dart';
 import '../../../state/app_share_entry_controller.dart';
-import '../../../state/app_share_coordinator.dart';
 import '../../widgets/panel.dart';
+import '../../widgets/share_copy.dart';
 import 'pid_editor_screen.dart';
 import 'pid_import_copy.dart';
 import 'pid_mutation_copy.dart';
@@ -330,10 +330,11 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
       final outcome = await ref
           .read(appShareEntryControllerProvider)
           .sharePidCsv(pids: custom, sharePositionOrigin: origin);
-      final error = outcome.userFacingError;
-      if (error != null) _snack(error);
-    } on Exception catch (e) {
-      _snack(l10n.pidExportFailed('$e'));
+      if (outcome.error != null) {
+        _snack(shareErrorText(l10n, outcome.error!));
+      }
+    } on Exception {
+      _snack(l10n.transcriptExportUnidentified);
     }
   }
 

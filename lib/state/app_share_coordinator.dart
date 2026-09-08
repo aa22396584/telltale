@@ -153,27 +153,6 @@ class AppShareOutcome {
   final ShareError? error;
 }
 
-extension AppShareOutcomeMessage on AppShareOutcome {
-  String? get userFacingError => switch (error) {
-    null => null,
-    ShareError.shareBusy || ShareError.artifactBusy => '另一個檔案作業尚未完成。',
-    ShareError.policyDenied => '目前的連線或行車狀態不允許匯出。',
-    ShareError.shareSafetyChangedRecorder ||
-    ShareError.shareSafetyChangedConnection ||
-    ShareError.shareSafetyChangedMoving ||
-    ShareError.shareSafetyChangedSpeedUnknown ||
-    ShareError.shareSafetyChangedForeground => '準備匯出期間狀態已改變，未開啟分享。',
-    ShareError.shareSizeLimit => '匯出檔超過 32 MiB 上限。',
-    ShareError.shareStagingBusy => '先前的分享檔仍在保留期內，請稍後再試。',
-    ShareError.shareCleanupRequired => '分享暫存區需要在重新啟動後檢查。',
-    ShareError.shareSpaceUnknown => '無法確認分享檔所需的可用空間。',
-    ShareError.shareNoSpace => '儲存空間不足，無法準備分享檔。',
-    ShareError.shareHandoffFailed =>
-      '檔案已準備完成，但系統分享介面無法開啟。',
-    ShareError.storageFailure => '準備或記錄分享結果時發生儲存錯誤。',
-  };
-}
-
 class AppShareCoordinator {
   AppShareCoordinator({
     required this.rootDirectory,
