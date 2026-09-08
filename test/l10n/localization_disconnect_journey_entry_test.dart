@@ -30,14 +30,18 @@ void main() {
     expect(source.contains('locale_english'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);
+    expect(source.contains('scrollUntilVisible'), isTrue);
+    expect(source.contains('-400'), isTrue);
     final demoAt = source.indexOf('await connectDemoRig');
     final settingsAt = source.indexOf("await _tapNav(tester, '設定')");
     final chineseAt = source.indexOf("中斷連線");
     final englishAt = source.indexOf('locale_english');
+    final scrollBackAt = source.indexOf('-400');
     expect(demoAt, greaterThan(0));
     expect(settingsAt, greaterThan(demoAt));
     expect(chineseAt, greaterThan(settingsAt));
     expect(englishAt, greaterThan(chineseAt));
+    expect(scrollBackAt, greaterThan(englishAt));
   });
 
   test('the journey does not replace ObdSession with a pre-solved mock', () {

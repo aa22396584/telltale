@@ -42,6 +42,19 @@ Finder _disconnectOnSettings(String label) {
   );
 }
 
+Finder _settingsVerticalScrollable() {
+  return find
+      .descendant(
+        of: find.byType(SettingsScreen),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.axisDirection == AxisDirection.down,
+        ),
+      )
+      .first;
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -73,29 +86,22 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('locale_english')),
       400,
-      scrollable: find
-          .descendant(
-            of: find.byType(SettingsScreen),
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is Scrollable &&
-                  widget.axisDirection == AxisDirection.down,
-            ),
-          )
-          .first,
+      scrollable: _settingsVerticalScrollable(),
     );
     await tester.tap(find.byKey(const Key('locale_english')));
     await tester.pump(const Duration(milliseconds: 500));
 
     final english = _disconnectOnSettings('Disconnect');
+    await tester.scrollUntilVisible(
+      english,
+      -400,
+      scrollable: _settingsVerticalScrollable(),
+    );
     expect(
-      await pumpUntil(tester, () => english.evaluate().isNotEmpty),
-      isTrue,
+      english.hitTestable(),
+      findsOneWidget,
       reason: 'Settings did not show Disconnect on SettingsScreen after language switch',
     );
-    await Scrollable.ensureVisible(tester.element(english), alignment: 0.5);
-    await tester.pump(const Duration(milliseconds: 50));
-    expect(english.hitTestable(), findsOneWidget);
     expect(_disconnectOnSettings('中斷連線'), findsNothing);
   });
 }
