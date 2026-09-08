@@ -313,6 +313,8 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       redlineFrom: _original?.redlineFrom,
     );
 
+    if (FormulaEngine.preflight(pid.equation) != null) return;
+
     final previous = _original;
     final registry = ref.read(pidRegistryProvider.notifier);
     final failure = previous == null
@@ -371,10 +373,14 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     final palette = context.palette;
     final preview = _previewFor(l10n);
     final definitionRejection = _definitionRejection(l10n);
+    // Preview is the sample payload. Commit is the same preflight CSV import
+    // uses: a formula undefined only at this sample (`1/(A-1)` with A=1)
+    // stays saveable; `A/0` does not.
+    final commitFailure = FormulaEngine.preflight(_equation.text.trim());
     final canSave =
         _modeAndPid.text.trim().length >= 4 &&
         definitionRejection == null &&
-        preview.error == null;
+        commitFailure == null;
 
     return PopScope(
       canPop: false,
