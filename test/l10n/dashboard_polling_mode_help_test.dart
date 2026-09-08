@@ -693,15 +693,12 @@ void main() {
     // windscreen-mount case, and 200% is the largest step Android's display
     // size and font size controls reach together.
     //
-    // The assertion is a COMPARISON, not `takeException() == null`. This
-    // dashboard already overflows a `RenderFlex` by 126 px at 640x320 in both
-    // languages, with the polling-mode pill present and with it absent — it
-    // predates this change and is not in this slice. An absolute assertion
-    // here would either fail on a defect it did not introduce or, once
-    // softened, stop being able to fail at all. So each geometry is rendered
-    // twice: once with the snapshot unpolled, where the pill is hidden by the
-    // poll gate, and once with it shown. What the pill adds must be
-    // nothing.
+    // #130 fixed the toolbar overflow that used to make an absolute check
+    // fail on a defect this slice did not introduce. Each geometry is
+    // rendered three times — pill hidden, pill shown, help opened — and
+    // every one of those frames must report zero render errors. Comparing
+    // against a pre-#130 overflow baseline would stay green while the
+    // dashboard still overflowed.
     const geometries = <String, (Size, double)>{
       '320dp portrait': (Size(320, 640), 1),
       'landscape': (Size(640, 320), 1),
@@ -746,9 +743,14 @@ void main() {
           });
           expect(find.byKey(PollingModePill.pillKey), findsOneWidget);
           expect(
-            withPill,
             baseline,
-            reason: 'the pill changed what this screen reports at ${entry.key}',
+            isEmpty,
+            reason: 'the dashboard complained at ${entry.key} before the pill',
+          );
+          expect(
+            withPill,
+            isEmpty,
+            reason: 'the dashboard complained at ${entry.key} with the pill',
           );
 
           // Inside the viewport, not merely present in the tree.
@@ -823,10 +825,10 @@ void main() {
           }
           expect(
             opening,
-            baseline,
+            isEmpty,
             reason:
-                'the explanation changed what this screen reports at '
-                '${entry.key}',
+                'the dashboard complained at ${entry.key} with the '
+                'explanation open',
           );
         });
       }
