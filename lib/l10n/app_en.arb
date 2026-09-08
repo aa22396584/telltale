@@ -3036,6 +3036,10 @@
   "@settingsManualCommandWriteFailed": {
     "description": "TransportIssue.writeFailed. Not a connect failure - it happens on an open link and reaches this panel, not the connect screen. The hedge is load-bearing: a write that failed part way has already put bytes on the wire."
   },
+  "settingsManualCommandOperationRetired": "This session has ended or gone to the background, so the command was not sent.",
+  "@settingsManualCommandOperationRetired": {
+    "description": "TransportIssue.operationRetired. The app stopped asking; nothing is wrong with the adapter or the vehicle. Distinct from notConnected: a link may still exist, but this command's owner expired before any byte left."
+  },
   "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
   "@manualCommandRefusedEmpty": {
     "description": "ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything."

@@ -92,6 +92,10 @@ const _expected = <TransportIssue, (String, String)>{
     "could not be handed to the adapter's connection",
     '無法交給轉接器的連線',
   ),
+  TransportIssue.operationRetired: (
+    'This session has ended or gone to the background, so the command was not sent.',
+    '這個工作階段已經結束或退到背景，指令沒有送出。',
+  ),
   TransportIssue.queryHeaderRefused: (
     'refused to aim this request at controller 7E1',
     '拒絕將這條要求對準到控制器 7E1',
@@ -144,37 +148,51 @@ void main() {
     expect(chinese, isEmpty, reason: chinese.join('\n'));
   });
 
-  test('the remainder is the subclasses that bake in a null identifier', () {
-    // What is left after this slice, said with the type that actually reaches
-    // here rather than with a bare `TransportException`. `lib/state/`'s throws
-    // all carry an identifier now; the scan in `transport_issue_guard_test.dart`
-    // fails a new one that does not.
-    //
-    // These two do not, and cannot be seen by that scan: they bake `issue:
-    // null` into their own constructors. Both are on the path a typed command
-    // takes; `SettingsScreen.describeManualFailure` writes out how each one
-    // gets there rather than asserting that it does -- so the panel still
-    // falls back to their Traditional Chinese. A
-    // sentence in the wrong language is worse than one in the right language
-    // and better than an empty panel, which is what dropping the fallback
-    // would give on the one screen that exists for when things have already
-    // gone wrong.
-    for (final l10n in [en, zh]) {
-      expect(
-        SettingsScreen.describeManualFailure(
-          l10n,
-          const WriteRefusedException(_sentinel),
-        ),
-        _sentinel,
-      );
-      expect(
-        SettingsScreen.describeManualFailure(
-          l10n,
-          const OperationRetiredException(_sentinel),
-        ),
-        _sentinel,
-      );
-    }
+  test('the two subclasses that reach this panel use their identifiers', () {
+    // Constructed as the transports and `_sendNow` throw them, not as a
+    // bare `TransportException` with the identifier already filled in.
+    expect(
+      SettingsScreen.describeManualFailure(
+        en,
+        const WriteRefusedException(_sentinel),
+      ),
+      'Nothing is connected, so the command was not sent.',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(
+        zh,
+        const WriteRefusedException(_sentinel),
+      ),
+      '目前沒有連線，這條指令沒有送出。',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(
+        en,
+        const OperationRetiredException(_sentinel),
+      ),
+      'This session has ended or gone to the background, so the command was not sent.',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(
+        zh,
+        const OperationRetiredException(_sentinel),
+      ),
+      '這個工作階段已經結束或退到背景，指令沒有送出。',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(
+        en,
+        const WriteRefusedException(_sentinel),
+      ),
+      isNot(contains(_sentinel)),
+    );
+    expect(
+      SettingsScreen.describeManualFailure(
+        en,
+        const OperationRetiredException(_sentinel),
+      ),
+      isNot(contains(_sentinel)),
+    );
   });
 
   test('each identifier renders the sentence written for it, in both languages',

@@ -169,7 +169,6 @@ const Set<String> kManualCommandReadOnlyAtQueries = {
   'I',
   '@1',
   '@2',
-  '@3',
   'RV',
   'DP',
   'DPN',
@@ -177,7 +176,6 @@ const Set<String> kManualCommandReadOnlyAtQueries = {
   'IGN',
   'DESC',
   'CS',
-  'CV',
   'RD',
 };
 

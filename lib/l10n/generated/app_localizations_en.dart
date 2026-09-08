@@ -3720,6 +3720,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
 
   @override
+  String get settingsManualCommandOperationRetired =>
+      'This session has ended or gone to the background, so the command was not sent.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Nothing was typed, so nothing was sent.';
 

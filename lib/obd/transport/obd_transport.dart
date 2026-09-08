@@ -257,6 +257,11 @@ enum TransportIssue {
   /// link was torn down. Distinct from [linkDroppedMidSession]: the transport
   /// still believes it is connected, and the silence is what is known.
   linkStoppedResponding,
+
+  /// The session that would have sent this command has ended or gone to the
+  /// background, so the bytes never left. Not a failure of the link or the
+  /// vehicle: the app stopped asking.
+  operationRetired,
 }
 
 /// Raised for link-level failures.
@@ -309,7 +314,7 @@ class TransportException implements Exception {
   /// Where that is still allowed is a mechanical question, not a number. The
   /// scan in `test/l10n/transport_issue_guard_test.dart` walks `lib/obd/` and
   /// `lib/state/` and fails any direct construction that settles for null;
-  /// what it cannot see is the three subclasses below, which bake it into
+  /// what it cannot see is the subclasses below that still bake it into
   /// their own constructors and are held by a written roster in the same file.
   ///
   /// This sentence used to carry a count of the throws still to be migrated.
@@ -347,9 +352,11 @@ class TransportException implements Exception {
 /// conservative direction: an unknown failure must read as possibly-sent. This
 /// only subtracts the cases where the transport itself says otherwise.
 class WriteRefusedException extends TransportException {
-  /// No identifier: this never reaches the connect screen. It is read by the
-  /// clear-DTC audit, which cares that nothing was transmitted, not about copy.
-  const WriteRefusedException(super.message) : super(issue: null);
+  /// [TransportIssue.notConnected]: nothing was transmitted, because no link
+  /// is open. The clear-DTC audit still keys off the type; the manual-command
+  /// panel keys off the identifier.
+  const WriteRefusedException(super.message)
+    : super(issue: TransportIssue.notConnected);
 }
 
 /// The request cannot be addressed on this bus, and retrying will not help.
@@ -367,8 +374,11 @@ class WriteRefusedException extends TransportException {
 /// mark a PID faulty or a scan broken should recognise it as "the app stopped
 /// asking", which is what it is.
 class OperationRetiredException extends TransportException {
-  /// No identifier: "the app stopped asking" is not a failure to report.
-  const OperationRetiredException(super.message) : super(issue: null);
+  /// [TransportIssue.operationRetired]: the app stopped asking. The polling
+  /// loop still keys off the type so it does not mark a PID faulty; the
+  /// manual-command panel keys off the identifier.
+  const OperationRetiredException(super.message)
+    : super(issue: TransportIssue.operationRetired);
 
   @override
   String toString() => 'OperationRetiredException: $message';

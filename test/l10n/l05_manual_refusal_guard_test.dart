@@ -67,6 +67,8 @@ const _conditions = <String, ManualCommandRefusalReason>{
   'ATZ': ManualCommandRefusalReason.adapterStateWouldChange,
   'ATSH 7E1': ManualCommandRefusalReason.adapterStateWouldChange,
   'ATCFC0': ManualCommandRefusalReason.adapterStateWouldChange,
+  'AT@3': ManualCommandRefusalReason.adapterStateWouldChange,
+  'ATCV': ManualCommandRefusalReason.adapterStateWouldChange,
   '04': ManualCommandRefusalReason.clearHasItsOwnButton,
   '04 00': ManualCommandRefusalReason.clearHasItsOwnButton,
   'ZZ': ManualCommandRefusalReason.charactersNoObdCommandHas,
