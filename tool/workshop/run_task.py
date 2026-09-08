@@ -331,6 +331,19 @@ def _task_writable_dirs(task: dict[str, Any]) -> list[str]:
     return out
 
 
+def _unfinished_dependencies(data: dict[str, Any], task: dict[str, Any]) -> bool:
+    tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
+    completed_issues = {
+        item.get("issue")
+        for item in tasks
+        if item.get("status") == "completed"
+    }
+    deps = task.get("depends_on") or []
+    return any(
+        isinstance(dep, int) and dep not in completed_issues for dep in deps
+    )
+
+
 def _in_progress_lease_conflict(data: dict[str, Any], task_id: str) -> bool:
     tasks = [item for item in (data.get("tasks") or []) if isinstance(item, dict)]
     target = next((item for item in tasks if item.get("id") == task_id), None)
@@ -567,7 +580,9 @@ def run_task(
             raise RunnerError(
                 f"{task_id}: not ready (lease or unfinished dependency)"
             )
-    elif _in_progress_lease_conflict(data, task_id):
+    elif _unfinished_dependencies(data, task) or _in_progress_lease_conflict(
+        data, task_id
+    ):
         raise RunnerError(
             f"{task_id}: not ready (lease or unfinished dependency)"
         )

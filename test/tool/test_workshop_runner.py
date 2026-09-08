@@ -275,6 +275,62 @@ class RunTaskTest(unittest.TestCase):
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 
+    def test_review_refuses_unfinished_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            extra = [
+                {
+                    "id": "WS-02",
+                    "issue": 2,
+                    "issue_url": "https://github.com/ImL1s/telltale/issues/2",
+                    "priority": "P1",
+                    "status": "completed",
+                    "depends_on": [1],
+                    "writable_dirs": ["docs/workshop/ws/ws-02/"],
+                    "run_commands": [["python3", "tool/workshop/probe.py"]],
+                    "required_evidence": [],
+                    "hardware_or_license_blockers": [],
+                    "reviewer_role": "implementation",
+                    "done_criteria": "named tests pass",
+                }
+            ]
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+                extra=extra,
+            )
+            result = {
+                "argv": ["python3", "tool/workshop/probe.py"],
+                "exit": 0,
+                "timed_out": False,
+                "duration_s": 0.1,
+                "stdout": "ok\n",
+                "stderr": "",
+            }
+            author = tmp / "ws02.json"
+            author.write_text(
+                json.dumps(
+                    {
+                        "task": "WS-02",
+                        "issue": 2,
+                        "status": "completed",
+                        "completed": True,
+                        "failed": [],
+                        "unrun": [],
+                        "results": [result],
+                        "evidence": [result],
+                        "reviewer_role": "implementation",
+                        "next": "reviewer re-runs the same argv",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(run_task.RunnerError) as ctx:
+                run_task.run_task(
+                    plan, "WS-02", handoff_path=author, timeout=5, review=True
+                )
+            self.assertIn("not ready", str(ctx.exception))
+
     def test_not_ready_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
