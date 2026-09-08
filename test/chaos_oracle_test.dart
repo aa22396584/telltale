@@ -16,6 +16,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
+import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/obd/transport/wifi_transport.dart';
 
 const _enabled = bool.fromEnvironment('CHAOS_ORACLE');
@@ -124,10 +125,49 @@ void main() {
           '$trace',
     );
     expect(failed.single.detail, switch (_fault) {
-      'close' => 'TransportException: 連線已中斷。',
+      // Transcript keeps the Chinese sentence. The Dart toString used to be
+      // stored here (`TransportException: 連線已中斷。`) and the connect banner
+      // interpolated it; the screen now maps [InitProgress.transportIssue].
+      'close' => '連線已中斷。',
       'corrupt' => '轉接器未確認此指令',
       _ => '逾時',
     }, reason: 'the injected fault must be the observed failure: $trace');
+    expect(
+      failed.single.detail,
+      isNot(contains('TransportException')),
+      reason: 'the injected fault must not be the Dart toString: $trace',
+    );
+    switch (_fault) {
+      case 'close':
+        expect(
+          failed.single.transportIssue,
+          TransportIssue.linkDroppedMidSession,
+          reason: 'peer EOF must be classified, not left as raw detail: $trace',
+        );
+        expect(failed.single.note, isNull, reason: 'handshake trace: $trace');
+      case 'corrupt':
+        expect(
+          failed.single.transportIssue,
+          isNull,
+          reason: 'handshake trace: $trace',
+        );
+        expect(
+          failed.single.note,
+          InitNote.notAcknowledged,
+          reason: 'handshake trace: $trace',
+        );
+      default:
+        expect(
+          failed.single.transportIssue,
+          isNull,
+          reason: 'handshake trace: $trace',
+        );
+        expect(
+          failed.single.note,
+          InitNote.timedOut,
+          reason: 'handshake trace: $trace',
+        );
+    }
     expect(
       transport.isConnected,
       _fault != 'close',

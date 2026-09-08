@@ -439,29 +439,34 @@ void main() {
     },
   );
 
-  test('a handshake TransportException is mapped, not interpolated as Chinese',
-      () {
-    final progress = InitProgress(
-      step: Elm327Client.initSequence.first,
-      index: 0,
-      total: Elm327Client.initSequence.length,
-      status: InitStatus.failed,
-      detail: 'TransportException: 連線已中斷。',
-      transportIssue: TransportIssue.bleLinkFailed,
-    );
-    final state = ObdConnectionState(
-      phase: ConnectionPhase.failed,
-      error: '初始化在 ATZ 失敗（TransportException: 連線已中斷。）',
-      issue: ObdConnectionIssue.handshakeStepFailed,
-      issueStep: progress,
-    );
-    final banner = connectionIssueText(_en, state)!;
-    expect(chinese.hasMatch(banner), isFalse);
-    expect(banner, isNot(contains('連線')));
-    expect(banner, isNot(contains('TransportException')));
-    expect(initProgressLine(_en, progress), _en.connectTransportBleLinkFailed);
-    expect(chinese.hasMatch(initProgressLine(_en, progress)), isFalse);
-  });
+  test(
+    'a handshake TransportException is mapped, not interpolated as Chinese',
+    () {
+      final progress = InitProgress(
+        step: Elm327Client.initSequence.first,
+        index: 0,
+        total: Elm327Client.initSequence.length,
+        status: InitStatus.failed,
+        detail: '連線已中斷。',
+        transportIssue: TransportIssue.bleLinkFailed,
+      );
+      final state = ObdConnectionState(
+        phase: ConnectionPhase.failed,
+        error: '初始化在 ATZ 失敗（連線已中斷。）',
+        issue: ObdConnectionIssue.handshakeStepFailed,
+        issueStep: progress,
+      );
+      final banner = connectionIssueText(_en, state)!;
+      expect(chinese.hasMatch(banner), isFalse);
+      expect(banner, isNot(contains('連線')));
+      expect(banner, isNot(contains('TransportException')));
+      expect(
+        initProgressLine(_en, progress),
+        _en.connectTransportBleLinkFailed,
+      );
+      expect(chinese.hasMatch(initProgressLine(_en, progress)), isFalse);
+    },
+  );
 
   test('an unexpected handshake exception uses the ARB, not \$e', () {
     final progress = InitProgress(
