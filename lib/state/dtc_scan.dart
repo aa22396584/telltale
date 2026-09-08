@@ -15,6 +15,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../obd/dtc/dtc.dart';
@@ -582,10 +583,18 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException('讀取逾時。請確認轉接器連線穩定、車輛電門已開啟。'),
         );
-      } on Object {
+      } on Object catch (error, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stack,
+            library: 'dtc_scan',
+            context: ErrorDescription('unexpected category read'),
+          ),
+        );
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException(
-            'scan failed',
+            '掃描這個類別時發生未預期的錯誤。',
             kind: DtcReadFailure.error,
           ),
         );

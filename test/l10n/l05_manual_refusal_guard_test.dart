@@ -288,13 +288,10 @@ void main() {
       'lib/ui/screens/settings/settings_screen.dart -> commandFailureText x1',
       'lib/ui/screens/settings/settings_screen.dart '
           '-> manualCommandRefusalText x1',
-      // The fault-code screen's detail line, reached by identifier rather than
-      // by exception. Driven in `transport_issue_guard_test.dart`, which walks
-      // a refused header from a fake adapter to the rendered sentence.
-      'lib/ui/screens/dtc/dtc_screen.dart -> commandIssueText x1',
-      // Clear-notice engine-failure arm maps a TransportIssue through the
-      // same table. Driven in message_fallback_copy_test.dart.
-      'lib/ui/screens/dtc/dtc_copy.dart -> commandIssueText x1',
+      // Category-failure and clear-notice engine-failure arms map a
+      // TransportIssue through the same table. Driven in
+      // message_fallback_copy_test.dart.
+      'lib/ui/screens/dtc/dtc_copy.dart -> commandIssueText x2',
     };
     expect(
       sites,

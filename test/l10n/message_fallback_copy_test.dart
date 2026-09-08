@@ -159,6 +159,39 @@ void main() {
     expect(text, isNot(contains('功能定址')));
   });
 
+  test('an unexpected scan failure does not render English scan failed', () {
+    const failure = DtcReadException(
+      'scan failed',
+      kind: DtcReadFailure.error,
+    );
+    expect(dtcCategoryFailureText(_en, failure), _en.dtcCategoryError);
+    expect(dtcCategoryFailureText(_en, failure), isNot(contains('scan failed')));
+    expect(chinese.hasMatch(dtcCategoryFailureText(_en, failure)), isFalse);
+  });
+
+  test('every DtcReadFailure kind has typed-out English category copy', () {
+    for (final kind in DtcReadFailure.values) {
+      final text = dtcCategoryFailureText(
+        _en,
+        DtcReadException('控制器沒有回應', kind: kind),
+      );
+      expect(chinese.hasMatch(text), isFalse, reason: '$kind $text');
+      expect(text, isNot(contains('控制器')));
+    }
+  });
+
+  test('a category failure with a transport identifier uses that table', () {
+    const failure = DtcReadException(
+      '轉接器拒絕切換為功能定址 7DF',
+      transportIssue: TransportIssue.wholeVehicleHeaderRefused,
+      issueDetail: '7DF',
+    );
+    final text = dtcCategoryFailureText(_en, failure);
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, contains('7DF'));
+    expect(text, isNot(contains('功能定址')));
+  });
+
   test('a FormulaException with no identifier does not render the engine sentence',
       () {
     const exception = FormulaException('運算結果不是有效數值', 'A', issue: null);

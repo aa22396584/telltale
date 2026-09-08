@@ -6419,6 +6419,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file has rows in it, but none of them is a PID definition.'**
   String get pidImportNothingImportable;
+
+  /// DtcReadFailure.noAnswer on a category panel. Not a clean result.
+  ///
+  /// In en, this message translates to:
+  /// **'This category did not answer. Scan again.'**
+  String get dtcCategoryNoAnswer;
+
+  /// DtcReadFailure.error, including unexpected Object catches. Screen must not interpolate failure.message.
+  ///
+  /// In en, this message translates to:
+  /// **'This category could not be read. The full error is kept in the transcript.'**
+  String get dtcCategoryError;
+
+  /// No description provided for @dtcCategoryDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection dropped while this category was being read.'**
+  String get dtcCategoryDisconnected;
+
+  /// DtcReadFailure.pending (NRC 0x78). Waiting is the right next step.
+  ///
+  /// In en, this message translates to:
+  /// **'A controller received the request and is still working on it. Wait, then scan again — this is not a refusal.'**
+  String get dtcCategoryPending;
+
+  /// No description provided for @dtcCategoryUnattributed.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes came back, but response headers were off so it is not known which controllers answered. Treat this as partial, not a clean result.'**
+  String get dtcCategoryUnattributed;
+
+  /// No description provided for @connectPairedListFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again. The full error is kept in the log below.'**
+  String get connectPairedListFailed;
 }
 
 class _AppLocalizationsDelegate
