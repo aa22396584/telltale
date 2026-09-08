@@ -226,7 +226,8 @@ String? transportIssueText(AppLocalizations l10n, TransportIssue? issue) =>
       TransportIssue.wholeVehicleHeaderRefused ||
       TransportIssue.legacyScanWouldBePartial ||
       TransportIssue.linkStoppedResponding ||
-      TransportIssue.operationRetired => null,
+      TransportIssue.operationRetired ||
+      TransportIssue.requestUnaddressable => null,
     };
 
 /// The line under a busy spinner, or null when there is nothing to say.

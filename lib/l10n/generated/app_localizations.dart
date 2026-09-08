@@ -5991,6 +5991,12 @@ abstract class AppLocalizations {
   /// **'This session has ended or gone to the background, so the command was not sent.'**
   String get settingsManualCommandOperationRetired;
 
+  /// TransportIssue.requestUnaddressable. Structural: no header on this bus reaches the named controller. Distinct from queryHeaderRefused, where the adapter declined ATSH, and from notConnected, where there is no link.
+  ///
+  /// In en, this message translates to:
+  /// **'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.'**
+  String get settingsManualCommandRequestUnaddressable;
+
   /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
   ///
   /// In en, this message translates to:

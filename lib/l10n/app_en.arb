@@ -3040,6 +3040,10 @@
   "@settingsManualCommandOperationRetired": {
     "description": "TransportIssue.operationRetired. The app stopped asking; nothing is wrong with the adapter or the vehicle. Distinct from notConnected: a link may still exist, but this command's owner expired before any byte left."
   },
+  "settingsManualCommandRequestUnaddressable": "This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.",
+  "@settingsManualCommandRequestUnaddressable": {
+    "description": "TransportIssue.requestUnaddressable. Structural: no header on this bus reaches the named controller. Distinct from queryHeaderRefused, where the adapter declined ATSH, and from notConnected, where there is no link."
+  },
   "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
   "@manualCommandRefusedEmpty": {
     "description": "ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything."
