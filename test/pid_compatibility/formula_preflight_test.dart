@@ -1,0 +1,83 @@
+/// #79.B leftover: one formula preflight for editor and CSV import.
+///
+/// A Torque wiki function this dialect does not implement is not a typo, and
+/// a syntactically valid `VAL{}` / `BARO` formula is not unsupported just
+/// because there is no live reading yet.
+library;
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/obd/pid/formula_engine.dart';
+import 'package:torque_obd/obd/pid/pid_csv.dart';
+
+void main() {
+  test('ABS, VAL and BARO without parentheses still preflight', () {
+    expect(FormulaEngine.preflight('ABS(A)'), isNull);
+    expect(FormulaEngine.preflight('A-VAL{010C}'), isNull);
+    expect(FormulaEngine.preflight('A-BARO'), isNull);
+    expect(FormulaEngine.preflight('((A*256)+B)/4'), isNull);
+  });
+
+  test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
+    for (final equation in [
+      'MIN(A:B)',
+      'MAX(A,B)',
+      'SQRT(A)',
+      'INT16(A:B)',
+      'LOOKUP(A:0:1=100)',
+      'BARO()',
+      'LOG(A)',
+    ]) {
+      final failure = FormulaEngine.preflight(equation);
+      expect(failure, isNotNull, reason: equation);
+      expect(
+        failure!.issue,
+        FormulaIssue.unsupportedConstruct,
+        reason: equation,
+      );
+      expect(failure.term, isNotEmpty, reason: equation);
+      expect(failure.term, isNot('ABS'), reason: equation);
+      expect(failure.term, isNot('LOG10'), reason: equation);
+    }
+  });
+
+  test('LOG10 is not classified as LOG', () {
+    expect(FormulaEngine.preflight('LOG10(A)'), isNull);
+  });
+
+  test('SIGNED is not classified as SIGNED8', () {
+    expect(FormulaEngine.preflight('SIGNED(A)'), isNull);
+  });
+
+  test('an unknown fragment is unparsableTerm, not unsupportedConstruct', () {
+    final failure = FormulaEngine.preflight('FOOZ(A)');
+    expect(failure, isNotNull);
+    expect(failure!.issue, FormulaIssue.unparsableTerm);
+  });
+
+  test('CSV import refuses an unsupported formula and keeps a sound one', () {
+    const wire =
+        'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+        'Boost,BST,010B,A-BARO,0,300,kPa,7E0\r\n'
+        'Lookup,LKP,010C,LOOKUP(A:0:1=100),0,8000,rpm,7E0\r\n';
+    final result = PidCsv.parse(wire);
+    expect(result.pids, hasLength(1));
+    expect(result.pids.single.equation, 'A-BARO');
+    expect(result.errors, hasLength(1));
+    expect(result.errors.single.issue, PidCsvIssue.rowFormulaRejected);
+    expect(result.errors.single.lineNumber, 3);
+    expect(
+      result.errors.single.preflight!.issue,
+      FormulaIssue.unsupportedConstruct,
+    );
+    expect(result.errors.single.preflight!.term, 'LOOKUP');
+  });
+
+  test('a missing live VAL reading is not an import syntax error', () {
+    const wire =
+        'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+        'Boost,BST,010B,A-VAL{0133},0,300,kPa,7E0\r\n';
+    final result = PidCsv.parse(wire);
+    expect(result.errors, isEmpty, reason: '${result.errors}');
+    expect(result.pids, hasLength(1));
+  });
+}

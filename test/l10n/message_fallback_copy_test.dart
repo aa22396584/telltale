@@ -468,6 +468,36 @@ void main() {
     },
   );
 
+  test(
+    'a mid-handshake link drop uses the command-path sentence, not silence',
+    () {
+      final progress = InitProgress(
+        step: Elm327Client.initSequence[1],
+        index: 1,
+        total: Elm327Client.initSequence.length,
+        status: InitStatus.failed,
+        detail: '連線已中斷。',
+        transportIssue: TransportIssue.linkDroppedMidSession,
+      );
+      final state = ObdConnectionState(
+        phase: ConnectionPhase.failed,
+        error: '初始化在 ATE0 失敗（連線已中斷。）',
+        issue: ObdConnectionIssue.handshakeStepFailed,
+        issueStep: progress,
+      );
+      final banner = connectionIssueText(_en, state)!;
+      expect(chinese.hasMatch(banner), isFalse);
+      expect(banner, isNot(contains(_en.handshakeStepNoReason)));
+      expect(banner, isNot(contains(_en.handshakeStepEchoOff)));
+      expect(banner, isNot(contains('TransportException')));
+      expect(
+        initProgressLine(_en, progress),
+        _en.settingsManualCommandLinkDropped,
+      );
+      expect(chinese.hasMatch(initProgressLine(_en, progress)), isFalse);
+    },
+  );
+
   test('an unexpected handshake exception uses the ARB, not \$e', () {
     final progress = InitProgress(
       step: Elm327Client.initSequence.first,

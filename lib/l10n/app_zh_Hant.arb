@@ -1090,5 +1090,7 @@
   "shareHandoffFailed": "檔案已準備完成，但系統分享介面無法開啟。",
   "shareStorageFailure": "準備或記錄分享結果時發生儲存錯誤。",
   "transcriptExportUnidentified": "匯出失敗。",
-  "handshakeNoteUnexpected": "此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。"
+  "handshakeNoteUnexpected": "此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。",
+  "pidFormulaUnsupportedConstruct": "{term} 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。",
+  "pidImportRowFormulaRejected": "第 {line} 行：{reason}"
 }
