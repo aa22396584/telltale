@@ -651,6 +651,12 @@ abstract class AppLocalizations {
   /// **'Enter the port (most adapters use {port}).'**
   String connectWifiPortRequired(int port);
 
+  /// Pill label while PriorityScheduler.fastModeEnabled AND canBatch are both true. Neither is a record that any exchange grouped anything: grouping also needs the PID confirmed batchable and more than one request queued. Says enabled, never active or verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Batching enabled'**
+  String get dashboardBatchingEnabled;
+
   /// No description provided for @dashboardChoosePids.
   ///
   /// In en, this message translates to:
@@ -687,7 +693,37 @@ abstract class AppLocalizations {
   /// **'Not connected'**
   String get dashboardNotConnected;
 
-  /// The other side of this pill reads the literal 'fastMode', an adapter behaviour name that stays untranslated.
+  /// Accessible name of the button the polling-mode pill sits inside. It opens an explanation and sends nothing to the adapter.
+  ///
+  /// In en, this message translates to:
+  /// **'About polling mode'**
+  String get dashboardPollingModeHelpAction;
+
+  /// Explains the enabled side of the pill, which is shown only when PriorityScheduler.fastModeEnabled and canBatch are both set. Must not claim that grouping was observed.
+  ///
+  /// In en, this message translates to:
+  /// **'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.'**
+  String get dashboardPollingModeHelpBatching;
+
+  /// Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'PIDs/s is a rate observed over the last second, not a promise about latency, freshness or accuracy. It moves with the adapter, the bus, the ECU, the PIDs you selected, how large each reply is, and any errors.'**
+  String get dashboardPollingModeHelpRate;
+
+  /// Explains the fallback side of the pill, which covers three different states and cannot tell them apart: a bus that never groups (not CAN); a CAN bus where PollingEngine has not yet had a support block answered, so canBatch is still false and grouping is held back on purpose; and grouping withdrawn after a bad reply. The third names what the three paths into PriorityScheduler.handleCorruptionEvent share rather than only the truncated-frame one — an unanswered batch is silence, not a garbled reply, and this codebase does not let those be confused. Says Mode 01 because a powertrain profile response is drained as one batch either way.
+  ///
+  /// In en, this message translates to:
+  /// **'Single request mode means each Mode 01 PID is read on its own. Telltale uses it when the bus does not take grouped requests at all, which is every non-CAN vehicle; while no support block has answered yet, because grouping PIDs the vehicle has not confirmed is what makes a reply come back short; and after a grouped request fails to come back in a form it can split apart again, whether truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.'**
+  String get dashboardPollingModeHelpSingle;
+
+  /// Title of the dialog behind the polling-mode pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Polling mode'**
+  String get dashboardPollingModeHelpTitle;
+
+  /// Pill label whenever PriorityScheduler.fastModeEnabled or canBatch is false. Either way popBatch stops grouping Mode 01 PIDs, so single-request is what the state proves rather than what it permits. The other side of the pill is dashboardBatchingEnabled, which needs both; the raw fastMode identifier stays in logs and code and is no longer rendered.
   ///
   /// In en, this message translates to:
   /// **'Single request mode'**

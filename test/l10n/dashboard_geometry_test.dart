@@ -1,14 +1,10 @@
 // The dashboard lays out without complaint at the geometries this project
 // supports, in both shipped languages.
 //
-// This is the absolute assertion that `dashboard_polling_mode_help_test.dart`
-// could not make. That file is not on `main` — it is on the branch behind
-// #123 — and there it renders each geometry twice, polling-mode pill hidden
-// and pill shown, asserting the two lists of render-time errors are
-// *identical*. It had to: the dashboard overflowed at 640x320 before the pill
-// existed, and an absolute check would have failed on a defect that change
-// did not introduce. The overflow is fixed, so the comparison can become what
-// it was standing in for: nothing complains at all.
+// The polling-mode help tests on #123 now make the same absolute claim for
+// pill hidden, pill shown, and help opened. This file is the dashboard
+// without that dialog: empty and with gauges, plus the width band where the
+// toolbar actually sits two controls side by side.
 //
 // What overflowed, and where: the toolbar's side-by-side branch
 // (`_WorkspaceToolbar`, `lib/ui/screens/dashboard/dashboard_screen.dart`) put

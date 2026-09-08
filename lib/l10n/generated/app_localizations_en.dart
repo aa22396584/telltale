@@ -347,6 +347,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchingEnabled => 'Batching enabled';
+
+  @override
   String get dashboardChoosePids => 'Choose PIDs';
 
   @override
@@ -364,6 +367,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardNotConnected => 'Not connected';
+
+  @override
+  String get dashboardPollingModeHelpAction => 'About polling mode';
+
+  @override
+  String get dashboardPollingModeHelpBatching =>
+      'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.';
+
+  @override
+  String get dashboardPollingModeHelpRate =>
+      'PIDs/s is a rate observed over the last second, not a promise about latency, freshness or accuracy. It moves with the adapter, the bus, the ECU, the PIDs you selected, how large each reply is, and any errors.';
+
+  @override
+  String get dashboardPollingModeHelpSingle =>
+      'Single request mode means each Mode 01 PID is read on its own. Telltale uses it when the bus does not take grouped requests at all, which is every non-CAN vehicle; while no support block has answered yet, because grouping PIDs the vehicle has not confirmed is what makes a reply come back short; and after a grouped request fails to come back in a form it can split apart again, whether truncated, refused because the adapter reported its buffer full, or unanswered. Readings carry on updating, and on its own this is not a connection failure.';
+
+  @override
+  String get dashboardPollingModeHelpTitle => 'Polling mode';
 
   @override
   String get dashboardSingleRequestMode => 'Single request mode';
