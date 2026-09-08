@@ -3603,5 +3603,20 @@
   "shareNoSpace": "There is not enough storage to prepare the share file.",
   "shareHandoffFailed": "The file is ready, but the system share sheet could not be opened.",
   "shareStorageFailure": "A storage error occurred while preparing or recording the share.",
-  "transcriptExportUnidentified": "Export failed."
+  "transcriptExportUnidentified": "Export failed.",
+  "pidFormulaUnsupportedConstruct": "{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.",
+  "@pidFormulaUnsupportedConstruct": {
+    "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.",
+    "placeholders": {
+      "term": { "type": "String" }
+    }
+  },
+  "pidImportRowFormulaRejected": "Row {line}: {reason}",
+  "@pidImportRowFormulaRejected": {
+    "description": "PidCsvIssue.rowFormulaRejected. {line} is the 1-based spreadsheet line. {reason} is already-rendered formulaIssueText.",
+    "placeholders": {
+      "line": { "type": "int" },
+      "reason": { "type": "String" }
+    }
+  }
 }

@@ -96,6 +96,11 @@ enum FormulaIssue {
   /// The referenced PID has no usable value — never read, or gone stale.
   /// Carries the key.
   dependencyNotYetMeasured,
+
+  /// A named Torque wiki function this dialect does not implement. Carries
+  /// the function name. Distinct from [unparsableTerm]: a typo is not a
+  /// documented construct we have chosen not to evaluate.
+  unsupportedConstruct,
 }
 
 /// Thrown when a formula cannot be evaluated. Carries the offending source so
@@ -431,6 +436,15 @@ class FormulaEngine {
         'Formula is empty',
         equation,
         issue: FormulaIssue.emptyFormula,
+      );
+    }
+    final unsupported = _unsupportedTorqueFunction(equation);
+    if (unsupported != null) {
+      throw FormulaException(
+        '此方言不支援 $unsupported',
+        equation,
+        issue: FormulaIssue.unsupportedConstruct,
+        term: unsupported,
       );
     }
     final double result;
@@ -984,9 +998,16 @@ class FormulaEngine {
     }
   }
 
-  /// Validates [equation] without live data by evaluating it against a probe
-  /// payload. Returns null when the formula is sound, else the error message.
-  static String? validate(String equation, {List<int>? sampleBytes}) {
+  /// Authoring check: well-formedness with stand-in dependencies.
+  ///
+  /// Runtime-only facts — a live value not yet measured, a stale cache —
+  /// do not fail this. CSV import and the editor save gate both call this
+  /// rather than each inventing a parser. Returns null when the formula
+  /// may be saved.
+  static FormulaException? preflight(
+    String equation, {
+    List<int>? sampleBytes,
+  }) {
     try {
       final engine = FormulaEngine()..seedForAuthoring(equation);
       engine.evaluateBytes(
@@ -996,7 +1017,15 @@ class FormulaEngine {
       );
       return null;
     } on FormulaException catch (e) {
-      return e.message;
+      return e;
+    }
+  }
+
+  /// Validates [equation] without live data by evaluating it against a probe
+  /// payload. Returns null when the formula is sound, else the error message.
+  static String? validate(String equation, {List<int>? sampleBytes}) {
+    try {
+      return preflight(equation, sampleBytes: sampleBytes)?.message;
     } catch (e) {
       return e.toString();
     }
@@ -1022,4 +1051,21 @@ class _Operator {
   final double Function(double, double) apply;
 
   _Operator(this.symbol, this.apply);
+}
+
+/// Torque wiki names this dialect does not implement, detected as `NAME(`.
+///
+/// `LOG10` is not `LOG`, `INT16` is not `INT`, `BARO` without a parenthesis
+/// is the ECU cache identifier we do implement. INT16 compatibility is
+/// still unclaimed (#79).
+final _unsupportedTorqueFunctionPattern = RegExp(
+  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|LOG|'
+  r'SQRT|INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
+  r'FLOAT64|FLOAT32|MIN|MAX|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
+  caseSensitive: false,
+);
+
+String? _unsupportedTorqueFunction(String equation) {
+  final match = _unsupportedTorqueFunctionPattern.firstMatch(equation);
+  return match?.group(1)?.toUpperCase();
 }

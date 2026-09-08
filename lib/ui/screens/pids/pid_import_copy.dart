@@ -13,6 +13,7 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/pid/pid_csv.dart';
+import 'pid_formula_copy.dart';
 import 'pid_rejection_copy.dart';
 
 /// What [diagnostic] says, in the reader's language.
@@ -78,5 +79,12 @@ String pidCsvDiagnosticText(
       diagnostic.maxValue ?? 0,
     ),
     PidCsvIssue.nothingImportable => l10n.pidImportNothingImportable,
+    PidCsvIssue.rowFormulaRejected => l10n.pidImportRowFormulaRejected(
+      diagnostic.lineNumber ?? 0,
+      diagnostic.formula == null
+          ? l10n.pidFormulaUnidentified
+          : formulaIssueText(l10n, diagnostic.formula!) ??
+                l10n.pidFormulaUnidentified,
+    ),
   };
 }

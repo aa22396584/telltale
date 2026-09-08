@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:csv/csv.dart';
 
 import '../addressing.dart';
+import 'formula_engine.dart';
 import 'pid.dart';
 import 'priority_tier.dart';
 
@@ -60,6 +61,12 @@ enum PidCsvIssue {
   /// Rows were read, none of them yielded a definition, and no row said why.
   /// Not [noRows]: there was content, and it produced nothing.
   nothingImportable,
+
+  /// A row's equation failed the same [FormulaEngine.preflight] the editor
+  /// uses. Carries the [FormulaException]. Distinct from [rowEmptyEquation]:
+  /// something was typed, and it is a construct this dialect will not
+  /// evaluate.
+  rowFormulaRejected,
 }
 
 /// One [PidCsvIssue] with whatever the sentence for it names.
@@ -73,6 +80,7 @@ class PidCsvDiagnostic {
     this.rejection,
     this.minValue,
     this.maxValue,
+    this.formula,
   });
 
   final PidCsvIssue issue;
@@ -96,6 +104,10 @@ class PidCsvDiagnostic {
   /// The bounds that were substituted, for [PidCsvIssue.rowRangeDefaulted].
   final double? minValue;
   final double? maxValue;
+
+  /// The shared formula preflight's own answer, for
+  /// [PidCsvIssue.rowFormulaRejected].
+  final FormulaException? formula;
 }
 
 class PidCsvResult {
@@ -446,6 +458,18 @@ abstract final class PidCsv {
             PidCsvIssue.rowDefinitionRejected,
             lineNumber: lineNumber,
             rejection: rejection,
+          ),
+        );
+        continue;
+      }
+
+      final formula = FormulaEngine.preflight(equation);
+      if (formula != null) {
+        errors.add(
+          PidCsvDiagnostic(
+            PidCsvIssue.rowFormulaRejected,
+            lineNumber: lineNumber,
+            formula: formula,
           ),
         );
         continue;

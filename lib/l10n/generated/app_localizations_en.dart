@@ -4187,4 +4187,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transcriptExportUnidentified => 'Export failed.';
+
+  @override
+  String pidFormulaUnsupportedConstruct(String term) {
+    return '$term is a Torque function this dialect does not implement, so the formula cannot be evaluated here.';
+  }
+
+  @override
+  String pidImportRowFormulaRejected(int line, String reason) {
+    return 'Row $line: $reason';
+  }
 }

@@ -3744,6 +3744,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
+
+  @override
+  String pidFormulaUnsupportedConstruct(String term) {
+    return '$term 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。';
+  }
+
+  @override
+  String pidImportRowFormulaRejected(int line, String reason) {
+    return '第 $line 行：$reason';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7485,4 +7495,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
+
+  @override
+  String pidFormulaUnsupportedConstruct(String term) {
+    return '$term 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。';
+  }
+
+  @override
+  String pidImportRowFormulaRejected(int line, String reason) {
+    return '第 $line 行：$reason';
+  }
 }

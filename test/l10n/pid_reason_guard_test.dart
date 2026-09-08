@@ -48,11 +48,12 @@ import '../support/dart_source_reader.dart';
 /// Every Dart file under `lib/`, because a throw is not confined to the file
 /// that declares the exception. `polling_engine.dart` already catches
 /// `FormulaException`; nothing stops it throwing one.
-List<File> _librarySources() => Directory('lib')
-    .listSync(recursive: true)
-    .whereType<File>()
-    .where((f) => f.path.endsWith('.dart'))
-    .toList();
+List<File> _librarySources() =>
+    Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .toList();
 
 /// The declaring constructor of each class, which `\bName\(` also matches.
 ///
@@ -89,6 +90,7 @@ const _dataCarried = <String, List<String>>{
   'FormulaIssue.dependencyControllerUnknown': ['pidKey:'],
   'FormulaIssue.dependencyTwoDefinitions': ['pidKey:'],
   'FormulaIssue.dependencyNotYetMeasured': ['pidKey:'],
+  'FormulaIssue.unsupportedConstruct': ['term:'],
   'PidRejection.serviceNotReadOnly': ['service:', 'allowedServices:'],
   'PidRejection.identifierWrongLength': ['service:', 'expectedBytes:'],
   'PidRejection.invalidHeader': ['text:'],
@@ -103,6 +105,7 @@ const _dataCarried = <String, List<String>>{
   'PidCsvIssue.rowEmptyEquation': ['lineNumber:'],
   'PidCsvIssue.rowDefinitionRejected': ['lineNumber:', 'rejection:'],
   'PidCsvIssue.rowRangeDefaulted': ['lineNumber:', 'minValue:', 'maxValue:'],
+  'PidCsvIssue.rowFormulaRejected': ['lineNumber:', 'formula:'],
 };
 
 /// One construction found in the source: where it is, and its top-level
@@ -226,9 +229,9 @@ void main() {
       for (final enumName in ['FormulaIssue', 'PidRejection', 'PidCsvIssue']) {
         final body = RegExp('enum $enumName \\{([^}]*)\\}').firstMatch(code);
         if (body == null) continue;
-        for (final value in RegExp(r'\b([a-z]\w*)\b')
-            .allMatches(body.group(1)!)
-            .map((m) => m.group(1)!)) {
+        for (final value in RegExp(
+          r'\b([a-z]\w*)\b',
+        ).allMatches(body.group(1)!).map((m) => m.group(1)!)) {
           declared.add('$enumName.$value');
         }
       }
@@ -284,7 +287,8 @@ void _pointerTests() {
     expect(
       broken,
       isEmpty,
-      reason: 'these comments name a file that does not exist:\n'
+      reason:
+          'these comments name a file that does not exist:\n'
           '${broken.join('\n')}',
     );
   });
@@ -317,13 +321,18 @@ void _pointerTests() {
     for (final path in copyFiles) {
       final file = File(path);
       expect(file.existsSync(), isTrue, reason: '$path is the census input');
-      for (final m in RegExp(r'^String\??\s+(\w+)\s*\(', multiLine: true)
-          .allMatches(codeOnly(file.readAsStringSync()))) {
+      for (final m in RegExp(
+        r'^String\??\s+(\w+)\s*\(',
+        multiLine: true,
+      ).allMatches(codeOnly(file.readAsStringSync()))) {
         exported.add(m.group(1)!);
       }
     }
-    expect(exported, isNotEmpty,
-        reason: 'no copy functions found, so this test asserts nothing');
+    expect(
+      exported,
+      isNotEmpty,
+      reason: 'no copy functions found, so this test asserts nothing',
+    );
 
     final sites = <String>{};
     for (final entity in Directory('lib').listSync(recursive: true)) {
@@ -357,10 +366,14 @@ void _pointerTests() {
       // such rather than left to look equivalent.
       'lib/ui/screens/pids/pid_manager_screen.dart -> pidCsvDiagnosticText x1',
     };
-    expect(sites, equals(known),
-        reason: 'a render site appeared or moved. Every one of these turns an '
-            'identifier into a sentence a person reads, and three of them once '
-            'printed the identifier instead with the suite green. Add the '
-            'widget test, then add the line here.');
+    expect(
+      sites,
+      equals(known),
+      reason:
+          'a render site appeared or moved. Every one of these turns an '
+          'identifier into a sentence a person reads, and three of them once '
+          'printed the identifier instead with the suite green. Add the '
+          'widget test, then add the line here.',
+    );
   });
 }
