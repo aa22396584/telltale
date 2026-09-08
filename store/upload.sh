@@ -157,17 +157,21 @@ if [ "$APPLY" = 1 ]; then
   status=$?
   set -e
   printf '%s\n' "$commit_out"
-  if [ "$status" -ne 0 ]; then
+  if [ "$status" -eq 0 ]; then
+    COMMITTED=1
+    echo "committed. Check the listing in Play Console before it reaches anyone."
+  else
     echo >&2
-    echo "The commit failed; nothing reached the store. Discarding the edit." >&2
-    # Only when the error really is the permission one. An expired edit answers
-    # 400 and a dropped connection answers nothing; printing a store-presence
-    # diagnosis for those states a cause that was never established, and it is
-    # the day this permission is granted that the paragraph starts lying to
-    # everyone who hits an unrelated failure.
+    # Exit code alone cannot tell "Play refused" from "Play accepted and the
+    # reply was lost". A timeout after a successful commit used to print
+    # "nothing reached the store" and then delete; the delete 404 was then
+    # read as proof of rollback. Keep the three outcomes distinct.
     case "$commit_out" in
-      *403*|*"does not have permission"*)
-        cat >&2 <<'DIAG'
+      *403*|*"does not have permission"*|*400*|*409*|*PERMISSION_DENIED*)
+        echo "The commit was refused; this edit did not become the store listing. Discarding the edit." >&2
+        case "$commit_out" in
+          *403*|*"does not have permission"*)
+            cat >&2 <<'DIAG'
 
 The pictures and text were accepted into the edit and only the commit was
 refused -- the service account can publish releases but cannot write the store
@@ -181,12 +185,19 @@ BOTH a new-locale text-only edit and an existing-locale images-only edit are
 refused. So it is store presence as a whole, not adding a language.
 See docs/maintainers/release.md section 4.7(c).
 DIAG
+            ;;
+        esac
+        exit "$status"
+        ;;
+      *)
+        echo "The commit result is unknown (exit $status). Play may already have edit $EDIT." >&2
+        echo "Not discarding it: a 404 from edits delete is not proof of rollback." >&2
+        echo "Check Play Console before retrying." >&2
+        COMMITTED=1
+        exit "$status"
         ;;
     esac
-    exit "$status"
   fi
-  COMMITTED=1
-  echo "committed. Check the listing in Play Console before it reaches anyone."
 else
   echo "dry run only. Nothing was written. Re-run with --apply."
 fi
