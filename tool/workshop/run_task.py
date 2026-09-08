@@ -87,6 +87,11 @@ def _resolve_executable(name: str) -> str:
     raise RunnerError(f"command {name!r} is not allowlisted")
 
 
+def _dir_lease_path(root: Path, rel: str) -> Path:
+    digest = hashlib.sha256(rel.encode("utf-8")).hexdigest()[:16]
+    return root / "docs" / "workshop" / "ws" / ".dir-leases" / f"{digest}.lock"
+
+
 def _acquire_lease(path: Path, task_id: str) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(str(path), os.O_CREAT | os.O_RDWR, 0o644)
@@ -641,9 +646,13 @@ def run_task(
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "lease.json"
     )
     lease_fd: int | None = None
-    if not dry_run:
-        lease_fd = _acquire_lease(lease_path, task_id)
+    dir_leases: list[tuple[int, Path]] = []
     try:
+        if not dry_run:
+            lease_fd = _acquire_lease(lease_path, task_id)
+            for rel in sorted(set(_task_writable_dirs(task))):
+                path = _dir_lease_path(original_root, rel)
+                dir_leases.append((_acquire_lease(path, task_id), path))
         if isolate:
             git_root = _git_toplevel(cwd)
             requested = base_sha or task.get("base_sha")
@@ -738,6 +747,8 @@ def run_task(
         _write_handoff(handoff_dest, payload)
         return 0 if completed else 1
     finally:
+        for fd, path in reversed(dir_leases):
+            _release_lease(fd, path)
         _release_lease(lease_fd, lease_path)
 
 
