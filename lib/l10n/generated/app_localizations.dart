@@ -6642,6 +6642,12 @@ abstract class AppLocalizations {
   /// **'Export failed.'**
   String get transcriptExportUnidentified;
 
+  /// InitNote.unexpected. The exception text stays on the transcript; the screen must not interpolate the raw exception.
+  ///
+  /// In en, this message translates to:
+  /// **'This step failed with an unexpected error. The full error is kept in the transcript.'**
+  String get handshakeNoteUnexpected;
+
   /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.
   ///
   /// In en, this message translates to:

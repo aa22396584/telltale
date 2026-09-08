@@ -52,6 +52,7 @@ String initNoteLabel(AppLocalizations l10n, InitNote note) => switch (note) {
     l10n.handshakeNoteNotModeOnePositiveReply,
   InitNote.pidEchoMismatch => l10n.handshakeNotePidEchoMismatch,
   InitNote.timedOut => l10n.handshakeNoteTimedOut,
+  InitNote.unexpected => l10n.handshakeNoteUnexpected,
 };
 
 /// What the adapter reported in place of data.
@@ -95,6 +96,11 @@ String initProgressLine(AppLocalizations l10n, InitProgress progress) {
   if (code != null && code != Elm327ErrorCode.none) {
     return adapterErrorLabel(l10n, code);
   }
+  final issue = progress.transportIssue;
+  if (issue != null) {
+    return transportIssueText(l10n, issue) ??
+        initStepPurposeLabel(l10n, progress.step.command);
+  }
   final detail = progress.detail;
   if (detail != null && detail.isNotEmpty) return detail;
   return initStepPurposeLabel(l10n, progress.step.command);
@@ -113,8 +119,14 @@ String _failureReason(AppLocalizations l10n, InitProgress? step) {
   if (code != null && code != Elm327ErrorCode.none) {
     return adapterErrorLabel(l10n, code);
   }
-  final detail = step.detail;
-  if (detail != null && detail.isNotEmpty) return detail;
+  final issue = step.transportIssue;
+  if (issue != null) {
+    return transportIssueText(l10n, issue) ?? l10n.handshakeStepNoReason;
+  }
+  // Adapter data (version, voltage, protocol) can sit in [detail] on a
+  // success row. A failed step that reached here with only `'$e'` used to
+  // print Traditional Chinese on every language; that path now carries
+  // [InitNote.unexpected] or [InitProgress.transportIssue].
   return l10n.handshakeStepNoReason;
 }
 

@@ -446,7 +446,9 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                               AppLocalizations.of(context),
                               connection,
                             ) ??
-                            connection.error!,
+                            AppLocalizations.of(
+                              context,
+                            ).connectIssueConnectionSetupFailed,
                       ),
                       const SizedBox(height: Spacing.md),
                       // Where the failure is, not two screens away behind a

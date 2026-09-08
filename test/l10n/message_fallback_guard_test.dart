@@ -147,6 +147,22 @@ void main() {
     expect(code.contains('on Object catch (e)'), isFalse);
   });
 
+  test('handshake catch does not put \$e on the screen path', () {
+    final source = File('lib/obd/elm327_client.dart').readAsStringSync();
+    expect(
+      source.contains("detail: e is TimeoutException ? null : '\$e'"),
+      isFalse,
+    );
+    expect(source.contains('InitNote.unexpected'), isTrue);
+    expect(source.contains('transportIssue: transport?.issue'), isTrue);
+  });
+
+  test('the connect banner does not render ObdConnectionState.error', () {
+    final source =
+        File('lib/ui/screens/connect/connect_screen.dart').readAsStringSync();
+    expect(source.contains('connection.error!'), isFalse);
+  });
+
   test(
     'PID import picker/read copy does not interpolate the caught exception',
     () {

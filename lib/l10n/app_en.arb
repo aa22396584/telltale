@@ -3604,6 +3604,10 @@
   "shareHandoffFailed": "The file is ready, but the system share sheet could not be opened.",
   "shareStorageFailure": "A storage error occurred while preparing or recording the share.",
   "transcriptExportUnidentified": "Export failed.",
+  "handshakeNoteUnexpected": "This step failed with an unexpected error. The full error is kept in the transcript.",
+  "@handshakeNoteUnexpected": {
+    "description": "InitNote.unexpected. The exception text stays on the transcript; the screen must not interpolate the raw exception."
+  },
   "pidFormulaUnsupportedConstruct": "{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.",
   "@pidFormulaUnsupportedConstruct": {
     "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.",

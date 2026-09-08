@@ -4189,6 +4189,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptExportUnidentified => 'Export failed.';
 
   @override
+  String get handshakeNoteUnexpected =>
+      'This step failed with an unexpected error. The full error is kept in the transcript.';
+
+  @override
   String pidFormulaUnsupportedConstruct(String term) {
     return '$term is a Torque function this dialect does not implement, so the formula cannot be evaluated here.';
   }

@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
+import 'package:torque_obd/obd/transport/obd_transport.dart';
 
 import 'support/fake_elm327.dart';
 
@@ -71,6 +72,11 @@ void main() {
       expect(failed.single.step.command, 'ATE0');
       expect(failed.single.detail, contains('連線已中斷'));
       expect(failed.single.detail, isNot('逾時'));
+      expect(failed.single.detail, isNot(contains('TransportException')));
+      expect(
+        failed.single.transportIssue,
+        TransportIssue.linkDroppedMidSession,
+      );
     });
 
     test(

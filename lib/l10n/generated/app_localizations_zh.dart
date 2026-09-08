@@ -3746,6 +3746,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get transcriptExportUnidentified => '匯出失敗。';
 
   @override
+  String get handshakeNoteUnexpected => '此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。';
+
+  @override
   String pidFormulaUnsupportedConstruct(String term) {
     return '$term 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。';
   }
@@ -7495,6 +7498,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
+
+  @override
+  String get handshakeNoteUnexpected => '此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。';
 
   @override
   String pidFormulaUnsupportedConstruct(String term) {
