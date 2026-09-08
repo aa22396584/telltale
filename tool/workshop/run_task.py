@@ -97,6 +97,7 @@ def _acquire_lease(path: Path, task_id: str) -> int:
 
 
 def _release_lease(fd: int | None, path: Path) -> None:
+    del path
     if fd is None:
         return
     try:
@@ -104,10 +105,6 @@ def _release_lease(fd: int | None, path: Path) -> None:
     except OSError:
         pass
     os.close(fd)
-    try:
-        path.unlink()
-    except FileNotFoundError:
-        return
 
 
 def _kill_group(pid: int, sig: int) -> None:
@@ -281,24 +278,6 @@ def run_task(
     cwd = original_root
     worktree_path: str | None = None
     head_sha: str | None = None
-    if isolate:
-        git_root = _git_toplevel(cwd)
-        requested = base_sha or task.get("base_sha")
-        head_sha = _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
-        worktree_dest = isolate_dir or (
-            git_root / ".worktrees" / f"ws-{task_id.lower()}"
-        )
-        _add_worktree(git_root, worktree_dest, head_sha)
-        worktree_path = str(worktree_dest)
-        try:
-            rel = cwd.resolve().relative_to(git_root.resolve())
-        except ValueError as exc:
-            raise RunnerError("plan root is outside the git checkout") from exc
-        cwd = worktree_dest if rel == Path(".") else worktree_dest / rel
-    child_env = _allowed_env(env if env is not None else os.environ)
-    results: list[dict[str, Any]] = []
-    failed: list[str] = []
-    unrun: list[str] = []
     handoff_dest = handoff_path or (
         original_root / "docs" / "workshop" / "ws" / task_id.lower() / "handoff.json"
     )
@@ -309,6 +288,28 @@ def run_task(
     if not dry_run:
         lease_fd = _acquire_lease(lease_path, task_id)
     try:
+        if isolate:
+            git_root = _git_toplevel(cwd)
+            requested = base_sha or task.get("base_sha")
+            head_sha = (
+                _git_sha(git_root, requested) if requested else _git_sha(git_root, "HEAD")
+            )
+            worktree_dest = (
+                isolate_dir.expanduser().resolve()
+                if isolate_dir is not None
+                else git_root / ".worktrees" / f"ws-{task_id.lower()}"
+            )
+            _add_worktree(git_root, worktree_dest, head_sha)
+            worktree_path = str(worktree_dest)
+            try:
+                rel = cwd.resolve().relative_to(git_root.resolve())
+            except ValueError as exc:
+                raise RunnerError("plan root is outside the git checkout") from exc
+            cwd = worktree_dest if rel == Path(".") else worktree_dest / rel
+        child_env = _allowed_env(env if env is not None else os.environ)
+        results: list[dict[str, Any]] = []
+        failed: list[str] = []
+        unrun: list[str] = []
         if dry_run:
             unrun = [" ".join(cmd) for cmd in commands]
         else:

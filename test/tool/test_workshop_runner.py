@@ -306,7 +306,7 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(code, 0)
             data = json.loads(handoff.read_text(encoding="utf-8"))
             self.assertEqual(data["head_sha"], sha)
-            self.assertEqual(data["worktree"], str(worktree))
+            self.assertEqual(Path(data["worktree"]).resolve(), worktree.resolve())
             self.assertIn("committed", data["results"][0]["stdout"])
             self.assertNotIn("dirty", data["results"][0]["stdout"])
             self.assertEqual(
