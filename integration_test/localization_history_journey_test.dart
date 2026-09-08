@@ -10,8 +10,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 
 import 'rig_support.dart';
@@ -35,10 +37,19 @@ Future<void> _tapNav(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
+Future<void> _stabilizeHistoryAccess(WidgetTester tester) async {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(MaterialApp)),
+    listen: false,
+  );
+  await container.read(obdSessionProvider.notifier).disconnect();
+  await tester.pump();
+}
+
 Future<void> _openHistory(WidgetTester tester) async {
-  final history = find.byKey(const ValueKey('telemetry-open-history'));
+  final history = find.byKey(const ValueKey('telemetry-history'));
   await tester.pump(const Duration(milliseconds: 300));
-  if (history.evaluate().isEmpty) {
+  if (history.evaluate().isEmpty || history.hitTestable().evaluate().isEmpty) {
     final dashboard = find.byType(CustomScrollView);
     expect(dashboard, findsWidgets);
     await tester.scrollUntilVisible(
@@ -61,6 +72,15 @@ Future<void> _openHistory(WidgetTester tester) async {
   await tester.pump();
 }
 
+Future<void> _leaveHistory(WidgetTester tester) async {
+  final title = find.text('本機紀錄').evaluate().isNotEmpty
+      ? find.text('本機紀錄')
+      : find.text('Local recordings');
+  expect(title, findsWidgets);
+  Navigator.of(tester.element(title.first)).pop();
+  await tester.pump();
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -69,6 +89,7 @@ void main() {
   ) async {
     await startCleanRigApp(tester);
     await connectDemoRig(tester);
+    await _stabilizeHistoryAccess(tester);
 
     await _openHistory(tester);
     final chineseTitle = await pumpUntil(
@@ -81,6 +102,7 @@ void main() {
       reason: 'History did not show 本機紀錄 after Demo connect',
     );
 
+    await _leaveHistory(tester);
     await _tapNav(tester, '設定');
     await tester.pump(const Duration(milliseconds: 300));
     await tester.scrollUntilVisible(
