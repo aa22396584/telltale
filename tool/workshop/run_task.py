@@ -644,7 +644,10 @@ def run_task(
     author_handoff: dict[str, Any] | None = None
     if review:
         author_path = handoff_dest
-        handoff_dest = author_path.with_name("review.json")
+        review_path = author_path.with_name("review.json")
+        if review_path.resolve() == author_path.resolve():
+            review_path = author_path.with_name("reviewer.json")
+        handoff_dest = review_path
         author_handoff = _read_author_handoff(author_path, task_id, task)
         author_sha = author_handoff.get("head_sha")
         if isinstance(author_sha, str) and author_sha:
