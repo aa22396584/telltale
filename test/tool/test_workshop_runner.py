@@ -331,6 +331,27 @@ class RunTaskTest(unittest.TestCase):
                 )
             self.assertIn("not ready", str(ctx.exception))
 
+    def test_review_refuses_in_progress_target(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            author = tmp / "handoff.json"
+            self.assertEqual(
+                run_task.run_task(plan, "WS-01", handoff_path=author, timeout=5),
+                0,
+            )
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"][0]["status"] = "in_progress"
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaises(run_task.RunnerError) as ctx:
+                run_task.run_task(
+                    plan, "WS-01", handoff_path=author, timeout=5, review=True
+                )
+            self.assertIn("not ready", str(ctx.exception))
+
     def test_not_ready_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)

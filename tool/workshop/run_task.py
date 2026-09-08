@@ -580,8 +580,10 @@ def run_task(
             raise RunnerError(
                 f"{task_id}: not ready (lease or unfinished dependency)"
             )
-    elif _unfinished_dependencies(data, task) or _in_progress_lease_conflict(
-        data, task_id
+    elif (
+        task.get("status") == "in_progress"
+        or _unfinished_dependencies(data, task)
+        or _in_progress_lease_conflict(data, task_id)
     ):
         raise RunnerError(
             f"{task_id}: not ready (lease or unfinished dependency)"
