@@ -82,7 +82,10 @@ class SerialTransport extends BaseObdTransport {
   @override
   Future<void> connect() async {
     if (_aborted) {
-      throw const TransportException('連線已取消。', issue: TransportIssue.cancelled);
+      throw const TransportException(
+        'The connection was cancelled.',
+        issue: TransportIssue.cancelled,
+      );
     }
     // Listen before open so a native disconnect/error that races the open
     // await is not dropped on the broadcast inbound controller.
@@ -105,9 +108,9 @@ class SerialTransport extends BaseObdTransport {
       await _inboundSub?.cancel();
       _inboundSub = null;
       throw TransportException(
-        '無法開啟 $displayName（$portName）。'
-        '請確認系統已為該藍牙轉接器建立序列埠'
-        '（Windows COMx / Linux /dev/rfcomm*），且電門已開啟。',
+        'Cannot open $displayName ($portName). '
+        'Confirm the system has a serial port for that Bluetooth adapter '
+        '(Windows COMx / Linux /dev/rfcomm*) and the ignition is on.',
         cause: e,
         issue: TransportIssue.serialPortOpenFailed,
       );
@@ -117,7 +120,9 @@ class SerialTransport extends BaseObdTransport {
       _inboundSub = null;
       await _session.close();
       throw TransportException(
-        sawTerminalDuringOpen ? '序列埠在開啟後立即中斷。' : '連線已取消。',
+        sawTerminalDuringOpen
+            ? 'The serial port dropped immediately after opening.'
+            : 'The connection was cancelled.',
         issue: sawTerminalDuringOpen
             ? TransportIssue.serialDroppedOnOpen
             : TransportIssue.cancelled,
@@ -142,13 +147,15 @@ class SerialTransport extends BaseObdTransport {
   @override
   Future<void> write(List<int> data) async {
     if (!isConnected) {
-      throw const WriteRefusedException('序列埠連線尚未建立。');
+      throw const WriteRefusedException(
+        'The serial-port connection is not established.',
+      );
     }
     try {
       await _session.write(data);
     } on Object catch (e) {
       throw TransportException(
-        '寫入 $displayName 失敗。',
+        'Write to $displayName failed.',
         cause: e,
         issue: TransportIssue.writeFailed,
       );
