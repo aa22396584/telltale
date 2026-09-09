@@ -34,6 +34,7 @@ void main() {
       expect(doc, contains('(A*256)+B'));
       expect(doc, contains('BARO()'));
       expect(doc, contains('not-run'));
+      expect(doc, contains('tool/pid_compat/external_torque.py'));
     },
   );
 
