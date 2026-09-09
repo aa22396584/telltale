@@ -7,10 +7,15 @@ two or three things about this project that are not obvious.
 
 ## Where this repository sits
 
-This repository is a **mirror**. The source of truth is a private repository
-that also holds a reverse-engineered protocol specification, which is why it
-cannot be opened. Everything in `lib/`, `test/`, `android/`, `ios/` and `macos/`
-is copied here verbatim and is never edited on this side.
+This repository is a **mirror** of a private source that also holds a
+reverse-engineered protocol specification, which is why that source cannot be
+opened. From 2026-09-09, **product pull requests, required CI, and issues land
+here**. Do not open a matching private PR and do not consume the private
+repository's GitHub Actions; public `main` push CI is the merge gate. Spec and
+reference-implementation work stay private. A later maintainer sync still
+copies `lib/`, `test/`, `android/`, `ios/` and `macos/` back to the private
+`app/` tree — that sync is not a second product source, and it is not a reason
+to burn private Actions on every leftover.
 
 A small publish-only set lives here and is maintained on the public side:
 `.github/`, `store/`, and the GitHub Pages shell files `docs/.nojekyll`,
