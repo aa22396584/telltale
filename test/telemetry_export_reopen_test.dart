@@ -41,7 +41,7 @@ void _reopenJson({
   required List<int> bytes,
   required String sessionId,
   required TelemetrySessionHeader nativeHeader,
-  required int nativeValueCount,
+  required TelemetrySessionFooter nativeFooter,
   required double expectedRpm,
 }) {
   final map = _objectMap(jsonDecode(utf8.decode(bytes)));
@@ -69,6 +69,7 @@ void _reopenJson({
   var previousElapsedUs = -1;
   var sawRpm = false;
   var valueCount = 0;
+  var statusCount = 0;
   for (final raw in events) {
     final eventResult = TelemetrySessionCodec.decodeEventObject(
       _objectMap(raw),
@@ -84,21 +85,27 @@ void _reopenJson({
           event.value == expectedRpm) {
         sawRpm = true;
       }
+    } else if (event.kind == TelemetryEventKind.status) {
+      statusCount++;
     }
   }
   expect(sawRpm, isTrue);
-  expect(valueCount, nativeValueCount);
+  expect(valueCount, nativeFooter.valueCount);
+  expect(statusCount, nativeFooter.statusCount);
 
   final footerMap = _objectMap(map['footer']);
   final footerResult = TelemetrySessionCodec.decodeFooterObject(
     footerMap,
-    footerMap['valueCount']! as int,
-    footerMap['statusCount']! as int,
-    footerMap['gapCount']! as int,
-    footerMap['bytesBeforeFooter']! as int,
+    nativeFooter.valueCount,
+    nativeFooter.statusCount,
+    nativeFooter.gapCount,
+    nativeFooter.bytesBeforeFooter,
   );
   expect(footerResult.error, isNull, reason: '${footerResult.error}');
-  expect(footerResult.value!.valueCount, nativeValueCount);
+  expect(footerResult.value!.valueCount, nativeFooter.valueCount);
+  expect(footerResult.value!.statusCount, nativeFooter.statusCount);
+  expect(footerResult.value!.gapCount, nativeFooter.gapCount);
+  expect(footerResult.value!.bytesBeforeFooter, nativeFooter.bytesBeforeFooter);
   expect(map['privacyExclusions'], contains('VIN'));
 }
 
@@ -217,7 +224,7 @@ void main() {
         bytes: platform.byExtension['json']!,
         sessionId: sessionId,
         nativeHeader: nativeRead.sessionHeader!,
-        nativeValueCount: nativeRead.valueCount,
+        nativeFooter: nativeRead.sessionFooter!,
         expectedRpm: 1726,
       );
 
