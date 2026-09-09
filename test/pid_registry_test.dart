@@ -39,49 +39,33 @@ void main() {
     final registry = container.read(pidRegistryProvider.notifier);
 
     const correct = Pid(
-      name: 'RPM correct',
-      shortName: 'RPM',
-      modeAndPid: '010C',
-      equation: '((A*256)+B)/4',
-      minValue: 0,
-      maxValue: 8000,
-      units: 'rpm',
-      header: kDefaultHeader,
-      isCustom: true,
+      name: 'RPM correct', shortName: 'RPM', modeAndPid: '010C',
+      equation: '((A*256)+B)/4', minValue: 0, maxValue: 8000, units: 'rpm',
+      header: kDefaultHeader, isCustom: true,
     );
     const raw = Pid(
-      name: 'RPM raw',
-      shortName: 'RPM',
-      modeAndPid: '010C',
-      equation: 'A',
-      minValue: 0,
-      maxValue: 8000,
-      units: 'rpm',
-      header: kDefaultHeader,
-      isCustom: true,
+      name: 'RPM raw', shortName: 'RPM', modeAndPid: '010C',
+      equation: 'A', minValue: 0, maxValue: 8000, units: 'rpm',
+      header: kDefaultHeader, isCustom: true,
     );
 
     final outcome = await registry.upsertAllCustom([correct, raw]);
     expect(outcome.inserted, 1);
-    expect(outcome.duplicatesInFile, [
-      'RPM raw',
-    ], reason: 'the second row is reported, not silently preferred');
+    expect(outcome.duplicatesInFile, ['RPM raw'],
+        reason: 'the second row is reported, not silently preferred');
 
     final stored = container
         .read(pidRegistryProvider)
         .where((p) => p.isCustom)
         .toList();
     expect(stored, hasLength(1));
-    expect(
-      stored.single.equation,
-      '((A*256)+B)/4',
-      reason:
-          'the first row is kept — deterministically, and reported, '
-          'rather than the last one silently winning',
-    );
+    expect(stored.single.equation, '((A*256)+B)/4',
+        reason: 'the first row is kept — deterministically, and reported, '
+            'rather than the last one silently winning');
   });
 
-  test('R15-codex 01: two spellings of one identity collapse on load', () async {
+  test('R15-codex 01: two spellings of one identity collapse on load',
+      () async {
     // Codex round 15. Stored entries are normalised one at a time and were not
     // coalesced, so `01 0C` and `010C` loaded as two objects with the same
     // `Pid.id`. `ActivePids` built a map literal — last wins — while
@@ -90,12 +74,10 @@ void main() {
     // driving the gauge: 26 rpm for bytes that mean 1726.
     // Stored in the order a real upgrade would have them: a stale definition
     // first, then the correction the user saved afterwards.
-    const stale =
-        '{"name":"RPM stale","shortName":"RPM",'
+    const stale = '{"name":"RPM stale","shortName":"RPM",'
         '"modeAndPid":"01 0C","equation":"A","minValue":0,'
         '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
-    const corrected =
-        '{"name":"RPM corrected","shortName":"RPM",'
+    const corrected = '{"name":"RPM corrected","shortName":"RPM",'
         '"modeAndPid":"010C","equation":"((A*256)+B)/4","minValue":0,'
         '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
 
@@ -105,71 +87,47 @@ void main() {
     });
     addTearDown(container.dispose);
 
-    final custom = container
-        .read(pidRegistryProvider)
-        .where((p) => p.isCustom)
-        .toList();
-    expect(
-      custom,
-      hasLength(1),
-      reason: 'one identity is one definition, whatever it was spelled as',
-    );
+    final custom =
+        container.read(pidRegistryProvider).where((p) => p.isCustom).toList();
+    expect(custom, hasLength(1),
+        reason: 'one identity is one definition, whatever it was spelled as');
     // The last, because that is the one the previous release was already
     // showing: `ActivePids` built a canonical map literal and a map literal
     // keeps the last. Collapsing to the first would have silently migrated a
     // working gauge from 1726 rpm to 26.
-    expect(
-      container.read(activePidsProvider).single.equation,
-      '((A*256)+B)/4',
-      reason: 'upgrading does not change what the gauge reads',
-    );
+    expect(container.read(activePidsProvider).single.equation,
+        '((A*256)+B)/4',
+        reason: 'upgrading does not change what the gauge reads');
   });
 
   test('R15-codex 05: the import message counts what landed', () {
     // The registry's counting is tested here; the sentences live in
     // `pidImportOutcomeText` and are pinned there in both languages.
     const clean = PidImportOutcome(
-      inserted: 3,
-      replaced: 0,
-      duplicatesInFile: [],
-    );
+        inserted: 3, replaced: 0, duplicatesInFile: []);
     expect(clean.landed, 3);
 
     const replacing = PidImportOutcome(
-      inserted: 1,
-      replaced: 2,
-      duplicatesInFile: [],
-    );
-    expect(
-      replacing.landed,
-      3,
-      reason:
-          'replacing an existing definition still lands, and is not '
-          'the same as adding one',
-    );
+        inserted: 1, replaced: 2, duplicatesInFile: []);
+    expect(replacing.landed, 3,
+        reason: 'replacing an existing definition still lands, and is not '
+            'the same as adding one');
     expect(replacing.replaced, 2);
 
     const duped = PidImportOutcome(
-      inserted: 1,
-      replaced: 0,
-      duplicatesInFile: ['RPM raw'],
-    );
+        inserted: 1, replaced: 0, duplicatesInFile: ['RPM raw']);
     expect(duped.landed, 1, reason: 'one landed, not two');
     expect(duped.duplicatesInFile, ['RPM raw']);
 
     const messy = PidImportOutcome(
-      inserted: 1,
-      replaced: 1,
-      duplicatesInFile: ['a', 'b'],
-    );
+        inserted: 1, replaced: 1, duplicatesInFile: ['a', 'b']);
     expect(messy.landed, 2);
     expect(messy.replaced, 1);
     expect(messy.duplicatesInFile, ['a', 'b']);
   });
 
   group('a definition leaving the registry leaves the dashboard', () {
-    const only =
-        '{"name":"Only","shortName":"ONE","modeAndPid":"010B",'
+    const only = '{"name":"Only","shortName":"ONE","modeAndPid":"010B",'
         '"equation":"A","minValue":0,"maxValue":300,"units":"kPa",'
         '"header":"7E0","isCustom":true,"variant":"only"}';
 
@@ -196,32 +154,22 @@ void main() {
 
       await container.read(pidRegistryProvider.notifier).removeCustom(gauge);
 
-      expect(
-        container.read(activePidsProvider),
-        isEmpty,
-        reason:
-            'the user deleted their only gauge; that is a choice, not a '
-            'broken layout',
-      );
+      expect(container.read(activePidsProvider), isEmpty,
+          reason: 'the user deleted their only gauge; that is a choice, not a '
+              'broken layout');
 
       // And it has to survive a relaunch. Checking only the in-memory
       // provider left `unawaited(_persist())` removable without a failure:
       // the stale non-empty id list then resolves to nothing on the next
       // start, which is the *broken layout* branch, and the shipped gauges
       // come back.
-      final relaunched = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(
-            await SharedPreferences.getInstance(),
-          ),
-        ],
-      );
+      final relaunched = ProviderContainer(overrides: [
+        sharedPreferencesProvider
+            .overrideWithValue(await SharedPreferences.getInstance()),
+      ]);
       addTearDown(relaunched.dispose);
-      expect(
-        relaunched.read(activePidsProvider),
-        isEmpty,
-        reason: 'the choice outlives the session that made it',
-      );
+      expect(relaunched.read(activePidsProvider), isEmpty,
+          reason: 'the choice outlives the session that made it');
     });
 
     test('R10-codex: an edited definition reaches the dashboard', () async {
@@ -244,7 +192,8 @@ void main() {
     });
   });
 
-  test('R10-codex 04: two variants that differ only by a space stay two PIDs', () async {
+  test('R10-codex 04: two variants that differ only by a space stay two PIDs',
+      () async {
     // Codex, round 10. `Pid.id` deliberately carries the raw `#variant`, and
     // the CSV importer takes that field verbatim — it is a user's label, not
     // a field this app owns. Canonicalising the *whole* id stripped spaces out
@@ -260,10 +209,7 @@ void main() {
         '"header":"7E0","isCustom":true,"variant":"$variant"}';
 
     final container = await _container({
-      'custom_pids_v1': <String>[
-        pid('raw value', 'A-40'),
-        pid('rawvalue', 'A*10'),
-      ],
+      'custom_pids_v1': <String>[pid('raw value', 'A-40'), pid('rawvalue', 'A*10')],
       'active_pid_ids_v1': <String>[
         'custom:7E0:0105#raw value',
         'custom:7E0:0105#rawvalue',
@@ -272,32 +218,24 @@ void main() {
     addTearDown(container.dispose);
 
     final active = container.read(activePidsProvider);
-    expect(
-      active,
-      hasLength(2),
-      reason:
-          'they are two definitions and the user put both on the '
-          'dashboard',
-    );
-    expect(
-      active.map((p) => p.equation),
-      ['A-40', 'A*10'],
-      reason:
-          'and each keeps its own formula, or one gauge is showing the '
-          "other's number",
-    );
+    expect(active, hasLength(2),
+        reason: 'they are two definitions and the user put both on the '
+            'dashboard');
+    expect(active.map((p) => p.equation), ['A-40', 'A*10'],
+        reason: 'and each keeps its own formula, or one gauge is showing the '
+            "other's number");
   });
 
   group('an upgrade may not lose a gauge', () {
     // Codex's M-02, also reported by cursor and qwen. Canonicalising `header`
     // on load was right; it changes `Pid.id`, and nothing was taught that
     // `active_pid_ids_v1` holds the old spelling.
-    const oldSpelling =
-        '{"name":"Coolant","shortName":"CLT",'
+    const oldSpelling = '{"name":"Coolant","shortName":"CLT",'
         '"modeAndPid":"01 05","equation":"A-40","minValue":-40,'
         '"maxValue":215,"units":"°C","header":"7 E 0","isCustom":true}';
 
-    test('R9-codex M-02: a custom gauge stored by an older build survives', () async {
+    test('R9-codex M-02: a custom gauge stored by an older build survives',
+        () async {
       final container = await _container({
         'custom_pids_v1': <String>[oldSpelling],
         // The old id, beside a built-in that still resolves — which is what
@@ -310,17 +248,14 @@ void main() {
       addTearDown(container.dispose);
 
       final active = container.read(activePidsProvider);
-      expect(
-        active,
-        hasLength(2),
-        reason:
-            'the gauge was on the dashboard before the upgrade and the '
-            'upgrade is not a reason to remove it',
-      );
+      expect(active, hasLength(2),
+          reason: 'the gauge was on the dashboard before the upgrade and the '
+              'upgrade is not a reason to remove it');
       expect(active.any((p) => p.isCustom && p.name == 'Coolant'), isTrue);
     });
 
-    test('R9-codex M-02: both identity fields are canonicalised, not just one', () async {
+    test('R9-codex M-02: both identity fields are canonicalised, not just one',
+        () async {
       final container = await _container({
         'custom_pids_v1': <String>[oldSpelling],
       });
@@ -335,29 +270,23 @@ void main() {
       // which parses to null — so the response splitter cannot associate a
       // valid `41 05 …` with this gauge and the reading never appears, while
       // the adapter ignores the space and answers perfectly.
-      expect(
-        stored.pidByte,
-        0x05,
-        reason:
-            'the vehicle answered; the app has to be able to tell whose '
-            'answer it is',
-      );
+      expect(stored.pidByte, 0x05,
+          reason: 'the vehicle answered; the app has to be able to tell whose '
+              'answer it is');
     });
   });
 
   group('the active dashboard layout', () {
-    test(
-      'starts from the shipped defaults when nothing has been stored',
-      () async {
-        final container = await _container({});
-        addTearDown(container.dispose);
+    test('starts from the shipped defaults when nothing has been stored',
+        () async {
+      final container = await _container({});
+      addTearDown(container.dispose);
 
-        expect(
-          container.read(activePidsProvider),
-          equals(PidLibrary.defaultDashboard),
-        );
-      },
-    );
+      expect(
+        container.read(activePidsProvider),
+        equals(PidLibrary.defaultDashboard),
+      );
+    });
 
     test('stays empty when the user has cleared it', () async {
       final container = await _container({'active_pid_ids_v1': <String>[]});
@@ -366,8 +295,7 @@ void main() {
       expect(
         container.read(activePidsProvider),
         isEmpty,
-        reason:
-            'restoring the defaults here overrides a deliberate choice — '
+        reason: 'restoring the defaults here overrides a deliberate choice — '
             'every gauge came back on the next launch with no way to make the '
             'removal stick',
       );
@@ -389,34 +317,26 @@ void main() {
     });
   });
 
-  test('restored preferences cannot land a formula the editor cannot save', () async {
+  test('restored preferences cannot land a formula the editor cannot save',
+      () async {
     // #79.B leftover. Editor and CSV already share FormulaEngine.preflight.
     // Loading custom_pids_v1 did not, so A/0 and INT16(A:B) survived a restart
     // and reached the poller without a preview.
-    const good =
-        '{"name":"RPM","shortName":"RPM","modeAndPid":"010C",'
+    const good = '{"name":"RPM","shortName":"RPM","modeAndPid":"010C",'
         '"equation":"((A*256)+B)/4","minValue":0,"maxValue":8000,'
         '"units":"rpm","header":"7E0","isCustom":true}';
-    const divideByZero =
-        '{"name":"Bad","shortName":"BAD","modeAndPid":"0105",'
+    const divideByZero = '{"name":"Bad","shortName":"BAD","modeAndPid":"0105",'
         '"equation":"A/0","minValue":0,"maxValue":100,"units":"°C",'
         '"header":"7E0","isCustom":true}';
-    const runtimeDomain =
-        '{"name":"Log","shortName":"LOG","modeAndPid":"0104",'
+    const runtimeDomain = '{"name":"Log","shortName":"LOG","modeAndPid":"0104",'
         '"equation":"LOG10(A-20)","minValue":0,"maxValue":3,"units":"",'
         '"header":"7E0","isCustom":true}';
-    const unsupported =
-        '{"name":"Int16","shortName":"I16","modeAndPid":"0106",'
+    const unsupported = '{"name":"Int16","shortName":"I16","modeAndPid":"0106",'
         '"equation":"INT16(A:B)","minValue":0,"maxValue":65535,"units":"",'
         '"header":"7E0","isCustom":true}';
 
     final container = await _container({
-      'custom_pids_v1': <String>[
-        good,
-        divideByZero,
-        runtimeDomain,
-        unsupported,
-      ],
+      'custom_pids_v1': <String>[good, divideByZero, runtimeDomain, unsupported],
     });
     addTearDown(container.dispose);
 
@@ -440,26 +360,14 @@ void main() {
     final registry = container.read(pidRegistryProvider.notifier);
 
     const good = Pid(
-      name: 'RPM',
-      shortName: 'RPM',
-      modeAndPid: '010C',
-      equation: '((A*256)+B)/4',
-      minValue: 0,
-      maxValue: 8000,
-      units: 'rpm',
-      header: kDefaultHeader,
-      isCustom: true,
+      name: 'RPM', shortName: 'RPM', modeAndPid: '010C',
+      equation: '((A*256)+B)/4', minValue: 0, maxValue: 8000, units: 'rpm',
+      header: kDefaultHeader, isCustom: true,
     );
     const poison = Pid(
-      name: 'Bad',
-      shortName: 'BAD',
-      modeAndPid: '0105',
-      equation: 'A/0',
-      minValue: 0,
-      maxValue: 100,
-      units: '°C',
-      header: kDefaultHeader,
-      isCustom: true,
+      name: 'Bad', shortName: 'BAD', modeAndPid: '0105',
+      equation: 'A/0', minValue: 0, maxValue: 100, units: '°C',
+      header: kDefaultHeader, isCustom: true,
     );
 
     final mixed = await registry.upsertAllCustom([good, poison]);
