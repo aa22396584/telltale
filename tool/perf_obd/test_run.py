@@ -11,6 +11,8 @@ from run import (
     GateError,
     main,
     prepare_output,
+    validate_competitor_report,
+    validate_physical_adapter_report,
     validate_report,
     validate_six_report,
     validate_twenty_report,
@@ -247,6 +249,69 @@ class ValidateReportTest(unittest.TestCase):
         text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
         self.assertIn("--ui-profile", text)
         self.assertIn("validate_ui_profile_report", text)
+
+    def test_a_software_report_is_not_a_competitor_lane(self):
+        with self.assertRaises(GateError):
+            validate_competitor_report(_ok())
+
+    def test_competitor_without_a_device_is_not_pass(self):
+        with self.assertRaises(GateError):
+            validate_competitor_report({"lane": "competitor", "device": ""})
+
+    def test_competitor_lane_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(main(["--competitor", "--output", str(output)]), 2)
+            self.assertFalse((output / "competitor.json").exists())
+            self.assertFalse((output / "software.json").exists())
+
+    def test_competitor_deletes_a_stale_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "competitor.json"
+            stale.write_text(
+                '{"lane":"competitor","device":"planted"}', encoding="utf-8"
+            )
+            self.assertEqual(main(["--competitor", "--output", str(output)]), 2)
+            self.assertFalse(stale.exists())
+
+    def test_a_software_report_is_not_a_physical_adapter_lane(self):
+        with self.assertRaises(GateError):
+            validate_physical_adapter_report(_ok())
+
+    def test_physical_adapter_without_a_device_is_not_pass(self):
+        with self.assertRaises(GateError):
+            validate_physical_adapter_report(
+                {"lane": "physical-adapter", "device": ""}
+            )
+
+    def test_physical_adapter_lane_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(["--physical-adapter", "--output", str(output)]), 2
+            )
+            self.assertFalse((output / "physical-adapter.json").exists())
+            self.assertFalse((output / "software.json").exists())
+
+    def test_physical_adapter_deletes_a_stale_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "physical-adapter.json"
+            stale.write_text(
+                '{"lane":"physical-adapter","device":"planted"}', encoding="utf-8"
+            )
+            self.assertEqual(
+                main(["--physical-adapter", "--output", str(output)]), 2
+            )
+            self.assertFalse(stale.exists())
+
+    def test_runner_names_the_competitor_and_physical_adapter_lanes(self):
+        text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
+        self.assertIn("--competitor", text)
+        self.assertIn("validate_competitor_report", text)
+        self.assertIn("--physical-adapter", text)
+        self.assertIn("validate_physical_adapter_report", text)
 
 
 if __name__ == "__main__":
