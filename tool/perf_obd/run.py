@@ -205,11 +205,30 @@ def run_software(output: Path) -> dict:
     return validate_report(payload)
 
 
+def validate_ui_profile_report(report: object) -> dict:
+    if not isinstance(report, dict):
+        raise GateError("ui-profile report is not an object")
+    if report.get("lane") != "ui-profile":
+        raise GateError("a software report is not a device UI profile")
+    device = report.get("device")
+    if not isinstance(device, str) or not device.strip():
+        raise GateError("ui-profile without an identified device is not PASS")
+    raise GateError("ui-profile lane is not-run without an identified device")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--software", action="store_true")
+    parser.add_argument("--ui-profile", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
+    if args.ui_profile:
+        args.output.mkdir(parents=True, exist_ok=True)
+        stale = args.output / "ui-profile.json"
+        if stale.exists():
+            stale.unlink()
+        print("ui-profile lane is not-run without an identified device", file=sys.stderr)
+        return 2
     if not args.software:
         print("physical/competitor lanes are not-run in this leftover", file=sys.stderr)
         return 2

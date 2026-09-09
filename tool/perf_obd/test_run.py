@@ -9,10 +9,12 @@ from pathlib import Path
 
 from run import (
     GateError,
+    main,
     prepare_output,
     validate_report,
     validate_six_report,
     validate_twenty_report,
+    validate_ui_profile_report,
 )
 
 
@@ -217,6 +219,34 @@ class ValidateReportTest(unittest.TestCase):
             self.assertFalse(stale.exists())
             self.assertFalse(six.exists())
             self.assertFalse(twenty.exists())
+
+    def test_a_software_report_is_not_a_ui_profile(self):
+        with self.assertRaises(GateError):
+            validate_ui_profile_report(_ok())
+
+    def test_ui_profile_without_a_device_is_not_pass(self):
+        with self.assertRaises(GateError):
+            validate_ui_profile_report({"lane": "ui-profile", "device": ""})
+
+    def test_ui_profile_lane_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(main(["--ui-profile", "--output", str(output)]), 2)
+            self.assertFalse((output / "ui-profile.json").exists())
+            self.assertFalse((output / "software.json").exists())
+
+    def test_ui_profile_deletes_a_stale_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "ui-profile.json"
+            stale.write_text('{"lane":"ui-profile","device":"planted"}', encoding="utf-8")
+            self.assertEqual(main(["--ui-profile", "--output", str(output)]), 2)
+            self.assertFalse(stale.exists())
+
+    def test_runner_names_the_ui_profile_lane(self):
+        text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
+        self.assertIn("--ui-profile", text)
+        self.assertIn("validate_ui_profile_report", text)
 
 
 if __name__ == "__main__":
