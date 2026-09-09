@@ -3198,7 +3198,7 @@ class PollingEngine {
       // user-visible change that no user can reach is the same mistake as the
       // gauge-face commit that claimed a treatment it never drew.
       throw const DtcReadException(
-        '凍結幀沒有讀到 —— 這不代表車上沒有。',
+        'This scan did not read a freeze frame — that does not mean the vehicle has none.',
         kind: DtcReadFailure.noAnswer,
       );
     }
@@ -3508,8 +3508,8 @@ class PollingEngine {
       if (decoded.isEmpty) return null;
       if (decoded.length > 1) {
         throw VinIdentityConflictException(
-          '有 ${decoded.length} 個控制器回報了不同的車身碼（VIN），'
-          '無法確認這輛車的身分。可能有模組被更換或設定錯誤。',
+          '${decoded.length} controller(s) reported different vehicle identification numbers (VIN), '
+          'so this vehicle\'s identity cannot be confirmed. A module may have been replaced or configured wrongly.',
         );
       }
       return decoded.first;
@@ -3593,8 +3593,8 @@ class PollingEngine {
         // Same rule as CAN: a conflict is the moment identity becomes
         // unknown, not the moment to pick one.
         throw VinIdentityConflictException(
-          '有 ${decoded.length} 個控制器回報了不同的車身碼（VIN），'
-          '無法確認這輛車的身分。可能有模組被更換或設定錯誤。',
+          '${decoded.length} controller(s) reported different vehicle identification numbers (VIN), '
+          'so this vehicle\'s identity cannot be confirmed. A module may have been replaced or configured wrongly.',
         );
       }
       return decoded.first;
