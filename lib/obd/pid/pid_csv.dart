@@ -248,7 +248,7 @@ abstract final class PidCsv {
   static String exportTorqueSubset(List<Pid> pids) {
     return _codec.encode(<List<dynamic>>[
       torqueHeader,
-      for (final pid in pids) pid.toCsvRow().sublist(0, torqueHeader.length),
+      for (final pid in pids) _torqueRow(pid),
     ]);
   }
 
@@ -260,11 +260,27 @@ abstract final class PidCsv {
     rows: () sync* {
       yield torqueHeader;
       for (final pid in pids) {
-        yield pid.toCsvRow().sublist(0, torqueHeader.length);
+        yield _torqueRow(pid);
       }
     },
     maxChunkBytes: maxChunkBytes,
   );
+
+  /// Torque's eight cells, taken by Telltale column name.
+  ///
+  /// A positional `sublist` of [Pid.toCsvRow] would put Priority under
+  /// `OBD Header` if a Telltale-only column is inserted before Header.
+  static List<dynamic> _torqueRow(Pid pid) {
+    final full = pid.toCsvRow();
+    final byName = <String, String>{
+      for (var i = 0; i < header.length && i < full.length; i++)
+        header[i]: full[i],
+    };
+    return [
+      for (final name in torqueHeader)
+        name == 'OBD Header' ? (byName['Header'] ?? '') : (byName[name] ?? ''),
+    ];
+  }
 
   /// Emits the canonical export incrementally without a whole-file String.
   static Stream<List<int>> stream(
