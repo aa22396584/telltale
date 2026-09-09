@@ -740,7 +740,7 @@ class Elm327Client {
       _watchdog = null;
       _failPending(
         const TransportException(
-          '連線已中斷。',
+          'The connection was dropped.',
           issue: TransportIssue.linkDroppedMidSession,
         ),
       );
@@ -863,7 +863,7 @@ class Elm327Client {
     // anything went wrong with it.
     _failPending(
       const TransportException(
-        '連線已中斷。',
+        'The connection was dropped.',
         issue: TransportIssue.disconnectedByApp,
       ),
     );
@@ -1194,7 +1194,7 @@ class Elm327Client {
     // the link down for it five seconds later.
     if (!transport.isConnected) {
       throw const TransportException(
-        '連線尚未建立。',
+        'The connection is not established.',
         issue: TransportIssue.notConnected,
       );
     }
@@ -2312,7 +2312,7 @@ class Elm327Client {
       _watchdog = null;
       _failPending(
         const TransportException(
-          '連線停止回應。',
+          'The connection stopped responding.',
           issue: TransportIssue.linkStoppedResponding,
         ),
       );

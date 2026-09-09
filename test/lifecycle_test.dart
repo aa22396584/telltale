@@ -70,7 +70,7 @@ void main() {
       );
       expect(failed, hasLength(1));
       expect(failed.single.step.command, 'ATE0');
-      expect(failed.single.detail, contains('連線已中斷'));
+      expect(failed.single.detail, contains('The connection was dropped.'));
       expect(failed.single.detail, isNot('逾時'));
       expect(failed.single.detail, isNot(contains('TransportException')));
       expect(
