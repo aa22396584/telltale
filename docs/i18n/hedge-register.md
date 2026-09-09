@@ -317,7 +317,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **Shipped as** `languageSaveFailed` (lib/l10n/app_en.arb).
 
-**Why it is load-bearing.** `lib/ui/widgets/language_picker.dart:69`; lib/l10n/app_en.arb:884 ↔ lib/l10n/app_zh_Hant.arb:249 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
+**Why it is load-bearing.** `lib/ui/widgets/language_picker.dart:70`; lib/l10n/app_en.arb:884 ↔ lib/l10n/app_zh_Hant.arb:249 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
 
 ### 23. 不確定要選哪一個？
 

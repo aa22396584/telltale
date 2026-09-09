@@ -11,6 +11,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 CI_PATH = REPO / ".github" / "workflows" / "ci.yml"
+ARB_DIR = REPO / "lib" / "l10n"
 
 
 class I18nVerifyCiGuardTest(unittest.TestCase):
@@ -24,9 +25,17 @@ class I18nVerifyCiGuardTest(unittest.TestCase):
         self.assertIn("tool/i18n_verify/check_arb.py", self.workflow)
 
     def test_ci_runs_check_arb_on_shipped_locales(self) -> None:
-        self.assertIn("lib/l10n/app_en.arb", self.workflow)
-        self.assertIn("lib/l10n/app_zh.arb", self.workflow)
-        self.assertIn("lib/l10n/app_zh_Hant.arb", self.workflow)
+        shipped = sorted(path.name for path in ARB_DIR.glob("*.arb"))
+        self.assertIn("app_en.arb", shipped)
+        # Read from the directory rather than a list written here. A new locale
+        # is a file somebody adds; the guard has to notice the file, not a
+        # second list they also had to remember to edit.
+        for name in shipped:
+            self.assertIn(
+                f"lib/l10n/{name}",
+                self.workflow,
+                msg=f"{name} ships but CI never checks its keys",
+            )
         arb_step = self.workflow.index("ARB locales have matching keys")
         shipped = self.workflow.index("lib/l10n/app_en.arb")
         self.assertGreater(shipped, arb_step)

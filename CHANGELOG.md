@@ -8,6 +8,36 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+### Added
+
+- A German interface. The picker on the Connect screen and in Settings now lists
+  Deutsch beside English and 繁體中文, and a phone set to German — including
+  `de-AT` and `de-CH` — starts in German without being asked. A stored language
+  this build does not know still falls back to following the system, so moving
+  between versions cannot strand somebody in a language they cannot read.
+
+  It is a machine translation, and this is the part worth stating plainly. Every
+  ICU argument and every token on `docs/i18n/do-not-translate.md` — `NO DATA`,
+  `ATZ`, `VIN`, `Wi-Fi`, every mode and PID number — was held out of the
+  translation request and verified in the result, so a command is still a
+  command and an adapter reply is still matched literally. Then all 1112 strings
+  were read and about a hundred corrected: `Port` had become *Hafen*, `Mass`
+  *Messe*, `Displacement` *Verdrängung*, `Stopped by you` *Ich habe bei Ihnen
+  vorbeigeschaut*; `read-only` had become *schreibgeschützt*, which says
+  something else entirely about a query this app promises never to write with;
+  `clear` drifted between *löschen*, *Freigabe* and *Bereinigung* across the six
+  screens that talk about clearing fault codes; and `The ECU did not answer` had
+  turned into *Der Befehl „ECU“ wurde nicht beantwortet*, which is a different
+  claim about a different thing. Every plural branch was rewritten, because the
+  translator glues the argument to the noun and opens new sentences inside a
+  branch.
+
+  What that pass cannot establish is the one thing this project cares most about
+  in prose: whether a hedge still lands with the force the English gives it.
+  Until a native speaker has read these screens in a car, a German sentence that
+  reads wrongly is a defect worth reporting rather than a matter of taste, and
+  `docs/i18n/README.md` says so where a translator will look.
+
 ### Fixed
 
 - The community APK died at launch on a Samsung Note 3 (`hlte`, Adreno 330)
