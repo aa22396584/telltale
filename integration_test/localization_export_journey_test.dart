@@ -351,7 +351,7 @@ Future<void> _reopenJsonArtifact({
   required File jsonFile,
   required String sessionId,
   required TelemetrySessionHeader nativeHeader,
-  required int nativeValueCount,
+  required TelemetrySessionFooter nativeFooter,
 }) async {
   // Preparation only: the rig sink copied the staged export. This is not an
   // OS chooser completion or a recipient handoff.
@@ -394,6 +394,7 @@ Future<void> _reopenJsonArtifact({
   expect(eventList, isNotEmpty);
   var previousElapsedUs = -1;
   var valueCount = 0;
+  var statusCount = 0;
   for (final raw in eventList) {
     final eventResult = TelemetrySessionCodec.decodeEventObject(
       _objectMap(raw),
@@ -411,24 +412,30 @@ Future<void> _reopenJsonArtifact({
       expect(event.value, isA<double>());
       expect(event.value!.isFinite, isTrue);
       valueCount++;
+    } else if (event.kind == TelemetryEventKind.status) {
+      statusCount++;
     }
   }
 
   final footerMap = _objectMap(map['footer']);
   final footerResult = TelemetrySessionCodec.decodeFooterObject(
     footerMap,
-    footerMap['valueCount']! as int,
-    footerMap['statusCount']! as int,
-    footerMap['gapCount']! as int,
-    footerMap['bytesBeforeFooter']! as int,
+    nativeFooter.valueCount,
+    nativeFooter.statusCount,
+    nativeFooter.gapCount,
+    nativeFooter.bytesBeforeFooter,
   );
   expect(
     footerResult.error,
     isNull,
     reason: 'exported JSON footer did not reopen: ${footerResult.error}',
   );
-  expect(footerResult.value!.valueCount, nativeValueCount);
+  expect(footerResult.value!.valueCount, nativeFooter.valueCount);
+  expect(footerResult.value!.statusCount, nativeFooter.statusCount);
+  expect(footerResult.value!.gapCount, nativeFooter.gapCount);
+  expect(footerResult.value!.bytesBeforeFooter, nativeFooter.bytesBeforeFooter);
   expect(footerResult.value!.valueCount, valueCount);
+  expect(footerResult.value!.statusCount, statusCount);
   expect(footerResult.value!.valueCount, greaterThan(0));
   expect(map['privacyExclusions'], contains('VIN'));
 }
@@ -498,7 +505,7 @@ void main() {
       jsonFile: jsonFile,
       sessionId: sessionId,
       nativeHeader: nativeHeader,
-      nativeValueCount: nativeValueCount,
+      nativeFooter: nativeRead.sessionFooter!,
     );
     await _expectNativeUnchanged(native, originalBytes);
 
@@ -562,7 +569,7 @@ void main() {
       jsonFile: englishJson,
       sessionId: sessionId,
       nativeHeader: nativeHeader,
-      nativeValueCount: nativeValueCount,
+      nativeFooter: nativeRead.sessionFooter!,
     );
     await _expectNativeUnchanged(native, originalBytes);
   });

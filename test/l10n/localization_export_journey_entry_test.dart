@@ -56,6 +56,11 @@ void main() {
     expect(source.contains('decodeHeaderObject'), isTrue);
     expect(source.contains('decodeEventObject'), isTrue);
     expect(source.contains('decodeFooterObject'), isTrue);
+    expect(source.contains('nativeFooter.valueCount'), isTrue);
+    expect(source.contains('nativeFooter.statusCount'), isTrue);
+    expect(source.contains('nativeFooter.gapCount'), isTrue);
+    expect(source.contains('nativeFooter.bytesBeforeFooter'), isTrue);
+    expect(source.contains("footerMap['valueCount']! as int"), isFalse);
     expect(source.contains("tapExportFormat(tester, '匯出 JSON')"), isTrue);
     expect(source.contains("tapExportFormat(tester, '匯出 CSV')"), isTrue);
     expect(source.contains("tapExportFormat(tester, 'Export JSON')"), isTrue);
