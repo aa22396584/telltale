@@ -31,6 +31,8 @@ void main() {
     expect(FormulaEngine.preflight('SIGNED16((A*256)+B)'), isNull);
     expect(FormulaEngine.preflight('SIGNED8(A)'), isNull);
     expect(FormulaEngine.preflight('SIGNED8((A-1))'), isNull);
+    expect(FormulaEngine.preflight('SIGNED24(A)'), isNull);
+    expect(FormulaEngine.preflight('SIGNED24((A-1))'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
