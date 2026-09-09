@@ -445,21 +445,28 @@ def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _drain_pipe(pipe, limit: int) -> bytes:
+def _drain_pipe(pipe, limit: int) -> tuple[bytes, bool]:
     chunks: list[bytes] = []
     kept = 0
+    truncated = False
     try:
         while True:
             block = pipe.read(65536)
             if not block:
                 break
+            if truncated:
+                continue
             if kept < limit:
                 take = min(len(block), limit - kept)
                 chunks.append(block[:take])
                 kept += take
+                if take < len(block):
+                    truncated = True
+            else:
+                truncated = True
     except (ValueError, OSError):
         pass
-    return b"".join(chunks)
+    return b"".join(chunks), truncated
 
 
 def _remaining(deadline: float) -> float:
@@ -521,11 +528,11 @@ def _run_command(
             "stderr": str(exc),
         }
     timed_out = False
-    stdout_holder: list[bytes] = []
-    stderr_holder: list[bytes] = []
+    stdout_holder: list[tuple[bytes, bool]] = []
+    stderr_holder: list[tuple[bytes, bool]] = []
     deadline = started + timeout
 
-    def collect(pipe, dest: list[bytes]) -> None:
+    def collect(pipe, dest: list[tuple[bytes, bool]]) -> None:
         dest.append(_drain_pipe(pipe, output_limit))
 
     reader_out = threading.Thread(
@@ -566,8 +573,8 @@ def _run_command(
     else:
         _close_pipe(proc.stdout)
         _close_pipe(proc.stderr)
-    stdout_b = stdout_holder[0] if stdout_holder else b""
-    stderr_b = stderr_holder[0] if stderr_holder else b""
+    stdout_b, stdout_trunc = stdout_holder[0] if stdout_holder else (b"", False)
+    stderr_b, stderr_trunc = stderr_holder[0] if stderr_holder else (b"", False)
     stdout = stdout_b.decode("utf-8", "replace")
     stderr = stderr_b.decode("utf-8", "replace")
     result: dict[str, Any] = {
@@ -578,6 +585,8 @@ def _run_command(
         "stdout": stdout,
         "stderr": stderr,
     }
+    if stdout_trunc or stderr_trunc:
+        result["truncated"] = True
     if validate_plan._is_flutter_test(argv):
         executed, skipped = validate_plan.parse_flutter_counts(stdout)
         if executed is not None:
@@ -752,7 +761,11 @@ def run_task(
                     output_limit=output_limit,
                 )
                 results.append(result)
-                if result["timed_out"] or result["exit"] != 0:
+                if (
+                    result["timed_out"]
+                    or result["exit"] != 0
+                    or result.get("truncated") is True
+                ):
                     failed.append(" ".join(argv))
         completed = not dry_run and not failed and not unrun
         payload = {

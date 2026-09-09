@@ -885,10 +885,43 @@ class RunTaskTest(unittest.TestCase):
             code = run_task.run_task(
                 plan, "WS-01", handoff_path=handoff, timeout=5, output_limit=50
             )
-            self.assertEqual(code, 0)
+            self.assertEqual(code, 1)
             data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertIs(data["completed"], False)
+            self.assertIs(data["results"][0]["truncated"], True)
             self.assertEqual(len(data["results"][0]["stdout"]), 50)
             self.assertEqual(data["results"][0]["stdout"], "x" * 50)
+            errors = validate_plan.validate_handoff(
+                {
+                    "status": "completed",
+                    "completed": True,
+                    "evidence": data["results"],
+                    "unrun": [],
+                    "head_sha": "a" * 40,
+                }
+            )
+            self.assertTrue(any("truncated" in error for error in errors), msg=errors)
+
+    def test_output_exactly_at_the_limit_is_not_truncated(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            (tmp / "tool" / "workshop" / "probe.py").write_text(
+                "import sys\nsys.stdout.write('y' * 50)\n",
+                encoding="utf-8",
+            )
+            handoff = tmp / "handoff.json"
+            code = run_task.run_task(
+                plan, "WS-01", handoff_path=handoff, timeout=5, output_limit=50
+            )
+            self.assertEqual(code, 0)
+            data = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertIs(data["completed"], True)
+            self.assertNotEqual(data["results"][0].get("truncated"), True)
+            self.assertEqual(data["results"][0]["stdout"], "y" * 50)
 
     def test_timeout_covers_a_descendant_that_keeps_stdout_open(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
