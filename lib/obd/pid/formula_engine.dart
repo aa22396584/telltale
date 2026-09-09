@@ -696,8 +696,14 @@ class FormulaEngine {
     s = s
         .replaceAll('ABS(', _absSentinel)
         .replaceAll('LOG10(', _log10Sentinel)
-        .replaceAll(RegExp(r'MIN\(', caseSensitive: false), _minSentinel)
-        .replaceAll(RegExp(r'MAX\(', caseSensitive: false), _maxSentinel);
+        .replaceAllMapped(
+          _namedCallPattern('MIN'),
+          (m) => '${m.group(1)}$_minSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('MAX'),
+          (m) => '${m.group(1)}$_maxSentinel',
+        );
 
     for (var i = 0; i < 14; i++) {
       final letter = String.fromCharCode(0x41 + i);
@@ -888,6 +894,10 @@ class FormulaEngine {
     while (true) {
       final start = input.indexOf(needle, from);
       if (start < 0) return null;
+      if (start > 0 && _isIdentChar(input.codeUnitAt(start - 1))) {
+        from = start + 1;
+        continue;
+      }
       var depth = 0;
       var end = -1;
       for (var i = start + name.length; i < input.length; i++) {
@@ -916,6 +926,15 @@ class FormulaEngine {
       inner.contains('LOG10(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(');
+
+  static bool _isIdentChar(int unit) =>
+      (unit >= 0x30 && unit <= 0x39) ||
+      (unit >= 0x41 && unit <= 0x5A) ||
+      (unit >= 0x61 && unit <= 0x7A) ||
+      unit == 0x5F;
+
+  static RegExp _namedCallPattern(String name) =>
+      RegExp('(^|[^A-Za-z0-9_])${RegExp.escape(name)}\\(', caseSensitive: false);
 
   /// Splits `A:B` or `A,B` into exactly two nonempty sides.
   /// A colon or comma inside grouping parentheses is not a separator.

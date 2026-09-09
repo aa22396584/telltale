@@ -304,6 +304,33 @@ void main() {
       expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
     });
 
+    test('MIN/MAX require a token boundary, not a substring', () {
+      // `1MIN(2:3)` used to reduce to 12: the matcher ate MIN(2:3) and
+      // concatenated the replacement onto the leading 1. A plausible number
+      // from a malformed import.
+      expect(
+        () => engine.evaluateBytes('1MIN(2:3)', const []),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(
+        () => engine.evaluateBytes('AMIN(B:C)', const [4, 5, 6]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(FormulaEngine.preflight('1MIN(2:3)'), isNotNull);
+    });
+
     test('MIN/MAX with the wrong arity is unparsable, not a number', () {
       expect(
         () => engine.evaluateBytes('MIN(A)', const [4]),
