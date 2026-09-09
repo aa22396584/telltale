@@ -121,6 +121,28 @@ void main() {
       expect(engine.evaluate('LOG10(A)', '41 00 64'), closeTo(2.0, 1e-6));
     });
 
+    test('LOG() is a complete token, not a substring', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      // `2LOG(1)` must not become 20. That is a confident wrong number.
+      expect(
+        thrownBy(() => engine.evaluateBytes('2LOG(1)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('BLOG(A)', const [1, 2])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(engine.evaluateBytes('2*LOG(1)', const []), closeTo(0.0, 1e-9));
+    });
+
     test('LOG() is natural log, not LOG10', () {
       expect(engine.evaluateBytes('LOG(1)', const []), closeTo(0.0, 1e-9));
       expect(engine.evaluateBytes('LOG(A)', const [10]), closeTo(math.log(10), 1e-9));

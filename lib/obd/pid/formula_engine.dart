@@ -313,7 +313,8 @@ class FormulaEngine {
   static final RegExp _signedPattern = RegExp(r'SIGNED\(([A-N])\)');
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
-  static final RegExp _logPattern = RegExp(r'LOG\(([^()]+)\)');
+  static final RegExp _logPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)');
   static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
@@ -709,7 +710,10 @@ class FormulaEngine {
     s = s
         .replaceAll('ABS(', _absSentinel)
         .replaceAll('LOG10(', _log10Sentinel)
-        .replaceAll('LOG(', _logSentinel)
+        .replaceAllMapped(
+          _namedCallPattern('LOG'),
+          (m) => '${m.group(1)}$_logSentinel',
+        )
         .replaceAll('SQRT(', _sqrtSentinel)
         .replaceAllMapped(
           _namedCallPattern('MIN'),
@@ -795,7 +799,7 @@ class FormulaEngine {
       });
       // Wiki `LOG` is ln, not LOG10. Answering LOG10's value here would be a
       // confident wrong number for every argument except 1.
-      s = _applyFunction(s, _logPattern, equation, (v) {
+      s = _applyPrefixedFunction(s, _logPattern, equation, (v) {
         if (v <= 0) {
           throw FormulaException(
             'LOG 的引數必須大於 0（收到 $v）',
@@ -886,6 +890,35 @@ class FormulaEngine {
       }
       final inner = _reduce(match.group(1)!, source);
       s = s.replaceRange(match.start, match.end, _format(fn(inner)));
+    }
+  }
+
+  /// Like [_applyFunction], but group 1 is a preceding non-identifier kept
+  /// in place so `2*LOG(1)` reduces and `2LOG(1)` does not become `20`.
+  String _applyPrefixedFunction(
+    String input,
+    RegExp pattern,
+    String source,
+    double Function(double) fn,
+  ) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final match = pattern.firstMatch(s);
+      if (match == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          'Formula nests functions too deeply',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      final inner = _reduce(match.group(2)!, source);
+      s = s.replaceRange(
+        match.start,
+        match.end,
+        '${match.group(1)}${_format(fn(inner))}',
+      );
     }
   }
 
