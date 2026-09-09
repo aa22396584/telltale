@@ -1638,8 +1638,11 @@ void main() {
       final asJ1939 = await onUserCan(0x42);
       await expectLater(
         asJ1939.readDtcs(DtcKind.stored),
-        throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('J1939'))),
+        throwsA(isA<DtcReadException>().having(
+          (e) => e.message,
+          'message',
+          contains('This bus is SAE J1939'),
+        )),
       );
       await asJ1939.dispose();
 
@@ -3174,8 +3177,11 @@ void main() {
 
       await expectLater(
         engine.clearDtcs(),
-        throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('J1939'))),
+        throwsA(isA<DtcReadException>().having(
+          (e) => e.message,
+          'message',
+          contains('This bus is SAE J1939'),
+        )),
       );
       expect(transport.commandLog.skip(before), isNot(contains('04')),
           reason: 'nothing state-changing goes out on a bus this app has '
@@ -3236,8 +3242,19 @@ void main() {
       final engine = await _connect(transport);
       await expectLater(
         engine.readDtcs(DtcKind.stored),
-        throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('J1939'))),
+        throwsA(
+          isA<DtcReadException>()
+              .having(
+                (e) => e.message,
+                'message',
+                contains('This bus is SAE J1939'),
+              )
+              .having(
+                (e) => e.message,
+                'message',
+                isNot(contains('Reconnect')),
+              ),
+        ),
       );
       expect(await engine.readVin().catchError((Object e) => null), isNull);
       await engine.dispose();

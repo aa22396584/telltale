@@ -677,7 +677,7 @@ class PollingEngine {
     // no chance at all.
     if (DateTime.now().add(client.globalTimeout).isBefore(deadline)) return;
     throw const DtcReadException(
-      '掃描已達時間上限，這個項目沒有開始查詢。請重新掃描。',
+      'The scan reached its time limit before this item started. Scan again.',
       kind: DtcReadFailure.noAnswer,
     );
   }
@@ -690,7 +690,9 @@ class PollingEngine {
     if (captured == null) return;
     if (lifecycleEpoch?.call() == captured) return;
     throw DtcReadException(
-      message ?? '這次操作在中途被中斷（App 退到背景或連線變更），已停止。請重新操作。',
+      message ??
+          'This operation was interrupted mid-way (the app went to the '
+              'background or the connection changed) and has stopped. Try again.',
       kind: DtcReadFailure.disconnected,
       repeatWouldHarm: repeatWouldHarm,
     );
@@ -1114,8 +1116,9 @@ class PollingEngine {
   /// existed for went on speaking with the other one's voice.
   String? _busRefusal(String subject) {
     if (client.addressing.family == ObdBusFamily.j1939) {
-      return '這條匯流排是 SAE J1939（大型商用車與機具用），'
-          '不是這個 App 讀取的 OBD2 診斷協定，因此無法讀取$subject。';
+      return 'This bus is SAE J1939 (heavy commercial vehicles and machinery), '
+          'not the OBD2 diagnostic protocol this app reads, so $subject '
+          'cannot be read.';
     }
     // Asked of the resolved addressing, not of the protocol letter.
     //
@@ -1135,11 +1138,13 @@ class PollingEngine {
       );
       if (protocol == 'B' || protocol == 'C') {
         final parameter = protocol == 'B' ? 'PP 2C' : 'PP 2E';
-        return '這個轉接器設定為使用者自訂 CAN 協定 $protocol，'
-            '而它的框架格式由 $parameter 決定 —— 轉接器沒有回報這項設定'
-            '（AT PPS 無回應），因此無法確認匯流排格式，也就無法安全解讀$subject。';
+        return 'This adapter is set to user-defined CAN protocol $protocol, '
+            'whose framing is decided by $parameter — the adapter did not '
+            'report that setting (no AT PPS reply), so the bus format cannot '
+            'be confirmed and $subject cannot be decoded safely.';
       }
-      return '尚未確定車輛使用的匯流排協定，無法安全解讀$subject。請重新連線。';
+      return 'The vehicle bus protocol is not yet determined, so $subject '
+          'cannot be decoded safely. Reconnect.';
     }
     return null;
   }
@@ -1722,7 +1727,7 @@ class PollingEngine {
     // `NO DATA` the question itself produced, so the user was told the vehicle
     // might not support the PID when the truth is that the app cannot speak
     // this bus at all.
-    final refusal = _busRefusal('故障碼');
+    final refusal = _busRefusal('fault codes');
     if (refusal != null) throw DtcReadException(refusal);
 
     // Asked of the whole emissions system, not of the engine controller. A
@@ -2434,7 +2439,7 @@ class PollingEngine {
     // matters most: this is the request that changes the vehicle. A J1939 bus
     // has no Mode 04, and an undetermined one cannot be shown to have carried
     // the request at all.
-    final refusal = _busRefusal('故障碼');
+    final refusal = _busRefusal('fault codes');
     if (refusal != null) throw DtcReadException(refusal);
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
@@ -2986,7 +2991,7 @@ class PollingEngine {
   /// Null means the question could not be answered, which is not the same as
   /// "no". Every caller has to treat it that way.
   Future<MilStatus?> readMilStatus({DateTime? deadline}) async {
-    if (_busRefusal('故障燈狀態') != null) return null;
+    if (_busRefusal('MIL status') != null) return null;
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
     client.knownResponders = _knownResponders ?? const {};
@@ -3151,7 +3156,7 @@ class PollingEngine {
     // next thing the screen offers is a clear — which destroys the frame that
     // was there all along and could not be read this time. One Mode 02 timeout
     // on a clone adapter, and the one record of the fault happening is gone.
-    final refusal = _busRefusal('凍結幀');
+    final refusal = _busRefusal('freeze frame');
     if (refusal != null) throw DtcReadException(refusal);
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
@@ -3460,7 +3465,7 @@ class PollingEngine {
     // one reassembled message — so an undetermined protocol means picking a
     // parser at random, and the failure mode is a plausible-looking 17
     // characters rather than an error.
-    final refusal = _busRefusal('車身碼');
+    final refusal = _busRefusal('VIN');
     if (refusal != null) throw DtcReadException(refusal);
     final response = await client.sendGlobal(
       '0902',
