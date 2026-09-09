@@ -12,6 +12,7 @@ import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/transcript.dart';
 import 'package:torque_obd/obd/transcript_store.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/state/app_share_coordinator.dart';
 import 'package:torque_obd/state/app_share_entry_controller.dart';
 import 'package:torque_obd/state/artifact_operation_gate.dart';
@@ -145,6 +146,39 @@ void main() {
       expect(pid.request.mimeType, 'text/csv');
       expect(pid.request.subject, 'Telltale custom PID definitions');
       expect(pid.sourceKind, ShareSourceKind.pidCsv);
+    },
+  );
+
+  test(
+    'share-sheet subjects follow the preference at call time, not construction',
+    () async {
+      final root = Directory.systemTemp.createTempSync('share-locale-pref');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final platform = _CapturePlatform();
+      final coordinator = AppShareCoordinator(
+        rootDirectory: () async => root,
+        policy: const _Policy(),
+        artifactGate: ArtifactOperationGate(),
+        platform: platform,
+        idSource: () => 'cccccccccccccccccccccccccccccccc',
+        nowUtc: () => DateTime.utc(2026, 8, 30),
+        availableBytes: (_) async => 64 * 1024 * 1024,
+      );
+      expect(
+        await coordinator.initialize(),
+        AppShareInitializationOutcome.ready,
+      );
+      var preference = LocalePreference.english;
+      final controller = AppShareEntryController(
+        coordinator,
+        readPreference: () => preference,
+      );
+      preference = LocalePreference.traditionalChinese;
+      final outcome = await controller.sharePidCsv(
+        pids: [PidLibrary.all.first],
+      );
+      expect(outcome.result, AppShareResult.selected);
+      expect(platform.capture!.request.subject, 'Telltale 自訂 PID 定義');
     },
   );
 

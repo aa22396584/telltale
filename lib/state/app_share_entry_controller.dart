@@ -25,13 +25,32 @@ import 'locale_settings.dart';
 /// admission. Descriptor-backed sources remain lazy so no file handle is open
 /// while another artifact operation owns the global gate.
 final class AppShareEntryController {
-  const AppShareEntryController(this._coordinator, {this._l10n});
+  const AppShareEntryController(
+    this._coordinator, {
+    this._l10n,
+    this.readPreference,
+  });
 
   final AppShareCoordinator _coordinator;
   final AppLocalizations? _l10n;
 
-  AppLocalizations get _copy =>
-      _l10n ?? lookupAppLocalizations(englishLocale);
+  /// Production reads this at share time so a `system` preference still
+  /// follows `platformDispatcher.locales` after `didChangeLocales`.
+  /// Tests that omit it keep English, matching the no-l10n default.
+  final LocalePreference Function()? readPreference;
+
+  AppLocalizations get _copy {
+    final cached = _l10n;
+    if (cached != null) return cached;
+    final read = readPreference;
+    if (read == null) return lookupAppLocalizations(englishLocale);
+    return lookupAppLocalizations(
+      resolveAppLocale(
+        preference: read(),
+        deviceLocales: WidgetsBinding.instance.platformDispatcher.locales,
+      ),
+    );
+  }
 
   Future<AppShareOutcome> shareTelemetryCsv({
     required Directory documents,
@@ -142,16 +161,10 @@ final class AppShareEntryController {
 }
 
 final appShareEntryControllerProvider = Provider<AppShareEntryController>(
-  (ref) {
-    final locale = resolveAppLocale(
-      preference: ref.watch(localePreferenceProvider),
-      deviceLocales: WidgetsBinding.instance.platformDispatcher.locales,
-    );
-    return AppShareEntryController(
-      ref.watch(appShareCoordinatorProvider),
-      l10n: lookupAppLocalizations(locale),
-    );
-  },
+  (ref) => AppShareEntryController(
+    ref.watch(appShareCoordinatorProvider),
+    readPreference: () => ref.read(localePreferenceProvider),
+  ),
 );
 
 Stream<List<int>> _offIsolateExportStream(String path, {required bool json}) =>
