@@ -10,6 +10,8 @@ does not create a worktree; required evidence is read from git blobs at
 that SHA instead of the caller's dirty tree. `--review` re-runs a completed
 author handoff and writes `review.json` beside it, or `reviewer.json` when
 the author path is already named `review.json`; it cannot be dry-run.
+`--campaign` refuses a demonstration seed: software tasks need
+`required_evidence` objects with `path` and `sha256`.
 """
 from __future__ import annotations
 
@@ -616,6 +618,7 @@ def run_task(
     isolate_dir: Path | None = None,
     base_sha: str | None = None,
     review: bool = False,
+    campaign: bool = False,
 ) -> int:
     try:
         data = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -627,6 +630,7 @@ def run_task(
         data,
         plan_path=plan_path,
         check_artifacts=not isolate,
+        campaign=campaign,
     )
     if errors:
         raise RunnerError("invalid plan: " + "; ".join(errors))
@@ -827,6 +831,14 @@ def main(argv: list[str]) -> int:
             "reviewer.json if the author path is already named review.json"
         ),
     )
+    parser.add_argument(
+        "--campaign",
+        action="store_true",
+        help=(
+            "refuse demonstration-seed empty required_evidence on software "
+            "tasks; each entry needs path and sha256"
+        ),
+    )
     args = parser.parse_args(argv[1:])
     try:
         return run_task(
@@ -840,6 +852,7 @@ def main(argv: list[str]) -> int:
             isolate_dir=Path(args.isolate_dir) if args.isolate_dir else None,
             base_sha=args.base_sha,
             review=args.review,
+            campaign=args.campaign,
         )
     except RunnerError as exc:
         print(str(exc), file=sys.stderr)
