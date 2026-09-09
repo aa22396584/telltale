@@ -2603,8 +2603,8 @@ class PollingEngine {
       });
       if (pending) {
         throw const DtcReadException(
-          'ECU 已接受清除指令但尚未回報完成（response pending）。'
-          '請稍候再重新掃描確認，不要立刻重複清除。',
+          'The controller accepted the clear but has not reported it finished (response pending). '
+          'Wait, then rescan to check — do not send another clear immediately.',
           kind: DtcReadFailure.pending,
           repeatWouldHarm: true,
         );
@@ -2749,8 +2749,8 @@ class PollingEngine {
           bytes[1] == 0x04 &&
           bytes[2] == 0x78) {
         throw const DtcReadException(
-          'ECU 已接受清除指令但尚未回報完成（response pending）。'
-          '請稍候再重新掃描確認，不要立刻重複清除。',
+          'The controller accepted the clear but has not reported it finished (response pending). '
+          'Wait, then rescan to check — do not send another clear immediately.',
           kind: DtcReadFailure.pending,
           repeatWouldHarm: true,
         );
@@ -2768,7 +2768,10 @@ class PollingEngine {
       // change what a person should do next are named; the rest keep the
       // general message rather than reciting a number.
       if (bytes.first == 0x7F && bytes.length >= 3 && bytes[1] == 0x04) {
-        final source = frame.sourceId == null ? '' : '控制器 ${frame.sourceId} ';
+        final id = frame.sourceId;
+        final source = (id == null || id.isEmpty)
+            ? 'A controller'
+            : 'Controller $id';
         // Whether anybody already did it.
         //
         // These messages used to end in 「再試一次」 unconditionally. On a
@@ -2831,22 +2834,22 @@ class PollingEngine {
         // same failure as an explanation with a live control, from the other
         // side.
         const harmWarning =
-            '已有其他控制器完成清除，所以不要再送一次全車清除 —— '
-            '重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+            'At least one other controller has finished the clear, so do not send another whole-vehicle clear — '
+            'repeating it resets emissions readiness on controllers that already finished.';
         // Three states, because there are three, and the middle one used to
         // borrow the wrong sentence from whichever side it fell on.
         const unreadableWarning =
-            '另有控制器的回覆無法判讀，可能已經清除，'
-            '所以不要再送一次全車清除 —— '
-            '重複清除會讓已完成的控制器再一次重置排放就緒狀態。';
+            'Another controller sent a reply that could not be read and may already have cleared, '
+            'so do not send another whole-vehicle clear — '
+            'repeating it resets emissions readiness on controllers that already finished.';
         final prohibition = someoneCleared
             ? harmWarning
             : couldHaveActed
             ? unreadableWarning
             : '';
         final retry = couldHaveActed
-            ? '$prohibition請重新掃描確認哪些故障碼還在。'
-            : '請稍候再試一次。';
+            ? '$prohibition Rescan to see which fault codes remain.'
+            : 'Wait, then try again.';
         switch (bytes[2]) {
           case 0x22: // conditionsNotCorrect
             // Composed rather than suffixed, because the order of these two
@@ -2860,14 +2863,14 @@ class PollingEngine {
             // that re-clears the controller which already finished, costing
             // another drive cycle.
             final why =
-                '$source拒絕清除，因為目前的車輛狀態不允許。'
-                '多數控制器在引擎運轉時不會清除故障記憶。';
+                '$source refused the clear because the vehicle state does not allow it. '
+                'Most controllers will not erase fault memory while the engine is running.';
             throw DtcReadException(
               couldHaveActed
-                  ? '$why$prohibition'
-                        '請先將電門轉到 ON 但不要發動引擎，'
-                        '再重新掃描確認哪些故障碼還在。'
-                  : '$why請將電門轉到 ON 但不要發動引擎，然後再試一次。',
+                  ? '$why $prohibition '
+                        'Turn the ignition ON without starting the engine, '
+                        'then rescan to see which fault codes remain.'
+                  : '$why Turn the ignition ON without starting the engine, then try again.',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
               issueDetail: frame.sourceId,
@@ -2882,10 +2885,10 @@ class PollingEngine {
             // two halves of one instruction have to agree.
             throw DtcReadException(
               couldHaveActed
-                  ? '$source不支援清除服務（Mode 04）。'
-                        '$prohibition請重新掃描確認哪些故障碼還在。'
-                  : '$source不支援清除服務（Mode 04），這輛車的故障碼可能要用'
-                        '原廠設備才能清除。',
+                  ? '$source does not support the clear service (Mode 04). '
+                        '$prohibition Rescan to see which fault codes remain.'
+                  : '$source does not support the clear service (Mode 04). '
+                        "This vehicle's fault codes may need dealer equipment to clear.",
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
               issueDetail: frame.sourceId,
@@ -2893,7 +2896,7 @@ class PollingEngine {
             );
           case 0x21: // busyRepeatRequest
             throw DtcReadException(
-              '$source目前忙碌中。$retry',
+              '$source is busy. $retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
               issueDetail: frame.sourceId,
@@ -2905,8 +2908,8 @@ class PollingEngine {
             // dealer equipment. The button stays live because a retry costs
             // nothing, not because it is likely to work.
             throw DtcReadException(
-              '$source要求先通過安全認證才允許清除，'
-              '這需要原廠或專用診斷設備。'
+              '$source requires a security unlock before it will clear. '
+              'That needs dealer or dedicated diagnostic equipment. '
               '$prohibition',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
@@ -2928,8 +2931,8 @@ class PollingEngine {
             // manufacturer-specific NRC is worse than quoting it: this is the
             // sentence somebody reads out over the phone.
             throw DtcReadException(
-              '$source拒絕清除（原因碼 '
-              '0x${bytes[2].toRadixString(16).toUpperCase().padLeft(2, '0')}）。'
+              '$source refused the clear (reason code '
+              '0x${bytes[2].toRadixString(16).toUpperCase().padLeft(2, '0')}). '
               '$retry',
               kind: DtcReadFailure.error,
               repeatWouldHarm: couldHaveActed,
