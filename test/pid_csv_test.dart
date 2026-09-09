@@ -113,6 +113,39 @@ void main() {
       expect(restored.pids.single.redlineFrom, isNull);
       expect(restored.pids.single.variant, isNull);
     });
+
+    test(
+      'streamed Torque subset preserves exact subset bytes in bounded chunks',
+      () async {
+        const original = Pid(
+          name: 'Transmission Fluid Temp',
+          shortName: 'Trans',
+          modeAndPid: '221E1C',
+          equation: '((A*256)+B)/8-40',
+          minValue: -40,
+          maxValue: 215,
+          units: '°C',
+          header: '7E1',
+          priority: PriorityTier.high,
+          redlineFrom: 120,
+          variant: 'tf',
+          isCustom: true,
+        );
+        final chunks = await PidCsv.streamTorqueSubset(
+          [original],
+          maxChunkBytes: 32,
+        ).toList();
+        expect(chunks.every((chunk) => chunk.length <= 32), isTrue);
+        expect(
+          chunks.expand((chunk) => chunk),
+          utf8.encode(PidCsv.exportTorqueSubset([original])),
+        );
+        expect(
+          utf8.decode(chunks.expand((chunk) => chunk).toList()),
+          isNot(contains('Priority')),
+        );
+      },
+    );
   });
 
   group('parsing files from elsewhere', () {

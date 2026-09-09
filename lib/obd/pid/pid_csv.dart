@@ -252,21 +252,41 @@ abstract final class PidCsv {
     ]);
   }
 
+  /// Incremental form of [exportTorqueSubset], same bytes, bounded chunks.
+  static Stream<List<int>> streamTorqueSubset(
+    Iterable<Pid> pids, {
+    int maxChunkBytes = 64 * 1024,
+  }) => _streamRows(
+    rows: () sync* {
+      yield torqueHeader;
+      for (final pid in pids) {
+        yield pid.toCsvRow().sublist(0, torqueHeader.length);
+      }
+    },
+    maxChunkBytes: maxChunkBytes,
+  );
+
   /// Emits the canonical export incrementally without a whole-file String.
   static Stream<List<int>> stream(
     Iterable<Pid> pids, {
     int maxChunkBytes = 64 * 1024,
-  }) async* {
-    if (maxChunkBytes <= 0) throw ArgumentError.value(maxChunkBytes);
-    final rowCodec = Csv(lineDelimiter: '\r\n');
-    var first = true;
-    Iterable<List<dynamic>> rows() sync* {
+  }) => _streamRows(
+    rows: () sync* {
       yield header;
       for (final pid in pids) {
         yield pid.toCsvRow();
       }
-    }
+    },
+    maxChunkBytes: maxChunkBytes,
+  );
 
+  static Stream<List<int>> _streamRows({
+    required Iterable<List<dynamic>> Function() rows,
+    required int maxChunkBytes,
+  }) async* {
+    if (maxChunkBytes <= 0) throw ArgumentError.value(maxChunkBytes);
+    final rowCodec = Csv(lineDelimiter: '\r\n');
+    var first = true;
     for (final row in rows()) {
       final bytes = utf8.encode(
         '${first ? '\ufeff' : '\r\n'}${rowCodec.encode([row])}',

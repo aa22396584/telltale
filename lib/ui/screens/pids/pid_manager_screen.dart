@@ -19,6 +19,7 @@ import '../../../obd/telemetry.dart';
 import '../../../state/obd_session.dart';
 import '../../../state/pid_mutation_lock.dart';
 import '../../../state/pid_registry.dart';
+import '../../../state/app_share_coordinator.dart';
 import '../../../state/app_share_entry_controller.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/share_copy.dart';
@@ -36,7 +37,7 @@ class PidManagerScreen extends ConsumerStatefulWidget {
   ConsumerState<PidManagerScreen> createState() => _PidManagerScreenState();
 }
 
-enum _PidMenuAction { arrange, importCsv, exportCsv }
+enum _PidMenuAction { arrange, importCsv, exportCsv, exportTorqueSubset }
 
 enum SupportedPidBulkUiState {
   pending,
@@ -239,6 +240,8 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         await _importCsv();
       case _PidMenuAction.exportCsv:
         await _exportCsv();
+      case _PidMenuAction.exportTorqueSubset:
+        await _exportTorqueSubsetCsv();
     }
   }
 
@@ -331,7 +334,22 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     );
   }
 
-  Future<void> _exportCsv() async {
+  Future<void> _exportCsv() => _exportCustomPids(
+        share: (custom, origin) => ref
+            .read(appShareEntryControllerProvider)
+            .sharePidCsv(pids: custom, sharePositionOrigin: origin),
+      );
+
+  Future<void> _exportTorqueSubsetCsv() => _exportCustomPids(
+        share: (custom, origin) => ref
+            .read(appShareEntryControllerProvider)
+            .shareTorqueSubsetCsv(pids: custom, sharePositionOrigin: origin),
+      );
+
+  Future<void> _exportCustomPids({
+    required Future<AppShareOutcome> Function(List<Pid> custom, Rect? origin)
+        share,
+  }) async {
     final l10n = AppLocalizations.of(context);
     final custom = ref.read(pidRegistryProvider.notifier).customPids;
     if (custom.isEmpty) {
@@ -344,9 +362,7 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
       final origin = box == null
           ? null
           : box.localToGlobal(Offset.zero) & box.size;
-      final outcome = await ref
-          .read(appShareEntryControllerProvider)
-          .sharePidCsv(pids: custom, sharePositionOrigin: origin);
+      final outcome = await share(custom, origin);
       if (outcome.error != null) {
         _snack(shareErrorText(l10n, outcome.error!));
       }
@@ -463,6 +479,18 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                                   size: 20,
                                 ),
                                 title: Text(l10n.pidManagerExportCsv),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: _PidMenuAction.exportTorqueSubset,
+                              child: ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(
+                                  Icons.table_chart_outlined,
+                                  size: 20,
+                                ),
+                                title: Text(l10n.pidManagerExportTorqueCsv),
                               ),
                             ),
                           ],

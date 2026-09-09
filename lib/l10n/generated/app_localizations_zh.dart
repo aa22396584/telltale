@@ -1305,6 +1305,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pidManagerExportCsv => '匯出自訂 PID';
 
   @override
+  String get pidManagerExportTorqueCsv => '匯出 Torque 相容 CSV';
+
+  @override
   String get pidManagerHeadline => 'PID 管理';
 
   @override
@@ -3800,6 +3803,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sharePidCsvSubject => 'Telltale 自訂 PID 定義';
+
+  @override
+  String get shareTorqueSubsetCsvSubject => 'Torque 相容 PID 定義';
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';
@@ -5136,6 +5142,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pidManagerExportCsv => '匯出自訂 PID';
 
   @override
+  String get pidManagerExportTorqueCsv => '匯出 Torque 相容 CSV';
+
+  @override
   String get pidManagerHeadline => 'PID 管理';
 
   @override
@@ -7631,6 +7640,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get sharePidCsvSubject => 'Telltale 自訂 PID 定義';
+
+  @override
+  String get shareTorqueSubsetCsvSubject => 'Torque 相容 PID 定義';
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';

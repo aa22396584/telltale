@@ -403,7 +403,7 @@ void main() {
     _expectNoTearOff(tester, 'PID manager empty state');
     _expectNoChinese(tester, 'PID manager empty state');
 
-    // The overflow menu: three destinations that are otherwise never built.
+    // The overflow menu: four destinations that are otherwise never built.
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
     _expectNoTearOff(tester, 'PID manager menu');
