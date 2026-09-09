@@ -597,6 +597,9 @@ def _run_command(
             result["executed"] = executed
         if skipped is not None:
             result["skipped"] = skipped
+        case_ids = validate_plan.parse_flutter_case_ids(stdout)
+        if case_ids is not None:
+            result["case_ids"] = case_ids
     return result
 
 

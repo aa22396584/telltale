@@ -558,6 +558,47 @@ def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
     return int(compact.group(1)), int(compact.group(2) or 0)
 
 
+def parse_flutter_case_ids(stdout: str) -> list[str] | None:
+    """Executed Flutter JSON case names, or None when IDs are missing/untyped."""
+    names: dict[object, str] = {}
+    case_ids: list[str] = []
+    saw_json = False
+    missing = False
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        kind = payload.get("type")
+        if kind == "test":
+            saw_json = True
+            name = payload.get("name")
+            if isinstance(name, str) and name.strip():
+                names[payload.get("id")] = name
+        elif kind == "testDone":
+            saw_json = True
+            if payload.get("hidden") is True:
+                continue
+            if payload.get("result") == "skipped":
+                continue
+            name = names.get(payload.get("testID"))
+            if not isinstance(name, str) or not name.strip():
+                missing = True
+            else:
+                case_ids.append(name)
+    if not saw_json:
+        return None
+    _, saw_done = _flutter_json_events(stdout)
+    if not saw_done or missing:
+        return None
+    return case_ids
+
+
 def _validate_completed_evidence(evidence: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(evidence, list) or not evidence:
@@ -599,6 +640,24 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
                 errors.append(
                     f"{prefix} executed {executed!r} cannot stand in for required cases"
                 )
+            elif json_mode:
+                case_ids = parse_flutter_case_ids(stdout)
+                if (
+                    not isinstance(case_ids, list)
+                    or not case_ids
+                    or not all(
+                        isinstance(item_id, str) and item_id.strip()
+                        for item_id in case_ids
+                    )
+                ):
+                    errors.append(
+                        f"{prefix} flutter JSON evidence is missing typed case IDs"
+                    )
+                elif len(case_ids) != executed:
+                    errors.append(
+                        f"{prefix} case ID count {len(case_ids)} "
+                        f"does not match executed {executed}"
+                    )
         elif executed is not None:
             if not isinstance(executed, int) or executed <= 0:
                 errors.append(
