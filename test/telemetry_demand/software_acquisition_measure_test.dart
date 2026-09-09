@@ -71,17 +71,19 @@ void main() {
     final stamps = <DateTime>[];
     final faulted = <String>{};
     DateTime? lastRpmAt;
-    await for (final snapshot in engine.snapshots.timeout(
-      const Duration(seconds: 20),
-    )) {
-      faulted.addAll(snapshot.faults.keys);
-      final reading = snapshot.readings[PidLibrary.engineRpm.id];
-      if (reading == null) continue;
-      if (!isFreshAcquisition(reading, lastRpmAt)) continue;
-      lastRpmAt = reading.timestamp;
-      stamps.add(reading.timestamp);
-      if (stamps.length >= _minimumObservations) break;
-    }
+    // includeProfileDerivedInputs: false still schedules speed and fuel rate.
+    const scheduledChannels = 3;
+    await Future<void>(() async {
+      await for (final snapshot in engine.snapshots) {
+        faulted.addAll(snapshot.faults.keys);
+        final reading = snapshot.readings[PidLibrary.engineRpm.id];
+        if (reading == null) continue;
+        if (!isFreshAcquisition(reading, lastRpmAt)) continue;
+        lastRpmAt = reading.timestamp;
+        stamps.add(reading.timestamp);
+        if (stamps.length >= _minimumObservations) return;
+      }
+    }).timeout(const Duration(seconds: 20));
 
     expect(
       stamps.length,
@@ -104,7 +106,8 @@ void main() {
       'quantile': 'nearest-rank',
       'minimumObservations': _minimumObservations,
       'observations': stamps.length,
-      'channels': 1,
+      'channels': scheduledChannels,
+      'scheduledModeAndPid': const ['010C', '010D', '015E'],
       'firstObservationMs': firstMs,
       'interarrivalMs': {
         'n': gaps.length,
