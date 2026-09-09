@@ -3694,7 +3694,7 @@ void main() {
         await expectLater(
           engine.clearDtcs(),
           throwsA(isA<DtcReadException>().having(
-              (e) => e.message, 'message', contains('未能辨識的位址：18'))),
+              (e) => e.message, 'message', contains('unrecognised addresses: 18'))),
           reason: 'and a clear measured against everyone *but* 18 is not a '
               'clear',
         );
@@ -3909,7 +3909,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('未能辨識的位址：008'))
+            .having((e) => e.message, 'message', contains('unrecognised addresses: 008'))
             .having(
                 (e) => e.message, 'message', isNot(contains('控制器沒有回應')))),
         reason: 'an unaccounted-for reply is an open question, not a silent '
@@ -4025,7 +4025,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('無法判斷'))),
+            .having((e) => e.message, 'message', contains('could not be identified'))),
         reason: 'refusing to guess what that token was is right; reporting a '
             'clear as if the question had never come up is not',
       );
@@ -4106,7 +4106,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('未能辨識的位址：430'))
+            .having((e) => e.message, 'message', contains('unrecognised addresses: 430'))
             .having(
                 (e) => e.message, 'message', isNot(contains('控制器沒有回應')))),
       );
@@ -4249,7 +4249,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('未能辨識的位址：430'))
+            .having((e) => e.message, 'message', contains('unrecognised addresses: 430'))
             .having((e) => e.message, 'message',
                 isNot(contains('控制器沒有回應')))),
         reason: 'corroboration has to be about the identifier, not about what '
@@ -4305,7 +4305,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('未能辨識的位址：430'))),
+            .having((e) => e.message, 'message', contains('unrecognised addresses: 430'))),
         reason: 'the second read learned nothing, so it cannot have learned '
             'that the first read’s open question was closed',
       );
@@ -8544,7 +8544,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('沒有任何控制器回報清除完成'))
+            .having((e) => e.message, 'message', contains('No controller reported the clear finished'))
             .having((e) => e.message, 'message', isNot(contains('已清除，但')))
             .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isTrue)),
       );

@@ -1435,10 +1435,10 @@ class PollingEngine {
       final unresolved = _unresolvedIdentities[kind] ?? const <String>{};
       if (unresolved.isNotEmpty) {
         throw DtcReadException(
-          '有 ${unresolved.length} 筆回應無法判斷是哪個控制器送出的'
-          '（未能辨識的位址：${unresolved.join('、')}）。'
-          '因此無法確認是不是每個控制器都回應了。'
-          '已讀到的結果仍然有效，但不能當作全車結果。請重新掃描。',
+          'There are ${unresolved.length} replies whose controller could '
+          'not be identified (unrecognised addresses: ${unresolved.join(', ')}). '
+          'It is therefore not known whether every controller answered. '
+          'The results that were read are still valid, but this cannot be treated as a whole-vehicle result. Scan again.',
           kind: DtcReadFailure.noAnswer,
           partial: result,
           terminalSources: Set.unmodifiable(heard),
@@ -2427,10 +2427,10 @@ class PollingEngine {
     final unresolved = openIdentityQuestions;
     if (unresolved.isNotEmpty) {
       throw DtcReadException(
-        '掃描時有回應無法判斷是哪個控制器送出的'
-        '（未能辨識的位址：${unresolved.join('、')}）。'
-        '因此無法確認清除指令會送到哪些控制器。'
-        '請重新掃描；若該位址一直沒有再出現，請重新連線後再試。',
+        'A previous scan had replies whose controller could not be identified '
+        '(unrecognised addresses: ${unresolved.join(', ')}). '
+        'It is therefore not known which controllers a clear would reach. '
+        'Scan again; if that address does not reappear, reconnect and try again.',
         kind: DtcReadFailure.noAnswer,
         unresolvedSources: Set.unmodifiable(unresolved),
       );
@@ -2567,10 +2567,10 @@ class PollingEngine {
       // That reads as "most of it worked", and somebody who believes it stops
       // looking while the fault is still set.
       throw DtcReadException(
-        '清除指令的回應中有無法判斷來源的資料'
-        '（未能辨識的位址：${openIdentityQuestions.join('、')}）。'
-        '${someoneFinished ? '已有控制器回報清除完成，但無法確認其餘控制器。' : '沒有任何控制器回報清除完成。'}'
-        '請重新掃描確認，不要重複清除。',
+        'The clear reply included data whose source could not be identified '
+        '(unrecognised addresses: ${openIdentityQuestions.join(', ')}). '
+        '${someoneFinished ? 'At least one controller reported the clear finished, but the rest could not be confirmed. ' : 'No controller reported the clear finished. '}'
+        'Rescan to check; do not send another clear.',
         kind: DtcReadFailure.noAnswer,
         unresolvedSources: Set.unmodifiable(openIdentityQuestions),
         repeatWouldHarm: true,
