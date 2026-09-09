@@ -385,6 +385,68 @@ void main() {
       );
     });
 
+    test('SIGNED24() is 24-bit two\'s complement, not 8-bit or 16-bit', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('SIGNED24(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('SIGNED24(8388607)', const []),
+        closeTo(8388607.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED24(8388608)', const []),
+        closeTo(-8388608.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED24(16777215)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      // Low 24 bits of 16777216 are 0. Answering 16777216 would not be 24-bit.
+      expect(
+        engine.evaluateBytes('SIGNED24(16777216)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8(A)', const [255]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16(A)', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED24(A)', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2SIGNED24(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED24(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        engine.evaluateBytes('ABS(SIGNED24(8388608))', const []),
+        closeTo(8388608.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED24((A-1))', const [0]),
+        closeTo(-1.0, 1e-9),
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
