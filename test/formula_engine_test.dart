@@ -937,6 +937,31 @@ void main() {
         closeTo(40.0, 1e-9),
       );
     });
+
+    test('intermediates below 5e-17 are not rounded to zero', () {
+      // toStringAsFixed(16) made MAX(4e-18:0)*1e19 publish 0.
+      expect(
+        engine.evaluateBytes(
+          'MAX(0.000000000000000004:0)*10000000000000000000',
+          const [],
+        ),
+        closeTo(40.0, 1e-6),
+      );
+      expect(
+        engine.evaluateBytes(
+          'ABS(0.000000000000000004)*10000000000000000000',
+          const [],
+        ),
+        closeTo(40.0, 1e-6),
+      );
+      expect(
+        engine.evaluateBytes(
+          'MIN(-0.000000000000000004:0)*10000000000000000000',
+          const [],
+        ),
+        closeTo(-40.0, 1e-6),
+      );
+    });
   });
 
   _editorValidation();
