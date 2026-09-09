@@ -7096,6 +7096,37 @@ void main() {
       );
       await engine.dispose();
     });
+
+    test('a later refusal is not an extra answered controller', () async {
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: {..._physicsReplies()},
+          ),
+        ],
+      );
+      transport.forceReplySequence('03', [
+        '7E8 04 43 01 03 01\r7E9 03 7F 03 78',
+        '7E9 03 7F 03 11',
+        '7E9 03 7F 03 11',
+      ]);
+
+      final engine = await _connect(transport);
+      await expectLater(
+        engine.readDtcs(DtcKind.stored),
+        throwsA(isA<DtcReadException>()
+            .having((e) => e.partial.map((d) => d.code), 'partial',
+                contains('P0301'))
+            .having((e) => e.refusedCount, 'refusedCount', 1)
+            .having((e) => e.answeredCount, 'answeredCount', 1)),
+        reason: 'a refusal is terminal, not a second positive answer',
+      );
+      await engine.dispose();
+    });
   });
 
   group('a header the app cannot restore is not a header it may guess', () {
