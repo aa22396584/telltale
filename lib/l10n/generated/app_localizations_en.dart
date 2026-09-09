@@ -1382,32 +1382,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pidImportLandedClean(int count) {
-    return 'Imported $count custom PIDs.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count custom PIDs.',
+      one: 'Imported 1 custom PID.',
+    );
+    return '$_temp0';
   }
 
   @override
   String pidImportLandedWithNotes(int count, String notes) {
-    return 'Imported $count items, $notes.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count items, $notes.',
+      one: 'Imported 1 item, $notes.',
+    );
+    return '$_temp0';
   }
 
   @override
   String pidImportNoteSkippedRows(int count) {
-    return '$count rows had problems and were skipped';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows had problems and were skipped',
+      one: '1 row had problems and was skipped',
+    );
+    return '$_temp0';
   }
 
   @override
   String pidImportNoteDefaultedRanges(int count) {
-    return '$count rows used the default gauge range';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows used the default gauge range',
+      one: '1 row used the default gauge range',
+    );
+    return '$_temp0';
   }
 
   @override
   String pidImportNoteReplaced(int count) {
-    return '$count items replaced existing definitions';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items replaced existing definitions',
+      one: '1 item replaced an existing definition',
+    );
+    return '$_temp0';
   }
 
   @override
   String pidImportNoteDuplicatesInFile(int count) {
-    return '$count rows duplicated another row in the file and were skipped';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows duplicated another row in the file and were skipped',
+      one: '1 row duplicated another row in the file and was skipped',
+    );
+    return '$_temp0';
   }
 
   @override

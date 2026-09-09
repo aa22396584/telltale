@@ -427,6 +427,13 @@ void main() {
     );
     expect(pidImportOutcomeText(en, clean), 'Imported 3 custom PIDs.');
     expect(pidImportOutcomeText(zh, clean), '已匯入 3 項自訂 PID。');
+    const one = PidImportOutcome(
+      inserted: 1,
+      replaced: 0,
+      duplicatesInFile: [],
+    );
+    expect(pidImportOutcomeText(en, one), 'Imported 1 custom PID.');
+    expect(pidImportOutcomeText(zh, one), '已匯入 1 項自訂 PID。');
 
     const replacing = PidImportOutcome(
       inserted: 1,
@@ -446,7 +453,7 @@ void main() {
     );
     expect(
       pidImportOutcomeText(en, duped),
-      'Imported 1 items, 1 rows duplicated another row in the file and were skipped.',
+      'Imported 1 item, 1 row duplicated another row in the file and was skipped.',
     );
     expect(pidImportOutcomeText(zh, duped), '匯入 1 項，1 行與檔案內其他行重複已略過。');
 
@@ -459,7 +466,7 @@ void main() {
       pidImportOutcomeText(en, messy, skippedRows: 4, defaultedRanges: 2),
       'Imported 2 items, 4 rows had problems and were skipped, '
       '2 rows used the default gauge range, '
-      '1 items replaced existing definitions, '
+      '1 item replaced an existing definition, '
       '2 rows duplicated another row in the file and were skipped.',
     );
     expect(

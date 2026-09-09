@@ -2310,37 +2310,37 @@ abstract class AppLocalizations {
   /// PidImportOutcome snack when every counted row landed and nothing was skipped, replaced, or defaulted. {count} is landed = inserted + replaced.
   ///
   /// In en, this message translates to:
-  /// **'Imported {count} custom PIDs.'**
+  /// **'{count, plural, =1{Imported 1 custom PID.} other{Imported {count} custom PIDs.}}'**
   String pidImportLandedClean(int count);
 
   /// PidImportOutcome snack when at least one note is present. {notes} is pidListSeparator-joined clauses; never spell the clauses into this sentence.
   ///
   /// In en, this message translates to:
-  /// **'Imported {count} items, {notes}.'**
+  /// **'{count, plural, =1{Imported 1 item, {notes}.} other{Imported {count} items, {notes}.}}'**
   String pidImportLandedWithNotes(int count, String notes);
 
   /// No description provided for @pidImportNoteSkippedRows.
   ///
   /// In en, this message translates to:
-  /// **'{count} rows had problems and were skipped'**
+  /// **'{count, plural, =1{1 row had problems and was skipped} other{{count} rows had problems and were skipped}}'**
   String pidImportNoteSkippedRows(int count);
 
   /// No description provided for @pidImportNoteDefaultedRanges.
   ///
   /// In en, this message translates to:
-  /// **'{count} rows used the default gauge range'**
+  /// **'{count, plural, =1{1 row used the default gauge range} other{{count} rows used the default gauge range}}'**
   String pidImportNoteDefaultedRanges(int count);
 
   /// No description provided for @pidImportNoteReplaced.
   ///
   /// In en, this message translates to:
-  /// **'{count} items replaced existing definitions'**
+  /// **'{count, plural, =1{1 item replaced an existing definition} other{{count} items replaced existing definitions}}'**
   String pidImportNoteReplaced(int count);
 
   /// No description provided for @pidImportNoteDuplicatesInFile.
   ///
   /// In en, this message translates to:
-  /// **'{count} rows duplicated another row in the file and were skipped'**
+  /// **'{count, plural, =1{1 row duplicated another row in the file and was skipped} other{{count} rows duplicated another row in the file and were skipped}}'**
   String pidImportNoteDuplicatesInFile(int count);
 
   /// No description provided for @pidImportPickerFailed.

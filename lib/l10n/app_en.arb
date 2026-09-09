@@ -1226,7 +1226,7 @@
   },
   "pidExportNoCustomPids": "There are no custom PIDs to export.",
   "pidImportNothingToImport": "No definitions to import.",
-  "pidImportLandedClean": "Imported {count} custom PIDs.",
+  "pidImportLandedClean": "{count, plural, =1{Imported 1 custom PID.} other{Imported {count} custom PIDs.}}",
   "@pidImportLandedClean": {
     "description": "PidImportOutcome snack when every counted row landed and nothing was skipped, replaced, or defaulted. {count} is landed = inserted + replaced.",
     "placeholders": {
@@ -1235,7 +1235,7 @@
       }
     }
   },
-  "pidImportLandedWithNotes": "Imported {count} items, {notes}.",
+  "pidImportLandedWithNotes": "{count, plural, =1{Imported 1 item, {notes}.} other{Imported {count} items, {notes}.}}",
   "@pidImportLandedWithNotes": {
     "description": "PidImportOutcome snack when at least one note is present. {notes} is pidListSeparator-joined clauses; never spell the clauses into this sentence.",
     "placeholders": {
@@ -1247,7 +1247,7 @@
       }
     }
   },
-  "pidImportNoteSkippedRows": "{count} rows had problems and were skipped",
+  "pidImportNoteSkippedRows": "{count, plural, =1{1 row had problems and was skipped} other{{count} rows had problems and were skipped}}",
   "@pidImportNoteSkippedRows": {
     "placeholders": {
       "count": {
@@ -1255,7 +1255,7 @@
       }
     }
   },
-  "pidImportNoteDefaultedRanges": "{count} rows used the default gauge range",
+  "pidImportNoteDefaultedRanges": "{count, plural, =1{1 row used the default gauge range} other{{count} rows used the default gauge range}}",
   "@pidImportNoteDefaultedRanges": {
     "placeholders": {
       "count": {
@@ -1263,7 +1263,7 @@
       }
     }
   },
-  "pidImportNoteReplaced": "{count} items replaced existing definitions",
+  "pidImportNoteReplaced": "{count, plural, =1{1 item replaced an existing definition} other{{count} items replaced existing definitions}}",
   "@pidImportNoteReplaced": {
     "placeholders": {
       "count": {
@@ -1271,7 +1271,7 @@
       }
     }
   },
-  "pidImportNoteDuplicatesInFile": "{count} rows duplicated another row in the file and were skipped",
+  "pidImportNoteDuplicatesInFile": "{count, plural, =1{1 row duplicated another row in the file and was skipped} other{{count} rows duplicated another row in the file and were skipped}}",
   "@pidImportNoteDuplicatesInFile": {
     "placeholders": {
       "count": {
