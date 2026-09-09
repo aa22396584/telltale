@@ -190,8 +190,13 @@ void main() {
     expect(text, contains('Starting connection'));
     expect(
       text,
-      contains('Connection failed'),
+      contains('Connection failed:'),
       reason: 'and what it failed with, which is the whole point',
+    );
+    expect(
+      text,
+      isNot(contains('Connection failed：')),
+      reason: 'the English note uses an ASCII colon, not U+FF1A',
     );
   });
 

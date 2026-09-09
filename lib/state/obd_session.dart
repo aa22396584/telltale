@@ -1137,7 +1137,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     _completeEvidence(client, outcome: 'failed');
     // Before the teardown reads it. The sentence on screen is what the user
     // gets; this is what somebody can act on afterwards.
-    _attemptTranscript?.recordNote('$prefix：${detail ?? why}');
+    _attemptTranscript?.recordNote('$prefix: ${detail ?? why}');
     if (_superseded(generation)) {
       // This attempt's own client, not the shared teardown: whoever superseded
       // it has already torn down and published, and `_teardown()` here would
