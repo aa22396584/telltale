@@ -33,6 +33,8 @@ certifications of an adapter, diagnosis, repair, vehicle, or safety outcome.
   implementation decisions that affect hardware behaviour (Traditional Chinese).
 - [Vehicle data sources](vehicle-data-sources.md) — official offline snapshots,
   reproducibility hashes, per-field semantics, market coverage, and known gaps.
+- [Torque PID dialect](compatibility/torque-pid-dialect.md) — which wiki
+  functions, operators, and columns this formula engine actually implements.
 
 ## Localization
 

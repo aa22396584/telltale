@@ -3610,7 +3610,7 @@
   },
   "pidFormulaUnsupportedConstruct": "{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.",
   "@pidFormulaUnsupportedConstruct": {
-    "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.",
+    "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, LOOKUP, BARO(), …). Distinct from an unparsable typo.",
     "placeholders": {
       "term": { "type": "String" }
     }
