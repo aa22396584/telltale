@@ -345,6 +345,51 @@ class ValidateReportTest(unittest.TestCase):
                 msg="a lane that was not requested must not be swept as a side effect",
             )
 
+    def test_sleep_walk_lane_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(main(["--sleep-walk", "--output", str(output)]), 2)
+            self.assertFalse((output / "sleep-walk.json").exists())
+            self.assertFalse((output / "software.json").exists())
+
+    def test_sleep_walk_deletes_a_dangling_symlink(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "sleep-walk.json"
+            stale.symlink_to(output / "missing-target.json")
+            self.assertEqual(main(["--sleep-walk", "--output", str(output)]), 2)
+            self.assertFalse(stale.exists())
+            self.assertFalse(stale.is_symlink())
+
+    def test_runner_names_the_sleep_walk_lane(self):
+        text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
+        self.assertIn("--sleep-walk", text)
+
+    def test_combined_sleep_walk_and_competitor_clean_each_requested_report(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            (output / "sleep-walk.json").write_text(
+                '{"lane":"sleep-walk","device":"planted"}', encoding="utf-8"
+            )
+            (output / "competitor.json").write_text(
+                '{"lane":"competitor","device":"planted"}', encoding="utf-8"
+            )
+            self.assertEqual(
+                main(
+                    [
+                        "--sleep-walk",
+                        "--competitor",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "sleep-walk.json").exists())
+            self.assertFalse((output / "competitor.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
