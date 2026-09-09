@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Gate tests for tool/perf_obd/run.py. Do not invoke Flutter."""
+
+from __future__ import annotations
+
+import unittest
+
+from run import GateError, validate_report
+
+
+def _ok(**overrides):
+    report = {
+        "lane": "software",
+        "transport": "FakeElm327",
+        "engine": "PollingEngine",
+        "quantile": "nearest-rank",
+        "minimumObservations": 20,
+        "observations": 20,
+        "channels": 1,
+        "firstObservationMs": 40,
+        "interarrivalMs": {"n": 19, "p50": 50, "p95": 80, "p99": 90},
+        "errors": 0,
+    }
+    report.update(overrides)
+    return report
+
+
+class ValidateReportTest(unittest.TestCase):
+    def test_a_complete_software_report_passes(self):
+        self.assertEqual(validate_report(_ok())["observations"], 20)
+
+    def test_zero_observations_fail(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(observations=0))
+
+    def test_truncated_observations_fail(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(observations=3))
+
+    def test_a_python_calculation_is_not_the_engine(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(engine="python-arithmetic"))
+
+    def test_missing_quantile_method_fails(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(quantile="unspecified"))
+
+
+if __name__ == "__main__":
+    unittest.main()
