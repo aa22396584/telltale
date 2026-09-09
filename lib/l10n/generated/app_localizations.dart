@@ -6731,6 +6731,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Row {line}: {reason}'**
   String pidImportRowFormulaRejected(int line, String reason);
+
+  /// TelemetryHistoryAccess.background and TelemetrySessionActionFailure.background. Distinct from telemetryStartNeedsForeground, which is about starting a recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to Telltale before continuing.'**
+  String get telemetryHistoryNeedsForeground;
+
+  /// No description provided for @telemetrySessionPolicyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Driving or connection state changed during this operation.'**
+  String get telemetrySessionPolicyChanged;
+
+  /// No description provided for @telemetrySessionInvalidId.
+  ///
+  /// In en, this message translates to:
+  /// **'This recording id is not valid.'**
+  String get telemetrySessionInvalidId;
+
+  /// No description provided for @telemetrySessionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This local recording was not found.'**
+  String get telemetrySessionNotFound;
+
+  /// No description provided for @telemetrySessionStorageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'A local storage operation failed.'**
+  String get telemetrySessionStorageFailed;
+
+  /// No description provided for @telemetrySessionShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare or open sharing.'**
+  String get telemetrySessionShareFailed;
 }
 
 class _AppLocalizationsDelegate

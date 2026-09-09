@@ -1104,5 +1104,11 @@
   "transcriptExportUnidentified": "匯出失敗。",
   "handshakeNoteUnexpected": "此步驟發生未預期的錯誤。完整錯誤保留在紀錄裡。",
   "pidFormulaUnsupportedConstruct": "{term} 是這個方言尚未實作的 Torque 函式，因此無法在這裡求值。",
-  "pidImportRowFormulaRejected": "第 {line} 行：{reason}"
+  "pidImportRowFormulaRejected": "第 {line} 行：{reason}",
+  "telemetryHistoryNeedsForeground": "請回到 App 後再操作",
+  "telemetrySessionPolicyChanged": "操作期間行車或連線狀態已改變",
+  "telemetrySessionInvalidId": "紀錄識別碼無效",
+  "telemetrySessionNotFound": "找不到這筆本機紀錄",
+  "telemetrySessionStorageFailed": "本機儲存作業失敗",
+  "telemetrySessionShareFailed": "無法準備或開啟分享"
 }

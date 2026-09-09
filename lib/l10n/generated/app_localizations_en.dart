@@ -4294,4 +4294,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String pidImportRowFormulaRejected(int line, String reason) {
     return 'Row $line: $reason';
   }
+
+  @override
+  String get telemetryHistoryNeedsForeground =>
+      'Return to Telltale before continuing.';
+
+  @override
+  String get telemetrySessionPolicyChanged =>
+      'Driving or connection state changed during this operation.';
+
+  @override
+  String get telemetrySessionInvalidId => 'This recording id is not valid.';
+
+  @override
+  String get telemetrySessionNotFound => 'This local recording was not found.';
+
+  @override
+  String get telemetrySessionStorageFailed =>
+      'A local storage operation failed.';
+
+  @override
+  String get telemetrySessionShareFailed =>
+      'Could not prepare or open sharing.';
 }

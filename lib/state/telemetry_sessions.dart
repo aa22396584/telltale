@@ -46,7 +46,7 @@ extension TelemetryHistoryAccessMessage on TelemetryHistoryAccess {
     TelemetryHistoryAccess.recorderActive => l10n.telemetryBlockedByRecorder,
     TelemetryHistoryAccess.moving => l10n.telemetryStartMoving,
     TelemetryHistoryAccess.speedUnknown => l10n.telemetryStartSpeedUnknown,
-    TelemetryHistoryAccess.background => '請回到 App 後再操作',
+    TelemetryHistoryAccess.background => l10n.telemetryHistoryNeedsForeground,
   };
 }
 
@@ -372,13 +372,15 @@ String telemetrySessionActionFailureLabel(
   TelemetrySessionActionFailure.recorderActive => l10n.telemetryBlockedByRecorder,
   TelemetrySessionActionFailure.moving => l10n.telemetryStartMoving,
   TelemetrySessionActionFailure.speedUnknown => l10n.telemetryStartSpeedUnknown,
-  TelemetrySessionActionFailure.background => '請回到 App 後再操作',
-  TelemetrySessionActionFailure.artifactBusy => '另一個檔案作業尚未完成',
-  TelemetrySessionActionFailure.policyChanged => '操作期間行車或連線狀態已改變',
-  TelemetrySessionActionFailure.invalidId => '紀錄識別碼無效',
-  TelemetrySessionActionFailure.notFound => '找不到這筆本機紀錄',
-  TelemetrySessionActionFailure.storage => '本機儲存作業失敗',
-  TelemetrySessionActionFailure.share => '無法準備或開啟分享',
+  TelemetrySessionActionFailure.background =>
+    l10n.telemetryHistoryNeedsForeground,
+  TelemetrySessionActionFailure.artifactBusy => l10n.transcriptDeleteBusy,
+  TelemetrySessionActionFailure.policyChanged =>
+    l10n.telemetrySessionPolicyChanged,
+  TelemetrySessionActionFailure.invalidId => l10n.telemetrySessionInvalidId,
+  TelemetrySessionActionFailure.notFound => l10n.telemetrySessionNotFound,
+  TelemetrySessionActionFailure.storage => l10n.telemetrySessionStorageFailed,
+  TelemetrySessionActionFailure.share => l10n.telemetrySessionShareFailed,
   TelemetrySessionActionFailure.restartRequired =>
     telemetryArtifactRestartRequiredCopy,
 };
