@@ -159,4 +159,32 @@ void main() {
     container.dispose();
     await tester.pump();
   });
+
+  testWidgets(
+    'overflow menu offers Telltale export and Torque subset separately',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: localizedMaterialApp(home: const PidManagerScreen()),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byTooltip('更多'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('匯出自訂 PID'), findsOneWidget);
+      expect(find.text('匯出 Torque 相容 CSV'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+      await tester.pump();
+    },
+  );
 }

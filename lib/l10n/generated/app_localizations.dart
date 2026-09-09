@@ -2391,6 +2391,12 @@ abstract class AppLocalizations {
   /// **'Export custom PIDs'**
   String get pidManagerExportCsv;
 
+  /// Overflow action that shares Torque Pro's eight-column subset, not the lossless Telltale file.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Torque-compatible CSV'**
+  String get pidManagerExportTorqueCsv;
+
   /// Screen title of the PID manager.
   ///
   /// In en, this message translates to:
@@ -6713,6 +6719,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Telltale custom PID definitions'**
   String get sharePidCsvSubject;
+
+  /// Share-sheet subject for the lossy Torque Pro eight-column CSV. Distinct from sharePidCsvSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Torque-compatible PID definitions'**
+  String get shareTorqueSubsetCsvSubject;
 
   /// No description provided for @transcriptExportUnidentified.
   ///

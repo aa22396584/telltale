@@ -96,7 +96,9 @@ normalization. `PidCsv.export` is the lossless Telltale machine round-trip
 (including Priority, Redline, Variant). `PidCsv.exportTorqueSubset` writes
 Torque Pro's eight documented columns (`OBD Header`, not Telltale's
 `Header`) and is a lossy interchange: reimporting it must not invent
-Telltale-only metadata. See `PidCsv` and `test/pid_csv_test.dart`.
+Telltale-only metadata. The PID manager shares those files on distinct
+paths (`sharePidCsv` vs `shareTorqueSubsetCsv`). See `PidCsv` and
+`test/pid_csv_test.dart`.
 
 ## What this file is not
 

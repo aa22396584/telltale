@@ -102,6 +102,10 @@ void main() {
     );
     expect(sharePidCsvSubjectText(en), 'Telltale custom PID definitions');
     expect(
+      shareTorqueSubsetCsvSubjectText(en),
+      'Torque-compatible PID definitions',
+    );
+    expect(
       shareTelemetrySubjectText(zh, sessionId),
       '本機 OBD 紀錄 $sessionId',
     );
@@ -114,11 +118,13 @@ void main() {
       'Telltale 傳輸紀錄（上一次連線）',
     );
     expect(sharePidCsvSubjectText(zh), 'Telltale 自訂 PID 定義');
+    expect(shareTorqueSubsetCsvSubjectText(zh), 'Torque 相容 PID 定義');
     for (final text in [
       shareTelemetrySubjectText(en, sessionId),
       shareRawTranscriptSubjectText(en, stamp),
       shareRecoveredTranscriptSubjectText(en),
       sharePidCsvSubjectText(en),
+      shareTorqueSubsetCsvSubjectText(en),
     ]) {
       expect(containsChinese(text), isFalse, reason: chineseIn(text));
     }

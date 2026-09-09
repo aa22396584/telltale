@@ -26,6 +26,9 @@ String shareRecoveredTranscriptSubjectText(AppLocalizations l10n) =>
 String sharePidCsvSubjectText(AppLocalizations l10n) =>
     l10n.sharePidCsvSubject;
 
+String shareTorqueSubsetCsvSubjectText(AppLocalizations l10n) =>
+    l10n.shareTorqueSubsetCsvSubject;
+
 /// Why a share did not open, in the reader's language.
 String shareErrorText(AppLocalizations l10n, ShareError error) {
   return switch (error) {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -150,6 +151,44 @@ void main() {
   );
 
   test(
+    'Torque subset share is not the lossless Telltale PID CSV',
+    () async {
+      final roots = Directory.systemTemp.createTempSync('share-entry-subset');
+      addTearDown(() {
+        if (roots.existsSync()) roots.deleteSync(recursive: true);
+      });
+      final mutablePids = [PidLibrary.all.first];
+      final expectedSubset = await _collect(
+        PidCsv.streamTorqueSubset(List.unmodifiable(mutablePids)),
+      );
+      final expectedLossless = await _collect(
+        PidCsv.stream(List.unmodifiable(mutablePids)),
+      );
+      final subsetFuture = _invoke(
+        roots,
+        6,
+        (controller) => controller.shareTorqueSubsetCsv(pids: mutablePids),
+        afterAdmission: mutablePids.clear,
+      );
+      final subset = await subsetFuture;
+      expect(subset.bytes, expectedSubset);
+      expect(subset.bytes, isNot(expectedLossless));
+      expect(subset.request.mimeType, 'text/csv');
+      expect(subset.request.subject, 'Torque-compatible PID definitions');
+      expect(subset.request.subject, isNot('Telltale custom PID definitions'));
+      expect(subset.sourceKind, ShareSourceKind.pidCsv);
+      expect(
+        utf8.decode(subset.bytes),
+        contains('OBD Header'),
+      );
+      expect(
+        utf8.decode(subset.bytes).split('\r\n').first,
+        isNot(contains(',Header')),
+      );
+    },
+  );
+
+  test(
     'share-sheet subjects follow the preference at call time, not construction',
     () async {
       final root = Directory.systemTemp.createTempSync('share-locale-pref');
@@ -260,6 +299,16 @@ void main() {
       ),
     );
     expect(pid.request.sharePositionOrigin, origin);
+
+    final subset = await _invoke(
+      roots,
+      64,
+      (controller) => controller.shareTorqueSubsetCsv(
+        pids: [PidLibrary.all.first],
+        sharePositionOrigin: origin,
+      ),
+    );
+    expect(subset.request.sharePositionOrigin, origin);
   });
 
   test('telemetry facade rejects non-opaque IDs before admission', () async {

@@ -158,6 +158,22 @@ final class AppShareEntryController {
       ),
     );
   }
+
+  /// Torque Pro's eight-column interchange, not the lossless Telltale file.
+  Future<AppShareOutcome> shareTorqueSubsetCsv({
+    required Iterable<Pid> pids,
+    Rect? sharePositionOrigin,
+  }) {
+    final frozen = List<Pid>.unmodifiable(pids);
+    return _coordinator.share(
+      AppShareRequest(
+        sourceKind: ShareSourceKind.pidCsv,
+        subject: shareTorqueSubsetCsvSubjectText(_copy),
+        sharePositionOrigin: sharePositionOrigin,
+        streamFactory: () => PidCsv.streamTorqueSubset(frozen),
+      ),
+    );
+  }
 }
 
 final appShareEntryControllerProvider = Provider<AppShareEntryController>(
