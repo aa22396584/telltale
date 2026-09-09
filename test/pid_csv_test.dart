@@ -891,5 +891,35 @@ void _humanReportNotReimported() {
       expect(human.contains("'@C"), isTrue);
       expect(human.contains(',=1+1'), isFalse);
     });
+
+    test(
+      'streamed human report preserves exact bytes in bounded chunks',
+      () async {
+        const injected = Pid(
+          name: '=1+1',
+          shortName: 'X',
+          modeAndPid: '0105',
+          equation: '+A',
+          minValue: 0,
+          maxValue: 1,
+          units: '@C',
+        );
+        final chunks = await PidCsv.streamHumanReport(
+          [pid, injected],
+          maxChunkBytes: 32,
+        ).toList();
+        expect(chunks.every((chunk) => chunk.length <= 32), isTrue);
+        expect(
+          chunks.expand((chunk) => chunk),
+          utf8.encode(PidCsv.exportHumanReport([pid, injected])),
+        );
+        final streamed = utf8.decode(
+          chunks.expand((chunk) => chunk).toList(),
+        );
+        expect(streamed.contains('Telltale human report'), isTrue);
+        expect(streamed.contains("'=1+1"), isTrue);
+        expect(PidCsv.parse(streamed).pids, isEmpty);
+      },
+    );
   });
 }
