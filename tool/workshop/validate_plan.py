@@ -509,16 +509,14 @@ def _flutter_json_events(stdout: str) -> tuple[bool, bool]:
             continue
         if not isinstance(payload, dict):
             continue
-        kind = payload.get("type")
-        if kind not in {"done", "testDone"}:
-            continue
         if saw_done:
             return True, False
+        kind = payload.get("type")
         if kind == "done":
             saw_json = True
             saw_done = True
             done_success = payload.get("success") is True
-        else:
+        elif kind == "testDone":
             saw_json = True
     return saw_json, saw_done and done_success
 

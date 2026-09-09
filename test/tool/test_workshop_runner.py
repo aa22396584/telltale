@@ -923,6 +923,27 @@ class RunTaskTest(unittest.TestCase):
             self.assertNotEqual(data["results"][0].get("truncated"), True)
             self.assertEqual(data["results"][0]["stdout"], "y" * 50)
 
+    def test_flutter_json_reporter_empty_stdout_is_truncated(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            stub = Path(raw) / "flutter"
+            stub.write_text("#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n")
+            stub.chmod(0o755)
+            original = run_task._resolve_executable
+            run_task._resolve_executable = lambda name: str(stub)
+            try:
+                result = run_task._run_command(
+                    ["flutter", "test", "--reporter", "json", "test/foo_test.dart"],
+                    cwd=Path(raw),
+                    env=os.environ.copy(),
+                    timeout=5,
+                    output_limit=1000,
+                )
+            finally:
+                run_task._resolve_executable = original
+            self.assertEqual(result["exit"], 0)
+            self.assertIs(result.get("truncated"), True)
+            self.assertEqual(result.get("stdout"), "")
+
     def test_timeout_covers_a_descendant_that_keeps_stdout_open(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
