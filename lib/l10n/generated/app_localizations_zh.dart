@@ -1249,6 +1249,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pidImportNothingToImport => '沒有可匯入的定義。';
 
   @override
+  String pidImportLandedClean(int count) {
+    return '已匯入 $count 項自訂 PID。';
+  }
+
+  @override
+  String pidImportLandedWithNotes(int count, String notes) {
+    return '匯入 $count 項，$notes。';
+  }
+
+  @override
+  String pidImportNoteSkippedRows(int count) {
+    return '$count 行有問題已略過';
+  }
+
+  @override
+  String pidImportNoteDefaultedRanges(int count) {
+    return '$count 行套用了預設量程';
+  }
+
+  @override
+  String pidImportNoteReplaced(int count) {
+    return '$count 項覆蓋了現有定義';
+  }
+
+  @override
+  String pidImportNoteDuplicatesInFile(int count) {
+    return '$count 行與檔案內其他行重複已略過';
+  }
+
+  @override
   String get pidImportPickerFailed => '無法開啟檔案選擇器。';
 
   @override
@@ -5011,6 +5041,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pidImportNothingToImport => '沒有可匯入的定義。';
+
+  @override
+  String pidImportLandedClean(int count) {
+    return '已匯入 $count 項自訂 PID。';
+  }
+
+  @override
+  String pidImportLandedWithNotes(int count, String notes) {
+    return '匯入 $count 項，$notes。';
+  }
+
+  @override
+  String pidImportNoteSkippedRows(int count) {
+    return '$count 行有問題已略過';
+  }
+
+  @override
+  String pidImportNoteDefaultedRanges(int count) {
+    return '$count 行套用了預設量程';
+  }
+
+  @override
+  String pidImportNoteReplaced(int count) {
+    return '$count 項覆蓋了現有定義';
+  }
+
+  @override
+  String pidImportNoteDuplicatesInFile(int count) {
+    return '$count 行與檔案內其他行重複已略過';
+  }
 
   @override
   String get pidImportPickerFailed => '無法開啟檔案選擇器。';

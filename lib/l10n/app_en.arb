@@ -1226,6 +1226,59 @@
   },
   "pidExportNoCustomPids": "There are no custom PIDs to export.",
   "pidImportNothingToImport": "No definitions to import.",
+  "pidImportLandedClean": "Imported {count} custom PIDs.",
+  "@pidImportLandedClean": {
+    "description": "PidImportOutcome snack when every counted row landed and nothing was skipped, replaced, or defaulted. {count} is landed = inserted + replaced.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportLandedWithNotes": "Imported {count} items, {notes}.",
+  "@pidImportLandedWithNotes": {
+    "description": "PidImportOutcome snack when at least one note is present. {notes} is pidListSeparator-joined clauses; never spell the clauses into this sentence.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "String"
+      }
+    }
+  },
+  "pidImportNoteSkippedRows": "{count} rows had problems and were skipped",
+  "@pidImportNoteSkippedRows": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportNoteDefaultedRanges": "{count} rows used the default gauge range",
+  "@pidImportNoteDefaultedRanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportNoteReplaced": "{count} items replaced existing definitions",
+  "@pidImportNoteReplaced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pidImportNoteDuplicatesInFile": "{count} rows duplicated another row in the file and were skipped",
+  "@pidImportNoteDuplicatesInFile": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "pidImportPickerFailed": "Could not open the file picker.",
   "pidImportReadFailed": "Could not read the file.",
   "pidListSeparator": ", ",

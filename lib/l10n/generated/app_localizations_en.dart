@@ -1381,6 +1381,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pidImportNothingToImport => 'No definitions to import.';
 
   @override
+  String pidImportLandedClean(int count) {
+    return 'Imported $count custom PIDs.';
+  }
+
+  @override
+  String pidImportLandedWithNotes(int count, String notes) {
+    return 'Imported $count items, $notes.';
+  }
+
+  @override
+  String pidImportNoteSkippedRows(int count) {
+    return '$count rows had problems and were skipped';
+  }
+
+  @override
+  String pidImportNoteDefaultedRanges(int count) {
+    return '$count rows used the default gauge range';
+  }
+
+  @override
+  String pidImportNoteReplaced(int count) {
+    return '$count items replaced existing definitions';
+  }
+
+  @override
+  String pidImportNoteDuplicatesInFile(int count) {
+    return '$count rows duplicated another row in the file and were skipped';
+  }
+
+  @override
   String get pidImportPickerFailed => 'Could not open the file picker.';
 
   @override

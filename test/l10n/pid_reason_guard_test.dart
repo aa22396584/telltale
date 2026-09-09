@@ -367,6 +367,10 @@ void _pointerTests() {
       // zero here. That is weaker than a widget test and is written down as
       // such rather than left to look equivalent.
       'lib/ui/screens/pids/pid_manager_screen.dart -> pidCsvDiagnosticText x1',
+      // the CSV import success snackbar. Sentences are pinned by
+      // `pidImportOutcomeText` in pid_reason_copy_test.dart; the site is
+      // behind a file picker, same census-only shape as pidCsvDiagnosticText.
+      'lib/ui/screens/pids/pid_manager_screen.dart -> pidImportOutcomeText x1',
     };
     expect(
       sites,

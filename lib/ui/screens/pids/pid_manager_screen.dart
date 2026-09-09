@@ -315,18 +315,19 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
     // importer chose is the change most worth mentioning, because a needle
     // reads as authoritative against whatever bounds it is drawn on.
     // Counted as they landed, not as they were parsed — and phrased by
-    // `PidImportOutcome.describe`, which is where the counting is tested.
+    // `pidImportOutcomeText`, which is where the sentences are tested.
     _snack(
-      (outcome ??
-              const PidImportOutcome(
-                inserted: 0,
-                replaced: 0,
-                duplicatesInFile: [],
-              ))
-          .describe(
-            skippedRows: result.hasErrors ? result.errors.length : 0,
-            defaultedRanges: result.hasWarnings ? result.warnings.length : 0,
-          ),
+      pidImportOutcomeText(
+        l10n,
+        outcome ??
+            const PidImportOutcome(
+              inserted: 0,
+              replaced: 0,
+              duplicatesInFile: [],
+            ),
+        skippedRows: result.hasErrors ? result.errors.length : 0,
+        defaultedRanges: result.hasWarnings ? result.warnings.length : 0,
+      ),
     );
   }
 

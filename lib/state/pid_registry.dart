@@ -474,29 +474,6 @@ class PidImportOutcome {
 
   /// How many definitions the registry actually ended up with.
   int get landed => inserted + replaced;
-
-  /// The sentence shown after an import.
-  ///
-  /// A pure function because the counts are the part worth testing, and a
-  /// snackbar built inline could only be checked by driving a file picker.
-  /// Saying "已匯入 2" while one row silently replaced another is how a gauge
-  /// comes to read 26 where the vehicle said 1726, so what is displayed is
-  /// held to the same standard as what is stored.
-  String describe({int skippedRows = 0, int defaultedRanges = 0}) {
-    if (failure == PidMutationFailure.locked) {
-      return '錄製準備、錄製或儲存完成前不能變更 PID。';
-    }
-    final notes = [
-      if (skippedRows > 0) '$skippedRows 行有問題已略過',
-      if (defaultedRanges > 0) '$defaultedRanges 行套用了預設量程',
-      if (replaced > 0) '$replaced 項覆蓋了現有定義',
-      if (duplicatesInFile.isNotEmpty)
-        '${duplicatesInFile.length} 行與檔案內其他行重複已略過',
-    ];
-    return notes.isEmpty
-        ? '已匯入 $landed 項自訂 PID。'
-        : '匯入 $landed 項，${notes.join('、')}。';
-  }
 }
 
 final pidRegistryProvider = NotifierProvider<PidRegistry, List<Pid>>(

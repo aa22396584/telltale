@@ -28,6 +28,8 @@ import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/pid/formula_engine.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
 import 'package:torque_obd/obd/pid/pid_csv.dart';
+import 'package:torque_obd/state/pid_mutation_lock.dart';
+import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/pids/pid_formula_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_import_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_rejection_copy.dart';
@@ -415,5 +417,63 @@ void main() {
         expect(import(en, issue), isNot(import(zh, issue)), reason: '$issue');
       }
     });
+  });
+
+  test('import outcome snack is handwritten in both languages', () {
+    const clean = PidImportOutcome(
+      inserted: 3,
+      replaced: 0,
+      duplicatesInFile: [],
+    );
+    expect(pidImportOutcomeText(en, clean), 'Imported 3 custom PIDs.');
+    expect(pidImportOutcomeText(zh, clean), '已匯入 3 項自訂 PID。');
+
+    const replacing = PidImportOutcome(
+      inserted: 1,
+      replaced: 2,
+      duplicatesInFile: [],
+    );
+    expect(
+      pidImportOutcomeText(en, replacing),
+      'Imported 3 items, 2 items replaced existing definitions.',
+    );
+    expect(pidImportOutcomeText(zh, replacing), '匯入 3 項，2 項覆蓋了現有定義。');
+
+    const duped = PidImportOutcome(
+      inserted: 1,
+      replaced: 0,
+      duplicatesInFile: ['RPM raw'],
+    );
+    expect(
+      pidImportOutcomeText(en, duped),
+      'Imported 1 items, 1 rows duplicated another row in the file and were skipped.',
+    );
+    expect(pidImportOutcomeText(zh, duped), '匯入 1 項，1 行與檔案內其他行重複已略過。');
+
+    const messy = PidImportOutcome(
+      inserted: 1,
+      replaced: 1,
+      duplicatesInFile: ['a', 'b'],
+    );
+    expect(
+      pidImportOutcomeText(en, messy, skippedRows: 4, defaultedRanges: 2),
+      'Imported 2 items, 4 rows had problems and were skipped, '
+      '2 rows used the default gauge range, '
+      '1 items replaced existing definitions, '
+      '2 rows duplicated another row in the file and were skipped.',
+    );
+    expect(
+      pidImportOutcomeText(zh, messy, skippedRows: 4, defaultedRanges: 2),
+      '匯入 2 項，4 行有問題已略過、2 行套用了預設量程、1 項覆蓋了現有定義、2 行與檔案內其他行重複已略過。',
+    );
+
+    const locked = PidImportOutcome(
+      inserted: 0,
+      replaced: 0,
+      duplicatesInFile: [],
+      failure: PidMutationFailure.locked,
+    );
+    expect(pidImportOutcomeText(en, locked), 'Stop and save the recording first');
+    expect(pidImportOutcomeText(zh, locked), '請先停止並儲存');
   });
 }

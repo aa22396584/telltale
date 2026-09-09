@@ -133,7 +133,7 @@ class PidCsvResult {
   /// whatever bounds it is drawn on, whoever picked them.
   ///
   /// **Counted, not quoted.** `pid_manager_screen.dart` passes
-  /// `warnings.length` into `PidImportOutcome.describe(defaultedRanges:)` and
+  /// `warnings.length` into `pidImportOutcomeText(defaultedRanges:)` and
   /// nothing else reads them, so the line number and the substituted bounds
   /// each entry carries do not currently reach a reader. This comment used to
   /// say they were "surfaced to the user", which is how a reviewer comes to
@@ -141,11 +141,8 @@ class PidCsvResult {
   ///
   /// The per-row sentence (`pidImportRowRangeDefaulted`) is built and pinned
   /// anyway, because [PidCsvIssue] is switched over exhaustively and the arm
-  /// has to exist. It is deliberately not wired into the snackbar in this
-  /// slice: `PidImportOutcome.describe` is still Traditional Chinese, so
-  /// appending a translated clause to it would produce a half-English
-  /// snackbar — a regression that is real, traded for one that is only
-  /// unrealised copy.
+  /// has to exist. The snackbar still counts these rows rather than quoting
+  /// each line number and substituted bounds.
   final List<PidCsvDiagnostic> warnings;
 
   const PidCsvResult({
