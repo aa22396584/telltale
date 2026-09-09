@@ -3,11 +3,13 @@ library;
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:ui' show Rect;
-
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/share/share_lease_ledger.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/locale_resolution.dart';
+import '../ui/widgets/share_copy.dart';
 import '../obd/pid/pid.dart';
 import '../obd/pid/pid_csv.dart';
 import '../obd/transcript.dart';
@@ -15,6 +17,7 @@ import '../obd/transcript_store.dart';
 import '../telemetry/session/telemetry_session_exporter.dart';
 import '../telemetry/session/telemetry_session_reader.dart';
 import 'app_share_coordinator.dart';
+import 'locale_settings.dart';
 
 /// The only production facade that turns domain data into a Share request.
 ///
@@ -22,9 +25,13 @@ import 'app_share_coordinator.dart';
 /// admission. Descriptor-backed sources remain lazy so no file handle is open
 /// while another artifact operation owns the global gate.
 final class AppShareEntryController {
-  const AppShareEntryController(this._coordinator);
+  const AppShareEntryController(this._coordinator, {this._l10n});
 
   final AppShareCoordinator _coordinator;
+  final AppLocalizations? _l10n;
+
+  AppLocalizations get _copy =>
+      _l10n ?? lookupAppLocalizations(englishLocale);
 
   Future<AppShareOutcome> shareTelemetryCsv({
     required Directory documents,
@@ -63,7 +70,7 @@ final class AppShareEntryController {
     return _coordinator.share(
       AppShareRequest(
         sourceKind: kind,
-        subject: '本機 OBD 紀錄 $sessionId',
+        subject: shareTelemetrySubjectText(_copy, sessionId),
         sharePositionOrigin: sharePositionOrigin,
         streamFactory: () => _offIsolateExportStream(
           path,
@@ -89,7 +96,7 @@ final class AppShareEntryController {
     return _coordinator.share(
       AppShareRequest(
         sourceKind: ShareSourceKind.rawTranscript,
-        subject: 'Telltale 傳輸紀錄 $stamp',
+        subject: shareRawTranscriptSubjectText(_copy, stamp),
         sharePositionOrigin: sharePositionOrigin,
         streamFactory: () =>
             frozen.streamEncoded(header: header, withHex: withHex),
@@ -104,7 +111,7 @@ final class AppShareEntryController {
   }) => _coordinator.share(
     AppShareRequest.lazy(
       sourceKind: ShareSourceKind.recoveredTranscript,
-      subject: 'Telltale 傳輸紀錄（上一次連線）',
+      subject: shareRecoveredTranscriptSubjectText(_copy),
       sharePositionOrigin: sharePositionOrigin,
       prepareSource: () async {
         final descriptor = await store.openStreaming(expected: expected);
@@ -126,7 +133,7 @@ final class AppShareEntryController {
     return _coordinator.share(
       AppShareRequest(
         sourceKind: ShareSourceKind.pidCsv,
-        subject: 'Telltale 自訂 PID 定義',
+        subject: sharePidCsvSubjectText(_copy),
         sharePositionOrigin: sharePositionOrigin,
         streamFactory: () => PidCsv.stream(frozen),
       ),
@@ -135,7 +142,16 @@ final class AppShareEntryController {
 }
 
 final appShareEntryControllerProvider = Provider<AppShareEntryController>(
-  (ref) => AppShareEntryController(ref.watch(appShareCoordinatorProvider)),
+  (ref) {
+    final locale = resolveAppLocale(
+      preference: ref.watch(localePreferenceProvider),
+      deviceLocales: WidgetsBinding.instance.platformDispatcher.locales,
+    );
+    return AppShareEntryController(
+      ref.watch(appShareCoordinatorProvider),
+      l10n: lookupAppLocalizations(locale),
+    );
+  },
 );
 
 Stream<List<int>> _offIsolateExportStream(String path, {required bool json}) =>

@@ -3783,6 +3783,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareStorageFailure => '準備或記錄分享結果時發生儲存錯誤。';
 
   @override
+  String shareTelemetrySubject(String sessionId) {
+    return '本機 OBD 紀錄 $sessionId';
+  }
+
+  @override
+  String shareRawTranscriptSubject(String stamp) {
+    return 'Telltale 傳輸紀錄 $stamp';
+  }
+
+  @override
+  String get shareRecoveredTranscriptSubject => 'Telltale 傳輸紀錄（上一次連線）';
+
+  @override
+  String get sharePidCsvSubject => 'Telltale 自訂 PID 定義';
+
+  @override
   String get transcriptExportUnidentified => '匯出失敗。';
 
   @override
@@ -7575,6 +7591,22 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get shareStorageFailure => '準備或記錄分享結果時發生儲存錯誤。';
+
+  @override
+  String shareTelemetrySubject(String sessionId) {
+    return '本機 OBD 紀錄 $sessionId';
+  }
+
+  @override
+  String shareRawTranscriptSubject(String stamp) {
+    return 'Telltale 傳輸紀錄 $stamp';
+  }
+
+  @override
+  String get shareRecoveredTranscriptSubject => 'Telltale 傳輸紀錄（上一次連線）';
+
+  @override
+  String get sharePidCsvSubject => 'Telltale 自訂 PID 定義';
 
   @override
   String get transcriptExportUnidentified => '匯出失敗。';

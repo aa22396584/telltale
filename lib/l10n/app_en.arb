@@ -3674,6 +3674,22 @@
   "shareNoSpace": "There is not enough storage to prepare the share file.",
   "shareHandoffFailed": "The file is ready, but the system share sheet could not be opened.",
   "shareStorageFailure": "A storage error occurred while preparing or recording the share.",
+  "shareTelemetrySubject": "Local OBD record {sessionId}",
+  "@shareTelemetrySubject": {
+    "description": "Share-sheet subject for a telemetry CSV/JSON export. {sessionId} is the opaque session id.",
+    "placeholders": {
+      "sessionId": { "type": "String" }
+    }
+  },
+  "shareRawTranscriptSubject": "Telltale transport log {stamp}",
+  "@shareRawTranscriptSubject": {
+    "description": "Share-sheet subject for a live adapter transcript. {stamp} is local YYYYMMDD-HHMMSS.",
+    "placeholders": {
+      "stamp": { "type": "String" }
+    }
+  },
+  "shareRecoveredTranscriptSubject": "Telltale transport log (last connection)",
+  "sharePidCsvSubject": "Telltale custom PID definitions",
   "transcriptExportUnidentified": "Export failed.",
   "handshakeNoteUnexpected": "This step failed with an unexpected error. The full error is kept in the transcript.",
   "@handshakeNoteUnexpected": {

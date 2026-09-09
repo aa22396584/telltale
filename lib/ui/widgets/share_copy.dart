@@ -12,6 +12,20 @@ library;
 import '../../l10n/generated/app_localizations.dart';
 import '../../state/app_share_coordinator.dart';
 
+/// Share-sheet titles. Built here so English never inherits the Chinese
+/// literals that used to live in [AppShareEntryController].
+String shareTelemetrySubjectText(AppLocalizations l10n, String sessionId) =>
+    l10n.shareTelemetrySubject(sessionId);
+
+String shareRawTranscriptSubjectText(AppLocalizations l10n, String stamp) =>
+    l10n.shareRawTranscriptSubject(stamp);
+
+String shareRecoveredTranscriptSubjectText(AppLocalizations l10n) =>
+    l10n.shareRecoveredTranscriptSubject;
+
+String sharePidCsvSubjectText(AppLocalizations l10n) =>
+    l10n.sharePidCsvSubject;
+
 /// Why a share did not open, in the reader's language.
 String shareErrorText(AppLocalizations l10n, ShareError error) {
   return switch (error) {

@@ -84,4 +84,43 @@ void main() {
       expect(containsChinese(text), isFalse, reason: '$error: ${chineseIn(text)}');
     }
   });
+
+  test('share-sheet subjects are bilingual and English has no Chinese', () {
+    const sessionId = '0123456789abcdef0123456789abcdef';
+    const stamp = '20260830-010203';
+    expect(
+      shareTelemetrySubjectText(en, sessionId),
+      'Local OBD record $sessionId',
+    );
+    expect(
+      shareRawTranscriptSubjectText(en, stamp),
+      'Telltale transport log $stamp',
+    );
+    expect(
+      shareRecoveredTranscriptSubjectText(en),
+      'Telltale transport log (last connection)',
+    );
+    expect(sharePidCsvSubjectText(en), 'Telltale custom PID definitions');
+    expect(
+      shareTelemetrySubjectText(zh, sessionId),
+      '本機 OBD 紀錄 $sessionId',
+    );
+    expect(
+      shareRawTranscriptSubjectText(zh, stamp),
+      'Telltale 傳輸紀錄 $stamp',
+    );
+    expect(
+      shareRecoveredTranscriptSubjectText(zh),
+      'Telltale 傳輸紀錄（上一次連線）',
+    );
+    expect(sharePidCsvSubjectText(zh), 'Telltale 自訂 PID 定義');
+    for (final text in [
+      shareTelemetrySubjectText(en, sessionId),
+      shareRawTranscriptSubjectText(en, stamp),
+      shareRecoveredTranscriptSubjectText(en),
+      sharePidCsvSubjectText(en),
+    ]) {
+      expect(containsChinese(text), isFalse, reason: chineseIn(text));
+    }
+  });
 }

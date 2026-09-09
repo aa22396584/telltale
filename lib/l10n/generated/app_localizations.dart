@@ -6684,6 +6684,30 @@ abstract class AppLocalizations {
   /// **'A storage error occurred while preparing or recording the share.'**
   String get shareStorageFailure;
 
+  /// Share-sheet subject for a telemetry CSV/JSON export. {sessionId} is the opaque session id.
+  ///
+  /// In en, this message translates to:
+  /// **'Local OBD record {sessionId}'**
+  String shareTelemetrySubject(String sessionId);
+
+  /// Share-sheet subject for a live adapter transcript. {stamp} is local YYYYMMDD-HHMMSS.
+  ///
+  /// In en, this message translates to:
+  /// **'Telltale transport log {stamp}'**
+  String shareRawTranscriptSubject(String stamp);
+
+  /// No description provided for @shareRecoveredTranscriptSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Telltale transport log (last connection)'**
+  String get shareRecoveredTranscriptSubject;
+
+  /// No description provided for @sharePidCsvSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Telltale custom PID definitions'**
+  String get sharePidCsvSubject;
+
   /// No description provided for @transcriptExportUnidentified.
   ///
   /// In en, this message translates to:

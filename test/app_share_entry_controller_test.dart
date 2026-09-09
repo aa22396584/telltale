@@ -59,6 +59,11 @@ void main() {
       expect(json.sourceKind, ShareSourceKind.telemetryJson);
       expect(json.request.fileName, endsWith('.json'));
       expect(
+        csv.request.subject,
+        'Local OBD record $sessionId',
+      );
+      expect(json.request.subject, csv.request.subject);
+      expect(
         csv.bytes,
         await _collect(
           TelemetrySessionExporter().csvStream(
@@ -97,7 +102,7 @@ void main() {
       );
       final raw = await rawFuture;
       expect(raw.bytes, expectedRaw);
-      expect(raw.request.subject, 'Telltale 傳輸紀錄 20260830-010203');
+      expect(raw.request.subject, 'Telltale transport log 20260830-010203');
       expect(raw.request.mimeType, 'text/plain');
       expect(raw.sourceKind, ShareSourceKind.rawTranscript);
 
@@ -122,7 +127,7 @@ void main() {
         ),
       );
       expect(recovered.bytes, expectedRecovered);
-      expect(recovered.request.subject, 'Telltale 傳輸紀錄（上一次連線）');
+      expect(recovered.request.subject, 'Telltale transport log (last connection)');
       expect(recovered.sourceKind, ShareSourceKind.recoveredTranscript);
 
       final mutablePids = [PidLibrary.all.first];
@@ -138,7 +143,7 @@ void main() {
       final pid = await pidFuture;
       expect(pid.bytes, expectedPid);
       expect(pid.request.mimeType, 'text/csv');
-      expect(pid.request.subject, 'Telltale 自訂 PID 定義');
+      expect(pid.request.subject, 'Telltale custom PID definitions');
       expect(pid.sourceKind, ShareSourceKind.pidCsv);
     },
   );

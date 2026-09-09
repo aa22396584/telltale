@@ -4262,6 +4262,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'A storage error occurred while preparing or recording the share.';
 
   @override
+  String shareTelemetrySubject(String sessionId) {
+    return 'Local OBD record $sessionId';
+  }
+
+  @override
+  String shareRawTranscriptSubject(String stamp) {
+    return 'Telltale transport log $stamp';
+  }
+
+  @override
+  String get shareRecoveredTranscriptSubject =>
+      'Telltale transport log (last connection)';
+
+  @override
+  String get sharePidCsvSubject => 'Telltale custom PID definitions';
+
+  @override
   String get transcriptExportUnidentified => 'Export failed.';
 
   @override
