@@ -505,6 +505,125 @@ void main() {
       );
     });
 
+    test('FLOAT32() is IEEE754 single from four big-endian bytes', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('FLOAT32(0:0:0:0)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      // 0x3F800000 is 1.0. A is the most significant byte.
+      expect(
+        engine.evaluateBytes('FLOAT32(63:128:0:0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32(64:0:0:0)', const []),
+        closeTo(2.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32(191:128:0:0)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32(A:B:C:D)', const [63, 128, 0, 0]),
+        closeTo(1.0, 1e-9),
+      );
+      // Little-endian 1.0 bytes are not 1.0 here. Write FLOAT32(D:C:B:A)
+      // if the payload is little-endian.
+      expect(
+        engine.evaluateBytes('FLOAT32(0:0:128:63)', const []),
+        isNot(closeTo(1.0, 1e-3)),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32(D:C:B:A)', const [63, 128, 0, 0]),
+        isNot(closeTo(1.0, 1e-3)),
+      );
+      // Low 8 bits of each input. 63+256 must not shift the exponent.
+      expect(
+        engine.evaluateBytes('FLOAT32(319:128:0:0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32(63,128,0,0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT32((A-1):B:C:D)', const [64, 128, 0, 0]),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('ABS(FLOAT32(191:128:0:0))', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2FLOAT32(0:0:0:0)', const []))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('FLOAT32(0:0:0:0)A', const [5]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('FLOAT32(A:B)', const [1, 2]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('FLOAT32(A:B:C)', const [1, 2, 3]),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(
+          () =>
+              engine.evaluateBytes('FLOAT32(A:B:C:D:E)', const [1, 2, 3, 4, 5]),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes(
+            'FLOAT64(A:B:C:D:E:F:G:H)',
+            const [0, 0, 0, 0, 0, 0, 0, 0],
+          ),
+        ).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        ).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('FLOAT32(127:128:0:0)', const []),
+        ).issue,
+        FormulaIssue.resultNotFinite,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('FLOAT32(127:192:0:0)', const []),
+        ).issue,
+        FormulaIssue.resultNotFinite,
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
