@@ -76,7 +76,7 @@ void main() {
           isA<TransportException>().having(
             (error) => error.message,
             'message',
-            contains('逾時'),
+            contains('timed out'),
           ),
         ),
       );
@@ -248,7 +248,7 @@ void main() {
           isA<TransportException>().having(
             (error) => error.message,
             'message',
-            contains('路由'),
+            contains('network route could not be restored'),
           ),
         ),
       );
@@ -282,7 +282,7 @@ void main() {
           isA<WriteRefusedException>().having(
             (error) => error.message,
             'message',
-            contains('尚未建立'),
+            contains('not established'),
           ),
         ),
       );
@@ -434,7 +434,7 @@ void main() {
                       '${InternetAddress.loopbackIPv4.host}:$refusedPort',
                     ),
                     contains('Wi-Fi'),
-                    contains('繼續使用'),
+                    contains('stay connected'),
                   ),
                 ),
           ),
