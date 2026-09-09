@@ -187,4 +187,23 @@ void main() {
     expect(wording.ordinarySilence, isFalse);
     expect(wording.detail, contains('Mode 03 同樣沒有回應'));
   });
+
+  test('structured no-answer names reach the category panel', () {
+    // kind is noAnswer, so the partial-coverage branch used to replace the
+    // inner sentence with empty and drop the silent controller list.
+    final wording = unansweredCategoryWording(
+      l10n: _en,
+      kind: DtcKind.pending,
+      result: const DtcCategoryResult.failed(DtcReadException(
+        '有 1 個控制器沒有回應這次查詢（7E9）。',
+        kind: DtcReadFailure.noAnswer,
+        terminalSources: {'7E8'},
+        silentSources: {'7E9'},
+      )),
+      storedAnswered: true,
+    );
+    expect(wording.ordinarySilence, isFalse);
+    expect(wording.detail, contains('7E9'));
+    expect(wording.detail, contains('Only some controllers'));
+  });
 }

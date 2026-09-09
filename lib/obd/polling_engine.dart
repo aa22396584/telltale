@@ -1467,6 +1467,10 @@ class PollingEngine {
     // all of them is a poor instrument; this makes the instrument stop
     // manufacturing its own debts.
     final finished = <String>{};
+    // Positive SID replies only. [finished] also includes refusals, and
+    // counting those as "already answered" produced "1 refused (2 answered)"
+    // for one `43` plus one `7F`.
+    final positive = <String>{};
     // Everyone whose reply was about this service, readable or not. Kept apart
     // from `finished`, which is a trustworthy terminal answer: an errored
     // exchange is not data, and the controller that printed a Mode 03 response
@@ -1494,6 +1498,7 @@ class PollingEngine {
         // spoke again — a category closed as clean on a controller that was
         // still thinking.
         finished.addAll(_lastTerminalSources);
+        positive.addAll(_lastPositiveSources);
         owed.removeAll(finished);
         if (owed.isEmpty) {
           // Silence is not a clean answer — asked here, where the cumulative
@@ -1513,13 +1518,15 @@ class PollingEngine {
           kind: DtcReadFailure.pending,
           partial: List.unmodifiable(found.values),
           pendingSources: Set.unmodifiable(owed),
-          answeredCount: finished.length,
+          answeredCount: positive.length,
+          positiveSources: Set.unmodifiable(positive),
         );
       } on DtcReadException catch (e) {
         heardOfService.addAll(_lastHeardOfService);
         doubts.addAll(_lastUnresolvedIdentities);
         collect(e.partial);
         finished.addAll(e.terminalSources);
+        positive.addAll(e.positiveSources);
         owed
           // A source that already answered this read cannot be put back in
           // debt by a broadcast it did not need to receive — `finished` is
@@ -1609,7 +1616,8 @@ class PollingEngine {
             negativeResponseCode: e.negativeResponseCode,
             repeatWouldHarm: e.repeatWouldHarm,
             refusedCount: e.refusedCount,
-            answeredCount: e.answeredCount,
+            answeredCount: positive.length,
+            positiveSources: Set.unmodifiable(positive),
             unrecognisedCount: e.unrecognisedCount,
           );
         }
@@ -1626,6 +1634,9 @@ class PollingEngine {
 
   /// Which controllers gave a terminal answer on the last completed read.
   Set<String> _lastTerminalSources = const {};
+
+  /// Which controllers returned a positive SID on the last completed read.
+  Set<String> _lastPositiveSources = const {};
 
   /// Every controller heard giving a terminal answer to *any* fault-code
   /// exchange this session.
@@ -1911,6 +1922,7 @@ class PollingEngine {
     // owing, or another one's answer discharges the debt.
     final pendingSources = <String>{};
     final terminalSources = <String>{};
+    final positiveSources = <String>{};
 
     for (final frame in response.frames) {
       final message = frame.bytes;
@@ -1950,6 +1962,7 @@ class PollingEngine {
 
       answered++;
       terminalSources.add(frame.sourceId ?? '');
+      positiveSources.add(frame.sourceId ?? '');
       final List<Dtc> decoded;
       try {
         decoded = DtcDecoder.decodeResponse(
@@ -1998,6 +2011,7 @@ class PollingEngine {
             : DtcReadFailure.error,
         pendingSources: Set.unmodifiable(pendingSources),
         terminalSources: Set.unmodifiable(terminalSources),
+        positiveSources: Set.unmodifiable(positiveSources),
         refusedCount: refused,
         answeredCount: answered,
         unrecognisedCount: unrecognised,
@@ -2034,6 +2048,7 @@ class PollingEngine {
         // `_lastTerminalSources` is not updated. Without carrying the
         // controllers that *did* finish, a debt could only ever grow.
         terminalSources: Set.unmodifiable(terminalSources),
+        positiveSources: Set.unmodifiable(positiveSources),
         refusedCount: refused,
         answeredCount: answered,
         unrecognisedCount: unrecognised,
@@ -2071,6 +2086,7 @@ class PollingEngine {
     // decoded. Everything above can fail the read outright; this one only
     // qualifies it, and a qualification wants the codes it is qualifying.
     _lastTerminalSources = Set.unmodifiable(terminalSources);
+    _lastPositiveSources = Set.unmodifiable(positiveSources);
     return codes;
   }
 

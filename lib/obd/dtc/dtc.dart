@@ -659,6 +659,7 @@ class DtcReadException implements Exception {
     this.partial = const [],
     this.pendingSources = const {},
     this.terminalSources = const {},
+    this.positiveSources = const {},
     this.heardAboutService = const {},
     this.silentSources = const {},
     this.unresolvedSources = const {},
@@ -751,8 +752,18 @@ class DtcReadException implements Exception {
   /// this field rather than [message].
   final int refusedCount;
 
-  /// How many controllers gave a terminal answer to this request.
+  /// How many controllers returned a positive SID for this request.
+  ///
+  /// Distinct from [terminalSources]: a refusal is a finished outcome and
+  /// still not an answer. The screen's "{n} answered" is this count.
   final int answeredCount;
+
+  /// Controllers that returned a positive SID for this request.
+  ///
+  /// Distinct from [terminalSources], which also includes refusals. A retry
+  /// that later sees only a refusal must not count that controller as an
+  /// extra "already answered" module.
+  final Set<String> positiveSources;
 
   /// How many replies were neither a refusal nor an answer to this service.
   final int unrecognisedCount;

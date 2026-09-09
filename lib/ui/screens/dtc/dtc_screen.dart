@@ -813,6 +813,21 @@ String? _failureSentence(AppLocalizations l10n, DtcCategoryResult result) {
   return dtcCategoryFailureText(l10n, failure);
 }
 
+/// Named silent/unresolved controllers. Empty when the failure is a generic
+/// `noAnswer` with no one to name — that fallback still stays off the
+/// partial-coverage sentence.
+String _structuredNoAnswerDetail(
+  AppLocalizations l10n,
+  DtcCategoryResult result,
+) {
+  final failure = result.failure;
+  if (failure == null) return '';
+  final hasNamed = failure.silentSources.any((id) => id.isNotEmpty) ||
+      failure.unresolvedSources.any((id) => id.isNotEmpty);
+  if (!hasNamed) return '';
+  return _failureSentence(l10n, result) ?? '';
+}
+
 UnansweredCategoryWording unansweredCategoryWording({
   required AppLocalizations l10n,
   required DtcKind kind,
@@ -858,23 +873,28 @@ UnansweredCategoryWording unansweredCategoryWording({
           : l10n.dtcUnconfirmed)
       : l10n.dtcReadFailed;
 
+  final structured = _structuredNoAnswerDetail(l10n, result);
   final String detail;
   if (ordinarySilence) {
     // Mode 07 and Mode 0A are not the same feature and were sharing one
     // sentence. Pending codes have been part of OBD-II since 1996; it is
     // *permanent* codes that arrived with the 2010-2012 generation. Telling a
     // driver that their 2004 car is too old for pending codes is simply wrong.
-    detail = switch (kind) {
-      DtcKind.permanent => l10n.dtcSilentPermanentDetail,
-      DtcKind.pending => l10n.dtcSilentPendingDetail,
-      // Unreachable: `ordinarySilence` requires an optional class. Left empty
-      // rather than given a key, because an ARB entry no screen can render is
-      // one a translator has to guess at.
-      DtcKind.stored => '',
-    };
+    detail = structured.isNotEmpty
+        ? structured
+        : switch (kind) {
+            DtcKind.permanent => l10n.dtcSilentPermanentDetail,
+            DtcKind.pending => l10n.dtcSilentPendingDetail,
+            // Unreachable: `ordinarySilence` requires an optional class. Left empty
+            // rather than given a key, because an ARB entry no screen can render is
+            // one a translator has to guess at.
+            DtcKind.stored => '',
+          };
   } else if (result.isSilence) {
     if (!isOptional) {
-      detail = l10n.dtcStoredSilentDetail(kind.mode);
+      detail = structured.isNotEmpty
+          ? '${l10n.dtcStoredSilentDetail(kind.mode)} $structured'
+          : l10n.dtcStoredSilentDetail(kind.mode);
     } else if (!answeredByNobody) {
       // Some controllers answered and some did not. Saying the vehicle did not
       // respond is false, and so is saying Mode 03 was silent.
@@ -882,13 +902,18 @@ UnansweredCategoryWording unansweredCategoryWording({
       // `DtcReadFailure.noAnswer` maps to "this category did not answer",
       // which contradicts the surrounding partial-coverage sentence. Keep that
       // identifier for total silence; here the outer sentence already names
-      // the incomplete set.
-      final inner = result.failure?.kind == DtcReadFailure.noAnswer
-          ? ''
-          : (_failureSentence(l10n, result) ?? '');
+      // the incomplete set. Structured silent/unresolved lists are not that
+      // generic fallback and must still reach the panel.
+      final inner = structured.isNotEmpty
+          ? structured
+          : (result.failure?.kind == DtcReadFailure.noAnswer
+              ? ''
+              : (_failureSentence(l10n, result) ?? ''));
       detail = l10n.dtcPartiallyAnsweredDetail(inner);
     } else {
-      detail = l10n.dtcBothSilentDetail(kind.mode);
+      detail = structured.isNotEmpty
+          ? structured
+          : l10n.dtcBothSilentDetail(kind.mode);
     }
   } else {
     detail = l10n.dtcReadFailureDetail(
