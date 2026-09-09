@@ -436,6 +436,150 @@ class ArtifactAndHandoffTest(unittest.TestCase):
             msg=errors,
         )
 
+    def test_completed_handoff_exit_1_is_not_complete(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [{"exit": 1}],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("exit" in error and "cannot complete" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_completed_handoff_all_skipped_is_not_complete(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [{"exit": 0, "executed": 0, "skipped": 12}],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("executed" in error or "skipped" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_completed_handoff_string_evidence_is_not_a_report(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": ["not a test report"],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(any("not a test report" in error for error in errors), msg=errors)
+
+    def test_completed_handoff_missing_head_sha_fails(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [{"exit": 0}],
+                "unrun": [],
+            }
+        )
+        self.assertTrue(any("head_sha" in error for error in errors), msg=errors)
+
+    def test_completed_handoff_zero_exit_reports_pass(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [{"exit": 0, "argv": ["python3", "tool/workshop/probe.py"]}],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertEqual(errors, [])
+
+
+class FlutterAllowlistTest(unittest.TestCase):
+    def _errors(self, commands: list) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            data = _plan(
+                [_minimal_task("WS-01", 9, commands=commands, writable=["test/"])]
+            )
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False
+            )
+            return errors
+
+    def test_arbitrary_flutter_option_is_still_rejected(self) -> None:
+        errors = self._errors(
+            [["flutter", "test", "--release", "test/foo_test.dart"]]
+        )
+        self.assertTrue(any("not allowlisted" in error for error in errors), msg=errors)
+
+    def test_reporter_json_is_allowlisted(self) -> None:
+        errors = self._errors(
+            [["flutter", "test", "test/foo_test.dart", "--reporter", "json"]]
+        )
+        self.assertEqual(errors, [])
+
+    def test_documented_rig_journey_command_is_allowlisted(self) -> None:
+        errors = self._errors(
+            [
+                [
+                    "flutter",
+                    "test",
+                    "integration_test/localization_journey_test.dart",
+                    "--flavor",
+                    "rig",
+                    "--dart-define",
+                    "TELLTALE_TEST_RIG=true",
+                    "-d",
+                    "emulator-5554",
+                ]
+            ]
+        )
+        self.assertEqual(errors, [])
+
+    def test_field_flavor_is_rejected(self) -> None:
+        errors = self._errors(
+            [
+                [
+                    "flutter",
+                    "test",
+                    "integration_test/localization_journey_test.dart",
+                    "--flavor",
+                    "field",
+                    "--dart-define",
+                    "TELLTALE_TEST_RIG=true",
+                    "-d",
+                    "emulator-5554",
+                ]
+            ]
+        )
+        self.assertTrue(any("flavor" in error for error in errors), msg=errors)
+
+    def test_rig_without_device_is_rejected(self) -> None:
+        errors = self._errors(
+            [
+                [
+                    "flutter",
+                    "test",
+                    "integration_test/localization_journey_test.dart",
+                    "--flavor",
+                    "rig",
+                    "--dart-define",
+                    "TELLTALE_TEST_RIG=true",
+                ]
+            ]
+        )
+        self.assertTrue(any("explicit-test-device" in error for error in errors), msg=errors)
+
 
 class ReadyAndLeaseTest(unittest.TestCase):
     def test_two_disjoint_tasks_are_both_ready(self) -> None:

@@ -102,7 +102,13 @@ class RunTaskTest(unittest.TestCase):
             code = run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=10)
             self.assertEqual(code, 0)
             data = json.loads(handoff.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(data["completed"])
             self.assertEqual(data["status"], "completed")
             self.assertEqual(data["unrun"], [])
@@ -120,7 +126,13 @@ class RunTaskTest(unittest.TestCase):
             code = run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=10)
             self.assertEqual(code, 1)
             data = json.loads(handoff.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertIs(data["completed"], False)
             self.assertEqual(data["status"], "failed")
             self.assertTrue(data["failed"])
@@ -145,7 +157,13 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(code, 1)
             review = author.with_name("review.json")
             data = json.loads(review.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertIs(data["completed"], False)
             self.assertEqual(data["status"], "failed")
             self.assertEqual(data["reviewer_role"], "review")
@@ -547,7 +565,13 @@ class RunTaskTest(unittest.TestCase):
             review = json.loads(
                 author.with_name("review.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(validate_plan.validate_handoff(review), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    review,
+                    require_head_sha=review.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 
@@ -579,7 +603,13 @@ class RunTaskTest(unittest.TestCase):
             review = json.loads(
                 author.with_name("reviewer.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(validate_plan.validate_handoff(review), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    review,
+                    require_head_sha=review.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 

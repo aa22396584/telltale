@@ -409,7 +409,10 @@ def _read_author_handoff(
         raise RunnerError(f"cannot read author handoff: {exc}") from exc
     if not isinstance(raw, dict):
         raise RunnerError("author handoff must be a JSON object")
-    errors = validate_plan.validate_handoff(raw)
+    errors = validate_plan.validate_handoff(
+        raw,
+        require_head_sha=raw.get("head_sha") is not None,
+    )
     if errors:
         raise RunnerError("invalid author handoff: " + "; ".join(errors))
     if raw.get("completed") is not True or raw.get("status") != "completed":
@@ -438,7 +441,10 @@ def _read_author_handoff(
 
 
 def _write_handoff(path: Path, payload: dict[str, Any]) -> None:
-    errors = validate_plan.validate_handoff(payload)
+    errors = validate_plan.validate_handoff(
+        payload,
+        require_head_sha=payload.get("head_sha") is not None,
+    )
     if errors:
         raise RunnerError("invalid handoff: " + "; ".join(errors))
     path.parent.mkdir(parents=True, exist_ok=True)
