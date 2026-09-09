@@ -50,8 +50,6 @@ import '../support/dart_source_reader.dart';
 /// here reaches a screen; `export_labels_stay_off_screen_test.dart` (on the
 /// #45 branch) is what keeps it that way.
 const _allowed = <String>{
-  // The exported disagreement list on a multi-controller DTC scan.
-  "            '\${disagreements.join('；')}。'",
   // Attempt transcript and evidence header, both written to a file.
   "          '# ATDPN：\${_evidenceHeaderValue(c.protocolNumber, whenEmpty: '—')}',",
   // The exported assumptions sentence, composed by _exportNote.
