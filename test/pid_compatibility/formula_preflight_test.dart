@@ -140,6 +140,15 @@ void main() {
     // Do not "fix" it by adding A=21 as another stand-in.
     expect(FormulaEngine.preflight('LOG10(A-20)'), isNull);
     expect(FormulaEngine.preflight('SQRT(A-20)'), isNull);
+    // A reply-byte token elsewhere does not save a constant-invalid term.
+    expect(
+      FormulaEngine.preflight('LOG10(-1)+A')?.issue,
+      FormulaIssue.log10NonPositiveArgument,
+    );
+    expect(
+      FormulaEngine.preflight('SQRT(-1)+A')?.issue,
+      FormulaIssue.sqrtNegativeArgument,
+    );
     const wire =
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
         'Inv,INV,010C,1/(A-1),0,100,,7E0\r\n';

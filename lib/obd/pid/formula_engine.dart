@@ -1921,6 +1921,9 @@ class FormulaEngine {
       List<int>.generate(14, (i) => i + 1),
       List<int>.generate(14, (i) => 14 - i),
     ];
+    var sawArgument = first.argument != null;
+    var argumentVaried = false;
+    double? seenArgument = first.argument;
     for (final probe in probes) {
       for (final standIn in standIns) {
         if (identical(probe, primary) && standIn == 1) continue;
@@ -1931,15 +1934,24 @@ class FormulaEngine {
         );
         if (retry == null) return null;
         if (!_isProbeDomain(retry.issue)) return retry;
+        if (retry.argument != null) {
+          if (sawArgument && retry.argument != seenArgument) {
+            argumentVaried = true;
+          }
+          seenArgument = retry.argument;
+          sawArgument = true;
+        }
       }
     }
     // Every finite probe can miss a well-formed domain (`LOG10(A-20)` is
     // negative for 1..14). Adding A=21 would miss `LOG10(A-200)` the same
-    // way. A log/sqrt/non-finite failure that names a reply byte is a
-    // runtime requirement. `A/0` stays rejected: every probe is
-    // `divisionByZero`, and `LOG10(-1)` names no reply byte.
+    // way. A log/sqrt failure whose argument moves with the reply byte is
+    // a runtime requirement. The same issue with a constant argument
+    // (`LOG10(-1)+A`) stays rejected: the `A` did not produce the failure.
+    // `A/0` stays rejected as `divisionByZero`.
     if (_isByteDependentRuntimeDomain(first.issue) &&
-        _referencesReplyByte(equation)) {
+        _referencesReplyByte(equation) &&
+        (!sawArgument || argumentVaried)) {
       return null;
     }
     return first;

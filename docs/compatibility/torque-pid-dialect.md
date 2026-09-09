@@ -48,11 +48,12 @@ past the payload is `byteBeyondResponse`, not zero.
 
 Authoring (`FormulaEngine.preflight`) uses stand-in bytes and `VAL`/`BARO`
 samples so a well-formed formula can be saved before a live reading exists.
-A log/sqrt domain error that names a reply byte (`LOG10(A-20)`,
-`SQRT(A-20)`) is a runtime requirement, not import syntax. Do not add
-more stand-in bytes to make those probes succeed. Constant-invalid
-formulas (`LOG10(-1)`, `A/0`) still cannot save. Runtime evaluation
-still refuses missing or stale dependencies.
+A log/sqrt domain error whose argument moves with a reply byte
+(`LOG10(A-20)`, `SQRT(A-20)`) is a runtime requirement, not import
+syntax. Do not add more stand-in bytes to make those probes succeed.
+Constant-invalid formulas (`LOG10(-1)`, `LOG10(-1)+A`, `A/0`) still
+cannot save. Runtime evaluation still refuses missing or stale
+dependencies.
 
 ## Unsupported
 
