@@ -88,6 +88,16 @@ void main() {
       expect(subset, isNot(contains('Priority')));
       expect(subset, isNot(contains('Redline')));
       expect(subset, isNot(contains('Variant')));
+      expect(
+        subset,
+        contains('OBD Header'),
+        reason: 'Torque consumers match the documented eighth column name',
+      );
+      expect(
+        subset.split('\r\n').first,
+        isNot(contains(',Header')),
+        reason: 'the Telltale Header spelling is not the Torque subset heading',
+      );
 
       final restored = PidCsv.parse(subset);
       expect(restored.errors, isEmpty);

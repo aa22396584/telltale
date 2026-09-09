@@ -94,9 +94,9 @@ unsupported wiki `NAME(` is `unparsableTerm`. Example: `FOOZ(A)`.
 Named imports require Name, ModeAndPID, and Equation after header
 normalization. `PidCsv.export` is the lossless Telltale machine round-trip
 (including Priority, Redline, Variant). `PidCsv.exportTorqueSubset` writes
-only Torque Pro's eight documented columns and is a lossy interchange:
-reimporting it must not invent Telltale-only metadata. See `PidCsv` and
-`test/pid_csv_test.dart`.
+Torque Pro's eight documented columns (`OBD Header`, not Telltale's
+`Header`) and is a lossy interchange: reimporting it must not invent
+Telltale-only metadata. See `PidCsv` and `test/pid_csv_test.dart`.
 
 ## What this file is not
 

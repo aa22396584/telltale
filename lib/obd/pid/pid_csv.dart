@@ -242,7 +242,7 @@ abstract final class PidCsv {
     'Min Value',
     'Max Value',
     'Units',
-    'Header',
+    'OBD Header',
   ];
 
   static String exportTorqueSubset(List<Pid> pids) {
