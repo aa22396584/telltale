@@ -249,6 +249,7 @@ def _not_run_lane(output: Path, *, filename: str, message: str) -> int:
 
 
 _NOT_RUN_LANES = {
+    "software": "software.json",
     "ui-profile": "ui-profile.json",
     "competitor": "competitor.json",
     "physical-adapter": "physical-adapter.json",

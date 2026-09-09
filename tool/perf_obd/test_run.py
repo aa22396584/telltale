@@ -390,6 +390,31 @@ class ValidateReportTest(unittest.TestCase):
             self.assertFalse((output / "sleep-walk.json").exists())
             self.assertFalse((output / "competitor.json").exists())
 
+    def test_combined_sleep_walk_and_software_deletes_the_software_report(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            (output / "software.json").write_text(
+                '{"lane":"software","device":"planted"}', encoding="utf-8"
+            )
+            (output / "sleep-walk.json").write_text(
+                '{"lane":"sleep-walk","device":"planted"}', encoding="utf-8"
+            )
+            self.assertEqual(
+                main(
+                    [
+                        "--sleep-walk",
+                        "--software",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "software.json").exists())
+            self.assertFalse((output / "sleep-walk.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
