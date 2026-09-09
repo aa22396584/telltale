@@ -354,6 +354,35 @@ void main() {
     expect(custom, isNot(contains('INT16(A:B)')));
   });
 
+  test('an unsavable latest duplicate does not revive the earlier spelling',
+      () async {
+    // Collapse last-wins first. If the later spelling is A/0, dropping it
+    // before collapse would let the earlier `A` drive the gauge again.
+    const stale = '{"name":"RPM stale","shortName":"RPM",'
+        '"modeAndPid":"01 0C","equation":"A","minValue":0,'
+        '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
+    const rejected = '{"name":"RPM bad","shortName":"RPM",'
+        '"modeAndPid":"010C","equation":"A/0","minValue":0,'
+        '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
+
+    final container = await _container({
+      'custom_pids_v1': <String>[stale, rejected],
+      'active_pid_ids_v1': <String>['custom:7E0:01 0C'],
+    });
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(pidRegistryProvider).where((p) => p.isCustom),
+      isEmpty,
+      reason: 'the definition in effect was unsavable; the obsolete twin stays buried',
+    );
+    expect(
+      container.read(activePidsProvider),
+      equals(PidLibrary.defaultDashboard),
+      reason: 'no custom identity survived, so the layout is the broken-id fallback',
+    );
+  });
+
   test('upsertAllCustom refuses a formula the editor cannot save', () async {
     final container = await _container({});
     addTearDown(container.dispose);

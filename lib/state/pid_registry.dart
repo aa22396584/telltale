@@ -47,12 +47,7 @@ class PidRegistry extends Notifier<List<Pid>> {
         // changed between builds, took the whole PID list and the screens
         // built on it down with it.
         if (decoded is! Map<String, dynamic>) continue;
-        final pid = Pid.fromJson(decoded);
-        // Editor and CSV already share FormulaEngine.preflight. Restore
-        // used not to, so A/0 and INT16(A:B) survived a restart and reached
-        // the poller. Skip them in memory; do not rewrite storage.
-        if (FormulaEngine.preflight(pid.equation) != null) continue;
-        custom.add(pid);
+        custom.add(Pid.fromJson(decoded));
       } on Object {
         // A corrupt entry should not cost the user their whole PID list.
         continue;
@@ -83,6 +78,12 @@ class PidRegistry extends Notifier<List<Pid>> {
     for (final pid in custom) {
       byCanonicalId[Pid.canonicalId(pid.id)] = pid;
     }
+    // Collapse last-wins first, then refuse the winner if the editor could
+    // not save it. Filtering first would drop an unsavable later spelling
+    // and revive the obsolete twin that was no longer driving the gauge.
+    byCanonicalId.removeWhere(
+      (id, pid) => FormulaEngine.preflight(pid.equation) != null,
+    );
     // Storage is not a trusted source for profile PIDs. The former key held
     // full Pid JSON, which would let a tampered preference carry a modified
     // formula past the SHA-256-verified catalog — so it is still ignored and

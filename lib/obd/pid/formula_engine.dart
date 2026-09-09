@@ -1880,7 +1880,9 @@ class FormulaEngine {
     double valStandIn = 1,
   }) {
     try {
-      final engine = FormulaEngine()
+      // Authoring probes must not depend on wall-clock entropy: RANDOM()
+      // during preflight is a stand-in, same as VAL{} using 1/2/100.
+      final engine = FormulaEngine(random: () => 0.5)
         ..seedForAuthoring(equation, sample: valStandIn);
       engine.evaluateBytes(
         equation,
