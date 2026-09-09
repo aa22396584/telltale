@@ -250,8 +250,11 @@ void main() {
       results: {
         DtcKind.stored: const DtcCategoryResult.codes([]),
         DtcKind.pending: const DtcCategoryResult.failed(
-          DtcReadException('掃描已達時間上限，這個類別沒有讀取到。請重新掃描。',
-              kind: DtcReadFailure.noAnswer),
+          DtcReadException(
+            'The scan reached its time limit before this category was read. '
+            'Scan again.',
+            kind: DtcReadFailure.noAnswer,
+          ),
         ),
         DtcKind.permanent: const DtcCategoryResult.codes([]),
       },
