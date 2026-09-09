@@ -314,7 +314,7 @@ class FormulaEngine {
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
   static final RegExp _logPattern =
-      RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)');
+      RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)(?![A-Za-z0-9_])');
   static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.

@@ -141,6 +141,12 @@ void main() {
         FormulaIssue.unparsableTerm,
       );
       expect(engine.evaluateBytes('2*LOG(1)', const []), closeTo(0.0, 1e-9));
+      // `LOG(1)A` with A=5 must not become 0.05.
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOG(1)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(engine.evaluateBytes('LOG(1)*A', const [5]), closeTo(0.0, 1e-9));
     });
 
     test('LOG() is natural log, not LOG10', () {
