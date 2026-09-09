@@ -1234,6 +1234,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       transport,
       transcript: _attemptTranscript!,
       elapsed: () => elapsedCache.elapsed,
+      agingElapsed: () => elapsedCache.agingElapsed,
     );
     _client = client;
 
@@ -1318,11 +1319,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
 
     _completeEvidence(client, outcome: 'connected');
 
-    final engine = PollingEngine(
-      client,
-      elapsed: () => elapsedCache.elapsed,
-      syncElapsed: elapsedCache.sync,
-    );
+    final engine = PollingEngine(client, elapsedClock: elapsedCache);
     engine.shouldContinue = () => _foreground && !_superseded(generation);
     // The same question, asked where the bytes actually leave. `shouldContinue`
     // guards the loop's decisions; this guards the wire, which is the only

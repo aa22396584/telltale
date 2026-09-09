@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'addressing.dart';
 import 'dtc/dtc.dart';
+import 'elapsed_clock.dart';
 import 'freeze_frame.dart';
 import 'readiness.dart';
 import 'elm327_client.dart';
@@ -266,8 +267,7 @@ class PollingEngine {
     this.client, {
     FormulaEngine? formulaEngine,
     PriorityScheduler? scheduler,
-    this.elapsed,
-    this.syncElapsed,
+    this.elapsedClock,
   }) : formula = formulaEngine ?? FormulaEngine(),
        scheduler = scheduler ?? PriorityScheduler();
 
@@ -282,10 +282,11 @@ class PollingEngine {
   /// Optional replacement for [_freshness]. Android production passes
   /// `elapsedRealtime`; a null mapping retires continuity instead of
   /// pretending Stopwatch includes deep sleep.
-  final Duration Function()? elapsed;
-  final Future<void> Function()? syncElapsed;
+  final NativeElapsedCache? elapsedClock;
 
-  Duration _nowElapsed() => elapsed?.call() ?? _freshness.elapsed;
+  Duration _nowElapsed() => elapsedClock?.elapsed ?? _freshness.elapsed;
+
+  Duration _ageElapsed() => elapsedClock?.agingElapsed ?? _nowElapsed();
 
   final Elm327Client client;
   final FormulaEngine formula;
@@ -321,7 +322,7 @@ class PollingEngine {
     batteryVoltage: client.batteryVoltage,
     accelerationMs2: accelerationMs2,
     capturedAt: DateTime.now(),
-    elapsedNow: () => _nowElapsed(),
+    elapsedNow: () => _ageElapsed(),
   );
 
   /// Smoothed longitudinal acceleration derived from road speed.
@@ -3709,8 +3710,7 @@ class PollingEngine {
             continue;
           }
 
-          final syncElapsed = this.syncElapsed;
-          if (syncElapsed != null) await syncElapsed();
+          await elapsedClock?.sync();
           await _refreshVoltageIfDue();
           _refillQueue();
           final batch = scheduler.popBatch();

@@ -461,9 +461,11 @@ class Elm327Client {
     this.writeTimeout = const Duration(seconds: 2),
     DateTime Function()? clock,
     Duration Function()? elapsed,
+    Duration Function()? agingElapsed,
     ObdTranscript? transcript,
   }) : _clock = clock ?? DateTime.now,
        _elapsedOverride = elapsed,
+       _agingElapsedOverride = agingElapsed,
        transcript = transcript ?? ObdTranscript();
 
   final ObdTransport transport;
@@ -471,9 +473,12 @@ class Elm327Client {
   final Duration commandTimeout;
   final DateTime Function() _clock;
   final Duration Function()? _elapsedOverride;
+  final Duration Function()? _agingElapsedOverride;
   final Stopwatch _freshness = Stopwatch()..start();
 
   Duration _nowElapsed() => _elapsedOverride?.call() ?? _freshness.elapsed;
+
+  Duration _ageElapsed() => _agingElapsedOverride?.call() ?? _nowElapsed();
 
   /// How long handing bytes to the transport may take before the link is
   /// considered gone. See the write in [_sendNow].
@@ -708,7 +713,7 @@ class Elm327Client {
     if (wallAge.isNegative) return null;
     final received = _batteryVoltageElapsed;
     if (received != null) {
-      final monoAge = _nowElapsed() - received;
+      final monoAge = _ageElapsed() - received;
       if (monoAge.isNegative || monoAge > voltageMaxAge) return null;
       return _batteryVoltage;
     }

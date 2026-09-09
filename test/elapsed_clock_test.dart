@@ -123,6 +123,50 @@ void main() {
       timestamp: wall,
       receivedElapsed: Duration.zero,
     );
-    expect(reading.isStaleAt(wall, elapsed: clock.elapsed), isTrue);
+    expect(reading.isStaleAt(wall, elapsed: clock.agingElapsed), isTrue);
+  });
+
+  test('elapsed keeps advancing between native synchronizations', () async {
+    var realtimeMs = 1000;
+    var tick = Duration.zero;
+    final clock = NativeElapsedCache(
+      readMs: () async => realtimeMs,
+      tick: () => tick,
+    );
+    await clock.sync();
+    expect(clock.elapsed, const Duration(milliseconds: 1000));
+    tick = const Duration(seconds: 3);
+    expect(clock.elapsed, const Duration(milliseconds: 4000));
+    realtimeMs = 5000;
+    await clock.sync();
+    expect(clock.elapsed, const Duration(milliseconds: 5000));
+  });
+
+  test('a retired clock keeps advancing and ages even a new stamp', () async {
+    var tick = Duration.zero;
+    var realtimeMs = 2000;
+    final clock = NativeElapsedCache(
+      readMs: () async => realtimeMs,
+      tick: () => tick,
+    );
+    await clock.sync();
+    realtimeMs = -1;
+    await clock.sync();
+    expect(clock.unknown, isTrue);
+    final stamped = clock.elapsed;
+    tick = const Duration(seconds: 5);
+    expect(clock.elapsed, greaterThan(stamped));
+    final reading = Reading(
+      pid: _rpm,
+      value: 800,
+      rawBytes: const [0x0c, 0x80],
+      timestamp: wall,
+      receivedElapsed: clock.elapsed,
+    );
+    expect(
+      reading.isStaleAt(wall, elapsed: clock.agingElapsed),
+      isTrue,
+      reason: 'unknown continuity must not use the stamp as its own age',
+    );
   });
 }
