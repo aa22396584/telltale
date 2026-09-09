@@ -439,7 +439,7 @@ void _functionalAddressingTests() {
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
             .having((e) => e.message, 'message', contains('7E9'))
-            .having((e) => e.message, 'message', contains('引擎'))),
+            .having((e) => e.message, 'message', contains('engine'))),
       );
     });
   });
