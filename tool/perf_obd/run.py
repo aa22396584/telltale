@@ -2,9 +2,9 @@
 """#70 software-lane evidence gate.
 
 Runs the production PollingEngine measurement (Dart) and refuses a missing,
-skipped, or zero-observation report. `--ui-profile`, `--competitor` and
-`--physical-adapter` fail closed without an identified device and must not
-be reported as PASS.
+skipped, or zero-observation report. `--ui-profile`, `--competitor`,
+`--physical-adapter` and `--sleep-walk` fail closed without an identified
+device and must not be reported as PASS.
 """
 
 from __future__ import annotations
@@ -242,16 +242,18 @@ def validate_physical_adapter_report(report: object) -> dict:
 def _not_run_lane(output: Path, *, filename: str, message: str) -> int:
     output.mkdir(parents=True, exist_ok=True)
     stale = output / filename
-    if stale.exists():
+    if stale.exists() or stale.is_symlink():
         stale.unlink()
     print(message, file=sys.stderr)
     return 2
 
 
 _NOT_RUN_LANES = {
+    "software": "software.json",
     "ui-profile": "ui-profile.json",
     "competitor": "competitor.json",
     "physical-adapter": "physical-adapter.json",
+    "sleep-walk": "sleep-walk.json",
 }
 
 
@@ -261,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ui-profile", action="store_true")
     parser.add_argument("--competitor", action="store_true")
     parser.add_argument("--physical-adapter", action="store_true")
+    parser.add_argument("--sleep-walk", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     chosen = [
@@ -270,6 +273,7 @@ def main(argv: list[str] | None = None) -> int:
             ("ui-profile", args.ui_profile),
             ("competitor", args.competitor),
             ("physical-adapter", args.physical_adapter),
+            ("sleep-walk", args.sleep_walk),
         )
         if on
     ]
@@ -280,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
             if filename is None:
                 continue
             stale = args.output / filename
-            if stale.exists():
+            if stale.exists() or stale.is_symlink():
                 stale.unlink()
         print("lane flags are mutually exclusive", file=sys.stderr)
         return 2
@@ -301,6 +305,12 @@ def main(argv: list[str] | None = None) -> int:
             args.output,
             filename="physical-adapter.json",
             message="physical-adapter lane is not-run without an identified device",
+        )
+    if args.sleep_walk:
+        return _not_run_lane(
+            args.output,
+            filename="sleep-walk.json",
+            message="sleep-walk lane is not-run without an identified device",
         )
     if not args.software:
         print("physical/competitor lanes are not-run in this leftover", file=sys.stderr)
