@@ -530,6 +530,8 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
             errors.append(f"{prefix} exit {exit_code!r} cannot complete")
         if item.get("timed_out") is True:
             errors.append(f"{prefix} timed out and cannot complete")
+        if item.get("truncated") is True:
+            errors.append(f"{prefix} truncated output cannot complete")
         executed = item.get("executed")
         skipped = item.get("skipped")
         if _is_flutter_test(item.get("argv")):

@@ -565,6 +565,54 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         )
         self.assertEqual(errors, [])
 
+    def test_completed_handoff_truncated_report_cannot_complete(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["python3", "tool/workshop/probe.py"],
+                        "exit": 0,
+                        "executed": 4,
+                        "truncated": True,
+                        "stdout": "x" * 50,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("truncated" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_flutter_truncated_json_cannot_complete_even_with_counts(self) -> None:
+        stdout = json.dumps({"type": "testDone", "result": "success"})
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "executed": 1,
+                        "skipped": 0,
+                        "truncated": True,
+                        "stdout": stdout,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("truncated" in error for error in errors),
+            msg=errors,
+        )
+
 
 class FlutterAllowlistTest(unittest.TestCase):
     def _errors(self, commands: list) -> list[str]:
