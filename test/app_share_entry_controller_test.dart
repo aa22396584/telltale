@@ -196,8 +196,8 @@ void main() {
         if (roots.existsSync()) roots.deleteSync(recursive: true);
       });
       final mutablePids = [PidLibrary.all.first];
-      final expectedHuman = utf8.encode(
-        PidCsv.exportHumanReport(List.unmodifiable(mutablePids)),
+      final expectedHuman = await _collect(
+        PidCsv.streamHumanReport(List.unmodifiable(mutablePids)),
       );
       final humanFuture = _invoke(
         roots,

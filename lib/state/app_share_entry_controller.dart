@@ -1,9 +1,9 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -177,6 +177,9 @@ final class AppShareEntryController {
   }
 
   /// Labeled human spreadsheet. Not a PID definition file.
+  ///
+  /// Bytes match [PidCsv.exportHumanReport], including formula-prefix
+  /// protection, in the same bounded chunks as [PidCsv.streamHumanReport].
   Future<AppShareOutcome> shareHumanReportCsv({
     required Iterable<Pid> pids,
     Rect? sharePositionOrigin,
@@ -187,9 +190,7 @@ final class AppShareEntryController {
         sourceKind: ShareSourceKind.pidCsv,
         subject: shareHumanReportCsvSubjectText(_copy),
         sharePositionOrigin: sharePositionOrigin,
-        streamFactory: () async* {
-          yield utf8.encode(PidCsv.exportHumanReport(frozen));
-        },
+        streamFactory: () => PidCsv.streamHumanReport(frozen),
       ),
     );
   }
