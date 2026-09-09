@@ -31,6 +31,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `LOG10(x)` | unary | Domain error when `x <= 0`. Not `LOG(`. |
 | `LOG(x)` | unary | Natural log (base e). Domain error when `x <= 0`. Not `LOG10(` or `LOG1P(`. |
 | `SQRT(x)` | unary | Domain error when `x < 0`. Zero is allowed. |
+| `SIN(x)` / `COS(x)` / `TAN(x)` | unary | Radians, matching Java `Math.sin`/`cos`/`tan`. Not degrees. `2SIN(0)` is `unparsableTerm`, not 20. |
 | `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
 | `BIT(value:bit)` | arity 2 | Wiki colon form. Returns 0 or 1. A negative or non-integer bit index is `unparsableTerm`, not 0. |
 
@@ -44,7 +45,7 @@ These wiki names are detected as `NAME(` and fail as
 `FormulaIssue.unsupportedConstruct`. They are **not** evaluated as zero and
 are **not** stripped out of the equation.
 
-`EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT` `SIN` `COS` `TAN` `LOG1P`
+`EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT` `LOG1P`
 `INT32` `INT24` `INT16` `INT` `SIGNED32` `SIGNED24` `SIGNED16`
 `SIGNED8` `FLOAT64` `FLOAT32` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
 

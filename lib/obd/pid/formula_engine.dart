@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
+/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
+///      `LOG10()`, `LOG()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -41,7 +41,7 @@ enum FormulaIssue {
   /// knows. Carries the fragment.
   unparsableTerm,
 
-  /// `ABS(`/`LOG10(`/`LOG(`/`SQRT(` nested past the evaluator's limit. Distinct from
+  /// `ABS(`/`LOG10(`/`LOG(`/`SQRT(`/`SIN(`/`COS(`/`TAN(` nested past the evaluator's limit. Distinct from
   /// [parenthesisNestingTooDeep] because it names a different construct to
   /// simplify.
   functionNestingTooDeep,
@@ -316,6 +316,13 @@ class FormulaEngine {
   static final RegExp _logPattern =
       RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)(?![A-Za-z0-9_])');
   static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
+  // Same token boundaries as LOG: `2SIN(0)` is not 20, `SIN(0)A` is not 0.05.
+  static final RegExp _sinPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])SIN\(([^()]+)\)(?![A-Za-z0-9_])');
+  static final RegExp _cosPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])COS\(([^()]+)\)(?![A-Za-z0-9_])');
+  static final RegExp _tanPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])TAN\(([^()]+)\)(?![A-Za-z0-9_])');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
   /// They must contain no A-N letters of their own, hence control characters.
@@ -326,6 +333,9 @@ class FormulaEngine {
   static const String _sqrtSentinel = '\u0005(';
   static const String _logSentinel = '\u0006(';
   static const String _bitSentinel = '\u0007(';
+  static const String _sinSentinel = '\u0008(';
+  static const String _cosSentinel = '\u000e(';
+  static const String _tanSentinel = '\u000f(';
 
   /// Characters that, when they precede a `-`, mark it as unary rather than
   /// a binary subtraction.
@@ -727,6 +737,18 @@ class FormulaEngine {
         .replaceAllMapped(
           _namedCallPattern('BIT'),
           (m) => '${m.group(1)}$_bitSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('SIN'),
+          (m) => '${m.group(1)}$_sinSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('COS'),
+          (m) => '${m.group(1)}$_cosSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('TAN'),
+          (m) => '${m.group(1)}$_tanSentinel',
         );
 
     for (var i = 0; i < 14; i++) {
@@ -761,7 +783,10 @@ class FormulaEngine {
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
         .replaceAll(_maxSentinel, 'MAX(')
-        .replaceAll(_bitSentinel, 'BIT(');
+        .replaceAll(_bitSentinel, 'BIT(')
+        .replaceAll(_sinSentinel, 'SIN(')
+        .replaceAll(_cosSentinel, 'COS(')
+        .replaceAll(_tanSentinel, 'TAN(');
 
     // Alternating, not one pass each in a fixed order.
     //
@@ -827,6 +852,12 @@ class FormulaEngine {
         }
         return math.sqrt(v);
       });
+      // Wiki does not name the unit. Dart/Java `sin` is radians; answering
+      // degrees here would be a confident wrong number for every nonzero
+      // argument.
+      s = _applyPrefixedFunction(s, _sinPattern, equation, math.sin);
+      s = _applyPrefixedFunction(s, _cosPattern, equation, math.cos);
+      s = _applyPrefixedFunction(s, _tanPattern, equation, math.tan);
       s = _applyBinaryFunction(
         s,
         'MIN',
@@ -879,7 +910,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10|LOG|SQRT)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -1037,6 +1068,9 @@ class FormulaEngine {
       inner.contains('LOG10(') ||
       inner.contains('LOG(') ||
       inner.contains('SQRT(') ||
+      inner.contains('SIN(') ||
+      inner.contains('COS(') ||
+      inner.contains('TAN(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
       inner.contains('BIT(');
@@ -1417,7 +1451,7 @@ class _Operator {
 /// is the ECU cache identifier we do implement. `MIN`/`MAX` are implemented
 /// as arity-2 colon or comma. INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
-  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|'
+  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|LOG1P|'
   r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
   r'FLOAT64|FLOAT32|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
