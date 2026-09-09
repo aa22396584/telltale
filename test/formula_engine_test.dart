@@ -447,6 +447,64 @@ void main() {
       );
     });
 
+    test('SIGNED32() is 32-bit two\'s complement, not 8-bit', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('SIGNED32(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('SIGNED32(2147483647)', const []),
+        closeTo(2147483647.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED32(2147483648)', const []),
+        closeTo(-2147483648.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED32(4294967295)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      // Low 32 bits of 4294967296 are 0. Answering 4294967296 would not be 32-bit.
+      expect(
+        engine.evaluateBytes('SIGNED32(4294967296)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8(A)', const [255]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED32(A)', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2SIGNED32(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED32(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        engine.evaluateBytes('ABS(SIGNED32(2147483648))', const []),
+        closeTo(2147483648.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED32((A-1))', const [0]),
+        closeTo(-1.0, 1e-9),
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
