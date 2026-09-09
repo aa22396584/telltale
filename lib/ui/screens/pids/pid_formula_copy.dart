@@ -50,6 +50,8 @@ String? formulaIssueText(AppLocalizations l10n, FormulaException exception) {
     FormulaIssue.moduloByZero => l10n.pidFormulaModuloByZero,
     FormulaIssue.log10NonPositiveArgument =>
       l10n.pidFormulaLog10NonPositiveArgument(exception.argument ?? 0),
+    FormulaIssue.sqrtNegativeArgument =>
+      l10n.pidFormulaSqrtNegativeArgument(exception.argument ?? 0),
     FormulaIssue.resultNotFinite => l10n.pidFormulaResultNotFinite,
     FormulaIssue.byteBeyondResponse => l10n.pidFormulaByteBeyondResponse(
       exception.byteLetter ?? '',

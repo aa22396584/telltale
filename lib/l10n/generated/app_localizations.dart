@@ -6183,7 +6183,7 @@ abstract class AppLocalizations {
   /// FormulaIssue.functionNestingTooDeep. Names the construct to simplify; the bracket depth limit has its own message.
   ///
   /// In en, this message translates to:
-  /// **'ABS() and LOG10() are nested too deeply to evaluate. Simplify the formula.'**
+  /// **'ABS(), LOG10() and SQRT() are nested too deeply to evaluate. Simplify the formula.'**
   String get pidFormulaFunctionNestingTooDeep;
 
   /// FormulaIssue.parenthesisNestingTooDeep. A different construct from the function limit, so a different sentence: the author has to find a different thing.
@@ -6209,6 +6209,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'LOG10 needs an argument greater than 0, and this one came out as {argument}.'**
   String pidFormulaLog10NonPositiveArgument(double argument);
+
+  /// FormulaIssue.sqrtNegativeArgument. {argument} is the value the argument reduced to. Zero is allowed; a negative argument has no real square root and must not become 0.
+  ///
+  /// In en, this message translates to:
+  /// **'SQRT needs an argument of 0 or greater, and this one came out as {argument}.'**
+  String pidFormulaSqrtNegativeArgument(double argument);
 
   /// FormulaIssue.resultNotFinite. Covers a non-finite intermediate as well as a non-finite result: both mean there is no reading, and rendering either as 0 is the failure this app is arranged against.
   ///

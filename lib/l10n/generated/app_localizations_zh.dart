@@ -3434,7 +3434,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pidFormulaFunctionNestingTooDeep =>
-      'ABS() 與 LOG10() 巢狀太深，無法求值。請簡化公式。';
+      'ABS()、LOG10() 與 SQRT() 巢狀太深，無法求值。請簡化公式。';
 
   @override
   String get pidFormulaParenthesisNestingTooDeep => '括號巢狀太深，無法求值。請簡化公式。';
@@ -3448,6 +3448,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String pidFormulaLog10NonPositiveArgument(double argument) {
     return 'LOG10 的引數必須大於 0，這裡算出來的是 $argument。';
+  }
+
+  @override
+  String pidFormulaSqrtNegativeArgument(double argument) {
+    return 'SQRT 的引數必須大於或等於 0，這裡算出來的是 $argument。';
   }
 
   @override
@@ -7188,7 +7193,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pidFormulaFunctionNestingTooDeep =>
-      'ABS() 與 LOG10() 巢狀太深，無法求值。請簡化公式。';
+      'ABS()、LOG10() 與 SQRT() 巢狀太深，無法求值。請簡化公式。';
 
   @override
   String get pidFormulaParenthesisNestingTooDeep => '括號巢狀太深，無法求值。請簡化公式。';
@@ -7202,6 +7207,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String pidFormulaLog10NonPositiveArgument(double argument) {
     return 'LOG10 的引數必須大於 0，這裡算出來的是 $argument。';
+  }
+
+  @override
+  String pidFormulaSqrtNegativeArgument(double argument) {
+    return 'SQRT 的引數必須大於或等於 0，這裡算出來的是 $argument。';
   }
 
   @override
