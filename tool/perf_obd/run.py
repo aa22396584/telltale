@@ -223,6 +223,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     if args.ui_profile:
+        args.output.mkdir(parents=True, exist_ok=True)
+        stale = args.output / "ui-profile.json"
+        if stale.exists():
+            stale.unlink()
         print("ui-profile lane is not-run without an identified device", file=sys.stderr)
         return 2
     if not args.software:

@@ -235,6 +235,14 @@ class ValidateReportTest(unittest.TestCase):
             self.assertFalse((output / "ui-profile.json").exists())
             self.assertFalse((output / "software.json").exists())
 
+    def test_ui_profile_deletes_a_stale_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "ui-profile.json"
+            stale.write_text('{"lane":"ui-profile","device":"planted"}', encoding="utf-8")
+            self.assertEqual(main(["--ui-profile", "--output", str(output)]), 2)
+            self.assertFalse(stale.exists())
+
     def test_runner_names_the_ui_profile_lane(self):
         text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
         self.assertIn("--ui-profile", text)
