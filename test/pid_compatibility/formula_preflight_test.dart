@@ -26,6 +26,7 @@ void main() {
     expect(FormulaEngine.preflight('COS(A)'), isNull);
     expect(FormulaEngine.preflight('TAN(A)'), isNull);
     expect(FormulaEngine.preflight('LOG1P(A)'), isNull);
+    expect(FormulaEngine.preflight('LOG1P((A-1))'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {

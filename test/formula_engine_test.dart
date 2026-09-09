@@ -217,6 +217,22 @@ void main() {
         thrownBy(() => engine.evaluateBytes('LOG1P(-2)', const [])).issue,
         FormulaIssue.resultNotFinite,
       );
+      expect(
+        engine.evaluateBytes('LOG1P((A-1))', const [2]),
+        closeTo(math.log(2), 1e-9),
+      );
+      // log(1+1e-16) is 0 in IEEE double. log1p must not invent that zero.
+      expect(
+        engine.evaluateBytes('LOG1P(0.0000000000000001)', const []),
+        closeTo(1e-16, 1e-18),
+      );
+      expect(
+        engine.evaluateBytes(
+          'LOG1P(0.000000000000000004)*10000000000000000000',
+          const [],
+        ),
+        closeTo(40.0, 1.0),
+      );
     });
 
     test('SQRT()', () {

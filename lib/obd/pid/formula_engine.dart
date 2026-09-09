@@ -850,9 +850,8 @@ class FormulaEngine {
         return math.log(v);
       });
       // Wiki LOG1P is ln(1+x), matching Java Math.log1p. Dart 3.13 has no
-      // math.log1p; log(1+x) is the wiki identity. Answering LOG or LOG10
-      // here would be a confident wrong number except at 0. Domain is
-      // x > -1; x <= -1 is not a real value.
+      // math.log1p. `log(1+v)` rounds 1+1e-16 to 1 and answers 0 — a
+      // confident wrong number the formatter was built not to invent.
       s = _applyPrefixedFunction(s, _log1pPattern, equation, (v) {
         if (!v.isFinite || v <= -1) {
           throw FormulaException(
@@ -861,7 +860,7 @@ class FormulaEngine {
             issue: FormulaIssue.resultNotFinite,
           );
         }
-        return math.log(1 + v);
+        return _log1p(v);
       });
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
@@ -932,7 +931,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|LOG1P|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -951,6 +950,16 @@ class FormulaEngine {
       s = s.replaceRange(
           match.start, match.end, '${match.group(1)}(${_format(inner)})');
     }
+  }
+
+  /// ln(1+x) without cancelling tiny x the way `log(1+x)` does.
+  ///
+  /// When `1+x` rounds to 1, `log(1+x)` is 0. Java `Math.log1p` returns x.
+  /// Dart 3.13 has no `math.log1p`; this is the fdlibm identity.
+  static double _log1p(double x) {
+    final y = 1.0 + x;
+    if (y == 1.0) return x;
+    return math.log(y) * x / (y - 1.0);
   }
 
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.

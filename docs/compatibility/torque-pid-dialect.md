@@ -30,7 +30,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
 | `LOG10(x)` | unary | Domain error when `x <= 0`. Not `LOG(`. |
 | `LOG(x)` | unary | Natural log (base e). Domain error when `x <= 0`. Not `LOG10(` or `LOG1P(`. |
-| `LOG1P(x)` | unary | Natural log of `(1+x)`, matching Java `Math.log1p`. Domain `x > -1`; `x <= -1` is `resultNotFinite`. Not `LOG(` or `LOG10(`. `2LOG1P(0)` is `unparsableTerm`, not 0. |
+| `LOG1P(x)` | unary | Natural log of `(1+x)`, matching Java `Math.log1p` (tiny `x` is not cancelled to 0). Domain `x > -1`; `x <= -1` is `resultNotFinite`. Not `LOG(` or `LOG10(`. `2LOG1P(0)` is `unparsableTerm`, not 0. Grouped `LOG1P((A-1))` is accepted. |
 | `SQRT(x)` | unary | Domain error when `x < 0`. Zero is allowed. |
 | `SIN(x)` / `COS(x)` / `TAN(x)` | unary | Radians, matching Java `Math.sin`/`cos`/`tan`. Not degrees. `2SIN(0)` is `unparsableTerm`, not 20. |
 | `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
