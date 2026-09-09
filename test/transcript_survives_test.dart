@@ -187,10 +187,10 @@ void main() {
     );
 
     final text = session.exportableTranscript!.render();
-    expect(text, contains('開始連線'));
+    expect(text, contains('Starting connection'));
     expect(
       text,
-      contains('連線失敗'),
+      contains('Connection failed'),
       reason: 'and what it failed with, which is the whole point',
     );
   });
@@ -302,7 +302,7 @@ void main() {
     // opens by naming the device the attempt was aimed at, and the heading has
     // to name the same one. Anything that lets them drift shows up here.
     final opening = record!.transcript.render().split('\n').first;
-    expect(opening, contains('開始連線'));
+    expect(opening, contains('Starting connection'));
     final device = _DeadTransport().displayName;
     expect(opening, contains(device));
     expect(

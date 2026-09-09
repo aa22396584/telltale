@@ -242,7 +242,7 @@ void main() {
     );
     expect(
       waiting.detail,
-      contains('中止'),
+      contains('Stopping the previous connection'),
       reason: 'and it says what it is waiting on, rather than nothing',
     );
 
@@ -289,7 +289,7 @@ void main() {
     );
     expect(
       container.read(obdSessionProvider).error,
-      contains('中止中'),
+      contains('still being stopped'),
       reason: 'and never silently',
     );
 

@@ -239,12 +239,14 @@ final class _PowertrainProbeWireOwner {
 /// which is where a maintainer reads it. This decides only what the driver sees.
 String describeConnectException(Object error) {
   if (error is TimeoutException) {
-    return '轉接器接受了連線，但在時限內沒有回應。'
-        '通常是它還沒通電 —— 多數 OBD 插座要電門轉到 ON 才供電；'
-        '也可能是它正被另一個 App 連著，先關掉那個再試。';
+    return 'The adapter accepted the connection but answered nothing in time. '
+        'Usually it is not powered yet — most OBD sockets only supply power '
+        'with the ignition on — or another app is already connected to it, '
+        'in which case close that one and try again.';
   }
-  return '連線在建立過程中失敗了。請確認轉接器已通電、就在附近，'
-      '然後再試一次。完整的錯誤留在下方的紀錄裡。';
+  return 'The connection failed while it was being established. Check that '
+      'the adapter has power and is nearby, then try again. The full error '
+      'is kept in the log below.';
 }
 
 /// The identifier for the sentence [describeConnectException] chose.
@@ -1019,7 +1021,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
         phase: ConnectionPhase.connecting,
         kind: kind,
         deviceName: transport.displayName,
-        detail: '正在中止上一個連線，請稍候…',
+        detail: 'Stopping the previous connection, one moment…',
         activity: ObdConnectionActivity.abortingPreviousConnection,
       );
       // Reaches the transport. `_teardown` disposes the client, and
@@ -1080,7 +1082,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
       if (_connecting) {
         state = state.copyWith(
           phase: ConnectionPhase.failed,
-          error: '上一個連線仍在中止中，轉接器還沒有釋放。請等幾秒再試一次。',
+          error:
+              'The previous connection is still being stopped and the adapter '
+              'has not been released yet. Wait a few seconds and try again.',
           issue: ObdConnectionIssue.previousConnectionStillAborting,
         );
         return false;
@@ -1124,7 +1128,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     int generation,
     Elm327Client client,
     String why, {
-    String prefix = '連線失敗',
+    String prefix = 'Connection failed',
     String? detail,
     ObdConnectionIssue? issue,
     InitProgress? issueStep,
@@ -1201,7 +1205,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
     );
     _sessionEvidenceGeneration = generation;
     _attemptTranscript = ObdTranscript()
-      ..recordNote('開始連線：${transport.displayName}（${kind.label}）');
+      ..recordNote(
+        'Starting connection: ${transport.displayName} (${kind.label})',
+      );
     state = ObdConnectionState(
       phase: ConnectionPhase.connecting,
       kind: kind,
@@ -1263,7 +1269,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
           generation,
           client,
           failure.message,
-          prefix: '握手失敗',
+          prefix: 'Handshake failed',
           issue: failure.issue,
           issueStep: failure.step,
         );
@@ -1406,7 +1412,8 @@ class ObdSession extends Notifier<ObdConnectionState> {
     final failed = steps.where((s) => s.status == InitStatus.failed).toList();
     if (failed.isEmpty) {
       return (
-        message: '初始化未通過，轉接器可能不相容。',
+        message:
+            'Initialisation did not pass. The adapter may not be compatible.',
         issue: ObdConnectionIssue.handshakeIncomplete,
         step: null,
       );
@@ -1420,8 +1427,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
     if (first.index == 0 && first.note != InitNote.unexpected) {
       return (
         message:
-            '轉接器沒有回應重置指令（${first.step.command}）。'
-            '這個裝置可能不是 ELM327 轉接器，或是連到了錯誤的裝置。',
+            'The adapter did not answer the reset command '
+            '(${first.step.command}). This device may not be an ELM327 '
+            'adapter, or the connection may have gone to the wrong device.',
         issue: ObdConnectionIssue.adapterSilentOnReset,
         step: first,
       );
@@ -1431,8 +1439,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
     // only for a step that failed with nothing to say about why.
     return (
       message:
-          '初始化在 ${first.step.command} 失敗（${first.detail ?? '無回應'}）。'
-          '請確認轉接器已插好、車輛電門已開啟。',
+          'Initialisation failed at ${first.step.command} '
+          '(${first.detail ?? 'no response'}). Check that the adapter is '
+          'seated properly and the vehicle\'s ignition is on.',
       issue: ObdConnectionIssue.handshakeStepFailed,
       step: first,
     );
@@ -1452,7 +1461,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
   /// race.
   void _handleConnectionLost(int generation) {
     if (_superseded(generation)) return;
-    _client?.transcript.recordNote('連線事件：轉接器連線中斷');
+    _client?.transcript.recordNote('Connection event: adapter link dropped');
     _publishSessionBoundary(ObdSessionBoundaryReason.linkLoss);
     _generation++;
     unawaited(
@@ -1467,7 +1476,8 @@ class ObdSession extends Notifier<ObdConnectionState> {
     ref.read(vehicleIdentityProvider.notifier).reset();
     state = state.copyWith(
       phase: ConnectionPhase.failed,
-      error: '轉接器停止回應，連線已中斷。',
+      error:
+          'The adapter stopped responding and the connection has been dropped.',
       issue: ObdConnectionIssue.adapterStoppedResponding,
     );
     unawaited(_teardown());
