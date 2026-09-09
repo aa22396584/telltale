@@ -1518,8 +1518,8 @@ class PollingEngine {
           return finish(finished, found.values);
         }
         throw DtcReadException(
-          '有 ${owed.length} 個控制器承諾稍後回覆，但一直沒有給出結果。'
-          '這次掃描並不完整，請稍候再試一次。',
+          '${owed.length} controller(s) promised a later reply and never delivered it. '
+          'This scan is incomplete; wait and try again.',
           kind: DtcReadFailure.pending,
           partial: List.unmodifiable(found.values),
           pendingSources: Set.unmodifiable(owed),
@@ -1630,7 +1630,7 @@ class PollingEngine {
       }
     }
     // Unreachable: the loop either returns or rethrows.
-    throw const DtcReadException('故障碼查詢未完成');
+    throw const DtcReadException('The fault-code query did not finish');
   }
 
   /// Controllers whose reply was about the service of the last exchange,
@@ -1889,7 +1889,7 @@ class PollingEngine {
     }
     if (response.frames.isEmpty) {
       throw const DtcReadException(
-        'ECU 沒有回應故障碼查詢',
+        'No controller answered the fault-code query',
         kind: DtcReadFailure.noAnswer,
       );
     }
@@ -1991,7 +1991,7 @@ class PollingEngine {
         // with the message and every code that *was* read carried out. What
         // changes is that the reading continues far enough to find them.
         unrecognised++;
-        decodeFailure ??= '解碼器拒絕這筆回應';
+        decodeFailure ??= 'the decoder rejected this reply';
         continue;
       }
       for (final dtc in decoded) {
@@ -2006,11 +2006,11 @@ class PollingEngine {
     if (answered == 0) {
       throw DtcReadException(
         pendingSources.isNotEmpty
-            ? 'ECU 已收到查詢但尚未回覆完成（response pending）。請稍候再試一次。'
+            ? 'A controller received the query but has not finished (response pending). Wait, then try again.'
             : refused > 0
-            ? 'ECU 拒絕了故障碼查詢（negative response）'
-            : '故障碼回應的模式位元組不符（期望 '
-                  '0x${expectedMode.toRadixString(16).toUpperCase()}）',
+            ? 'A controller refused the fault-code query (negative response)'
+            : 'The fault-code reply used the wrong service byte (expected '
+                  '0x${expectedMode.toRadixString(16).toUpperCase()})',
         kind: pendingSources.isNotEmpty
             ? DtcReadFailure.pending
             : DtcReadFailure.error,
@@ -2033,17 +2033,17 @@ class PollingEngine {
     if (refused > 0 || unrecognised > 0 || pendingSources.isNotEmpty) {
       throw DtcReadException(
         refused > 0
-            ? '有 $refused 個控制器拒絕回答（$answered 個已回應）。'
-                  '這次掃描無法涵蓋全車，結果並不完整。'
+            ? '$refused controller(s) refused ($answered answered). '
+                  'This scan cannot cover the whole vehicle, so the result is incomplete.'
             : pendingSources.isNotEmpty
-            ? '有 ${pendingSources.length} 個控制器還在處理這次查詢'
-                  '（response pending），'
-                  '$answered 個已回應。結果尚不完整，請稍候再掃描一次。'
+            ? '${pendingSources.length} controller(s) are still working on this query '
+                  '(response pending), '
+                  '$answered already answered. The result is incomplete; wait, then scan again.'
             : decodeFailure != null
-            ? '有 $unrecognised 筆回應無法解讀（$decodeFailure）。'
-                  '其餘控制器的結果仍然有效，但這次掃描並不完整。'
-            : '有 $unrecognised 筆回應無法辨識（$answered 個已回應）。'
-                  '這次掃描結果並不完整。',
+            ? '$unrecognised response(s) could not be decoded ($decodeFailure). '
+                  'Other controllers\' results are still valid, but this scan is incomplete.'
+            : '$unrecognised response(s) could not be recognised ($answered answered). '
+                  'This scan is incomplete.',
         kind: pendingSources.isNotEmpty && refused == 0 && unrecognised == 0
             ? DtcReadFailure.pending
             : DtcReadFailure.error,
