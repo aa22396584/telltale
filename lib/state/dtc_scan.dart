@@ -561,7 +561,8 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         // ran out of time look identical on screen otherwise.
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException(
-            '掃描已達時間上限，這個類別沒有讀取到。請重新掃描。',
+            'The scan reached its time limit before this category was read. '
+            'Scan again.',
             kind: DtcReadFailure.noAnswer,
           ),
         );
@@ -585,7 +586,10 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         results[kind] = DtcCategoryResult.failed(e);
       } on TimeoutException {
         results[kind] = const DtcCategoryResult.failed(
-          DtcReadException('讀取逾時。請確認轉接器連線穩定、車輛電門已開啟。'),
+          DtcReadException(
+            'The read timed out. Confirm the adapter is connected and the '
+            'ignition is on.',
+          ),
         );
       } on Object catch (error, stack) {
         FlutterError.reportError(
@@ -597,11 +601,11 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
           ),
         );
         transcript?.recordNote(
-          '未預期的類別讀取失敗（Mode ${kind.mode}）：$error',
+          'Unexpected category-read failure (Mode ${kind.mode}): $error',
         );
         results[kind] = const DtcCategoryResult.failed(
           DtcReadException(
-            '掃描這個類別時發生未預期的錯誤。',
+            'An unexpected error occurred while scanning this category.',
             kind: DtcReadFailure.error,
           ),
         );
