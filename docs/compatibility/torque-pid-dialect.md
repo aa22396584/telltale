@@ -30,6 +30,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `SIGNED24(x)` | unary | 24-bit two's complement of the toward-zero integer's low 24 bits. `SIGNED24(8388608)` is -8388608. `SIGNED24(255)` is 255, not `SIGNED8(255)`. `2SIGNED24(0)` is `unparsableTerm`, not 0. Grouped `SIGNED24((A-1))` is accepted. |
 | `SIGNED32(x)` | unary | 32-bit two's complement of the toward-zero integer's low 32 bits. `SIGNED32(2147483648)` is -2147483648. `SIGNED32(255)` is 255, not `SIGNED8(255)`. `2SIGNED32(0)` is `unparsableTerm`, not 0. Grouped `SIGNED32((A-1))` is accepted. |
 | `FLOAT32(a:b:c:d)` | arity 4 | IEEE754 binary32 from four inputs. A is the most significant byte (sign bit). Each input uses the toward-zero integer's low 8 bits. `FLOAT32(63:128:0:0)` is 1.0. Little-endian payloads use `FLOAT32(D:C:B:A)`. Inf/NaN is `resultNotFinite`, not 0. A single comma form (`FLOAT32(A,B,C,D)`) is accepted. Wrong arity is `unparsableTerm`. `2FLOAT32(0:0:0:0)` is `unparsableTerm`, not 0. Grouped `FLOAT32((A-1):B:C:D)` is accepted. Not `FLOAT64`. |
+| `INT(x)` | unary | Toward-zero integer of a finite value. `INT(1.9)` is 1. `INT(-1.9)` is -1, not floor -2. `2INT(1)` is `unparsableTerm`, not 21. Grouped `INT((A-1))` is accepted. Not `INT16(A:B)` / `INT24` / `INT32`. |
 | `VAL{hex}` | `VAL{010C}` | Same-controller cached PID. Missing/stale/ambiguous is not a syntax error. |
 | `BARO` | identifier, no `(` | Cached ambient pressure for the requesting controller. |
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
@@ -52,11 +53,11 @@ These wiki names are detected as `NAME(` and fail as
 are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
-`INT32` `INT24` `INT16` `INT`
+`INT32` `INT24` `INT16`
 `FLOAT64` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
 
 `LOG10` is not classified as `LOG`. `SIGNED8(x)` is the same 8-bit
-conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `BARO` without parentheses is the identifier above; `BARO()` is
+conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `INT(x)` is not `INT16`. `BARO` without parentheses is the identifier above; `BARO()` is
 the wiki function that reads the Android barometer or ECU baro **in psi**,
 which this engine does not implement.
 
