@@ -165,6 +165,76 @@ void main() {
       expect(engine.evaluateBytes('LOG10(A)', const [100]), closeTo(2.0, 1e-6));
     });
 
+    test('LOG1P() is ln(1+x), not LOG or LOG10', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('LOG1P(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('LOG1P(A)', const [0]),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOG1P(A)', const [1]),
+        closeTo(math.log(2), 1e-9),
+      );
+      // ln(10) is not 1. Answering LOG10(1+x) here is a confident wrong number.
+      expect(
+        engine.evaluateBytes('LOG1P(9)', const []),
+        closeTo(math.log(10), 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOG1P(9)', const []),
+        isNot(closeTo(1.0, 0.1)),
+      );
+      expect(
+        engine.evaluateBytes('ABS(LOG1P(A))', const [1]),
+        closeTo(math.log(2), 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOG1P(-0.5)', const []),
+        closeTo(math.log(0.5), 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2LOG1P(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOG1P(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOG1P(-1)', const [])).issue,
+        FormulaIssue.resultNotFinite,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOG1P(-2)', const [])).issue,
+        FormulaIssue.resultNotFinite,
+      );
+      expect(
+        engine.evaluateBytes('LOG1P((A-1))', const [2]),
+        closeTo(math.log(2), 1e-9),
+      );
+      // log(1+1e-16) is 0 in IEEE double. log1p must not invent that zero.
+      expect(
+        engine.evaluateBytes('LOG1P(0.0000000000000001)', const []),
+        closeTo(1e-16, 1e-18),
+      );
+      expect(
+        engine.evaluateBytes(
+          'LOG1P(0.000000000000000004)*10000000000000000000',
+          const [],
+        ),
+        closeTo(40.0, 1.0),
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));

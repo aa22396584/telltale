@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
+/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()`, `LOG()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
+///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -315,6 +315,8 @@ class FormulaEngine {
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
   static final RegExp _logPattern =
       RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)(?![A-Za-z0-9_])');
+  static final RegExp _log1pPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])LOG1P\(([^()]+)\)(?![A-Za-z0-9_])');
   static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
   // Same token boundaries as LOG: `2SIN(0)` is not 20, `SIN(0)A` is not 0.05.
   static final RegExp _sinPattern =
@@ -332,6 +334,7 @@ class FormulaEngine {
   static const String _maxSentinel = '\u0004(';
   static const String _sqrtSentinel = '\u0005(';
   static const String _logSentinel = '\u0006(';
+  static const String _log1pSentinel = '\u0010(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -722,6 +725,10 @@ class FormulaEngine {
         .replaceAll('ABS(', _absSentinel)
         .replaceAll('LOG10(', _log10Sentinel)
         .replaceAllMapped(
+          _namedCallPattern('LOG1P'),
+          (m) => '${m.group(1)}$_log1pSentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('LOG'),
           (m) => '${m.group(1)}$_logSentinel',
         )
@@ -779,6 +786,7 @@ class FormulaEngine {
     s = s
         .replaceAll(_absSentinel, 'ABS(')
         .replaceAll(_log10Sentinel, 'LOG10(')
+        .replaceAll(_log1pSentinel, 'LOG1P(')
         .replaceAll(_logSentinel, 'LOG(')
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
@@ -840,6 +848,19 @@ class FormulaEngine {
           );
         }
         return math.log(v);
+      });
+      // Wiki LOG1P is ln(1+x), matching Java Math.log1p. Dart 3.13 has no
+      // math.log1p. `log(1+v)` rounds 1+1e-16 to 1 and answers 0 — a
+      // confident wrong number the formatter was built not to invent.
+      s = _applyPrefixedFunction(s, _log1pPattern, equation, (v) {
+        if (!v.isFinite || v <= -1) {
+          throw FormulaException(
+            '運算結果不是有效數值',
+            equation,
+            issue: FormulaIssue.resultNotFinite,
+          );
+        }
+        return _log1p(v);
       });
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
@@ -910,7 +931,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|LOG1P|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -929,6 +950,16 @@ class FormulaEngine {
       s = s.replaceRange(
           match.start, match.end, '${match.group(1)}(${_format(inner)})');
     }
+  }
+
+  /// ln(1+x) without cancelling tiny x the way `log(1+x)` does.
+  ///
+  /// When `1+x` rounds to 1, `log(1+x)` is 0. Java `Math.log1p` returns x.
+  /// Dart 3.13 has no `math.log1p`; this is the fdlibm identity.
+  static double _log1p(double x) {
+    final y = 1.0 + x;
+    if (y == 1.0) return x;
+    return math.log(y) * x / (y - 1.0);
   }
 
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.
@@ -1066,6 +1097,7 @@ class FormulaEngine {
   static bool _innerStillHasFunction(String inner) =>
       inner.contains('ABS(') ||
       inner.contains('LOG10(') ||
+      inner.contains('LOG1P(') ||
       inner.contains('LOG(') ||
       inner.contains('SQRT(') ||
       inner.contains('SIN(') ||
@@ -1447,11 +1479,12 @@ class _Operator {
 
 /// Torque wiki names this dialect does not implement, detected as `NAME(`.
 ///
-/// `LOG10` is not `LOG`, `INT16` is not `INT`, `BARO` without a parenthesis
-/// is the ECU cache identifier we do implement. `MIN`/`MAX` are implemented
-/// as arity-2 colon or comma. INT16 compatibility is still unclaimed (#79).
+/// `LOG10`/`LOG1P` are not `LOG`, `INT16` is not `INT`, `BARO` without a
+/// parenthesis is the ECU cache identifier we do implement. `MIN`/`MAX` are
+/// implemented as arity-2 colon or comma. INT16 compatibility is still
+/// unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
-  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|LOG1P|'
+  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
   r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
   r'FLOAT64|FLOAT32|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
