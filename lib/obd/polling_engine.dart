@@ -1375,13 +1375,13 @@ class PollingEngine {
         if (silent.isNotEmpty) {
           throw DtcReadException(
             kind == DtcKind.stored
-                ? '有 ${silent.length} 個控制器完全沒有回應這次查詢'
-                      '（${silent.join('、')}）。'
-                      '已回應的部分沒有問題，但這不能當作全車結果。'
-                : '有 ${silent.length} 個控制器沒有回應${kind.transcriptLabel}故障碼查詢'
-                      '（${silent.join('、')}）。'
-                      '這個類別是選配的，沉默可能只代表它沒有實作 —— '
-                      '但也因此無法當作全車都沒有${kind.transcriptLabel}故障碼。',
+                ? '${silent.length} controller(s) did not answer this query '
+                      '(${silent.join(', ')}). '
+                      'Answers that did come back are valid, but this cannot be treated as a whole-vehicle result.'
+                : '${silent.length} controller(s) did not answer the ${kind.name} '
+                      'fault-code query (${silent.join(', ')}). '
+                      'This class is optional, so silence may only mean it is not implemented — '
+                      'but this still cannot be treated as a whole-vehicle result of no ${kind.name} fault codes.',
             kind: DtcReadFailure.noAnswer,
             partial: result,
             terminalSources: Set.unmodifiable(heard),
@@ -1398,8 +1398,8 @@ class PollingEngine {
         // *unknown*, and unknown is not complete — which is what was being
         // reported as a clean bill.
         throw DtcReadException(
-          '無法確認這輛車上有哪些控制器，因此不能判斷是否每一個都回應了。'
-          '已讀到的結果仍然有效，但不能當作全車結果。',
+          'It is not known which controllers are on this vehicle, so it is not known whether every one answered. '
+          'The results that were read are still valid, but this cannot be treated as a whole-vehicle result.',
           kind: DtcReadFailure.noAnswer,
           partial: result,
           terminalSources: Set.unmodifiable(heard),
@@ -2688,10 +2688,10 @@ class PollingEngine {
       final silent = census.difference(acknowledged);
       if (silent.isNotEmpty) {
         throw DtcReadException(
-          '有 ${silent.length} 個控制器沒有回應清除指令'
-          '（${silent.join('、')}）。'
-          '已回應的控制器已清除，但其餘控制器的故障碼可能仍在。'
-          '請重新掃描確認，不要重複清除。',
+          '${silent.length} controller(s) did not answer the clear '
+          '(${silent.join(', ')}). '
+          'Controllers that answered have cleared, but fault codes may remain on the rest. '
+          'Rescan to check; do not send another clear.',
           kind: DtcReadFailure.noAnswer,
           silentSources: Set.unmodifiable(silent),
           repeatWouldHarm: true,
@@ -2704,8 +2704,8 @@ class PollingEngine {
       // Nothing was heard on a scan either, so there is not one controller
       // this acknowledgement can be said to cover.
       throw const DtcReadException(
-        '無法確認這輛車上有哪些控制器，因此不能確定每一個都收到了清除指令。'
-        '有回應的控制器已清除。請重新掃描確認，不要重複清除。',
+        'It is not known which controllers are on this vehicle, so it is not known whether every one received the clear. '
+        'Controllers that answered have cleared. Rescan to check; do not send another clear.',
         kind: DtcReadFailure.noAnswer,
         repeatWouldHarm: true,
       );
