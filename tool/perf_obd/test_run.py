@@ -18,7 +18,8 @@ def _ok(**overrides):
         "quantile": "nearest-rank",
         "minimumObservations": 20,
         "observations": 20,
-        "channels": 1,
+        "channels": 3,
+        "scheduledModeAndPid": ["010C", "010D", "015E"],
         "firstObservationMs": 40,
         "interarrivalMs": {"n": 19, "p50": 50, "p95": 80, "p99": 90},
         "errors": 0,
@@ -54,6 +55,10 @@ class ValidateReportTest(unittest.TestCase):
     def test_missing_quantile_method_fails(self):
         with self.assertRaises(GateError):
             validate_report(_ok(quantile="unspecified"))
+
+    def test_a_one_channel_label_fails(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(channels=1, scheduledModeAndPid=["010C"]))
 
     def test_prepare_output_deletes_a_stale_report(self):
         with tempfile.TemporaryDirectory() as raw:

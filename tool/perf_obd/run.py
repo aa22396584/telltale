@@ -48,6 +48,11 @@ def validate_report(report: object) -> dict:
         raise GateError("interarrival sample count is inadequate")
     if report.get("errors") not in (0, 0.0):
         raise GateError("errors are not zero")
+    if report.get("channels") != 3:
+        raise GateError("channels must be 3 (RPM plus implicit speed and fuel rate)")
+    scheduled = report.get("scheduledModeAndPid")
+    if scheduled != ["010C", "010D", "015E"]:
+        raise GateError("scheduledModeAndPid must be 010C/010D/015E")
     return report
 
 
