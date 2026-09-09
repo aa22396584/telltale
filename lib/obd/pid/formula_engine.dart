@@ -1103,14 +1103,53 @@ class FormulaEngine {
   }
 
   /// Fixed-point so the reducer never sees `1e-7` (it would split on `-`).
-  /// Ten fractional digits rounded `4e-11` to zero, so `MAX(4e-11:0)*1e12`
-  /// published 0 instead of 40.
+  ///
+  /// `toStringAsFixed` stops at 20 fractional digits, so a 16-place cutoff
+  /// still rounded `4e-18` to zero and `MAX(...)*1e19` published 0. Expand
+  /// the shortest round-trip form instead of imposing a place count.
   static String _fixedWithoutScientific(double magnitude) {
-    var rendered = magnitude.toStringAsFixed(16);
-    if (rendered.contains('.')) {
-      rendered = rendered.replaceFirst(RegExp(r'0+$'), '');
-      if (rendered.endsWith('.')) rendered = '${rendered}0';
+    if (magnitude == 0) return '0.0';
+    final shortest = magnitude.toString();
+    final decimal = _scientificToDecimal(shortest) ?? shortest;
+    return _trimFixedZeros(_withoutScientific(decimal, magnitude));
+  }
+
+  /// `1.25e-18` / `4e+20` → a decimal with no `e`/`E`/`+`/`-`.
+  static String? _scientificToDecimal(String text) {
+    final match =
+        RegExp(r'^(\d+)(?:\.(\d+))?[eE]([+-]?)(\d+)$').firstMatch(text);
+    if (match == null) return null;
+    final fracPart = match.group(2) ?? '';
+    final exp = int.parse(match.group(4)!);
+    final shift = match.group(3) == '-' ? -exp : exp;
+    final digits = '${match.group(1)!}$fracPart';
+    final k = shift - fracPart.length;
+    if (k >= 0) return '$digits${'0' * k}.0';
+    final pad = -k - digits.length;
+    if (pad >= 0) return '0.${'0' * pad}$digits';
+    final split = digits.length + k;
+    return '${digits.substring(0, split)}.${digits.substring(split)}';
+  }
+
+  static String _withoutScientific(String decimal, double magnitude) {
+    if (!_scientificToken.hasMatch(decimal)) return decimal;
+    final retry = _scientificToDecimal(magnitude.toStringAsExponential());
+    if (retry == null || _scientificToken.hasMatch(retry)) {
+      throw const FormulaException(
+        '運算結果不是有效數值',
+        '',
+        issue: FormulaIssue.resultNotFinite,
+      );
     }
+    return retry;
+  }
+
+  static final RegExp _scientificToken = RegExp(r'[eE+-]');
+
+  static String _trimFixedZeros(String rendered) {
+    if (!rendered.contains('.')) return rendered;
+    rendered = rendered.replaceFirst(RegExp(r'0+$'), '');
+    if (rendered.endsWith('.')) return '${rendered}0';
     return rendered;
   }
 
