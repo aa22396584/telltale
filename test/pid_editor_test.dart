@@ -556,6 +556,33 @@ void main() {
     );
   });
 
+  testWidgets('a VAL stand-in of one does not block save', (tester) async {
+    _tallViewport(tester);
+    final container = await _container(const <String, Object>{});
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_hostNew(container));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, '名稱', 'Val domain');
+    await _enter(tester, '模式 + PID', '010B');
+    await _enter(tester, '運算式', '1/(VAL{010C}-1)');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '儲存'))
+          .onPressed,
+      isNotNull,
+      reason: 'VAL stand-in of 1 is not a commit refusal',
+    );
+    await _save(tester);
+    expect(
+      container.read(pidRegistryProvider).where(
+        (p) => p.isCustom && p.equation == '1/(VAL{010C}-1)',
+      ),
+      hasLength(1),
+    );
+  });
+
   testWidgets('an always-invalid formula cannot save', (tester) async {
     _tallViewport(tester);
     final container = await _container(const <String, Object>{});
