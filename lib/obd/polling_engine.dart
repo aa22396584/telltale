@@ -1609,7 +1609,7 @@ class PollingEngine {
             negativeResponseCode: e.negativeResponseCode,
             repeatWouldHarm: e.repeatWouldHarm,
             refusedCount: e.refusedCount,
-            answeredCount: e.answeredCount,
+            answeredCount: finished.length,
             unrecognisedCount: e.unrecognisedCount,
           );
         }

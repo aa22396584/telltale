@@ -345,6 +345,17 @@ void main() {
     );
   });
 
+  test('an anonymous pending sentinel is not one named controller', () {
+    const failure = DtcReadException(
+      '有 1 個控制器還在處理這次查詢',
+      kind: DtcReadFailure.pending,
+      pendingSources: {''},
+    );
+    final text = dtcCategoryFailureText(_en, failure);
+    expect(text, _en.dtcCategoryPending);
+    expect(text, isNot(contains('1 controller')));
+  });
+
   test(
     'unrecognised response counts are mapped without the decoder sentence',
     () {

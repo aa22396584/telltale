@@ -7089,7 +7089,8 @@ void main() {
         throwsA(isA<DtcReadException>()
             .having((e) => e.partial.map((d) => d.code), 'partial',
                 contains('P0301'))
-            .having((e) => e.pendingSources, 'pendingSources', contains('7E9'))),
+            .having((e) => e.pendingSources, 'pendingSources', contains('7E9'))
+            .having((e) => e.answeredCount, 'answeredCount', 1)),
         reason: 'incomplete coverage qualifies a finding; it does not delete '
             'it',
       );

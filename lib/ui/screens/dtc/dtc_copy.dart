@@ -65,16 +65,18 @@ String dtcCategoryFailureText(AppLocalizations l10n, DtcReadException failure) {
   // a named silence, an unresolvable identity, a refusal, a pending wait,
   // then an unreadable reply. Kind is the fallback when none of those
   // counts were carried.
-  if (failure.silentSources.isNotEmpty) {
+  final silent = _namedSources(failure.silentSources);
+  if (silent.isNotEmpty) {
     return l10n.dtcCategorySilentControllers(
-      failure.silentSources.length,
-      _controllerList(failure.silentSources),
+      silent.length,
+      _controllerList(silent),
     );
   }
-  if (failure.unresolvedSources.isNotEmpty) {
+  final unresolved = _namedSources(failure.unresolvedSources);
+  if (unresolved.isNotEmpty) {
     return l10n.dtcCategoryUnresolvedSources(
-      failure.unresolvedSources.length,
-      _controllerList(failure.unresolvedSources),
+      unresolved.length,
+      _controllerList(unresolved),
     );
   }
   if (failure.refusedCount > 0) {
@@ -83,11 +85,17 @@ String dtcCategoryFailureText(AppLocalizations l10n, DtcReadException failure) {
       failure.answeredCount,
     );
   }
-  if (failure.pendingSources.isNotEmpty) {
+  final pending = _namedSources(failure.pendingSources);
+  if (pending.isNotEmpty) {
     return l10n.dtcCategoryPendingControllers(
-      failure.pendingSources.length,
+      pending.length,
       failure.answeredCount,
     );
+  }
+  if (failure.pendingSources.isNotEmpty) {
+    // Headerless `7F xx 78` is stored as `''`. That is not one named
+    // controller, and counting it as 1 invented a coverage number.
+    return l10n.dtcCategoryPending;
   }
   if (failure.unrecognisedCount > 0) {
     return l10n.dtcCategoryUnrecognisedResponses(
@@ -168,12 +176,14 @@ String _clearEngineFailureText(AppLocalizations l10n, DtcClearNotice notice) {
 /// headerless pending frame is stored as `''` and must not punch a hole in
 /// the sentence.
 String _controllerList(Set<String> ids) {
-  final names = [
-    for (final id in ids)
-      if (id.isNotEmpty) id,
-  ]..sort();
+  final names = _namedSources(ids).toList()..sort();
   return names.join(', ');
 }
+
+Set<String> _namedSources(Set<String> ids) => {
+      for (final id in ids)
+        if (id.isNotEmpty) id,
+    };
 
 /// Stored / pending / permanent. Three classes that must stay three things.
 String dtcKindLabel(AppLocalizations l10n, DtcKind kind) => switch (kind) {

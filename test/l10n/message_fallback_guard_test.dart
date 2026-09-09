@@ -113,6 +113,8 @@ void main() {
     );
     expect(code.contains('refusedCount: refused'), isTrue);
     expect(code.contains('answeredCount: answered'), isTrue);
+    expect(code.contains('answeredCount: finished.length'), isTrue);
+    expect(code.contains('answeredCount: e.answeredCount'), isFalse);
     expect(code.contains('unrecognisedCount: unrecognised'), isTrue);
     expect(code.contains('refusedCount: e.refusedCount'), isTrue);
   });
