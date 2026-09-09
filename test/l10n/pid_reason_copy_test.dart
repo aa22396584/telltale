@@ -32,6 +32,7 @@ import 'package:torque_obd/state/pid_mutation_lock.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/pids/pid_formula_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_import_copy.dart';
+import 'package:torque_obd/ui/screens/pids/pid_mutation_copy.dart';
 import 'package:torque_obd/ui/screens/pids/pid_rejection_copy.dart';
 
 import '../support/cjk.dart';
@@ -480,7 +481,45 @@ void main() {
       duplicatesInFile: [],
       failure: PidMutationFailure.locked,
     );
-    expect(pidImportOutcomeText(en, locked), 'Stop and save the recording first');
+    expect(
+      pidImportOutcomeText(en, locked),
+      'Stop and save the recording first',
+    );
     expect(pidImportOutcomeText(zh, locked), '請先停止並儲存');
+
+    const persistFailed = PidImportOutcome(
+      inserted: 0,
+      replaced: 0,
+      duplicatesInFile: [],
+      failure: PidMutationFailure.persistFailed,
+    );
+    expect(
+      pidImportOutcomeText(en, persistFailed),
+      'The custom PID list could not be saved. Nothing was changed.',
+    );
+    expect(pidImportOutcomeText(zh, persistFailed), '自訂 PID 清單無法寫入。沒有任何變更。');
+  });
+
+  test('mutation failure copy is handwritten in both languages', () {
+    expect(
+      pidMutationFailureText(en, PidMutationFailure.locked),
+      'Stop and save the recording first',
+    );
+    expect(pidMutationFailureText(zh, PidMutationFailure.locked), '請先停止並儲存');
+    expect(
+      pidMutationFailureText(en, PidMutationFailure.persistFailed),
+      'The custom PID list could not be saved. Nothing was changed.',
+    );
+    expect(
+      pidMutationFailureText(zh, PidMutationFailure.persistFailed),
+      '自訂 PID 清單無法寫入。沒有任何變更。',
+    );
+    for (final failure in PidMutationFailure.values) {
+      expect(
+        pidMutationFailureText(en, failure),
+        isNot(pidMutationFailureText(zh, failure)),
+        reason: '$failure',
+      );
+    }
   });
 }

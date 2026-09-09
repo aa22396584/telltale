@@ -144,8 +144,9 @@ class PidRegistry extends Notifier<List<Pid>> {
 
     final next = [...state];
     next[index] = custom;
-    state = next;
-    await _persist();
+    if (!await _commitCustom(next)) {
+      return const PidMutationOutcome.persistFailed();
+    }
     return const PidMutationOutcome.applied();
   }
 
@@ -202,8 +203,14 @@ class PidRegistry extends Notifier<List<Pid>> {
         inserted++;
       }
     }
-    state = next;
-    await _persist();
+    if (!await _commitCustom(next)) {
+      return const PidImportOutcome(
+        inserted: 0,
+        replaced: 0,
+        duplicatesInFile: [],
+        failure: PidMutationFailure.persistFailed,
+      );
+    }
     return PidImportOutcome(
       inserted: inserted,
       replaced: replaced,
@@ -218,8 +225,13 @@ class PidRegistry extends Notifier<List<Pid>> {
     if (!state.any((p) => p.id == pid.id && p.isCustom)) {
       return const PidMutationOutcome.noChange();
     }
-    state = state.where((p) => !(p.id == pid.id && p.isCustom)).toList();
-    await _persist();
+    final next = [
+      for (final candidate in state)
+        if (!(candidate.id == pid.id && candidate.isCustom)) candidate,
+    ];
+    if (!await _commitCustom(next)) {
+      return const PidMutationOutcome.persistFailed();
+    }
     // A deleted PID must also leave the dashboard, and it does — by being
     // gone from here.
     //
@@ -457,12 +469,26 @@ class PidRegistry extends Notifier<List<Pid>> {
     }
   }
 
-  Future<void> _persist() async {
+  /// Apply [next] synchronously, then persist. If the store reports `false`,
+  /// roll memory back — `SharedPreferences` does not throw.
+  ///
+  /// Identity replacement must not yield a delete-only registry: Start can
+  /// acquire the mutation lock during the persist await, and it has to see
+  /// the replacement rather than a hole.
+  Future<bool> _commitCustom(List<Pid> next) async {
+    final previous = state;
+    state = next;
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setStringList(
+    final saved = await prefs.setStringList(
       _kCustomPidsKey,
-      customPids.map((p) => jsonEncode(p.toJson())).toList(),
+      [
+        for (final pid in next)
+          if (pid.isCustom) jsonEncode(pid.toJson()),
+      ],
     );
+    if (saved) return true;
+    state = previous;
+    return false;
   }
 }
 

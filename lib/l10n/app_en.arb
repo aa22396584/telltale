@@ -3730,5 +3730,9 @@
   "telemetrySessionInvalidId": "This recording id is not valid.",
   "telemetrySessionNotFound": "This local recording was not found.",
   "telemetrySessionStorageFailed": "A local storage operation failed.",
-  "telemetrySessionShareFailed": "Could not prepare or open sharing."
+  "telemetrySessionShareFailed": "Could not prepare or open sharing.",
+  "pidMutationPersistFailed": "The custom PID list could not be saved. Nothing was changed.",
+  "@pidMutationPersistFailed": {
+    "description": "PidMutationFailure.persistFailed. SharedPreferences reported false; in-memory custom PIDs are left unchanged."
+  }
 }

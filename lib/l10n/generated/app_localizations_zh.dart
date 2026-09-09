@@ -3840,6 +3840,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get telemetrySessionShareFailed => '無法準備或開啟分享';
+
+  @override
+  String get pidMutationPersistFailed => '自訂 PID 清單無法寫入。沒有任何變更。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7677,4 +7680,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get telemetrySessionShareFailed => '無法準備或開啟分享';
+
+  @override
+  String get pidMutationPersistFailed => '自訂 PID 清單無法寫入。沒有任何變更。';
 }

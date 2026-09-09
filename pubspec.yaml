@@ -95,6 +95,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  # Persist-false SharedPreferences store for custom-PID commit tests.
+  shared_preferences_platform_interface: 2.4.2
 
 # Launcher icons are generated from assets/icon/*.svg via Chrome headless into
 # the matching PNGs, then expanded to every density by:

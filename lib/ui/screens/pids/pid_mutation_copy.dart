@@ -31,4 +31,5 @@ String pidMutationFailureText(
   PidMutationFailure failure,
 ) => switch (failure) {
   PidMutationFailure.locked => l10n.telemetryBlockedByRecorder,
+  PidMutationFailure.persistFailed => l10n.pidMutationPersistFailed,
 };

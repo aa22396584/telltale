@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// used to carry them: `const kPidMutationLockedMessage = '請先停止並儲存'`,
 /// snacked raw by the powertrain-battery catalog screen, so an English driver
 /// was refused in Traditional Chinese.
-enum PidMutationFailure { locked }
+enum PidMutationFailure { locked, persistFailed }
 
 class PidMutationOutcome {
   const PidMutationOutcome._({required this.applied, this.failure});
@@ -17,6 +17,9 @@ class PidMutationOutcome {
 
   const PidMutationOutcome.locked()
     : this._(applied: false, failure: PidMutationFailure.locked);
+
+  const PidMutationOutcome.persistFailed()
+    : this._(applied: false, failure: PidMutationFailure.persistFailed);
 
   final bool applied;
   final PidMutationFailure? failure;
