@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `MIN()` and `MAX()` on top. Accepting it means
+/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
+///      `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -325,6 +325,7 @@ class FormulaEngine {
   static const String _maxSentinel = '\u0004(';
   static const String _sqrtSentinel = '\u0005(';
   static const String _logSentinel = '\u0006(';
+  static const String _bitSentinel = '\u0007(';
 
   /// Characters that, when they precede a `-`, mark it as unary rather than
   /// a binary subtraction.
@@ -722,6 +723,10 @@ class FormulaEngine {
         .replaceAllMapped(
           _namedCallPattern('MAX'),
           (m) => '${m.group(1)}$_maxSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('BIT'),
+          (m) => '${m.group(1)}$_bitSentinel',
         );
 
     for (var i = 0; i < 14; i++) {
@@ -755,7 +760,8 @@ class FormulaEngine {
         .replaceAll(_logSentinel, 'LOG(')
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
-        .replaceAll(_maxSentinel, 'MAX(');
+        .replaceAll(_maxSentinel, 'MAX(')
+        .replaceAll(_bitSentinel, 'BIT(');
 
     // Alternating, not one pass each in a fixed order.
     //
@@ -832,6 +838,33 @@ class FormulaEngine {
         'MAX',
         equation,
         (a, b) => math.max(a, b),
+      );
+      s = _applyBinaryFunction(
+        s,
+        'BIT',
+        equation,
+        (value, bit) {
+          // toInt() on NaN/infinity throws UnsupportedError, which the
+          // poller does not catch — the previous reading stays on the
+          // gauge. Preflight uses small sample bytes, so BIT(A^B:0) can
+          // look well-formed and still overflow on live data.
+          if (!value.isFinite) {
+            throw FormulaException(
+              '運算結果不是有效數值',
+              equation,
+              issue: FormulaIssue.resultNotFinite,
+            );
+          }
+          if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
+            throw FormulaException(
+              'Cannot parse "$bit"',
+              equation,
+              issue: FormulaIssue.unparsableTerm,
+              term: bit.toString(),
+            );
+          }
+          return ((value.toInt() >> bit.toInt()) & 1).toDouble();
+        },
       );
       s = _unwrapFunctionParens(s, equation);
     }
@@ -1005,7 +1038,8 @@ class FormulaEngine {
       inner.contains('LOG(') ||
       inner.contains('SQRT(') ||
       inner.contains('MIN(') ||
-      inner.contains('MAX(');
+      inner.contains('MAX(') ||
+      inner.contains('BIT(');
 
   static bool _isIdentChar(int unit) =>
       (unit >= 0x30 && unit <= 0x39) ||
@@ -1385,7 +1419,7 @@ class _Operator {
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|'
   r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
-  r'FLOAT64|FLOAT32|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
+  r'FLOAT64|FLOAT32|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );
 

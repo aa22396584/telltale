@@ -31,7 +31,6 @@ const _unsupportedWikiNames = <String>[
   'SIGNED8',
   'FLOAT64',
   'FLOAT32',
-  'BIT',
   'LOOKUP',
   'CLOSEST',
   'RANDOM',
@@ -74,6 +73,7 @@ void main() {
     expect(FormulaEngine.preflight('SIGNED(A)'), isNull);
     expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
     expect(FormulaEngine.preflight('MAX(A:B)'), isNull);
+    expect(FormulaEngine.preflight('BIT(A:0)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });

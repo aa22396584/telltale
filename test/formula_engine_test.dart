@@ -174,6 +174,32 @@ void main() {
       );
     });
 
+    test('BIT() returns the named bit, not a plausible 0', () {
+      expect(engine.evaluateBytes('BIT(A:0)', const [5]), closeTo(1.0, 1e-9));
+      expect(engine.evaluateBytes('BIT(A:1)', const [5]), closeTo(0.0, 1e-9));
+      expect(engine.evaluateBytes('BIT(A:2)', const [5]), closeTo(1.0, 1e-9));
+      expect(engine.evaluateBytes('BIT(A,0)', const [5]), closeTo(1.0, 1e-9));
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        thrownBy(() => engine.evaluateBytes('BIT(A:-1)', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('BIT(A^B:0)', const [255, 255]),
+        ).issue,
+        FormulaIssue.resultNotFinite,
+      );
+    });
+
     test('MIN() and MAX() take the wiki colon form', () {
       expect(engine.evaluateBytes('MIN(A:B)', const [20, 5]), closeTo(5.0, 1e-9));
       expect(engine.evaluateBytes('MAX(A:B)', const [20, 5]), closeTo(20.0, 1e-9));
