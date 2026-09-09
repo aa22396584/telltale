@@ -20,6 +20,7 @@ void main() {
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
     expect(FormulaEngine.preflight('SQRT(A)'), isNull);
+    expect(FormulaEngine.preflight('LOG(A)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
@@ -27,7 +28,7 @@ void main() {
       'INT16(A:B)',
       'LOOKUP(A:0:1=100)',
       'BARO()',
-      'LOG(A)',
+      'LOG1P(A)',
     ]) {
       final failure = FormulaEngine.preflight(equation);
       expect(failure, isNotNull, reason: equation);
@@ -92,6 +93,10 @@ void main() {
       FormulaIssue.log10NonPositiveArgument,
     );
     expect(
+      FormulaEngine.preflight('LOG(-1)')?.issue,
+      FormulaIssue.logNonPositiveArgument,
+    );
+    expect(
       FormulaEngine.preflight('SQRT(-1)')?.issue,
       FormulaIssue.sqrtNegativeArgument,
     );
@@ -103,6 +108,7 @@ void main() {
     expect(FormulaEngine.preflight('LOG10(A-1)'), isNull);
     expect(FormulaEngine.preflight('1/(A-B)'), isNull);
     expect(FormulaEngine.preflight('LOG10(A-B)'), isNull);
+    expect(FormulaEngine.preflight('LOG(A-2)'), isNull);
     expect(FormulaEngine.preflight('SQRT(A-2)'), isNull);
     expect(FormulaEngine.preflight('1/(VAL{010C}-1)'), isNull);
     const wire =

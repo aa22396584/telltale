@@ -3852,7 +3852,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pidFormulaFunctionNestingTooDeep =>
-      'ABS(), LOG10() and SQRT() are nested too deeply to evaluate. Simplify the formula.';
+      'ABS(), LOG10(), LOG() and SQRT() are nested too deeply to evaluate. Simplify the formula.';
 
   @override
   String get pidFormulaParenthesisNestingTooDeep =>
@@ -3868,6 +3868,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String pidFormulaLog10NonPositiveArgument(double argument) {
     return 'LOG10 needs an argument greater than 0, and this one came out as $argument.';
+  }
+
+  @override
+  String pidFormulaLogNonPositiveArgument(double argument) {
+    return 'LOG needs an argument greater than 0, and this one came out as $argument.';
   }
 
   @override

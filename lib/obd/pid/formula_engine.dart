@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()`, `LOG10()`, `SQRT()`, `MIN()` and `MAX()` on top. Accepting it means
+/// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `SQRT()`, `MIN()` and `MAX()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()`, `SQRT()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
+///      `LOG10()`, `LOG()`, `SQRT()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -41,7 +41,7 @@ enum FormulaIssue {
   /// knows. Carries the fragment.
   unparsableTerm,
 
-  /// `ABS(`/`LOG10(` nested past the evaluator's limit. Distinct from
+  /// `ABS(`/`LOG10(`/`LOG(`/`SQRT(` nested past the evaluator's limit. Distinct from
   /// [parenthesisNestingTooDeep] because it names a different construct to
   /// simplify.
   functionNestingTooDeep,
@@ -59,6 +59,11 @@ enum FormulaIssue {
   /// `LOG10` of zero or a negative number, which has no value. Carries the
   /// argument.
   log10NonPositiveArgument,
+
+  /// `LOG` of zero or a negative number, which has no value. Carries the
+  /// argument. Not [log10NonPositiveArgument]: the function the author has to
+  /// find is a different name, even though the domain is the same.
+  logNonPositiveArgument,
 
   /// `SQRT` of a negative number, which has no real value. Carries the
   /// argument. Zero is allowed.
@@ -137,7 +142,7 @@ class FormulaException implements Exception {
   /// How many data bytes the reply actually carried.
   final int? byteCount;
 
-  /// The out-of-domain argument, for [FormulaIssue.log10NonPositiveArgument].
+  /// The out-of-domain argument, for log/sqrt domain refusals.
   final double? argument;
 
   /// The fragment that could not be parsed.
@@ -308,6 +313,8 @@ class FormulaEngine {
   static final RegExp _signedPattern = RegExp(r'SIGNED\(([A-N])\)');
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
+  static final RegExp _logPattern =
+      RegExp(r'(^|[^A-Za-z0-9_])LOG\(([^()]+)\)(?![A-Za-z0-9_])');
   static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
@@ -317,6 +324,7 @@ class FormulaEngine {
   static const String _minSentinel = '\u0003(';
   static const String _maxSentinel = '\u0004(';
   static const String _sqrtSentinel = '\u0005(';
+  static const String _logSentinel = '\u0006(';
 
   /// Characters that, when they precede a `-`, mark it as unary rather than
   /// a binary subtraction.
@@ -702,6 +710,10 @@ class FormulaEngine {
     s = s
         .replaceAll('ABS(', _absSentinel)
         .replaceAll('LOG10(', _log10Sentinel)
+        .replaceAllMapped(
+          _namedCallPattern('LOG'),
+          (m) => '${m.group(1)}$_logSentinel',
+        )
         .replaceAll('SQRT(', _sqrtSentinel)
         .replaceAllMapped(
           _namedCallPattern('MIN'),
@@ -740,6 +752,7 @@ class FormulaEngine {
     s = s
         .replaceAll(_absSentinel, 'ABS(')
         .replaceAll(_log10Sentinel, 'LOG10(')
+        .replaceAll(_logSentinel, 'LOG(')
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
         .replaceAll(_maxSentinel, 'MAX(');
@@ -784,6 +797,19 @@ class FormulaEngine {
         }
         return math.log(v) / math.ln10;
       });
+      // Wiki `LOG` is ln, not LOG10. Answering LOG10's value here would be a
+      // confident wrong number for every argument except 1.
+      s = _applyPrefixedFunction(s, _logPattern, equation, (v) {
+        if (v <= 0) {
+          throw FormulaException(
+            'LOG 的引數必須大於 0（收到 $v）',
+            equation,
+            issue: FormulaIssue.logNonPositiveArgument,
+            argument: v,
+          );
+        }
+        return math.log(v);
+      });
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
           throw FormulaException(
@@ -820,7 +846,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10|SQRT)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|LOG|SQRT)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -867,6 +893,35 @@ class FormulaEngine {
     }
   }
 
+  /// Like [_applyFunction], but group 1 is a preceding non-identifier kept
+  /// in place so `2*LOG(1)` reduces and `2LOG(1)` does not become `20`.
+  String _applyPrefixedFunction(
+    String input,
+    RegExp pattern,
+    String source,
+    double Function(double) fn,
+  ) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final match = pattern.firstMatch(s);
+      if (match == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          'Formula nests functions too deeply',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      final inner = _reduce(match.group(2)!, source);
+      s = s.replaceRange(
+        match.start,
+        match.end,
+        '${match.group(1)}${_format(fn(inner))}',
+      );
+    }
+  }
+
   /// Torque wiki `MIN(A:B)` / `MAX(A:B)`. A single comma is accepted too
   /// (`MAX(A,B)`); two separators or an empty side is not a two-argument call.
   /// Arguments may be grouped: `MIN((A+1):B)` is not `unparsableTerm`.
@@ -903,7 +958,7 @@ class FormulaEngine {
   }
 
   /// Leftmost `NAME(...)` whose argument list does not still contain `ABS(`,
-  /// `LOG10(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
+  /// `LOG10(`, `LOG(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
   static ({int start, int end, String inner})? _innermostBinaryCall(
     String input,
     String name,
@@ -947,6 +1002,7 @@ class FormulaEngine {
   static bool _innerStillHasFunction(String inner) =>
       inner.contains('ABS(') ||
       inner.contains('LOG10(') ||
+      inner.contains('LOG(') ||
       inner.contains('SQRT(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(');
@@ -1223,6 +1279,7 @@ class FormulaEngine {
       issue == FormulaIssue.divisionByZero ||
       issue == FormulaIssue.moduloByZero ||
       issue == FormulaIssue.log10NonPositiveArgument ||
+      issue == FormulaIssue.logNonPositiveArgument ||
       issue == FormulaIssue.sqrtNegativeArgument ||
       issue == FormulaIssue.resultNotFinite;
 
@@ -1326,7 +1383,7 @@ class _Operator {
 /// is the ECU cache identifier we do implement. `MIN`/`MAX` are implemented
 /// as arity-2 colon or comma. INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
-  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|LOG|'
+  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|'
   r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
   r'FLOAT64|FLOAT32|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,

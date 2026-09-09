@@ -21,7 +21,6 @@ const _unsupportedWikiNames = <String>[
   'COS',
   'TAN',
   'LOG1P',
-  'LOG',
   'INT32',
   'INT24',
   'INT16',
@@ -70,6 +69,7 @@ void main() {
   test('supported wiki-shaped functions are not unsupportedConstruct', () {
     expect(FormulaEngine.preflight('ABS(A)'), isNull);
     expect(FormulaEngine.preflight('LOG10(A)'), isNull);
+    expect(FormulaEngine.preflight('LOG(A)'), isNull);
     expect(FormulaEngine.preflight('SQRT(A)'), isNull);
     expect(FormulaEngine.preflight('SIGNED(A)'), isNull);
     expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
