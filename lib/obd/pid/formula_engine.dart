@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `INT()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `INT()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -376,6 +376,7 @@ class FormulaEngine {
   static const String _signed32Sentinel = '\u0014(';
   static const String _float32Sentinel = '\u0015(';
   static const String _intSentinel = '\u0016(';
+  static const String _float64Sentinel = '\u0017(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -832,6 +833,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_intSentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('FLOAT64'),
+          (m) => '${m.group(1)}$_float64Sentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('LOG'),
           (m) => '${m.group(1)}$_logSentinel',
         )
@@ -896,6 +901,7 @@ class FormulaEngine {
         .replaceAll(_signed32Sentinel, 'SIGNED32(')
         .replaceAll(_float32Sentinel, 'FLOAT32(')
         .replaceAll(_intSentinel, 'INT(')
+        .replaceAll(_float64Sentinel, 'FLOAT64(')
         .replaceAll(_logSentinel, 'LOG(')
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
@@ -987,6 +993,9 @@ class FormulaEngine {
       // Wiki INT(value) converts to an integer toward zero, not floor and
       // not INT16(A:B). Non-finite is refused rather than becoming 0.
       s = _applyUnaryNamedFunction(s, 'INT', equation, _int);
+      // Wiki FLOAT64(A:B:C:D:E:F:G:H) is IEEE754 binary64. A is the most
+      // significant byte. Inf/NaN is refused rather than becoming 0.
+      s = _applyNaryFunction(s, 'FLOAT64', equation, 8, _float64);
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
           throw FormulaException(
@@ -1194,6 +1203,36 @@ class FormulaEngine {
       );
     }
     return x.toInt().toDouble();
+  }
+
+  /// IEEE754 binary64 from eight inputs. A is the most significant byte.
+  ///
+  /// Wiki: "Returns an IEEE754 float based on the supplied 8 (value:0-255)
+  /// inputs". Each input uses the toward-zero integer's low 8 bits. Inf/NaN
+  /// must not become 0. Not `FLOAT32`.
+  static double _float64(List<double> parts) {
+    for (final x in parts) {
+      if (!x.isFinite) {
+        throw const FormulaException(
+          '運算結果不是有效數值',
+          '',
+          issue: FormulaIssue.resultNotFinite,
+        );
+      }
+    }
+    final bytes = Uint8List(8);
+    for (var i = 0; i < 8; i++) {
+      bytes[i] = parts[i].toInt() & 0xFF;
+    }
+    final value = ByteData.sublistView(bytes).getFloat64(0, Endian.big);
+    if (!value.isFinite) {
+      throw const FormulaException(
+        '運算結果不是有效數值',
+        '',
+        issue: FormulaIssue.resultNotFinite,
+      );
+    }
+    return value;
   }
 
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.
@@ -1404,6 +1443,7 @@ class FormulaEngine {
       inner.contains('SIGNED32(') ||
       inner.contains('FLOAT32(') ||
       inner.contains('INT(') ||
+      inner.contains('FLOAT64(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
       inner.contains('BIT(');
@@ -1814,11 +1854,12 @@ class _Operator {
 /// `SIGNED` or `SIGNED8`, `BARO` without a parenthesis is the ECU cache
 /// identifier we do implement. `MIN`/`MAX` are implemented as arity-2 colon
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
-/// toward-zero truncation. INT16 compatibility is still unclaimed (#79).
+/// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
+/// INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
   r'INT32|INT24|INT16|'
-  r'FLOAT64|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
+  r'LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );
 

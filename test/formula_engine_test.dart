@@ -610,13 +610,11 @@ void main() {
         FormulaIssue.unsupportedConstruct,
       );
       expect(
-        thrownBy(
-          () => engine.evaluateBytes(
-            'FLOAT64(A:B:C:D:E:F:G:H)',
-            const [0, 0, 0, 0, 0, 0, 0, 0],
-          ),
-        ).issue,
-        FormulaIssue.unsupportedConstruct,
+        engine.evaluateBytes(
+          'FLOAT64(A:B:C:D:E:F:G:H)',
+          const [0, 0, 0, 0, 0, 0, 0, 0],
+        ),
+        closeTo(0.0, 1e-9),
       );
       expect(
         thrownBy(
@@ -678,6 +676,94 @@ void main() {
           () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
         ).issue,
         FormulaIssue.unsupportedConstruct,
+      );
+    });
+
+    test('FLOAT64() is IEEE754 double from eight big-endian bytes', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('FLOAT64(0:0:0:0:0:0:0:0)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      // 0x3FF0000000000000 is 1.0. A is the most significant byte.
+      expect(
+        engine.evaluateBytes('FLOAT64(63:240:0:0:0:0:0:0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT64(64:0:0:0:0:0:0:0)', const []),
+        closeTo(2.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT64(191:240:0:0:0:0:0:0)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes(
+          'FLOAT64(A:B:C:D:E:F:G:H)',
+          const [63, 240, 0, 0, 0, 0, 0, 0],
+        ),
+        closeTo(1.0, 1e-9),
+      );
+      // binary32 1.0 bytes are not binary64 1.0.
+      expect(
+        engine.evaluateBytes('FLOAT32(63:128:0:0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT64(63:128:0:0:0:0:0:0)', const []),
+        isNot(closeTo(1.0, 1e-3)),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT64(319:240:0:0:0:0:0:0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('FLOAT64(63,240,0,0,0,0,0,0)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes(
+          'FLOAT64((A-1):B:C:D:E:F:G:H)',
+          const [64, 240, 0, 0, 0, 0, 0, 0],
+        ),
+        closeTo(1.0, 1e-9),
+      );
+      final negativeZero = engine.evaluateBytes(
+        'FLOAT64(128:0:0:0:0:0:0:0)',
+        const [],
+      );
+      expect(negativeZero, 0.0);
+      expect(negativeZero.isNegative, isTrue);
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('2FLOAT64(0:0:0:0:0:0:0:0)', const []),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('FLOAT64(A:B:C:D)', const [1, 2, 3, 4]),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('FLOAT64(127:240:0:0:0:0:0:0)', const []),
+        ).issue,
+        FormulaIssue.resultNotFinite,
       );
     });
 
