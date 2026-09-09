@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -192,6 +192,12 @@ class _CachedValue {
 }
 
 class FormulaEngine {
+  FormulaEngine({double Function()? random})
+      : _random = random ?? math.Random().nextDouble;
+
+  /// Wiki `RANDOM()` source. Defaults to Dart `Random.nextDouble` (`[0, 1)`).
+  final double Function() _random;
+
   /// Cached values of other PIDs for `VAL{...}` lookups.
   ///
   /// Keyed by controller **and** hex, never hex alone. `7E0:221101` and
@@ -379,6 +385,7 @@ class FormulaEngine {
   static const String _float64Sentinel = '\u0017(';
   static const String _int24Sentinel = '\u0018(';
   static const String _int32Sentinel = '\u0019(';
+  static const String _randomSentinel = '\u001a(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -835,6 +842,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_int32Sentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('RANDOM'),
+          (m) => '${m.group(1)}$_randomSentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('INT24'),
           (m) => '${m.group(1)}$_int24Sentinel',
         )
@@ -911,6 +922,7 @@ class FormulaEngine {
         .replaceAll(_signed32Sentinel, 'SIGNED32(')
         .replaceAll(_float32Sentinel, 'FLOAT32(')
         .replaceAll(_int32Sentinel, 'INT32(')
+        .replaceAll(_randomSentinel, 'RANDOM(')
         .replaceAll(_int24Sentinel, 'INT24(')
         .replaceAll(_intSentinel, 'INT(')
         .replaceAll(_float64Sentinel, 'FLOAT64(')
@@ -1014,6 +1026,9 @@ class FormulaEngine {
       // Wiki INT32(A:B:C:D) is an unsigned 32-bit int. A is the most
       // significant byte. Not SIGNED32 and not INT16.
       s = _applyNaryFunction(s, 'INT32', equation, 4, _int32);
+      // Wiki RANDOM() is a number between 0 and 1. Dart Random.nextDouble
+      // matches Java Math.random: [0, 1). Arguments are not a call.
+      s = _applyNaryFunction(s, 'RANDOM', equation, 0, _randomCall);
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
           throw FormulaException(
@@ -1296,6 +1311,22 @@ class FormulaEngine {
     return ((a << 24) | (b << 16) | (c << 8) | d).toDouble();
   }
 
+  /// Wiki `RANDOM()`: a number between 0 and 1.
+  ///
+  /// Dart `Random.nextDouble` and Java `Math.random` are `[0, 1)`.
+  /// Non-finite must not become 0. Not `BARO()`.
+  double _randomCall(List<double> parts) {
+    final value = _random();
+    if (!value.isFinite) {
+      throw const FormulaException(
+        '運算結果不是有效數值',
+        '',
+        issue: FormulaIssue.resultNotFinite,
+      );
+    }
+    return value;
+  }
+
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.
   /// The pattern excludes nested parens, so each pass necessarily targets an
   /// innermost call and the string strictly shrinks.
@@ -1506,6 +1537,7 @@ class FormulaEngine {
       inner.contains('INT(') ||
       inner.contains('INT24(') ||
       inner.contains('INT32(') ||
+      inner.contains('RANDOM(') ||
       inner.contains('FLOAT64(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
@@ -1545,7 +1577,11 @@ class FormulaEngine {
 
   /// Splits `A:B:C:D` or `A,B,C,D` into exactly [arity] nonempty sides.
   /// A colon or comma inside grouping parentheses is not a separator.
+  /// Arity 0 is `NAME()` with an empty argument list.
   static List<String>? _splitNaryArgs(String inner, int arity) {
+    if (arity == 0) {
+      return inner.trim().isEmpty ? <String>[] : null;
+    }
     final parts = <String>[];
     var start = 0;
     var depth = 0;
@@ -1919,12 +1955,12 @@ class _Operator {
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
-/// unsigned 32-bit int from four inputs. INT16 compatibility is still
-/// unclaimed (#79).
+/// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. INT16
+/// compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
   r'INT16|'
-  r'LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
+  r'LOOKUP|CLOSEST|BARO)\s*\(',
   caseSensitive: false,
 );
 

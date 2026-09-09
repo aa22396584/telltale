@@ -20,7 +20,6 @@ const _unsupportedWikiNames = <String>[
   'INT16',
   'LOOKUP',
   'CLOSEST',
-  'RANDOM',
 ];
 
 void main() {
@@ -83,6 +82,7 @@ void main() {
     expect(FormulaEngine.preflight('INT24((A-1):B:C)'), isNull);
     expect(FormulaEngine.preflight('INT32(A:B:C:D)'), isNull);
     expect(FormulaEngine.preflight('INT32((A-1):B:C:D)'), isNull);
+    expect(FormulaEngine.preflight('RANDOM()'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });

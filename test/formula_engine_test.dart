@@ -923,6 +923,62 @@ void main() {
       );
     });
 
+    test('RANDOM() is [0, 1) from the injected source, not BARO()', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      final seeded = FormulaEngine(random: () => 0.25);
+      expect(seeded.evaluateBytes('RANDOM()', const []), closeTo(0.25, 1e-9));
+      expect(seeded.evaluateBytes('RANDOM()+1', const []), closeTo(1.25, 1e-9));
+      expect(
+        seeded.evaluateBytes('ABS(RANDOM())', const []),
+        closeTo(0.25, 1e-9),
+      );
+      final live = engine.evaluateBytes('RANDOM()', const []);
+      expect(live, greaterThanOrEqualTo(0.0));
+      expect(live, lessThan(1.0));
+      expect(
+        thrownBy(() => seeded.evaluateBytes('2RANDOM()', const [])).issue,
+        FormulaIssue.emptySubExpression,
+      );
+      expect(
+        thrownBy(() => seeded.evaluateBytes('2RANDOM(1)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => seeded.evaluateBytes('RANDOM(A)', const [1])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => seeded.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(() => seeded.evaluateBytes('LOOKUP(A:0:1=100)', const [1]))
+            .issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(() => seeded.evaluateBytes('BARO()', const [])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => FormulaEngine(random: () => double.nan).evaluateBytes(
+            'RANDOM()',
+            const [],
+          ),
+        ).issue,
+        FormulaIssue.resultNotFinite,
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));

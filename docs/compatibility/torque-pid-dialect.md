@@ -34,6 +34,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `FLOAT64(a:b:c:d:e:f:g:h)` | arity 8 | IEEE754 binary64 from eight inputs. A is the most significant byte. Each input uses the toward-zero integer's low 8 bits. `FLOAT64(63:240:0:0:0:0:0:0)` is 1.0. Inf/NaN is `resultNotFinite`, not 0. A comma form is accepted. Wrong arity is `unparsableTerm`. `2FLOAT64(0:0:0:0:0:0:0:0)` is `unparsableTerm`, not 0. Grouped `FLOAT64((A-1):B:C:D:E:F:G:H)` is accepted. Not `FLOAT32`. |
 | `INT24(a:b:c)` | arity 3 | Unsigned 24-bit integer from three inputs. A is the most significant byte. Each input uses the toward-zero integer's low 8 bits. `INT24(1:0:0)` is 65536. `INT24(128:0:0)` is 8388608, not `SIGNED24(8388608)`'s -8388608. A comma form is accepted. Wrong arity is `unparsableTerm`. `2INT24(0:0:0)` is `unparsableTerm`, not 0. Grouped `INT24((A-1):B:C)` is accepted. Not `INT16`. |
 | `INT32(a:b:c:d)` | arity 4 | Unsigned 32-bit integer from four inputs. A is the most significant byte. Each input uses the toward-zero integer's low 8 bits. `INT32(1:0:0:0)` is 16777216. `INT32(128:0:0:0)` is 2147483648, not `SIGNED32(2147483648)`'s -2147483648. A comma form is accepted. Wrong arity is `unparsableTerm`. `2INT32(0:0:0:0)` is `unparsableTerm`, not 0. Grouped `INT32((A-1):B:C:D)` is accepted. Not `INT16`. |
+| `RANDOM()` | nullary | Wiki: a random number between 0 and 1. Dart `Random.nextDouble` matches Java `Math.random`: `[0, 1)`. Arguments are `unparsableTerm`. `2RANDOM()` is not a call (`2` is an identifier character); the leftover empty group is `emptySubExpression`. `2RANDOM(1)` is `unparsableTerm`. Not `BARO()`. |
 | `VAL{hex}` | `VAL{010C}` | Same-controller cached PID. Missing/stale/ambiguous is not a syntax error. |
 | `BARO` | identifier, no `(` | Cached ambient pressure for the requesting controller. |
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
@@ -57,10 +58,10 @@ are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
 `INT16`
-`LOOKUP` `CLOSEST` `RANDOM` `BARO()`
+`LOOKUP` `CLOSEST` `BARO()`
 
 `LOG10` is not classified as `LOG`. `SIGNED8(x)` is the same 8-bit
-conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `BARO` without parentheses is the identifier above; `BARO()` is
+conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `RANDOM()` is `[0, 1)`, not `BARO()`. `BARO` without parentheses is the identifier above; `BARO()` is
 the wiki function that reads the Android barometer or ECU baro **in psi**,
 which this engine does not implement.
 
