@@ -38,9 +38,13 @@ const _incoming = Pid(
   isCustom: true,
 );
 
-Future<ProviderContainer> _rejectingContainer({Pid? seed}) async {
+Future<ProviderContainer> _rejectingContainer({
+  Pid? seed,
+  List<String>? activeIds,
+}) async {
   SharedPreferences.setMockInitialValues({
     if (seed != null) 'custom_pids_v1': [jsonEncode(seed.toJson())],
+    'active_pid_ids_v1': ?activeIds,
   });
   final seeded = await SharedPreferencesStorePlatform.instance.getAll();
   SharedPreferencesStorePlatform.instance = _RejectingWritesStore.withData(
@@ -118,6 +122,33 @@ void main() {
       );
     },
   );
+
+  test('failed removeCustom does not drop a dashboard-active gauge', () async {
+    final container = await _rejectingContainer(
+      seed: _existing,
+      activeIds: [Pid.canonicalId(_existing.id)],
+    );
+    addTearDown(container.dispose);
+    expect(container.read(activePidsProvider).map((pid) => pid.id), [
+      _existing.id,
+    ]);
+
+    final outcome = await container
+        .read(pidRegistryProvider.notifier)
+        .removeCustom(_existing);
+
+    expect(outcome.failure, PidMutationFailure.persistFailed);
+    expect(
+      container
+          .read(pidRegistryProvider)
+          .where((pid) => pid.isCustom)
+          .map((pid) => pid.id),
+      [_existing.id],
+    );
+    expect(container.read(activePidsProvider).map((pid) => pid.id), [
+      _existing.id,
+    ], reason: 'rolling back the registry must not leave a pruned layout');
+  });
 }
 
 /// Reads succeed from the seeded map; every write reports false and is dropped.

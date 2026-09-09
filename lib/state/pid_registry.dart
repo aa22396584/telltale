@@ -229,7 +229,7 @@ class PidRegistry extends Notifier<List<Pid>> {
       for (final candidate in state)
         if (!(candidate.id == pid.id && candidate.isCustom)) candidate,
     ];
-    if (!await _commitCustom(next)) {
+    if (!await _commitCustom(next, publishFirst: false)) {
       return const PidMutationOutcome.persistFailed();
     }
     // A deleted PID must also leave the dashboard, and it does — by being
@@ -469,25 +469,26 @@ class PidRegistry extends Notifier<List<Pid>> {
     }
   }
 
-  /// Apply [next] synchronously, then persist. If the store reports `false`,
-  /// roll memory back — `SharedPreferences` does not throw.
+  /// Persist [next], optionally publishing it first.
   ///
-  /// Identity replacement must not yield a delete-only registry: Start can
-  /// acquire the mutation lock during the persist await, and it has to see
-  /// the replacement rather than a hole.
-  Future<bool> _commitCustom(List<Pid> next) async {
+  /// Identity replacement ([publishFirst] true) must not yield a delete-only
+  /// registry: Start can acquire the mutation lock during the persist await,
+  /// and it has to see the replacement rather than a hole. Removal publishes
+  /// only after a durable write — otherwise [ActivePids] prunes the layout
+  /// from the transient `state = next` and cannot put the slot back.
+  Future<bool> _commitCustom(List<Pid> next, {bool publishFirst = true}) async {
     final previous = state;
-    state = next;
+    if (publishFirst) state = next;
     final prefs = ref.read(sharedPreferencesProvider);
-    final saved = await prefs.setStringList(
-      _kCustomPidsKey,
-      [
-        for (final pid in next)
-          if (pid.isCustom) jsonEncode(pid.toJson()),
-      ],
-    );
-    if (saved) return true;
-    state = previous;
+    final saved = await prefs.setStringList(_kCustomPidsKey, [
+      for (final pid in next)
+        if (pid.isCustom) jsonEncode(pid.toJson()),
+    ]);
+    if (saved) {
+      if (!publishFirst) state = next;
+      return true;
+    }
+    if (publishFirst) state = previous;
     return false;
   }
 }
