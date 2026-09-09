@@ -135,6 +135,20 @@ void main() {
     expect(FormulaEngine.preflight('LOG(A-2)'), isNull);
     expect(FormulaEngine.preflight('SQRT(A-2)'), isNull);
     expect(FormulaEngine.preflight('1/(VAL{010C}-1)'), isNull);
+    // Probe bytes are 1, 2, 1..14 and 14..1. `LOG10(A-20)` is negative at
+    // every one of those. That is a runtime domain, not import syntax.
+    // Do not "fix" it by adding A=21 as another stand-in.
+    expect(FormulaEngine.preflight('LOG10(A-20)'), isNull);
+    expect(FormulaEngine.preflight('SQRT(A-20)'), isNull);
+    // A reply-byte token elsewhere does not save a constant-invalid term.
+    expect(
+      FormulaEngine.preflight('LOG10(-1)+A')?.issue,
+      FormulaIssue.log10NonPositiveArgument,
+    );
+    expect(
+      FormulaEngine.preflight('SQRT(-1)+A')?.issue,
+      FormulaIssue.sqrtNegativeArgument,
+    );
     const wire =
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
         'Inv,INV,010C,1/(A-1),0,100,,7E0\r\n';
@@ -142,6 +156,12 @@ void main() {
     expect(result.errors, isEmpty, reason: '${result.errors}');
     expect(result.pids, hasLength(1));
     expect(result.pids.single.equation, '1/(A-1)');
+    const logWire =
+        'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
+        'Shift,SH,010C,LOG10(A-20),0,3,,7E0\r\n';
+    final logResult = PidCsv.parse(logWire);
+    expect(logResult.errors, isEmpty, reason: '${logResult.errors}');
+    expect(logResult.pids.single.equation, 'LOG10(A-20)');
   });
 
   test('an unexpected evaluator Error is contained, not thrown', () {
