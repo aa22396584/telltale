@@ -460,14 +460,20 @@ class Elm327Client {
     this.commandTimeout = const Duration(seconds: 5),
     this.writeTimeout = const Duration(seconds: 2),
     DateTime Function()? clock,
+    Duration Function()? elapsed,
     ObdTranscript? transcript,
   }) : _clock = clock ?? DateTime.now,
+       _elapsedOverride = elapsed,
        transcript = transcript ?? ObdTranscript();
 
   final ObdTransport transport;
   final Duration watchdogTimeout;
   final Duration commandTimeout;
   final DateTime Function() _clock;
+  final Duration Function()? _elapsedOverride;
+  final Stopwatch _freshness = Stopwatch()..start();
+
+  Duration _nowElapsed() => _elapsedOverride?.call() ?? _freshness.elapsed;
 
   /// How long handing bytes to the transport may take before the link is
   /// considered gone. See the write in [_sendNow].
@@ -677,6 +683,7 @@ class Elm327Client {
   );
   double? _batteryVoltage;
   DateTime? _batteryVoltageAt;
+  Duration? _batteryVoltageElapsed;
 
   /// How long an `ATRV` reading stays presentable as live.
   ///
@@ -697,8 +704,15 @@ class Elm327Client {
   double? get batteryVoltage {
     final at = _batteryVoltageAt;
     if (at == null) return null;
-    final age = _clock().difference(at);
-    if (age.isNegative || age > voltageMaxAge) return null;
+    final wallAge = _clock().difference(at);
+    if (wallAge.isNegative) return null;
+    final received = _batteryVoltageElapsed;
+    if (received != null) {
+      final monoAge = _nowElapsed() - received;
+      if (monoAge.isNegative || monoAge > voltageMaxAge) return null;
+      return _batteryVoltage;
+    }
+    if (wallAge > voltageMaxAge) return null;
     return _batteryVoltage;
   }
 
@@ -708,7 +722,13 @@ class Elm327Client {
   /// still holds; it is evidence that we no longer know.
   void _recordVoltage(double? volts) {
     _batteryVoltage = volts;
-    _batteryVoltageAt = volts == null ? null : _clock();
+    if (volts == null) {
+      _batteryVoltageAt = null;
+      _batteryVoltageElapsed = null;
+    } else {
+      _batteryVoltageAt = _clock();
+      _batteryVoltageElapsed = _nowElapsed();
+    }
   }
 
   /// Fires when the watchdog gives up, so the app can drop to a disconnected
