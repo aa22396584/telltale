@@ -794,7 +794,7 @@ void main() {
     await expectLater(
       session.clearDtcs(),
       throwsA(isA<DtcReadException>()
-          .having((e) => e.message, 'message', contains('正在執行'))),
+          .having((e) => e.message, 'message', contains('already in progress'))),
       reason: 'a second functional 04 queued behind the first reaches the '
           'controller the first just finished',
     );
@@ -814,7 +814,7 @@ void main() {
     await expectLater(
       session.clearDtcs(),
       throwsA(isA<DtcReadException>()
-          .having((e) => e.message, 'message', isNot(contains('正在執行')))),
+          .having((e) => e.message, 'message', isNot(contains('already in progress')))),
       reason: 'the second attempt fails on the vehicle, not on the guard',
     );
     await session.disconnect();
