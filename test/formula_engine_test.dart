@@ -617,10 +617,8 @@ void main() {
         closeTo(0.0, 1e-9),
       );
       expect(
-        thrownBy(
-          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
-        ).issue,
-        FormulaIssue.unsupportedConstruct,
+        engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        closeTo(16909060.0, 1e-9),
       );
       expect(
         thrownBy(
@@ -672,10 +670,8 @@ void main() {
         FormulaIssue.unsupportedConstruct,
       );
       expect(
-        thrownBy(
-          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
-        ).issue,
-        FormulaIssue.unsupportedConstruct,
+        engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        closeTo(16909060.0, 1e-9),
       );
     });
 
@@ -845,9 +841,84 @@ void main() {
         FormulaIssue.unsupportedConstruct,
       );
       expect(
-        thrownBy(
-          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
-        ).issue,
+        engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        closeTo(16909060.0, 1e-9),
+      );
+    });
+
+    test('INT32() is unsigned 32-bit from four big-endian bytes, not SIGNED32', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('INT32(0:0:0:0)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(0:0:0:1)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(0:0:1:0)', const []),
+        closeTo(256.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(0:1:0:0)', const []),
+        closeTo(65536.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(1:0:0:0)', const []),
+        closeTo(16777216.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(255:255:255:255)', const []),
+        closeTo(4294967295.0, 1e-9),
+      );
+      // 0x80000000 is unsigned 2147483648, not SIGNED32's -2147483648.
+      expect(
+        engine.evaluateBytes('INT32(128:0:0:0)', const []),
+        closeTo(2147483648.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED32(2147483648)', const []),
+        closeTo(-2147483648.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        closeTo(16909060.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(256:0:0:1)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT32(1,0,0,0)', const []),
+        closeTo(16777216.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes(
+          'INT32((A-1):B:C:D)',
+          const [2, 0, 0, 0],
+        ),
+        closeTo(16777216.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2INT32(0:0:0:0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT32(A:B:C)', const [1, 2, 3]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
         FormulaIssue.unsupportedConstruct,
       );
     });
