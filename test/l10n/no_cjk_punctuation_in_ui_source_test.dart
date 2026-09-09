@@ -54,7 +54,6 @@ const _allowed = <String>{
   "            '\${disagreements.join('；')}。'",
   // Attempt transcript and evidence header, both written to a file.
   "          '# ATDPN：\${_evidenceHeaderValue(c.protocolNumber, whenEmpty: '—')}',",
-  "    _attemptTranscript?.recordNote('\$prefix：\${detail ?? why}');",
   // The exported assumptions sentence, composed by _exportNote.
   "  ) => assumptionsFor(profile, kind).map(_exportNote).join('；');",
   "        : '\$name \$value（\${_originLabel(origin)}）';",

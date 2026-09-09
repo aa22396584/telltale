@@ -45,8 +45,11 @@ void main() {
     // Actionable, and specific to the commonest cause: an adapter on a
     // switched socket has no power until the ignition is on, and it accepts a
     // connection long before it answers anything.
-    expect(text.contains('電門') || text.contains('通電'), isTrue,
-        reason: 'a timeout at connect is usually an unpowered adapter: $text');
+    expect(
+      text.contains('ignition') || text.contains('powered'),
+      isTrue,
+      reason: 'a timeout at connect is usually an unpowered adapter: $text',
+    );
   });
 
   test('an unknown failure does not leak its class name either', () {

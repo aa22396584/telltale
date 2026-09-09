@@ -731,7 +731,7 @@ void main() {
       // previous connection" and the screen keeps saying it.
       const aborting = ObdConnectionState(
         phase: ConnectionPhase.connecting,
-        detail: '正在中止上一個連線，請稍候…',
+        detail: 'Stopping the previous connection, one moment…',
         activity: ObdConnectionActivity.abortingPreviousConnection,
       );
       final tier = aborting.copyWith(detail: '未加密 SPP 連線');
@@ -744,7 +744,7 @@ void main() {
       // evidence. Localizing it would make two readers' records incomparable.
       expect(
         describeConnectException(TimeoutException('x')),
-        contains('多數 OBD 插座要電門轉到 ON 才供電'),
+        contains('most OBD sockets only supply power with the ignition on'),
       );
       expect(
         connectExceptionIssue(TimeoutException('x')),

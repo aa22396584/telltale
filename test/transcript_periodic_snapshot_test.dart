@@ -401,7 +401,7 @@ void main() {
       expect(stored, isNotNull);
       expect(stored!.fromRealHardware, isTrue);
       expect(stored.body, contains('physical adapter evidence'));
-      expect(stored.body, isNot(contains('開始連線')));
+      expect(stored.body, isNot(contains('Starting connection')));
     },
   );
 
@@ -451,7 +451,7 @@ void main() {
       expect(stored, isNotNull);
       expect(stored!.fromRealHardware, isTrue);
       expect(stored.body, contains('physical adapter evidence'));
-      expect(stored.body, isNot(contains('開始連線')));
+      expect(stored.body, isNot(contains('Starting connection')));
     },
   );
 
@@ -501,7 +501,7 @@ void main() {
       expect(stored, isNotNull);
       expect(stored!.fromRealHardware, isTrue);
       expect(stored.body, contains('physical adapter evidence'));
-      expect(stored.body, isNot(contains('開始連線')));
+      expect(stored.body, isNot(contains('Starting connection')));
     },
   );
 
@@ -552,7 +552,7 @@ void main() {
       expect(stored, isNotNull);
       expect(stored!.fromRealHardware, isTrue);
       expect(stored.body, contains('physical adapter evidence'));
-      expect(stored.body, isNot(contains('開始連線')));
+      expect(stored.body, isNot(contains('Starting connection')));
     },
   );
 
@@ -635,7 +635,10 @@ void main() {
       }
 
       expect(container.read(obdSessionProvider).isConnected, isFalse);
-      expect(session.exportableTranscript!.render(), contains('連線事件：轉接器連線中斷'));
+      expect(
+        session.exportableTranscript!.render(),
+        contains('Connection event: adapter link dropped'),
+      );
     },
   );
 
