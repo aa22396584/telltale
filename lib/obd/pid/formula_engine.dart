@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED16()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED16()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -369,6 +369,7 @@ class FormulaEngine {
   static const String _sqrtSentinel = '\u0005(';
   static const String _logSentinel = '\u0006(';
   static const String _log1pSentinel = '\u0010(';
+  static const String _signed16Sentinel = '\u0011(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -801,6 +802,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_log1pSentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('SIGNED16'),
+          (m) => '${m.group(1)}$_signed16Sentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('LOG'),
           (m) => '${m.group(1)}$_logSentinel',
         )
@@ -859,6 +864,7 @@ class FormulaEngine {
         .replaceAll(_absSentinel, 'ABS(')
         .replaceAll(_log10Sentinel, 'LOG10(')
         .replaceAll(_log1pSentinel, 'LOG1P(')
+        .replaceAll(_signed16Sentinel, 'SIGNED16(')
         .replaceAll(_logSentinel, 'LOG(')
         .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
@@ -934,6 +940,10 @@ class FormulaEngine {
         }
         return _log1p(v);
       });
+      // Wiki SIGNED16(value) is 16-bit two's complement of that number, not
+      // 8-bit SIGNED(A) and not INT16(A:B). Java `(short)` of the toward-zero
+      // integer; non-finite is refused rather than becoming 0.
+      s = _applyUnaryNamedFunction(s, 'SIGNED16', equation, _signed16);
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
           throw FormulaException(
@@ -1003,7 +1013,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10|LOG1P|LOG|SQRT|SIN|COS|TAN)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|LOG1P|LOG|SQRT|SIN|COS|TAN|SIGNED16)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -1032,6 +1042,22 @@ class FormulaEngine {
     final y = 1.0 + x;
     if (y == 1.0) return x;
     return math.log(y) * x / (y - 1.0);
+  }
+
+  /// Two's complement of the low 16 bits of the toward-zero integer.
+  ///
+  /// Wiki: "Treats the incoming value as 16bit signed". Java `(short)` does
+  /// the same bit truncation. `NaN`/`Infinity` must not become 0.
+  static double _signed16(double x) {
+    if (!x.isFinite) {
+      throw const FormulaException(
+        '運算結果不是有效數值',
+        '',
+        issue: FormulaIssue.resultNotFinite,
+      );
+    }
+    final bits = x.toInt() & 0xFFFF;
+    return (bits >= 32768 ? bits - 65536 : bits).toDouble();
   }
 
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.
@@ -1086,6 +1112,31 @@ class FormulaEngine {
         match.end,
         '${match.group(1)}${_format(fn(inner))}',
       );
+    }
+  }
+
+  /// Unary wiki `SIGNED16(value)`. Grouping is allowed (`SIGNED16((A*256)+B)`);
+  /// `2SIGNED16(0)` is not a call, matching LOG1P token boundaries.
+  String _applyUnaryNamedFunction(
+    String input,
+    String name,
+    String source,
+    double Function(double) fn,
+  ) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final call = _innermostBinaryCall(s, name);
+      if (call == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          'Formula nests functions too deeply',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      final value = fn(_reduce(call.inner, source));
+      s = s.replaceRange(call.start, call.end, _format(value));
     }
   }
 
@@ -1175,6 +1226,7 @@ class FormulaEngine {
       inner.contains('SIN(') ||
       inner.contains('COS(') ||
       inner.contains('TAN(') ||
+      inner.contains('SIGNED16(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
       inner.contains('BIT(');
@@ -1551,13 +1603,13 @@ class _Operator {
 
 /// Torque wiki names this dialect does not implement, detected as `NAME(`.
 ///
-/// `LOG10`/`LOG1P` are not `LOG`, `INT16` is not `INT`, `BARO` without a
-/// parenthesis is the ECU cache identifier we do implement. `MIN`/`MAX` are
-/// implemented as arity-2 colon or comma. INT16 compatibility is still
-/// unclaimed (#79).
+/// `LOG10`/`LOG1P` are not `LOG`, `INT16` is not `INT`, `SIGNED16` is not
+/// `SIGNED` or `SIGNED8`, `BARO` without a parenthesis is the ECU cache
+/// identifier we do implement. `MIN`/`MAX` are implemented as arity-2 colon
+/// or comma. INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
-  r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
+  r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED8|'
   r'FLOAT64|FLOAT32|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );
