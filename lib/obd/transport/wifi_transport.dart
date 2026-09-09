@@ -169,7 +169,7 @@ class WifiTransport extends BaseObdTransport {
       // right for only one of these. The identifier keeps them apart so the
       // screen can stop saying it to the other three.
       throw TransportException(
-        'Wi-Fi routing failed; cannot reach $host:$port.',
+        'Wi-Fi 路由失敗，連不上 $host:$port。',
         cause: e,
         issue: transportIssueForRouteFailure(e.failure),
       );
@@ -182,7 +182,7 @@ class WifiTransport extends BaseObdTransport {
       final remaining = connectTimeout - stopwatch.elapsed;
       if (remaining <= Duration.zero) {
         throw TimeoutException(
-          'Route binding used up the connect deadline',
+          '路由綁定用完連線時限',
           connectTimeout,
         );
       }
@@ -190,10 +190,9 @@ class WifiTransport extends BaseObdTransport {
     } on SocketException catch (e) {
       await _releaseQuietly(lease);
       throw TransportException(
-        'Cannot reach $host:$port. Confirm the phone is on the adapter '
-        'Wi-Fi hotspot; if the system asked whether to stay connected '
-        'without internet, choose stay connected. If it still fails, '
-        'turn off mobile data and try again.',
+        '連不上 $host:$port。確認手機已連上轉接器的 Wi-Fi 熱點；'
+        '若系統問沒有網際網路是否保持連線，請選保持連線。'
+        '若仍失敗，關掉行動數據再試。',
         cause: e,
         issue: TransportIssue.wifiHostUnreachable,
       );
@@ -203,7 +202,7 @@ class WifiTransport extends BaseObdTransport {
       // budget check above.
       await _releaseQuietly(lease);
       throw TransportException(
-        'Connection to $host:$port timed out.',
+        '連線 $host:$port 逾時。',
         cause: e,
         issue: TransportIssue.wifiConnectTimeout,
       );
@@ -223,9 +222,8 @@ class WifiTransport extends BaseObdTransport {
     } on Object catch (e) {
       socket.destroy();
       throw TransportException(
-        'The connection was made, but the system network route could '
-        'not be restored, so $host:$port was dropped. Restart the app '
-        'and try again.',
+        '連線已建立，但系統網路路由無法還原，所以 $host:$port 被切斷。'
+        '請重開 App 再試。',
         cause: e,
         issue: TransportIssue.wifiRouteRestoreFailed,
       );
@@ -284,7 +282,7 @@ class WifiTransport extends BaseObdTransport {
   Future<void> write(List<int> data) async {
     final socket = _socket;
     if (socket == null) {
-      throw const WriteRefusedException('Wi-Fi connection is not established.');
+      throw const WriteRefusedException('Wi-Fi 尚未連上。');
     }
     socket.add(data);
     await socket.flush();
