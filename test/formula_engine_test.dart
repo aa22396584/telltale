@@ -638,6 +638,49 @@ void main() {
       );
     });
 
+    test('INT() is toward-zero integer, not INT16', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('INT(0)', const []), closeTo(0.0, 1e-9));
+      expect(engine.evaluateBytes('INT(1.9)', const []), closeTo(1.0, 1e-9));
+      // Toward zero, not floor: floor(-1.9) is -2.
+      expect(engine.evaluateBytes('INT(-1.9)', const []), closeTo(-1.0, 1e-9));
+      expect(engine.evaluateBytes('INT(A)', const [255]), closeTo(255.0, 1e-9));
+      expect(
+        engine.evaluateBytes('INT((A-1))', const [0]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('ABS(INT(-1.9))', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2INT(1)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT(1)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        ).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
