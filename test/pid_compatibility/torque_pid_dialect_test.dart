@@ -23,7 +23,6 @@ const _unsupportedWikiNames = <String>[
   'INT',
   'SIGNED32',
   'SIGNED24',
-  'SIGNED16',
   'SIGNED8',
   'FLOAT64',
   'FLOAT32',
@@ -74,6 +73,8 @@ void main() {
     expect(FormulaEngine.preflight('COS(A)'), isNull);
     expect(FormulaEngine.preflight('TAN(A)'), isNull);
     expect(FormulaEngine.preflight('LOG1P(A)'), isNull);
+    expect(FormulaEngine.preflight('SIGNED16(A)'), isNull);
+    expect(FormulaEngine.preflight('SIGNED16((A*256)+B)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });

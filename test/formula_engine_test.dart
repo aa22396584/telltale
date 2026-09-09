@@ -235,6 +235,101 @@ void main() {
       );
     });
 
+    test('SIGNED16() is 16-bit two\'s complement, not 8-bit and not INT16', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('SIGNED16(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('SIGNED16(32767)', const []),
+        closeTo(32767.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16(32768)', const []),
+        closeTo(-32768.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16(65535)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      // Low 16 bits of 65536 are 0. Answering 65536 would not be 16-bit.
+      expect(
+        engine.evaluateBytes('SIGNED16(65536)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      // A=255 is -1 as SIGNED(A), but 255 as 16-bit signed.
+      expect(
+        engine.evaluateBytes('SIGNED(A)', const [255]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16(A)', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16((A*256)+B)', const [0xFF, 0xFF]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16((A*256)+B)', const [0x80, 0x00]),
+        closeTo(-32768.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16((A*256)+B)', const [0x00, 0x01]),
+        closeTo(1.0, 1e-9),
+      );
+      // Wiki INT16(A:B) claims (A*255)+B. SIGNED16 of that product is not
+      // two-byte signed big-endian, and INT16 itself stays unimplemented.
+      expect(
+        engine.evaluateBytes('SIGNED16((A*255)+B)', const [1, 2]),
+        closeTo(257.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16((A*256)+B)', const [1, 2]),
+        closeTo(258.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).term,
+        'INT16',
+      );
+      // Wiki SIGNED16 is unary. The colon form is INT16, which we refuse.
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED16(A:B)', const [1, 2]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2SIGNED16(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED16(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED8(A)', const [255])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        engine.evaluateBytes('ABS(SIGNED16(A))', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED16((A-1))', const [0]),
+        closeTo(-1.0, 1e-9),
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
