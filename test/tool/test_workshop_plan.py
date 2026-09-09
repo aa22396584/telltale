@@ -550,7 +550,7 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         stdout = "\n".join(
             [
                 json.dumps({"type": "testDone", "result": "success"}),
-                json.dumps({"type": "done", "success": 1, "skip": 0}),
+                json.dumps({"type": "done", "success": True}),
             ]
         )
         errors = validate_plan.validate_handoff(
@@ -591,6 +591,94 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         )
         self.assertTrue(
             any("incomplete" in error or "truncated" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_flutter_json_reporter_argv_empty_stdout_cannot_complete(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": [
+                            "flutter",
+                            "test",
+                            "--reporter",
+                            "json",
+                            "test/foo_test.dart",
+                        ],
+                        "exit": 0,
+                        "executed": 1,
+                        "skipped": 0,
+                        "stdout": "",
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("incomplete" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_flutter_json_done_then_test_done_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "testDone", "result": "success"}),
+                json.dumps({"type": "done", "success": True}),
+                json.dumps({"type": "testDone", "result": "success"}),
+            ]
+        )
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "executed": 1,
+                        "skipped": 0,
+                        "stdout": stdout,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("incomplete" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_flutter_json_done_success_false_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "testDone", "result": "success"}),
+                json.dumps({"type": "done", "success": False}),
+            ]
+        )
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "executed": 1,
+                        "skipped": 0,
+                        "stdout": stdout,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("incomplete" in error for error in errors),
             msg=errors,
         )
 
