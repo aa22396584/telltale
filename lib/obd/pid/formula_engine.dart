@@ -1098,8 +1098,20 @@ class FormulaEngine {
     final magnitude = value.abs();
     final rendered = magnitude == magnitude.roundToDouble() && magnitude < 1e15
         ? magnitude.toStringAsFixed(1)
-        : magnitude.toStringAsFixed(10);
+        : _fixedWithoutScientific(magnitude);
     return value < 0 ? '$_negative$rendered' : rendered;
+  }
+
+  /// Fixed-point so the reducer never sees `1e-7` (it would split on `-`).
+  /// Ten fractional digits rounded `4e-11` to zero, so `MAX(4e-11:0)*1e12`
+  /// published 0 instead of 40.
+  static String _fixedWithoutScientific(double magnitude) {
+    var rendered = magnitude.toStringAsFixed(16);
+    if (rendered.contains('.')) {
+      rendered = rendered.replaceFirst(RegExp(r'0+$'), '');
+      if (rendered.endsWith('.')) rendered = '${rendered}0';
+    }
+    return rendered;
   }
 
   /// The PIDs an equation references through `VAL{...}`.
