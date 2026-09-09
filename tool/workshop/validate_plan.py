@@ -86,23 +86,102 @@ def _is_execution_mode_flag(arg: str) -> bool:
     return False
 
 
+DEVICE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+ALLOWED_FLUTTER_REPORTERS = {"json"}
+ALLOWED_FLUTTER_FLAVORS = {"rig"}
+REQUIRED_RIG_DEFINE = "TELLTALE_TEST_RIG=true"
+
+
 def _validate_flutter_command(argv: list[str], task_id: str) -> None:
     if len(argv) < 3 or argv[1] != "test":
         raise PlanError(f"{task_id}: flutter command must be 'flutter test <dart files>'")
     dart_files = 0
-    for item in argv[2:]:
-        if item.startswith("-"):
+    has_integration = False
+    flavor: str | None = None
+    reporter: str | None = None
+    dart_define: str | None = None
+    device: str | None = None
+    items = argv[2:]
+    index = 0
+    while index < len(items):
+        item = items[index]
+        if item == "--reporter" or item.startswith("--reporter="):
+            value = item.split("=", 1)[1] if "=" in item else None
+            if value is None:
+                index += 1
+                if index >= len(items):
+                    raise PlanError(f"{task_id}: --reporter requires json")
+                value = items[index]
+            if value not in ALLOWED_FLUTTER_REPORTERS:
+                raise PlanError(
+                    f"{task_id}: flutter test reporter {value!r} is not allowlisted"
+                )
+            reporter = value
+        elif item == "--flavor" or item.startswith("--flavor="):
+            value = item.split("=", 1)[1] if "=" in item else None
+            if value is None:
+                index += 1
+                if index >= len(items):
+                    raise PlanError(f"{task_id}: --flavor requires rig")
+                value = items[index]
+            if value not in ALLOWED_FLUTTER_FLAVORS:
+                raise PlanError(
+                    f"{task_id}: flutter test flavor {value!r} is not allowlisted"
+                )
+            flavor = value
+        elif item == "--dart-define" or item.startswith("--dart-define="):
+            value = item.split("=", 1)[1] if "=" in item else None
+            if value is None:
+                index += 1
+                if index >= len(items):
+                    raise PlanError(
+                        f"{task_id}: --dart-define requires {REQUIRED_RIG_DEFINE}"
+                    )
+                value = items[index]
+            if value != REQUIRED_RIG_DEFINE:
+                raise PlanError(
+                    f"{task_id}: flutter test dart-define {value!r} is not allowlisted"
+                )
+            dart_define = value
+        elif item == "-d":
+            index += 1
+            if index >= len(items):
+                raise PlanError(f"{task_id}: -d requires an explicit test device")
+            value = items[index]
+            if not DEVICE_RE.fullmatch(value):
+                raise PlanError(
+                    f"{task_id}: flutter test device {value!r} is not allowlisted"
+                )
+            device = value
+        elif item.startswith("-"):
             raise PlanError(
                 f"{task_id}: flutter test option {item!r} is not allowlisted"
             )
-        if not item.endswith(".dart"):
-            raise PlanError(f"{task_id}: flutter test argument must be a .dart file")
-        rel = _normalize_rel(item)
-        if not rel.startswith(ALLOWED_FLUTTER_TEST_PREFIXES):
-            raise PlanError(f"{task_id}: script {rel} is outside the workshop allowlist")
-        dart_files += 1
+        else:
+            if not item.endswith(".dart"):
+                raise PlanError(
+                    f"{task_id}: flutter test argument must be a .dart file"
+                )
+            rel = _normalize_rel(item)
+            if not rel.startswith(ALLOWED_FLUTTER_TEST_PREFIXES):
+                raise PlanError(
+                    f"{task_id}: script {rel} is outside the workshop allowlist"
+                )
+            if rel.startswith("integration_test/"):
+                has_integration = True
+            dart_files += 1
+        index += 1
     if dart_files == 0:
         raise PlanError(f"{task_id}: command has no local script path")
+    if has_integration or flavor == "rig":
+        if flavor != "rig":
+            raise PlanError(f"{task_id}: integration tests require --flavor rig")
+        if dart_define != REQUIRED_RIG_DEFINE:
+            raise PlanError(
+                f"{task_id}: rig tests require --dart-define={REQUIRED_RIG_DEFINE}"
+            )
+        if not device:
+            raise PlanError(f"{task_id}: rig tests require -d <explicit-test-device>")
 
 
 def _validate_command(argv: list[Any], task_id: str) -> None:
@@ -394,7 +473,101 @@ def validate_plan(
     return errors, ready
 
 
-def validate_handoff(data: dict[str, Any]) -> list[str]:
+def _is_flutter_test(argv: Any) -> bool:
+    if not isinstance(argv, list) or len(argv) < 2:
+        return False
+    if not all(isinstance(item, str) for item in argv):
+        return False
+    return Path(argv[0]).name == "flutter" and argv[1] == "test"
+
+
+def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
+    """Read executed/skipped from flutter JSON or compact reporter text."""
+    executed = 0
+    skipped = 0
+    saw_json = False
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict) or payload.get("type") != "testDone":
+            continue
+        if payload.get("hidden") is True:
+            continue
+        saw_json = True
+        if payload.get("result") == "skipped":
+            skipped += 1
+        else:
+            executed += 1
+    if saw_json:
+        return executed, skipped
+    compact = None
+    for raw in stdout.splitlines():
+        match = re.search(r"\+(\d+)(?:\s+-\d+)?(?:\s+~(\d+))?", raw)
+        if match:
+            compact = match
+    if compact is None:
+        return None, None
+    return int(compact.group(1)), int(compact.group(2) or 0)
+
+
+def _validate_completed_evidence(evidence: Any) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(evidence, list) or not evidence:
+        errors.append("completed handoff evidence must be a non-empty list of reports")
+        return errors
+    for index, item in enumerate(evidence):
+        prefix = f"evidence[{index}]"
+        if not isinstance(item, dict):
+            errors.append(f"{prefix} is not a test report")
+            continue
+        exit_code = item.get("exit")
+        if exit_code != 0:
+            errors.append(f"{prefix} exit {exit_code!r} cannot complete")
+        if item.get("timed_out") is True:
+            errors.append(f"{prefix} timed out and cannot complete")
+        executed = item.get("executed")
+        skipped = item.get("skipped")
+        if _is_flutter_test(item.get("argv")):
+            if not isinstance(executed, int) or not isinstance(skipped, int):
+                parsed_executed, parsed_skipped = parse_flutter_counts(
+                    item.get("stdout") or ""
+                )
+                if executed is None:
+                    executed = parsed_executed
+                if skipped is None:
+                    skipped = parsed_skipped
+            if not isinstance(executed, int):
+                errors.append(
+                    f"{prefix} flutter evidence execution count is unknown"
+                )
+            elif executed <= 0:
+                errors.append(
+                    f"{prefix} executed {executed!r} cannot stand in for required cases"
+                )
+        elif executed is not None:
+            if not isinstance(executed, int) or executed <= 0:
+                errors.append(
+                    f"{prefix} executed {executed!r} cannot stand in for required cases"
+                )
+        if isinstance(skipped, int) and skipped > 0 and not (
+            isinstance(executed, int) and executed > 0
+        ):
+            errors.append(
+                f"{prefix} skipped {skipped} with no executed cases cannot complete"
+            )
+    return errors
+
+
+def validate_handoff(
+    data: dict[str, Any],
+    *,
+    require_head_sha: bool = True,
+) -> list[str]:
     errors: list[str] = []
     status = data.get("status")
     if status not in {"in_progress", "failed", "blocked", "completed"}:
@@ -403,20 +576,27 @@ def validate_handoff(data: dict[str, Any]) -> list[str]:
     if status == "completed":
         if completed_flag is not True:
             errors.append("completed handoff requires completed: true")
-        evidence = data.get("evidence")
-        if not evidence:
-            errors.append("completed handoff requires evidence")
+        errors.extend(_validate_completed_evidence(data.get("evidence")))
         unrun = data.get("unrun") or []
         if unrun:
             errors.append("completed handoff still has unrun steps")
+        sha = data.get("head_sha")
+        if require_head_sha and (
+            not isinstance(sha, str) or not SHA_RE.fullmatch(sha)
+        ):
+            errors.append("completed handoff requires head_sha")
+        elif sha is not None and (
+            not isinstance(sha, str) or not SHA_RE.fullmatch(sha)
+        ):
+            errors.append("handoff.head_sha must be 40 lowercase hex")
     elif status in {"in_progress", "failed", "blocked"}:
         if completed_flag is True:
             errors.append("unfinished handoff must not be labelled completed")
         if completed_flag is not False:
             errors.append("unfinished handoff must set completed: false")
-    sha = data.get("head_sha")
-    if sha is not None and (not isinstance(sha, str) or not SHA_RE.fullmatch(sha)):
-        errors.append("handoff.head_sha must be 40 lowercase hex")
+        sha = data.get("head_sha")
+        if sha is not None and (not isinstance(sha, str) or not SHA_RE.fullmatch(sha)):
+            errors.append("handoff.head_sha must be 40 lowercase hex")
     return errors
 
 

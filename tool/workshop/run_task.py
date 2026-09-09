@@ -570,7 +570,7 @@ def _run_command(
     stderr_b = stderr_holder[0] if stderr_holder else b""
     stdout = stdout_b.decode("utf-8", "replace")
     stderr = stderr_b.decode("utf-8", "replace")
-    return {
+    result: dict[str, Any] = {
         "argv": argv,
         "exit": None if timed_out else proc.returncode,
         "timed_out": timed_out,
@@ -578,6 +578,13 @@ def _run_command(
         "stdout": stdout,
         "stderr": stderr,
     }
+    if validate_plan._is_flutter_test(argv):
+        executed, skipped = validate_plan.parse_flutter_counts(stdout)
+        if executed is not None:
+            result["executed"] = executed
+        if skipped is not None:
+            result["skipped"] = skipped
+    return result
 
 
 def run_task(
@@ -652,7 +659,7 @@ def run_task(
         author_handoff = _read_author_handoff(author_path, task_id, task)
         author_sha = author_handoff.get("head_sha")
         if isinstance(author_sha, str) and author_sha:
-            if not isolate:
+            if not isolate and author_handoff.get("worktree"):
                 raise RunnerError(
                     f"{task_id}: review must isolate at the author SHA"
                 )
@@ -767,6 +774,8 @@ def run_task(
         }
         if worktree_path is not None:
             payload["worktree"] = worktree_path
+        if completed and head_sha is None:
+            head_sha = _git_sha(_git_toplevel(original_root), "HEAD")
         if head_sha is not None:
             payload["head_sha"] = head_sha
         if completed:

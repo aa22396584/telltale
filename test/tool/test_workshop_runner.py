@@ -73,6 +73,8 @@ def _plan(
     }
     path = workshop / "plan.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
+    if not (tmp / ".git").exists():
+        _init_git(tmp)
     return path
 
 
@@ -102,11 +104,19 @@ class RunTaskTest(unittest.TestCase):
             code = run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=10)
             self.assertEqual(code, 0)
             data = json.loads(handoff.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(data["completed"])
             self.assertEqual(data["status"], "completed")
             self.assertEqual(data["unrun"], [])
             self.assertEqual(data["results"][0]["exit"], 0)
+            self.assertRegex(data["head_sha"], r"^[0-9a-f]{40}$")
+            self.assertEqual(validate_plan.validate_handoff(data), [])
 
     def test_failed_command_cannot_claim_completed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -120,7 +130,13 @@ class RunTaskTest(unittest.TestCase):
             code = run_task.run_task(plan, "WS-01", handoff_path=handoff, timeout=10)
             self.assertEqual(code, 1)
             data = json.loads(handoff.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertIs(data["completed"], False)
             self.assertEqual(data["status"], "failed")
             self.assertTrue(data["failed"])
@@ -145,7 +161,13 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(code, 1)
             review = author.with_name("review.json")
             data = json.loads(review.read_text(encoding="utf-8"))
-            self.assertEqual(validate_plan.validate_handoff(data), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    data,
+                    require_head_sha=data.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertIs(data["completed"], False)
             self.assertEqual(data["status"], "failed")
             self.assertEqual(data["reviewer_role"], "review")
@@ -463,6 +485,7 @@ class RunTaskTest(unittest.TestCase):
                             }
                         ],
                         "reviewer_role": "implementation",
+                        "head_sha": "a" * 40,
                         "next": "reviewer re-runs the same argv",
                     }
                 ),
@@ -547,7 +570,13 @@ class RunTaskTest(unittest.TestCase):
             review = json.loads(
                 author.with_name("review.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(validate_plan.validate_handoff(review), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    review,
+                    require_head_sha=review.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 
@@ -579,7 +608,13 @@ class RunTaskTest(unittest.TestCase):
             review = json.loads(
                 author.with_name("reviewer.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(validate_plan.validate_handoff(review), [])
+            self.assertEqual(
+                validate_plan.validate_handoff(
+                    review,
+                    require_head_sha=review.get("head_sha") is not None,
+                ),
+                [],
+            )
             self.assertTrue(review["completed"])
             self.assertEqual(review["reviewer_role"], "review")
 
@@ -628,6 +663,7 @@ class RunTaskTest(unittest.TestCase):
                         "results": [result],
                         "evidence": [result],
                         "reviewer_role": "implementation",
+                        "head_sha": "a" * 40,
                         "next": "reviewer re-runs the same argv",
                     }
                 ),
@@ -1593,7 +1629,7 @@ def _init_git(root: Path) -> str:
     )
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
     subprocess.run(
-        ["git", "-C", str(root), "commit", "-m", "init"],
+        ["git", "-C", str(root), "commit", "--allow-empty", "-m", "init"],
         check=True,
         capture_output=True,
     )
