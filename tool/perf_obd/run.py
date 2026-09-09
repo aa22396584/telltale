@@ -56,8 +56,16 @@ def _flutter() -> str:
     return os.environ.get("FLUTTER", str(pinned))
 
 
-def run_software(output: Path) -> dict:
+def prepare_output(output: Path) -> Path:
     output.mkdir(parents=True, exist_ok=True)
+    report_path = output / "software.json"
+    if report_path.exists():
+        report_path.unlink()
+    return report_path
+
+
+def run_software(output: Path) -> dict:
+    report_path = prepare_output(output)
     env = os.environ.copy()
     env["PERF_OBD_OUTPUT"] = str(output.resolve())
     app = Path(__file__).resolve().parents[2]
@@ -69,7 +77,6 @@ def run_software(output: Path) -> dict:
     completed = subprocess.run(cmd, cwd=app, env=env, check=False)
     if completed.returncode != 0:
         raise GateError("flutter test failed")
-    report_path = output / "software.json"
     if not report_path.is_file():
         raise GateError("software.json was not written")
     try:

@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
-from run import GateError, validate_report
+from run import GateError, prepare_output, validate_report
 
 
 def _ok(**overrides):
@@ -52,6 +54,15 @@ class ValidateReportTest(unittest.TestCase):
     def test_missing_quantile_method_fails(self):
         with self.assertRaises(GateError):
             validate_report(_ok(quantile="unspecified"))
+
+    def test_prepare_output_deletes_a_stale_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "software.json"
+            stale.write_text("{}", encoding="utf-8")
+            report_path = prepare_output(output)
+            self.assertEqual(report_path, stale)
+            self.assertFalse(stale.exists())
 
 
 if __name__ == "__main__":
