@@ -62,7 +62,9 @@ enum Elm327ErrorCode {
       this == Elm327ErrorCode.busInitError ||
       this == Elm327ErrorCode.lowVoltageReset;
 
-  /// Message for the connection status strip. Written for a driver.
+  /// Transcript wording for this adapter status. The connection wizard maps
+  /// the identifier through ARB; this string is for logs and
+  /// [InitProgress.detail].
   String get description => switch (this) {
     Elm327ErrorCode.none => '',
     // Not "the vehicle does not support this".
@@ -77,21 +79,25 @@ enum Elm327ErrorCode {
     // goes unanswered surfaced as "this vehicle does not support that
     // PID", in the same tree that says elsewhere, correctly, that silence
     // is not a clean answer.
-    Elm327ErrorCode.noData => '沒有收到回應（可能是暫時無回應，或車輛不支援）',
-    Elm327ErrorCode.busInitError => '匯流排初始化失敗',
-    Elm327ErrorCode.canError => 'CAN 匯流排錯誤',
-    Elm327ErrorCode.unableToConnect => '無法與 ECU 通訊，請確認電門已開啟',
-    Elm327ErrorCode.stopped => '傳輸被中斷',
-    Elm327ErrorCode.bufferFull => '轉接器緩衝區溢位',
-    Elm327ErrorCode.busBusy => '匯流排忙碌',
-    Elm327ErrorCode.busError => '匯流排錯誤，可能是接線問題',
-    Elm327ErrorCode.dataError => '收到的資料不正確',
-    Elm327ErrorCode.feedbackError => '訊號回授錯誤',
-    Elm327ErrorCode.lowVoltageReset => '電壓過低導致轉接器重置',
-    Elm327ErrorCode.activityAlert => '匯流排活動警示',
-    Elm327ErrorCode.lowPowerAlert => '轉接器即將進入低功耗模式',
-    Elm327ErrorCode.internalError => '轉接器內部錯誤',
-    Elm327ErrorCode.unknownCommand => '轉接器不支援此指令',
+    Elm327ErrorCode.noData =>
+      'No reply arrived — it may be temporary silence, or the vehicle may not support this.',
+    Elm327ErrorCode.busInitError => 'Bus initialisation failed.',
+    Elm327ErrorCode.canError => 'CAN bus error.',
+    Elm327ErrorCode.unableToConnect =>
+      'Cannot reach the ECU. Check that the ignition is on.',
+    Elm327ErrorCode.stopped => 'The transfer was interrupted.',
+    Elm327ErrorCode.bufferFull => "The adapter's buffer overflowed.",
+    Elm327ErrorCode.busBusy => 'The bus is busy.',
+    Elm327ErrorCode.busError => 'Bus error; the wiring may be the cause.',
+    Elm327ErrorCode.dataError => 'The data that arrived is not correct.',
+    Elm327ErrorCode.feedbackError => 'Signal feedback error.',
+    Elm327ErrorCode.lowVoltageReset => 'Low voltage reset the adapter.',
+    Elm327ErrorCode.activityAlert => 'Bus activity alert.',
+    Elm327ErrorCode.lowPowerAlert =>
+      'The adapter is about to enter low-power mode.',
+    Elm327ErrorCode.internalError => 'Adapter internal error.',
+    Elm327ErrorCode.unknownCommand =>
+      'The adapter does not support this command.',
   };
 }
 
@@ -347,15 +353,21 @@ enum InitNote {
 
 /// The wording [InitNote] replaced, kept for [InitProgress.detail].
 String initNoteText(InitNote note) => switch (note) {
-  InitNote.aborted => '已中止',
-  InitNote.notAcknowledged => '轉接器未確認此指令',
-  InitNote.ecuSilent => 'ECU 沒有回應',
-  InitNote.ecuRefusedSupportQuery => 'ECU 拒絕了支援度查詢（negative response）',
-  InitNote.supportMaskTooShort => '支援度回應過短（需要 41 00 加四個位元組）',
-  InitNote.notModeOnePositiveReply => '回應不是 Mode 01 的正向回覆',
-  InitNote.pidEchoMismatch => '回應的 PID 與查詢不符',
-  InitNote.timedOut => '逾時',
-  InitNote.unexpected => '此步驟發生未預期的錯誤',
+  InitNote.aborted => 'Stopped after an earlier step failed.',
+  InitNote.notAcknowledged =>
+    'The adapter did not acknowledge this command.',
+  InitNote.ecuSilent => 'The ECU did not answer.',
+  InitNote.ecuRefusedSupportQuery =>
+    'The ECU refused the support query (negative response).',
+  InitNote.supportMaskTooShort =>
+    'The support reply is too short; 41 00 and four more bytes are required.',
+  InitNote.notModeOnePositiveReply =>
+    'The reply is not a Mode 01 positive response.',
+  InitNote.pidEchoMismatch =>
+    'The reply echoes a different PID from the one that was asked for.',
+  InitNote.timedOut => 'Timed out.',
+  InitNote.unexpected =>
+    'This step failed with an unexpected error. The full error is kept in the transcript.',
 };
 
 /// Requires the literal `OK` acknowledgement a state-changing AT command owes.

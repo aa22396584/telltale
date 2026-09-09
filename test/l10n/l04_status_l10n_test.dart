@@ -550,6 +550,7 @@ void main() {
         );
         expect(progress.detail, code.description, reason: '$code');
         expect(progress.detail, isNotEmpty, reason: '$code');
+        expect(chinese.hasMatch(code.description), isFalse, reason: '$code');
         expect(initProgressLine(en, progress), adapterErrorLabel(en, code));
       }
     });
@@ -566,9 +567,13 @@ void main() {
         expect(progress.detail, initNoteText(note), reason: '$note');
         expect(initProgressLine(en, progress), initNoteLabel(en, note));
         expect(chinese.hasMatch(initProgressLine(en, progress)), isFalse);
+        expect(chinese.hasMatch(initNoteText(note)), isFalse, reason: '$note');
       }
-      expect(initNoteText(InitNote.aborted), '已中止');
-      expect(initNoteText(InitNote.timedOut), '逾時');
+      expect(
+        initNoteText(InitNote.aborted),
+        'Stopped after an earlier step failed.',
+      );
+      expect(initNoteText(InitNote.timedOut), 'Timed out.');
     });
 
     test('adapter data is shown as it arrived, never translated', () {
