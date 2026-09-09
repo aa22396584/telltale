@@ -62,6 +62,47 @@ void main() {
       expect(restored.redlineFrom, 120);
       expect(restored.isCustom, isTrue);
     });
+
+    test('the Torque subset export is not the Telltale complete export', () {
+      const original = Pid(
+        name: 'Transmission Fluid Temp',
+        shortName: 'Trans',
+        modeAndPid: '221E1C',
+        equation: '((A*256)+B)/8-40',
+        minValue: -40,
+        maxValue: 215,
+        units: '°C',
+        header: '7E1',
+        priority: PriorityTier.high,
+        redlineFrom: 120,
+        variant: 'tf',
+        isCustom: true,
+      );
+
+      final complete = PidCsv.export([original]);
+      final subset = PidCsv.exportTorqueSubset([original]);
+      expect(complete, isNot(subset));
+      expect(complete, contains('Priority'));
+      expect(complete, contains('Redline'));
+      expect(complete, contains('Variant'));
+      expect(subset, isNot(contains('Priority')));
+      expect(subset, isNot(contains('Redline')));
+      expect(subset, isNot(contains('Variant')));
+
+      final restored = PidCsv.parse(subset);
+      expect(restored.errors, isEmpty);
+      expect(restored.pids.single.name, original.name);
+      expect(restored.pids.single.equation, original.equation);
+      expect(restored.pids.single.header, '7E1');
+      expect(restored.pids.single.units, '°C');
+      expect(
+        restored.pids.single.priority,
+        PriorityTier.medium,
+        reason: 'lossy Torque interchange must not invent Telltale metadata',
+      );
+      expect(restored.pids.single.redlineFrom, isNull);
+      expect(restored.pids.single.variant, isNull);
+    });
   });
 
   group('parsing files from elsewhere', () {
