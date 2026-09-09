@@ -2,6 +2,8 @@
 /// and the current connection.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,6 +88,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
   static String describeManualFailure(AppLocalizations l10n, Object error) {
     if (error is ManualCommandRefusedException) {
       return manualCommandRefusalText(l10n, error.refusal);
+    }
+    if (error is TimeoutException) {
+      return l10n.settingsManualCommandTimedOut;
     }
     if (error is! TransportException) return '$error';
     return commandFailureText(l10n, error) ?? '$error';

@@ -3398,6 +3398,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
 
   @override
+  String get settingsManualCommandTimedOut =>
+      'No reply arrived before the time limit. Confirm the adapter is connected and the ignition is on.';
+
+  @override
   String get settingsManualCommandOperationRetired => '這個工作階段已經結束或退到背景，指令沒有送出。';
 
   @override
@@ -7224,6 +7228,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandWriteFailed =>
       '這條指令無法交給轉接器的連線。有多少內容送達轉接器並不確定。';
+
+  @override
+  String get settingsManualCommandTimedOut => '在時限內沒有收到回應。請確認轉接器已連線，且車輛電門已開啟。';
 
   @override
   String get settingsManualCommandOperationRetired => '這個工作階段已經結束或退到背景，指令沒有送出。';
