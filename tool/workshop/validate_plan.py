@@ -481,10 +481,24 @@ def _is_flutter_test(argv: Any) -> bool:
     return Path(argv[0]).name == "flutter" and argv[1] == "test"
 
 
+def _flutter_json_reporter(argv: Any) -> bool:
+    if not isinstance(argv, list):
+        return False
+    for index, item in enumerate(argv):
+        if not isinstance(item, str):
+            continue
+        if item == "--reporter=json":
+            return True
+        if item == "--reporter" and index + 1 < len(argv) and argv[index + 1] == "json":
+            return True
+    return False
+
+
 def _flutter_json_events(stdout: str) -> tuple[bool, bool]:
-    """Return (saw_json_reporter, saw_done_event)."""
+    """Return (saw_json_reporter, saw_successful_terminal_done)."""
     saw_json = False
     saw_done = False
+    done_success = False
     for raw in stdout.splitlines():
         line = raw.strip()
         if not line.startswith("{"):
@@ -495,13 +509,16 @@ def _flutter_json_events(stdout: str) -> tuple[bool, bool]:
             continue
         if not isinstance(payload, dict):
             continue
+        if saw_done:
+            return True, False
         kind = payload.get("type")
         if kind == "done":
-            saw_done = True
             saw_json = True
+            saw_done = True
+            done_success = payload.get("success") is True
         elif kind == "testDone":
             saw_json = True
-    return saw_json, saw_done
+    return saw_json, saw_done and done_success
 
 
 def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
@@ -563,7 +580,8 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
         if _is_flutter_test(item.get("argv")):
             stdout = item.get("stdout") or ""
             saw_json, saw_done = _flutter_json_events(stdout)
-            if saw_json and not saw_done:
+            json_mode = saw_json or _flutter_json_reporter(item.get("argv"))
+            if json_mode and not saw_done:
                 errors.append(
                     f"{prefix} flutter JSON reporter stream is incomplete"
                 )
