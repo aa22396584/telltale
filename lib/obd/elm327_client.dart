@@ -723,7 +723,7 @@ class Elm327Client {
     _transportLost = false;
     await transport.connect();
     transcript.recordNote(
-      '連線建立：${transport.displayName}（${transport.kind.label}）',
+      'Connection established: ${transport.displayName} (${transport.kind.label})',
     );
     _rxSub = transport.incoming.listen(_onBytes);
 
@@ -847,7 +847,9 @@ class Elm327Client {
     try {
       final reply = await send('ATS1');
       if (_saidOk(reply)) {
-        transcript.recordNote('此匯流排同時接受 11/29 位識別碼，已開啟位元組空白以避免歧義');
+        transcript.recordNote(
+          'This bus accepts both 11-bit and 29-bit identifiers, so byte spacing is on to avoid ambiguity',
+        );
       }
     } on Object {
       // An adapter that will not do it leaves the parser's refusal in place.
@@ -1218,7 +1220,9 @@ class Elm327Client {
     // screen that has gone — is refused at the *first* write of its exchange,
     // which is where the decision belongs.
     if (!completesCommittedTransaction && !(mayTransmit?.call(owner) ?? true)) {
-      throw const OperationRetiredException('這個工作階段已經結束或退到背景，指令沒有送出。');
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
     }
     // The caller's budget, applied to each write rather than to the operation
     // as a whole.
@@ -1237,7 +1241,9 @@ class Elm327Client {
     if (deadline != null) {
       final left = deadline.difference(DateTime.now());
       if (left <= Duration.zero) {
-        throw TimeoutException('已超過這次操作的時間上限，$command 沒有送出。');
+        throw TimeoutException(
+          'The time limit for this operation has passed, so $command was not sent.',
+        );
       }
       if (left < timeout) timeout = left;
     }
@@ -1490,7 +1496,7 @@ class Elm327Client {
   /// the handshake has completed.
   Future<ObdResponse> queryPid(String modeAndPid) {
     if (!isInitialized) {
-      throw StateError('ELM327 尚未完成初始化');
+      throw StateError('ELM327 is not initialized yet');
     }
     return send(modeAndPid);
   }
@@ -1673,10 +1679,14 @@ class Elm327Client {
         // blocking newer commands and, on a link that stays quiet,
         // disconnecting the session on behalf of work nobody was waiting for.
         if (!(mayTransmit?.call(owner) ?? true)) {
-          throw const OperationRetiredException('這個工作階段已經結束或退到背景，指令沒有送出。');
+          throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
         }
         if (deadline != null && !deadline.isAfter(DateTime.now())) {
-          throw TimeoutException('已超過這次操作的時間上限，$command 沒有送出。');
+          throw TimeoutException(
+          'The time limit for this operation has passed, so $command was not sent.',
+        );
         }
         if (_outOfSync) await _resync(deadline: deadline);
 
