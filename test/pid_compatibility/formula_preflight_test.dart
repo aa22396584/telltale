@@ -15,12 +15,14 @@ void main() {
     expect(FormulaEngine.preflight('A-VAL{010C}'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
     expect(FormulaEngine.preflight('((A*256)+B)/4'), isNull);
+    expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
+    expect(FormulaEngine.preflight('MAX(A,B)'), isNull);
+    expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
+    expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
     for (final equation in [
-      'MIN(A:B)',
-      'MAX(A,B)',
       'SQRT(A)',
       'INT16(A:B)',
       'LOOKUP(A:0:1=100)',
@@ -58,13 +60,14 @@ void main() {
     const wire =
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
         'Boost,BST,010B,A-BARO,0,300,kPa,7E0\r\n'
-        'Lookup,LKP,010C,LOOKUP(A:0:1=100),0,8000,rpm,7E0\r\n';
+        'Clip,CLP,010C,MIN(A:B),0,255,,7E0\r\n'
+        'Lookup,LKP,010D,LOOKUP(A:0:1=100),0,8000,rpm,7E0\r\n';
     final result = PidCsv.parse(wire);
-    expect(result.pids, hasLength(1));
-    expect(result.pids.single.equation, 'A-BARO');
+    expect(result.pids, hasLength(2));
+    expect(result.pids.map((p) => p.equation), ['A-BARO', 'MIN(A:B)']);
     expect(result.errors, hasLength(1));
     expect(result.errors.single.issue, PidCsvIssue.rowFormulaRejected);
-    expect(result.errors.single.lineNumber, 3);
+    expect(result.errors.single.lineNumber, 4);
     expect(
       result.errors.single.preflight!.issue,
       FormulaIssue.unsupportedConstruct,

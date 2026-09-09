@@ -120,6 +120,13 @@ void main() {
       expect(engine.evaluate('LOG10(A)', '41 00 64'), closeTo(2.0, 1e-6));
     });
 
+    test('MIN() and MAX() take the wiki colon form', () {
+      expect(engine.evaluateBytes('MIN(A:B)', const [20, 5]), closeTo(5.0, 1e-9));
+      expect(engine.evaluateBytes('MAX(A:B)', const [20, 5]), closeTo(20.0, 1e-9));
+      expect(engine.evaluateBytes('MAX(A,B)', const [20, 5]), closeTo(20.0, 1e-9));
+      expect(engine.evaluateBytes('min(A:B)', const [20, 5]), closeTo(5.0, 1e-9));
+    });
+
     test('VAL{} external PID reference', () {
       // A VAL{} reference now resolves against the *asking* controller, so the
       // seed and the requester have to be on the same one. Keying by bare hex
@@ -264,6 +271,107 @@ void main() {
 
     test('nested functions reduce innermost first', () {
       expect(engine.evaluateBytes('ABS(ABS(A)-20)', const [5]), closeTo(15.0, 1e-9));
+      expect(
+        engine.evaluateBytes('ABS(MIN(A:B))', const [3, 9]),
+        closeTo(3.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('MIN(ABS(A-10):B)', const [3, 9]),
+        closeTo(7.0, 1e-9),
+      );
+    });
+
+    test('MIN and MAX names survive variable substitution', () {
+      expect(engine.evaluateBytes('MIN(A:B)', const [1, 2]), closeTo(1.0, 1e-9));
+      expect(engine.evaluateBytes('MAX(A:B)', const [1, 2]), closeTo(2.0, 1e-9));
+    });
+
+    test('MIN/MAX arguments may be grouped', () {
+      // Codex P2: `[^()]+` could not see `MIN((A+1):B)` / `MAX(A:(B*2))`.
+      expect(
+        engine.evaluateBytes('MIN((A+1):B)', const [3, 9]),
+        closeTo(4.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('MAX(A:(B*2))', const [3, 9]),
+        closeTo(18.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('MIN((A-10):(B+1))', const [3, 9]),
+        closeTo(-7.0, 1e-9),
+      );
+      expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
+      expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
+    });
+
+    test('MIN/MAX require a token boundary, not a substring', () {
+      // `1MIN(2:3)` used to reduce to 12: the matcher ate MIN(2:3) and
+      // concatenated the replacement onto the leading 1. A plausible number
+      // from a malformed import.
+      expect(
+        () => engine.evaluateBytes('1MIN(2:3)', const []),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(
+        () => engine.evaluateBytes('AMIN(B:C)', const [4, 5, 6]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(FormulaEngine.preflight('1MIN(2:3)'), isNotNull);
+      expect(
+        () => engine.evaluateBytes('MIN(1:2)3', const []),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(
+        () => engine.evaluateBytes('MIN(A:B)C', const [4, 5, 6]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+    });
+
+    test('MIN/MAX with the wrong arity is unparsable, not a number', () {
+      expect(
+        () => engine.evaluateBytes('MIN(A)', const [4]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(
+        () => engine.evaluateBytes('MIN(A:B:C)', const [1, 2, 3]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
     });
 
     test('BARO injects the ambient pressure', () {

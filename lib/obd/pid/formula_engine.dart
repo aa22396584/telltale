@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()` and `LOG10()` on top. Accepting it means somebody's
-/// existing formula for their car works here without being retyped.
+/// `BARO`, `ABS()`, `LOG10()`, `MIN()` and `MAX()` on top. Accepting it means
+/// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()` — leaving a pure arithmetic string.
+///      `LOG10()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -305,11 +305,12 @@ class FormulaEngine {
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
 
-
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
   /// They must contain no A-N letters of their own, hence control characters.
   static const String _absSentinel = '\u0001(';
   static const String _log10Sentinel = '\u0002(';
+  static const String _minSentinel = '\u0003(';
+  static const String _maxSentinel = '\u0004(';
 
   /// Characters that, when they precede a `-`, mark it as unary rather than
   /// a binary subtraction.
@@ -689,8 +690,20 @@ class FormulaEngine {
     });
 
     // Shield function names before single-letter substitution, otherwise the
-    // `A` in `ABS` and the `G` in `LOG10` would be replaced by byte values.
-    s = s.replaceAll('ABS(', _absSentinel).replaceAll('LOG10(', _log10Sentinel);
+    // `A` in `ABS`/`MAX` and the `M`/`I`/`N` in `MIN` would be replaced by
+    // byte values. `min(` / `max(` are restored as `MIN(` / `MAX(` so a
+    // Torque CSV that used wiki case still evaluates.
+    s = s
+        .replaceAll('ABS(', _absSentinel)
+        .replaceAll('LOG10(', _log10Sentinel)
+        .replaceAllMapped(
+          _namedCallPattern('MIN'),
+          (m) => '${m.group(1)}$_minSentinel',
+        )
+        .replaceAllMapped(
+          _namedCallPattern('MAX'),
+          (m) => '${m.group(1)}$_maxSentinel',
+        );
 
     for (var i = 0; i < 14; i++) {
       final letter = String.fromCharCode(0x41 + i);
@@ -717,7 +730,11 @@ class FormulaEngine {
       s = s.replaceAll(pattern, bytes[i].toString());
     }
 
-    s = s.replaceAll(_absSentinel, 'ABS(').replaceAll(_log10Sentinel, 'LOG10(');
+    s = s
+        .replaceAll(_absSentinel, 'ABS(')
+        .replaceAll(_log10Sentinel, 'LOG10(')
+        .replaceAll(_minSentinel, 'MIN(')
+        .replaceAll(_maxSentinel, 'MAX(');
 
     // Alternating, not one pass each in a fixed order.
     //
@@ -759,6 +776,18 @@ class FormulaEngine {
         }
         return math.log(v) / math.ln10;
       });
+      s = _applyBinaryFunction(
+        s,
+        'MIN',
+        equation,
+        (a, b) => math.min(a, b),
+      );
+      s = _applyBinaryFunction(
+        s,
+        'MAX',
+        equation,
+        (a, b) => math.max(a, b),
+      );
       s = _unwrapFunctionParens(s, equation);
     }
 
@@ -817,6 +846,121 @@ class FormulaEngine {
       final inner = _reduce(match.group(1)!, source);
       s = s.replaceRange(match.start, match.end, _format(fn(inner)));
     }
+  }
+
+  /// Torque wiki `MIN(A:B)` / `MAX(A:B)`. A single comma is accepted too
+  /// (`MAX(A,B)`); two separators or an empty side is not a two-argument call.
+  /// Arguments may be grouped: `MIN((A+1):B)` is not `unparsableTerm`.
+  String _applyBinaryFunction(
+    String input,
+    String name,
+    String source,
+    double Function(double, double) fn,
+  ) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final call = _innermostBinaryCall(s, name);
+      if (call == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          'Formula nests functions too deeply',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      final parts = _splitBinaryArgs(call.inner);
+      if (parts == null) {
+        throw FormulaException(
+          'Cannot parse "${call.inner}"',
+          source,
+          issue: FormulaIssue.unparsableTerm,
+          term: call.inner,
+        );
+      }
+      final value = fn(_reduce(parts[0], source), _reduce(parts[1], source));
+      s = s.replaceRange(call.start, call.end, _format(value));
+    }
+  }
+
+  /// Leftmost `NAME(...)` whose argument list does not still contain `ABS(`,
+  /// `LOG10(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
+  static ({int start, int end, String inner})? _innermostBinaryCall(
+    String input,
+    String name,
+  ) {
+    final needle = '$name(';
+    var from = 0;
+    while (true) {
+      final start = input.indexOf(needle, from);
+      if (start < 0) return null;
+      if (start > 0 && _isIdentChar(input.codeUnitAt(start - 1))) {
+        from = start + 1;
+        continue;
+      }
+      var depth = 0;
+      var end = -1;
+      for (var i = start + name.length; i < input.length; i++) {
+        final c = input[i];
+        if (c == '(') {
+          depth++;
+        } else if (c == ')') {
+          depth--;
+          if (depth == 0) {
+            end = i + 1;
+            break;
+          }
+        }
+      }
+      if (end < 0) return null;
+      if (end < input.length && _isIdentChar(input.codeUnitAt(end))) {
+        from = start + 1;
+        continue;
+      }
+      final inner = input.substring(start + needle.length, end - 1);
+      if (!_innerStillHasFunction(inner)) {
+        return (start: start, end: end, inner: inner);
+      }
+      from = start + 1;
+    }
+  }
+
+  static bool _innerStillHasFunction(String inner) =>
+      inner.contains('ABS(') ||
+      inner.contains('LOG10(') ||
+      inner.contains('MIN(') ||
+      inner.contains('MAX(');
+
+  static bool _isIdentChar(int unit) =>
+      (unit >= 0x30 && unit <= 0x39) ||
+      (unit >= 0x41 && unit <= 0x5A) ||
+      (unit >= 0x61 && unit <= 0x7A) ||
+      unit == 0x5F;
+
+  static RegExp _namedCallPattern(String name) =>
+      RegExp('(^|[^A-Za-z0-9_])${RegExp.escape(name)}\\(', caseSensitive: false);
+
+  /// Splits `A:B` or `A,B` into exactly two nonempty sides.
+  /// A colon or comma inside grouping parentheses is not a separator.
+  static List<String>? _splitBinaryArgs(String inner) {
+    var sep = -1;
+    var depth = 0;
+    for (var i = 0; i < inner.length; i++) {
+      final c = inner[i];
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && (c == ':' || c == ',')) {
+        if (sep != -1) return null;
+        sep = i;
+      }
+    }
+    if (sep < 0 || depth != 0) return null;
+    final left = inner.substring(0, sep).trim();
+    final right = inner.substring(sep + 1).trim();
+    if (left.isEmpty || right.isEmpty) return null;
+    return [left, right];
   }
 
   double _reduce(String expression, String source) {
@@ -1107,12 +1251,12 @@ class _Operator {
 /// Torque wiki names this dialect does not implement, detected as `NAME(`.
 ///
 /// `LOG10` is not `LOG`, `INT16` is not `INT`, `BARO` without a parenthesis
-/// is the ECU cache identifier we do implement. INT16 compatibility is
-/// still unclaimed (#79).
+/// is the ECU cache identifier we do implement. `MIN`/`MAX` are implemented
+/// as arity-2 colon or comma. INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|LOG|'
   r'SQRT|INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
-  r'FLOAT64|FLOAT32|MIN|MAX|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
+  r'FLOAT64|FLOAT32|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );
 

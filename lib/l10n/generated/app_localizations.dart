@@ -6648,7 +6648,7 @@ abstract class AppLocalizations {
   /// **'This step failed with an unexpected error. The full error is kept in the transcript.'**
   String get handshakeNoteUnexpected;
 
-  /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (MIN, INT16, LOOKUP, …). Distinct from an unparsable typo.
+  /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, LOOKUP, BARO(), …). Distinct from an unparsable typo.
   ///
   /// In en, this message translates to:
   /// **'{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.'**
