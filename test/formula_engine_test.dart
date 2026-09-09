@@ -532,6 +532,20 @@ void main() {
         engine.evaluateBytes('FLOAT32(191:128:0:0)', const []),
         closeTo(-1.0, 1e-9),
       );
+      // 0x80000000 is IEEE754 -0.0. `value < 0` is false for -0, so _format
+      // must use isNegative or the sign is lost and 1/x of -0 becomes +Inf.
+      final negativeZero =
+          engine.evaluateBytes('FLOAT32(128:0:0:0)', const []);
+      expect(negativeZero, 0.0);
+      expect(negativeZero.isNegative, isTrue);
+      expect(
+        engine.evaluateBytes('FLOAT32(0:0:0:0)', const []).isNegative,
+        isFalse,
+      );
+      expect(
+        engine.evaluateBytes('-FLOAT32(128:0:0:0)', const []).isNegative,
+        isFalse,
+      );
       expect(
         engine.evaluateBytes('FLOAT32(A:B:C:D)', const [63, 128, 0, 0]),
         closeTo(1.0, 1e-9),

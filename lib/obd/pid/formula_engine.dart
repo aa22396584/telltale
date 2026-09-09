@@ -1577,7 +1577,10 @@ class FormulaEngine {
     final rendered = magnitude == magnitude.roundToDouble() && magnitude < 1e15
         ? magnitude.toStringAsFixed(1)
         : _fixedWithoutScientific(magnitude);
-    return value < 0 ? '$_negative$rendered' : rendered;
+    // `isNegative`, not `< 0`: IEEE754 -0.0 compares equal to +0 and is not
+    // `< 0`, so a FLOAT32 payload of 0x80000000 would otherwise come back as
+    // +0 and flip the sign of later arithmetic (`1/x` of -0 is -Inf).
+    return value.isNegative ? '$_negative$rendered' : rendered;
   }
 
   /// Fixed-point so the reducer never sees `1e-7` (it would split on `-`).
