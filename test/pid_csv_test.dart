@@ -10,6 +10,7 @@ void main() {
   _reorderedColumns();
   _strictParsingTests();
   _torqueProCompatibility();
+  _humanReportNotReimported();
   group('export / import round trip', () {
     test(
       'streamed export preserves exact CSV bytes in bounded chunks',
@@ -844,6 +845,34 @@ void _torqueProCompatibility() {
       final result = PidCsv.parse(file);
       expect(result.errors, isEmpty);
       expect(result.pids.single.header, '7E1');
+    });
+  });
+}
+
+void _humanReportNotReimported() {
+  group('human spreadsheet report', () {
+    const pid = Pid(
+      name: 'Coolant',
+      shortName: 'ECT',
+      modeAndPid: '0105',
+      equation: 'A-40',
+      minValue: -40,
+      maxValue: 215,
+      units: '°C',
+      priority: PriorityTier.high,
+    );
+
+    test('is labeled separately from the machine file', () {
+      final human = PidCsv.exportHumanReport([pid]);
+      expect(human.contains('Telltale human report'), isTrue);
+      expect(human.contains('Priority'), isFalse);
+      expect(PidCsv.export([pid]).contains('Telltale human report'), isFalse);
+    });
+
+    test('cannot be silently reimported as unchanged formulas', () {
+      final result = PidCsv.parse(PidCsv.exportHumanReport([pid]));
+      expect(result.pids, isEmpty);
+      expect(result.errors, isNotEmpty);
     });
   });
 }
