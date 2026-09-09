@@ -23,6 +23,29 @@ class GateError(Exception):
 REQUIRED_MINIMUM = 20
 SIX_REQUIRED_MINIMUM = 8
 SIX_SCHEDULED = ["010C", "010D", "015E", "0105", "0104", "0111"]
+TWENTY_REQUIRED_MINIMUM = 8
+TWENTY_SCHEDULED = [
+    "010C",
+    "010D",
+    "015E",
+    "0105",
+    "0104",
+    "0111",
+    "010F",
+    "010B",
+    "0110",
+    "010E",
+    "010A",
+    "012F",
+    "0133",
+    "0142",
+    "0146",
+    "015C",
+    "0106",
+    "0107",
+    "011F",
+    "012C",
+]
 
 
 def validate_report(report: object) -> dict:
@@ -94,6 +117,35 @@ def validate_six_report(report: object) -> dict:
     return report
 
 
+def validate_twenty_report(report: object) -> dict:
+    if not isinstance(report, dict):
+        raise GateError("twenty-channel report is not an object")
+    if report.get("lane") != "software":
+        raise GateError("twenty-channel lane is not software")
+    if report.get("engine") != "PollingEngine":
+        raise GateError("twenty-channel engine is not PollingEngine")
+    if report.get("quantile") != "nearest-rank":
+        raise GateError("twenty-channel quantile method is missing or not nearest-rank")
+    if report.get("channels") != 20:
+        raise GateError("a 6-channel report is not a 20-channel matrix")
+    scheduled = report.get("scheduledModeAndPid")
+    if scheduled != TWENTY_SCHEDULED:
+        raise GateError("twenty-channel scheduledModeAndPid must be the 20 Mode 01 channels")
+    per_channel = report.get("perChannel")
+    if not isinstance(per_channel, dict):
+        raise GateError("twenty-channel perChannel is missing")
+    for pid in TWENTY_SCHEDULED:
+        count = per_channel.get(pid)
+        if not isinstance(count, int) or count < TWENTY_REQUIRED_MINIMUM:
+            raise GateError(f"{pid} produced inadequate twenty-channel observations")
+    observations = report.get("observations")
+    if not isinstance(observations, int) or observations < TWENTY_REQUIRED_MINIMUM:
+        raise GateError("twenty-channel observations are inadequate")
+    if report.get("errors") not in (0, 0.0):
+        raise GateError("twenty-channel errors are not zero")
+    return report
+
+
 def _flutter() -> str:
     pinned = Path.home() / "fvm/versions/3.47.0/bin/flutter"
     return os.environ.get("FLUTTER", str(pinned))
@@ -103,16 +155,20 @@ def prepare_output(output: Path) -> Path:
     output.mkdir(parents=True, exist_ok=True)
     report_path = output / "software.json"
     six_path = output / "software-six.json"
+    twenty_path = output / "software-twenty.json"
     if report_path.exists():
         report_path.unlink()
     if six_path.exists():
         six_path.unlink()
+    if twenty_path.exists():
+        twenty_path.unlink()
     return report_path
 
 
 def run_software(output: Path) -> dict:
     report_path = prepare_output(output)
     six_path = output / "software-six.json"
+    twenty_path = output / "software-twenty.json"
     env = os.environ.copy()
     env["PERF_OBD_OUTPUT"] = str(output.resolve())
     app = Path(__file__).resolve().parents[2]
@@ -121,6 +177,7 @@ def run_software(output: Path) -> dict:
         "test",
         "test/telemetry_demand/software_acquisition_measure_test.dart",
         "test/telemetry_demand/software_six_channel_measure_test.dart",
+        "test/telemetry_demand/software_twenty_channel_measure_test.dart",
     ]
     completed = subprocess.run(cmd, cwd=app, env=env, check=False)
     if completed.returncode != 0:
@@ -129,6 +186,8 @@ def run_software(output: Path) -> dict:
         raise GateError("software.json was not written")
     if not six_path.is_file():
         raise GateError("software-six.json was not written")
+    if not twenty_path.is_file():
+        raise GateError("software-twenty.json was not written")
     try:
         payload = json.loads(report_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -137,7 +196,12 @@ def run_software(output: Path) -> dict:
         six_payload = json.loads(six_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise GateError("software-six.json is not JSON") from exc
+    try:
+        twenty_payload = json.loads(twenty_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise GateError("software-twenty.json is not JSON") from exc
     validate_six_report(six_payload)
+    validate_twenty_report(twenty_payload)
     return validate_report(payload)
 
 
