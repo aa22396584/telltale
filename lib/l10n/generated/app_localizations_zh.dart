@@ -3813,6 +3813,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String pidImportRowFormulaRejected(int line, String reason) {
     return '第 $line 行：$reason';
   }
+
+  @override
+  String get telemetryHistoryNeedsForeground => '請回到 App 後再操作';
+
+  @override
+  String get telemetrySessionPolicyChanged => '操作期間行車或連線狀態已改變';
+
+  @override
+  String get telemetrySessionInvalidId => '紀錄識別碼無效';
+
+  @override
+  String get telemetrySessionNotFound => '找不到這筆本機紀錄';
+
+  @override
+  String get telemetrySessionStorageFailed => '本機儲存作業失敗';
+
+  @override
+  String get telemetrySessionShareFailed => '無法準備或開啟分享';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7623,4 +7641,22 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String pidImportRowFormulaRejected(int line, String reason) {
     return '第 $line 行：$reason';
   }
+
+  @override
+  String get telemetryHistoryNeedsForeground => '請回到 App 後再操作';
+
+  @override
+  String get telemetrySessionPolicyChanged => '操作期間行車或連線狀態已改變';
+
+  @override
+  String get telemetrySessionInvalidId => '紀錄識別碼無效';
+
+  @override
+  String get telemetrySessionNotFound => '找不到這筆本機紀錄';
+
+  @override
+  String get telemetrySessionStorageFailed => '本機儲存作業失敗';
+
+  @override
+  String get telemetrySessionShareFailed => '無法準備或開啟分享';
 }

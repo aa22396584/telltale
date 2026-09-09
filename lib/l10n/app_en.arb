@@ -3709,5 +3709,14 @@
       "line": { "type": "int" },
       "reason": { "type": "String" }
     }
-  }
+  },
+  "telemetryHistoryNeedsForeground": "Return to Telltale before continuing.",
+  "@telemetryHistoryNeedsForeground": {
+    "description": "TelemetryHistoryAccess.background and TelemetrySessionActionFailure.background. Distinct from telemetryStartNeedsForeground, which is about starting a recording."
+  },
+  "telemetrySessionPolicyChanged": "Driving or connection state changed during this operation.",
+  "telemetrySessionInvalidId": "This recording id is not valid.",
+  "telemetrySessionNotFound": "This local recording was not found.",
+  "telemetrySessionStorageFailed": "A local storage operation failed.",
+  "telemetrySessionShareFailed": "Could not prepare or open sharing."
 }
