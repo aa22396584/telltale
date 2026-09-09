@@ -1071,7 +1071,12 @@ class Elm327Client {
     _pendingTimeout?.cancel();
     _pendingTimeout = Timer(_withinDeadline(protocolSearchTimeout), () {
       _outOfSync = true;
-      _failPending(TimeoutException('協定搜尋逾時，車輛可能未開啟電門', protocolSearchTimeout));
+      _failPending(
+        TimeoutException(
+          'Protocol search timed out; the vehicle ignition may be off',
+          protocolSearchTimeout,
+        ),
+      );
     });
   }
 
@@ -1373,7 +1378,7 @@ class Elm327Client {
   /// marked out of sync and resynchronised before anything else is sent.
   void _onCommandTimeout() {
     _outOfSync = true;
-    _failPending(TimeoutException('等待回應逾時', commandTimeout));
+    _failPending(TimeoutException('Timed out waiting for a reply', commandTimeout));
   }
 
   /// Waits out whatever the adapter still owes us, then clears the desync.
@@ -1391,7 +1396,7 @@ class Elm327Client {
     // Worth a line of its own. A resync is the app saying the stream is out of
     // step, and the bytes around it read very differently once you know that
     // is what was happening.
-    transcript.recordNote('連線不同步，開始重新對齊');
+    transcript.recordNote('Connection is out of sync, starting realignment');
     _buffer.clear();
     final drain = Completer<bool>();
     _draining = drain;
@@ -1431,7 +1436,10 @@ class Elm327Client {
     if (!sawPrompt && window < resyncTimeout) {
       // The rest of the window this client allows, minus what was spent.
       _resyncGraceUntil = started.add(resyncTimeout);
-      throw TimeoutException('這次操作的時間上限到了，連線同步尚未完成。請重新操作。');
+      throw TimeoutException(
+        'This operation\'s time limit was reached before the connection '
+        'finished synchronising. Try again.',
+      );
     }
     if (!sawPrompt) {
       // Clearing the flag here — which is what this method used to do
@@ -1458,7 +1466,10 @@ class Elm327Client {
       _watchdog = null;
       scheduleMicrotask(() => onConnectionLost?.call());
       throw const TransportException(
-        '轉接器沒有回應同步請求，連線已中斷。請重新連線。',
+        'The adapter\'s replies had fallen out of step with the commands '
+        'sent to it, and it did not answer the check that would have put '
+        'them back in step, so the connection was dropped. Connect again '
+        'before retrying.',
         issue: TransportIssue.adapterSilentOnResync,
       );
     }

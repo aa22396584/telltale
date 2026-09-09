@@ -6123,6 +6123,12 @@ abstract class AppLocalizations {
   /// **'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.'**
   String get settingsManualCommandWriteFailed;
 
+  /// TimeoutException from Elm327Client.send on the manual-command panel. The engine sentence is transcript-only; interpolating it would put English on a Traditional Chinese screen. Distinct from linkStoppedResponding: the command timer fired, not the watchdog.
+  ///
+  /// In en, this message translates to:
+  /// **'No reply arrived before the time limit. Confirm the adapter is connected and the ignition is on.'**
+  String get settingsManualCommandTimedOut;
+
   /// TransportIssue.operationRetired. The app stopped asking; nothing is wrong with the adapter or the vehicle. Distinct from notConnected: a link may still exist, but this command's owner expired before any byte left.
   ///
   /// In en, this message translates to:

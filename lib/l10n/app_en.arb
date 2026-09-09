@@ -3138,6 +3138,10 @@
   "@settingsManualCommandWriteFailed": {
     "description": "TransportIssue.writeFailed. Not a connect failure - it happens on an open link and reaches this panel, not the connect screen. The hedge is load-bearing: a write that failed part way has already put bytes on the wire."
   },
+  "settingsManualCommandTimedOut": "No reply arrived before the time limit. Confirm the adapter is connected and the ignition is on.",
+  "@settingsManualCommandTimedOut": {
+    "description": "TimeoutException from Elm327Client.send on the manual-command panel. The engine sentence is transcript-only; interpolating it would put English on a Traditional Chinese screen. Distinct from linkStoppedResponding: the command timer fired, not the watchdog."
+  },
   "settingsManualCommandOperationRetired": "This session has ended or gone to the background, so the command was not sent.",
   "@settingsManualCommandOperationRetired": {
     "description": "TransportIssue.operationRetired. The app stopped asking; nothing is wrong with the adapter or the vehicle. Distinct from notConnected: a link may still exist, but this command's owner expired before any byte left."

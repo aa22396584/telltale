@@ -3848,6 +3848,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The command could not be handed to the adapter\'s connection. How much of it reached the adapter is not known.';
 
   @override
+  String get settingsManualCommandTimedOut =>
+      'No reply arrived before the time limit. Confirm the adapter is connected and the ignition is on.';
+
+  @override
   String get settingsManualCommandOperationRetired =>
       'This session has ended or gone to the background, so the command was not sent.';
 

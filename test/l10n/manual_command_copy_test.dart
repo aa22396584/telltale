@@ -22,6 +22,8 @@
 // exceptions the session really throws.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
@@ -150,6 +152,34 @@ void main() {
       }
     }
     expect(chinese, isEmpty, reason: chinese.join('\n'));
+  });
+
+  test('a TimeoutException is mapped, not stringified onto the panel', () {
+    // sendManualCommand awaits Elm327Client.send, which times out as a
+    // TimeoutException. describeManualFailure used to return '$error', so an
+    // English engine fallback leaked onto a Traditional Chinese panel as
+    // "TimeoutException after 0:00:00.080000: Timed out waiting for a reply".
+    final error = TimeoutException(
+      'Timed out waiting for a reply',
+      const Duration(milliseconds: 80),
+    );
+    expect(
+      SettingsScreen.describeManualFailure(en, error),
+      'No reply arrived before the time limit. Confirm the adapter is '
+      'connected and the ignition is on.',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(zh, error),
+      '在時限內沒有收到回應。請確認轉接器已連線，且車輛電門已開啟。',
+    );
+    expect(
+      SettingsScreen.describeManualFailure(en, error),
+      isNot(contains('TimeoutException')),
+    );
+    expect(
+      SettingsScreen.describeManualFailure(zh, error),
+      isNot(contains('Timed out waiting')),
+    );
   });
 
   test('the two subclasses that reach this panel use their identifiers', () {
