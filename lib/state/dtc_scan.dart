@@ -643,19 +643,23 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
             storedCodes.where((d) => d.sourceId == entry.key).length;
         if (summary.confirmedCount > mine) {
           disagreements.add(
-            '控制器 ${entry.key} 回報 ${summary.confirmedCount} 筆已確認故障碼，'
-            'Mode 03 只讀到 $mine 筆',
+            'Controller ${entry.key} reported ${summary.confirmedCount} '
+            'confirmed fault codes, but Mode 03 only read $mine',
           );
         } else if (summary.milOn && mine == 0) {
-          disagreements.add('控制器 ${entry.key} 回報故障燈亮起，但沒有讀到它的故障碼');
+          disagreements.add(
+            'Controller ${entry.key} reported that the malfunction '
+            'indicator is lit, but none of its fault codes were read',
+          );
         }
       }
       if (disagreements.isNotEmpty && comparable) {
         results[DtcKind.stored] = DtcCategoryResult.failed(
           DtcReadException(
-            '${disagreements.join('；')}。'
-            '車輛自己回報的狀態與讀到的故障碼不一致，'
-            '可能有控制器不在這次查詢的範圍內。請以車輛儀表為準，並洽維修廠。',
+            '${disagreements.join('; ')}. '
+            'The vehicle\'s own status does not match the fault codes '
+            'that were read; a controller may be outside the range of this '
+            'query. Trust the dashboard lamp, and see a workshop.',
             kind: DtcReadFailure.noAnswer,
             partial: storedCodes,
           ),
@@ -675,9 +679,12 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
     // result, which is the only point where both are true.
     final unresolved = session.engine?.openIdentityQuestions ?? const <String>{};
     if (fatal == null && unresolved.isNotEmpty) {
-      final message = '有 ${unresolved.length} 筆回應無法判斷是哪個控制器送出的'
-          '（未能辨識的位址：${unresolved.join('、')}）。'
-          '已讀到的結果仍然有效，但不能當作全車結果。請重新掃描。';
+      final message =
+          'There are ${unresolved.length} replies whose controller could '
+          'not be identified (unrecognised addresses: '
+          '${unresolved.join(', ')}). The results that were read are still '
+          'valid, but this cannot be treated as a whole-vehicle result. '
+          'Scan again.';
       for (final entry in results.entries.toList()) {
         if (!entry.value.answered) continue;
         results[entry.key] = DtcCategoryResult.failed(

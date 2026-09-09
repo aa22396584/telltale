@@ -48,6 +48,7 @@ const _frame = FreezeFrame(
 /// back.
 class _ScriptedSession extends ObdSession {
   int freezeCalls = 0;
+  int readDtcsCalls = 0;
 
   @override
   ObdConnectionState build() => const ObdConnectionState(
@@ -57,8 +58,10 @@ class _ScriptedSession extends ObdSession {
       );
 
   @override
-  Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async =>
-      kind == DtcKind.stored ? const [_misfire] : const [];
+  Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async {
+    readDtcsCalls++;
+    return kind == DtcKind.stored ? const [_misfire] : const [];
+  }
 
   @override
   Future<MilStatus?> readMilStatus({DateTime? deadline}) async =>
@@ -221,13 +224,59 @@ void main() {
           reason: 'not asked is not the same as asked and failed');
     });
   });
+
+  group('MIL disagreement is transcript-only English', () {
+    test('a count mismatch keeps the engine sentence off the Chinese screen',
+        () async {
+      // scan() really compares PID 01 against Mode 03. The screen maps
+      // DtcReadException through kind; interpolating .message is how an
+      // English reader was shown 控制器 7E8 回報… after a leftover that
+      // Englishized other scan failures.
+      late _MilClaimsTwo built;
+      final container = ProviderContainer(overrides: [
+        obdSessionProvider.overrideWith(() => built = _MilClaimsTwo()),
+      ]);
+      addTearDown(container.dispose);
+
+      await container.read(dtcScanProvider.notifier).scan();
+      final failure =
+          container.read(dtcScanProvider).results[DtcKind.stored]!.failure;
+      expect(failure, isNotNull);
+      expect(
+        failure!.message,
+        'Controller 7E8 reported 2 confirmed fault codes, but Mode 03 only '
+        'read 1. The vehicle\'s own status does not match the fault codes '
+        'that were read; a controller may be outside the range of this '
+        'query. Trust the dashboard lamp, and see a workshop.',
+      );
+      expect(failure.message.contains('控制器'), isFalse);
+      expect(built.readDtcsCalls, greaterThan(0),
+          reason: 'the disagreement is produced by the real scan, not a '
+              'hand-built exception');
+    });
+  });
 }
 
 /// A session whose vehicle has no fault codes.
 class _NoCodes extends _ScriptedSession {
   @override
-  Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async =>
-      const [];
+  Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async {
+    readDtcsCalls++;
+    return const [];
+  }
+}
+
+/// PID 01 claims two confirmed codes; Mode 03 only returns one.
+class _MilClaimsTwo extends _ScriptedSession {
+  @override
+  Future<MilStatus?> readMilStatus({DateTime? deadline}) async =>
+      const MilStatus({
+        '7E8': MilSummary(
+          milOn: true,
+          confirmedCount: 2,
+          readiness: Readiness(ignition: IgnitionType.spark, states: {}),
+        ),
+      });
 }
 
 /// A session whose freeze-frame read fails the way a real one does.
