@@ -481,6 +481,29 @@ def _is_flutter_test(argv: Any) -> bool:
     return Path(argv[0]).name == "flutter" and argv[1] == "test"
 
 
+def _flutter_json_events(stdout: str) -> tuple[bool, bool]:
+    """Return (saw_json_reporter, saw_done_event)."""
+    saw_json = False
+    saw_done = False
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        kind = payload.get("type")
+        if kind == "done":
+            saw_done = True
+            saw_json = True
+        elif kind == "testDone":
+            saw_json = True
+    return saw_json, saw_done
+
+
 def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
     """Read executed/skipped from flutter JSON or compact reporter text."""
     executed = 0
@@ -504,6 +527,9 @@ def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
         else:
             executed += 1
     if saw_json:
+        _, saw_done = _flutter_json_events(stdout)
+        if not saw_done:
+            return None, None
         return executed, skipped
     compact = None
     for raw in stdout.splitlines():
@@ -535,10 +561,14 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
         executed = item.get("executed")
         skipped = item.get("skipped")
         if _is_flutter_test(item.get("argv")):
-            if not isinstance(executed, int) or not isinstance(skipped, int):
-                parsed_executed, parsed_skipped = parse_flutter_counts(
-                    item.get("stdout") or ""
+            stdout = item.get("stdout") or ""
+            saw_json, saw_done = _flutter_json_events(stdout)
+            if saw_json and not saw_done:
+                errors.append(
+                    f"{prefix} flutter JSON reporter stream is incomplete"
                 )
+            if not isinstance(executed, int) or not isinstance(skipped, int):
+                parsed_executed, parsed_skipped = parse_flutter_counts(stdout)
                 if executed is None:
                     executed = parsed_executed
                 if skipped is None:

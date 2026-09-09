@@ -589,6 +589,9 @@ def _run_command(
         result["truncated"] = True
     if validate_plan._is_flutter_test(argv):
         executed, skipped = validate_plan.parse_flutter_counts(stdout)
+        saw_json, saw_done = validate_plan._flutter_json_events(stdout)
+        if saw_json and not saw_done:
+            result["truncated"] = True
         if executed is not None:
             result["executed"] = executed
         if skipped is not None:
