@@ -1540,7 +1540,7 @@ class Elm327Client {
               ack.rawLines.any((l) => l.trim().toUpperCase() == 'OK');
           if (!acknowledged) {
             throw TransportException(
-              '轉接器拒絕切換標頭 $header',
+              'The adapter refused to switch header $header',
               issue: TransportIssue.queryHeaderRefused,
               issueDetail: header,
             );
@@ -1625,9 +1625,10 @@ class Elm327Client {
       // on the wrong gauge is the failure this app exists to avoid, and unlike
       // a refusal it says nothing about itself.
       throw UnaddressableRequestException(
-        '這輛車使用的舊式匯流排沒有標準的控制器位址，而轉接器目前指定在 '
-        '$_currentHeader。無法確定內建感測器的查詢會由哪一個控制器回答，'
-        '因此已停止查詢。請移除自訂 PID 的標頭設定後重新連線。',
+        'This vehicle uses a legacy bus with no standard controller address, '
+        'and the adapter is currently set to $_currentHeader. It is not known '
+        'which controller would answer a built-in sensor query, so polling has '
+        'stopped. Remove the custom PID header setting and reconnect.',
       );
     }
     if (_currentHeader != restore.toUpperCase()) {
@@ -1699,9 +1700,11 @@ class Elm327Client {
           final installed = _currentHeader;
           if (installed != null && !BusAddressing.isAppDefault(installed)) {
             throw TransportException(
-              '這輛車使用的舊式匯流排沒有標準的廣播位址，而轉接器目前指定在控制器 '
-              '$installed。掃描只會涵蓋該控制器，不能當作全車結果，因此已中止。'
-              '請重新連線後再掃描一次。',
+              'This vehicle uses a legacy bus with no standard broadcast '
+              'address, and the adapter is currently set to controller '
+              '$installed. A scan would only cover that controller and cannot '
+              'be treated as a whole-vehicle result, so it was stopped. '
+              'Reconnect, then scan again.',
               issue: TransportIssue.legacyScanWouldBePartial,
               issueDetail: installed,
             );
@@ -1820,7 +1823,7 @@ class Elm327Client {
           );
           if (!_saidOk(ack)) {
             throw TransportException(
-              '轉接器拒絕切換為功能定址 $functional',
+              'The adapter refused to switch to functional addressing $functional',
               issue: TransportIssue.wholeVehicleHeaderRefused,
               issueDetail: functional,
             );
