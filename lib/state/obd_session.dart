@@ -1594,7 +1594,10 @@ class ObdSession extends Notifier<ObdConnectionState> {
   Future<List<Dtc>> readDtcs(DtcKind kind, {DateTime? deadline}) async {
     final engine = _engine;
     if (engine == null) {
-      throw const DtcReadException('連線已中斷', kind: DtcReadFailure.disconnected);
+      throw const DtcReadException(
+        'The connection is down',
+        kind: DtcReadFailure.disconnected,
+      );
     }
     return engine.readDtcs(kind, deadline: deadline);
   }
@@ -1602,7 +1605,10 @@ class ObdSession extends Notifier<ObdConnectionState> {
   Future<ClearOutcome> clearDtcs() async {
     final engine = _engine;
     if (engine == null) {
-      throw const DtcReadException('連線已中斷', kind: DtcReadFailure.disconnected);
+      throw const DtcReadException(
+        'The connection is down',
+        kind: DtcReadFailure.disconnected,
+      );
     }
     // One clear at a time, decided here rather than by whoever is on screen.
     //
@@ -1617,7 +1623,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     // screen.
     if (_clearInFlight) {
       throw const DtcReadException(
-        '已經有一個清除指令正在執行，請等它完成。',
+        'A clear is already in progress. Wait for it to finish.',
         kind: DtcReadFailure.error,
       );
     }
@@ -1635,7 +1641,10 @@ class ObdSession extends Notifier<ObdConnectionState> {
   Future<String?> readVin({DateTime? deadline}) async {
     final engine = _engine;
     if (engine == null) {
-      throw const DtcReadException('連線已中斷', kind: DtcReadFailure.disconnected);
+      throw const DtcReadException(
+        'The connection is down',
+        kind: DtcReadFailure.disconnected,
+      );
     }
     return engine.readVin(deadline: deadline);
   }
@@ -1691,7 +1700,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
     final engine = _engine;
     if (engine == null) {
       throw const DtcReadException(
-        '連線在讀取凍結幀前中斷，這次沒有讀到。',
+        'The connection dropped before freeze frames were read, so none were retrieved.',
         kind: DtcReadFailure.disconnected,
       );
     }
@@ -1701,7 +1710,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
   Future<void> disconnect() async {
     // Invalidates any handshake still in flight, so a connect the user has
     // just abandoned cannot finish and publish itself as live.
-    _client?.transcript.recordNote('連線事件：使用者中斷連線');
+    _client?.transcript.recordNote('Connection event: the user disconnected');
     _publishSessionBoundary(ObdSessionBoundaryReason.userDisconnect);
     _generation++;
     await _teardown();

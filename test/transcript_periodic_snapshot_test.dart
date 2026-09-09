@@ -344,7 +344,7 @@ void main() {
     );
     await session.disconnect();
     final before = session.exportableTranscript!.recorded;
-    expect(session.exportableTranscript!.render(), contains('連線事件：使用者中斷連線'));
+    expect(session.exportableTranscript!.render(), contains('Connection event: the user disconnected'));
 
     expect(
       await session.recordFieldEvent(FieldEventMarker.roadTestStarted),
