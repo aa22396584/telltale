@@ -14,11 +14,20 @@ class Reading {
 
   final DateTime timestamp;
 
+  /// Monotonic tick at acquisition, from the connection stopwatch.
+  ///
+  /// Wall UTC is display metadata. A clock step *forward-correction* after a
+  /// long real pause can make `now.difference(timestamp)` look younger than
+  /// the sample is. Freshness follows this tick when the caller supplies
+  /// matching elapsed time.
+  final Duration receivedElapsed;
+
   const Reading({
     required this.pid,
     required this.value,
     required this.rawBytes,
     required this.timestamp,
+    this.receivedElapsed = Duration.zero,
   });
 
   String get formatted {
@@ -54,12 +63,22 @@ class Reading {
     return slack;
   }
 
-  /// Elapsed time, not wall-clock proximity. A clock step *back* makes
-  /// `difference` negative, which used to look fresher than a live sample.
-  bool isStaleAt(DateTime now) {
-    final age = now.difference(timestamp);
-    if (age.isNegative) return true;
-    return age > maxAge;
+  /// Elapsed time, not wall-clock proximity.
+  ///
+  /// A clock step *back* makes `difference` negative, which used to look
+  /// fresher than a live sample. A small-*positive* correction after a long
+  /// real pause does the same with wall time alone: age looks like one
+  /// second while a minute has passed. When [elapsed] is supplied, the
+  /// monotonic tick is the TTL; wall time still flags a backwards step.
+  bool isStaleAt(DateTime now, {Duration? elapsed}) {
+    final wallAge = now.difference(timestamp);
+    if (wallAge.isNegative) return true;
+    if (elapsed != null) {
+      final monoAge = elapsed - receivedElapsed;
+      if (monoAge.isNegative) return true;
+      return monoAge > maxAge;
+    }
+    return wallAge > maxAge;
   }
 }
 
@@ -120,6 +139,7 @@ class TelemetrySnapshot {
 
   final double pidsPerSecond;
   final bool fastModeEnabled;
+
   /// Adapter supply voltage, or null when it has not been read or the adapter
   /// reported a value no vehicle produces. Zero would be a claim about the
   /// battery; null is the absence of one.
@@ -140,6 +160,13 @@ class TelemetrySnapshot {
   /// for every widget rendering the same frame.
   final DateTime? capturedAt;
 
+  /// Live monotonic elapsed from the connection that produced this snapshot.
+  ///
+  /// Not frozen at [capturedAt]: a snapshot nobody is rebuilding must still
+  /// age. The stopwatch keeps running while the polling loop is stuck, which
+  /// is the case staleness exists for.
+  final Duration Function()? elapsedNow;
+
   const TelemetrySnapshot({
     this.readings = const {},
     this.faults = const {},
@@ -148,6 +175,7 @@ class TelemetrySnapshot {
     this.batteryVoltage,
     this.accelerationMs2,
     this.capturedAt,
+    this.elapsedNow,
   });
 
   Reading? operator [](String pidId) => readings[pidId];
@@ -161,14 +189,16 @@ class TelemetrySnapshot {
   double? valueOf(Pid pid, {DateTime? now}) {
     final reading = readings[pid.id];
     if (reading == null) return null;
-    return reading.isStaleAt(_reference(now)) ? null : reading.value;
+    return reading.isStaleAt(_reference(now), elapsed: elapsedNow?.call())
+        ? null
+        : reading.value;
   }
 
   /// True when [pid] has no reading, or one too old to show as live.
   bool isStale(Pid pid, {DateTime? now}) {
     final reading = readings[pid.id];
     if (reading == null) return true;
-    return reading.isStaleAt(_reference(now));
+    return reading.isStaleAt(_reference(now), elapsed: elapsedNow?.call());
   }
 
   /// The clock staleness is measured against.
@@ -194,6 +224,7 @@ class TelemetrySnapshot {
     DateTime? capturedAt,
     double? batteryVoltage,
     double? accelerationMs2,
+    Duration Function()? elapsedNow,
   }) {
     return TelemetrySnapshot(
       readings: readings ?? this.readings,
@@ -203,6 +234,7 @@ class TelemetrySnapshot {
       batteryVoltage: batteryVoltage ?? this.batteryVoltage,
       accelerationMs2: accelerationMs2 ?? this.accelerationMs2,
       capturedAt: capturedAt ?? this.capturedAt,
+      elapsedNow: elapsedNow ?? this.elapsedNow,
     );
   }
 }
