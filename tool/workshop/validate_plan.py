@@ -521,6 +521,20 @@ def _flutter_json_events(stdout: str) -> tuple[bool, bool]:
     return saw_json, saw_done and done_success
 
 
+def _flutter_typed_id(value: object) -> object | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _flutter_skipped(payload: dict[str, Any]) -> bool:
+    return payload.get("skipped") is True or payload.get("result") == "skipped"
+
+
 def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
     """Read executed/skipped from flutter JSON or compact reporter text."""
     executed = 0
@@ -539,7 +553,7 @@ def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
         if payload.get("hidden") is True:
             continue
         saw_json = True
-        if payload.get("result") == "skipped":
+        if _flutter_skipped(payload):
             skipped += 1
         else:
             executed += 1
@@ -556,6 +570,54 @@ def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
     if compact is None:
         return None, None
     return int(compact.group(1)), int(compact.group(2) or 0)
+
+
+def parse_flutter_case_ids(stdout: str) -> list[str] | None:
+    """Executed Flutter JSON case names, or None when IDs are missing/untyped."""
+    names: dict[object, str] = {}
+    case_ids: list[str] = []
+    saw_json = False
+    missing = False
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        kind = payload.get("type")
+        if kind == "test":
+            saw_json = True
+            tid = _flutter_typed_id(payload.get("id"))
+            name = payload.get("name")
+            if tid is None:
+                missing = True
+            elif isinstance(name, str) and name.strip():
+                names[tid] = name
+        elif kind == "testDone":
+            saw_json = True
+            if payload.get("hidden") is True:
+                continue
+            if _flutter_skipped(payload):
+                continue
+            tid = _flutter_typed_id(payload.get("testID"))
+            if tid is None:
+                missing = True
+                continue
+            name = names.get(tid)
+            if not isinstance(name, str) or not name.strip():
+                missing = True
+            else:
+                case_ids.append(name)
+    if not saw_json:
+        return None
+    _, saw_done = _flutter_json_events(stdout)
+    if not saw_done or missing:
+        return None
+    return case_ids
 
 
 def _validate_completed_evidence(evidence: Any) -> list[str]:
@@ -599,6 +661,24 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
                 errors.append(
                     f"{prefix} executed {executed!r} cannot stand in for required cases"
                 )
+            elif json_mode:
+                case_ids = parse_flutter_case_ids(stdout)
+                if (
+                    not isinstance(case_ids, list)
+                    or not case_ids
+                    or not all(
+                        isinstance(item_id, str) and item_id.strip()
+                        for item_id in case_ids
+                    )
+                ):
+                    errors.append(
+                        f"{prefix} flutter JSON evidence is missing typed case IDs"
+                    )
+                elif len(case_ids) != executed:
+                    errors.append(
+                        f"{prefix} case ID count {len(case_ids)} "
+                        f"does not match executed {executed}"
+                    )
         elif executed is not None:
             if not isinstance(executed, int) or executed <= 0:
                 errors.append(
