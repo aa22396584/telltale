@@ -181,7 +181,7 @@ void main() {
           isA<TransportException>().having(
             (e) => e.message,
             'message',
-            contains('無法開啟'),
+            contains('Cannot open'),
           ),
         ),
       );
