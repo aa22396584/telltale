@@ -1160,10 +1160,10 @@ class PollingEngine {
     final anonymous = response.frames.where((f) => f.sourceId == null).length;
     if (anonymous == 0) return;
     throw DtcReadException(
-      '轉接器回報了 $anonymous 筆無法辨識來源的回應。'
-      '無法判斷有幾個控制器答覆，因此不能當作全車結果。'
-      '${repeatWouldHarm ? '其中有控制器回報清除完成，所以不要直接再清除一次。' : ''}'
-      '請重新連線，或改用其他轉接器。',
+      'The adapter reported $anonymous replies with no identifiable source. '
+      'It is not known how many controllers answered, so this cannot be treated as a whole-vehicle result. '
+      '${repeatWouldHarm ? 'At least one controller reported the clear finished, so do not send another clear. ' : ''}'
+      'Reconnect, or try a different adapter.',
       repeatWouldHarm: repeatWouldHarm,
     );
   }
@@ -1195,8 +1195,8 @@ class PollingEngine {
   }) {
     if (response.headersEnabled) return;
     throw DtcReadException(
-      '轉接器不支援顯示回應標頭，無法分辨有幾個控制器答覆。'
-      '${repeatWouldHarm ? '但回應中有控制器回報清除完成，所以不要直接再清除一次 —— 請重新掃描確認。' : '已讀到的故障碼仍然有效，但這次掃描不能當作全車結果。'}',
+      'The adapter cannot display reply headers, so it is not known how many controllers answered. '
+      '${repeatWouldHarm ? 'At least one controller reported the clear finished, so do not send another clear — rescan to check.' : 'Codes that were read are still valid, but this scan cannot be treated as a whole-vehicle result.'}',
       kind: DtcReadFailure.unattributed,
       partial: List.unmodifiable(found),
       repeatWouldHarm: repeatWouldHarm,
@@ -1450,8 +1450,8 @@ class PollingEngine {
       // result and a qualification wants the codes it is qualifying.
       if (!_lastReadWasAttributed) {
         throw DtcReadException(
-          '轉接器不支援顯示回應標頭，無法分辨有幾個控制器答覆。'
-          '已讀到的故障碼仍然有效，但這次掃描不能當作全車結果。',
+          'The adapter cannot display reply headers, so it is not known how many controllers answered. '
+          'Codes that were read are still valid, but this scan cannot be treated as a whole-vehicle result.',
           kind: DtcReadFailure.unattributed,
           partial: result,
         );
