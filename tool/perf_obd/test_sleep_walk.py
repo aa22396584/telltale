@@ -54,6 +54,17 @@ class SleepWalkLaneTest(unittest.TestCase):
             self.assertEqual(main(["--output", str(output)]), 2)
             self.assertFalse(stale.exists())
 
+    def test_sleep_walk_deletes_a_dangling_symlink(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "sleep-walk.json"
+            stale.symlink_to(output / "missing-target.json")
+            self.assertTrue(stale.is_symlink())
+            self.assertFalse(stale.exists())
+            self.assertEqual(main(["--output", str(output)]), 2)
+            self.assertFalse(stale.exists())
+            self.assertFalse(stale.is_symlink())
+
 
 if __name__ == "__main__":
     unittest.main()
