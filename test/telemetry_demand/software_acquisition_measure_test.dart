@@ -5,6 +5,7 @@
 /// or skipped run cannot be reported as PASS.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -65,25 +66,35 @@ void main() {
       ], includeProfileDerivedInputs: false);
     addTearDown(engine.dispose);
 
-    final started = DateTime.now();
-    engine.start();
-
     final stamps = <DateTime>[];
     final faulted = <String>{};
     DateTime? lastRpmAt;
     // includeProfileDerivedInputs: false still schedules speed and fuel rate.
     const scheduledChannels = 3;
-    await Future<void>(() async {
-      await for (final snapshot in engine.snapshots) {
+    final done = Completer<void>();
+    // snapshots is broadcast; listen before start so the first microtask
+    // publication is not dropped from firstObservationMs.
+    final sub = engine.snapshots.listen(
+      (snapshot) {
         faulted.addAll(snapshot.faults.keys);
         final reading = snapshot.readings[PidLibrary.engineRpm.id];
-        if (reading == null) continue;
-        if (!isFreshAcquisition(reading, lastRpmAt)) continue;
+        if (reading == null) return;
+        if (!isFreshAcquisition(reading, lastRpmAt)) return;
         lastRpmAt = reading.timestamp;
         stamps.add(reading.timestamp);
-        if (stamps.length >= _minimumObservations) return;
-      }
-    }).timeout(const Duration(seconds: 20));
+        if (stamps.length >= _minimumObservations && !done.isCompleted) {
+          done.complete();
+        }
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!done.isCompleted) done.completeError(error, stack);
+      },
+    );
+    addTearDown(sub.cancel);
+
+    final started = DateTime.now();
+    engine.start();
+    await done.future.timeout(const Duration(seconds: 20));
 
     expect(
       stamps.length,

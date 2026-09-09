@@ -48,6 +48,18 @@ class ValidateReportTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_report(_ok(interarrivalMs={"n": 19}))
 
+    def test_negative_interarrival_quantiles_fail(self):
+        with self.assertRaises(GateError):
+            validate_report(
+                _ok(interarrivalMs={"n": 19, "p50": -1, "p95": 80, "p99": 90})
+            )
+
+    def test_decreasing_interarrival_quantiles_fail(self):
+        with self.assertRaises(GateError):
+            validate_report(
+                _ok(interarrivalMs={"n": 19, "p50": 90, "p95": 80, "p99": 70})
+            )
+
     def test_a_python_calculation_is_not_the_engine(self):
         with self.assertRaises(GateError):
             validate_report(_ok(engine="python-arithmetic"))

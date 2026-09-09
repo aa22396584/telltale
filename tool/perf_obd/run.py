@@ -46,6 +46,13 @@ def validate_report(report: object) -> dict:
             raise GateError(f"interarrivalMs.{key} is missing")
     if interarrival["n"] < REQUIRED_MINIMUM - 1:
         raise GateError("interarrival sample count is inadequate")
+    p50 = interarrival["p50"]
+    p95 = interarrival["p95"]
+    p99 = interarrival["p99"]
+    if p50 < 0 or p95 < 0 or p99 < 0:
+        raise GateError("interarrival quantiles must be nonnegative")
+    if p50 > p95 or p95 > p99:
+        raise GateError("interarrival quantiles must be nondecreasing")
     if report.get("errors") not in (0, 0.0):
         raise GateError("errors are not zero")
     if report.get("channels") != 3:
