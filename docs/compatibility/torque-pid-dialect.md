@@ -32,6 +32,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `LOG(x)` | unary | Natural log (base e). Domain error when `x <= 0`. Not `LOG10(` or `LOG1P(`. |
 | `SQRT(x)` | unary | Domain error when `x < 0`. Zero is allowed. |
 | `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
+| `BIT(value:bit)` | arity 2 | Wiki colon form. Returns 0 or 1. A negative or non-integer bit index is `unparsableTerm`, not 0. |
 
 Authoring (`FormulaEngine.preflight`) uses stand-in bytes and `VAL`/`BARO`
 samples so a well-formed formula can be saved before a live reading exists.
@@ -45,7 +46,7 @@ are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT` `SIN` `COS` `TAN` `LOG1P`
 `INT32` `INT24` `INT16` `INT` `SIGNED32` `SIGNED24` `SIGNED16`
-`SIGNED8` `FLOAT64` `FLOAT32` `BIT` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
+`SIGNED8` `FLOAT64` `FLOAT32` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
 
 `LOG10` is not classified as `LOG`. `SIGNED(A)` is not classified as
 `SIGNED8`. `BARO` without parentheses is the identifier above; `BARO()` is

@@ -21,6 +21,7 @@ void main() {
     expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
     expect(FormulaEngine.preflight('SQRT(A)'), isNull);
     expect(FormulaEngine.preflight('LOG(A)'), isNull);
+    expect(FormulaEngine.preflight('BIT(A:0)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
