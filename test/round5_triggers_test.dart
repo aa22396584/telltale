@@ -5322,7 +5322,8 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>().having(
-          (e) => e.message.indexOf('不要再送一次') < e.message.indexOf('電門'),
+          (e) => e.message.indexOf('do not send another whole-vehicle clear') <
+              e.message.indexOf('ignition'),
           'the prohibition is read before the instruction',
           isTrue,
         )),
@@ -5662,8 +5663,8 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('不要再送一次'))
-            .having((e) => e.message, 'message', isNot(contains('再試一次')))),
+            .having((e) => e.message, 'message', contains('do not send another whole-vehicle clear'))
+            .having((e) => e.message, 'message', isNot(contains('try again')))),
         reason: '7E8 already cleared; telling somebody to repeat a global '
             'clear costs it another drive cycle',
       );
@@ -7882,7 +7883,7 @@ void main() {
       await expectLater(
         engine.clearDtcs(),
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('再試一次'))
+            .having((e) => e.message, 'message', contains('try again'))
             .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isFalse)),
         reason: 'the engine refused with the engine running and erased '
             'nothing; the fix is to switch the ignition and try again, and '
@@ -7940,11 +7941,11 @@ void main() {
     /// through to the branch for malformed replies and was reported as damage.
     /// Codex round 31.
     for (final nrc in const [
-      (code: 0x21, says: '忙碌', note: 'busyRepeatRequest'),
-      (code: 0x33, says: '安全認證', note: 'securityAccessDenied'),
+      (code: 0x21, says: 'busy', note: 'busyRepeatRequest'),
+      (code: 0x33, says: 'security', note: 'securityAccessDenied'),
       (code: 0x10, says: '0x10', note: 'generalReject — named by nothing'),
       (code: 0x11, says: 'Mode 04', note: 'serviceNotSupported'),
-      (code: 0x22, says: '車輛狀態', note: 'conditionsNotCorrect'),
+      (code: 0x22, says: 'vehicle state', note: 'conditionsNotCorrect'),
     ]) {
       test('R31: ${nrc.note} alone is a refusal the button lets you retry',
           () async {
@@ -7972,7 +7973,7 @@ void main() {
               // 「電門轉到 ON 但不要發動引擎」, which is the advice, not the
               // warning — an assertion that fails on the correct message
               // teaches nothing.
-              .having((e) => e.message, 'message', isNot(contains('不要再送一次')))
+              .having((e) => e.message, 'message', isNot(contains('do not send another whole-vehicle clear')))
               .having((e) => e.message, 'message', isNot(contains('不要重複清除')))
               .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isFalse)),
           reason: 'the whole exchange arrived and none of it was a '
@@ -8008,7 +8009,7 @@ void main() {
         await expectLater(
           engine.clearDtcs(),
           throwsA(isA<DtcReadException>()
-              .having((e) => e.message, 'message', contains('不要再送一次'))
+              .having((e) => e.message, 'message', contains('do not send another whole-vehicle clear'))
               .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isTrue)),
           reason: 'a controller finished; the button will be dead, so the '
               'message has to be the one that explains why — 0x33 locked it '
@@ -8384,7 +8385,7 @@ void main() {
       expect(refusalFirst.repeatWouldHarm, isTrue,
           reason: '7E9 sent the completion byte; the order it arrived in is '
               'not a fact about the vehicle');
-      expect(refusalFirst.message, contains('不要再送一次'),
+      expect(refusalFirst.message, contains('do not send another whole-vehicle clear'),
           reason: 'and the sentence has to explain the dead button — this one '
               'cannot claim a controller *finished*, only that one may have');
     }, timeout: const Timeout(Duration(seconds: 30)));
@@ -8426,7 +8427,7 @@ void main() {
         throwsA(isA<DtcReadException>()
             .having((e) => e.message, 'message',
                 isNot(contains('其他控制器已經清除完成')))
-            .having((e) => e.message, 'message', contains('已有其他控制器完成清除'))
+            .having((e) => e.message, 'message', contains('At least one other controller has finished'))
             .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isTrue)),
         reason: 'the app may say that one controller finished; saying that '
             'the rest did sends somebody away from a module still holding '
