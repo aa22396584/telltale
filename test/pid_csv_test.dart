@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
@@ -146,6 +147,54 @@ void main() {
         );
       },
     );
+
+    test(
+      're-exporting a parsed Torque subset still uses OBD Header',
+      () {
+        const original = Pid(
+          name: 'Transmission Fluid Temp',
+          shortName: 'Trans',
+          modeAndPid: '221E1C',
+          equation: '((A*256)+B)/8-40',
+          minValue: -40,
+          maxValue: 215,
+          units: '°C',
+          header: '7E1',
+          priority: PriorityTier.high,
+          redlineFrom: 120,
+          variant: 'tf',
+          isCustom: true,
+        );
+        final first = PidCsv.exportTorqueSubset([original]);
+        final restored = PidCsv.parse(first).pids.single;
+        final second = PidCsv.exportTorqueSubset([restored]);
+        expect(
+          second.split('\r\n').first,
+          contains('OBD Header'),
+          reason: 'human interchange must keep Torque\'s eighth heading',
+        );
+        expect(
+          second.split('\r\n').first,
+          isNot(contains(',Header')),
+          reason: 're-export must not switch back to the Telltale Header spelling',
+        );
+        expect(PidCsv.parse(second).errors, isEmpty);
+        expect(PidCsv.parse(second).pids.single.header, '7E1');
+        expect(PidCsv.parse(second).pids.single.priority, PriorityTier.medium);
+        expect(second, isNot(contains('Priority')));
+      },
+    );
+
+    test('Torque subset cells are selected by Telltale column name', () {
+      final source = File('lib/obd/pid/pid_csv.dart').readAsStringSync();
+      expect(
+        source.contains('sublist(0, torqueHeader.length)'),
+        isFalse,
+        reason:
+            'positional slice would put Priority under OBD Header if a '
+            'Telltale-only column is inserted before Header',
+      );
+    });
   });
 
   group('parsing files from elsewhere', () {
