@@ -252,6 +252,25 @@ abstract final class PidCsv {
     ]);
   }
 
+  /// Spreadsheet-safe human report. Not a PID definition file.
+  ///
+  /// [export] is the lossless machine round-trip. [exportTorqueSubset] is
+  /// Torque interchange. This labeled report must not parse back into live
+  /// formulas — a Name/Equation table is for reading, not scheduling.
+  static const List<String> humanHeader = [
+    'Telltale human report',
+    'Name',
+    'Equation',
+    'Units',
+  ];
+
+  static String exportHumanReport(List<Pid> pids) {
+    return _codec.encode(<List<dynamic>>[
+      humanHeader,
+      for (final pid in pids) <dynamic>['', pid.name, pid.equation, pid.units],
+    ]);
+  }
+
   /// Incremental form of [exportTorqueSubset], same bytes, bounded chunks.
   static Stream<List<int>> streamTorqueSubset(
     Iterable<Pid> pids, {
@@ -346,6 +365,18 @@ abstract final class PidCsv {
     final first = rows.first
         .map((c) => c.toString().trim().toLowerCase())
         .toList();
+    if (first.isNotEmpty && _key(first.first) == 'telltalehumanreport') {
+      return PidCsvResult(
+        pids: const [],
+        errors: [
+          PidCsvDiagnostic(
+            PidCsvIssue.missingRequiredColumns,
+            columns: _required.map(_canonical).toList(),
+            requiredColumns: _required.map(_canonical).toList(),
+          ),
+        ],
+      );
+    }
     // Where each field lives. Positional by default, because a file with no
     // header row has nothing else to go on — and by *name* when there is a
     // header, which is the case this used to get wrong.
