@@ -32,8 +32,17 @@ const _ambient = Pid(
   priority: PriorityTier.low,
 );
 
-Reading _readingAt(Pid pid, DateTime at) =>
-    Reading(pid: pid, value: 42, rawBytes: const [0x2A], timestamp: at);
+Reading _readingAt(
+  Pid pid,
+  DateTime at, {
+  Duration receivedElapsed = Duration.zero,
+}) => Reading(
+  pid: pid,
+  value: 42,
+  rawBytes: const [0x2A],
+  timestamp: at,
+  receivedElapsed: receivedElapsed,
+);
 
 void main() {
   final now = DateTime(2026, 8, 15, 12);
@@ -45,14 +54,16 @@ void main() {
       expect(reading.isStaleAt(now.add(const Duration(seconds: 3))), isTrue);
     });
 
-    test('a wall-clock step backwards ages the sample instead of refreshing it',
-        () {
-      final reading = _readingAt(_rpm, now);
-      expect(
-        reading.isStaleAt(now.subtract(const Duration(hours: 1))),
-        isTrue,
-      );
-    });
+    test(
+      'a wall-clock step backwards ages the sample instead of refreshing it',
+      () {
+        final reading = _readingAt(_rpm, now);
+        expect(
+          reading.isStaleAt(now.subtract(const Duration(hours: 1))),
+          isTrue,
+        );
+      },
+    );
 
     test('a low-priority signal is given more room', () {
       // A trip signal legitimately updates every few seconds; flagging it as
@@ -63,8 +74,35 @@ void main() {
     });
 
     test('the ceiling stops any PID from looking live for a whole minute', () {
-      expect(_readingAt(_ambient, now).maxAge,
-          lessThanOrEqualTo(const Duration(seconds: 10)));
+      expect(
+        _readingAt(_ambient, now).maxAge,
+        lessThanOrEqualTo(const Duration(seconds: 10)),
+      );
+    });
+
+    test(
+      'a small-positive wall rollback cannot revive a monotonically old sample',
+      () {
+        // Wall was 100s at acquisition. 60 real seconds later the clock is
+        // corrected to 101s. Wall age is 1s (inside the high-priority TTL);
+        // monotonic age is 60s. Freshness follows the monotonic tick.
+        final reading = _readingAt(_rpm, now);
+        expect(
+          reading.isStaleAt(
+            now.add(const Duration(seconds: 1)),
+            elapsed: const Duration(seconds: 60),
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('monotonic advance with an unchanged wall still ages the sample', () {
+      final reading = _readingAt(_rpm, now);
+      expect(
+        reading.isStaleAt(now, elapsed: const Duration(seconds: 60)),
+        isTrue,
+      );
     });
   });
 
@@ -87,8 +125,10 @@ void main() {
         isTrue,
         reason: 'the reading has not changed, but five minutes have passed',
       );
-      expect(snapshot.valueOf(_rpm, now: now.add(const Duration(minutes: 5))),
-          isNull);
+      expect(
+        snapshot.valueOf(_rpm, now: now.add(const Duration(minutes: 5))),
+        isNull,
+      );
     });
 
     test('a fresh reading has a value', () {
@@ -119,5 +159,27 @@ void main() {
       const snapshot = TelemetrySnapshot();
       expect(snapshot.isStale(_rpm, now: now), isTrue);
     });
+
+    test(
+      'the snapshot uses live elapsed, so a frozen capturedAt cannot hide age',
+      () {
+        var elapsed = Duration.zero;
+        final snapshot = TelemetrySnapshot(
+          readings: {_rpm.id: _readingAt(_rpm, now)},
+          capturedAt: now,
+          elapsedNow: () => elapsed,
+        );
+        expect(snapshot.valueOf(_rpm, now: now), 42);
+        elapsed = const Duration(seconds: 60);
+        expect(
+          snapshot.valueOf(_rpm, now: now.add(const Duration(seconds: 1))),
+          isNull,
+        );
+        expect(
+          snapshot.isStale(_rpm, now: now.add(const Duration(seconds: 1))),
+          isTrue,
+        );
+      },
+    );
   });
 }

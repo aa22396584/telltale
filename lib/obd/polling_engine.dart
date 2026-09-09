@@ -269,6 +269,13 @@ class PollingEngine {
   }) : formula = formulaEngine ?? FormulaEngine(),
        scheduler = scheduler ?? PriorityScheduler();
 
+  /// Connection-scoped monotonic clock for freshness.
+  ///
+  /// Wall UTC on [Reading.timestamp] is display metadata. Freshness follows
+  /// this stopwatch so a small-positive clock correction cannot revive a
+  /// sample that has already lived past its TTL.
+  final Stopwatch _freshness = Stopwatch()..start();
+
   final Elm327Client client;
   final FormulaEngine formula;
   final PriorityScheduler scheduler;
@@ -303,6 +310,7 @@ class PollingEngine {
     batteryVoltage: client.batteryVoltage,
     accelerationMs2: accelerationMs2,
     capturedAt: DateTime.now(),
+    elapsedNow: () => _freshness.elapsed,
   );
 
   /// Smoothed longitudinal acceleration derived from road speed.
@@ -3901,6 +3909,7 @@ class PollingEngine {
           value: value,
           rawBytes: bytes,
           timestamp: now,
+          receivedElapsed: _freshness.elapsed,
         );
         _markDirectlyAnswered(sibling);
       } on FormulaException {
@@ -4197,6 +4206,7 @@ class PollingEngine {
           value: value,
           rawBytes: bytes,
           timestamp: now,
+          receivedElapsed: _freshness.elapsed,
         );
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);
