@@ -192,6 +192,12 @@ void main() {
         thrownBy(() => engine.evaluateBytes('BIT(A:-1)', const [5])).issue,
         FormulaIssue.unparsableTerm,
       );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('BIT(A^B:0)', const [255, 255]),
+        ).issue,
+        FormulaIssue.resultNotFinite,
+      );
     });
 
     test('MIN() and MAX() take the wiki colon form', () {

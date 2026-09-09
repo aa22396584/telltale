@@ -844,6 +844,17 @@ class FormulaEngine {
         'BIT',
         equation,
         (value, bit) {
+          // toInt() on NaN/infinity throws UnsupportedError, which the
+          // poller does not catch — the previous reading stays on the
+          // gauge. Preflight uses small sample bytes, so BIT(A^B:0) can
+          // look well-formed and still overflow on live data.
+          if (!value.isFinite) {
+            throw FormulaException(
+              '運算結果不是有效數值',
+              equation,
+              issue: FormulaIssue.resultNotFinite,
+            );
+          }
           if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
             throw FormulaException(
               'Cannot parse "$bit"',
