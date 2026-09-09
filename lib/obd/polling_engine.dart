@@ -2472,11 +2472,11 @@ class PollingEngine {
       final reached = client.wroteSinceAudit('04');
       throw DtcReadException(
         reached
-            ? '清除指令送出後連線中斷，無法確認車輛是否已清除。'
-                  '請重新掃描確認結果，不要直接再清除一次 —— '
-                  '如果其實已經清除成功，再清一次會重置排放就緒狀態。'
-            : '清除指令還沒送出就失敗了。'
-                  '車輛沒有任何變化，可以再試一次。',
+            ? 'The clear was sent, then the connection dropped, so it is not known whether the vehicle cleared. '
+                  'Rescan to check the result; do not send another clear — '
+                  'if it already succeeded, repeating it resets emissions readiness.'
+            : 'The clear failed before it was sent. '
+                  'The vehicle is unchanged; you can try again.',
         kind: DtcReadFailure.disconnected,
         repeatWouldHarm: reached,
       );
@@ -2493,10 +2493,10 @@ class PollingEngine {
     _requireStillOwned(
       owner,
       message:
-          '清除指令已經送出，但 App 在等待回覆時被中斷，'
-          '因此無法確認車輛是否已經清除。'
-          '請重新掃描確認結果，不要直接再清除一次 —— '
-          '重複清除會再一次重置排放就緒狀態。',
+          'The clear was sent, but the app was interrupted while waiting for a reply, '
+          'so it is not known whether the vehicle cleared. '
+          'Rescan to check the result; do not send another clear — '
+          'repeating it resets emissions readiness again.',
       // The sentence said so and the button did not, which is the same
       // mismatch the flag was introduced to close. The command is already on
       // the wire; being interrupted while waiting for the answer is exactly
