@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     args.output.mkdir(parents=True, exist_ok=True)
     stale = args.output / "sleep-walk.json"
-    if stale.exists():
+    if stale.exists() or stale.is_symlink():
         stale.unlink()
     print("sleep-walk lane is not-run without an identified device", file=sys.stderr)
     return 2
