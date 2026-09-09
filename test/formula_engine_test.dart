@@ -767,6 +767,91 @@ void main() {
       );
     });
 
+    test('INT24() is unsigned 24-bit from three big-endian bytes, not SIGNED24', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('INT24(0:0:0)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(0:0:1)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(0:1:0)', const []),
+        closeTo(256.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(1:0:0)', const []),
+        closeTo(65536.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(255:255:255)', const []),
+        closeTo(16777215.0, 1e-9),
+      );
+      // 0x800000 is unsigned 8388608, not SIGNED24's -8388608.
+      expect(
+        engine.evaluateBytes('INT24(128:0:0)', const []),
+        closeTo(8388608.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED24(8388608)', const []),
+        closeTo(-8388608.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(A:B:C)', const [1, 2, 3]),
+        closeTo(66051.0, 1e-9),
+      );
+      // Low 8 bits of each input. 256 must not shift the high byte.
+      expect(
+        engine.evaluateBytes('INT24(256:0:1)', const []),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('INT24(1,0,0)', const []),
+        closeTo(65536.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes(
+          'INT24((A-1):B:C)',
+          const [2, 0, 0],
+        ),
+        closeTo(65536.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2INT24(0:0:0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT24(A:B)', const [1, 2])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('INT24(A:B:C:D)', const [1, 2, 3, 4]),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
+        ).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+    });
+
     test('SQRT()', () {
       expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
       expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));

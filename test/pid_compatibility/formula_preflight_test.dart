@@ -41,6 +41,8 @@ void main() {
     expect(FormulaEngine.preflight('INT((A-1))'), isNull);
     expect(FormulaEngine.preflight('FLOAT64(A:B:C:D:E:F:G:H)'), isNull);
     expect(FormulaEngine.preflight('FLOAT64((A-1):B:C:D:E:F:G:H)'), isNull);
+    expect(FormulaEngine.preflight('INT24(A:B:C)'), isNull);
+    expect(FormulaEngine.preflight('INT24((A-1):B:C)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
