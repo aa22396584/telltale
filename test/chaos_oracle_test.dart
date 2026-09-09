@@ -125,12 +125,13 @@ void main() {
           '$trace',
     );
     expect(failed.single.detail, switch (_fault) {
-      // Transcript keeps the Chinese sentence. The Dart toString used to be
-      // stored here (`TransportException: 連線已中斷。`) and the connect banner
-      // interpolated it; the screen now maps [InitProgress.transportIssue].
+      // Transcript still keeps the disconnect sentence in Chinese; that
+      // leftover is separate. The Dart toString used to be stored here
+      // (`TransportException: 連線已中斷。`) and the connect banner interpolated
+      // it; the screen now maps [InitProgress.transportIssue].
       'close' => '連線已中斷。',
-      'corrupt' => '轉接器未確認此指令',
-      _ => '逾時',
+      'corrupt' => 'The adapter did not acknowledge this command.',
+      _ => 'Timed out.',
     }, reason: 'the injected fault must be the observed failure: $trace');
     expect(
       failed.single.detail,
