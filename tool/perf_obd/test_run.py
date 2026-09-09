@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from run import GateError, prepare_output, validate_report
+from run import GateError, prepare_output, validate_report, validate_six_report
 
 
 def _ok(**overrides):
@@ -22,6 +22,32 @@ def _ok(**overrides):
         "scheduledModeAndPid": ["010C", "010D", "015E"],
         "firstObservationMs": 40,
         "interarrivalMs": {"n": 19, "p50": 50, "p95": 80, "p99": 90},
+        "errors": 0,
+    }
+    report.update(overrides)
+    return report
+
+
+def _ok_six(**overrides):
+    report = {
+        "lane": "software",
+        "transport": "FakeElm327",
+        "engine": "PollingEngine",
+        "quantile": "nearest-rank",
+        "minimumObservations": 8,
+        "observations": 8,
+        "channels": 6,
+        "scheduledModeAndPid": ["010C", "010D", "015E", "0105", "0104", "0111"],
+        "perChannel": {
+            "010C": 8,
+            "010D": 8,
+            "015E": 8,
+            "0105": 8,
+            "0104": 8,
+            "0111": 8,
+        },
+        "firstObservationMs": 40,
+        "interarrivalMs": {"n": 7, "p50": 50, "p95": 80, "p99": 90},
         "errors": 0,
     }
     report.update(overrides)
@@ -72,14 +98,36 @@ class ValidateReportTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_report(_ok(channels=1, scheduledModeAndPid=["010C"]))
 
+    def test_a_three_channel_report_is_not_the_six_channel_matrix(self):
+        with self.assertRaises(GateError):
+            validate_six_report(_ok())
+
+    def test_a_complete_six_channel_report_passes(self):
+        self.assertEqual(validate_six_report(_ok_six())["channels"], 6)
+
+    def test_a_short_six_channel_pid_fails(self):
+        with self.assertRaises(GateError):
+            validate_six_report(
+                _ok_six(perChannel={"010C": 8, "010D": 1, "015E": 8, "0105": 8, "0104": 8, "0111": 8})
+            )
+
+    def test_runner_invokes_the_six_channel_matrix(self):
+        text = Path(__file__).with_name("run.py").read_text(encoding="utf-8")
+        self.assertIn("software_six_channel_measure_test.dart", text)
+        self.assertIn("software-six.json", text)
+        self.assertIn("validate_six_report", text)
+
     def test_prepare_output_deletes_a_stale_report(self):
         with tempfile.TemporaryDirectory() as raw:
             output = Path(raw)
             stale = output / "software.json"
+            six = output / "software-six.json"
             stale.write_text("{}", encoding="utf-8")
+            six.write_text("{}", encoding="utf-8")
             report_path = prepare_output(output)
             self.assertEqual(report_path, stale)
             self.assertFalse(stale.exists())
+            self.assertFalse(six.exists())
 
 
 if __name__ == "__main__":

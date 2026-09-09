@@ -6,6 +6,8 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
@@ -17,6 +19,17 @@ import 'package:torque_obd/obd/telemetry.dart';
 import '../support/fake_elm327.dart';
 
 const _minimumPerChannel = 8;
+
+int _nearestRank(List<int> sortedAscending, double q) {
+  if (sortedAscending.isEmpty) {
+    throw StateError('quantile of no samples');
+  }
+  final rank = (q * sortedAscending.length).ceil().clamp(
+    1,
+    sortedAscending.length,
+  );
+  return sortedAscending[rank - 1];
+}
 
 bool _isFresh(Reading reading, DateTime? previous) {
   if (previous == null) return true;
@@ -67,8 +80,10 @@ void main() {
 
     final counts = <String, int>{for (final pid in channels) pid.id: 0};
     final lastAt = <String, DateTime>{};
+    final rpmStamps = <DateTime>[];
     final faulted = <String>{};
     final done = Completer<void>();
+    final started = DateTime.now();
     final sub = engine.snapshots.listen(
       (snapshot) {
         faulted.addAll(snapshot.faults.keys);
@@ -78,6 +93,9 @@ void main() {
           if (!_isFresh(reading, lastAt[pid.id])) continue;
           lastAt[pid.id] = reading.timestamp;
           counts[pid.id] = (counts[pid.id] ?? 0) + 1;
+          if (pid.id == PidLibrary.engineRpm.id) {
+            rpmStamps.add(reading.timestamp);
+          }
         }
         if (counts.values.every((n) => n >= _minimumPerChannel) &&
             !done.isCompleted) {
@@ -110,5 +128,45 @@ void main() {
       isEmpty,
       reason: 'a clean software lane must not hide poller faults: $faulted',
     );
+
+    final gaps = <int>[
+      for (var i = 1; i < rpmStamps.length; i++)
+        rpmStamps[i].difference(rpmStamps[i - 1]).inMilliseconds,
+    ]..sort();
+    expect(gaps, isNotEmpty);
+    final perChannel = <String, int>{
+      for (final pid in channels) pid.modeAndPid: counts[pid.id] ?? 0,
+    };
+    final report = <String, Object?>{
+      'lane': 'software',
+      'transport': 'FakeElm327',
+      'engine': 'PollingEngine',
+      'quantile': 'nearest-rank',
+      'minimumObservations': _minimumPerChannel,
+      'observations': counts.values.reduce((a, b) => a < b ? a : b),
+      'channels': 6,
+      'scheduledModeAndPid': [
+        for (final pid in channels) pid.modeAndPid,
+      ],
+      'perChannel': perChannel,
+      'firstObservationMs': rpmStamps.first.difference(started).inMilliseconds,
+      'interarrivalMs': {
+        'n': gaps.length,
+        'p50': _nearestRank(gaps, 0.50),
+        'p95': _nearestRank(gaps, 0.95),
+        'p99': _nearestRank(gaps, 0.99),
+      },
+      'errors': faulted.length,
+    };
+    expect(report['channels'], 6);
+    expect(report['observations'], greaterThanOrEqualTo(_minimumPerChannel));
+
+    final out = Platform.environment['PERF_OBD_OUTPUT'];
+    if (out != null && out.isNotEmpty) {
+      final dir = Directory(out)..createSync(recursive: true);
+      File('${dir.path}/software-six.json').writeAsStringSync(
+        const JsonEncoder.withIndent('  ').convert(report),
+      );
+    }
   });
 }
