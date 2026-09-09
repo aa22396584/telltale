@@ -24,8 +24,9 @@ past the payload is `byteBeyondResponse`, not zero.
 | Arithmetic | `+ - * / % ^` | `%` is Java/Torque remainder (sign of the dividend), not Dart Euclidean `%`. |
 | Bitwise / compare | `& \| ~ ! == != > < >= <=` | Integers via `toInt()` for `&` / `\|` / `~`. |
 | Grouping | `( … )` | Nested past 256 groups is `parenthesisNestingTooDeep`. |
-| `SIGNED(letter)` | `SIGNED(A)` | 8-bit two's complement of that byte. Not `SIGNED8(` or `SIGNED16(`. |
-| `SIGNED16(x)` | unary | 16-bit two's complement of the toward-zero integer (Java `(short)` of the low 16 bits). `SIGNED16(255)` is 255, not `SIGNED(A)` of 0xFF. `SIGNED16((A*256)+B)` is the two-byte form. Not `INT16(A:B)` and not `SIGNED8(`. `2SIGNED16(0)` is `unparsableTerm`, not 0. Grouped `SIGNED16((A-1))` is accepted. |
+| `SIGNED(letter)` | `SIGNED(A)` | 8-bit two's complement of that byte. Not `SIGNED16(`. |
+| `SIGNED8(x)` | unary | Same 8-bit conversion as `SIGNED`, of the toward-zero integer's low 8 bits. `SIGNED8(255)` is -1, matching `SIGNED(A)` of 0xFF, not `SIGNED16(255)`. `2SIGNED8(0)` is `unparsableTerm`, not 0. Grouped `SIGNED8((A-1))` is accepted. |
+| `SIGNED16(x)` | unary | 16-bit two's complement of the toward-zero integer (Java `(short)` of the low 16 bits). `SIGNED16(255)` is 255, not `SIGNED(A)` of 0xFF. `SIGNED16((A*256)+B)` is the two-byte form. Not `INT16(A:B)`. `2SIGNED16(0)` is `unparsableTerm`, not 0. Grouped `SIGNED16((A-1))` is accepted. |
 | `VAL{hex}` | `VAL{010C}` | Same-controller cached PID. Missing/stale/ambiguous is not a syntax error. |
 | `BARO` | identifier, no `(` | Cached ambient pressure for the requesting controller. |
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
@@ -49,10 +50,10 @@ are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
 `INT32` `INT24` `INT16` `INT` `SIGNED32` `SIGNED24`
-`SIGNED8` `FLOAT64` `FLOAT32` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
+`FLOAT64` `FLOAT32` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
 
-`LOG10` is not classified as `LOG`. `SIGNED(A)` is not classified as
-`SIGNED8`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `BARO` without parentheses is the identifier above; `BARO()` is
+`LOG10` is not classified as `LOG`. `SIGNED8(x)` is the same 8-bit
+conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `BARO` without parentheses is the identifier above; `BARO()` is
 the wiki function that reads the Android barometer or ECU baro **in psi**,
 which this engine does not implement.
 
