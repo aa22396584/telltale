@@ -73,6 +73,8 @@ def _plan(
     }
     path = workshop / "plan.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
+    if not (tmp / ".git").exists():
+        _init_git(tmp)
     return path
 
 
@@ -113,6 +115,8 @@ class RunTaskTest(unittest.TestCase):
             self.assertEqual(data["status"], "completed")
             self.assertEqual(data["unrun"], [])
             self.assertEqual(data["results"][0]["exit"], 0)
+            self.assertRegex(data["head_sha"], r"^[0-9a-f]{40}$")
+            self.assertEqual(validate_plan.validate_handoff(data), [])
 
     def test_failed_command_cannot_claim_completed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -481,6 +485,7 @@ class RunTaskTest(unittest.TestCase):
                             }
                         ],
                         "reviewer_role": "implementation",
+                        "head_sha": "a" * 40,
                         "next": "reviewer re-runs the same argv",
                     }
                 ),
@@ -658,6 +663,7 @@ class RunTaskTest(unittest.TestCase):
                         "results": [result],
                         "evidence": [result],
                         "reviewer_role": "implementation",
+                        "head_sha": "a" * 40,
                         "next": "reviewer re-runs the same argv",
                     }
                 ),
@@ -1623,7 +1629,7 @@ def _init_git(root: Path) -> str:
     )
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
     subprocess.run(
-        ["git", "-C", str(root), "commit", "-m", "init"],
+        ["git", "-C", str(root), "commit", "--allow-empty", "-m", "init"],
         check=True,
         capture_output=True,
     )

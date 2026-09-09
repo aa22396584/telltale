@@ -473,6 +473,48 @@ def validate_plan(
     return errors, ready
 
 
+def _is_flutter_test(argv: Any) -> bool:
+    if not isinstance(argv, list) or len(argv) < 2:
+        return False
+    if not all(isinstance(item, str) for item in argv):
+        return False
+    return Path(argv[0]).name == "flutter" and argv[1] == "test"
+
+
+def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
+    """Read executed/skipped from flutter JSON or compact reporter text."""
+    executed = 0
+    skipped = 0
+    saw_json = False
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict) or payload.get("type") != "testDone":
+            continue
+        if payload.get("hidden") is True:
+            continue
+        saw_json = True
+        if payload.get("result") == "skipped":
+            skipped += 1
+        else:
+            executed += 1
+    if saw_json:
+        return executed, skipped
+    compact = None
+    for raw in stdout.splitlines():
+        match = re.search(r"\+(\d+)(?:\s+-\d+)?(?:\s+~(\d+))?", raw)
+        if match:
+            compact = match
+    if compact is None:
+        return None, None
+    return int(compact.group(1)), int(compact.group(2) or 0)
+
+
 def _validate_completed_evidence(evidence: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(evidence, list) or not evidence:
@@ -490,7 +532,24 @@ def _validate_completed_evidence(evidence: Any) -> list[str]:
             errors.append(f"{prefix} timed out and cannot complete")
         executed = item.get("executed")
         skipped = item.get("skipped")
-        if executed is not None:
+        if _is_flutter_test(item.get("argv")):
+            if not isinstance(executed, int) or not isinstance(skipped, int):
+                parsed_executed, parsed_skipped = parse_flutter_counts(
+                    item.get("stdout") or ""
+                )
+                if executed is None:
+                    executed = parsed_executed
+                if skipped is None:
+                    skipped = parsed_skipped
+            if not isinstance(executed, int):
+                errors.append(
+                    f"{prefix} flutter evidence execution count is unknown"
+                )
+            elif executed <= 0:
+                errors.append(
+                    f"{prefix} executed {executed!r} cannot stand in for required cases"
+                )
+        elif executed is not None:
             if not isinstance(executed, int) or executed <= 0:
                 errors.append(
                     f"{prefix} executed {executed!r} cannot stand in for required cases"

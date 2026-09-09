@@ -501,6 +501,70 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         )
         self.assertEqual(errors, [])
 
+    def test_flutter_skip_only_json_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "testDone", "result": "skipped"}),
+                json.dumps({"type": "testDone", "result": "skipped"}),
+            ]
+        )
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "stdout": stdout,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(
+            any("executed" in error or "unknown" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_flutter_unknown_counts_cannot_complete(self) -> None:
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "stdout": "All tests passed!",
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertTrue(any("unknown" in error for error in errors), msg=errors)
+
+    def test_flutter_json_success_counts_as_executed(self) -> None:
+        stdout = json.dumps({"type": "testDone", "result": "success"})
+        errors = validate_plan.validate_handoff(
+            {
+                "status": "completed",
+                "completed": True,
+                "evidence": [
+                    {
+                        "argv": ["flutter", "test", "test/foo_test.dart"],
+                        "exit": 0,
+                        "stdout": stdout,
+                    }
+                ],
+                "unrun": [],
+                "head_sha": "a" * 40,
+            }
+        )
+        self.assertEqual(errors, [])
+
 
 class FlutterAllowlistTest(unittest.TestCase):
     def _errors(self, commands: list) -> list[str]:
