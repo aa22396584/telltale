@@ -267,15 +267,30 @@ abstract final class PidCsv {
   static String exportHumanReport(List<Pid> pids) {
     return _codec.encode(<List<dynamic>>[
       humanHeader,
-      for (final pid in pids)
-        <dynamic>[
-          '',
-          _protectSpreadsheetCell(pid.name),
-          _protectSpreadsheetCell(pid.equation),
-          _protectSpreadsheetCell(pid.units),
-        ],
+      for (final pid in pids) _humanRow(pid),
     ]);
   }
+
+  /// Incremental form of [exportHumanReport], same bytes, bounded chunks.
+  static Stream<List<int>> streamHumanReport(
+    Iterable<Pid> pids, {
+    int maxChunkBytes = 64 * 1024,
+  }) => _streamRows(
+    rows: () sync* {
+      yield humanHeader;
+      for (final pid in pids) {
+        yield _humanRow(pid);
+      }
+    },
+    maxChunkBytes: maxChunkBytes,
+  );
+
+  static List<dynamic> _humanRow(Pid pid) => <dynamic>[
+    '',
+    _protectSpreadsheetCell(pid.name),
+    _protectSpreadsheetCell(pid.equation),
+    _protectSpreadsheetCell(pid.units),
+  ];
 
   /// Same prefix rule as telemetry CSV: `=`, `+`, `-`, `@`, tab, CR.
   static String _protectSpreadsheetCell(String value) {
