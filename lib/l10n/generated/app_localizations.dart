@@ -6785,6 +6785,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not prepare or open sharing.'**
   String get telemetrySessionShareFailed;
+
+  /// PidMutationFailure.persistFailed. SharedPreferences reported false; in-memory custom PIDs are left unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The custom PID list could not be saved. Nothing was changed.'**
+  String get pidMutationPersistFailed;
 }
 
 class _AppLocalizationsDelegate

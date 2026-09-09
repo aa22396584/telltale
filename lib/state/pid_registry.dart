@@ -144,8 +144,9 @@ class PidRegistry extends Notifier<List<Pid>> {
 
     final next = [...state];
     next[index] = custom;
-    state = next;
-    await _persist();
+    if (!await _commitCustom(next)) {
+      return const PidMutationOutcome.persistFailed();
+    }
     return const PidMutationOutcome.applied();
   }
 
@@ -202,8 +203,14 @@ class PidRegistry extends Notifier<List<Pid>> {
         inserted++;
       }
     }
-    state = next;
-    await _persist();
+    if (!await _commitCustom(next)) {
+      return const PidImportOutcome(
+        inserted: 0,
+        replaced: 0,
+        duplicatesInFile: [],
+        failure: PidMutationFailure.persistFailed,
+      );
+    }
     return PidImportOutcome(
       inserted: inserted,
       replaced: replaced,
@@ -218,8 +225,13 @@ class PidRegistry extends Notifier<List<Pid>> {
     if (!state.any((p) => p.id == pid.id && p.isCustom)) {
       return const PidMutationOutcome.noChange();
     }
-    state = state.where((p) => !(p.id == pid.id && p.isCustom)).toList();
-    await _persist();
+    final next = [
+      for (final candidate in state)
+        if (!(candidate.id == pid.id && candidate.isCustom)) candidate,
+    ];
+    if (!await _commitCustom(next, publishFirst: false)) {
+      return const PidMutationOutcome.persistFailed();
+    }
     // A deleted PID must also leave the dashboard, and it does — by being
     // gone from here.
     //
@@ -457,12 +469,27 @@ class PidRegistry extends Notifier<List<Pid>> {
     }
   }
 
-  Future<void> _persist() async {
+  /// Persist [next], optionally publishing it first.
+  ///
+  /// Identity replacement ([publishFirst] true) must not yield a delete-only
+  /// registry: Start can acquire the mutation lock during the persist await,
+  /// and it has to see the replacement rather than a hole. Removal publishes
+  /// only after a durable write — otherwise [ActivePids] prunes the layout
+  /// from the transient `state = next` and cannot put the slot back.
+  Future<bool> _commitCustom(List<Pid> next, {bool publishFirst = true}) async {
+    final previous = state;
+    if (publishFirst) state = next;
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setStringList(
-      _kCustomPidsKey,
-      customPids.map((p) => jsonEncode(p.toJson())).toList(),
-    );
+    final saved = await prefs.setStringList(_kCustomPidsKey, [
+      for (final pid in next)
+        if (pid.isCustom) jsonEncode(pid.toJson()),
+    ]);
+    if (saved) {
+      if (!publishFirst) state = next;
+      return true;
+    }
+    if (publishFirst) state = previous;
+    return false;
   }
 }
 

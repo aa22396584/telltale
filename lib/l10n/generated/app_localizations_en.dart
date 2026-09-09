@@ -4326,4 +4326,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get telemetrySessionShareFailed =>
       'Could not prepare or open sharing.';
+
+  @override
+  String get pidMutationPersistFailed =>
+      'The custom PID list could not be saved. Nothing was changed.';
 }

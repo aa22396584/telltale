@@ -97,6 +97,9 @@ String pidImportOutcomeText(
   if (outcome.failure == PidMutationFailure.locked) {
     return l10n.telemetryBlockedByRecorder;
   }
+  if (outcome.failure == PidMutationFailure.persistFailed) {
+    return l10n.pidMutationPersistFailed;
+  }
   final notes = [
     if (skippedRows > 0) l10n.pidImportNoteSkippedRows(skippedRows),
     if (defaultedRanges > 0) l10n.pidImportNoteDefaultedRanges(defaultedRanges),
