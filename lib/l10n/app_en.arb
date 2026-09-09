@@ -3170,7 +3170,7 @@
       }
     }
   },
-  "pidFormulaFunctionNestingTooDeep": "ABS(), LOG10() and SQRT() are nested too deeply to evaluate. Simplify the formula.",
+  "pidFormulaFunctionNestingTooDeep": "ABS(), LOG10(), LOG() and SQRT() are nested too deeply to evaluate. Simplify the formula.",
   "@pidFormulaFunctionNestingTooDeep": {
     "description": "FormulaIssue.functionNestingTooDeep. Names the construct to simplify; the bracket depth limit has its own message."
   },
@@ -3189,6 +3189,15 @@
   "pidFormulaLog10NonPositiveArgument": "LOG10 needs an argument greater than 0, and this one came out as {argument}.",
   "@pidFormulaLog10NonPositiveArgument": {
     "description": "FormulaIssue.log10NonPositiveArgument. {argument} is the value the argument reduced to, never spelled into the sentence. Answering 0 for an impossible input is what this refusal exists to avoid.",
+    "placeholders": {
+      "argument": {
+        "type": "double"
+      }
+    }
+  },
+  "pidFormulaLogNonPositiveArgument": "LOG needs an argument greater than 0, and this one came out as {argument}.",
+  "@pidFormulaLogNonPositiveArgument": {
+    "description": "FormulaIssue.logNonPositiveArgument. Natural log, not LOG10. {argument} is the value the argument reduced to. Answering 0 for an impossible input is what this refusal exists to avoid.",
     "placeholders": {
       "argument": {
         "type": "double"

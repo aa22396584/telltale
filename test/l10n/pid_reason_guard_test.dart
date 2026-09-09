@@ -86,6 +86,7 @@ const _declarations = <String, ({String file, String firstParameter})>{
 const _dataCarried = <String, List<String>>{
   'FormulaIssue.unparsableTerm': ['term:'],
   'FormulaIssue.log10NonPositiveArgument': ['argument:'],
+  'FormulaIssue.logNonPositiveArgument': ['argument:'],
   'FormulaIssue.sqrtNegativeArgument': ['argument:'],
   'FormulaIssue.byteBeyondResponse': ['byteLetter:', 'byteCount:'],
   'FormulaIssue.dependencyControllerUnknown': ['pidKey:'],

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/pid/formula_engine.dart';
@@ -118,6 +119,22 @@ void main() {
 
     test('LOG10()', () {
       expect(engine.evaluate('LOG10(A)', '41 00 64'), closeTo(2.0, 1e-6));
+    });
+
+    test('LOG() is natural log, not LOG10', () {
+      expect(engine.evaluateBytes('LOG(1)', const []), closeTo(0.0, 1e-9));
+      expect(engine.evaluateBytes('LOG(A)', const [10]), closeTo(math.log(10), 1e-9));
+      expect(
+        engine.evaluateBytes('ABS(LOG(A))', const [10]),
+        closeTo(math.log(10), 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOG10(LOG(A))', const [100]),
+        closeTo(math.log(math.log(100)) / math.ln10, 1e-9),
+      );
+      // ln(100) is not 2. Answering LOG10 here is a confident wrong number.
+      expect(engine.evaluateBytes('LOG(A)', const [100]), isNot(closeTo(2.0, 0.1)));
+      expect(engine.evaluateBytes('LOG10(A)', const [100]), closeTo(2.0, 1e-6));
     });
 
     test('SQRT()', () {
@@ -598,6 +615,12 @@ void main() {
       // expression that is nowhere near the boundary.
       final e = thrownBy(() => engine.evaluateBytes('LOG10(A-128)', const [0]));
       expect(e.issue, FormulaIssue.log10NonPositiveArgument);
+      expect(e.argument, -128.0);
+    });
+
+    test('LOG of a non-positive argument carries the argument', () {
+      final e = thrownBy(() => engine.evaluateBytes('LOG(A-128)', const [0]));
+      expect(e.issue, FormulaIssue.logNonPositiveArgument);
       expect(e.argument, -128.0);
     });
 
