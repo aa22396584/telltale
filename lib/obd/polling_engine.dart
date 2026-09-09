@@ -266,6 +266,8 @@ class PollingEngine {
     this.client, {
     FormulaEngine? formulaEngine,
     PriorityScheduler? scheduler,
+    this.elapsed,
+    this.syncElapsed,
   }) : formula = formulaEngine ?? FormulaEngine(),
        scheduler = scheduler ?? PriorityScheduler();
 
@@ -273,8 +275,17 @@ class PollingEngine {
   ///
   /// Wall UTC on [Reading.timestamp] is display metadata. Freshness follows
   /// this stopwatch so a small-positive clock correction cannot revive a
-  /// sample that has already lived past its TTL.
+  /// sample that has already lived past its TTL. Production Android replaces
+  /// it with `elapsedRealtime` (includes deep sleep); [Stopwatch] does not.
   final Stopwatch _freshness = Stopwatch()..start();
+
+  /// Optional replacement for [_freshness]. Android production passes
+  /// `elapsedRealtime`; a null mapping retires continuity instead of
+  /// pretending Stopwatch includes deep sleep.
+  final Duration Function()? elapsed;
+  final Future<void> Function()? syncElapsed;
+
+  Duration _nowElapsed() => elapsed?.call() ?? _freshness.elapsed;
 
   final Elm327Client client;
   final FormulaEngine formula;
@@ -310,7 +321,7 @@ class PollingEngine {
     batteryVoltage: client.batteryVoltage,
     accelerationMs2: accelerationMs2,
     capturedAt: DateTime.now(),
-    elapsedNow: () => _freshness.elapsed,
+    elapsedNow: () => _nowElapsed(),
   );
 
   /// Smoothed longitudinal acceleration derived from road speed.
@@ -3698,6 +3709,8 @@ class PollingEngine {
             continue;
           }
 
+          final syncElapsed = this.syncElapsed;
+          if (syncElapsed != null) await syncElapsed();
           await _refreshVoltageIfDue();
           _refillQueue();
           final batch = scheduler.popBatch();
@@ -3898,7 +3911,7 @@ class PollingEngine {
           bytes,
           requester: sibling,
           now: now,
-          elapsed: _freshness.elapsed,
+          elapsed: _nowElapsed(),
         );
         if (!value.isFinite) {
           _invalidate(sibling.id, PidFault.formulaError);
@@ -3908,14 +3921,14 @@ class PollingEngine {
           sibling,
           value,
           now,
-          receivedElapsed: _freshness.elapsed,
+          receivedElapsed: _nowElapsed(),
         );
         _readings[sibling.id] = Reading(
           pid: sibling,
           value: value,
           rawBytes: bytes,
           timestamp: now,
-          receivedElapsed: _freshness.elapsed,
+          receivedElapsed: _nowElapsed(),
         );
         _markDirectlyAnswered(sibling);
       } on FormulaException {
@@ -4188,7 +4201,7 @@ class PollingEngine {
           bytes,
           requester: request.pid,
           now: now,
-          elapsed: _freshness.elapsed,
+          elapsed: _nowElapsed(),
         );
         // Non-finite results are not numbers. Finite values outside a
         // catalog or gauge range stay visible as outliers (USABILITY-R2);
@@ -4202,7 +4215,7 @@ class PollingEngine {
           request.pid,
           value,
           now,
-          receivedElapsed: _freshness.elapsed,
+          receivedElapsed: _nowElapsed(),
         );
         // `BARO` is the one formula input with no byte of its own to bind to,
         // so it has to be routed here from the PID that measures it. Without
@@ -4215,7 +4228,7 @@ class PollingEngine {
             request.pid,
             value,
             now,
-            receivedElapsed: _freshness.elapsed,
+            receivedElapsed: _nowElapsed(),
           );
         }
         _readings[request.pid.id] = Reading(
@@ -4223,7 +4236,7 @@ class PollingEngine {
           value: value,
           rawBytes: bytes,
           timestamp: now,
-          receivedElapsed: _freshness.elapsed,
+          receivedElapsed: _nowElapsed(),
         );
         if (request.pid.id == PidLibrary.vehicleSpeed.id) {
           _trackAcceleration(value, now);

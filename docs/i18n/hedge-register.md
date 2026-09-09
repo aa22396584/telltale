@@ -206,7 +206,7 @@ are anchored at the start of a line.
 
 **Shipped as** `dtcClearDialogFrameUnread` (lib/l10n/app_en.arb). The panel says more and is entry 45. The sentence appears in more than one place on purpose — the panel and the clear dialog both have to say it, and a reader who only sees one of them must still be told.
 
-**Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3209 'This scan did not read a freeze frame — that does not mean the vehicle has none.'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss. The engine sentence is transcript-only English; the screen still ships the Traditional Chinese ARB hedge.
+**Why it is load-bearing.** lib/ui/screens/dtc/dtc_screen.dart:353 (also :89 and lib/obd/polling_engine.dart:3220 'This scan did not read a freeze frame — that does not mean the vehicle has none.'). Explained at docs/field-guide.zh-TW.md:226-228. Distinguishes a READ FAILURE from an ABSENT freeze frame; the field guide tells users to rescan rather than clear, because clearing destroys an unread frame permanently. Collapsing this into 'no freeze frame' causes irreversible evidence loss. The engine sentence is transcript-only English; the screen still ships the Traditional Chinese ARB hedge.
 
 ### 12. 這個控制器沒有儲存凍結幀 —— 故障碼可能是清除後重新出現的，或是由不記錄凍結幀的模組所報告。
 
