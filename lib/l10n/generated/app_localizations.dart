@@ -2397,6 +2397,12 @@ abstract class AppLocalizations {
   /// **'Export Torque-compatible CSV'**
   String get pidManagerExportTorqueCsv;
 
+  /// Overflow action that shares the labeled human spreadsheet report. Not a PID definition file.
+  ///
+  /// In en, this message translates to:
+  /// **'Export human PID report'**
+  String get pidManagerExportHumanReport;
+
   /// Screen title of the PID manager.
   ///
   /// In en, this message translates to:
@@ -6725,6 +6731,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Torque-compatible PID definitions'**
   String get shareTorqueSubsetCsvSubject;
+
+  /// Share-sheet subject for the labeled human spreadsheet report. Distinct from sharePidCsvSubject and shareTorqueSubsetCsvSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Telltale human PID report'**
+  String get shareHumanReportCsvSubject;
 
   /// No description provided for @transcriptExportUnidentified.
   ///

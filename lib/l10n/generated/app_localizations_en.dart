@@ -1476,6 +1476,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pidManagerExportTorqueCsv => 'Export Torque-compatible CSV';
 
   @override
+  String get pidManagerExportHumanReport => 'Export human PID report';
+
+  @override
   String get pidManagerHeadline => 'PID manager';
 
   @override
@@ -4287,6 +4290,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareTorqueSubsetCsvSubject => 'Torque-compatible PID definitions';
+
+  @override
+  String get shareHumanReportCsvSubject => 'Telltale human PID report';
 
   @override
   String get transcriptExportUnidentified => 'Export failed.';

@@ -37,7 +37,13 @@ class PidManagerScreen extends ConsumerStatefulWidget {
   ConsumerState<PidManagerScreen> createState() => _PidManagerScreenState();
 }
 
-enum _PidMenuAction { arrange, importCsv, exportCsv, exportTorqueSubset }
+enum _PidMenuAction {
+  arrange,
+  importCsv,
+  exportCsv,
+  exportTorqueSubset,
+  exportHumanReport,
+}
 
 enum SupportedPidBulkUiState {
   pending,
@@ -242,6 +248,8 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         await _exportCsv();
       case _PidMenuAction.exportTorqueSubset:
         await _exportTorqueSubsetCsv();
+      case _PidMenuAction.exportHumanReport:
+        await _exportHumanReportCsv();
     }
   }
 
@@ -344,6 +352,12 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
         share: (custom, origin) => ref
             .read(appShareEntryControllerProvider)
             .shareTorqueSubsetCsv(pids: custom, sharePositionOrigin: origin),
+      );
+
+  Future<void> _exportHumanReportCsv() => _exportCustomPids(
+        share: (custom, origin) => ref
+            .read(appShareEntryControllerProvider)
+            .shareHumanReportCsv(pids: custom, sharePositionOrigin: origin),
       );
 
   Future<void> _exportCustomPids({
@@ -491,6 +505,18 @@ class _PidManagerScreenState extends ConsumerState<PidManagerScreen> {
                                   size: 20,
                                 ),
                                 title: Text(l10n.pidManagerExportTorqueCsv),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: _PidMenuAction.exportHumanReport,
+                              child: ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(
+                                  Icons.description_outlined,
+                                  size: 20,
+                                ),
+                                title: Text(l10n.pidManagerExportHumanReport),
                               ),
                             ),
                           ],

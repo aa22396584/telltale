@@ -1308,6 +1308,10 @@
   "@pidManagerExportTorqueCsv": {
     "description": "Overflow action that shares Torque Pro's eight-column subset, not the lossless Telltale file."
   },
+  "pidManagerExportHumanReport": "Export human PID report",
+  "@pidManagerExportHumanReport": {
+    "description": "Overflow action that shares the labeled human spreadsheet report. Not a PID definition file."
+  },
   "pidManagerHeadline": "PID manager",
   "@pidManagerHeadline": {
     "description": "Screen title of the PID manager."
@@ -3701,6 +3705,10 @@
   "shareTorqueSubsetCsvSubject": "Torque-compatible PID definitions",
   "@shareTorqueSubsetCsvSubject": {
     "description": "Share-sheet subject for the lossy Torque Pro eight-column CSV. Distinct from sharePidCsvSubject."
+  },
+  "shareHumanReportCsvSubject": "Telltale human PID report",
+  "@shareHumanReportCsvSubject": {
+    "description": "Share-sheet subject for the labeled human spreadsheet report. Distinct from sharePidCsvSubject and shareTorqueSubsetCsvSubject."
   },
   "transcriptExportUnidentified": "Export failed.",
   "handshakeNoteUnexpected": "This step failed with an unexpected error. The full error is kept in the transcript.",
