@@ -100,7 +100,13 @@ void main() {
 
       await expectLater(
         client.send('010C'),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<TimeoutException>().having(
+            (e) => e.message,
+            'message',
+            'Timed out waiting for a reply',
+          ),
+        ),
       );
 
       // The stale 010C reply is still in flight. The next command must not be
@@ -108,9 +114,82 @@ void main() {
       // desync this guards against.
       final response = await client.send('010D');
       expect(response.hexPayload, '410D3C');
+      expect(
+        client.transcript.render(),
+        contains('Connection is out of sync, starting realignment'),
+      );
 
       await client.dispose();
     });
+
+    test('a silent resync drops the link with the ARB English sentence',
+        () async {
+      final transport = _ScriptedTransport({
+        '010C': ('', const Duration(hours: 1)),
+        '010D': ('', const Duration(hours: 1)),
+      });
+      final client = Elm327Client(
+        transport,
+        commandTimeout: const Duration(milliseconds: 80),
+      );
+      expect(await client.connect(), isTrue);
+
+      await expectLater(client.send('010C'), throwsA(isA<TimeoutException>()));
+      await expectLater(
+        client.send('010D'),
+        throwsA(
+          isA<TransportException>()
+              .having(
+                (e) => e.issue,
+                'issue',
+                TransportIssue.adapterSilentOnResync,
+              )
+              .having(
+                (e) => e.message,
+                'message',
+                'The adapter\'s replies had fallen out of step with the '
+                    'commands sent to it, and it did not answer the check that '
+                    'would have put them back in step, so the connection was '
+                    'dropped. Connect again before retrying.',
+              ),
+        ),
+      );
+
+      await client.dispose();
+    });
+
+    test(
+      'a caller budget that expires mid-resync is not an adapter failure',
+      () async {
+        final transport = _ScriptedTransport({
+          '010C': ('', const Duration(hours: 1)),
+        });
+        final client = Elm327Client(
+          transport,
+          commandTimeout: const Duration(milliseconds: 80),
+        );
+        expect(await client.connect(), isTrue);
+
+        await expectLater(client.send('010C'), throwsA(isA<TimeoutException>()));
+        await expectLater(
+          client.sendGlobal(
+            '03',
+            deadline: DateTime.now().add(const Duration(milliseconds: 50)),
+          ),
+          throwsA(
+            isA<TimeoutException>().having(
+              (e) => e.message,
+              'message',
+              'This operation\'s time limit was reached before the '
+                  'connection finished synchronising. Try again.',
+            ),
+          ),
+        );
+        expect(client.isInitialized, isTrue);
+
+        await client.dispose();
+      },
+    );
   });
 
   group('sendOnHeader', () {
