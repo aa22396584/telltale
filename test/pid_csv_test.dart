@@ -874,5 +874,22 @@ void _humanReportNotReimported() {
       expect(result.pids, isEmpty);
       expect(result.errors, isNotEmpty);
     });
+
+    test('neutralizes spreadsheet formula cells', () {
+      const injected = Pid(
+        name: '=1+1',
+        shortName: 'X',
+        modeAndPid: '0105',
+        equation: '+A',
+        minValue: 0,
+        maxValue: 1,
+        units: '@C',
+      );
+      final human = PidCsv.exportHumanReport([injected]);
+      expect(human.contains("'=1+1"), isTrue);
+      expect(human.contains("'+A"), isTrue);
+      expect(human.contains("'@C"), isTrue);
+      expect(human.contains(',=1+1'), isFalse);
+    });
   });
 }
