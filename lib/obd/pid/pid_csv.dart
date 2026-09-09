@@ -267,8 +267,23 @@ abstract final class PidCsv {
   static String exportHumanReport(List<Pid> pids) {
     return _codec.encode(<List<dynamic>>[
       humanHeader,
-      for (final pid in pids) <dynamic>['', pid.name, pid.equation, pid.units],
+      for (final pid in pids)
+        <dynamic>[
+          '',
+          _protectSpreadsheetCell(pid.name),
+          _protectSpreadsheetCell(pid.equation),
+          _protectSpreadsheetCell(pid.units),
+        ],
     ]);
+  }
+
+  /// Same prefix rule as telemetry CSV: `=`, `+`, `-`, `@`, tab, CR.
+  static String _protectSpreadsheetCell(String value) {
+    if (value.isEmpty) return value;
+    return switch (value.codeUnitAt(0)) {
+      0x3d || 0x2b || 0x2d || 0x40 || 0x09 || 0x0d => "'$value",
+      _ => value,
+    };
   }
 
   /// Incremental form of [exportTorqueSubset], same bytes, bounded chunks.
