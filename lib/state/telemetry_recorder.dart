@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../obd/physics/vehicle_profile.dart';
 import '../obd/pid/pid.dart';
+import '../obd/recording_demand_lease.dart';
 import '../obd/session_boundary.dart';
 import '../obd/telemetry.dart';
 import '../obd/transport/obd_transport.dart';
@@ -262,6 +263,8 @@ final class RootTelemetryRecorder {
     required this.elapsedUs,
     this.scheduleDurationLimit = _scheduleDurationLimit,
     this.pidDefinitionsSettled = _pidDefinitionsAlwaysSettled,
+    this.acquireRecordingChannels,
+    this.releaseRecordingChannels,
   }) {
     _recorder = _newRecorder();
   }
@@ -275,6 +278,11 @@ final class RootTelemetryRecorder {
   final int Function() elapsedUs;
   final TelemetryDurationLimitScheduler scheduleDurationLimit;
   final bool Function() pidDefinitionsSettled;
+
+  /// Live poller holds for the frozen recording set. Null in tests that do
+  /// not drive an adapter.
+  final void Function(List<Pid> pids)? acquireRecordingChannels;
+  final void Function()? releaseRecordingChannels;
   final StreamController<TelemetryRecorderState> _states =
       StreamController<TelemetryRecorderState>.broadcast(sync: true);
 
@@ -525,6 +533,7 @@ final class RootTelemetryRecorder {
       }
       _recordingStartedElapsedUs = elapsedUs();
       _frozenProfile = request.vehicleProfile;
+      acquireRecordingChannels?.call(request.activePids);
       _armDurationLimit();
       _releaseCommand();
       _publish();
@@ -622,6 +631,7 @@ final class RootTelemetryRecorder {
     _durationLimitTimer?.cancel();
     _durationLimitTimer = null;
     _recordingEndedElapsedUs ??= elapsedUs();
+    releaseRecordingChannels?.call();
     _recorder.stop(reason: reason);
     _publish();
     _finalization ??= _finalize();
@@ -983,6 +993,7 @@ final telemetryRecorderControllerProvider = Provider<RootTelemetryRecorder>((
   ref,
 ) {
   final runtime = ref.watch(telemetryRecorderRuntimeProvider);
+  RecordingDemandLease? lease;
   final controller = RootTelemetryRecorder(
     environment: runtime.environment,
     storage: runtime.storage,
@@ -993,6 +1004,22 @@ final telemetryRecorderControllerProvider = Provider<RootTelemetryRecorder>((
     elapsedUs: runtime.elapsedUs,
     pidDefinitionsSettled: () =>
         ref.read(pidRegistryProvider.notifier).pidDefinitionsReadyForRecording,
+    acquireRecordingChannels: (pids) {
+      final engine = ref.read(obdSessionProvider.notifier).engine;
+      if (engine == null) return;
+      final next = RecordingDemandLease(engine);
+      try {
+        next.acquire(pids);
+        lease = next;
+      } on Object {
+        next.release();
+        rethrow;
+      }
+    },
+    releaseRecordingChannels: () {
+      lease?.release();
+      lease = null;
+    },
   );
   ref.listen(telemetryProvider, (_, next) {
     final value = authoritativeTelemetryValue(next);
