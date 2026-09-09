@@ -8,9 +8,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final source = File(
-    'integration_test/localization_journey_test.dart',
-  ).readAsStringSync();
+  final source = File('integration_test/localization_journey_test.dart')
+      .readAsStringSync();
 
   test('the named #47 journey file exists and is not an empty stub', () {
     expect(source.length, greaterThan(400));
@@ -37,6 +36,48 @@ void main() {
     expect(selectCall, greaterThan(0));
     expect(demoCall, greaterThan(selectCall));
   });
+
+  test(
+    'the journey records the Demo session, opens that id, then disconnects',
+    () {
+      expect(source.contains('telemetry-start'), isTrue);
+      expect(source.contains('telemetry-stop'), isTrue);
+      expect(source.contains('telemetry-history'), isTrue);
+      expect(source.contains('_openExactRecording'), isTrue);
+      expect(source.contains('progress.sessionId'), isTrue);
+      expect(source.contains('detail.sessionId'), isTrue);
+      expect(source.contains('TelemetrySessionDetailScreen'), isTrue);
+      expect(source.contains('find.byType(ListTile).first'), isFalse);
+      expect(source.contains('中斷連線'), isTrue);
+      expect(source.contains('Disconnect'), isTrue);
+      expect(source.contains('TelemetryExportSheet'), isFalse);
+      expect(source.contains('ConnectionPhase.connected'), isTrue);
+      final demoCall = source.indexOf('await connectDemoRig(tester');
+      final recordCall = source.indexOf('await _recordShortDemoSession');
+      final historyCall = source.indexOf('await _openHistory');
+      final exactCall = source.indexOf('await _openExactRecording');
+      final disconnectCall = source.indexOf("中斷連線");
+      expect(demoCall, greaterThan(0));
+      expect(recordCall, greaterThan(demoCall));
+      expect(historyCall, greaterThan(recordCall));
+      expect(exactCall, greaterThan(historyCall));
+      expect(disconnectCall, greaterThan(exactCall));
+      final sessionIdAssign = source.indexOf('progress.sessionId');
+      final returnSession = source.indexOf('return sessionId');
+      expect(sessionIdAssign, greaterThan(0));
+      expect(returnSession, greaterThan(sessionIdAssign));
+      final disconnectAfterRecord = source.indexOf(
+        'disconnect()',
+        sessionIdAssign,
+      );
+      expect(
+        disconnectAfterRecord == -1 || disconnectAfterRecord > returnSession,
+        isTrue,
+        reason:
+            'recording helper must keep Demo connected for Settings disconnect copy',
+      );
+    },
+  );
 
   test('the journey does not replace ObdSession with a pre-solved mock', () {
     expect(source.contains('obdSessionProvider.overrideWith'), isFalse);
