@@ -17,7 +17,6 @@ const _unsupportedWikiNames = <String>[
   'TDLY',
   'RDLY',
   'TOT',
-  'LOG1P',
   'INT32',
   'INT24',
   'INT16',
@@ -74,6 +73,7 @@ void main() {
     expect(FormulaEngine.preflight('SIN(A)'), isNull);
     expect(FormulaEngine.preflight('COS(A)'), isNull);
     expect(FormulaEngine.preflight('TAN(A)'), isNull);
+    expect(FormulaEngine.preflight('LOG1P(A)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });

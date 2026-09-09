@@ -25,6 +25,7 @@ void main() {
     expect(FormulaEngine.preflight('SIN(A)'), isNull);
     expect(FormulaEngine.preflight('COS(A)'), isNull);
     expect(FormulaEngine.preflight('TAN(A)'), isNull);
+    expect(FormulaEngine.preflight('LOG1P(A)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
@@ -32,7 +33,6 @@ void main() {
       'INT16(A:B)',
       'LOOKUP(A:0:1=100)',
       'BARO()',
-      'LOG1P(A)',
     ]) {
       final failure = FormulaEngine.preflight(equation);
       expect(failure, isNotNull, reason: equation);
