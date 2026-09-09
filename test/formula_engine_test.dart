@@ -925,6 +925,18 @@ void main() {
       final result = engine.evaluateBytes('(A/10000000)*10000000', const [3]);
       expect(result, closeTo(3.0, 1e-6));
     });
+
+    test('sub-1e-10 intermediates are not rounded to zero', () {
+      // Ten fractional digits made MAX(4e-11:0)*1e12 publish 0.
+      expect(
+        engine.evaluateBytes('MAX(0.00000000004:0)*1000000000000', const []),
+        closeTo(40.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('ABS(0.00000000004)*1000000000000', const []),
+        closeTo(40.0, 1e-9),
+      );
+    });
   });
 
   _editorValidation();
