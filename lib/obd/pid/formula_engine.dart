@@ -1853,6 +1853,27 @@ class FormulaEngine {
       issue == FormulaIssue.sqrtNegativeArgument ||
       issue == FormulaIssue.resultNotFinite;
 
+  static bool _isByteDependentRuntimeDomain(FormulaIssue? issue) =>
+      issue == FormulaIssue.log10NonPositiveArgument ||
+      issue == FormulaIssue.logNonPositiveArgument ||
+      issue == FormulaIssue.sqrtNegativeArgument ||
+      issue == FormulaIssue.resultNotFinite;
+
+  /// True when [equation] names a Torque reply byte `A`..`N` as its own
+  /// token. `ABS(1)` does not: the `A` sits inside the function name.
+  static bool _referencesReplyByte(String equation) {
+    final s = equation.toUpperCase();
+    for (var i = 0; i < s.length; i++) {
+      final c = s.codeUnitAt(i);
+      if (c < 65 || c > 78) continue;
+      final prev = i == 0 ? 0 : s.codeUnitAt(i - 1);
+      final next = i + 1 >= s.length ? 0 : s.codeUnitAt(i + 1);
+      if (_isIdentChar(prev) || _isIdentChar(next)) continue;
+      return true;
+    }
+    return false;
+  }
+
   static FormulaException? _evaluateAuthoring(
     String equation,
     List<int> sampleBytes, {
@@ -1911,6 +1932,15 @@ class FormulaEngine {
         if (retry == null) return null;
         if (!_isProbeDomain(retry.issue)) return retry;
       }
+    }
+    // Every finite probe can miss a well-formed domain (`LOG10(A-20)` is
+    // negative for 1..14). Adding A=21 would miss `LOG10(A-200)` the same
+    // way. A log/sqrt/non-finite failure that names a reply byte is a
+    // runtime requirement. `A/0` stays rejected: every probe is
+    // `divisionByZero`, and `LOG10(-1)` names no reply byte.
+    if (_isByteDependentRuntimeDomain(first.issue) &&
+        _referencesReplyByte(equation)) {
+      return null;
     }
     return first;
   }
