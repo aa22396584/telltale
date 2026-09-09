@@ -17,6 +17,8 @@ void main() {
     expect(FormulaEngine.preflight('((A*256)+B)/4'), isNull);
     expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
     expect(FormulaEngine.preflight('MAX(A,B)'), isNull);
+    expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
+    expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {

@@ -74,6 +74,7 @@ void main() {
     expect(FormulaEngine.preflight('SIGNED(A)'), isNull);
     expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
     expect(FormulaEngine.preflight('MAX(A:B)'), isNull);
+    expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });
 

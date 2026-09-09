@@ -29,7 +29,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `BARO` | identifier, no `(` | Cached ambient pressure for the requesting controller. |
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
 | `LOG10(x)` | unary | Domain error when `x <= 0`. Not `LOG(`. |
-| `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Empty sides or a second separator are `unparsableTerm`, not a number. |
+| `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
 
 Authoring (`FormulaEngine.preflight`) uses stand-in bytes and `VAL`/`BARO`
 samples so a well-formed formula can be saved before a live reading exists.

@@ -304,8 +304,6 @@ class FormulaEngine {
   static final RegExp _signedPattern = RegExp(r'SIGNED\(([A-N])\)');
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
-  static final RegExp _minPattern = RegExp(r'MIN\(([^()]+)\)');
-  static final RegExp _maxPattern = RegExp(r'MAX\(([^()]+)\)');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
   /// They must contain no A-N letters of their own, hence control characters.
@@ -774,13 +772,13 @@ class FormulaEngine {
       });
       s = _applyBinaryFunction(
         s,
-        _minPattern,
+        'MIN',
         equation,
         (a, b) => math.min(a, b),
       );
       s = _applyBinaryFunction(
         s,
-        _maxPattern,
+        'MAX',
         equation,
         (a, b) => math.max(a, b),
       );
@@ -846,17 +844,18 @@ class FormulaEngine {
 
   /// Torque wiki `MIN(A:B)` / `MAX(A:B)`. A single comma is accepted too
   /// (`MAX(A,B)`); two separators or an empty side is not a two-argument call.
+  /// Arguments may be grouped: `MIN((A+1):B)` is not `unparsableTerm`.
   String _applyBinaryFunction(
     String input,
-    RegExp pattern,
+    String name,
     String source,
     double Function(double, double) fn,
   ) {
     var s = input;
     var guard = 0;
     while (true) {
-      final match = pattern.firstMatch(s);
-      if (match == null) return s;
+      final call = _innermostBinaryCall(s, name);
+      if (call == null) return s;
       if (++guard > 64) {
         throw FormulaException(
           'Formula nests functions too deeply',
@@ -864,31 +863,77 @@ class FormulaEngine {
           issue: FormulaIssue.functionNestingTooDeep,
         );
       }
-      final inner = match.group(1)!;
-      final parts = _splitBinaryArgs(inner);
+      final parts = _splitBinaryArgs(call.inner);
       if (parts == null) {
         throw FormulaException(
-          'Cannot parse "$inner"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
-          term: inner,
+          term: call.inner,
         );
       }
       final value = fn(_reduce(parts[0], source), _reduce(parts[1], source));
-      s = s.replaceRange(match.start, match.end, _format(value));
+      s = s.replaceRange(call.start, call.end, _format(value));
     }
   }
 
+  /// Leftmost `NAME(...)` whose argument list does not still contain `ABS(`,
+  /// `LOG10(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
+  static ({int start, int end, String inner})? _innermostBinaryCall(
+    String input,
+    String name,
+  ) {
+    final needle = '$name(';
+    var from = 0;
+    while (true) {
+      final start = input.indexOf(needle, from);
+      if (start < 0) return null;
+      var depth = 0;
+      var end = -1;
+      for (var i = start + name.length; i < input.length; i++) {
+        final c = input[i];
+        if (c == '(') {
+          depth++;
+        } else if (c == ')') {
+          depth--;
+          if (depth == 0) {
+            end = i + 1;
+            break;
+          }
+        }
+      }
+      if (end < 0) return null;
+      final inner = input.substring(start + needle.length, end - 1);
+      if (!_innerStillHasFunction(inner)) {
+        return (start: start, end: end, inner: inner);
+      }
+      from = start + 1;
+    }
+  }
+
+  static bool _innerStillHasFunction(String inner) =>
+      inner.contains('ABS(') ||
+      inner.contains('LOG10(') ||
+      inner.contains('MIN(') ||
+      inner.contains('MAX(');
+
   /// Splits `A:B` or `A,B` into exactly two nonempty sides.
+  /// A colon or comma inside grouping parentheses is not a separator.
   static List<String>? _splitBinaryArgs(String inner) {
     var sep = -1;
+    var depth = 0;
     for (var i = 0; i < inner.length; i++) {
       final c = inner[i];
-      if (c != ':' && c != ',') continue;
-      if (sep != -1) return null;
-      sep = i;
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && (c == ':' || c == ',')) {
+        if (sep != -1) return null;
+        sep = i;
+      }
     }
-    if (sep < 0) return null;
+    if (sep < 0 || depth != 0) return null;
     final left = inner.substring(0, sep).trim();
     final right = inner.substring(sep + 1).trim();
     if (left.isEmpty || right.isEmpty) return null;

@@ -286,6 +286,24 @@ void main() {
       expect(engine.evaluateBytes('MAX(A:B)', const [1, 2]), closeTo(2.0, 1e-9));
     });
 
+    test('MIN/MAX arguments may be grouped', () {
+      // Codex P2: `[^()]+` could not see `MIN((A+1):B)` / `MAX(A:(B*2))`.
+      expect(
+        engine.evaluateBytes('MIN((A+1):B)', const [3, 9]),
+        closeTo(4.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('MAX(A:(B*2))', const [3, 9]),
+        closeTo(18.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('MIN((A-10):(B+1))', const [3, 9]),
+        closeTo(-7.0, 1e-9),
+      );
+      expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
+      expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
+    });
+
     test('MIN/MAX with the wrong arity is unparsable, not a number', () {
       expect(
         () => engine.evaluateBytes('MIN(A)', const [4]),
