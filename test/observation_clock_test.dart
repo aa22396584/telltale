@@ -93,6 +93,71 @@ void main() {
     },
   );
 
+  test(
+    'a small-positive wall rollback cannot revive a monotonically old ATRV',
+    () async {
+      var now = DateTime(2026, 9, 8, 12);
+      var elapsed = Duration.zero;
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: {
+              '0100': [0x41, 0x00, 0xBE, 0x1F, 0xA8, 0x13],
+            },
+          ),
+        ],
+        faults: const AdapterFaults(voltageText: '13.8V'),
+      );
+      final client = Elm327Client(
+        transport,
+        commandTimeout: const Duration(milliseconds: 200),
+        clock: () => now,
+        elapsed: () => elapsed,
+      );
+      expect(await client.connect(), isTrue);
+      expect(client.batteryVoltage, closeTo(13.8, 0.001));
+      now = now.add(const Duration(seconds: 1));
+      elapsed = Elm327Client.voltageMaxAge + const Duration(seconds: 1);
+      expect(client.batteryVoltage, isNull);
+    },
+  );
+
+  test(
+    'monotonic advance with an unchanged wall still expires ATRV',
+    () async {
+      final now = DateTime(2026, 9, 8, 12);
+      var elapsed = Duration.zero;
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: {
+              '0100': [0x41, 0x00, 0xBE, 0x1F, 0xA8, 0x13],
+            },
+          ),
+        ],
+        faults: const AdapterFaults(voltageText: '13.8V'),
+      );
+      final client = Elm327Client(
+        transport,
+        commandTimeout: const Duration(milliseconds: 200),
+        clock: () => now,
+        elapsed: () => elapsed,
+      );
+      expect(await client.connect(), isTrue);
+      expect(client.batteryVoltage, closeTo(13.8, 0.001));
+      elapsed = Elm327Client.voltageMaxAge + const Duration(seconds: 1);
+      expect(client.batteryVoltage, isNull);
+    },
+  );
+
   test('adapter voltage cache expires on a backwards clock step', () async {
     var now = DateTime(2026, 9, 8, 12);
     final transport = FakeElm327(
