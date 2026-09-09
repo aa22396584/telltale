@@ -74,7 +74,7 @@ void main() {
               (error) => error.message,
               'message',
               allOf(
-                contains('關閉另一個 Wi-Fi'),
+                contains('disconnect the others first'),
                 isNot(contains('2 Wi-Fi networks')),
               ),
             )
@@ -105,7 +105,7 @@ void main() {
         isA<WifiRouteException>().having(
           (error) => error.message,
           'message',
-          contains('沒有連上任何 Wi-Fi'),
+          contains('not on any Wi-Fi network'),
         ),
       ),
     );
@@ -127,7 +127,7 @@ void main() {
               (error) => error.message,
               'message',
               allOf(
-                contains('無法綁定'),
+                contains('Could not bind the Wi-Fi route'),
                 isNot(contains('something novel')),
               ),
             )
@@ -174,7 +174,7 @@ void main() {
               (error) => error.message,
               'message',
               allOf(
-                contains('無法恢復'),
+                contains('Could not restore the system network route'),
                 isNot(contains('bindProcessToNetwork')),
               ),
             )
@@ -207,7 +207,7 @@ void main() {
         isA<WifiRouteException>().having(
           (error) => error.message,
           'message',
-          contains('逾時'),
+          contains('Timed out binding the Wi-Fi route'),
         ),
       ),
     );

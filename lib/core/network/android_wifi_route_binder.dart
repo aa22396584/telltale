@@ -62,20 +62,20 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
       // showed English platform prose (ImL1s/telltale#45).
       final (message, failure) = switch (e.code) {
         'no_wifi_network' => (
-          '手機目前沒有連上任何 Wi-Fi 網路',
+          'The phone is not on any Wi-Fi network',
           WifiRouteFailure.noNetwork,
         ),
         'ambiguous_wifi_network' => (
-          '手機同時連著多個同樣可能的 Wi-Fi，無法判斷哪一個通往轉接器；'
-              '請先關閉另一個 Wi-Fi 連線',
+          'Multiple Wi-Fi networks could reach the adapter; '
+              'disconnect the others first',
           WifiRouteFailure.ambiguous,
         ),
         'bind_refused' => (
-          '系統拒絕綁定 Wi-Fi 網路路由',
+          'The system refused to bind the Wi-Fi route',
           WifiRouteFailure.refused,
         ),
         _ => (
-          '無法綁定 Wi-Fi 網路路由',
+          'Could not bind the Wi-Fi route',
           WifiRouteFailure.unclassified,
         ),
       };
@@ -95,7 +95,7 @@ final class AndroidWifiRouteBinder implements WifiRouteBinder {
         ),
       );
       throw const WifiRouteException(
-        '綁定 Wi-Fi 網路路由逾時（系統暫時沒有回應）',
+        'Timed out binding the Wi-Fi route (the system did not answer)',
         WifiRouteFailure.timedOut,
       );
     }
@@ -139,7 +139,7 @@ final class _AndroidWifiRouteLease implements WifiRouteLease {
       // and wrong the moment somebody threads it through, which is when a
       // restore failure would start reading "the system refused Wi-Fi".
       throw WifiRouteException(
-        '無法恢復系統網路路由',
+        'Could not restore the system network route',
         WifiRouteFailure.unclassified,
         detail: e.message,
       );
@@ -150,7 +150,7 @@ final class _AndroidWifiRouteLease implements WifiRouteLease {
       // because nothing here can know when — or whether — that recovery
       // happens, and "eventually correct" is not a state to hand a session.
       throw const WifiRouteException(
-        '恢復系統網路路由逾時',
+        'Timed out restoring the system network route',
         WifiRouteFailure.timedOut,
       );
     }
