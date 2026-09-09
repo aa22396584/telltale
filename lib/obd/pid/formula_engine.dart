@@ -913,6 +913,10 @@ class FormulaEngine {
         }
       }
       if (end < 0) return null;
+      if (end < input.length && _isIdentChar(input.codeUnitAt(end))) {
+        from = start + 1;
+        continue;
+      }
       final inner = input.substring(start + needle.length, end - 1);
       if (!_innerStillHasFunction(inner)) {
         return (start: start, end: end, inner: inner);

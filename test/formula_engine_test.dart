@@ -329,6 +329,26 @@ void main() {
         ),
       );
       expect(FormulaEngine.preflight('1MIN(2:3)'), isNotNull);
+      expect(
+        () => engine.evaluateBytes('MIN(1:2)3', const []),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
+      expect(
+        () => engine.evaluateBytes('MIN(A:B)C', const [4, 5, 6]),
+        throwsA(
+          isA<FormulaException>().having(
+            (e) => e.issue,
+            'issue',
+            FormulaIssue.unparsableTerm,
+          ),
+        ),
+      );
     });
 
     test('MIN/MAX with the wrong arity is unparsable, not a number', () {
