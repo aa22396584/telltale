@@ -174,6 +174,39 @@ void main() {
       );
     });
 
+    test('SIN COS TAN are radians, not degrees', () {
+      expect(engine.evaluateBytes('SIN(0)', const []), closeTo(0.0, 1e-9));
+      expect(engine.evaluateBytes('COS(0)', const []), closeTo(1.0, 1e-9));
+      expect(engine.evaluateBytes('TAN(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('SIN(A)', const [0]),
+        closeTo(0.0, 1e-9),
+      );
+      // 90 as degrees would be 1. Radians of 90 is not 1.
+      expect(engine.evaluateBytes('SIN(90)', const []), isNot(closeTo(1.0, 0.1)));
+      expect(
+        engine.evaluateBytes('COS(SIN(0))', const []),
+        closeTo(1.0, 1e-9),
+      );
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        thrownBy(() => engine.evaluateBytes('2SIN(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIN(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+    });
+
     test('BIT() returns the named bit, not a plausible 0', () {
       expect(engine.evaluateBytes('BIT(A:0)', const [5]), closeTo(1.0, 1e-9));
       expect(engine.evaluateBytes('BIT(A:1)', const [5]), closeTo(0.0, 1e-9));
