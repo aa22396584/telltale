@@ -166,9 +166,19 @@ class FormulaException implements Exception {
 /// A cached dependency value, with the two things a bare `double` cannot say:
 /// when it was measured, and which controller measured it (via its cache key).
 class _CachedValue {
-  const _CachedValue(this.value, this.at, this.writtenBy);
+  const _CachedValue(
+    this.value,
+    this.at,
+    this.writtenBy, {
+    this.receivedElapsed = Duration.zero,
+  });
   final double value;
   final DateTime at;
+
+  /// Connection-stopwatch tick at acquisition. Wall UTC is display
+  /// metadata; a small-positive clock correction after a real pause
+  /// must not make this entry look younger than it is.
+  final Duration receivedElapsed;
 
   /// The equation that produced it.
   ///
@@ -213,7 +223,12 @@ class FormulaEngine {
   /// `A-BARO` on a 100 kPa manifold reported -1.3 kPa instead of +20.5 kPa:
   /// plausible, labelled as derived from measurement, and wrong by the whole
   /// altitude.
-  void setBaroPressure(Pid source, double kPa, DateTime at) {
+  void setBaroPressure(
+    Pid source,
+    double kPa,
+    DateTime at, {
+    Duration receivedElapsed = Duration.zero,
+  }) {
     final key = _controllerKey(source.header);
     final existing = _baro[key];
     // The same conflict rule `VAL{}` uses, and it was missing here — the
@@ -226,7 +241,12 @@ class FormulaEngine {
     if (existing != null && _writersDisagree(existing, source.equation, kPa)) {
       _baroAmbiguous.add(key);
     }
-    _baro[key] = _CachedValue(kPa, at, source.equation);
+    _baro[key] = _CachedValue(
+      kPa,
+      at,
+      source.equation,
+      receivedElapsed: receivedElapsed,
+    );
   }
 
   /// Controllers whose ambient pressure has more than one author.
@@ -253,9 +273,23 @@ class FormulaEngine {
 
   /// Elapsed cache age. A backwards clock step is expiry, not freshness:
   /// `.abs()` used to make an hour-old sample look one hour in the future.
-  static bool _expired(DateTime now, DateTime at, Duration maxAge) {
-    final age = now.difference(at);
-    return age.isNegative || age > maxAge;
+  /// When [elapsed] is supplied, the monotonic tick is the TTL; wall time
+  /// still flags a backwards step.
+  static bool _expired(
+    DateTime now,
+    DateTime at,
+    Duration maxAge, {
+    Duration? elapsed,
+    Duration receivedElapsed = Duration.zero,
+  }) {
+    final wallAge = now.difference(at);
+    if (wallAge.isNegative) return true;
+    if (elapsed != null) {
+      final monoAge = elapsed - receivedElapsed;
+      if (monoAge.isNegative) return true;
+      return monoAge > maxAge;
+    }
+    return wallAge > maxAge;
   }
 
   /// Operators grouped into precedence levels, loosest first.
@@ -367,7 +401,12 @@ class FormulaEngine {
     return true;
   }
 
-  void cachePidValue(Pid pid, double value, DateTime at) {
+  void cachePidValue(
+    Pid pid,
+    double value,
+    DateTime at, {
+    Duration receivedElapsed = Duration.zero,
+  }) {
     final key = _cacheKey(pid.header, pid.modeAndPid);
     final existing = _pidCache[key];
     if (existing != null && _writersDisagree(existing, pid.equation, value)) {
@@ -375,7 +414,12 @@ class FormulaEngine {
       // different things. `VAL{}` names hex, so it cannot say which was meant.
       _ambiguous.add(key);
     }
-    _pidCache[key] = _CachedValue(value, at, pid.equation);
+    _pidCache[key] = _CachedValue(
+      value,
+      at,
+      pid.equation,
+      receivedElapsed: receivedElapsed,
+    );
   }
 
   /// The value [requester] should see for `VAL{[modeAndPid]}`, if any.
@@ -387,6 +431,7 @@ class FormulaEngine {
     Pid requester,
     String modeAndPid, {
     required DateTime? now,
+    Duration? elapsed,
   }) {
     final key = _cacheKey(requester.header, modeAndPid);
     // Refused rather than resolved. Picking either answer would be picking one
@@ -399,7 +444,16 @@ class FormulaEngine {
     if (entry == null) return null;
     // A null `now` means the caller has no clock to judge staleness against —
     // the authoring preview. Runtime always passes one.
-    if (now != null && _expired(now, entry.at, maxCacheAge)) return null;
+    if (now != null &&
+        _expired(
+          now,
+          entry.at,
+          maxCacheAge,
+          elapsed: elapsed,
+          receivedElapsed: entry.receivedElapsed,
+        )) {
+      return null;
+    }
     return entry.value;
   }
 
@@ -442,12 +496,14 @@ class FormulaEngine {
     String payload, {
     Pid? requester,
     DateTime? now,
+    Duration? elapsed,
   }) {
     return evaluateBytes(
       equation,
       parseUserTypedSampleBytes(payload, stripResponsePrefix: true),
       requester: requester,
       now: now,
+      elapsed: elapsed,
     );
   }
 
@@ -459,6 +515,7 @@ class FormulaEngine {
     List<int> dataBytes, {
     Pid? requester,
     DateTime? now,
+    Duration? elapsed,
   }) {
     if (equation.trim().isEmpty) {
       throw FormulaException(
@@ -486,7 +543,13 @@ class FormulaEngine {
       // cycle through the loop's outer catch, without invalidating the reading
       // or recording a fault: the previous value stayed on the gauge,
       // presented as current.
-      final prepared = _preprocess(equation, dataBytes, requester, now);
+      final prepared = _preprocess(
+        equation,
+        dataBytes,
+        requester,
+        now,
+        elapsed,
+      );
       result = _reduce(prepared, equation);
     } on _ArithmeticFailure catch (e) {
       throw FormulaException(e.message, equation, issue: e.issue);
@@ -597,8 +660,9 @@ class FormulaEngine {
     String equation,
     List<int> bytes,
     Pid? requester,
-    DateTime? now,
-  ) {
+    DateTime? now, [
+    Duration? elapsed,
+  ]) {
     var s = equation.replaceAll(' ', '').toUpperCase();
     // Normalise the Unicode minus that sneaks in from copy-pasted formulas.
     s = s.replaceAll('−', '-');
@@ -631,7 +695,14 @@ class FormulaEngine {
         );
       }
       // `now == null` is the authoring path, which has no measurements to age.
-      if (now != null && _expired(now, baro.at, maxCacheAge)) {
+      if (now != null &&
+          _expired(
+            now,
+            baro.at,
+            maxCacheAge,
+            elapsed: elapsed,
+            receivedElapsed: baro.receivedElapsed,
+          )) {
         throw FormulaException(
           '大氣壓力量測值已過期，無法計算',
           equation,
@@ -660,6 +731,7 @@ class FormulaEngine {
         requester,
         key,
         now: now ?? _pidCache[_cacheKey(requester.header, key)]?.at,
+        elapsed: elapsed,
       );
       // Substituting zero for a PID that has not been read yet is how a boost
       // gauge ends up displaying raw manifold pressure: `A-VAL{0133}` quietly

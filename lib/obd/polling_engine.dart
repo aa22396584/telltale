@@ -3898,12 +3898,18 @@ class PollingEngine {
           bytes,
           requester: sibling,
           now: now,
+          elapsed: _freshness.elapsed,
         );
         if (!value.isFinite) {
           _invalidate(sibling.id, PidFault.formulaError);
           continue;
         }
-        formula.cachePidValue(sibling, value, now);
+        formula.cachePidValue(
+          sibling,
+          value,
+          now,
+          receivedElapsed: _freshness.elapsed,
+        );
         _readings[sibling.id] = Reading(
           pid: sibling,
           value: value,
@@ -4182,6 +4188,7 @@ class PollingEngine {
           bytes,
           requester: request.pid,
           now: now,
+          elapsed: _freshness.elapsed,
         );
         // Non-finite results are not numbers. Finite values outside a
         // catalog or gauge range stay visible as outliers (USABILITY-R2);
@@ -4191,7 +4198,12 @@ class PollingEngine {
           _invalidate(request.pid.id, PidFault.formulaError);
           continue;
         }
-        formula.cachePidValue(request.pid, value, now);
+        formula.cachePidValue(
+          request.pid,
+          value,
+          now,
+          receivedElapsed: _freshness.elapsed,
+        );
         // `BARO` is the one formula input with no byte of its own to bind to,
         // so it has to be routed here from the PID that measures it. Without
         // this, removing the sea-level default would leave every BARO formula
@@ -4199,7 +4211,12 @@ class PollingEngine {
         // which is better but still not the fix.
         if (request.pid.modeAndPid.toUpperCase() ==
             PidLibrary.barometricPressure.modeAndPid) {
-          formula.setBaroPressure(request.pid, value, now);
+          formula.setBaroPressure(
+            request.pid,
+            value,
+            now,
+            receivedElapsed: _freshness.elapsed,
+          );
         }
         _readings[request.pid.id] = Reading(
           pid: request.pid,
