@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/polling_engine.dart';
+import 'package:torque_obd/obd/telemetry.dart';
 
 import '../support/fake_elm327.dart';
 
@@ -29,6 +30,12 @@ int nearestRank(List<int> sortedAscending, double q) {
   return sortedAscending[rank - 1];
 }
 
+/// A snapshot that still contains the previous RPM is not a new acquisition.
+bool isFreshAcquisition(Reading reading, DateTime? previous) {
+  if (previous == null) return true;
+  return reading.timestamp.isAfter(previous);
+}
+
 void main() {
   test('software acquisition records observations and refuses an empty run', () async {
     final transport = FakeElm327(
@@ -42,6 +49,7 @@ void main() {
             '0100': [0x41, 0x00, 0xBE, 0x1F, 0xA8, 0x13],
             '010C': [0x41, 0x0C, 0x1A, 0xF8],
             '010D': [0x41, 0x0D, 0x32],
+            '015E': [0x41, 0x5E, 0x00, 0x14],
           },
         ),
       ],
@@ -61,11 +69,17 @@ void main() {
     engine.start();
 
     final stamps = <DateTime>[];
+    final faulted = <String>{};
+    DateTime? lastRpmAt;
     await for (final snapshot in engine.snapshots.timeout(
       const Duration(seconds: 20),
     )) {
-      if (!snapshot.readings.containsKey(PidLibrary.engineRpm.id)) continue;
-      stamps.add(DateTime.now());
+      faulted.addAll(snapshot.faults.keys);
+      final reading = snapshot.readings[PidLibrary.engineRpm.id];
+      if (reading == null) continue;
+      if (!isFreshAcquisition(reading, lastRpmAt)) continue;
+      lastRpmAt = reading.timestamp;
+      stamps.add(reading.timestamp);
       if (stamps.length >= _minimumObservations) break;
     }
 
@@ -98,11 +112,16 @@ void main() {
         'p95': nearestRank(gaps, 0.95),
         'p99': nearestRank(gaps, 0.99),
       },
-      'errors': 0,
+      'errors': faulted.length,
     };
 
     expect(nearestRank(gaps, 0.50), greaterThanOrEqualTo(0));
     expect(report['observations'], _minimumObservations);
+    expect(
+      report['errors'],
+      0,
+      reason: 'a clean software lane must not hide poller faults',
+    );
 
     final out = Platform.environment['PERF_OBD_OUTPUT'];
     if (out != null && out.isNotEmpty) {
@@ -115,5 +134,31 @@ void main() {
 
   test('nearest-rank refuses an empty sample list', () {
     expect(() => nearestRank(const [], 0.5), throwsStateError);
+  });
+
+  test('a reused RPM timestamp is not a new acquisition', () {
+    const pid = PidLibrary.engineRpm;
+    final at = DateTime(2026, 9, 9, 1);
+    final first = Reading(
+      pid: pid,
+      value: 1724,
+      rawBytes: const [0x1A, 0xF8],
+      timestamp: at,
+    );
+    final echo = Reading(
+      pid: pid,
+      value: 1724,
+      rawBytes: const [0x1A, 0xF8],
+      timestamp: at,
+    );
+    final later = Reading(
+      pid: pid,
+      value: 1800,
+      rawBytes: const [0x1C, 0x20],
+      timestamp: at.add(const Duration(milliseconds: 50)),
+    );
+    expect(isFreshAcquisition(first, null), isTrue);
+    expect(isFreshAcquisition(echo, first.timestamp), isFalse);
+    expect(isFreshAcquisition(later, first.timestamp), isTrue);
   });
 }
