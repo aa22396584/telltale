@@ -317,15 +317,70 @@ void main() {
         FormulaIssue.unparsableTerm,
       );
       expect(
-        thrownBy(() => engine.evaluateBytes('SIGNED8(A)', const [255])).issue,
-        FormulaIssue.unsupportedConstruct,
-      );
-      expect(
         engine.evaluateBytes('ABS(SIGNED16(A))', const [255]),
         closeTo(255.0, 1e-9),
       );
       expect(
         engine.evaluateBytes('SIGNED16((A-1))', const [0]),
+        closeTo(-1.0, 1e-9),
+      );
+    });
+
+    test('SIGNED8() is 8-bit two\'s complement, same as SIGNED not SIGNED16', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(engine.evaluateBytes('SIGNED8(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('SIGNED8(127)', const []),
+        closeTo(127.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8(128)', const []),
+        closeTo(-128.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8(255)', const []),
+        closeTo(-1.0, 1e-9),
+      );
+      // Low 8 bits of 256 are 0. Answering 256 would not be 8-bit.
+      expect(
+        engine.evaluateBytes('SIGNED8(256)', const []),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED(A)', const [255]),
+        closeTo(-1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8(A)', const [255]),
+        closeTo(-1.0, 1e-9),
+      );
+      // Wiki: SIGNED8 is the same as SIGNED, not 16-bit SIGNED16.
+      expect(
+        engine.evaluateBytes('SIGNED16(A)', const [255]),
+        closeTo(255.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2SIGNED8(0)', const [])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('SIGNED8(0)A', const [5])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        engine.evaluateBytes('ABS(SIGNED8(A))', const [255]),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('SIGNED8((A-1))', const [0]),
         closeTo(-1.0, 1e-9),
       );
     });
