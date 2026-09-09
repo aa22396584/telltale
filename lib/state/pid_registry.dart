@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../obd/pid/formula_engine.dart';
 import '../obd/pid/pid.dart';
 import '../obd/pid/pid_library.dart';
 import '../obd/polling_engine.dart';
@@ -46,7 +47,12 @@ class PidRegistry extends Notifier<List<Pid>> {
         // changed between builds, took the whole PID list and the screens
         // built on it down with it.
         if (decoded is! Map<String, dynamic>) continue;
-        custom.add(Pid.fromJson(decoded));
+        final pid = Pid.fromJson(decoded);
+        // Editor and CSV already share FormulaEngine.preflight. Restore
+        // used not to, so A/0 and INT16(A:B) survived a restart and reached
+        // the poller. Skip them in memory; do not rewrite storage.
+        if (FormulaEngine.preflight(pid.equation) != null) continue;
+        custom.add(pid);
       } on Object {
         // A corrupt entry should not cost the user their whole PID list.
         continue;
@@ -123,6 +129,9 @@ class PidRegistry extends Notifier<List<Pid>> {
     if (index < 0) return const PidMutationOutcome.noChange();
 
     final custom = replacement.copyWith(isCustom: true);
+    if (FormulaEngine.preflight(custom.equation) != null) {
+      return const PidMutationOutcome.noChange();
+    }
     final replacementId = Pid.canonicalId(custom.id);
     final collision = state.indexWhere(
       (pid) =>
@@ -168,6 +177,7 @@ class PidRegistry extends Notifier<List<Pid>> {
 
     for (final pid in pids) {
       final custom = pid.copyWith(isCustom: true);
+      if (FormulaEngine.preflight(custom.equation) != null) continue;
       // Two rows in one file claiming the same identity is a mistake in the
       // file, not an instruction. The first is taken and the rest are
       // reported, because silently keeping the last one makes which formula
