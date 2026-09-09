@@ -2,8 +2,9 @@
 """#70 software-lane evidence gate.
 
 Runs the production PollingEngine measurement (Dart) and refuses a missing,
-skipped, or zero-observation report. Physical-adapter and competitor lanes
-are not implemented here and must not be reported as PASS.
+skipped, or zero-observation report. `--ui-profile`, `--competitor` and
+`--physical-adapter` fail closed without an identified device and must not
+be reported as PASS.
 """
 
 from __future__ import annotations
@@ -216,19 +217,91 @@ def validate_ui_profile_report(report: object) -> dict:
     raise GateError("ui-profile lane is not-run without an identified device")
 
 
+def validate_competitor_report(report: object) -> dict:
+    if not isinstance(report, dict):
+        raise GateError("competitor report is not an object")
+    if report.get("lane") != "competitor":
+        raise GateError("a software report is not a competitor lane")
+    device = report.get("device")
+    if not isinstance(device, str) or not device.strip():
+        raise GateError("competitor without an identified device is not PASS")
+    raise GateError("competitor lane is not-run without an identified device")
+
+
+def validate_physical_adapter_report(report: object) -> dict:
+    if not isinstance(report, dict):
+        raise GateError("physical-adapter report is not an object")
+    if report.get("lane") != "physical-adapter":
+        raise GateError("a software report is not a physical-adapter lane")
+    device = report.get("device")
+    if not isinstance(device, str) or not device.strip():
+        raise GateError("physical-adapter without an identified device is not PASS")
+    raise GateError("physical-adapter lane is not-run without an identified device")
+
+
+def _not_run_lane(output: Path, *, filename: str, message: str) -> int:
+    output.mkdir(parents=True, exist_ok=True)
+    stale = output / filename
+    if stale.exists():
+        stale.unlink()
+    print(message, file=sys.stderr)
+    return 2
+
+
+_NOT_RUN_LANES = {
+    "ui-profile": "ui-profile.json",
+    "competitor": "competitor.json",
+    "physical-adapter": "physical-adapter.json",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--software", action="store_true")
     parser.add_argument("--ui-profile", action="store_true")
+    parser.add_argument("--competitor", action="store_true")
+    parser.add_argument("--physical-adapter", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
-    if args.ui_profile:
+    chosen = [
+        name
+        for name, on in (
+            ("software", args.software),
+            ("ui-profile", args.ui_profile),
+            ("competitor", args.competitor),
+            ("physical-adapter", args.physical_adapter),
+        )
+        if on
+    ]
+    if len(chosen) > 1:
         args.output.mkdir(parents=True, exist_ok=True)
-        stale = args.output / "ui-profile.json"
-        if stale.exists():
-            stale.unlink()
-        print("ui-profile lane is not-run without an identified device", file=sys.stderr)
+        for name in chosen:
+            filename = _NOT_RUN_LANES.get(name)
+            if filename is None:
+                continue
+            stale = args.output / filename
+            if stale.exists():
+                stale.unlink()
+        print("lane flags are mutually exclusive", file=sys.stderr)
         return 2
+    if args.ui_profile:
+        return _not_run_lane(
+            args.output,
+            filename="ui-profile.json",
+            message="ui-profile lane is not-run without an identified device",
+        )
+    if args.competitor:
+        return _not_run_lane(
+            args.output,
+            filename="competitor.json",
+            message="competitor lane is not-run without an identified device",
+        )
+    if args.physical_adapter:
+        return _not_run_lane(
+            args.output,
+            filename="physical-adapter.json",
+            message="physical-adapter lane is not-run without an identified device",
+        )
     if not args.software:
         print("physical/competitor lanes are not-run in this leftover", file=sys.stderr)
         return 2
