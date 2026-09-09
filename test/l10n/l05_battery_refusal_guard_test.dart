@@ -70,10 +70,11 @@ import '../support/dart_source_reader.dart';
 /// guard that fails on work nobody has done yet gets an exception list rather
 /// than a fix:
 ///
-///   * `lib/state/pid_registry.dart` — `PidImportOutcome.describe` composes
-///     the CSV-import snackbar out of Chinese sentence fragments joined with
-///     `、`. That is a real defect of the same family, on the PID import path
-///     rather than this screen's refusal path, and it is a slice of its own.
+///   * `lib/state/pid_registry.dart` — `PidImportOutcome.describe` used to
+///     compose the CSV-import snackbar out of Chinese sentence fragments.
+///     That snack is `pidImportOutcomeText` now. This comment stays so a
+///     revert of the words back into the outcome object is a documented
+///     regression.
 ///   * `powertrain_battery_catalog_screen.dart`'s install catch now maps
 ///     `PowertrainProfileInstallIssue` through `powertrainInstallIssueText`.
 ///     The previous `l10n.powertrainInstallFailed(error.message)` interpolation

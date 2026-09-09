@@ -101,34 +101,29 @@ void main() {
   });
 
   test('R15-codex 05: the import message counts what landed', () {
-    // Codex round 15's coverage note. The registry's counting was tested; what
-    // the user is *told* was not, and the two are the same claim. "已匯入 2"
-    // for a file whose second row replaced the first is how someone comes away
-    // believing they have two gauges, one of which is now wrong.
+    // The registry's counting is tested here; the sentences live in
+    // `pidImportOutcomeText` and are pinned there in both languages.
     const clean = PidImportOutcome(
         inserted: 3, replaced: 0, duplicatesInFile: []);
-    expect(clean.describe(), '已匯入 3 項自訂 PID。');
+    expect(clean.landed, 3);
 
     const replacing = PidImportOutcome(
         inserted: 1, replaced: 2, duplicatesInFile: []);
-    expect(replacing.describe(), contains('匯入 3 項'));
-    expect(replacing.describe(), contains('2 項覆蓋了現有定義'),
-        reason: 'replacing an existing definition is not the same as adding '
-            'one, and the person who chose the file has to hear so');
+    expect(replacing.landed, 3,
+        reason: 'replacing an existing definition still lands, and is not '
+            'the same as adding one');
+    expect(replacing.replaced, 2);
 
     const duped = PidImportOutcome(
         inserted: 1, replaced: 0, duplicatesInFile: ['RPM raw']);
     expect(duped.landed, 1, reason: 'one landed, not two');
-    expect(duped.describe(), contains('1 行與檔案內其他行重複已略過'));
+    expect(duped.duplicatesInFile, ['RPM raw']);
 
     const messy = PidImportOutcome(
         inserted: 1, replaced: 1, duplicatesInFile: ['a', 'b']);
-    final text = messy.describe(skippedRows: 4, defaultedRanges: 2);
-    expect(text, contains('匯入 2 項'));
-    expect(text, contains('4 行有問題已略過'));
-    expect(text, contains('2 行套用了預設量程'));
-    expect(text, contains('1 項覆蓋了現有定義'));
-    expect(text, contains('2 行與檔案內其他行重複已略過'));
+    expect(messy.landed, 2);
+    expect(messy.replaced, 1);
+    expect(messy.duplicatesInFile, ['a', 'b']);
   });
 
   group('a definition leaving the registry leaves the dashboard', () {

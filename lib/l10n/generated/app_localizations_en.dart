@@ -1381,6 +1381,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pidImportNothingToImport => 'No definitions to import.';
 
   @override
+  String pidImportLandedClean(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count custom PIDs.',
+      one: 'Imported 1 custom PID.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pidImportLandedWithNotes(int count, String notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count items, $notes.',
+      one: 'Imported 1 item, $notes.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pidImportNoteSkippedRows(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows had problems and were skipped',
+      one: '1 row had problems and was skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pidImportNoteDefaultedRanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows used the default gauge range',
+      one: '1 row used the default gauge range',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pidImportNoteReplaced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items replaced existing definitions',
+      one: '1 item replaced an existing definition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pidImportNoteDuplicatesInFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows duplicated another row in the file and were skipped',
+      one: '1 row duplicated another row in the file and was skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pidImportPickerFailed => 'Could not open the file picker.';
 
   @override

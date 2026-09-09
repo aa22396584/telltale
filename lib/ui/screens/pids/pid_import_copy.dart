@@ -13,6 +13,8 @@ library;
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../obd/pid/pid_csv.dart';
+import '../../../state/pid_mutation_lock.dart';
+import '../../../state/pid_registry.dart';
 import 'pid_formula_copy.dart';
 import 'pid_rejection_copy.dart';
 
@@ -59,20 +61,12 @@ String pidCsvDiagnosticText(
           ? ''
           : pidRejectionText(l10n, diagnostic.rejection!),
     ),
-    // **Reaches no reader today, and that is a deliberate hold rather than an
-    // oversight.** `rowRangeDefaulted` is only ever a warning;
-    // `lib/ui/screens/pids/pid_manager_screen.dart` renders `errors.first` and
-    // passes `warnings.length` into `PidImportOutcome.describe`, so the line
-    // number and the substituted bounds this arm formats never reach a screen.
-    //
-    // The arm cannot simply be deleted: the switch is exhaustive with no
-    // default, and `PidCsvIssue.rowRangeDefaulted` is a value the parser
-    // really produces (`test/pid_csv_test.dart` drives it). Wiring it in is
-    // the other option and is worse *in this slice*: `PidImportOutcome.describe`
-    // is still Traditional Chinese, so appending a translated per-row clause
-    // to it ships a half-English snackbar — a regression that is real, traded
-    // for one that is only unrealised copy. Both halves move together, in the
-    // slice that translates `describe`.
+    // **Counted in the snack, not quoted per row.** `rowRangeDefaulted` is
+    // only ever a warning; the manager screen renders `errors.first` and
+    // passes `warnings.length` into [pidImportOutcomeText], so the line
+    // number and substituted bounds this arm formats still do not reach a
+    // screen. The arm cannot be deleted: the switch is exhaustive and the
+    // parser really produces the value.
     PidCsvIssue.rowRangeDefaulted => l10n.pidImportRowRangeDefaulted(
       diagnostic.lineNumber ?? 0,
       diagnostic.minValue ?? 0,
@@ -87,4 +81,34 @@ String pidCsvDiagnosticText(
                 l10n.pidFormulaUnidentified,
     ),
   };
+}
+
+/// The snack after a CSV import, in the reader's language.
+///
+/// Counts are data on [PidImportOutcome]; the words used to live there too, in
+/// Traditional Chinese joined with `、`, so an English import snackbar still
+/// said 「已匯入 3 項自訂 PID。」 (ImL1s/telltale#45).
+String pidImportOutcomeText(
+  AppLocalizations l10n,
+  PidImportOutcome outcome, {
+  int skippedRows = 0,
+  int defaultedRanges = 0,
+}) {
+  if (outcome.failure == PidMutationFailure.locked) {
+    return l10n.telemetryBlockedByRecorder;
+  }
+  final notes = [
+    if (skippedRows > 0) l10n.pidImportNoteSkippedRows(skippedRows),
+    if (defaultedRanges > 0) l10n.pidImportNoteDefaultedRanges(defaultedRanges),
+    if (outcome.replaced > 0) l10n.pidImportNoteReplaced(outcome.replaced),
+    if (outcome.duplicatesInFile.isNotEmpty)
+      l10n.pidImportNoteDuplicatesInFile(outcome.duplicatesInFile.length),
+  ];
+  if (notes.isEmpty) {
+    return l10n.pidImportLandedClean(outcome.landed);
+  }
+  return l10n.pidImportLandedWithNotes(
+    outcome.landed,
+    notes.join(l10n.pidListSeparator),
+  );
 }
