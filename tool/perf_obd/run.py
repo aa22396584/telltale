@@ -20,6 +20,9 @@ class GateError(Exception):
     """Evidence is not an honest software-lane pass."""
 
 
+REQUIRED_MINIMUM = 20
+
+
 def validate_report(report: object) -> dict:
     if not isinstance(report, dict):
         raise GateError("report is not an object")
@@ -30,11 +33,19 @@ def validate_report(report: object) -> dict:
     if report.get("quantile") != "nearest-rank":
         raise GateError("quantile method is missing or not nearest-rank")
     observations = report.get("observations")
-    minimum = report.get("minimumObservations")
     if not isinstance(observations, int) or observations <= 0:
         raise GateError("zero observations are not PASS")
-    if not isinstance(minimum, int) or observations < minimum:
+    if observations < REQUIRED_MINIMUM:
         raise GateError("inadequate observations are not PASS")
+    interarrival = report.get("interarrivalMs")
+    if not isinstance(interarrival, dict):
+        raise GateError("interarrivalMs is missing")
+    for key in ("n", "p50", "p95", "p99"):
+        value = interarrival.get(key)
+        if not isinstance(value, int):
+            raise GateError(f"interarrivalMs.{key} is missing")
+    if interarrival["n"] < REQUIRED_MINIMUM - 1:
+        raise GateError("interarrival sample count is inadequate")
     if report.get("errors") not in (0, 0.0):
         raise GateError("errors are not zero")
     return report

@@ -37,6 +37,14 @@ class ValidateReportTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_report(_ok(observations=3))
 
+    def test_a_self_reported_minimum_cannot_lower_the_floor(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(observations=1, minimumObservations=1))
+
+    def test_missing_interarrival_quantiles_fail(self):
+        with self.assertRaises(GateError):
+            validate_report(_ok(interarrivalMs={"n": 19}))
+
     def test_a_python_calculation_is_not_the_engine(self):
         with self.assertRaises(GateError):
             validate_report(_ok(engine="python-arithmetic"))
