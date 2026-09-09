@@ -14,10 +14,13 @@ import 'package:flutter/widgets.dart'
     show AppLifecycleListener, AppLifecycleState, WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/elapsed_realtime.dart';
 import '../core/field_evidence/evidence_text.dart';
 import '../core/field_evidence/platform_metadata.dart';
 import '../core/network/android_wifi_route_binder.dart';
+import '../core/serial/spp_serial_platform.dart';
 import '../obd/dtc/dtc.dart';
+import '../obd/elapsed_clock.dart';
 import '../obd/elm327_client.dart';
 import '../obd/pid/pid.dart';
 import '../obd/freeze_frame.dart';
@@ -35,7 +38,6 @@ import '../obd/transport/demo_transport.dart';
 import '../obd/transport/obd_transport.dart';
 import '../obd/transport/serial_transport.dart';
 import '../obd/transport/wifi_transport.dart';
-import '../core/serial/spp_serial_platform.dart';
 import 'manual_command_refusal.dart';
 import 'pid_registry.dart';
 import 'powertrain_battery_profiles.dart';
@@ -1222,7 +1224,18 @@ class ObdSession extends Notifier<ObdConnectionState> {
     // the record at the tap means even those attempts come back with
     // something: which transport, which address, which tier, and how long each
     // one waited.
-    final client = Elm327Client(transport, transcript: _attemptTranscript!);
+    final elapsedCache = NativeElapsedCache(
+      readMs: Platform.isAndroid
+          ? ElapsedRealtimePlatform.elapsedRealtimeMs
+          : null,
+    );
+    await elapsedCache.sync();
+    final client = Elm327Client(
+      transport,
+      transcript: _attemptTranscript!,
+      elapsed: () => elapsedCache.elapsed,
+      agingElapsed: () => elapsedCache.agingElapsed,
+    );
     _client = client;
 
     final steps = <InitProgress>[];
@@ -1306,7 +1319,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
 
     _completeEvidence(client, outcome: 'connected');
 
-    final engine = PollingEngine(client);
+    final engine = PollingEngine(client, elapsedClock: elapsedCache);
     engine.shouldContinue = () => _foreground && !_superseded(generation);
     // The same question, asked where the bytes actually leave. `shouldContinue`
     // guards the loop's decisions; this guards the wire, which is the only

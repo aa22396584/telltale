@@ -5,6 +5,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.os.StatFs
+import android.os.SystemClock
 import android.util.Log
 import io.flutter.BuildConfig as FlutterBuildConfig
 import io.flutter.FlutterInjector
@@ -130,6 +131,17 @@ class MainActivity : FlutterActivity() {
                         android.content.pm.PackageManager.FEATURE_WATCH,
                     ),
                 )
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            ELAPSED_REALTIME_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                // Includes deep sleep. Dart Stopwatch / uptimeMillis do not.
+                "elapsedRealtimeMs" -> result.success(SystemClock.elapsedRealtime())
                 else -> result.notImplemented()
             }
         }
@@ -418,6 +430,7 @@ class MainActivity : FlutterActivity() {
             "com.cbstudio.telltale/app_storage_capacity"
         const val WIFI_ROUTE_CHANNEL = "com.cbstudio.telltale/wifi_route"
         const val SCREEN_WAKE_CHANNEL = "com.cbstudio.telltale/screen_wake"
+        const val ELAPSED_REALTIME_CHANNEL = "com.cbstudio.telltale/elapsed_realtime"
         const val FORM_FACTOR_CHANNEL = "com.cbstudio.telltale/form_factor"
         const val UNKNOWN = "unknown"
     }
