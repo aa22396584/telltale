@@ -8475,7 +8475,7 @@ void main() {
       await expectLater(
         clear,
         throwsA(isA<DtcReadException>()
-            .having((e) => e.message, 'message', contains('不要直接再清除一次'))
+            .having((e) => e.message, 'message', contains('do not send another clear'))
             .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isTrue)),
         reason: 'the command is on the wire; a second tap costs a drive cycle '
             'whatever the app was doing when the answer failed to arrive',
