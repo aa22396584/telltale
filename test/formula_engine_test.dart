@@ -120,6 +120,15 @@ void main() {
       expect(engine.evaluate('LOG10(A)', '41 00 64'), closeTo(2.0, 1e-6));
     });
 
+    test('SQRT()', () {
+      expect(engine.evaluateBytes('SQRT(A)', const [16]), closeTo(4.0, 1e-9));
+      expect(engine.evaluateBytes('SQRT(0)', const []), closeTo(0.0, 1e-9));
+      expect(
+        engine.evaluateBytes('ABS(SQRT(A))', const [9]),
+        closeTo(3.0, 1e-9),
+      );
+    });
+
     test('MIN() and MAX() take the wiki colon form', () {
       expect(engine.evaluateBytes('MIN(A:B)', const [20, 5]), closeTo(5.0, 1e-9));
       expect(engine.evaluateBytes('MAX(A:B)', const [20, 5]), closeTo(20.0, 1e-9));
@@ -575,6 +584,12 @@ void main() {
       expect(e.issue, FormulaIssue.byteBeyondResponse);
       expect(e.byteLetter, 'E');
       expect(e.byteCount, 3);
+    });
+
+    test('SQRT of a negative argument carries the argument', () {
+      final e = thrownBy(() => engine.evaluateBytes('SQRT(A-128)', const [0]));
+      expect(e.issue, FormulaIssue.sqrtNegativeArgument);
+      expect(e.argument, -128.0);
     });
 
     test('LOG10 of a non-positive argument carries the argument', () {

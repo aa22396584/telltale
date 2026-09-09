@@ -2,13 +2,13 @@
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
 /// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `VAL{}`,
-/// `BARO`, `ABS()`, `LOG10()`, `MIN()` and `MAX()` on top. Accepting it means
+/// `BARO`, `ABS()`, `LOG10()`, `SQRT()`, `MIN()` and `MAX()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
 ///      non-arithmetic constructs — `SIGNED()`, `VAL{}`, `BARO`, `ABS()`,
-///      `LOG10()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
+///      `LOG10()`, `SQRT()`, `MIN()`, `MAX()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
 library;
@@ -59,6 +59,10 @@ enum FormulaIssue {
   /// `LOG10` of zero or a negative number, which has no value. Carries the
   /// argument.
   log10NonPositiveArgument,
+
+  /// `SQRT` of a negative number, which has no real value. Carries the
+  /// argument. Zero is allowed.
+  sqrtNegativeArgument,
 
   /// The arithmetic produced NaN or an infinity, at the end or part-way
   /// through. Either way there is no reading, and the remedy is the same.
@@ -304,6 +308,7 @@ class FormulaEngine {
   static final RegExp _signedPattern = RegExp(r'SIGNED\(([A-N])\)');
   static final RegExp _absPattern = RegExp(r'ABS\(([^()]+)\)');
   static final RegExp _log10Pattern = RegExp(r'LOG10\(([^()]+)\)');
+  static final RegExp _sqrtPattern = RegExp(r'SQRT\(([^()]+)\)');
 
   /// Sentinels that stand in for function names while `A`..`N` are substituted.
   /// They must contain no A-N letters of their own, hence control characters.
@@ -311,6 +316,7 @@ class FormulaEngine {
   static const String _log10Sentinel = '\u0002(';
   static const String _minSentinel = '\u0003(';
   static const String _maxSentinel = '\u0004(';
+  static const String _sqrtSentinel = '\u0005(';
 
   /// Characters that, when they precede a `-`, mark it as unary rather than
   /// a binary subtraction.
@@ -696,6 +702,7 @@ class FormulaEngine {
     s = s
         .replaceAll('ABS(', _absSentinel)
         .replaceAll('LOG10(', _log10Sentinel)
+        .replaceAll('SQRT(', _sqrtSentinel)
         .replaceAllMapped(
           _namedCallPattern('MIN'),
           (m) => '${m.group(1)}$_minSentinel',
@@ -733,6 +740,7 @@ class FormulaEngine {
     s = s
         .replaceAll(_absSentinel, 'ABS(')
         .replaceAll(_log10Sentinel, 'LOG10(')
+        .replaceAll(_sqrtSentinel, 'SQRT(')
         .replaceAll(_minSentinel, 'MIN(')
         .replaceAll(_maxSentinel, 'MAX(');
 
@@ -776,6 +784,17 @@ class FormulaEngine {
         }
         return math.log(v) / math.ln10;
       });
+      s = _applyFunction(s, _sqrtPattern, equation, (v) {
+        if (v < 0) {
+          throw FormulaException(
+            'SQRT 的引數必須大於或等於 0（收到 $v）',
+            equation,
+            issue: FormulaIssue.sqrtNegativeArgument,
+            argument: v,
+          );
+        }
+        return math.sqrt(v);
+      });
       s = _applyBinaryFunction(
         s,
         'MIN',
@@ -801,7 +820,7 @@ class FormulaEngine {
   /// how people write. Reducing the inner group turns it back into something
   /// the ordinary pass matches on the next turn.
   static final RegExp _functionWrappedParens =
-      RegExp(r'(ABS|LOG10)\(\s*(\([^()]*\))\s*\)');
+      RegExp(r'(ABS|LOG10|SQRT)\(\s*(\([^()]*\))\s*\)');
 
   String _unwrapFunctionParens(String input, String source) {
     var s = input;
@@ -928,6 +947,7 @@ class FormulaEngine {
   static bool _innerStillHasFunction(String inner) =>
       inner.contains('ABS(') ||
       inner.contains('LOG10(') ||
+      inner.contains('SQRT(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(');
 
@@ -1203,6 +1223,7 @@ class FormulaEngine {
       issue == FormulaIssue.divisionByZero ||
       issue == FormulaIssue.moduloByZero ||
       issue == FormulaIssue.log10NonPositiveArgument ||
+      issue == FormulaIssue.sqrtNegativeArgument ||
       issue == FormulaIssue.resultNotFinite;
 
   static FormulaException? _evaluateAuthoring(
@@ -1306,7 +1327,7 @@ class _Operator {
 /// as arity-2 colon or comma. INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|SIN|COS|TAN|LOG1P|LOG|'
-  r'SQRT|INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
+  r'INT32|INT24|INT16|INT|SIGNED32|SIGNED24|SIGNED16|SIGNED8|'
   r'FLOAT64|FLOAT32|BIT|LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );

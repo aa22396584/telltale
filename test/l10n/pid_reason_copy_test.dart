@@ -60,7 +60,7 @@ const _formulaEnglish = <FormulaIssue, String>{
   FormulaIssue.unparsableTerm:
       '“A@B” is not a number, an operator, or a name this editor understands.',
   FormulaIssue.functionNestingTooDeep:
-      'ABS() and LOG10() are nested too deeply to evaluate. Simplify the '
+      'ABS(), LOG10() and SQRT() are nested too deeply to evaluate. Simplify the '
       'formula.',
   FormulaIssue.parenthesisNestingTooDeep:
       'The brackets are nested too deeply to evaluate. Simplify the formula.',
@@ -68,6 +68,8 @@ const _formulaEnglish = <FormulaIssue, String>{
   FormulaIssue.moduloByZero: 'The formula takes a remainder modulo zero.',
   FormulaIssue.log10NonPositiveArgument:
       'LOG10 needs an argument greater than 0, and this one came out as -3.0.',
+  FormulaIssue.sqrtNegativeArgument:
+      'SQRT needs an argument of 0 or greater, and this one came out as -3.0.',
   FormulaIssue.resultNotFinite:
       'The arithmetic produced no usable number, so there is no reading to '
       'show.',
@@ -105,11 +107,12 @@ const _formulaChinese = <FormulaIssue, String>{
   FormulaIssue.emptySubExpression: '公式有一段是空的 —— 運算子後面沒有東西，或括號裡沒有內容。',
   FormulaIssue.unbalancedParentheses: '括號沒有配對：每一個 ( 都需要一個對應的 )。',
   FormulaIssue.unparsableTerm: '「A@B」不是數值、運算子，也不是這個編輯器認得的名稱。',
-  FormulaIssue.functionNestingTooDeep: 'ABS() 與 LOG10() 巢狀太深，無法求值。請簡化公式。',
+  FormulaIssue.functionNestingTooDeep: 'ABS()、LOG10() 與 SQRT() 巢狀太深，無法求值。請簡化公式。',
   FormulaIssue.parenthesisNestingTooDeep: '括號巢狀太深，無法求值。請簡化公式。',
   FormulaIssue.divisionByZero: '公式除以零。',
   FormulaIssue.moduloByZero: '公式對零取餘數。',
   FormulaIssue.log10NonPositiveArgument: 'LOG10 的引數必須大於 0，這裡算出來的是 -3.0。',
+  FormulaIssue.sqrtNegativeArgument: 'SQRT 的引數必須大於或等於 0，這裡算出來的是 -3.0。',
   FormulaIssue.resultNotFinite: '這串運算沒有得出可用的數值，因此沒有讀數可顯示。',
   FormulaIssue.byteBeyondResponse: '公式參照位元組 C，但回應只有 2 個位元組。',
   FormulaIssue.baroControllerUnknown: '這裡無法使用 BARO，因為無法判斷指的是哪一個控制器的大氣壓力。',

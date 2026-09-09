@@ -29,6 +29,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `BARO` | identifier, no `(` | Cached ambient pressure for the requesting controller. |
 | `ABS(x)` | unary | Nested past 64 function reductions is `functionNestingTooDeep`. |
 | `LOG10(x)` | unary | Domain error when `x <= 0`. Not `LOG(`. |
+| `SQRT(x)` | unary | Domain error when `x < 0`. Zero is allowed. |
 | `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
 
 Authoring (`FormulaEngine.preflight`) uses stand-in bytes and `VAL`/`BARO`
@@ -42,7 +43,7 @@ These wiki names are detected as `NAME(` and fail as
 are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT` `SIN` `COS` `TAN` `LOG1P`
-`LOG` `SQRT` `INT32` `INT24` `INT16` `INT` `SIGNED32` `SIGNED24` `SIGNED16`
+`LOG` `INT32` `INT24` `INT16` `INT` `SIGNED32` `SIGNED24` `SIGNED16`
 `SIGNED8` `FLOAT64` `FLOAT32` `BIT` `LOOKUP` `CLOSEST` `RANDOM` `BARO()`
 
 `LOG10` is not classified as `LOG`. `SIGNED(A)` is not classified as
