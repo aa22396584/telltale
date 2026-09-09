@@ -8059,7 +8059,7 @@ void main() {
         await expectLater(
           engine.clearDtcs(),
           throwsA(isA<DtcReadException>()
-              .having((e) => e.message, 'message', contains('不要直接再清除一次'))
+              .having((e) => e.message, 'message', contains('do not send another clear'))
               .having((e) => e.repeatWouldHarm, 'repeatWouldHarm', isTrue)),
           reason: 'something on this bus sent the completion byte; the field '
               'guide tells people a live button means nothing was erased, and '
