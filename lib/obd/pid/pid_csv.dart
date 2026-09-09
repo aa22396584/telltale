@@ -228,6 +228,30 @@ abstract final class PidCsv {
     ]);
   }
 
+  /// Torque Pro's eight documented columns, without Telltale-only metadata.
+  ///
+  /// [export] is the lossless machine round-trip. This subset is the
+  /// interchange file: Priority, Redline and Variant are omitted so a
+  /// spreadsheet-safe Torque import cannot be mistaken for an unchanged
+  /// Telltale definition.
+  static const List<String> torqueHeader = [
+    'Name',
+    'ShortName',
+    'ModeAndPID',
+    'Equation',
+    'Min Value',
+    'Max Value',
+    'Units',
+    'OBD Header',
+  ];
+
+  static String exportTorqueSubset(List<Pid> pids) {
+    return _codec.encode(<List<dynamic>>[
+      torqueHeader,
+      for (final pid in pids) pid.toCsvRow().sublist(0, torqueHeader.length),
+    ]);
+  }
+
   /// Emits the canonical export incrementally without a whole-file String.
   static Stream<List<int>> stream(
     Iterable<Pid> pids, {
