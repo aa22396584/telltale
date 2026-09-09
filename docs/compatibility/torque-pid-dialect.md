@@ -4,8 +4,11 @@ This is the compatibility subset `FormulaEngine` actually evaluates. A CSV
 header, a wiki page, or a file Torque Pro can open is not proof that every
 equation in it will compute here.
 
-External qualification against a named Torque Pro build is **not-run**. The
-published reference used to name wiki functions is:
+External qualification against a named Torque Pro build is **not-run**.
+`python3 tool/pid_compat/external_torque.py --output <dir>` deletes a planted
+`external-torque.json` and exits 2. A planted version string is still not PASS;
+this leftover does not execute Torque Pro. The published reference used to name
+wiki functions is:
 
 - https://wiki.torque-bhp.com/view/Equations
 - MediaWiki `oldid=603`, last modified 7 February 2022
