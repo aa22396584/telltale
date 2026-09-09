@@ -313,6 +313,38 @@ class ValidateReportTest(unittest.TestCase):
         self.assertIn("--physical-adapter", text)
         self.assertIn("validate_physical_adapter_report", text)
 
+    def test_combined_lane_flags_are_rejected_and_clean_each_requested_report(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            planted = {
+                "competitor.json": '{"lane":"competitor","device":"planted"}',
+                "physical-adapter.json": (
+                    '{"lane":"physical-adapter","device":"planted"}'
+                ),
+                "ui-profile.json": '{"lane":"ui-profile","device":"planted"}',
+            }
+            for name, body in planted.items():
+                (output / name).write_text(body, encoding="utf-8")
+            self.assertEqual(
+                main(
+                    [
+                        "--competitor",
+                        "--physical-adapter",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "competitor.json").exists())
+            self.assertFalse((output / "physical-adapter.json").exists())
+            self.assertTrue(
+                (output / "ui-profile.json").exists(),
+                msg="a lane that was not requested must not be swept as a side effect",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

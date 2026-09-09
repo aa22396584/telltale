@@ -248,6 +248,13 @@ def _not_run_lane(output: Path, *, filename: str, message: str) -> int:
     return 2
 
 
+_NOT_RUN_LANES = {
+    "ui-profile": "ui-profile.json",
+    "competitor": "competitor.json",
+    "physical-adapter": "physical-adapter.json",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--software", action="store_true")
@@ -256,6 +263,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--physical-adapter", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
+    chosen = [
+        name
+        for name, on in (
+            ("software", args.software),
+            ("ui-profile", args.ui_profile),
+            ("competitor", args.competitor),
+            ("physical-adapter", args.physical_adapter),
+        )
+        if on
+    ]
+    if len(chosen) > 1:
+        args.output.mkdir(parents=True, exist_ok=True)
+        for name in chosen:
+            filename = _NOT_RUN_LANES.get(name)
+            if filename is None:
+                continue
+            stale = args.output / filename
+            if stale.exists():
+                stale.unlink()
+        print("lane flags are mutually exclusive", file=sys.stderr)
+        return 2
     if args.ui_profile:
         return _not_run_lane(
             args.output,
