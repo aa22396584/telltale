@@ -129,8 +129,14 @@ Future<String> _recordShortDemoSession(WidgetTester tester) async {
   expect(sessionId, isNotNull);
   expect(TelemetrySessionReader.isOpaqueId(sessionId!), isTrue);
 
-  await session.disconnect();
-  await tester.pump();
+  // Keep Demo connected. Settings disconnect copy is the leftover
+  // assertion after History; disconnecting here would retitle the
+  // button to Connect and make that wait time out.
+  expect(
+    container.read(obdSessionProvider).phase,
+    ConnectionPhase.connected,
+    reason: 'Demo must stay connected after the recorded session',
+  );
   return sessionId;
 }
 
@@ -282,6 +288,16 @@ void main() {
       expect(find.byType(TelemetrySessionDetailScreen), findsOneWidget);
 
       await _leaveReplayToShell(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MaterialApp)),
+        listen: false,
+      );
+      expect(
+        container.read(obdSessionProvider).phase,
+        ConnectionPhase.connected,
+        reason:
+            'Demo must stay connected after History so Settings can show disconnect copy',
+      );
       await _tapNav(tester, '設定');
       expect(
         await pumpUntil(

@@ -51,6 +51,7 @@ void main() {
       expect(source.contains('中斷連線'), isTrue);
       expect(source.contains('Disconnect'), isTrue);
       expect(source.contains('TelemetryExportSheet'), isFalse);
+      expect(source.contains('ConnectionPhase.connected'), isTrue);
       final demoCall = source.indexOf('await connectDemoRig(tester');
       final recordCall = source.indexOf('await _recordShortDemoSession');
       final historyCall = source.indexOf('await _openHistory');
@@ -61,6 +62,20 @@ void main() {
       expect(historyCall, greaterThan(recordCall));
       expect(exactCall, greaterThan(historyCall));
       expect(disconnectCall, greaterThan(exactCall));
+      final sessionIdAssign = source.indexOf('progress.sessionId');
+      final returnSession = source.indexOf('return sessionId');
+      expect(sessionIdAssign, greaterThan(0));
+      expect(returnSession, greaterThan(sessionIdAssign));
+      final disconnectAfterRecord = source.indexOf(
+        'disconnect()',
+        sessionIdAssign,
+      );
+      expect(
+        disconnectAfterRecord == -1 || disconnectAfterRecord > returnSession,
+        isTrue,
+        reason:
+            'recording helper must keep Demo connected for Settings disconnect copy',
+      );
     },
   );
 
