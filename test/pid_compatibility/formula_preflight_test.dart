@@ -19,11 +19,11 @@ void main() {
     expect(FormulaEngine.preflight('MAX(A,B)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('MAX(A:(B*2))'), isNull);
+    expect(FormulaEngine.preflight('SQRT(A)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
     for (final equation in [
-      'SQRT(A)',
       'INT16(A:B)',
       'LOOKUP(A:0:1=100)',
       'BARO()',
@@ -91,6 +91,10 @@ void main() {
       FormulaEngine.preflight('LOG10(-1)')?.issue,
       FormulaIssue.log10NonPositiveArgument,
     );
+    expect(
+      FormulaEngine.preflight('SQRT(-1)')?.issue,
+      FormulaIssue.sqrtNegativeArgument,
+    );
   });
 
   test('a probe-value domain error is not an import syntax error', () {
@@ -99,6 +103,7 @@ void main() {
     expect(FormulaEngine.preflight('LOG10(A-1)'), isNull);
     expect(FormulaEngine.preflight('1/(A-B)'), isNull);
     expect(FormulaEngine.preflight('LOG10(A-B)'), isNull);
+    expect(FormulaEngine.preflight('SQRT(A-2)'), isNull);
     expect(FormulaEngine.preflight('1/(VAL{010C}-1)'), isNull);
     const wire =
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'

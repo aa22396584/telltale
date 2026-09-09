@@ -1223,6 +1223,7 @@ class FormulaEngine {
       issue == FormulaIssue.divisionByZero ||
       issue == FormulaIssue.moduloByZero ||
       issue == FormulaIssue.log10NonPositiveArgument ||
+      issue == FormulaIssue.sqrtNegativeArgument ||
       issue == FormulaIssue.resultNotFinite;
 
   static FormulaException? _evaluateAuthoring(
