@@ -181,6 +181,7 @@ void main() {
 
       expect(find.text('匯出自訂 PID'), findsOneWidget);
       expect(find.text('匯出 Torque 相容 CSV'), findsOneWidget);
+      expect(find.text('匯出人類可讀 PID 報表'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();

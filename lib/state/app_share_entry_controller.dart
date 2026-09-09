@@ -1,6 +1,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/widgets.dart';
@@ -171,6 +172,24 @@ final class AppShareEntryController {
         subject: shareTorqueSubsetCsvSubjectText(_copy),
         sharePositionOrigin: sharePositionOrigin,
         streamFactory: () => PidCsv.streamTorqueSubset(frozen),
+      ),
+    );
+  }
+
+  /// Labeled human spreadsheet. Not a PID definition file.
+  Future<AppShareOutcome> shareHumanReportCsv({
+    required Iterable<Pid> pids,
+    Rect? sharePositionOrigin,
+  }) {
+    final frozen = List<Pid>.unmodifiable(pids);
+    return _coordinator.share(
+      AppShareRequest(
+        sourceKind: ShareSourceKind.pidCsv,
+        subject: shareHumanReportCsvSubjectText(_copy),
+        sharePositionOrigin: sharePositionOrigin,
+        streamFactory: () async* {
+          yield utf8.encode(PidCsv.exportHumanReport(frozen));
+        },
       ),
     );
   }

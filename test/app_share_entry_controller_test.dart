@@ -189,6 +189,35 @@ void main() {
   );
 
   test(
+    'human report share is labeled and cannot reimport as formulas',
+    () async {
+      final roots = Directory.systemTemp.createTempSync('share-entry-human');
+      addTearDown(() {
+        if (roots.existsSync()) roots.deleteSync(recursive: true);
+      });
+      final mutablePids = [PidLibrary.all.first];
+      final expectedHuman = utf8.encode(
+        PidCsv.exportHumanReport(List.unmodifiable(mutablePids)),
+      );
+      final humanFuture = _invoke(
+        roots,
+        7,
+        (controller) => controller.shareHumanReportCsv(pids: mutablePids),
+        afterAdmission: mutablePids.clear,
+      );
+      final human = await humanFuture;
+      expect(human.bytes, expectedHuman);
+      expect(utf8.decode(human.bytes), contains('Telltale human report'));
+      expect(PidCsv.parse(utf8.decode(human.bytes)).pids, isEmpty);
+      expect(human.request.mimeType, 'text/csv');
+      expect(human.request.subject, 'Telltale human PID report');
+      expect(human.request.subject, isNot('Telltale custom PID definitions'));
+      expect(human.request.subject, isNot('Torque-compatible PID definitions'));
+      expect(human.sourceKind, ShareSourceKind.pidCsv);
+    },
+  );
+
+  test(
     'share-sheet subjects follow the preference at call time, not construction',
     () async {
       final root = Directory.systemTemp.createTempSync('share-locale-pref');
