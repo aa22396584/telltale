@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../obd/pid/formula_engine.dart';
 import '../obd/pid/pid.dart';
 import '../obd/pid/pid_library.dart';
 import '../obd/polling_engine.dart';
@@ -77,6 +78,12 @@ class PidRegistry extends Notifier<List<Pid>> {
     for (final pid in custom) {
       byCanonicalId[Pid.canonicalId(pid.id)] = pid;
     }
+    // Collapse last-wins first, then refuse the winner if the editor could
+    // not save it. Filtering first would drop an unsavable later spelling
+    // and revive the obsolete twin that was no longer driving the gauge.
+    byCanonicalId.removeWhere(
+      (id, pid) => FormulaEngine.preflight(pid.equation) != null,
+    );
     // Storage is not a trusted source for profile PIDs. The former key held
     // full Pid JSON, which would let a tampered preference carry a modified
     // formula past the SHA-256-verified catalog — so it is still ignored and
@@ -123,6 +130,9 @@ class PidRegistry extends Notifier<List<Pid>> {
     if (index < 0) return const PidMutationOutcome.noChange();
 
     final custom = replacement.copyWith(isCustom: true);
+    if (FormulaEngine.preflight(custom.equation) != null) {
+      return const PidMutationOutcome.noChange();
+    }
     final replacementId = Pid.canonicalId(custom.id);
     final collision = state.indexWhere(
       (pid) =>
@@ -168,6 +178,7 @@ class PidRegistry extends Notifier<List<Pid>> {
 
     for (final pid in pids) {
       final custom = pid.copyWith(isCustom: true);
+      if (FormulaEngine.preflight(custom.equation) != null) continue;
       // Two rows in one file claiming the same identity is a mistake in the
       // file, not an instruction. The first is taken and the rest are
       // reported, because silently keeping the last one makes which formula

@@ -71,6 +71,17 @@ void main() {
     expect(FormulaEngine.preflight('LOG10(A)'), isNull);
   });
 
+  test('RANDOM() authoring uses a stand-in, not live entropy', () {
+    expect(FormulaEngine.preflight('RANDOM()'), isNull);
+    for (var i = 0; i < 20; i++) {
+      expect(
+        FormulaEngine.preflight('LOG10(RANDOM()-0.99)'),
+        isNotNull,
+        reason: 'a domain that fails at the 0.5 stand-in is not saveable',
+      );
+    }
+  });
+
   test('SIGNED is not classified as SIGNED8', () {
     expect(FormulaEngine.preflight('SIGNED(A)'), isNull);
   });

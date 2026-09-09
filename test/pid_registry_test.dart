@@ -316,4 +316,112 @@ void main() {
       );
     });
   });
+
+  test('restored preferences cannot land a formula the editor cannot save',
+      () async {
+    // #79.B leftover. Editor and CSV already share FormulaEngine.preflight.
+    // Loading custom_pids_v1 did not, so A/0 and INT16(A:B) survived a restart
+    // and reached the poller without a preview.
+    const good = '{"name":"RPM","shortName":"RPM","modeAndPid":"010C",'
+        '"equation":"((A*256)+B)/4","minValue":0,"maxValue":8000,'
+        '"units":"rpm","header":"7E0","isCustom":true}';
+    const divideByZero = '{"name":"Bad","shortName":"BAD","modeAndPid":"0105",'
+        '"equation":"A/0","minValue":0,"maxValue":100,"units":"°C",'
+        '"header":"7E0","isCustom":true}';
+    const runtimeDomain = '{"name":"Log","shortName":"LOG","modeAndPid":"0104",'
+        '"equation":"LOG10(A-20)","minValue":0,"maxValue":3,"units":"",'
+        '"header":"7E0","isCustom":true}';
+    const unsupported = '{"name":"Int16","shortName":"I16","modeAndPid":"0106",'
+        '"equation":"INT16(A:B)","minValue":0,"maxValue":65535,"units":"",'
+        '"header":"7E0","isCustom":true}';
+
+    final container = await _container({
+      'custom_pids_v1': <String>[good, divideByZero, runtimeDomain, unsupported],
+    });
+    addTearDown(container.dispose);
+
+    final custom = container
+        .read(pidRegistryProvider)
+        .where((p) => p.isCustom)
+        .map((p) => p.equation)
+        .toList();
+    expect(
+      custom,
+      containsAll(['((A*256)+B)/4', 'LOG10(A-20)']),
+      reason: 'a byte-dependent runtime domain still restores',
+    );
+    expect(custom, isNot(contains('A/0')));
+    expect(custom, isNot(contains('INT16(A:B)')));
+  });
+
+  test('an unsavable latest duplicate does not revive the earlier spelling',
+      () async {
+    // Collapse last-wins first. If the later spelling is A/0, dropping it
+    // before collapse would let the earlier `A` drive the gauge again.
+    const stale = '{"name":"RPM stale","shortName":"RPM",'
+        '"modeAndPid":"01 0C","equation":"A","minValue":0,'
+        '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
+    const rejected = '{"name":"RPM bad","shortName":"RPM",'
+        '"modeAndPid":"010C","equation":"A/0","minValue":0,'
+        '"maxValue":8000,"units":"rpm","header":"7E0","isCustom":true}';
+
+    final container = await _container({
+      'custom_pids_v1': <String>[stale, rejected],
+      'active_pid_ids_v1': <String>['custom:7E0:01 0C'],
+    });
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(pidRegistryProvider).where((p) => p.isCustom),
+      isEmpty,
+      reason: 'the definition in effect was unsavable; the obsolete twin stays buried',
+    );
+    expect(
+      container.read(activePidsProvider),
+      equals(PidLibrary.defaultDashboard),
+      reason: 'no custom identity survived, so the layout is the broken-id fallback',
+    );
+  });
+
+  test('upsertAllCustom refuses a formula the editor cannot save', () async {
+    final container = await _container({});
+    addTearDown(container.dispose);
+    final registry = container.read(pidRegistryProvider.notifier);
+
+    const good = Pid(
+      name: 'RPM', shortName: 'RPM', modeAndPid: '010C',
+      equation: '((A*256)+B)/4', minValue: 0, maxValue: 8000, units: 'rpm',
+      header: kDefaultHeader, isCustom: true,
+    );
+    const poison = Pid(
+      name: 'Bad', shortName: 'BAD', modeAndPid: '0105',
+      equation: 'A/0', minValue: 0, maxValue: 100, units: '°C',
+      header: kDefaultHeader, isCustom: true,
+    );
+
+    final mixed = await registry.upsertAllCustom([good, poison]);
+    expect(mixed.inserted, 1);
+    expect(
+      container
+          .read(pidRegistryProvider)
+          .where((p) => p.isCustom)
+          .map((p) => p.equation),
+      ['((A*256)+B)/4'],
+    );
+
+    final replaced = await registry.upsertAllCustom([
+      good.copyWith(equation: 'A/0'),
+    ]);
+    expect(replaced.inserted, 0);
+    expect(replaced.replaced, 0);
+    expect(
+      container
+          .read(pidRegistryProvider)
+          .where((p) => p.isCustom)
+          .single
+          .equation,
+      '((A*256)+B)/4',
+      reason: 'an unsavable row must not overwrite a landed definition',
+    );
+  });
 }
