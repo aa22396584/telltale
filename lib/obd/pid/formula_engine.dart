@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -378,6 +378,7 @@ class FormulaEngine {
   static const String _intSentinel = '\u0016(';
   static const String _float64Sentinel = '\u0017(';
   static const String _int24Sentinel = '\u0018(';
+  static const String _int32Sentinel = '\u0019(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -830,6 +831,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_float32Sentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('INT32'),
+          (m) => '${m.group(1)}$_int32Sentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('INT24'),
           (m) => '${m.group(1)}$_int24Sentinel',
         )
@@ -905,6 +910,7 @@ class FormulaEngine {
         .replaceAll(_signed24Sentinel, 'SIGNED24(')
         .replaceAll(_signed32Sentinel, 'SIGNED32(')
         .replaceAll(_float32Sentinel, 'FLOAT32(')
+        .replaceAll(_int32Sentinel, 'INT32(')
         .replaceAll(_int24Sentinel, 'INT24(')
         .replaceAll(_intSentinel, 'INT(')
         .replaceAll(_float64Sentinel, 'FLOAT64(')
@@ -1005,6 +1011,9 @@ class FormulaEngine {
       // Wiki INT24(A:B:C) is an unsigned 24-bit int. A is the most
       // significant byte. Not SIGNED24 and not INT16.
       s = _applyNaryFunction(s, 'INT24', equation, 3, _int24);
+      // Wiki INT32(A:B:C:D) is an unsigned 32-bit int. A is the most
+      // significant byte. Not SIGNED32 and not INT16.
+      s = _applyNaryFunction(s, 'INT32', equation, 4, _int32);
       s = _applyFunction(s, _sqrtPattern, equation, (v) {
         if (v < 0) {
           throw FormulaException(
@@ -1265,6 +1274,28 @@ class FormulaEngine {
     return ((a << 16) | (b << 8) | c).toDouble();
   }
 
+  /// Unsigned 32-bit integer from four inputs. A is the most significant byte.
+  ///
+  /// Wiki: "Returns a 32bit int from the input values". Each input uses the
+  /// toward-zero integer's low 8 bits. `INT32(128:0:0:0)` is 2147483648, not
+  /// `SIGNED32`'s -2147483648. Not `INT16`.
+  static double _int32(List<double> parts) {
+    for (final x in parts) {
+      if (!x.isFinite) {
+        throw const FormulaException(
+          '運算結果不是有效數值',
+          '',
+          issue: FormulaIssue.resultNotFinite,
+        );
+      }
+    }
+    final a = parts[0].toInt() & 0xFF;
+    final b = parts[1].toInt() & 0xFF;
+    final c = parts[2].toInt() & 0xFF;
+    final d = parts[3].toInt() & 0xFF;
+    return ((a << 24) | (b << 16) | (c << 8) | d).toDouble();
+  }
+
   /// Repeatedly collapses the innermost `NAME(...)` call until none remain.
   /// The pattern excludes nested parens, so each pass necessarily targets an
   /// innermost call and the string strictly shrinks.
@@ -1474,6 +1505,7 @@ class FormulaEngine {
       inner.contains('FLOAT32(') ||
       inner.contains('INT(') ||
       inner.contains('INT24(') ||
+      inner.contains('INT32(') ||
       inner.contains('FLOAT64(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
@@ -1886,11 +1918,12 @@ class _Operator {
 /// identifier we do implement. `MIN`/`MAX` are implemented as arity-2 colon
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
-/// `INT24` is an unsigned 24-bit int from three inputs. INT16 compatibility
-/// is still unclaimed (#79).
+/// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
+/// unsigned 32-bit int from four inputs. INT16 compatibility is still
+/// unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
-  r'INT32|INT16|'
+  r'INT16|'
   r'LOOKUP|CLOSEST|RANDOM|BARO)\s*\(',
   caseSensitive: false,
 );
