@@ -6,6 +6,7 @@ Do not invoke Flutter, an OS share chooser, or invent a device id.
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
@@ -14,7 +15,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from native_dialog import GateError, main, validate_native_dialog_report  # noqa: E402
+from native_dialog import (  # noqa: E402
+    GateError,
+    PACKAGE,
+    _package_listed,
+    main,
+    validate_native_dialog_report,
+)
 
 
 def _software(**overrides):
@@ -54,6 +61,24 @@ class NativeDialogLaneTest(unittest.TestCase):
                 }
             )
         self.assertIn("chooser", str(raised.exception))
+
+    def test_quietinbox_report_is_not_pass_even_with_aosp_fields(self):
+        with self.assertRaises(GateError) as raised:
+            validate_native_dialog_report(
+                {
+                    "lane": "native-dialog",
+                    "device": "emulator-5556",
+                    "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.D1/13818094:user/release-keys",
+                    "package": "com.cbstudio.telltale.rig",
+                    "command": ["adb", "shell", "am", "instrument"],
+                    "exit": 0,
+                    "chooser_shown": True,
+                    "case_ids": ["productionShareIntentOpensOsChooser"],
+                    "screenshot_sha256": "a" * 64,
+                    "head_sha": "b" * 40,
+                }
+            )
+        self.assertIn("emulator-5556", str(raised.exception))
 
     def test_executed_aosp_chooser_report_passes(self):
         report = {
@@ -110,6 +135,51 @@ class NativeDialogLaneTest(unittest.TestCase):
                 2,
             )
             self.assertFalse((output / "native-dialog.json").exists())
+
+    def test_missing_adb_unlinks_a_stale_pass_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            stale = output / "native-dialog.json"
+            stale.write_text(
+                '{"lane":"native-dialog","device":"planted"}',
+                encoding="utf-8",
+            )
+            previous = os.environ.get("ADB")
+            os.environ["ADB"] = str(output / "missing-adb")
+            try:
+                self.assertEqual(
+                    main(
+                        [
+                            "--output",
+                            str(output),
+                            "--execute",
+                            "--serial",
+                            "emulator-5554",
+                        ]
+                    ),
+                    2,
+                )
+            finally:
+                if previous is None:
+                    os.environ.pop("ADB", None)
+                else:
+                    os.environ["ADB"] = previous
+            self.assertFalse(stale.exists())
+
+    def test_test_package_listing_is_not_the_app(self):
+        self.assertTrue(
+            _package_listed("package:com.cbstudio.telltale.rig\n", PACKAGE)
+        )
+        self.assertFalse(
+            _package_listed("package:com.cbstudio.telltale.rig.test\n", PACKAGE)
+        )
+        self.assertTrue(
+            _package_listed(
+                "package:com.cbstudio.telltale.rig.test\n"
+                "package:com.cbstudio.telltale.rig\n",
+                PACKAGE,
+            )
+        )
 
     def test_execute_quietinbox_emulator_is_refused(self):
         with tempfile.TemporaryDirectory() as raw:

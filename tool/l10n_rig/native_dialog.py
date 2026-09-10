@@ -43,6 +43,10 @@ def validate_native_dialog_report(report: object) -> dict:
         raise GateError("native-dialog without an identified device is not PASS")
     if device == FIELD_SERIAL:
         raise GateError("native-dialog refuses the field phone")
+    if device != ALLOWED_SERIAL:
+        raise GateError(
+            f"native-dialog serial {device} is not the disposable AOSP emulator"
+        )
     fingerprint = report.get("fingerprint")
     if not isinstance(fingerprint, str) or "sdk_gphone" not in fingerprint:
         raise GateError("native-dialog without an AOSP emulator fingerprint is not PASS")
@@ -152,6 +156,11 @@ def _gradle_env() -> dict[str, str]:
     return env
 
 
+def _package_listed(listed_stdout: str, package: str) -> bool:
+    needle = f"package:{package}"
+    return any(line.strip() == needle for line in listed_stdout.splitlines())
+
+
 def _run_instrumentation(serial: str) -> tuple[list[str], int, str]:
     wrapper = _ensure_gradlew()
     env = _gradle_env()
@@ -162,7 +171,7 @@ def _run_instrumentation(serial: str) -> tuple[list[str], int, str]:
         capture_output=True,
         text=True,
     )
-    app_present = f"package:{PACKAGE}" in (listed.stdout or "")
+    app_present = _package_listed(listed.stdout or "", PACKAGE)
     assemble = [str(wrapper), ":app:assembleRigDebugAndroidTest"]
     if not app_present:
         assemble.insert(1, ":app:assembleRigDebug")
@@ -293,6 +302,8 @@ def main(argv: list[str] | None = None) -> int:
             "native-dialog lane is not-run without an identified device",
         )
     serial = (args.serial or os.environ.get("ANDROID_SERIAL") or "").strip()
+    args.output.mkdir(parents=True, exist_ok=True)
+    _unlink_stale(args.output)
     if not serial:
         return _not_run(
             args.output,
@@ -331,7 +342,11 @@ def main(argv: list[str] | None = None) -> int:
         validate_native_dialog_report(report)
     except GateError as exc:
         return _not_run(args.output, str(exc))
-    args.output.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        return _not_run(
+            args.output,
+            f"native-dialog execute failed: {type(exc).__name__}: {exc}",
+        )
     (args.output / "native-dialog.json").write_text(
         json.dumps(report, indent=2) + "\n",
         encoding="utf-8",
