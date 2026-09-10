@@ -77,7 +77,7 @@ String powertrainProfileIssueText(
   AppLocalizations l10n,
   PowertrainBatteryProfileIssue issue,
 ) => switch (issue.code) {
-  'vehicle_year_out_of_range' => l10n.powertrainInstallYearOutOfRange,
+  'vehicle_year_out_of_range' => l10n.powertrainAuthorizeYearOutOfRange,
   _ => l10n.powertrainProfileNotVerified,
 };
 

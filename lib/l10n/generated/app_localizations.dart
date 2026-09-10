@@ -6817,6 +6817,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The custom PID list could not be saved. Nothing was changed.'**
   String get pidMutationPersistFailed;
+
+  /// Connection-confirm refusal when an installed profile's saved vehicle year is outside the catalog range. Not an install sentence; install copy stays on powertrainInstallYearOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'That model year is outside this profile\'s documented year range.'**
+  String get powertrainAuthorizeYearOutOfRange;
 }
 
 class _AppLocalizationsDelegate

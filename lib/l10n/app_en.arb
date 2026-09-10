@@ -3750,5 +3750,9 @@
   "pidMutationPersistFailed": "The custom PID list could not be saved. Nothing was changed.",
   "@pidMutationPersistFailed": {
     "description": "PidMutationFailure.persistFailed. SharedPreferences reported false; in-memory custom PIDs are left unchanged."
+  },
+  "powertrainAuthorizeYearOutOfRange": "That model year is outside this profile's documented year range.",
+  "@powertrainAuthorizeYearOutOfRange": {
+    "description": "Connection-confirm refusal when an installed profile's saved vehicle year is outside the catalog range. Not an install sentence; install copy stays on powertrainInstallYearOutOfRange."
   }
 }

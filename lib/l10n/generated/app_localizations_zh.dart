@@ -3856,6 +3856,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pidMutationPersistFailed => '自訂 PID 清單無法寫入。沒有任何變更。';
+
+  @override
+  String get powertrainAuthorizeYearOutOfRange => '該年式不在這個設定檔記載的年份範圍內。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7709,4 +7712,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pidMutationPersistFailed => '自訂 PID 清單無法寫入。沒有任何變更。';
+
+  @override
+  String get powertrainAuthorizeYearOutOfRange => '該年式不在這個設定檔記載的年份範圍內。';
 }

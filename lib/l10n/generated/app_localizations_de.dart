@@ -4424,4 +4424,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get pidMutationPersistFailed =>
       'Die Liste der benutzerdefinierten PIDs konnte nicht gespeichert werden. Es wurden keine Änderungen vorgenommen.';
+
+  @override
+  String get powertrainAuthorizeYearOutOfRange =>
+      'Das Modelljahr liegt außerhalb des für dieses Profil dokumentierten Jahresbereichs.';
 }
