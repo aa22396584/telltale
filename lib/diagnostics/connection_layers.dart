@@ -50,10 +50,14 @@ final class ConnectionLayerReport {
     String protocol = '',
     String requestedProtocol = '',
     Set<String> responders = const {},
+    bool testRig = false,
   }) {
     // Each layer is its own input. A dropped socket is not permission to
     // forget a protocol or ECU that already answered. Requested and
     // observed stay two strings: ATSP 5 vs ATDPN 6 is a fact, not a merge.
+    // Evidence is fail-closed: Demo and the no-car test rig are software.
+    // Nothing else becomes field here — ATI strings and adapter names are
+    // not inputs, so they cannot elevate the row.
     final observed = protocol.trim();
     final requested = requestedProtocol.trim();
     return ConnectionLayerReport(
@@ -70,7 +74,7 @@ final class ConnectionLayerReport {
       ecu: responders.isEmpty
           ? ConnectionLayerValue.notObserved
           : ConnectionLayerValue.answered,
-      evidence: kind == TransportKind.demo
+      evidence: kind == TransportKind.demo || testRig
           ? ConnectionLayerValue.software
           : ConnectionLayerValue.unknown,
       requestedProtocol: requested,
