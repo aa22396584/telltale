@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/app_locales_platform.dart';
+import '../l10n/app_locales_sync.dart';
 import '../l10n/locale_resolution.dart';
 import 'pid_registry.dart';
 
@@ -54,6 +56,24 @@ class LocalePreferenceController extends Notifier<LocalePreference> {
 
   Future<bool> _persist(LocalePreference preference, int attempt) async {
     try {
+      // After the first-run marker, resume treats LocaleManager as authority.
+      // An in-app picker that only wrote SharedPreferences would be clobbered
+      // on the next resume. Tests keep [AppLocalesPlatform.live] false so this
+      // never waits on an unanswered MethodChannel.
+      var wroteOs = false;
+      if (AppLocalesPlatform.live) {
+        final current = await AppLocalesPlatform.get();
+        if (current.apiSupported) {
+          final written = await AppLocalesPlatform.setOverrideTags(
+            tagsForPreference(preference),
+          );
+          if (written == null || !written.apiSupported) {
+            if (attempt == _attempt) state = _committed;
+            return false;
+          }
+          wroteOs = true;
+        }
+      }
       final prefs = ref.read(sharedPreferencesProvider);
       final ok = await prefs.setString(
         kLocalePreferenceKey,
@@ -62,6 +82,9 @@ class LocalePreferenceController extends Notifier<LocalePreference> {
       if (!ok) {
         if (attempt == _attempt) state = _committed;
         return false;
+      }
+      if (wroteOs) {
+        await prefs.setBool(kLocaleOsMigratedKey, true);
       }
       _committed = preference;
       return true;
