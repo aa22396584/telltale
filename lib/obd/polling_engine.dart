@@ -3660,7 +3660,10 @@ class PollingEngine {
     // session's disabled fastMode into a fresh one would silently cap
     // throughput at single-PID rates with nothing in the UI explaining why.
     scheduler.resetThrottle();
-    _lastMode01PidCount = null;
+    // Do not clear `_lastMode01PidCount` here. `ObdSession._resumeNow` restarts
+    // the same engine after a background pause; wiping the count made the
+    // dashboard forget a grouped Mode 01 command that had already gone out on
+    // this connection. A new engine (a new connection) starts at null.
     _running = true;
     final epoch = ++_epoch;
     _loopDone[epoch] = Completer<void>();
@@ -4100,6 +4103,20 @@ class PollingEngine {
       // Header and query in one chain slot, so nothing else can execute
       // against a header that was selected for this batch.
       final expectedResponseId = batch.first.pid.expectedResponseId;
+      // Record packing when the bytes are about to go on the wire, not after
+      // the reply. `_sendNow` writes then waits; a timeout after a grouped
+      // Mode 01 command still observed the batch.
+      final mode01Count = mode01PidCountOnWire(command);
+      if (mode01Count != null) {
+        final previous = _lastMode01PidCount;
+        // Keep the highest packing this connection. A later singleton
+        // (unbatchable 010F sitting at the queue head) must not erase an
+        // earlier grouped Mode 01 command — that is the observation the
+        // pill is allowed to show. A new engine starts at null.
+        if (previous == null || mode01Count > previous) {
+          _lastMode01PidCount = mode01Count;
+        }
+      }
       response = expectedResponseId == null
           ? await client.sendAddressed(header, command)
           : await client.sendGlobal(
@@ -4107,17 +4124,6 @@ class PollingEngine {
               header: header,
               timeout: client.commandTimeout,
             );
-      final mode01Count = mode01PidCountOnWire(command);
-      if (mode01Count != null) {
-        final previous = _lastMode01PidCount;
-        // Keep the highest packing this connection. A later singleton
-        // (unbatchable 010F sitting at the queue head) must not erase an
-        // earlier grouped Mode 01 command — that is the observation the
-        // pill is allowed to show. Reconnect clears the field.
-        if (previous == null || mode01Count > previous) {
-          _lastMode01PidCount = mode01Count;
-        }
-      }
       if (epoch != null && epoch != _epoch) return;
       // The definitions this request was built from are gone, so its answer
       // describes a question nobody is asking any more. Writing it to the

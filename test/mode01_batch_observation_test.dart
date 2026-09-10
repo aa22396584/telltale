@@ -136,7 +136,10 @@ void main() {
     await engine.dispose();
   });
 
-  test('start() retires the previous connection\'s count', () async {
+  test('stop then start on the same engine keeps the observation', () async {
+    // `_resumeNow` restarts this engine. Clearing the count here is how
+    // backgrounding forgot a grouped Mode 01 command that had already gone
+    // out on this connection.
     final transport = FakeElm327(
       protocol: BusProtocol.can11,
       ecus: [
@@ -158,10 +161,46 @@ void main() {
     engine.start();
     expect(
       engine.current.lastMode01PidCount,
-      isNull,
-      reason: 'reconnect must not keep the previous session\'s observation',
+      greaterThanOrEqualTo(2),
+      reason: 'lifecycle resume is not a new connection',
     );
     await engine.stop();
     await engine.dispose();
+  });
+
+  test('a new engine does not inherit another connection\'s count', () async {
+    final transport = FakeElm327(
+      protocol: BusProtocol.can11,
+      ecus: [
+        FakeEcu(
+          name: 'ECM',
+          requestId: '7E0',
+          responseId: '7E8',
+          responses: _physicsReplies(),
+        ),
+      ],
+    );
+    final first = await _connect(transport);
+    await first.discoverSupportedPids();
+    first.setActivePids([PidLibrary.engineRpm, PidLibrary.vehicleSpeed]);
+    first.start();
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    await first.stop();
+    expect(first.current.lastMode01PidCount, greaterThanOrEqualTo(2));
+    await first.dispose();
+
+    final second = PollingEngine(
+      Elm327Client(
+        transport,
+        commandTimeout: const Duration(milliseconds: 200),
+        responsePendingTimeout: const Duration(milliseconds: 280),
+      ),
+    );
+    expect(
+      second.current.lastMode01PidCount,
+      isNull,
+      reason: 'replacing the engine is a new connection',
+    );
+    await second.dispose();
   });
 }
