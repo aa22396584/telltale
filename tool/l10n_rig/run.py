@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """#47 l10n_rig lane runner.
 
-`--native-dialog`, `--android-os-locale` and `--overflow` fail closed
-without an identified device. Combined flags are mutually exclusive: each
-requested planted report is deleted and none of the lanes run. This leftover
-does not change the phone language, restart a process, open an OS share
-chooser, resize a window, invent a device id, or PASS a host-entry report.
+`--native-dialog`, `--android-os-locale`, `--overflow` and `--wear` fail
+closed without an identified device. Combined flags are mutually exclusive:
+each requested planted report is deleted and none of the lanes run. This
+leftover does not change the phone language, restart a process, open an OS
+share chooser, resize a window, open a Wear emulator, invent a device id,
+or PASS a host-entry report.
 """
 
 from __future__ import annotations
@@ -17,12 +18,14 @@ import sys
 from android_os_locale import main as android_os_locale_main
 from native_dialog import main as native_dialog_main
 from overflow import main as overflow_main
+from wear import main as wear_main
 
 
 _NOT_RUN_LANES = {
     "native-dialog": "native-dialog.json",
     "android-os-locale": "android-os-locale.json",
     "overflow": "overflow.json",
+    "wear": "wear.json",
 }
 
 
@@ -37,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--native-dialog", action="store_true")
     parser.add_argument("--android-os-locale", action="store_true")
     parser.add_argument("--overflow", action="store_true")
+    parser.add_argument("--wear", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     chosen = [
@@ -45,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
             ("native-dialog", args.native_dialog),
             ("android-os-locale", args.android_os_locale),
             ("overflow", args.overflow),
+            ("wear", args.wear),
         )
         if on
     ]
@@ -63,9 +68,11 @@ def main(argv: list[str] | None = None) -> int:
         return android_os_locale_main(["--output", str(args.output)])
     if args.overflow:
         return overflow_main(["--output", str(args.output)])
+    if args.wear:
+        return wear_main(["--output", str(args.output)])
     print(
-        "native-dialog, android-os-locale and overflow lanes are not-run "
-        "without an identified device",
+        "native-dialog, android-os-locale, overflow and wear lanes are "
+        "not-run without an identified device",
         file=sys.stderr,
     )
     return 2

@@ -99,6 +99,73 @@ class L10nRigRunnerTest(unittest.TestCase):
         self.assertIn("--android-os-locale", text)
         self.assertIn("mutually exclusive", text)
         self.assertIn("--overflow", text)
+        self.assertIn("--wear", text)
+
+
+    def test_wear_flag_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(["--wear", "--output", str(output)]),
+                2,
+            )
+            self.assertFalse((output / "wear.json").exists())
+            self.assertFalse((output / "overflow.json").exists())
+            self.assertFalse((output / "native-dialog.json").exists())
+
+    def test_combined_wear_and_overflow_clean_each_requested_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            (output / "wear.json").write_text(
+                '{"lane":"wear","device":"planted"}',
+                encoding="utf-8",
+            )
+            (output / "overflow.json").write_text(
+                '{"lane":"overflow","device":"planted"}',
+                encoding="utf-8",
+            )
+            leftover = output / "native-dialog.json"
+            leftover.write_text("{}", encoding="utf-8")
+            self.assertEqual(
+                main(
+                    [
+                        "--wear",
+                        "--overflow",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "wear.json").exists())
+            self.assertFalse((output / "overflow.json").exists())
+            self.assertTrue(
+                leftover.exists(),
+                msg="a lane that was not requested must not be swept as a side effect",
+            )
+
+    def test_combined_wear_flags_delete_dangling_symlinks(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            wear = output / "wear.json"
+            overflow = output / "overflow.json"
+            wear.symlink_to(output / "missing-wear.json")
+            overflow.symlink_to(output / "missing-overflow.json")
+            self.assertEqual(
+                main(
+                    [
+                        "--wear",
+                        "--overflow",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse(wear.exists())
+            self.assertFalse(wear.is_symlink())
+            self.assertFalse(overflow.exists())
+            self.assertFalse(overflow.is_symlink())
 
 
     def test_overflow_flag_is_not_run(self):
