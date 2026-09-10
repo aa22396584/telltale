@@ -1533,11 +1533,14 @@ class FormulaEngine {
       }
       final value = _reduce(parts[0], source);
       final fallback = parts[1].isEmpty ? 0.0 : _reduce(parts[1], source);
+      final rows = [
+        for (var i = 2; i < parts.length; i++)
+          _parseLookupPair(parts[i], source),
+      ];
       var matched = fallback;
-      for (var i = 2; i < parts.length; i++) {
-        final mapped = _matchLookupPair(parts[i], value, source);
-        if (mapped != null) {
-          matched = mapped;
+      for (final row in rows) {
+        if (_lookupRowMatches(row, value, source)) {
+          matched = _reduce(row.mapped, source);
           break;
         }
       }
@@ -1584,6 +1587,11 @@ class FormulaEngine {
         for (var i = 2; i < parts.length; i++)
           _splitExactMapping(parts[i], source),
       ];
+      // Every mapped expression is reduced, including unselected branches,
+      // so authoring cannot save CLOSEST(A:0:1=100:255=1/0).
+      final mappedValues = [
+        for (final mapping in mappings) _reduce(mapping.mapped, source),
+      ];
       var bestIndex = 0;
       var bestDistance = (_reduce(mappings[0].key, source) - value).abs();
       for (var i = 1; i < mappings.length; i++) {
@@ -1596,7 +1604,7 @@ class FormulaEngine {
       s = s.replaceRange(
         call.start,
         call.end,
-        _format(_reduce(mappings[bestIndex].mapped, source)),
+        _format(mappedValues[bestIndex]),
       );
     }
   }
@@ -1797,9 +1805,13 @@ class FormulaEngine {
     return (key: key, mapped: mapped);
   }
 
-  /// Exact `key=val` or inclusive range `lo~hi=val`. First match wins.
-  /// A pair without `=`, an empty side, or a second `~` is not a mapping.
-  double? _matchLookupPair(String pair, double value, String source) {
+  /// Exact `key=val` or inclusive range `lo~hi=val`. Does not reduce the
+  /// mapped expression — unselected branches may be domain-invalid for this
+  /// input. A pair without `=`, an empty side, or a second `~` is not a mapping.
+  ({String mapped, String? exact, String? lo, String? hi}) _parseLookupPair(
+    String pair,
+    String source,
+  ) {
     var depth = 0;
     var eq = -1;
     for (var i = 0; i < pair.length; i++) {
@@ -1821,8 +1833,8 @@ class FormulaEngine {
       );
     }
     final key = pair.substring(0, eq).trim();
-    final mappedText = pair.substring(eq + 1).trim();
-    if (key.isEmpty || mappedText.isEmpty) {
+    final mapped = pair.substring(eq + 1).trim();
+    if (key.isEmpty || mapped.isEmpty) {
       throw FormulaException(
         '無法解析 "$pair"',
         source,
@@ -1830,7 +1842,6 @@ class FormulaEngine {
         term: pair,
       );
     }
-    final mapped = _reduce(mappedText, source);
     var tilde = -1;
     depth = 0;
     for (var i = 0; i < key.length; i++) {
@@ -1852,11 +1863,11 @@ class FormulaEngine {
       }
     }
     if (tilde < 0) {
-      return _reduce(key, source) == value ? mapped : null;
+      return (mapped: mapped, exact: key, lo: null, hi: null);
     }
-    final loText = key.substring(0, tilde).trim();
-    final hiText = key.substring(tilde + 1).trim();
-    if (loText.isEmpty || hiText.isEmpty) {
+    final lo = key.substring(0, tilde).trim();
+    final hi = key.substring(tilde + 1).trim();
+    if (lo.isEmpty || hi.isEmpty) {
       throw FormulaException(
         '無法解析 "$pair"',
         source,
@@ -1864,9 +1875,20 @@ class FormulaEngine {
         term: pair,
       );
     }
-    final lo = _reduce(loText, source);
-    final hi = _reduce(hiText, source);
-    return value >= lo && value <= hi ? mapped : null;
+    return (mapped: mapped, exact: null, lo: lo, hi: hi);
+  }
+
+  bool _lookupRowMatches(
+    ({String mapped, String? exact, String? lo, String? hi}) row,
+    double value,
+    String source,
+  ) {
+    if (row.exact != null) {
+      return _reduce(row.exact!, source) == value;
+    }
+    final lo = _reduce(row.lo!, source);
+    final hi = _reduce(row.hi!, source);
+    return value >= lo && value <= hi;
   }
 
   double _reduce(String expression, String source) {
