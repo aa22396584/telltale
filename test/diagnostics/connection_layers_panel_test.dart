@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/connection_layers.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -103,5 +104,40 @@ void main() {
       find.byKey(const Key('connection-layer-protocol-observed')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('copy puts the four-row summary on the clipboard', (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.demo,
+      protocol: 'AUTO, ISO 15765-4 (CAN 11/500)',
+      responders: const {'7E8'},
+    );
+    await tester.pumpWidget(
+      localizedMaterialApp(
+        locale: const Locale('en'),
+        home: Scaffold(body: ConnectionLayersPanel(report: report)),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('connection-layer-copy')));
+    await tester.pump();
+    expect(copied, contains('Transport\tDemo'));
+    expect(copied, contains('Evidence\tSoftware'));
+    expect(copied?.split('\n'), hasLength(4));
   });
 }

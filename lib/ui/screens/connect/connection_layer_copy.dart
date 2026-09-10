@@ -46,3 +46,30 @@ String connectionLayerValueText(
   ConnectionLayerValue.connected ||
   ConnectionLayerValue.field => l10n.connectionLayerUnknown,
 };
+
+/// Four rows, one line each, for a pasteable diagnostic summary.
+///
+/// Titles and values are the same strings the panel shows. Requested vs
+/// observed stays on the protocol line when the two differ.
+String connectionLayerSummary(
+  AppLocalizations l10n,
+  ConnectionLayerReport report,
+) {
+  String line(
+    ConnectionLayerKind kind,
+    ConnectionLayerValue value, {
+    String? detail,
+  }) =>
+      '${connectionLayerTitle(l10n, kind)}\t'
+      '${detail ?? connectionLayerValueText(l10n, value)}';
+  return [
+    line(ConnectionLayerKind.transport, report.transport),
+    line(
+      ConnectionLayerKind.protocol,
+      report.protocol,
+      detail: connectionLayerProtocolDetail(l10n, report),
+    ),
+    line(ConnectionLayerKind.ecu, report.ecu),
+    line(ConnectionLayerKind.evidence, report.evidence),
+  ].join('\n');
+}
