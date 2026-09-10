@@ -21,6 +21,8 @@ import sys
 import time
 from pathlib import Path
 
+from png_gate import png_reject_reason
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FIELD_SERIAL = "R5CX10VFFBA"
@@ -82,6 +84,8 @@ def validate_overflow_report(report: object) -> dict:
         raise GateError("overflow missing installed versionName")
     if report.get("apk_matches_runner_head") is True:
         raise GateError("overflow must not claim the installed APK is this checkout")
+    if report.get("installed_debuggable") is not True:
+        raise GateError("overflow RenderFlex logs require a debuggable APK")
     return report
 
 
@@ -209,6 +213,12 @@ def _wait_for_connect(serial: str, timeout_s: float = 45.0) -> str:
     raise GateError("overflow connect screen did not appear")
 
 
+def assert_png_has_visible_content(data: bytes) -> None:
+    reason = png_reject_reason(data)
+    if reason:
+        raise GateError(reason)
+
+
 def _screencap(serial: str, dest: Path) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("wb") as handle:
@@ -219,16 +229,35 @@ def _screencap(serial: str, dest: Path) -> str:
         )
     if captured.returncode != 0 or not dest.is_file() or dest.stat().st_size == 0:
         raise GateError("overflow could not capture the large-text screenshot")
-    return hashlib.sha256(dest.read_bytes()).hexdigest()
+    payload = dest.read_bytes()
+    assert_png_has_visible_content(payload)
+    return hashlib.sha256(payload).hexdigest()
 
 
-def _overflow_lines(serial: str) -> list[str]:
-    log = _run(serial, "logcat", "-d")
+def overflow_lines_from_logcat(
+    log: subprocess.CompletedProcess[str],
+) -> list[str]:
+    if log.returncode != 0:
+        raise GateError("overflow could not read logcat")
     return [
         line
         for line in (log.stdout or "").splitlines()
         if OVERFLOW_RE.search(line)
     ]
+
+
+def _overflow_lines(serial: str) -> list[str]:
+    return overflow_lines_from_logcat(_run(serial, "logcat", "-d"))
+
+
+def package_is_debuggable(dumpsys_stdout: str) -> bool:
+    for line in dumpsys_stdout.splitlines():
+        stripped = line.strip()
+        if "DEBUGGABLE" not in stripped:
+            continue
+        if "flags=[" in stripped or "pkgFlags=[" in stripped:
+            return True
+    return False
 
 
 def _installed_version_name(serial: str) -> str:
@@ -256,6 +285,9 @@ def _execute(serial: str, output: Path) -> dict:
     listed = _run(serial, "shell", "pm", "list", "packages", PACKAGE)
     if not _package_listed(listed.stdout or "", PACKAGE):
         raise GateError("overflow rig package is not installed")
+    dumpsys = _run(serial, "shell", "dumpsys", "package", PACKAGE)
+    if not package_is_debuggable(dumpsys.stdout or ""):
+        raise GateError("overflow RenderFlex logs require a debuggable APK")
     previous = _font_scale(serial)
     command = [
         _adb(),
@@ -296,6 +328,7 @@ def _execute(serial: str, output: Path) -> dict:
         "runner_head_sha": _git_head(),
         "installed_version_name": _installed_version_name(serial),
         "apk_matches_runner_head": False,
+        "installed_debuggable": True,
     }
 
 

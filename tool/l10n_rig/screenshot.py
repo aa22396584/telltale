@@ -22,6 +22,8 @@ import sys
 import time
 from pathlib import Path
 
+from png_gate import png_reject_reason
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FIELD_SERIAL = "R5CX10VFFBA"
@@ -195,6 +197,12 @@ def _wait_for_connect(serial: str, timeout_s: float = 45.0) -> str:
     raise GateError("screenshot connect screen did not appear")
 
 
+def assert_png_has_visible_content(data: bytes) -> None:
+    reason = png_reject_reason(data)
+    if reason:
+        raise GateError(reason)
+
+
 def _screencap(serial: str, dest: Path) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("wb") as handle:
@@ -205,7 +213,9 @@ def _screencap(serial: str, dest: Path) -> str:
         )
     if captured.returncode != 0 or not dest.is_file() or dest.stat().st_size == 0:
         raise GateError("screenshot could not capture the connect screen")
-    return hashlib.sha256(dest.read_bytes()).hexdigest()
+    payload = dest.read_bytes()
+    assert_png_has_visible_content(payload)
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _installed_version_name(serial: str) -> str:

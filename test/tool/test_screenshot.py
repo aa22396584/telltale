@@ -15,7 +15,39 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from screenshot import CASE_ID, GateError, main, validate_screenshot_report  # noqa: E402
+import binascii
+import struct
+import zlib
+
+from screenshot import (  # noqa: E402
+    CASE_ID,
+    GateError,
+    assert_png_has_visible_content,
+    main,
+    validate_screenshot_report,
+)
+
+
+def _chunk(tag: bytes, data: bytes) -> bytes:
+    crc = binascii.crc32(tag + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+
+def _png(width: int, height: int, pixels: list[tuple[int, int, int, int]]) -> bytes:
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    raw = b""
+    index = 0
+    for _ in range(height):
+        raw += b"\x00"
+        for _ in range(width):
+            raw += bytes(pixels[index])
+            index += 1
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", ihdr)
+        + _chunk(b"IDAT", zlib.compress(raw, 9))
+        + _chunk(b"IEND", b"")
+    )
 
 
 def _software(**overrides):
@@ -107,6 +139,20 @@ class ScreenshotLaneTest(unittest.TestCase):
             self.assertEqual(main(["--output", str(output)]), 2)
             self.assertFalse(stale.exists())
             self.assertFalse(stale.is_symlink())
+
+    def test_uniform_transparent_black_png_is_not_pass(self):
+        blank = _png(2, 2, [(0, 0, 0, 0)] * 4)
+        with self.assertRaises(GateError) as raised:
+            assert_png_has_visible_content(blank)
+        self.assertIn("blank", str(raised.exception).lower())
+
+    def test_varied_connect_png_is_accepted(self):
+        varied = _png(
+            2,
+            2,
+            [(10, 20, 30, 255), (40, 50, 60, 255), (70, 80, 90, 255), (1, 2, 3, 255)],
+        )
+        assert_png_has_visible_content(varied)
 
 
 if __name__ == "__main__":
