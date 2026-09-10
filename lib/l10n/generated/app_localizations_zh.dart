@@ -357,7 +357,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpObserved =>
-      '「批次讀取」代表上一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
+      '「批次讀取」代表這次連線裡，有一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -4210,7 +4210,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardPollingModeHelpObserved =>
-      '「批次讀取」代表上一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
+      '「批次讀取」代表這次連線裡，有一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
 
   @override
   String get dashboardPollingModeHelpRate =>

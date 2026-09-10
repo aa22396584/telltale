@@ -250,7 +250,7 @@
   },
   "dashboardBatchedPolling": "Batched polling",
   "@dashboardBatchedPolling": {
-    "description": "Pill label only when the last Mode 01 command on the wire packed two or more PIDs. Permission without that record stays dashboardBatchingEnabled. Must not be used for profile-response grouping."
+    "description": "Pill label only when a Mode 01 command this connection packed two or more PIDs. Permission without that record stays dashboardBatchingEnabled. Must not be used for profile-response grouping."
   },
   "dashboardBatchingEnabled": "Batching enabled",
   "@dashboardBatchingEnabled": {
@@ -273,7 +273,7 @@
   "@dashboardPollingModeHelpBatching": {
     "description": "Explains the enabled side of the pill, which is shown only when PriorityScheduler.fastModeEnabled and canBatch are both set. Must not claim that grouping was observed."
   },
-  "dashboardPollingModeHelpObserved": "Batched polling means the last Mode 01 command actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.",
+  "dashboardPollingModeHelpObserved": "Batched polling means a Mode 01 command this connection actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.",
   "@dashboardPollingModeHelpObserved": {
     "description": "Explains the observed-batch side of the pill. Shown in the same dialog as the permission and fallback paragraphs. Must name Mode 01 so a powertrain profile response is not counted."
   },

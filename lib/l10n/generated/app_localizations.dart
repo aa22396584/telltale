@@ -653,7 +653,7 @@ abstract class AppLocalizations {
   /// **'Enter the port (most adapters use {port}).'**
   String connectWifiPortRequired(int port);
 
-  /// Pill label only when the last Mode 01 command on the wire packed two or more PIDs. Permission without that record stays dashboardBatchingEnabled. Must not be used for profile-response grouping.
+  /// Pill label only when a Mode 01 command this connection packed two or more PIDs. Permission without that record stays dashboardBatchingEnabled. Must not be used for profile-response grouping.
   ///
   /// In en, this message translates to:
   /// **'Batched polling'**
@@ -716,7 +716,7 @@ abstract class AppLocalizations {
   /// Explains the observed-batch side of the pill. Shown in the same dialog as the permission and fallback paragraphs. Must name Mode 01 so a powertrain profile response is not counted.
   ///
   /// In en, this message translates to:
-  /// **'Batched polling means the last Mode 01 command actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.'**
+  /// **'Batched polling means a Mode 01 command this connection actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.'**
   String get dashboardPollingModeHelpObserved;
 
   /// Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages.

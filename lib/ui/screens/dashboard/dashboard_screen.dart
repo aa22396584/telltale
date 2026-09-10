@@ -716,16 +716,12 @@ class PollingModePill extends StatelessWidget {
               heightFactor: 1,
               child: StatusPill(
                 label: label,
-                icon: observedMode01Batch
-                    ? Icons.fast_forward
-                    : grouping
-                    ? Icons.fast_forward
-                    : Icons.slow_motion_video,
-                tone: observedMode01Batch
+                icon: grouping ? Icons.fast_forward : Icons.slow_motion_video,
+                tone: !grouping
+                    ? StatusTone.warn
+                    : observedMode01Batch
                     ? StatusTone.good
-                    : grouping
-                    ? StatusTone.accent
-                    : StatusTone.warn,
+                    : StatusTone.accent,
               ),
             ),
           ),

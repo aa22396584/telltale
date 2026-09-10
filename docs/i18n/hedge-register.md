@@ -307,7 +307,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **Shipped as** `startupRestartHint` (lib/l10n/app_en.arb).
 
-**Why it is load-bearing.** `lib/app.dart:267`; lib/l10n/app_en.arb:1951 ↔ lib/l10n/app_zh_Hant.arb:563 (T1). States the consequence (wrong file overwritten/deleted/SHARED) as the reason for the demand. The three-verb enumeration is the hedge — 'so nothing goes wrong' would delete the privacy half.
+**Why it is load-bearing.** `lib/app.dart:267`; lib/l10n/app_en.arb:1959 ↔ lib/l10n/app_zh_Hant.arb:563 (T1). States the consequence (wrong file overwritten/deleted/SHARED) as the reason for the demand. The three-verb enumeration is the hedge — 'so nothing goes wrong' would delete the privacy half.
 
 ### 22. 無法儲存語言設定，請再試一次。
 
@@ -317,7 +317,7 @@ ARB entry first. The complement of the previous hedge: a CONFIRMED absence, with
 
 **Shipped as** `languageSaveFailed` (lib/l10n/app_en.arb).
 
-**Why it is load-bearing.** `lib/ui/widgets/language_picker.dart:70`; lib/l10n/app_en.arb:884 ↔ lib/l10n/app_zh_Hant.arb:249 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
+**Why it is load-bearing.** `lib/ui/widgets/language_picker.dart:70`; lib/l10n/app_en.arb:892 ↔ lib/l10n/app_zh_Hant.arb:249 (T1). The picker never silently claims success; a failed write is surfaced. Keep it a failure statement plus a remedy.
 
 ### 23. 不確定要選哪一個？
 
@@ -369,7 +369,7 @@ fresh round of self-diagnosis before it will pass an inspection.
 **Status** — proposed
 
 **Why it is load-bearing.** `dtcKindPermanentExplanation`
-(`lib/l10n/app_en.arb:2172` ↔ `lib/l10n/app_zh_Hant.arb:638`) defines the category as
+(`lib/l10n/app_en.arb:2180` ↔ `lib/l10n/app_zh_Hant.arb:638`) defines the category as
 「無法用診斷儀清除，需修復後由 ECU 自行確認」— it lived on `DtcKind` in
 `lib/obd/dtc/dtc.dart` until the engine stopped carrying screen copy — and
 `dtcClearDialogBody` repeats it beside the Clear button. Issue #45 names this specific mistranslation: a

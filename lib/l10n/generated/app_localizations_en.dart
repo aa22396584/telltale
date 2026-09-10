@@ -380,7 +380,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpObserved =>
-      'Batched polling means the last Mode 01 command actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.';
+      'Batched polling means a Mode 01 command this connection actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.';
 
   @override
   String get dashboardPollingModeHelpRate =>

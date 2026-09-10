@@ -386,7 +386,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dashboardPollingModeHelpObserved =>
-      'Gebündelte Abfrage bedeutet, dass der letzte Mode-01-Befehl tatsächlich mehr als eine PID mitgeführt hat. Das ist die Aufzeichnung dieses Austauschs, kein Versprechen, dass der nächste ebenfalls gruppiert, und keine Aussage über den Durchsatz.';
+      'Gebündelte Abfrage bedeutet, dass in dieser Verbindung ein Mode-01-Befehl tatsächlich mehr als eine PID mitgeführt hat. Das ist die Aufzeichnung dieses Austauschs, kein Versprechen, dass der nächste ebenfalls gruppiert, und keine Aussage über den Durchsatz.';
 
   @override
   String get dashboardPollingModeHelpRate =>

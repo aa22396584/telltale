@@ -330,7 +330,7 @@ void main() {
       expect(en.dashboardPollingModeHelpBatching, contains('permission'));
       expect(zh.dashboardPollingModeHelpBatching, contains('併成一次交握'));
       expect(zh.dashboardPollingModeHelpBatching, contains('仍然是授權而不是量測'));
-      expect(en.dashboardPollingModeHelpObserved, contains('last Mode 01'));
+      expect(en.dashboardPollingModeHelpObserved, contains('this connection'));
       expect(
         en.dashboardPollingModeHelpObserved,
         contains('more than one PID'),
