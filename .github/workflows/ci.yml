@@ -82,9 +82,13 @@ jobs:
             exit 1
           fi
 
-      # #47: ARB locales compared without Flutter. A missing English or
-      # Traditional Chinese key is a failure; gen-l10n English fallback is not
-      # a pass. Fixture tests do not rewrite the shipped ARB files.
+      # #47: ARB locales compared without Flutter. A missing key in any shipped
+      # locale is a failure; gen-l10n English fallback is not a pass. Every ARB
+      # in lib/l10n has to be named here — the checker compares the files it is
+      # given, so a shipped locale nobody lists is a locale with no guard at
+      # all, and test/tool/test_i18n_verify_ci_guard.py reads the directory to
+      # make sure this list keeps up. Fixture tests do not rewrite the shipped
+      # ARB files.
       - name: ARB locales have matching keys
         run: |
           set -euo pipefail
@@ -93,7 +97,8 @@ jobs:
           python3 tool/i18n_verify/check_arb.py \
             lib/l10n/app_en.arb \
             lib/l10n/app_zh.arb \
-            lib/l10n/app_zh_Hant.arb
+            lib/l10n/app_zh_Hant.arb \
+            lib/l10n/app_de.arb
 
       # The three simulator-backed oracle files self-skip here because no
       # simulator is listening. The `oracle` job below exercises the public
