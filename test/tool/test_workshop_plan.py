@@ -1009,6 +1009,61 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         errors = validate_plan.validate_handoff(_completed_flutter(stdout))
         self.assertTrue(any("case" in error for error in errors), msg=errors)
 
+    def test_testStart_without_matching_testDone_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 1, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 1, "result": "success"}
+                ),
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 2, "name": "omitted", "suiteID": 0},
+                    }
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        self.assertEqual(validate_plan.parse_flutter_counts(stdout), (1, 0))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
+    def test_hidden_testStart_still_requires_a_terminal_event(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {
+                            "id": 1,
+                            "name": "loading /foo_test.dart",
+                            "suiteID": 0,
+                        },
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 2, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 2, "result": "success"}
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
     def test_unknown_terminal_id_cannot_complete(self) -> None:
         stdout = "\n".join(
             [

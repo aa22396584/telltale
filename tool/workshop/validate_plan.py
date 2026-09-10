@@ -655,15 +655,15 @@ def parse_flutter_case_ids(stdout: str) -> list[str] | None:
             invalid = True
         elif kind == "testDone":
             saw_json = True
-            if payload.get("hidden") is True:
-                continue
-            if _flutter_skipped(payload):
-                continue
             tid = _flutter_typed_id(payload.get("testID"))
             if tid is None or tid in finished:
                 invalid = True
                 continue
             finished.add(tid)
+            if payload.get("hidden") is True:
+                continue
+            if _flutter_skipped(payload):
+                continue
             name = names.get(tid)
             if not isinstance(name, str) or not name.strip():
                 invalid = True
@@ -672,7 +672,7 @@ def parse_flutter_case_ids(stdout: str) -> list[str] | None:
     if not saw_json:
         return None
     _, saw_done = _flutter_json_events(stdout)
-    if not saw_done or invalid:
+    if not saw_done or invalid or started != finished:
         return None
     return case_ids
 
