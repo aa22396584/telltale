@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""#47 leftover: large-text / 大字 lane is fail-closed not-run.
+"""#47 leftover: large-text / 大字 lane.
 
-Do not invoke Flutter, change font scale, invent a device id, or walk a
-phone. Host-entry geometry tests do not substitute for this lane.
+Default is fail-closed. --execute on emulator-5554 sets font_scale 1.3.
+The field phone and emulator-5556 are refused.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from large_text import GateError, main, validate_large_text_report  # noqa: E402
+from large_text import CASE_ID, GateError, main, validate_large_text_report  # noqa: E402
 
 
 def _software(**overrides):
@@ -24,6 +24,25 @@ def _software(**overrides):
         "engine": "host-entry",
         "observations": 20,
         "device": "",
+    }
+    report.update(overrides)
+    return report
+
+
+def _executed(**overrides):
+    report = {
+        "lane": "large-text",
+        "device": "emulator-5554",
+        "fingerprint": "google/sdk_gphone64_arm64/emu64a",
+        "command": ["adb", "shell", "settings", "put", "system", "font_scale", "1.3"],
+        "exit": 0,
+        "font_scale": "1.3",
+        "connect_shown": True,
+        "case_ids": [CASE_ID],
+        "screenshot_sha256": "a" * 64,
+        "runner_head_sha": "b" * 40,
+        "installed_version_name": "1.0.12-rig",
+        "apk_matches_runner_head": False,
     }
     report.update(overrides)
     return report
@@ -38,10 +57,39 @@ class LargeTextLaneTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_large_text_report({"lane": "large-text", "device": ""})
 
-    def test_large_text_with_a_device_is_still_not_run(self):
+    def test_large_text_refuses_the_field_phone(self):
         with self.assertRaises(GateError) as raised:
-            validate_large_text_report({"lane": "large-text", "device": "R5CX10VFFBA"})
-        self.assertIn("not-run", str(raised.exception))
+            validate_large_text_report(
+                {"lane": "large-text", "device": "R5CX10VFFBA"}
+            )
+        self.assertIn("field phone", str(raised.exception))
+
+    def test_executed_large_text_report_passes(self):
+        self.assertEqual(
+            validate_large_text_report(_executed())["device"],
+            "emulator-5554",
+        )
+
+    def test_default_font_scale_is_not_pass(self):
+        with self.assertRaises(GateError):
+            validate_large_text_report(_executed(font_scale="1.0"))
+
+    def test_execute_quietinbox_is_refused(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(
+                    [
+                        "--output",
+                        str(output),
+                        "--execute",
+                        "--serial",
+                        "emulator-5556",
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "large-text.json").exists())
 
     def test_large_text_lane_is_not_run(self):
         with tempfile.TemporaryDirectory() as raw:
