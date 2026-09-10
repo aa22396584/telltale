@@ -290,6 +290,7 @@ def validate_plan(
     plan_path: Path,
     check_artifacts: bool = True,
     git_shas: set[str] | None = None,
+    campaign: bool = False,
 ) -> tuple[list[str], list[str]]:
     """Return (errors, ready_task_ids)."""
     errors: list[str] = []
@@ -366,6 +367,41 @@ def validate_plan(
             evidence = _as_list(
                 raw.get("required_evidence", []), f"{ident}.required_evidence"
             )
+            if campaign and blockers and status == "completed":
+                raise PlanError(
+                    f"{ident}: campaign blocked task cannot be completed"
+                )
+            if campaign and commands and not blockers:
+                if not evidence:
+                    raise PlanError(
+                        f"{ident}: campaign software task needs required_evidence"
+                    )
+                required_items = 0
+                for item in evidence:
+                    if not isinstance(item, dict):
+                        raise PlanError(
+                            f"{ident}: required_evidence entries are objects"
+                        )
+                    _as_str(item.get("path"), f"{ident}.evidence.path")
+                    digest = item.get("sha256")
+                    if not isinstance(digest, str) or not SHA256_RE.fullmatch(
+                        digest
+                    ):
+                        raise PlanError(
+                            f"{ident}: campaign evidence sha256 must be 64 hex"
+                        )
+                    flag = item.get("required", True)
+                    if flag is False:
+                        continue
+                    if flag is not True:
+                        raise PlanError(
+                            f"{ident}: campaign evidence required must be boolean"
+                        )
+                    required_items += 1
+                if required_items == 0:
+                    raise PlanError(
+                        f"{ident}: campaign software task needs required evidence"
+                    )
             reviewer = raw.get("reviewer_role")
             if reviewer not in ALLOWED_REVIEWER:
                 raise PlanError(f"{ident}: reviewer_role must be implementation or review")
@@ -737,6 +773,14 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--handoff")
     parser.add_argument("--no-artifacts", action="store_true")
     parser.add_argument(
+        "--campaign",
+        action="store_true",
+        help=(
+            "refuse demonstration-seed empty required_evidence on software "
+            "tasks; each entry needs path and sha256"
+        ),
+    )
+    parser.add_argument(
         "--known-sha",
         action="append",
         default=[],
@@ -758,6 +802,7 @@ def main(argv: list[str]) -> int:
         plan_path=path,
         check_artifacts=not args.no_artifacts,
         git_shas=git_shas,
+        campaign=args.campaign,
     )
     if args.handoff:
         try:

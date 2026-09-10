@@ -1130,5 +1130,214 @@ class ReadyAndLeaseTest(unittest.TestCase):
         self.assertEqual(ready, ["WS-01"])
 
 
+class CampaignQueueTest(unittest.TestCase):
+    def test_shipped_seed_validates_without_campaign(self) -> None:
+        path = ROOT / "tool" / "workshop" / "plan.json"
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "tool" / "workshop" / "validate_plan.py"), str(path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+
+    def test_shipped_seed_cannot_be_a_campaign(self) -> None:
+        path = ROOT / "tool" / "workshop" / "plan.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        errors, _ = validate_plan.validate_plan(
+            data, plan_path=path, check_artifacts=False, campaign=True
+        )
+        self.assertTrue(
+            any("required_evidence" in error for error in errors),
+            msg=errors,
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                str(path),
+                "--campaign",
+                "--no-artifacts",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("required_evidence", completed.stderr)
+
+    def test_software_empty_evidence_fails_campaign(self) -> None:
+        errors, _ = validate_plan.validate_plan(
+            _plan([_minimal_task("WS-01", 9)]),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any("WS-01: campaign software task needs required_evidence" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_blocked_task_may_keep_empty_evidence_in_campaign(self) -> None:
+        data = _plan(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[],
+                    blockers=["needs a licensed adapter"],
+                )
+            ]
+        )
+        errors, _ = validate_plan.validate_plan(
+            data,
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(
+            data["tasks"][0]["hardware_or_license_blockers"],
+            ["needs a licensed adapter"],
+        )
+
+    def test_campaign_evidence_needs_path_and_sha256(self) -> None:
+        errors, _ = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[{"path": "docs/workshop/capabilities.json"}],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any("sha256" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_campaign_accepts_path_and_sha256_without_opening_artifacts(self) -> None:
+        errors, ready = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[
+                            {
+                                "path": "docs/workshop/capabilities.json",
+                                "sha256": "a" * 64,
+                            }
+                        ],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(ready, ["WS-01"])
+
+    def test_campaign_optional_only_evidence_is_not_enough(self) -> None:
+        errors, _ = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[
+                            {
+                                "path": "missing.json",
+                                "sha256": "a" * 64,
+                                "required": False,
+                            }
+                        ],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any("required evidence" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_campaign_one_required_artifact_allows_optional_peers(self) -> None:
+        errors, ready = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[
+                            {
+                                "path": "docs/workshop/capabilities.json",
+                                "sha256": "a" * 64,
+                            },
+                            {
+                                "path": "missing.json",
+                                "sha256": "b" * 64,
+                                "required": False,
+                            },
+                        ],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(ready, ["WS-01"])
+
+    def test_campaign_completed_blocked_task_is_not_pass(self) -> None:
+        data = _plan(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[],
+                    blockers=["needs a licensed adapter"],
+                    status="completed",
+                ),
+                _minimal_task(
+                    "WS-02",
+                    10,
+                    depends_on=[9],
+                    evidence=[
+                        {
+                            "path": "docs/workshop/capabilities.json",
+                            "sha256": "a" * 64,
+                        }
+                    ],
+                ),
+            ]
+        )
+        errors, ready = validate_plan.validate_plan(
+            data,
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any(
+                "WS-01" in error and "cannot be completed" in error
+                for error in errors
+            ),
+            msg=errors,
+        )
+        self.assertNotIn("WS-02", ready)
+
+
 if __name__ == "__main__":
     unittest.main()

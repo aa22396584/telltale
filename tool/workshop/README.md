@@ -27,6 +27,13 @@ python3 tool/workshop/validate_plan.py tool/workshop/plan.json --ready
 python3 -m unittest discover -s test/tool -p '*workshop*plan*.py' -v
 ```
 
+`--campaign` is the 11.D queue gate. The shipped `plan.json` is still a
+demonstration seed (`required_evidence` lists are empty). Default
+validation accepts that seed. `--campaign` does not: every software task
+needs `required_evidence` objects with `path` and `sha256`. Hardware or
+license blockers may keep an empty list. `run_task.py --campaign` uses the
+same rule and cannot complete a seed task.
+
 The validator refuses missing dependencies, cycles, duplicate ids, path
 escape, stale SHAs, missing artifacts, hash mismatch, and skip-as-required-pass.
 Ready tasks are those whose issue-number dependencies are `completed` and that
