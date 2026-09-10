@@ -46,8 +46,7 @@
       ],
       "hardware_or_license_blockers": [],
       "reviewer_role": "implementation",
-      "done_criteria": "assert_official_reporter.py exits 0: official success and pinned-SDK capture yield required case IDs, the failing capture yields none, invented type=test identities are rejected. A skipped required test is a failure.",
-      "base_sha": "3547d9c7406e4a87329d40d1454ddab7a3aa4379"
+      "done_criteria": "assert_official_reporter.py exits 0: official success and pinned-SDK capture yield required case IDs, the failing capture yields none, invented type=test identities are rejected. A skipped required test is a failure."
     },
     {
       "id": "CURRENT-47-NATIVE",

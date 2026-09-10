@@ -1688,7 +1688,8 @@ class CurrentCampaignTest(unittest.TestCase):
         )
         self.assertEqual(errors, [], msg=errors)
         self.assertEqual(ready, ["CURRENT-278"])
-        self.assertEqual(data["audited_sha"], "3547d9c7406e4a87329d40d1454ddab7a3aa4379")
+        self.assertRegex(str(data.get("audited_sha") or ""), r"^[0-9a-f]{40}$")
+        self.assertNotIn("base_sha", data["tasks"][0])
         self.assertNotEqual(
             path.resolve(),
             (ROOT / "tool" / "workshop" / "plan.json").resolve(),
