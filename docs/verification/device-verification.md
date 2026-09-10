@@ -70,6 +70,38 @@ the artifact, not that they walked it, which is what this file is for. A
 weaker claim that is true beats a stronger one nobody can check, and the price
 of keeping it is one sentence in the release notes saying which claim it is.
 
+## 2026-09-11 — 1.0.13 release APK on Pixel_9 and Galaxy S24 Ultra
+
+Device walk attested: 1.0.13
+
+Samsung `R5CX10VFFBA` (zh-TW) and emulator-5554 `Pixel_9` (English). Built
+`app-field-release.apk` from `feat/release-1.0.13` with
+`-PallowUnsignedRelease=true` — this worktree has no `android/key.properties`,
+so the Gradle guard would refuse a release build rather than sign with the
+debug key. **The walked binary is debug-signed and is not the artifact CI or
+Play publishes**; the walk establishes behaviour, not the release signature.
+The previous Play-signed install on the phone had to be removed first for
+that reason. emulator-5556 was not used.
+
+`dumpsys package` after install, read from the package manager: both devices
+`versionCode=14 versionName=1.0.13`. The process pid was unchanged from
+launch through Demo, dashboard, a fault-code scan, Settings, disconnect and
+a second Demo connect.
+
+Walked: the language picker lists Deutsch beside English, 繁體中文 and the
+system default, on both phones, before any connection. The affiliate line
+reads Shopee in English and 蝦皮 in zh-TW. Demo ECU live gauges; the
+dashboard shows **Batched polling** once Mode 01 packing is observed. Fault
+codes: 3 codes, VIN `1D4GP00R55B123456`, freeze-frame cause `P0301` so the
+Mode 02 gate was exercised. Settings connection card. No crash.
+
+The Connect four-row handshake panel is not on screen long enough to
+photograph on Demo — the dashboard replaces it before a screenshot. The
+rows are covered by widget tests on this commit. No adapter, no vehicle.
+
+Harness on Pixel_9: `integration_test/demo_rig_test.dart` PASS and
+`tool/telemetry_lifecycle_rig/run.sh emulator-5554` PASS.
+
 ## 2026-09-07 — 1.0.12 release APK, English walk-through on the phone
 
 Device walk attested: 1.0.12

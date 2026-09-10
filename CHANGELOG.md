@@ -8,6 +8,13 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+## 1.0.13 — 2026-09-11
+
+Google Play production target `1.0.13` / versionCode 14. GitHub community
+release `v1.0.13`. Play production is still `1.0.11` / versionCode 12 as of
+this writing — `1.0.12` shipped only as the community APK — so a Play
+install jumping here also receives everything listed under `1.0.12`.
+
 ### Added
 
 - A German interface. The picker on the Connect screen and in Settings now lists
@@ -37,6 +44,16 @@ Dates are the date the build was made, not the date it reached anyone.
   Until a native speaker has read these screens in a car, a German sentence that
   reads wrongly is a defect worth reporting rather than a matter of taste, and
   `docs/i18n/README.md` says so where a translator will look.
+- The connect handshake now shows four separate facts: the transport, the
+  protocol that answered, which ECUs replied, and what that is based on.
+  Demo is named as software, never as a field adapter. An empty protocol is
+  unknown. No ECU answers is not observed. Link loss does not wipe a fact
+  that was already seen. (#51 leftover, #306, #307)
+- The dashboard reports how many Mode 01 sensors the adapter actually packed
+  in one reply, not only whether fast mode is allowed. That count survives
+  resume, and a reply that times out after the write still counts as a
+  packed batch rather than as a silent miss. (#94 leftover, #297, #298,
+  #300, #301)
 
 ### Fixed
 
@@ -57,6 +74,8 @@ Dates are the date the build was made, not the date it reached anyone.
   Not yet run on the reporter's phone: the emulator and a Galaxy S24 Ultra
   show the two sides of the switch; the Note 3 row is the reporter's. (#121,
   #104)
+- Year-range confirm refusals used diagnostic copy. They now use the
+  authorization wording. (#45 leftover, #299)
 
 ## 1.0.12 — 2026-09-07
 
