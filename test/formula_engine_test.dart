@@ -1060,6 +1060,13 @@ void main() {
         FormulaEngine.preflight('LOOKUP(A:0:1=100:not-a-pair)')!.issue,
         FormulaIssue.unparsableTerm,
       );
+      // Named calls in an unselected mapped branch must stay lazy.
+      // LOG10(A-2) at A=2 is log10(0); reducing it before the table
+      // selects 2=200 would throw.
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:1=LOG10(A-2):2=200)', const [2]),
+        closeTo(200.0, 1e-9),
+      );
     });
 
     test('CLOSEST() is nearest numeric key, not LOOKUP exact-or-default', () {
