@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/connection_layers.dart';
 import 'package:torque_obd/l10n/generated/app_localizations_en.dart';
+import 'package:torque_obd/obd/addressing.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/ui/screens/connect/connection_layer_copy.dart';
 
@@ -101,6 +102,44 @@ void main() {
     expect(source.contains('.requestedProtocol'), isTrue);
     expect(source.contains('connection.requestedProtocol'), isTrue);
     expect(source.contains('connection.protocolNumber'), isTrue);
+    expect(source.contains('protocolDescription:'), isTrue);
+    expect(source.contains('protocolNumber:'), isTrue);
+  });
+
+  test('ATDP-only KWP is subtype unknown, not 5-baud or fast', () {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      protocol: 'ISO 14230-4 (KWP FAST)',
+    );
+    expect(report.kwpInit, KwpInit.unknown);
+    expect(
+      connectionLayerProtocolDetail(AppLocalizationsEn(), report),
+      'KWP, 5-baud vs fast not distinguished',
+    );
+  });
+
+  test('ATDPN 5 is fast even when ATDP also names KWP FAST', () {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      protocol: '5',
+      protocolNumber: '5',
+      protocolDescription: 'ISO 14230-4 (KWP FAST)',
+    );
+    expect(report.kwpInit, KwpInit.fast);
+    expect(
+      connectionLayerProtocolDetail(AppLocalizationsEn(), report),
+      isNot('KWP, 5-baud vs fast not distinguished'),
+    );
+  });
+
+  test('ATDPN 4 is 5-baud', () {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.wifi,
+      protocol: '4',
+      protocolNumber: '4',
+      protocolDescription: 'ISO 14230-4 (KWP2000)',
+    );
+    expect(report.kwpInit, KwpInit.fiveBaud);
   });
 
   test('requested protocol 5 and observed 6 are both retained', () {

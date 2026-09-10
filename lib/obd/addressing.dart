@@ -63,6 +63,17 @@ enum ObdBusFamily {
   unknown,
 }
 
+/// ISO 14230-4 init: 5-baud (`ATDPN` 4) vs fast (`ATDPN` 5).
+///
+/// `ATDP` can print "KWP FAST". That sentence is not the protocol number.
+/// ATDP-only KWP is [unknown], not fast and not 5-baud.
+enum KwpInit {
+  none,
+  fiveBaud,
+  fast,
+  unknown,
+}
+
 class BusAddressing {
   const BusAddressing._(this.family, this.headerHexDigits,
       {this.acceptsBothReceiveWidths = false});
@@ -117,6 +128,29 @@ class BusAddressing {
   /// of defect a shared helper prevents.
   static String normaliseProtocolNumber(String protocolNumber) =>
       protocolNumber.trim().toUpperCase().replaceFirst(RegExp(r'^A(?=.)'), '');
+
+  /// 5-baud vs fast is `ATDPN` 4 vs 5. An ISO 14230 sentence without that
+  /// number cannot choose.
+  static KwpInit kwpInit({
+    String protocolNumber = '',
+    String description = '',
+  }) {
+    KwpInit fromNumber(String raw) {
+      final n = normaliseProtocolNumber(raw);
+      if (n == '4') return KwpInit.fiveBaud;
+      if (n == '5') return KwpInit.fast;
+      return KwpInit.none;
+    }
+
+    final numbered = fromNumber(protocolNumber);
+    if (numbered != KwpInit.none) return numbered;
+    final numberedDescription = fromNumber(description);
+    if (numberedDescription != KwpInit.none) return numberedDescription;
+    if (familyFromDescription(description) == ObdBusFamily.kwp2000) {
+      return KwpInit.unknown;
+    }
+    return KwpInit.none;
+  }
 
   /// Derives addressing from what `ATDPN` reported.
   ///

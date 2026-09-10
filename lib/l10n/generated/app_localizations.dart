@@ -6907,6 +6907,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'asked {requested}, settled {observed}'**
   String connectionLayerRequestedObserved(String requested, String observed);
+
+  /// Connect protocol row when ATDP names ISO 14230-4 / KWP but ATDPN is not 4 or 5. An ATDP sentence that includes KWP FAST is still not ATDPN 5.
+  ///
+  /// In en, this message translates to:
+  /// **'KWP, 5-baud vs fast not distinguished'**
+  String get connectionLayerKwpSubtypeUnknown;
 }
 
 class _AppLocalizationsDelegate

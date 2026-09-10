@@ -3903,6 +3903,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String connectionLayerRequestedObserved(String requested, String observed) {
     return '要求 $requested，實際 $observed';
   }
+
+  @override
+  String get connectionLayerKwpSubtypeUnknown => 'KWP，5-baud 與 fast 無法分辨';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7803,4 +7806,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String connectionLayerRequestedObserved(String requested, String observed) {
     return '要求 $requested，實際 $observed';
   }
+
+  @override
+  String get connectionLayerKwpSubtypeUnknown => 'KWP，5-baud 與 fast 無法分辨';
 }

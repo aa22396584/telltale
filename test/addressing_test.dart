@@ -95,6 +95,50 @@ Future<(FakeElm327, TelemetrySnapshot)> _poll(
 void main() {
   _descriptionFallback();
   _functionalAddressingTests();
+  group('KWP init subtype', () {
+    test('ATDPN 4 is 5-baud and ATDPN 5 is fast', () {
+      expect(BusAddressing.kwpInit(protocolNumber: '4'), KwpInit.fiveBaud);
+      expect(BusAddressing.kwpInit(protocolNumber: '5'), KwpInit.fast);
+      expect(BusAddressing.kwpInit(protocolNumber: 'A4'), KwpInit.fiveBaud);
+      expect(BusAddressing.kwpInit(protocolNumber: 'A5'), KwpInit.fast);
+    });
+
+    test('ATDP-only KWP cannot distinguish 5-baud vs fast', () {
+      // The datasheet sentence can say FAST. That is still not ATDPN 5.
+      expect(
+        BusAddressing.kwpInit(description: 'ISO 14230-4 (KWP FAST)'),
+        KwpInit.unknown,
+      );
+      expect(
+        BusAddressing.kwpInit(description: 'ISO 14230-4 (KWP2000)'),
+        KwpInit.unknown,
+      );
+      expect(
+        BusAddressing.kwpInit(description: 'AUTO, ISO 14230-4 (KWP 5BAUD)'),
+        KwpInit.unknown,
+      );
+    });
+
+    test('a number is not second-guessed by an ATDP sentence', () {
+      expect(
+        BusAddressing.kwpInit(
+          protocolNumber: '4',
+          description: 'ISO 14230-4 (KWP FAST)',
+        ),
+        KwpInit.fiveBaud,
+      );
+    });
+
+    test('CAN is not a KWP subtype question', () {
+      expect(
+        BusAddressing.kwpInit(
+          protocolNumber: '6',
+          description: 'ISO 15765-4 (CAN 11/500)',
+        ),
+        KwpInit.none,
+      );
+    });
+  });
   group('protocol number to addressing', () {
     test('R8-8: the two J1850 sub-protocols are told apart', () {
       // `ATDPN` answers 1 for PWM and 2 for VPW. The app used to collapse both

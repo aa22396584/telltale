@@ -106,6 +106,21 @@ void main() {
     );
   });
 
+  testWidgets('ATDP-only KWP shows subtype unknown, not FAST', (tester) async {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      protocol: 'ISO 14230-4 (KWP FAST)',
+    );
+    await tester.pumpWidget(
+      localizedMaterialApp(
+        locale: const Locale('en'),
+        home: Scaffold(body: ConnectionLayersPanel(report: report)),
+      ),
+    );
+    expect(find.text('KWP, 5-baud vs fast not distinguished'), findsOneWidget);
+    expect(find.text('KWP FAST'), findsNothing);
+  });
+
   testWidgets('copy puts the four-row summary on the clipboard', (tester) async {
     String? copied;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(

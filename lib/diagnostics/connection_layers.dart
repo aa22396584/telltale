@@ -5,6 +5,7 @@
 /// AUTO. No ECU answers is notObserved, not unsupported.
 library;
 
+import '../obd/addressing.dart';
 import '../obd/transport/obd_transport.dart';
 
 enum ConnectionLayerKind { transport, protocol, ecu, evidence }
@@ -32,6 +33,8 @@ final class ConnectionLayerReport {
     required this.evidence,
     this.requestedProtocol = '',
     this.observedProtocol = '',
+    this.protocolNumber = '',
+    this.protocolDescription = '',
   });
 
   final ConnectionLayerValue transport;
@@ -45,10 +48,26 @@ final class ConnectionLayerReport {
   /// What the adapter actually settled on (`ATDP` / `ATDPN`).
   final String observedProtocol;
 
+  /// `ATDPN` only. Empty when the adapter would not print a number.
+  final String protocolNumber;
+
+  /// `ATDP` sentence. Not a substitute for [protocolNumber] 4 vs 5.
+  final String protocolDescription;
+
+  /// 5-baud vs fast is `ATDPN` 4 vs 5. An ISO 14230 sentence is [KwpInit.unknown].
+  KwpInit get kwpInit => BusAddressing.kwpInit(
+        protocolNumber: protocolNumber,
+        description: protocolDescription.isNotEmpty
+            ? protocolDescription
+            : observedProtocol,
+      );
+
   factory ConnectionLayerReport.fromConnection({
     TransportKind? kind,
     String protocol = '',
     String requestedProtocol = '',
+    String protocolNumber = '',
+    String protocolDescription = '',
     Set<String> responders = const {},
     bool testRig = false,
   }) {
@@ -60,6 +79,8 @@ final class ConnectionLayerReport {
     // not inputs, so they cannot elevate the row.
     final observed = protocol.trim();
     final requested = requestedProtocol.trim();
+    final number = protocolNumber.trim();
+    final description = protocolDescription.trim();
     return ConnectionLayerReport(
       transport: switch (kind) {
         TransportKind.demo => ConnectionLayerValue.demo,
@@ -79,6 +100,9 @@ final class ConnectionLayerReport {
           : ConnectionLayerValue.unknown,
       requestedProtocol: requested,
       observedProtocol: observed,
+      protocolNumber: number,
+      protocolDescription:
+          description.isNotEmpty ? description : observed,
     );
   }
 }
