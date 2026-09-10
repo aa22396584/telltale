@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/app_locales_platform.dart';
 import '../l10n/locale_resolution.dart';
 import 'pid_registry.dart';
 
@@ -64,12 +65,25 @@ class LocalePreferenceController extends Notifier<LocalePreference> {
         return false;
       }
       _committed = preference;
+      // API 33+: also tell LocaleManager. Missing channel / API 32 is a
+      // no-op so SharedPreferences remains the store. Dirty-editor restart
+      // handling is still #43 leftover.
+      await AppLocalesPlatform.setOverrideTags(_overrideTagsFor(preference));
       return true;
     } on Object {
       if (attempt == _attempt) state = _committed;
       return false;
     }
   }
+}
+
+List<String> _overrideTagsFor(LocalePreference preference) {
+  return switch (preference) {
+    LocalePreference.system => const <String>[],
+    LocalePreference.english => const <String>['en'],
+    LocalePreference.traditionalChinese => const <String>['zh-Hant'],
+    LocalePreference.german => const <String>['de'],
+  };
 }
 
 final localePreferenceProvider =
