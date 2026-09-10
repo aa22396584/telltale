@@ -4199,7 +4199,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dtcCategoryPending =>
-      'Ein Sachbearbeiter hat die Anfrage erhalten und bearbeitet sie derzeit noch. Bitte warten Sie und versuchen Sie es dann erneut – dies ist keine Ablehnung.';
+      'Ein Steuergerät hat die Anfrage erhalten und bearbeitet sie derzeit noch. Bitte warten Sie und versuchen Sie es dann erneut – dies ist keine Ablehnung.';
 
   @override
   String get dtcCategoryUnattributed =>
@@ -4222,7 +4222,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dtcCategoryRefusedControllers(int refused, int answered) {
-    return '$refused Steuergerät(e) haben nicht geantwortet ($answered hat geantwortet). Dieser Scan kann nicht das gesamte Fahrzeug erfassen.';
+    return '$refused Steuergerät(e) haben die Anfrage abgelehnt ($answered hat geantwortet). Dieser Scan kann nicht das gesamte Fahrzeug erfassen.';
   }
 
   @override
@@ -4273,7 +4273,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dtcClearSilentControllers(int count, String controllers) {
-    return '$count Steuergerät(e) haben nicht auf das Löschen geantwortet ($controllers). Die Steuergeräte, die geantwortet haben, sind gelöscht; bei den anderen ist es unbekannt.';
+    return '$count Steuergerät(e) haben nicht auf den Löschbefehl geantwortet ($controllers). Die Steuergeräte, die geantwortet haben, sind gelöscht; die anderen können noch Fehlercodes enthalten. Führen Sie einen erneuten Scan durch. Senden Sie keinen weiteren Löschbefehl.';
   }
 
   @override
@@ -4283,7 +4283,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dtcClearUnresolvedSourcesDoNotRepeat(int count, String addresses) {
-    return 'Die $count Antwort(en) in der unverschlüsselten Rückmeldung konnten nicht zugeordnet werden ($addresses). Senden Sie keine weitere unverschlüsselte Rückmeldung. Führen Sie einen erneuten Scan durch, um festzustellen, welche Codes noch vorhanden sind.';
+    return 'Die $count Antwort(en) auf den Löschbefehl konnten nicht zugeordnet werden ($addresses). Senden Sie keinen weiteren Löschbefehl. Führen Sie einen erneuten Scan durch, um festzustellen, welche Fehlercodes noch vorhanden sind.';
   }
 
   @override
