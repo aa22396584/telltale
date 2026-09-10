@@ -241,6 +241,14 @@ void main() {
       expect(picker, isNot(contains('force-stop')));
       final main = File('lib/main.dart').readAsStringSync();
       expect(main, contains('AppLocalesPlatform.live = true'));
+      // PidEditorScreen must not write pidEditorDirtyProvider from dispose:
+      // Riverpod 3 forbids using ref while unmounting, and 25 editor tests
+      // failed on that path in telltale#294 CI 34468560906.
+      final editor = File(
+        'lib/ui/screens/pids/pid_editor_screen.dart',
+      ).readAsStringSync();
+      expect(editor, isNot(contains('language_switch_guard')));
+      expect(editor, isNot(contains('pidEditorDirtyProvider')));
     });
 
     test('copy is localized, not a raw identifier', () {
