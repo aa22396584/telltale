@@ -1195,8 +1195,9 @@ void main() {
     final offenders = <String>[];
     for (final file in files) {
       final literals = stringLiteralsOnly(file.readAsStringSync());
-      if (literals.contains('dashboardPollingModePill'))
+      if (literals.contains('dashboardPollingModePill')) {
         sawAKnownLiteral = true;
+      }
       if (literals.contains('fastMode')) offenders.add(file.path);
     }
     expect(
