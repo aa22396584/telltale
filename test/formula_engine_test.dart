@@ -1067,6 +1067,19 @@ void main() {
         engine.evaluateBytes('LOOKUP(A:0:1=LOG10(A-2):2=200)', const [2]),
         closeTo(200.0, 1e-9),
       );
+      var nested = '7';
+      for (var i = 0; i < 8; i++) {
+        nested = 'LOOKUP(1:0:1=$nested)';
+      }
+      expect(engine.evaluateBytes(nested, const []), closeTo(7.0, 1e-9));
+      var tooDeep = '7';
+      for (var i = 0; i < 65; i++) {
+        tooDeep = 'LOOKUP(1:0:1=$tooDeep)';
+      }
+      expect(
+        thrownBy(() => engine.evaluateBytes(tooDeep, const [])).issue,
+        FormulaIssue.functionNestingTooDeep,
+      );
     });
 
     test('CLOSEST() is nearest numeric key, not LOOKUP exact-or-default', () {
@@ -1837,6 +1850,18 @@ void main() {
         '${'ABS((' * 65}A${'))' * 65}',
         const [1],
       ),
+    );
+
+    expectIssue(
+      'LOOKUP fragment recursion spends the same 64-pass budget',
+      FormulaIssue.functionNestingTooDeep,
+      () {
+        var nested = '7';
+        for (var i = 0; i < 65; i++) {
+          nested = 'LOOKUP(1:0:1=$nested)';
+        }
+        engine.evaluateBytes(nested, const []);
+      },
     );
 
     expectIssue(
