@@ -312,6 +312,11 @@ class PollingEngine {
   int _capabilityDiscoveryEpoch = 0;
   bool _running = false;
 
+  /// Last Mode 01 command's PID count on the wire, or null this connection.
+  ///
+  /// Retired by [start]. Profile-response commands do not write it.
+  int? _lastMode01PidCount;
+
   Stream<TelemetrySnapshot> get snapshots => _snapshots.stream;
 
   TelemetrySnapshot get current => TelemetrySnapshot(
@@ -319,6 +324,7 @@ class PollingEngine {
     faults: Map.unmodifiable(_faults),
     pidsPerSecond: scheduler.stats.pidsPerSecond,
     fastModeEnabled: scheduler.fastModeEnabled,
+    lastMode01PidCount: _lastMode01PidCount,
     batteryVoltage: client.batteryVoltage,
     accelerationMs2: accelerationMs2,
     capturedAt: DateTime.now(),
@@ -516,9 +522,7 @@ class PollingEngine {
     // see [_scheduledDefinitions], not the dashboard set alone.
     _active = List.unmodifiable(merged.values);
     _syncDashboardLeases();
-    final live = {
-      for (final pid in _scheduledDefinitions()) pid.id: pid,
-    };
+    final live = {for (final pid in _scheduledDefinitions()) pid.id: pid};
     _authorizedProfileDefinitions = Map.unmodifiable({
       for (final pid in live.values)
         if (pid.ownerProfileId != null) pid.id: pid,
@@ -585,9 +589,7 @@ class PollingEngine {
     final removed = _leasedDefinitions.remove(leaseId);
     demands.release(leaseId);
     if (removed == null) return;
-    final live = {
-      for (final pid in _scheduledDefinitions()) pid.id: pid,
-    };
+    final live = {for (final pid in _scheduledDefinitions()) pid.id: pid};
     _authorizedProfileDefinitions = Map.unmodifiable({
       for (final pid in live.values)
         if (pid.ownerProfileId != null) pid.id: pid,
@@ -1303,8 +1305,9 @@ class PollingEngine {
     // `transcriptLabel`, not screen copy. The transcript is an exported
     // artifact that two people compare weeks apart, so its language must not
     // depend on whose phone produced it.
-    client.transcript
-        .recordNote('開始讀取${kind.transcriptLabel}故障碼（Mode ${kind.mode}）');
+    client.transcript.recordNote(
+      '開始讀取${kind.transcriptLabel}故障碼（Mode ${kind.mode}）',
+    );
     // Captured, not sampled. Re-checked before every attempt, so a retry that
     // slept across an interruption does not resume on the other side of it.
     final owner = lifecycleEpoch?.call();
@@ -3657,6 +3660,7 @@ class PollingEngine {
     // session's disabled fastMode into a fresh one would silently cap
     // throughput at single-PID rates with nothing in the UI explaining why.
     scheduler.resetThrottle();
+    _lastMode01PidCount = null;
     _running = true;
     final epoch = ++_epoch;
     _loopDone[epoch] = Completer<void>();
@@ -3787,9 +3791,10 @@ class PollingEngine {
   /// Rebuilds dashboard leases to match [_active]. Recording/trip/alert
   /// leases are left alone so they can share a wire request with the gauges.
   void _syncDashboardLeases() {
-    for (final lease in demands.leases
-        .where((demand) => demand.owner == DemandOwner.dashboard)
-        .toList()) {
+    for (final lease
+        in demands.leases
+            .where((demand) => demand.owner == DemandOwner.dashboard)
+            .toList()) {
       demands.release(lease.leaseId);
     }
     for (final pid in _active) {
@@ -3814,9 +3819,7 @@ class PollingEngine {
   /// gone, only this union still sees the held equation.
   List<Pid> _scheduledDefinitions() {
     if (_leasedDefinitions.isEmpty) return _active;
-    final byId = <String, Pid>{
-      for (final pid in _active) pid.id: pid,
-    };
+    final byId = <String, Pid>{for (final pid in _active) pid.id: pid};
     for (final pid in _leasedDefinitions.values) {
       byId.putIfAbsent(pid.id, () => pid);
     }
@@ -3896,11 +3899,7 @@ class PollingEngine {
           key) {
         continue;
       }
-      final bytes = _bytesForSharedSibling(
-        sibling,
-        response,
-        sourceBytes,
-      );
+      final bytes = _bytesForSharedSibling(sibling, response, sourceBytes);
       if (bytes == null) {
         _invalidate(sibling.id, PidFault.busError);
         continue;
@@ -3946,7 +3945,11 @@ class PollingEngine {
     );
   }
 
-  void _invalidateSharedWire(Pid source, PidFault fault, {DateTime? retryAfter}) {
+  void _invalidateSharedWire(
+    Pid source,
+    PidFault fault, {
+    DateTime? retryAfter,
+  }) {
     void one(String id) {
       _invalidate(id, fault);
       if (retryAfter != null) _retryAfter[id] = retryAfter;
@@ -4104,6 +4107,17 @@ class PollingEngine {
               header: header,
               timeout: client.commandTimeout,
             );
+      final mode01Count = mode01PidCountOnWire(command);
+      if (mode01Count != null) {
+        final previous = _lastMode01PidCount;
+        // Keep the highest packing this connection. A later singleton
+        // (unbatchable 010F sitting at the queue head) must not erase an
+        // earlier grouped Mode 01 command — that is the observation the
+        // pill is allowed to show. Reconnect clears the field.
+        if (previous == null || mode01Count > previous) {
+          _lastMode01PidCount = mode01Count;
+        }
+      }
       if (epoch != null && epoch != _epoch) return;
       // The definitions this request was built from are gone, so its answer
       // describes a question nobody is asking any more. Writing it to the

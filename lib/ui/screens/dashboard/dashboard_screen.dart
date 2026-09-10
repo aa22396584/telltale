@@ -552,6 +552,7 @@ class _StatusStrip extends ConsumerWidget {
                 PollingModePill(
                   schedulerAllowsGrouping: snapshot.fastModeEnabled,
                   busAllowsGrouping: ref.watch(busGroupsRequestsProvider),
+                  observedMode01Batch: (snapshot.lastMode01PidCount ?? 0) >= 2,
                 ),
               // Shown even when unknown. Hiding the pill would make "the
               // adapter stopped reporting voltage" look identical to "this
@@ -611,9 +612,11 @@ bool _snapshotHasBeenPolled(TelemetrySnapshot snapshot) {
 ///
 /// So "Batching enabled" requires both, and it is still only permission:
 /// `popBatch` also wants the member PID confirmed batchable and more than one
-/// request queued, so "active", "batched" or "verified" remain claims this
-/// state cannot make. When either half is down, every Mode 01 PID is read on
-/// its own, which is what the fallback label says and what the code does.
+/// request queued. "Batched polling" is a third label, and it is the only one
+/// that may say grouping was observed: [observedMode01Batch] is true when the
+/// last Mode 01 command on the wire packed two or more PIDs. "active" and
+/// "verified" remain unsayable. When either permission half is down, every
+/// Mode 01 PID is read on its own, which is what the fallback label says.
 ///
 /// **The fallback label covers three states and cannot tell them apart.** The
 /// bus is not CAN and never will group; the bus is CAN but no support block
@@ -644,6 +647,7 @@ class PollingModePill extends StatelessWidget {
   const PollingModePill({
     required this.schedulerAllowsGrouping,
     required this.busAllowsGrouping,
+    this.observedMode01Batch = false,
     super.key,
   });
 
@@ -652,6 +656,12 @@ class PollingModePill extends StatelessWidget {
 
   /// `PriorityScheduler.canBatch`, read through `busGroupsRequestsProvider`.
   final bool busAllowsGrouping;
+
+  /// Last Mode 01 command on the wire packed two or more PIDs.
+  ///
+  /// Independent of the permission halves. A session can have grouping
+  /// permitted and still never have sent a grouped Mode 01 command.
+  final bool observedMode01Batch;
 
   static const Key pillKey = Key('dashboardPollingModePill');
 
@@ -680,9 +690,11 @@ class PollingModePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final grouping = schedulerAllowsGrouping && busAllowsGrouping;
-    final label = grouping
-        ? l10n.dashboardBatchingEnabled
-        : l10n.dashboardSingleRequestMode;
+    final label = !grouping
+        ? l10n.dashboardSingleRequestMode
+        : observedMode01Batch
+        ? l10n.dashboardBatchedPolling
+        : l10n.dashboardBatchingEnabled;
     // Merged rather than excluded: the InkWell contributes the focus and tap
     // semantics a keyboard user needs, and the pill contributes the state.
     // Excluding the subtree would have made the node read cleanly in a test
@@ -705,7 +717,11 @@ class PollingModePill extends StatelessWidget {
               child: StatusPill(
                 label: label,
                 icon: grouping ? Icons.fast_forward : Icons.slow_motion_video,
-                tone: grouping ? StatusTone.good : StatusTone.warn,
+                tone: !grouping
+                    ? StatusTone.warn
+                    : observedMode01Batch
+                    ? StatusTone.good
+                    : StatusTone.accent,
               ),
             ),
           ),
@@ -736,6 +752,8 @@ Future<void> showPollingModeHelp(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(l10n.dashboardPollingModeHelpBatching),
+              const SizedBox(height: Spacing.md),
+              Text(l10n.dashboardPollingModeHelpObserved),
               const SizedBox(height: Spacing.md),
               Text(l10n.dashboardPollingModeHelpSingle),
               const SizedBox(height: Spacing.md),

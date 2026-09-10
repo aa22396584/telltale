@@ -325,6 +325,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchedPolling => '批次讀取';
+
+  @override
   String get dashboardBatchingEnabled => '已啟用批次';
 
   @override
@@ -351,6 +354,10 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get dashboardPollingModeHelpBatching =>
       '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+
+  @override
+  String get dashboardPollingModeHelpObserved =>
+      '「批次讀取」代表這次連線裡，有一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
 
   @override
   String get dashboardPollingModeHelpRate =>
@@ -4171,6 +4178,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get dashboardBatchedPolling => '批次讀取';
+
+  @override
   String get dashboardBatchingEnabled => '已啟用批次';
 
   @override
@@ -4197,6 +4207,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get dashboardPollingModeHelpBatching =>
       '「已啟用批次」代表 Telltale 可以把多個 PID 請求併成一次交握，以減少來回次數：這條匯流排允許嘗試併批，而且併批沒有被關掉。它仍然是授權而不是量測，因為某一次交握到底有沒有併起來，還要看這輛車確認支援哪些 PID，以及當下排了幾筆。';
+
+  @override
+  String get dashboardPollingModeHelpObserved =>
+      '「批次讀取」代表這次連線裡，有一筆 Mode 01 指令在線路上一次帶了超過一個 PID。那是對那一次交握的紀錄，不是下一筆也會併批的保證，也不是對吞吐量的主張。';
 
   @override
   String get dashboardPollingModeHelpRate =>

@@ -125,9 +125,8 @@ class _LocaleRoot extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
       home: home,
@@ -272,10 +271,12 @@ void main() {
   // Hand-typed. Not read back from the ARB, from `AppLocalizations`, or from
   // the widget under test.
   const enBatching = 'Batching enabled';
+  const enBatched = 'Batched polling';
   const enSingle = 'Single request mode';
   const enAction = 'About polling mode';
   const enTitle = 'Polling mode';
   const zhBatching = '已啟用批次';
+  const zhBatched = '批次讀取';
   const zhSingle = '單筆模式';
   const zhAction = '關於讀取模式';
   const zhTitle = '讀取模式';
@@ -287,6 +288,8 @@ void main() {
     test('enabled is enabled, and never active, batched or verified', () {
       expect(en.dashboardBatchingEnabled, enBatching);
       expect(zh.dashboardBatchingEnabled, zhBatching);
+      expect(en.dashboardBatchedPolling, enBatched);
+      expect(zh.dashboardBatchedPolling, zhBatched);
       // The three words the state cannot support. `enabled` is permission;
       // these would each be a claim that an exchange was observed.
       for (final forbidden in ['active', 'batched', 'verified']) {
@@ -298,6 +301,11 @@ void main() {
               'PriorityScheduler.fastModeEnabled is permission, not a record',
         );
       }
+      expect(
+        en.dashboardBatchedPolling.toLowerCase(),
+        contains('batched'),
+        reason: 'the observed label is the one place "batched" is allowed',
+      );
     });
 
     test('the fallback side is unchanged and still translated', () {
@@ -314,11 +322,21 @@ void main() {
 
     test('the explanation states the mechanism, the fallback and the limit', () {
       // Grouping to cut round trips, and the hedge that it is permission.
-      expect(en.dashboardPollingModeHelpBatching, contains('group PID requests'));
+      expect(
+        en.dashboardPollingModeHelpBatching,
+        contains('group PID requests'),
+      );
       expect(en.dashboardPollingModeHelpBatching, contains('round trips'));
       expect(en.dashboardPollingModeHelpBatching, contains('permission'));
       expect(zh.dashboardPollingModeHelpBatching, contains('併成一次交握'));
       expect(zh.dashboardPollingModeHelpBatching, contains('仍然是授權而不是量測'));
+      expect(en.dashboardPollingModeHelpObserved, contains('this connection'));
+      expect(
+        en.dashboardPollingModeHelpObserved,
+        contains('more than one PID'),
+      );
+      expect(zh.dashboardPollingModeHelpObserved, contains('Mode 01'));
+      expect(zh.dashboardPollingModeHelpObserved, contains('超過一個 PID'));
       // The fallback continues to update, and is not by itself a lost link.
       expect(en.dashboardPollingModeHelpSingle, contains('carry on updating'));
       expect(
@@ -351,10 +369,7 @@ void main() {
         en.dashboardPollingModeHelpSingle,
         isNot(contains('short or garbled')),
       );
-      expect(
-        zh.dashboardPollingModeHelpSingle,
-        isNot(contains('過短或錯亂')),
-      );
+      expect(zh.dashboardPollingModeHelpSingle, isNot(contains('過短或錯亂')));
 
       // The fallback label covers three unrelated states and has to name all
       // of them. A bus that never groups is not a fallback from anything; a
@@ -404,7 +419,10 @@ void main() {
         en.dashboardPollingModeHelpSingle,
         contains('each Mode 01 PID is read on its own'),
       );
-      expect(zh.dashboardPollingModeHelpSingle, contains('每個 Mode 01 PID 各自讀取'));
+      expect(
+        zh.dashboardPollingModeHelpSingle,
+        contains('每個 Mode 01 PID 各自讀取'),
+      );
 
       // canBatch is addressing.isCan && a nonempty verified-support map. That
       // is set after a support block answers and before any grouped request
@@ -426,9 +444,19 @@ void main() {
       );
 
       // The rate is observed, and depends on six named things.
-      expect(en.dashboardPollingModeHelpRate, contains('observed over the last second'));
+      expect(
+        en.dashboardPollingModeHelpRate,
+        contains('observed over the last second'),
+      );
       expect(zh.dashboardPollingModeHelpRate, contains('過去一秒觀測到的速率'));
-      for (final term in ['adapter', 'bus', 'ECU', 'PIDs you selected', 'reply', 'errors']) {
+      for (final term in [
+        'adapter',
+        'bus',
+        'ECU',
+        'PIDs you selected',
+        'reply',
+        'errors',
+      ]) {
         expect(
           en.dashboardPollingModeHelpRate,
           contains(term),
@@ -533,8 +561,87 @@ void main() {
     // And the explanation names that state, not only the corruption fallback.
     await tester.tap(find.byKey(PollingModePill.pillKey));
     await _openHelpPump(tester);
-    expect(find.textContaining('does not take grouped requests'), findsOneWidget);
+    expect(
+      find.textContaining('does not take grouped requests'),
+      findsOneWidget,
+    );
   });
+
+  testWidgets(
+    'Batched polling is shown only when a Mode 01 command packed two PIDs',
+    (tester) async {
+      await _pumpDashboard(
+        tester,
+        batchingEnabled: true,
+        snapshot: TelemetrySnapshot(
+          pidsPerSecond: 12,
+          fastModeEnabled: true,
+          lastMode01PidCount: 2,
+          capturedAt: DateTime.now(),
+        ),
+      );
+      expect(find.text(enBatched), findsOneWidget);
+      expect(
+        find.text(enBatching),
+        findsNothing,
+        reason:
+            'permission without the observed count stays Batching enabled; '
+            'this snapshot has the count, so the enabled label must yield',
+      );
+    },
+  );
+
+  testWidgets('a single-PID Mode 01 command does not claim Batched polling', (
+    tester,
+  ) async {
+    await _pumpDashboard(
+      tester,
+      batchingEnabled: true,
+      snapshot: TelemetrySnapshot(
+        pidsPerSecond: 12,
+        fastModeEnabled: true,
+        lastMode01PidCount: 1,
+        capturedAt: DateTime.now(),
+      ),
+    );
+    expect(find.text(enBatching), findsOneWidget);
+    expect(find.text(enBatched), findsNothing);
+  });
+
+  testWidgets('an observed batch does not outrank withdrawn grouping', (
+    tester,
+  ) async {
+    await _pumpDashboard(
+      tester,
+      batchingEnabled: false,
+      snapshot: TelemetrySnapshot(
+        capturedAt: DateTime.now(),
+        fastModeEnabled: false,
+        lastMode01PidCount: 6,
+      ),
+    );
+    expect(find.text(enSingle), findsOneWidget);
+    expect(find.text(enBatched), findsNothing);
+  });
+
+  testWidgets(
+    'an observed batch on a bus that cannot group is still the fallback',
+    (tester) async {
+      await _pumpDashboard(
+        tester,
+        batchingEnabled: true,
+        busAllowsGrouping: false,
+        snapshot: TelemetrySnapshot(
+          pidsPerSecond: 12,
+          fastModeEnabled: true,
+          lastMode01PidCount: 2,
+          capturedAt: DateTime.now(),
+        ),
+      );
+      expect(find.text(enSingle), findsOneWidget);
+      expect(find.text(enBatched), findsNothing);
+    },
+  );
 
   testWidgets('the enabled label needs both halves of the permission', (
     tester,
@@ -561,45 +668,46 @@ void main() {
     }
   });
 
-  testWidgets('the explanation activates from the keyboard once the pill has focus', (
-    tester,
-  ) async {
-    await _pumpDashboard(tester, batchingEnabled: true);
+  testWidgets(
+    'the explanation activates from the keyboard once the pill has focus',
+    (tester) async {
+      await _pumpDashboard(tester, batchingEnabled: true);
 
-    // Focus without touching the widget, then activate. A `tap` here would
-    // make this a second copy of the tap test; the point is that the InkWell's
-    // ActivateIntent handler exists, which a GestureDetector does not have.
-    //
-    // Named for what it does. It focuses the node directly rather than walking
-    // there with Tab, so it proves activation, not reachability by traversal —
-    // the earlier name claimed the second and tested the first.
-    final inkWell = tester.widget<InkWell>(
-      find.byKey(PollingModePill.pillKey),
-    );
-    expect(
-      inkWell.canRequestFocus,
-      isTrue,
-      reason: 'a control a keyboard cannot reach is not keyboard-accessible',
-    );
-    // From inside the InkWell, so `Focus.of` finds the node the InkResponse
-    // built rather than an ancestor scope.
-    final focusNode = Focus.of(
-      tester.element(
-        find.descendant(
-          of: find.byKey(PollingModePill.pillKey),
-          matching: find.byType(StatusPill),
+      // Focus without touching the widget, then activate. A `tap` here would
+      // make this a second copy of the tap test; the point is that the InkWell's
+      // ActivateIntent handler exists, which a GestureDetector does not have.
+      //
+      // Named for what it does. It focuses the node directly rather than walking
+      // there with Tab, so it proves activation, not reachability by traversal —
+      // the earlier name claimed the second and tested the first.
+      final inkWell = tester.widget<InkWell>(
+        find.byKey(PollingModePill.pillKey),
+      );
+      expect(
+        inkWell.canRequestFocus,
+        isTrue,
+        reason: 'a control a keyboard cannot reach is not keyboard-accessible',
+      );
+      // From inside the InkWell, so `Focus.of` finds the node the InkResponse
+      // built rather than an ancestor scope.
+      final focusNode = Focus.of(
+        tester.element(
+          find.descendant(
+            of: find.byKey(PollingModePill.pillKey),
+            matching: find.byType(StatusPill),
+          ),
         ),
-      ),
-    );
-    focusNode.requestFocus();
-    await tester.pump();
-    expect(focusNode.hasPrimaryFocus, isTrue);
+      );
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasPrimaryFocus, isTrue);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await _openHelpPump(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await _openHelpPump(tester);
 
-    expect(find.text(enTitle), findsOneWidget);
-  });
+      expect(find.text(enTitle), findsOneWidget);
+    },
+  );
 
   testWidgets('the semantics tree exposes a button with the localized name', (
     tester,
@@ -803,20 +911,17 @@ void main() {
           // All three paragraphs, not just the first. The dialog scrolls, so a
           // paragraph pushed past the bottom is still built and still
           // findable; one that could not be laid out at all is not.
-          for (final paragraph in english
-              ? const [
-                  'group PID requests',
-                  'each Mode 01 PID is read on its own',
-                  // Not the bare token: the throughput pill beside the
-                  // explanation prints `PIDs/s` too, so a search for it finds
-                  // two widgets and says nothing about this paragraph.
-                  'observed over the last second',
-                ]
-              : const [
-                  '併成一次交握',
-                  '每個 Mode 01 PID 各自讀取',
-                  '過去一秒觀測到的速率',
-                ]) {
+          for (final paragraph
+              in english
+                  ? const [
+                      'group PID requests',
+                      'each Mode 01 PID is read on its own',
+                      // Not the bare token: the throughput pill beside the
+                      // explanation prints `PIDs/s` too, so a search for it finds
+                      // two widgets and says nothing about this paragraph.
+                      'observed over the last second',
+                    ]
+                  : const ['併成一次交握', '每個 Mode 01 PID 各自讀取', '過去一秒觀測到的速率']) {
             expect(
               find.textContaining(paragraph),
               findsOneWidget,
@@ -980,7 +1085,8 @@ void main() {
     expect(
       find.byKey(PollingModePill.pillKey),
       findsOneWidget,
-      reason: 'no snapshot was published, so the pill under test never rendered',
+      reason:
+          'no snapshot was published, so the pill under test never rendered',
     );
     expect(
       transport.written,
@@ -1000,7 +1106,15 @@ void main() {
           'assertion below is true for the wrong reason',
     );
     expect(container.read(busGroupsRequestsProvider), scheduler.canBatch);
-    expect(find.text(enBatching), findsOneWidget);
+    expect(
+      find.text(enBatching).evaluate().length +
+          find.text(enBatched).evaluate().length,
+      1,
+      reason:
+          'Demo on CAN may already have packed a Mode 01 command, so the '
+          'pill reads Batched polling; permission without that record '
+          'still reads Batching enabled. Either means the pill rendered.',
+    );
 
     // Quiescence, and this one can fail. A window of real elapsed time with
     // nothing touched: parked, it adds nothing; running, the same window adds
@@ -1081,7 +1195,9 @@ void main() {
     final offenders = <String>[];
     for (final file in files) {
       final literals = stringLiteralsOnly(file.readAsStringSync());
-      if (literals.contains('dashboardPollingModePill')) sawAKnownLiteral = true;
+      if (literals.contains('dashboardPollingModePill')) {
+        sawAKnownLiteral = true;
+      }
       if (literals.contains('fastMode')) offenders.add(file.path);
     }
     expect(

@@ -653,7 +653,13 @@ abstract class AppLocalizations {
   /// **'Enter the port (most adapters use {port}).'**
   String connectWifiPortRequired(int port);
 
-  /// Pill label while PriorityScheduler.fastModeEnabled AND canBatch are both true. Neither is a record that any exchange grouped anything: grouping also needs the PID confirmed batchable and more than one request queued. Says enabled, never active or verified.
+  /// Pill label only when a Mode 01 command this connection packed two or more PIDs. Permission without that record stays dashboardBatchingEnabled. Must not be used for profile-response grouping.
+  ///
+  /// In en, this message translates to:
+  /// **'Batched polling'**
+  String get dashboardBatchedPolling;
+
+  /// Pill label while PriorityScheduler.fastModeEnabled AND canBatch are both true and no grouped Mode 01 command has been observed this connection. Neither flag is a record that any exchange grouped anything. Says enabled, never active, batched or verified.
   ///
   /// In en, this message translates to:
   /// **'Batching enabled'**
@@ -706,6 +712,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.'**
   String get dashboardPollingModeHelpBatching;
+
+  /// Explains the observed-batch side of the pill. Shown in the same dialog as the permission and fallback paragraphs. Must name Mode 01 so a powertrain profile response is not counted.
+  ///
+  /// In en, this message translates to:
+  /// **'Batched polling means a Mode 01 command this connection actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.'**
+  String get dashboardPollingModeHelpObserved;
 
   /// Keeps the throughput pill separate from the polling mode. PIDs/s is on docs/i18n/do-not-translate.md and stays byte-identical in both languages.
   ///

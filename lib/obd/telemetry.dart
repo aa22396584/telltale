@@ -140,6 +140,16 @@ class TelemetrySnapshot {
   final double pidsPerSecond;
   final bool fastModeEnabled;
 
+  /// Highest Mode 01 PID packing observed on the wire this connection.
+  ///
+  /// Null until a Mode 01 query has gone on the wire. `1` means every Mode
+  /// 01 command so far packed a single PID. `>= 2` is an observed grouped
+  /// Mode 01 exchange — the only state that may be labelled "Batched
+  /// polling". A later singleton does not erase that observation.
+  /// Permission (`fastModeEnabled`) is a different field; a powertrain
+  /// profile command is not Mode 01 and does not write this.
+  final int? lastMode01PidCount;
+
   /// Adapter supply voltage, or null when it has not been read or the adapter
   /// reported a value no vehicle produces. Zero would be a claim about the
   /// battery; null is the absence of one.
@@ -172,6 +182,7 @@ class TelemetrySnapshot {
     this.faults = const {},
     this.pidsPerSecond = 0,
     this.fastModeEnabled = true,
+    this.lastMode01PidCount,
     this.batteryVoltage,
     this.accelerationMs2,
     this.capturedAt,
@@ -221,6 +232,7 @@ class TelemetrySnapshot {
     Map<String, PidFault>? faults,
     double? pidsPerSecond,
     bool? fastModeEnabled,
+    int? lastMode01PidCount,
     DateTime? capturedAt,
     double? batteryVoltage,
     double? accelerationMs2,
@@ -231,10 +243,24 @@ class TelemetrySnapshot {
       faults: faults ?? this.faults,
       pidsPerSecond: pidsPerSecond ?? this.pidsPerSecond,
       fastModeEnabled: fastModeEnabled ?? this.fastModeEnabled,
+      lastMode01PidCount: lastMode01PidCount ?? this.lastMode01PidCount,
       batteryVoltage: batteryVoltage ?? this.batteryVoltage,
       accelerationMs2: accelerationMs2 ?? this.accelerationMs2,
       capturedAt: capturedAt ?? this.capturedAt,
       elapsedNow: elapsedNow ?? this.elapsedNow,
     );
   }
+}
+
+/// How many Mode 01 PIDs [command] packs, or null if it is not a Mode 01 query.
+///
+/// ELM batches are `01` plus two hex digits per PID (`010C`, `010C0D`).
+/// Spaces and case are ignored. A VIN / Mode 09 / profile-response command
+/// is not Mode 01, so it returns null and cannot be counted as grouping.
+int? mode01PidCountOnWire(String command) {
+  final compact = command.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+  if (compact.length < 4 || compact.length.isOdd) return null;
+  if (!compact.startsWith('01')) return null;
+  if (!RegExp(r'^[0-9A-F]+$').hasMatch(compact)) return null;
+  return (compact.length - 2) ~/ 2;
 }
