@@ -536,7 +536,7 @@ class FormulaEngine {
   }) {
     if (equation.trim().isEmpty) {
       throw FormulaException(
-        'Formula is empty',
+        '公式是空的',
         equation,
         issue: FormulaIssue.emptyFormula,
       );
@@ -1076,7 +1076,7 @@ class FormulaEngine {
           }
           if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
             throw FormulaException(
-              'Cannot parse "$bit"',
+              '無法解析 "$bit"',
               equation,
               issue: FormulaIssue.unparsableTerm,
               term: bit.toString(),
@@ -1343,7 +1343,7 @@ class FormulaEngine {
       if (match == null) return s;
       if (++guard > 64) {
         throw FormulaException(
-          'Formula nests functions too deeply',
+          '公式的函式巢狀太深',
           source,
           issue: FormulaIssue.functionNestingTooDeep,
         );
@@ -1368,7 +1368,7 @@ class FormulaEngine {
       if (match == null) return s;
       if (++guard > 64) {
         throw FormulaException(
-          'Formula nests functions too deeply',
+          '公式的函式巢狀太深',
           source,
           issue: FormulaIssue.functionNestingTooDeep,
         );
@@ -1397,7 +1397,7 @@ class FormulaEngine {
       if (call == null) return s;
       if (++guard > 64) {
         throw FormulaException(
-          'Formula nests functions too deeply',
+          '公式的函式巢狀太深',
           source,
           issue: FormulaIssue.functionNestingTooDeep,
         );
@@ -1423,7 +1423,7 @@ class FormulaEngine {
       if (call == null) return s;
       if (++guard > 64) {
         throw FormulaException(
-          'Formula nests functions too deeply',
+          '公式的函式巢狀太深',
           source,
           issue: FormulaIssue.functionNestingTooDeep,
         );
@@ -1431,7 +1431,7 @@ class FormulaEngine {
       final parts = _splitBinaryArgs(call.inner);
       if (parts == null) {
         throw FormulaException(
-          'Cannot parse "${call.inner}"',
+          '無法解析 "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1459,7 +1459,7 @@ class FormulaEngine {
       if (call == null) return s;
       if (++guard > 64) {
         throw FormulaException(
-          'Formula nests functions too deeply',
+          '公式的函式巢狀太深',
           source,
           issue: FormulaIssue.functionNestingTooDeep,
         );
@@ -1467,7 +1467,7 @@ class FormulaEngine {
       final parts = _splitNaryArgs(call.inner, arity);
       if (parts == null) {
         throw FormulaException(
-          'Cannot parse "${call.inner}"',
+          '無法解析 "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1610,7 +1610,7 @@ class FormulaEngine {
     var s = expression.trim();
     if (s.isEmpty) {
       throw FormulaException(
-        'Empty sub-expression',
+        '子運算式是空的',
         source,
         issue: FormulaIssue.emptySubExpression,
       );
@@ -1621,7 +1621,7 @@ class FormulaEngine {
     while (s.contains('(')) {
       if (++guard > 256) {
         throw FormulaException(
-          'Formula nests parentheses too deeply',
+          '公式的括號巢狀太深',
           source,
           issue: FormulaIssue.parenthesisNestingTooDeep,
         );
@@ -1629,7 +1629,7 @@ class FormulaEngine {
       final close = s.indexOf(')');
       if (close == -1) {
         throw FormulaException(
-          'Unbalanced parentheses',
+          '括號沒有配對',
           source,
           issue: FormulaIssue.unbalancedParentheses,
         );
@@ -1637,7 +1637,7 @@ class FormulaEngine {
       final open = s.lastIndexOf('(', close);
       if (open == -1) {
         throw FormulaException(
-          'Unbalanced parentheses',
+          '括號沒有配對',
           source,
           issue: FormulaIssue.unbalancedParentheses,
         );
@@ -1691,7 +1691,7 @@ class FormulaEngine {
     if (s.startsWith('!')) return _reduce(s.substring(1), source) == 0.0 ? 1.0 : 0.0;
 
     throw FormulaException(
-      'Cannot parse "$s"',
+      '無法解析 "$s"',
       source,
       issue: FormulaIssue.unparsableTerm,
       term: s,
