@@ -353,6 +353,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchedPolling => 'Gebündelte Abfrage';
+
+  @override
   String get dashboardBatchingEnabled => 'Batch-Verarbeitung aktiviert';
 
   @override
@@ -380,6 +383,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dashboardPollingModeHelpBatching =>
       'Ist die Batching-Funktion aktiviert, kann Telltale PID-Anfragen zu einem Austausch zusammenfassen, um die Anzahl der Hin- und Rückläufe zu reduzieren: Gruppierte Versuche sind zulässig, und die Gruppierung wurde nicht deaktiviert. Es handelt sich hierbei weiterhin um eine Berechtigung und nicht um eine Messung, da es auch davon abhängt, welche PIDs das Fahrzeug bestätigt hat und wie viele noch ausstehen, ob bei einem bestimmten Austausch etwas gruppiert wurde.';
+
+  @override
+  String get dashboardPollingModeHelpObserved =>
+      'Gebündelte Abfrage bedeutet, dass der letzte Mode-01-Befehl tatsächlich mehr als eine PID mitgeführt hat. Das ist die Aufzeichnung dieses Austauschs, kein Versprechen, dass der nächste ebenfalls gruppiert, und keine Aussage über den Durchsatz.';
 
   @override
   String get dashboardPollingModeHelpRate =>

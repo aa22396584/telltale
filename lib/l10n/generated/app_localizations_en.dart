@@ -347,6 +347,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardBatchedPolling => 'Batched polling';
+
+  @override
   String get dashboardBatchingEnabled => 'Batching enabled';
 
   @override
@@ -374,6 +377,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardPollingModeHelpBatching =>
       'Batching enabled means Telltale may group PID requests into one exchange, to cut the number of round trips: grouped attempts are permitted and nothing has turned grouping off. It is still permission rather than a measurement, because whether a given exchange grouped anything also depends on which PIDs the vehicle has confirmed and on how many are waiting.';
+
+  @override
+  String get dashboardPollingModeHelpObserved =>
+      'Batched polling means the last Mode 01 command actually carried more than one PID. It is a record of that exchange, not a promise that the next one will group, and not a claim about throughput.';
 
   @override
   String get dashboardPollingModeHelpRate =>
