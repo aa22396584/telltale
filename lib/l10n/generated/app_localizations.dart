@@ -6326,6 +6326,12 @@ abstract class AppLocalizations {
   /// **'The ambient pressure reading is out of date, so this cannot be calculated.'**
   String get pidFormulaBaroMeasurementStale;
 
+  /// FormulaIssue.baroParenFormUnsupported. Wiki BARO() is psi from the phone or ECU baro. BARO without parentheses is the ECU cache. Not evaluated as 0 and not as kPa.
+  ///
+  /// In en, this message translates to:
+  /// **'BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.'**
+  String get pidFormulaBaroParenFormUnsupported;
+
   /// FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.
   ///
   /// In en, this message translates to:
@@ -6764,7 +6770,7 @@ abstract class AppLocalizations {
   /// **'This step failed with an unexpected error. The full error is kept in the transcript.'**
   String get handshakeNoteUnexpected;
 
-  /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, LOOKUP, BARO(), …). Distinct from an unparsable typo.
+  /// FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, EWMAF, …). Distinct from an unparsable typo. BARO() has its own issue.
   ///
   /// In en, this message translates to:
   /// **'{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.'**

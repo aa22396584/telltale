@@ -46,8 +46,27 @@ void main() {
     }
     final baroCall = FormulaEngine.preflight('BARO()');
     expect(baroCall, isNotNull);
-    expect(baroCall!.issue, FormulaIssue.unsupportedConstruct);
-    expect(baroCall.term, 'BARO');
+    expect(baroCall!.issue, FormulaIssue.baroParenFormUnsupported);
+    expect(baroCall.term, 'BARO()');
+  });
+
+  test('BARO() is not the BARO identifier and is not a number', () {
+    // Wiki BARO() is Android barometer / ECU baro in psi. BARO without
+    // parentheses is the ECU cache. Collapsing them is a plausible kPa.
+    expect(FormulaEngine.preflight('A-BARO'), isNull);
+    final failure = FormulaEngine.preflight('BARO()');
+    expect(failure!.issue, FormulaIssue.baroParenFormUnsupported);
+    expect(failure.term, 'BARO()');
+    expect(
+      () => FormulaEngine().evaluateBytes('BARO()', const []),
+      throwsA(
+        isA<FormulaException>().having(
+          (e) => e.issue,
+          'issue',
+          FormulaIssue.baroParenFormUnsupported,
+        ),
+      ),
+    );
   });
 
   test('supported wiki-shaped functions are not unsupportedConstruct', () {

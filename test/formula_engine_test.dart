@@ -961,7 +961,7 @@ void main() {
       );
       expect(
         thrownBy(() => seeded.evaluateBytes('BARO()', const [])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.baroParenFormUnsupported,
       );
       expect(
         thrownBy(
@@ -1042,7 +1042,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('BARO()', const [])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.baroParenFormUnsupported,
       );
       // Unselected mapped expressions are not reduced. A=2 matches the
       // second pair; evaluating 1/(A-2) first would throw divisionByZero.

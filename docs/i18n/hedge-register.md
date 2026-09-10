@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-60 entries. Every entry that names a **Shipped as** key is checked against the shipped
+61 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -709,3 +709,13 @@ maintainer.
 **Shipped as** `connectionLayerKwpSubtypeUnknown` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/connect/connection_layer_copy.dart:23`, the Connect protocol row when `ATDP` names ISO 14230-4 / KWP and `ATDPN` is not 4 or 5. The datasheet sentence can print KWP FAST; that is still not protocol 5. Softened to 'KWP' or 'ISO 14230-4' it looks like the init is known. 5-baud and fast stay those words in every language.
+
+### 61. BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。
+
+**繁體中文** — BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。
+
+**English** — BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.
+
+**Shipped as** `pidFormulaBaroParenFormUnsupported` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:67`, the PID editor sentence when a formula writes `BARO()`. Softened to 'BARO is not supported' it hides that `A-BARO` still evaluates, and that the wiki form is psi not kPa. BARO(), BARO and psi stay those tokens in every language.

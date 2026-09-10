@@ -3989,6 +3989,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The ambient pressure reading is out of date, so this cannot be calculated.';
 
   @override
+  String get pidFormulaBaroParenFormUnsupported =>
+      'BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.';
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '$reference cannot be resolved here, because which controller that PID belongs to is not known.';
   }

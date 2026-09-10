@@ -1034,6 +1034,7 @@
   "pidFormulaBaroTwoDefinitions": "Da beide Definitionen den Umgebungsdruck angeben, könnte der Wert bei beiden „eins“ sein, sodass keine der beiden verwendet werden kann. Entfernen Sie eines der Messgeräte, das den Umgebungsdruck misst.",
   "pidFormulaBaroNotYetMeasured": "Der Umgebungsdruck wurde noch nicht erfasst, daher kann dieser Wert nicht berechnet werden.",
   "pidFormulaBaroMeasurementStale": "Der gemessene Umgebungsdruck ist veraltet, sodass dieser Wert nicht berechnet werden kann.",
+  "pidFormulaBaroParenFormUnsupported": "BARO() ist der Android-Barometer- / ECU-Baro-Wert in psi, den dieser Dialekt nicht implementiert. Für den zwischengespeicherten Umgebungsdruck BARO ohne Klammern verwenden.",
   "pidFormulaDependencyControllerUnknown": "„{reference}“ lässt sich hier nicht auflösen, weil nicht bekannt ist, zu welchem Steuergerät diese PID gehört.",
   "pidFormulaDependencyTwoDefinitions": "Zwei Definitionen interpretieren beide „{key}“ auf dieselbe Weise, sodass der Wert beides sein könnte und keine der beiden verwendet werden kann. Ändern Sie eine der beiden Definitionen in einen anderen Mode + PID. Hinweis: Die für die Schätzungen benötigten PIDs (010B, 010C, 010D) werden stets ausgelesen; das Entfernen einer Anzeige aus dem Armaturenbrett führt daher nicht zu deren Unterbrechung.",
   "pidFormulaDependencyNotYetMeasured": "Für {key} wurde noch kein verwertbarer Wert ausgelesen.",

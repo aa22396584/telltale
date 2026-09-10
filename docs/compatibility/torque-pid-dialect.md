@@ -68,12 +68,15 @@ are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
 `INT16`
-`BARO()`
+
+`BARO()` is `FormulaIssue.baroParenFormUnsupported`, not
+`unsupportedConstruct`. The wiki function reads the Android barometer or
+ECU baro **in psi**. `BARO` without parentheses is the identifier above.
+Not evaluated as 0 and not as kPa. A generic "BARO is unimplemented"
+sentence would hide that `A-BARO` still works.
 
 `LOG10` is not classified as `LOG`. `SIGNED8(x)` is the same 8-bit
-conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `RANDOM()` is `[0, 1)`, not `BARO()`. `LOOKUP(A:0:1=100)` is numeric exact/`~` range matching, not `CLOSEST`. `CLOSEST(A:0:1=100)` is nearest numeric key, not `LOOKUP`. `BARO` without parentheses is the identifier above; `BARO()` is
-the wiki function that reads the Android barometer or ECU baro **in psi**,
-which this engine does not implement.
+conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `RANDOM()` is `[0, 1)`, not `BARO()`. `LOOKUP(A:0:1=100)` is numeric exact/`~` range matching, not `CLOSEST`. `CLOSEST(A:0:1=100)` is nearest numeric key, not `LOOKUP`.
 
 ### INT16 is unclaimed
 

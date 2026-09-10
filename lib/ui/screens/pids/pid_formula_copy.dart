@@ -64,6 +64,8 @@ String? formulaIssueText(AppLocalizations l10n, FormulaException exception) {
     FormulaIssue.baroTwoDefinitions => l10n.pidFormulaBaroTwoDefinitions,
     FormulaIssue.baroNotYetMeasured => l10n.pidFormulaBaroNotYetMeasured,
     FormulaIssue.baroMeasurementStale => l10n.pidFormulaBaroMeasurementStale,
+    FormulaIssue.baroParenFormUnsupported =>
+      l10n.pidFormulaBaroParenFormUnsupported,
     // The whole `VAL{...}` token, composed here rather than in the ARB: braces
     // are placeholder syntax there, and this is formula syntax that has to stay
     // byte-identical in both languages. Same reason `pidEditorEquationHelper`

@@ -3529,6 +3529,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pidFormulaBaroMeasurementStale => '大氣壓力量測值已過期，無法計算。';
 
   @override
+  String get pidFormulaBaroParenFormUnsupported =>
+      'BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。';
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '這裡無法解析 $reference，因為無法判斷那個 PID 屬於哪一個控制器。';
   }
@@ -7430,6 +7434,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pidFormulaBaroMeasurementStale => '大氣壓力量測值已過期，無法計算。';
+
+  @override
+  String get pidFormulaBaroParenFormUnsupported =>
+      'BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。';
 
   @override
   String pidFormulaDependencyControllerUnknown(String reference) {

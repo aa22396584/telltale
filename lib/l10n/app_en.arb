@@ -3318,6 +3318,10 @@
   "@pidFormulaBaroMeasurementStale": {
     "description": "FormulaIssue.baroMeasurementStale. A different fact from never having read one, with a different remedy: the source has stopped answering rather than not yet started."
   },
+  "pidFormulaBaroParenFormUnsupported": "BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.",
+  "@pidFormulaBaroParenFormUnsupported": {
+    "description": "FormulaIssue.baroParenFormUnsupported. Wiki BARO() is psi from the phone or ECU baro. BARO without parentheses is the ECU cache. Not evaluated as 0 and not as kPa."
+  },
   "pidFormulaDependencyControllerUnknown": "{reference} cannot be resolved here, because which controller that PID belongs to is not known.",
   "@pidFormulaDependencyControllerUnknown": {
     "description": "FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.",
@@ -3725,7 +3729,7 @@
   },
   "pidFormulaUnsupportedConstruct": "{term} is a Torque function this dialect does not implement, so the formula cannot be evaluated here.",
   "@pidFormulaUnsupportedConstruct": {
-    "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, LOOKUP, BARO(), …). Distinct from an unparsable typo.",
+    "description": "FormulaIssue.unsupportedConstruct. {term} is the wiki function name (INT16, EWMAF, …). Distinct from an unparsable typo. BARO() has its own issue.",
     "placeholders": {
       "term": { "type": "String" }
     }

@@ -96,6 +96,10 @@ enum FormulaIssue {
   /// source has stopped answering rather than not yet started.
   baroMeasurementStale,
 
+  /// Wiki `BARO()`: Android barometer / ECU baro in psi. Not the `BARO`
+  /// identifier, which is cached ambient pressure. Not evaluated as 0.
+  baroParenFormUnsupported,
+
   /// `VAL{...}` was used with no requesting PID. Carries the referenced key.
   dependencyControllerUnknown,
 
@@ -545,6 +549,14 @@ class FormulaEngine {
         '公式是空的',
         equation,
         issue: FormulaIssue.emptyFormula,
+      );
+    }
+    if (_baroParenForm(equation)) {
+      throw FormulaException(
+        '此方言不支援 BARO()',
+        equation,
+        issue: FormulaIssue.baroParenFormUnsupported,
+        term: 'BARO()',
       );
     }
     final unsupported = _unsupportedTorqueFunction(equation);
@@ -2242,7 +2254,8 @@ class _Operator {
 ///
 /// `LOG10`/`LOG1P` are not `LOG`, `INT16` is not `INT`, `SIGNED16` is not
 /// `SIGNED` or `SIGNED8`, `BARO` without a parenthesis is the ECU cache
-/// identifier we do implement. `MIN`/`MAX` are implemented as arity-2 colon
+/// identifier we do implement. Wiki `BARO()` is [FormulaIssue.baroParenFormUnsupported],
+/// not this list. `MIN`/`MAX` are implemented as arity-2 colon
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
@@ -2251,10 +2264,14 @@ class _Operator {
 /// INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
-  r'INT16|'
-  r'BARO)\s*\(',
+  r'INT16)\s*\(',
   caseSensitive: false,
 );
+
+final _baroParenFormPattern = RegExp(r'\bBARO\s*\(', caseSensitive: false);
+
+bool _baroParenForm(String equation) =>
+    _baroParenFormPattern.hasMatch(equation);
 
 String? _unsupportedTorqueFunction(String equation) {
   final match = _unsupportedTorqueFunctionPattern.firstMatch(equation);
