@@ -8,7 +8,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/locale_resolution.dart';
 import '../../state/locale_settings.dart';
 
-/// The three options, each written in its own script.
+/// The options, each written in its own language.
 ///
 /// These deliberately do NOT go through [AppLocalizations], and this is the one
 /// place in the app where a hard-coded language name is correct. Somebody
@@ -25,6 +25,7 @@ String localePreferenceLabel(LocalePreference preference) {
   return switch (preference) {
     LocalePreference.english => 'English',
     LocalePreference.traditionalChinese => '繁體中文',
+    LocalePreference.german => 'Deutsch',
     LocalePreference.system => 'System default / 跟隨系統',
   };
 }

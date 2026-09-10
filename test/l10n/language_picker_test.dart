@@ -9,6 +9,7 @@ import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
 import 'package:torque_obd/ui/screens/connect/connect_screen.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
+import 'package:torque_obd/ui/widgets/language_picker.dart';
 
 class _IdleSession extends ObdSession {
   int connects = 0;
@@ -19,6 +20,29 @@ class _IdleSession extends ObdSession {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('every option is named in its own language, and named once', () {
+    // This picker is the way out for somebody who cannot read the screen they
+    // are on, so a duplicate or empty label is not cosmetic: it is a row they
+    // cannot identify. The exhaustive switch makes a missing case a compile
+    // error; this makes a copy-pasted one a test failure.
+    final labels = <LocalePreference, String>{
+      for (final preference in LocalePreference.values)
+        preference: localePreferenceLabel(preference),
+    };
+    for (final entry in labels.entries) {
+      expect(
+        entry.value.trim(),
+        isNotEmpty,
+        reason: '${entry.key} has no self-name',
+      );
+    }
+    expect(
+      labels.values.toSet(),
+      hasLength(LocalePreference.values.length),
+      reason: 'two options share a label: ${labels.values.join(", ")}',
+    );
+  });
 
   Future<SharedPreferences> prefsWith(Map<String, Object> values) async {
     SharedPreferences.setMockInitialValues(values);
@@ -69,6 +93,7 @@ void main() {
 
     expect(find.text('English'), findsOneWidget);
     expect(find.text('繁體中文'), findsOneWidget);
+    expect(find.text('Deutsch'), findsOneWidget);
     expect(find.text('System default / 跟隨系統'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('locale_traditionalChinese')));

@@ -36,6 +36,72 @@ void main() {
       localePreferenceFromStored('zh_Hant'),
       LocalePreference.traditionalChinese,
     );
+    expect(localePreferenceFromStored('de'), LocalePreference.german);
+  });
+
+  test('every preference round-trips through the store', () {
+    // The stored ids are a format: they sit on disk under kLocalePreferenceKey
+    // while a build is replaced. A rename that touched only one direction would
+    // strand somebody on the language they chose, and nothing else would notice.
+    for (final preference in LocalePreference.values) {
+      expect(
+        localePreferenceFromStored(localePreferenceToStored(preference)),
+        preference,
+      );
+    }
+  });
+
+  test('a stored id this build does not know is system, not a crash', () {
+    // Downgrading is a real path: a preference written by a build that ships a
+    // language this one does not must not throw, and must not be quietly read
+    // as some other language.
+    expect(localePreferenceFromStored('fr'), LocalePreference.system);
+    expect(localePreferenceFromStored('de_AT'), LocalePreference.system);
+  });
+
+  test('explicit German wins over the device list', () {
+    expect(
+      resolveAppLocale(
+        preference: LocalePreference.german,
+        deviceLocales: [
+          const Locale('en', 'US'),
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        ],
+      ),
+      germanLocale,
+    );
+  });
+
+  test('regional German maps to the one German bundle', () {
+    // Region is not a translation. de-AT and de-CH read the ARB this app ships;
+    // a regional variant would be a later file, not a fall back to English.
+    expect(mapDeviceLocale(const Locale('de')), germanLocale);
+    expect(mapDeviceLocale(const Locale('de', 'DE')), germanLocale);
+    expect(mapDeviceLocale(const Locale('de', 'AT')), germanLocale);
+    expect(mapDeviceLocale(const Locale('de', 'CH')), germanLocale);
+  });
+
+  test('an unshipped language still falls through to the next device locale', () {
+    expect(mapDeviceLocale(const Locale('fr')), isNull);
+    expect(
+      resolveAppLocale(
+        preference: LocalePreference.system,
+        deviceLocales: [const Locale('fr', 'FR'), const Locale('de', 'DE')],
+      ),
+      germanLocale,
+    );
+  });
+
+  test('every preference resolves to a locale the app ships', () {
+    for (final preference in LocalePreference.values) {
+      expect(
+        supportedAppLocales,
+        contains(
+          resolveAppLocale(preference: preference, deviceLocales: const []),
+        ),
+        reason: '$preference resolves outside supportedAppLocales',
+      );
+    }
   });
 
   test('system en-US and en-GB map to English', () {

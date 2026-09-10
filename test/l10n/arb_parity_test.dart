@@ -1,5 +1,5 @@
 // Guards the ARB files against the failure that no other test can see: a key
-// that exists in one language and not the other.
+// that exists in one language and not in another.
 //
 // `gen-l10n` does not fail on a missing translation — it falls back to the
 // template locale. So a forgotten Traditional Chinese entry ships as English
@@ -9,6 +9,12 @@
 // `app_zh.arb` is a byte-for-byte fallback for a plain `zh` device locale that
 // carries no script subtag. It is not a second translation and must never
 // become one: two Chinese files free to drift are two sources of truth.
+//
+// German is a machine translation corrected by hand (docs/i18n/README.md). That
+// changes what a reviewer can promise about its sentences; it changes nothing
+// about what this file checks, because keys, arguments and empty values are
+// exactly the failures a translator — human or machine — cannot see and the app
+// will not report.
 library;
 
 import 'dart:convert';
@@ -44,25 +50,40 @@ void main() {
   final en = _readArb('app_en.arb');
   final zhHant = _readArb('app_zh_Hant.arb');
   final zh = _readArb('app_zh.arb');
+  final de = _readArb('app_de.arb');
+
+  /// Every shipped locale except the template, by file name. `app_zh.arb` is in
+  /// here too: it is a copy rather than a translation, but a key missing from a
+  /// copy still ships as English on a plain `zh` device.
+  final shipped = <String, Map<String, dynamic>>{
+    'app_zh_Hant.arb': zhHant,
+    'app_zh.arb': zh,
+    'app_de.arb': de,
+  };
+
+  /// The template and everything that has to agree with it.
+  final everyLocale = <String, Map<String, dynamic>>{'app_en.arb': en, ...shipped};
+
+  /// Locales that carry their own copy. `app_zh.arb` is excluded because it is
+  /// checked against `app_zh_Hant.arb` further down instead.
+  final translations = Map<String, Map<String, dynamic>>.from(shipped)
+    ..remove('app_zh.arb');
 
   test('every locale declares the same message keys', () {
     final enKeys = _messageKeys(en);
     expect(enKeys, isNotEmpty);
-    expect(
-      _messageKeys(zhHant),
-      enKeys,
-      reason: 'app_zh_Hant.arb and app_en.arb disagree on which messages exist',
-    );
-    expect(
-      _messageKeys(zh),
-      enKeys,
-      reason: 'app_zh.arb and app_en.arb disagree on which messages exist',
-    );
+    for (final entry in shipped.entries) {
+      expect(
+        _messageKeys(entry.value),
+        enKeys,
+        reason: '${entry.key} and app_en.arb disagree on which messages exist',
+      );
+    }
   });
 
   test('no message is empty', () {
     for (final key in _messageKeys(en)) {
-      for (final entry in {'app_en.arb': en, 'app_zh_Hant.arb': zhHant}.entries) {
+      for (final entry in everyLocale.entries) {
         final value = entry.value[key];
         expect(
           value,
@@ -103,7 +124,7 @@ void main() {
       ['dtcCompleteCleanTitle', 'dtcVerdictPartialClean'],
     ];
     final collapsed = <String>[];
-    for (final locale in [en, zh]) {
+    for (final locale in everyLocale.values) {
       for (final pair in mustDiffer) {
         final a = locale[pair[0]];
         final b = locale[pair[1]];
@@ -124,19 +145,19 @@ void main() {
     );
   });
 
-  test('no message is left as its English source in Chinese', () {
+  test('no message is left as its English source in a translation', () {
     // The failure gen-l10n cannot report. It does not fail on a missing
     // translation — it falls back to the template — so a forgotten entry ships
     // as English inside an otherwise Chinese screen, and every widget test
     // still passes because the widget rendered something.
     //
-    // A few entries are identical in both languages on purpose. They are listed
-    // here by name so that adding a fourth is a decision somebody makes rather
+    // A few entries are identical in every language on purpose. They are listed
+    // here by name so that adding another is a decision somebody makes rather
     // than a translation somebody forgot.
     const identicalOnPurpose = <String>{
       // A product name is not translated.
       'appTitle',
-      // The language control names both languages in both languages, so a
+      // The language control names the languages in their own scripts, so a
       // reader who cannot read the current one can still find their way out.
       'languageSectionTitle',
       // An SAE J1979 term, on docs/i18n/do-not-translate.md. Somebody who has
@@ -172,24 +193,78 @@ void main() {
       // which has a sentence in the middle and is therefore not listed here.
       'datumFormulaHorsepower',
     };
-    final untranslated = <String>[];
-    for (final key in _messageKeys(en)) {
-      if (identicalOnPurpose.contains(key)) continue;
-      if (zhHant[key] == en[key]) untranslated.add(key);
+    // Some entries land on the English word in one language and not in another,
+    // and that is a fact about the language rather than a lapse: German writes
+    // Dashboard, Trends, Pause, Diesel and Port, and its separators and
+    // placeholder-only strings have nothing in them to translate. Listed per
+    // locale so each one is a decision made about that language.
+    const coincidental = <String, Set<String>>{
+      'app_zh_Hant.arb': <String>{},
+      'app_de.arb': <String>{
+        // German uses the English word.
+        'connectWifiPortLabel',
+        'dashboardWorkspaceTrends',
+        'navDashboard',
+        'performanceSplitsHeading',
+        'telemetryPause',
+        'dtcKindPermanent',
+        'gaugeSkinCluster',
+        'gaugeSkinMinimal',
+        'fuelTypeDiesel',
+        'fuelTypeLpg',
+        'pidEditorFieldName',
+        // Punctuation, placeholders, and tokens from
+        // docs/i18n/do-not-translate.md — nothing in them is language.
+        'dtcGroupHeader',
+        'dtcReadFailureDetail',
+        'pidEditorFieldModeAndPid',
+        'wearPermissionBluetooth',
+        'recommendedPurchaseStoreShopee',
+        'assumptionWithOrigin',
+        'assumptionSeparator',
+        'dtcListSeparator',
+        'pidListSeparator',
+        'powertrainFieldListSeparator',
+        'semanticsFieldSeparator',
+        'settingsListSeparator',
+        'telemetryPhraseJoin',
+        'telemetrySentenceJoin',
+      },
+    };
+    for (final entry in translations.entries) {
+      final allowed = coincidental[entry.key] ?? const <String>{};
+      final untranslated = <String>[];
+      for (final key in _messageKeys(en)) {
+        if (identicalOnPurpose.contains(key)) continue;
+        if (allowed.contains(key)) continue;
+        if (entry.value[key] == en[key]) untranslated.add(key);
+      }
+      expect(
+        untranslated,
+        isEmpty,
+        reason:
+            '${entry.key} carries the English source verbatim for: '
+            '${untranslated.join(", ")}',
+      );
+      // A stale allowance is its own defect: it silently exempts a key that has
+      // since been translated, so the next regression there goes unreported.
+      final stale = allowed
+          .where((key) => entry.value[key] != en[key])
+          .toList();
+      expect(
+        stale,
+        isEmpty,
+        reason:
+            '${entry.key} no longer matches English for ${stale.join(", ")} — '
+            'remove them from coincidental',
+      );
     }
-    expect(
-      untranslated,
-      isEmpty,
-      reason:
-          'app_zh_Hant.arb carries the English source verbatim for: '
-          '${untranslated.join(", ")}',
-    );
   });
 
   test('placeholders match across locales, by name', () {
     for (final key in _messageKeys(en)) {
       final expected = _placeholders(en, key);
-      for (final entry in {'app_zh_Hant.arb': zhHant, 'app_zh.arb': zh}.entries) {
+      for (final entry in shipped.entries) {
         final actual = _placeholders(entry.value, key);
         // A translation may omit the metadata block and inherit the template's
         // placeholders; it may not declare a *different* set.
@@ -214,11 +289,7 @@ void main() {
       r'\{\s*\w+\s*,\s*(?:plural|select|selectordinal)\s*,[\s\S]*\}',
     );
     final reference = RegExp(r'\{(\w+)\}');
-    for (final entry in {
-      'app_en.arb': en,
-      'app_zh_Hant.arb': zhHant,
-      'app_zh.arb': zh,
-    }.entries) {
+    for (final entry in everyLocale.entries) {
       for (final key in _messageKeys(entry.value)) {
         final value = entry.value[key];
         if (value is! String) continue;
