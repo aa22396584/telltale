@@ -45,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--overflow", action="store_true")
     parser.add_argument("--wear", action="store_true")
     parser.add_argument("--screenshot", action="store_true")
+    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--serial")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     chosen = [
@@ -68,7 +70,12 @@ def main(argv: list[str] | None = None) -> int:
         print("lane flags are mutually exclusive", file=sys.stderr)
         return 2
     if args.native_dialog:
-        return native_dialog_main(["--output", str(args.output)])
+        forwarded = ["--output", str(args.output)]
+        if args.execute:
+            forwarded.append("--execute")
+        if args.serial:
+            forwarded.extend(["--serial", args.serial])
+        return native_dialog_main(forwarded)
     if args.android_os_locale:
         return android_os_locale_main(["--output", str(args.output)])
     if args.overflow:

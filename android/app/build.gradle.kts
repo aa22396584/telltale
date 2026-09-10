@@ -121,6 +121,7 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -242,6 +243,9 @@ dependencies {
     // Plain JUnit for the pre-engine renderer decision, which is a pure
     // function of three property strings and needs no Android runtime.
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test:runner:1.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.2.0")
 }
 
 flutter {

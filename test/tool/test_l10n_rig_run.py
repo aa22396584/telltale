@@ -101,6 +101,8 @@ class L10nRigRunnerTest(unittest.TestCase):
         self.assertIn("--overflow", text)
         self.assertIn("--wear", text)
         self.assertIn("--screenshot", text)
+        self.assertIn("--execute", text)
+        self.assertIn("--serial", text)
 
 
     def test_screenshot_flag_is_not_run(self):
