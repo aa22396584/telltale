@@ -1,0 +1,20 @@
+{
+  "source_sha": "a206803b92f933e26ccfdad589f966bba239f730",
+  "flutter": "3.47.0",
+  "dart": "3.13.0",
+  "framework_revision": "4cf2416426",
+  "command": [
+    "flutter",
+    "test",
+    "--reporter",
+    "json",
+    "test/fnv1a64_test.dart"
+  ],
+  "exit": 0,
+  "packages": {
+    "test": "1.31.1",
+    "test_core": "0.6.18"
+  },
+  "sha256": "9ec587566bb3ab2ed10ee0969d78f5193446b70d7a67af433488d8b70703376a",
+  "note": "JSON events only; pub-get chatter stripped. Paths rewritten to file:///fixture/."
+}

@@ -6,6 +6,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -952,7 +953,7 @@ class RunTaskTest(unittest.TestCase):
                     [
                         "#!/usr/bin/env python3",
                         "import json, sys",
-                        "sys.stdout.write(json.dumps({'type': 'test', 'id': 1, 'name': 'coolant temperature: A-40'}) + '\\n')",
+                        "sys.stdout.write(json.dumps({'type': 'testStart', 'test': {'id': 1, 'name': 'coolant temperature: A-40', 'suiteID': 0}}) + '\\n')",
                         "sys.stdout.write(json.dumps({'type': 'testDone', 'testID': 1, 'result': 'success'}) + '\\n')",
                         "sys.stdout.write(json.dumps({'type': 'done', 'success': True}) + '\\n')",
                         "sys.exit(0)",
@@ -981,6 +982,47 @@ class RunTaskTest(unittest.TestCase):
                 result.get("case_ids"),
                 ["coolant temperature: A-40"],
             )
+
+    def test_live_flutter_json_reporter_records_typed_case_ids(self) -> None:
+        pinned = Path.home() / "fvm" / "versions" / "3.47.0" / "bin" / "flutter"
+        flutter = pinned if pinned.is_file() else None
+        if flutter is None:
+            found = shutil.which("flutter")
+            flutter = Path(found) if found else None
+        if flutter is None:
+            self.skipTest("pinned Flutter SDK is not available")
+        original = run_task._resolve_executable
+        run_task._resolve_executable = (
+            lambda name, _flutter=flutter, _orig=original: str(_flutter)
+            if Path(name).name == "flutter"
+            else _orig(name)
+        )
+        try:
+            result = run_task._run_command(
+                [
+                    "flutter",
+                    "test",
+                    "--reporter",
+                    "json",
+                    "test/fnv1a64_test.dart",
+                ],
+                cwd=ROOT,
+                env=os.environ.copy(),
+                timeout=120,
+                output_limit=1_000_000,
+            )
+        finally:
+            run_task._resolve_executable = original
+        self.assertEqual(result["exit"], 0, msg=result.get("stderr", "")[-2000:])
+        self.assertNotEqual(result.get("truncated"), True)
+        self.assertEqual(result.get("executed"), 2)
+        self.assertEqual(
+            result.get("case_ids"),
+            [
+                "FNV-1a 64 preserves canonical vectors",
+                "FNV-1a 64 is invariant across arbitrary stream chunks",
+            ],
+        )
 
     def test_timeout_covers_a_descendant_that_keeps_stdout_open(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

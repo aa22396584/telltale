@@ -1,0 +1,6 @@
+{"type": "start", "time": 0, "protocolVersion": "0.1.1", "runnerVersion": "fixture", "pid": 123}
+{"type": "suite", "time": 0, "suite": {"id": 0, "platform": "vm", "path": "test/smoke_test.dart"}}
+{"type": "group", "time": 0, "group": {"id": 0, "name": null, "suiteID": 0, "parentID": null, "testCount": 1, "metadata": {"skip": false, "skipReason": null}, "line": null, "column": null, "url": null}}
+{"type": "testStart", "time": 0, "test": {"id": 1, "name": "independent reporter success", "suiteID": 0, "groupIDs": [0], "metadata": {"skip": false, "skipReason": null}, "line": 1, "column": 1, "url": "file:///fixture/smoke_test.dart"}}
+{"type": "testDone", "time": 1, "testID": 1, "result": "success", "hidden": false, "skipped": false}
+{"type": "done", "time": 2, "success": true}

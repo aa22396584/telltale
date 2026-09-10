@@ -609,11 +609,20 @@ def parse_flutter_counts(stdout: str) -> tuple[int | None, int | None]:
 
 
 def parse_flutter_case_ids(stdout: str) -> list[str] | None:
-    """Executed Flutter JSON case names, or None when IDs are missing/untyped."""
+    """Executed Flutter JSON case names, or None when IDs are missing/untyped.
+
+    The Dart JSON reporter names tests with type=testStart and a nested
+    ``test`` object (id, name, suiteID). A top-level type=test record is
+    not that event and cannot supply identities. Integer identities are
+    unique for the run, so equally named tests in different suites stay
+    distinct internally even when the returned names coincide.
+    """
     names: dict[object, str] = {}
+    started: set[object] = set()
+    finished: set[object] = set()
     case_ids: list[str] = []
     saw_json = False
-    missing = False
+    invalid = False
     for raw in stdout.splitlines():
         line = raw.strip()
         if not line.startswith("{"):
@@ -621,37 +630,49 @@ def parse_flutter_case_ids(stdout: str) -> list[str] | None:
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
-            continue
+            return None
         if not isinstance(payload, dict):
             continue
         kind = payload.get("type")
-        if kind == "test":
+        if kind == "testStart":
             saw_json = True
-            tid = _flutter_typed_id(payload.get("id"))
-            name = payload.get("name")
-            if tid is None:
-                missing = True
-            elif isinstance(name, str) and name.strip():
+            test = payload.get("test")
+            if not isinstance(test, dict):
+                invalid = True
+                continue
+            tid = _flutter_typed_id(test.get("id"))
+            name = test.get("name")
+            if tid is None or tid in started:
+                invalid = True
+                continue
+            started.add(tid)
+            if isinstance(name, str) and name.strip():
                 names[tid] = name
+            else:
+                invalid = True
+        elif kind == "error":
+            saw_json = True
+            invalid = True
         elif kind == "testDone":
             saw_json = True
+            tid = _flutter_typed_id(payload.get("testID"))
+            if tid is None or tid in finished:
+                invalid = True
+                continue
+            finished.add(tid)
             if payload.get("hidden") is True:
                 continue
             if _flutter_skipped(payload):
                 continue
-            tid = _flutter_typed_id(payload.get("testID"))
-            if tid is None:
-                missing = True
-                continue
             name = names.get(tid)
             if not isinstance(name, str) or not name.strip():
-                missing = True
+                invalid = True
             else:
                 case_ids.append(name)
     if not saw_json:
         return None
     _, saw_done = _flutter_json_events(stdout)
-    if not saw_done or missing:
+    if not saw_done or invalid or started != finished:
         return None
     return case_ids
 
