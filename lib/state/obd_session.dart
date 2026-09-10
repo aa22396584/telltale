@@ -308,7 +308,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
   bool get requiresSimulatedEvidence => _currentSessionIsTestRig;
 
   bool _simulatedEvidenceFor(TransportKind kind) =>
-      testRigBuild || kind == TransportKind.demo;
+      testRigBuild ||
+      kind == TransportKind.demo ||
+      platformMetadata.requiresSimulatedEvidence;
 
   StreamSubscription<InitProgress>? _initSub;
   StreamSubscription<TelemetrySnapshot>? _snapshotSub;

@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:torque_obd/core/field_evidence/platform_metadata.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
@@ -311,6 +312,70 @@ void main() {
       expect(await second, isTrue);
       expect(await abandoned, isFalse);
       await session.disconnect();
+    },
+  );
+
+  test(
+    'a rig Android package freezes software evidence on a hardware transport',
+    () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+      final session = container.read(obdSessionProvider.notifier);
+      session.testRigBuild = false;
+      session.platformMetadata = const PlatformMetadata(
+        applicationId: androidRigApplicationId,
+        appVersion: '1',
+        appBuild: '1',
+        platform: 'android',
+        osVersion: 'unknown',
+        manufacturer: 'unknown',
+        model: 'unknown',
+        sdkInt: 'unknown',
+      );
+      final attempt = session.connectForTest(
+        _HangingTransport(),
+        TransportKind.wifi,
+      );
+      await _settle();
+      expect(
+        container.read(obdSessionProvider).simulatedEvidence,
+        isTrue,
+        reason: 'the .rig package is software even on Wi-Fi',
+      );
+      await session.disconnect();
+      expect(await attempt, isFalse);
+    },
+  );
+
+  test(
+    'the production Android package does not freeze software evidence on Wi-Fi',
+    () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+      final session = container.read(obdSessionProvider.notifier);
+      session.testRigBuild = false;
+      session.platformMetadata = const PlatformMetadata(
+        applicationId: androidFieldApplicationId,
+        appVersion: '1',
+        appBuild: '1',
+        platform: 'android',
+        osVersion: 'unknown',
+        manufacturer: 'unknown',
+        model: 'unknown',
+        sdkInt: 'unknown',
+      );
+      final attempt = session.connectForTest(
+        _HangingTransport(),
+        TransportKind.wifi,
+      );
+      await _settle();
+      expect(
+        container.read(obdSessionProvider).simulatedEvidence,
+        isFalse,
+        reason: 'production Wi-Fi stays unknown, never software by package',
+      );
+      await session.disconnect();
+      expect(await attempt, isFalse);
     },
   );
 
