@@ -15,6 +15,20 @@ String connectionLayerTitle(AppLocalizations l10n, ConnectionLayerKind kind) =>
       ConnectionLayerKind.evidence => l10n.connectionLayerEvidence,
     };
 
+String? connectionLayerProtocolDetail(
+  AppLocalizations l10n,
+  ConnectionLayerReport report,
+) {
+  if (report.requestedProtocol.isEmpty || report.observedProtocol.isEmpty) {
+    return null;
+  }
+  if (report.requestedProtocol == report.observedProtocol) return null;
+  return l10n.connectionLayerRequestedObserved(
+    report.requestedProtocol,
+    report.observedProtocol,
+  );
+}
+
 String connectionLayerValueText(
   AppLocalizations l10n,
   ConnectionLayerValue value,

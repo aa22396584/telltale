@@ -6901,6 +6901,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wi-Fi'**
   String get connectionLayerWifi;
+
+  /// Connect protocol row when ATSP (asked) and ATDPN (settled) differ. Keep both numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'asked {requested}, settled {observed}'**
+  String connectionLayerRequestedObserved(String requested, String observed);
 }
 
 class _AppLocalizationsDelegate

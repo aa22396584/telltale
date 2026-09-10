@@ -6,6 +6,8 @@
 /// connected flag answers none of those.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/connection_layers.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -71,6 +73,14 @@ void main() {
     expect(report.protocol, ConnectionLayerValue.unknown);
     expect(report.ecu, ConnectionLayerValue.notObserved);
     expect(report.evidence, ConnectionLayerValue.unknown);
+  });
+
+  test('the Connect screen feeds ATSP from the client into the report', () {
+    final source = File(
+      'lib/ui/screens/connect/connect_screen.dart',
+    ).readAsStringSync();
+    expect(source.contains('requestedProtocol:'), isTrue);
+    expect(source.contains('.requestedProtocol'), isTrue);
   });
 
   test('requested protocol 5 and observed 6 are both retained', () {

@@ -1347,17 +1347,22 @@ class _HandshakePanel extends ConsumerWidget {
           if (connection.kind != null || connection.protocol.isNotEmpty) ...[
             const SizedBox(height: Spacing.md),
             ConnectionLayersPanel(
-              report: ConnectionLayerReport.fromConnection(
-                kind: connection.kind,
-                protocol: connection.protocol,
-                responders:
-                    ref
-                        .read(obdSessionProvider.notifier)
-                        .engine
-                        ?.client
-                        .knownResponders ??
-                    const {},
-              ),
+              report: () {
+                final client = ref
+                    .read(obdSessionProvider.notifier)
+                    .engine
+                    ?.client;
+                final observed = client != null &&
+                        client.protocolNumber.isNotEmpty
+                    ? client.protocolNumber
+                    : connection.protocol;
+                return ConnectionLayerReport.fromConnection(
+                  kind: connection.kind,
+                  protocol: observed,
+                  requestedProtocol: client?.requestedProtocol ?? '',
+                  responders: client?.knownResponders ?? const {},
+                );
+              }(),
             ),
           ],
           // A way out.

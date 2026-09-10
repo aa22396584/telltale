@@ -672,6 +672,12 @@ class Elm327Client {
 
   String protocolNumber = '';
 
+  /// Last `ATSPn` that actually left the app.
+  ///
+  /// Distinct from [protocolNumber]: that is ATDPN (what the adapter settled
+  /// on). This is what was asked. ATSP 5 vs ATDPN 6 must not collapse.
+  String requestedProtocol = '';
+
   /// What `ATDPN` prints: one protocol character, optionally prefixed by `A`.
   ///
   /// "The ELM327 will print a leading 'A' if the protocol was found
@@ -1317,6 +1323,9 @@ class Elm327Client {
       // one time the transcript stays silent.
       transcript.recordWrite(wire);
       await transport.write(wire).timeout(_withinDeadline(writeTimeout));
+      if (normalised.startsWith('ATSP') && normalised.length > 4) {
+        requestedProtocol = normalised.substring(4);
+      }
     } on Object catch (e) {
       // …and taken back only when the transport says it never started.
       //

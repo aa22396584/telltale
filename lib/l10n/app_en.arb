@@ -3779,5 +3779,13 @@
   "connectionLayerDemo": "Demo",
   "connectionLayerBle": "Bluetooth LE",
   "connectionLayerClassic": "Bluetooth Classic",
-  "connectionLayerWifi": "Wi-Fi"
+  "connectionLayerWifi": "Wi-Fi",
+  "connectionLayerRequestedObserved": "asked {requested}, settled {observed}",
+  "@connectionLayerRequestedObserved": {
+    "description": "Connect protocol row when ATSP (asked) and ATDPN (settled) differ. Keep both numbers.",
+    "placeholders": {
+      "requested": {"type": "String"},
+      "observed": {"type": "String"}
+    }
+  }
 }

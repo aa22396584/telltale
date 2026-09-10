@@ -83,4 +83,25 @@ void main() {
     expect(zh, containsAll(['連線方式', '協定', '控制器回應', '證據']));
     expect(en.intersection(zh), isEmpty);
   });
+
+  testWidgets('a protocol mismatch keeps asked and settled as two numbers', (
+    tester,
+  ) async {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      requestedProtocol: '5',
+      protocol: '6',
+    );
+    await tester.pumpWidget(
+      localizedMaterialApp(
+        locale: const Locale('en'),
+        home: Scaffold(body: ConnectionLayersPanel(report: report)),
+      ),
+    );
+    expect(find.text('asked 5, settled 6'), findsOneWidget);
+    expect(
+      find.byKey(const Key('connection-layer-protocol-observed')),
+      findsOneWidget,
+    );
+  });
 }
