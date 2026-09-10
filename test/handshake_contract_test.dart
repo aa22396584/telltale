@@ -121,6 +121,50 @@ void main() {
       expect(client.requestedProtocol, '5');
       expect(client.protocolNumber, contains('6'));
     });
+
+    test(
+      'a flush failure after ATSP still records the request that left the app',
+      () async {
+        final transport = FakeElm327(
+          protocol: BusProtocol.can11,
+          ecus: [_canEcm()],
+        );
+        final client = _clientFor(transport);
+        expect(await client.connect(), isTrue);
+        expect(client.requestedProtocol, '0');
+        transport.failWriteAfterAcceptingFor = const {'ATSP5'};
+        await expectLater(client.send('ATSP5'), throwsA(isA<Object>()));
+        expect(
+          client.requestedProtocol,
+          '5',
+          reason:
+              'socket.add can deliver ATSP before flush throws; that is a request',
+        );
+      },
+    );
+
+    test(
+      'a write refused before ATSP leaves the previous request in place',
+      () async {
+        final transport = FakeElm327(
+          protocol: BusProtocol.can11,
+          ecus: [_canEcm()],
+        );
+        final client = _clientFor(transport);
+        expect(await client.connect(), isTrue);
+        expect(client.requestedProtocol, '0');
+        transport.refuseWriteBeforeAcceptingFor = const {'ATSP5'};
+        await expectLater(
+          client.send('ATSP5'),
+          throwsA(isA<WriteRefusedException>()),
+        );
+        expect(
+          client.requestedProtocol,
+          '0',
+          reason: 'a guard refusal never left the app',
+        );
+      },
+    );
   });
 
   group('state-changing AT commands must be acknowledged', () {
