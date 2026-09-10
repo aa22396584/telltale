@@ -18,7 +18,6 @@ const _unsupportedWikiNames = <String>[
   'RDLY',
   'TOT',
   'INT16',
-  'CLOSEST',
 ];
 
 void main() {
@@ -86,6 +85,8 @@ void main() {
     expect(FormulaEngine.preflight('LOOKUP(A:0:1=100)'), isNull);
     expect(FormulaEngine.preflight('LOOKUP(A::0~3=4)'), isNull);
     expect(FormulaEngine.preflight('LOOKUP((A-1):0:0=50)'), isNull);
+    expect(FormulaEngine.preflight('CLOSEST(A:0:1=100:255=200)'), isNull);
+    expect(FormulaEngine.preflight('CLOSEST((A-1):0:0=50)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
   });
