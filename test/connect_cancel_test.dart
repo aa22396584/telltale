@@ -252,6 +252,68 @@ void main() {
     container.dispose();
   });
 
+  test(
+    'handover from Demo to Wi-Fi does not keep software evidence on the new attempt',
+    () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+      final session = container.read(obdSessionProvider.notifier);
+      final abandoned = session.connectForTest(
+        _HangingTransport(unwind: const Duration(milliseconds: 200)),
+        TransportKind.demo,
+      );
+      await _settle();
+      await session.disconnect();
+      final second = session.connectForTest(
+        _HangingTransport(),
+        TransportKind.wifi,
+      );
+      await _settle();
+      final waiting = container.read(obdSessionProvider);
+      expect(waiting.kind, TransportKind.wifi);
+      expect(waiting.detail, contains('Stopping the previous connection'));
+      expect(
+        waiting.simulatedEvidence,
+        isFalse,
+        reason: 'the new attempt is Wi-Fi; Demo provenance must not travel',
+      );
+      await session.disconnect();
+      expect(await abandoned, isFalse);
+      expect(await second, isFalse);
+    },
+  );
+
+  test(
+    'handover onto Demo publishes software evidence before session evidence is replaced',
+    () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+      final session = container.read(obdSessionProvider.notifier);
+      final abandoned = session.connectForTest(
+        _HangingTransport(unwind: const Duration(milliseconds: 200)),
+        TransportKind.wifi,
+      );
+      await _settle();
+      await session.disconnect();
+      final second = session.connectForTest(
+        DemoTransport(),
+        TransportKind.demo,
+      );
+      await _settle();
+      final waiting = container.read(obdSessionProvider);
+      expect(waiting.kind, TransportKind.demo);
+      expect(waiting.detail, contains('Stopping the previous connection'));
+      expect(
+        waiting.simulatedEvidence,
+        isTrue,
+        reason: 'Demo is software from the tap, not after _sessionEvidence lands',
+      );
+      expect(await second, isTrue);
+      expect(await abandoned, isFalse);
+      await session.disconnect();
+    },
+  );
+
   test('R30-codex 07B: a slow teardown is spent from the handover budget', () async {
     // Codex round 30, an unpinned rule. `f228a67` says one budget covers the
     // whole handover — the teardown *and* the wait — because a teardown has no

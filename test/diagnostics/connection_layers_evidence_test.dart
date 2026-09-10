@@ -47,6 +47,6 @@ void main() {
       'lib/ui/screens/connect/connect_screen.dart',
     ).readAsStringSync();
     expect(source.contains('testRig:'), isTrue);
-    expect(source.contains('requiresSimulatedEvidence'), isTrue);
+    expect(source.contains('connection.simulatedEvidence'), isTrue);
   });
 }
