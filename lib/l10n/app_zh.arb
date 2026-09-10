@@ -1118,5 +1118,6 @@
   "telemetrySessionNotFound": "找不到這筆本機紀錄",
   "telemetrySessionStorageFailed": "本機儲存作業失敗",
   "telemetrySessionShareFailed": "無法準備或開啟分享",
-  "pidMutationPersistFailed": "自訂 PID 清單無法寫入。沒有任何變更。"
+  "pidMutationPersistFailed": "自訂 PID 清單無法寫入。沒有任何變更。",
+  "powertrainAuthorizeYearOutOfRange": "該年式不在這個設定檔記載的年份範圍內。"
 }

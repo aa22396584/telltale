@@ -237,11 +237,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final installSnap = snapshotOfProfiles([_profileJson()]);
       final catalogSnap = snapshotOfProfiles([
-        {
-          ..._profileJson(),
-          'year_from': 1990,
-          'year_to': 1990,
-        },
+        {..._profileJson(), 'year_from': 1990, 'year_to': 1990},
       ]);
       final container = ProviderContainer(
         overrides: [
@@ -278,9 +274,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('selected vehicle year'), findsNothing);
+      expect(find.textContaining('Cannot install'), findsNothing);
       expect(
         find.textContaining(
-          'Cannot install: that model year is outside this profile',
+          'That model year is outside this profile\'s documented year range',
         ),
         findsOneWidget,
       );

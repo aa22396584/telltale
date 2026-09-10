@@ -4343,4 +4343,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pidMutationPersistFailed =>
       'The custom PID list could not be saved. Nothing was changed.';
+
+  @override
+  String get powertrainAuthorizeYearOutOfRange =>
+      'That model year is outside this profile\'s documented year range.';
 }

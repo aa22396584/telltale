@@ -92,7 +92,7 @@ void main() {
   });
 
   test(
-    'a year-range profile issue uses install copy, not the engine diagnostic',
+    'a year-range profile issue uses authorization copy, not install copy',
     () {
       const issue = PowertrainBatteryProfileIssue(
         code: 'vehicle_year_out_of_range',
@@ -100,7 +100,12 @@ void main() {
         message: 'selected vehicle year 2021 is outside this profile range',
       );
       final text = powertrainProfileIssueText(_en, issue);
-      expect(text, _en.powertrainInstallYearOutOfRange);
+      expect(
+        text,
+        'That model year is outside this profile\'s documented year range.',
+      );
+      expect(text, isNot(_en.powertrainInstallYearOutOfRange));
+      expect(text, isNot(contains('Cannot install')));
       expect(text, isNot(contains('selected vehicle year')));
       expect(chinese.hasMatch(text), isFalse);
     },

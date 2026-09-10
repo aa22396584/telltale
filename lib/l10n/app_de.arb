@@ -1115,5 +1115,6 @@
   "telemetrySessionNotFound": "Dieser lokale Datensatz wurde nicht gefunden.",
   "telemetrySessionStorageFailed": "Ein lokaler Speichervorgang ist fehlgeschlagen.",
   "telemetrySessionShareFailed": "Die Freigabe konnte nicht vorbereitet oder geöffnet werden.",
-  "pidMutationPersistFailed": "Die Liste der benutzerdefinierten PIDs konnte nicht gespeichert werden. Es wurden keine Änderungen vorgenommen."
+  "pidMutationPersistFailed": "Die Liste der benutzerdefinierten PIDs konnte nicht gespeichert werden. Es wurden keine Änderungen vorgenommen.",
+  "powertrainAuthorizeYearOutOfRange": "Das Modelljahr liegt außerhalb des für dieses Profil dokumentierten Jahresbereichs."
 }
