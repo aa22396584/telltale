@@ -13,7 +13,6 @@ import 'package:torque_obd/obd/transport/obd_transport.dart';
 void main() {
   test('a Demo session is software evidence, never field', () {
     final report = ConnectionLayerReport.fromConnection(
-      connected: true,
       kind: TransportKind.demo,
       protocol: 'AUTO, ISO 15765-4 (CAN 11/500)',
       responders: const {'7E8'},
@@ -27,7 +26,6 @@ void main() {
 
   test('an empty protocol string is unknown, not AUTO', () {
     final report = ConnectionLayerReport.fromConnection(
-      connected: true,
       kind: TransportKind.bluetoothLe,
       protocol: '',
       responders: const {'7E8'},
@@ -38,7 +36,6 @@ void main() {
 
   test('no ECU answers is notObserved, not unsupported', () {
     final report = ConnectionLayerReport.fromConnection(
-      connected: true,
       kind: TransportKind.bluetoothLe,
       protocol: 'ISO 9141-2',
       responders: const {},
@@ -50,7 +47,6 @@ void main() {
 
   test('the four layers are four facts, not one connected flag', () {
     final report = ConnectionLayerReport.fromConnection(
-      connected: true,
       kind: TransportKind.wifi,
       protocol: '',
       responders: const {},
@@ -69,11 +65,26 @@ void main() {
     expect(report.evidence, ConnectionLayerValue.unknown);
   });
 
-  test('disconnected is unknown on every layer except ecu notObserved', () {
-    final report = ConnectionLayerReport.fromConnection(connected: false);
+  test('disconnected with no retained facts is unknown / notObserved', () {
+    final report = ConnectionLayerReport.fromConnection();
     expect(report.transport, ConnectionLayerValue.unknown);
     expect(report.protocol, ConnectionLayerValue.unknown);
     expect(report.ecu, ConnectionLayerValue.notObserved);
     expect(report.evidence, ConnectionLayerValue.unknown);
+  });
+
+  test('link loss does not erase observed transport, protocol or ECU', () {
+    // Handshake history keeps kind/protocol/responders after the socket
+    // drops. Wiping them because `connected` is false would make the
+    // diagnostic panel forget the session it exists to explain.
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.wifi,
+      protocol: 'ISO 15765-4 (CAN 11/500)',
+      responders: const {'7E8'},
+    );
+    expect(report.transport, ConnectionLayerValue.wifi);
+    expect(report.protocol, ConnectionLayerValue.observed);
+    expect(report.ecu, ConnectionLayerValue.answered);
+    expect(report.evidence, isNot(ConnectionLayerValue.field));
   });
 }

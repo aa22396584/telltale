@@ -36,19 +36,12 @@ final class ConnectionLayerReport {
   final ConnectionLayerValue evidence;
 
   factory ConnectionLayerReport.fromConnection({
-    required bool connected,
     TransportKind? kind,
     String protocol = '',
     Set<String> responders = const {},
   }) {
-    if (!connected) {
-      return const ConnectionLayerReport(
-        transport: ConnectionLayerValue.unknown,
-        protocol: ConnectionLayerValue.unknown,
-        ecu: ConnectionLayerValue.notObserved,
-        evidence: ConnectionLayerValue.unknown,
-      );
-    }
+    // Each layer is its own input. A dropped socket is not permission to
+    // forget a protocol or ECU that already answered.
     return ConnectionLayerReport(
       transport: switch (kind) {
         TransportKind.demo => ConnectionLayerValue.demo,
