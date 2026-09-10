@@ -73,6 +73,29 @@ void main() {
       );
     });
 
+    test('link loss keeps protocolNumber after the client is gone', () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+
+      final session = container.read(obdSessionProvider.notifier);
+      expect(await session.connectDemo(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(session.client!.protocolNumber, contains('6'));
+      expect(
+        container.read(obdSessionProvider).protocolNumber,
+        contains('6'),
+      );
+
+      session.client!.onConnectionLost!();
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(session.client, isNull);
+      expect(
+        container.read(obdSessionProvider).protocolNumber,
+        contains('6'),
+        reason: 'handshake history must keep ATDPN after engine teardown',
+      );
+    });
+
     test(
       'every critical handshake step succeeds against the simulator',
       () async {

@@ -82,6 +82,7 @@ void main() {
     expect(source.contains('requestedProtocol:'), isTrue);
     expect(source.contains('.requestedProtocol'), isTrue);
     expect(source.contains('connection.requestedProtocol'), isTrue);
+    expect(source.contains('connection.protocolNumber'), isTrue);
   });
 
   test('requested protocol 5 and observed 6 are both retained', () {
