@@ -53,20 +53,22 @@ void main() {
     expect(FormulaEngine.preflight('CLOSEST((A-1):0:0=50)'), isNull);
   });
 
-  test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
+  test('delay/average wiki functions are timeWindowUnsupported, not a typo', () {
     for (final equation in [
       'EWMAF(A)',
+      'AVG(A:B)',
+      'TDLY(A)',
     ]) {
       final failure = FormulaEngine.preflight(equation);
       expect(failure, isNotNull, reason: equation);
       expect(
         failure!.issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.timeWindowUnsupported,
         reason: equation,
       );
       expect(failure.term, isNotEmpty, reason: equation);
       expect(failure.term, isNot('ABS'), reason: equation);
-      expect(failure.term, isNot('LOG10'), reason: equation);
+      expect(failure.term, isNot('MIN'), reason: equation);
     }
   });
 

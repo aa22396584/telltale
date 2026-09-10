@@ -93,6 +93,7 @@ const _dataCarried = <String, List<String>>{
   'FormulaIssue.dependencyTwoDefinitions': ['pidKey:'],
   'FormulaIssue.dependencyNotYetMeasured': ['pidKey:'],
   'FormulaIssue.unsupportedConstruct': ['term:'],
+  'FormulaIssue.timeWindowUnsupported': ['term:'],
   'PidRejection.serviceNotReadOnly': ['service:', 'allowedServices:'],
   'PidRejection.identifierWrongLength': ['service:', 'expectedBytes:'],
   'PidRejection.invalidHeader': ['text:'],

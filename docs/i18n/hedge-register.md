@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-62 entries. Every entry that names a **Shipped as** key is checked against the shipped
+63 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -729,3 +729,13 @@ maintainer.
 **Shipped as** `pidFormulaInt16Unclaimed` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:69`, the PID editor sentence when a formula writes `INT16(A:B)`. Softened to 'INT16 is not supported' it hides that (A*255)+B and (A*256)+B are different numbers. INT16, (A*255)+B and (A*256)+B stay those tokens in every language. Not evaluated as either.
+
+### 63. 延遲或平均 Torque 函式不是 0，也不是 MIN 或 MAX
+
+**繁體中文** — {term} 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。
+
+**English** — {term} is a delay or average Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.
+
+**Shipped as** `pidFormulaTimeWindowUnsupported` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:70`, the PID editor sentence when a formula writes `AVG`, `TDLY` or the rest of the wiki delay/average family. Softened to 'not supported' it hides that AVG is not MIN/MAX and TDLY is not 0. MIN, MAX and 0 stay those tokens in every language.
