@@ -10,7 +10,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/connection_layers.dart';
+import 'package:torque_obd/l10n/generated/app_localizations_en.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
+import 'package:torque_obd/ui/screens/connect/connection_layer_copy.dart';
 
 void main() {
   test('a Demo session is software evidence, never field', () {
@@ -65,6 +67,22 @@ void main() {
     expect(report.protocol, ConnectionLayerValue.unknown);
     expect(report.ecu, ConnectionLayerValue.notObserved);
     expect(report.evidence, ConnectionLayerValue.unknown);
+  });
+
+  test('the pasteable summary is the four on-screen rows', () {
+    final l10n = AppLocalizationsEn();
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.demo,
+      protocol: 'AUTO, ISO 15765-4 (CAN 11/500)',
+      responders: const {'7E8'},
+    );
+    final summary = connectionLayerSummary(l10n, report);
+    expect(summary.split('\n'), hasLength(4));
+    expect(summary, contains('Transport\tDemo'));
+    expect(summary, contains('Protocol\tObserved'));
+    expect(summary, contains('ECU replies\tAnswered'));
+    expect(summary, contains('Evidence\tSoftware'));
+    expect(summary, isNot(contains('field')));
   });
 
   test('disconnected with no retained facts is unknown / notObserved', () {

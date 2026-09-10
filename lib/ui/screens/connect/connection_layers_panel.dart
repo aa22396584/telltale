@@ -4,7 +4,10 @@
 /// "connected" line. Demo is software evidence, never field.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../diagnostics/connection_layers.dart';
@@ -22,6 +25,22 @@ class ConnectionLayersPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            key: const Key('connection-layer-copy'),
+            tooltip: MaterialLocalizations.of(context).copyButtonLabel,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.copy, size: 18),
+            onPressed: () {
+              unawaited(
+                Clipboard.setData(
+                  ClipboardData(text: connectionLayerSummary(l10n, report)),
+                ),
+              );
+            },
+          ),
+        ),
         _row(
           context,
           kind: ConnectionLayerKind.transport,
