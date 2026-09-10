@@ -4103,9 +4103,17 @@ class PollingEngine {
       // Header and query in one chain slot, so nothing else can execute
       // against a header that was selected for this batch.
       final expectedResponseId = batch.first.pid.expectedResponseId;
-      // Record packing when the bytes are about to go on the wire, not after
-      // the reply. `_sendNow` writes then waits; a timeout after a grouped
-      // Mode 01 command still observed the batch.
+      response = expectedResponseId == null
+          ? await client.sendAddressed(header, command)
+          : await client.sendGlobal(
+              command,
+              header: header,
+              timeout: client.commandTimeout,
+            );
+      // Only after the client method returns. Counting before it would treat
+      // OperationRetiredException / a failed ATSH as an observed batch — a
+      // grouped command that never reached the bus. A timeout after the PID
+      // write is a leftover; this path records answered Mode 01 commands.
       final mode01Count = mode01PidCountOnWire(command);
       if (mode01Count != null) {
         final previous = _lastMode01PidCount;
@@ -4117,13 +4125,6 @@ class PollingEngine {
           _lastMode01PidCount = mode01Count;
         }
       }
-      response = expectedResponseId == null
-          ? await client.sendAddressed(header, command)
-          : await client.sendGlobal(
-              command,
-              header: header,
-              timeout: client.commandTimeout,
-            );
       if (epoch != null && epoch != _epoch) return;
       // The definitions this request was built from are gone, so its answer
       // describes a question nobody is asking any more. Writing it to the
