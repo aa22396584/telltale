@@ -49,9 +49,14 @@ final class AppLocalesSnapshot {
 abstract final class AppLocalesPlatform {
   static MethodChannel channel = const MethodChannel(kAppLocalesChannelName);
 
+  /// Off in widget tests so an unanswered LocaleManager cannot freeze
+  /// fake-async. [main] turns it on before [runApp].
+  static bool live = false;
+
   static const _timeout = Duration(milliseconds: 500);
 
   static Future<AppLocalesSnapshot> get() async {
+    if (!live) return AppLocalesSnapshot.unsupported();
     try {
       final raw = await channel
           .invokeMethod<Object?>(kAppLocalesGetMethod)
@@ -70,6 +75,7 @@ abstract final class AppLocalesPlatform {
   /// Returns the post-set snapshot, or unsupported when the host has no
   /// LocaleManager. A rejected tag list returns null.
   static Future<AppLocalesSnapshot?> setOverrideTags(List<String> tags) async {
+    if (!live) return AppLocalesSnapshot.unsupported();
     try {
       final raw = await channel
           .invokeMethod<Object?>(

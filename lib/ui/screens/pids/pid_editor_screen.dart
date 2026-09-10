@@ -16,6 +16,7 @@ import '../../../obd/addressing.dart';
 import '../../../obd/pid/formula_engine.dart';
 import '../../../obd/pid/pid.dart';
 import '../../../obd/pid/priority_tier.dart';
+import '../../../state/language_switch_guard.dart';
 import '../../../state/pid_mutation_lock.dart';
 import '../../../state/pid_registry.dart';
 import '../../widgets/gauges/linear_gauge.dart';
@@ -96,7 +97,10 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
       _header,
       _modeAndPid,
     ]) {
-      controller.addListener(() => setState(() {}));
+      controller.addListener(() {
+        setState(() {});
+        _publishDirty();
+      });
     }
 
     _initialPriority = _priority;
@@ -139,8 +143,13 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
     return discard ?? false;
   }
 
+  void _publishDirty() {
+    ref.read(pidEditorDirtyProvider.notifier).setDirty(_isDirty);
+  }
+
   @override
   void dispose() {
+    ref.read(pidEditorDirtyProvider.notifier).setDirty(false);
     for (final controller in [
       _name,
       _shortName,
@@ -555,7 +564,10 @@ class _PidEditorScreenState extends ConsumerState<PidEditorScreen> {
                 ),
             ],
             selected: {_priority},
-            onSelectionChanged: (s) => setState(() => _priority = s.first),
+            onSelectionChanged: (s) => setState(() {
+              _priority = s.first;
+              _publishDirty();
+            }),
             showSelectedIcon: false,
           ),
 

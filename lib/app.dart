@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/app_locales_platform.dart';
 import 'core/form_factor.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'l10n/locale_resolution.dart';
 import 'l10n/startup_copy.dart';
+import 'state/app_locales_synchronizer.dart';
 import 'state/app_share_coordinator.dart';
 import 'state/locale_settings.dart';
+import 'state/pid_registry.dart';
 import 'state/powertrain_battery_profiles.dart';
 import 'state/settings.dart';
 import 'state/telemetry_recorder.dart';
@@ -60,7 +65,32 @@ class _TorqueAppState extends ConsumerState<TorqueApp>
     ref.read(telemetryRecorderControllerProvider);
     ref.read(telemetryRecorderProgressProvider);
     _startupInitialization = _initializeStartup();
-    _lifecycleListener = AppLifecycleListener(onResume: _retryStartup);
+    _lifecycleListener = AppLifecycleListener(onResume: _onResume);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAppLocales());
+  }
+
+  void _onResume() {
+    _retryStartup();
+    _syncAppLocales();
+  }
+
+  void _syncAppLocales() {
+    unawaited(_syncAppLocalesAsync());
+  }
+
+  Future<void> _syncAppLocalesAsync() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final sync = AppLocalesSynchronizer(
+      prefs: prefs,
+      getOs: AppLocalesPlatform.get,
+      setOs: AppLocalesPlatform.setOverrideTags,
+    );
+    final plan = await sync.sync();
+    if (!mounted) return;
+    final next = localePreferenceFromStored(plan.storedIdToKeep);
+    if (ref.read(localePreferenceProvider) != next) {
+      await ref.read(localePreferenceProvider.notifier).set(next);
+    }
   }
 
   @override
@@ -72,6 +102,7 @@ class _TorqueAppState extends ConsumerState<TorqueApp>
 
   @override
   void didChangeLocales(List<Locale>? locales) {
+    _syncAppLocales();
     if (ref.read(localePreferenceProvider) == LocalePreference.system) {
       setState(() {});
     }
