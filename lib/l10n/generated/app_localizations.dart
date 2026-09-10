@@ -6823,6 +6823,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That model year is outside this profile\'s documented year range.'**
   String get powertrainAuthorizeYearOutOfRange;
+
+  /// Connect diagnostic row: phone↔adapter path. Distinct from protocol, ECU answers, and evidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get connectionLayerTransport;
+
+  /// Connect diagnostic row: adapter-settled bus protocol. Empty is unknown, not AUTO.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get connectionLayerProtocol;
+
+  /// Connect diagnostic row: controllers that answered. No answers is not observed, not unsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'ECU replies'**
+  String get connectionLayerEcu;
+
+  /// Connect diagnostic row: software/bench/field. Demo is software, never field.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get connectionLayerEvidence;
+
+  /// No description provided for @connectionLayerUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get connectionLayerUnknown;
+
+  /// No description provided for @connectionLayerNotObserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not observed'**
+  String get connectionLayerNotObserved;
+
+  /// No description provided for @connectionLayerObserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Observed'**
+  String get connectionLayerObserved;
+
+  /// No description provided for @connectionLayerAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered'**
+  String get connectionLayerAnswered;
+
+  /// No description provided for @connectionLayerSoftware.
+  ///
+  /// In en, this message translates to:
+  /// **'Software'**
+  String get connectionLayerSoftware;
+
+  /// No description provided for @connectionLayerDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get connectionLayerDemo;
+
+  /// No description provided for @connectionLayerBle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth LE'**
+  String get connectionLayerBle;
+
+  /// No description provided for @connectionLayerClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Classic'**
+  String get connectionLayerClassic;
+
+  /// No description provided for @connectionLayerWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi'**
+  String get connectionLayerWifi;
 }
 
 class _AppLocalizationsDelegate

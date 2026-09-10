@@ -3859,6 +3859,45 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get powertrainAuthorizeYearOutOfRange => '該年式不在這個設定檔記載的年份範圍內。';
+
+  @override
+  String get connectionLayerTransport => '連線方式';
+
+  @override
+  String get connectionLayerProtocol => '協定';
+
+  @override
+  String get connectionLayerEcu => '控制器回應';
+
+  @override
+  String get connectionLayerEvidence => '證據';
+
+  @override
+  String get connectionLayerUnknown => '未知';
+
+  @override
+  String get connectionLayerNotObserved => '未觀察到';
+
+  @override
+  String get connectionLayerObserved => '已觀察';
+
+  @override
+  String get connectionLayerAnswered => '有回應';
+
+  @override
+  String get connectionLayerSoftware => '軟體';
+
+  @override
+  String get connectionLayerDemo => '內建模擬器';
+
+  @override
+  String get connectionLayerBle => '藍牙 LE';
+
+  @override
+  String get connectionLayerClassic => '藍牙 Classic';
+
+  @override
+  String get connectionLayerWifi => '無線網路';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7715,4 +7754,43 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get powertrainAuthorizeYearOutOfRange => '該年式不在這個設定檔記載的年份範圍內。';
+
+  @override
+  String get connectionLayerTransport => '連線方式';
+
+  @override
+  String get connectionLayerProtocol => '協定';
+
+  @override
+  String get connectionLayerEcu => '控制器回應';
+
+  @override
+  String get connectionLayerEvidence => '證據';
+
+  @override
+  String get connectionLayerUnknown => '未知';
+
+  @override
+  String get connectionLayerNotObserved => '未觀察到';
+
+  @override
+  String get connectionLayerObserved => '已觀察';
+
+  @override
+  String get connectionLayerAnswered => '有回應';
+
+  @override
+  String get connectionLayerSoftware => '軟體';
+
+  @override
+  String get connectionLayerDemo => '內建模擬器';
+
+  @override
+  String get connectionLayerBle => '藍牙 LE';
+
+  @override
+  String get connectionLayerClassic => '藍牙 Classic';
+
+  @override
+  String get connectionLayerWifi => '無線網路';
 }

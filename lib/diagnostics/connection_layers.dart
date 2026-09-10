@@ -7,6 +7,8 @@ library;
 
 import '../obd/transport/obd_transport.dart';
 
+enum ConnectionLayerKind { transport, protocol, ecu, evidence }
+
 enum ConnectionLayerValue {
   unknown,
   notObserved,
