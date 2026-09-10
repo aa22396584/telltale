@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:torque_obd/core/app_locales_platform.dart';
+import 'package:torque_obd/l10n/app_locales_sync.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/state/locale_settings.dart';
 import 'package:torque_obd/state/pid_registry.dart';
@@ -316,6 +319,81 @@ void main() {
     // screen returns to that committed value, not System and not Chinese.
     expect(env.container.read(localePreferenceProvider), LocalePreference.english);
     expect(env.inner.getString(kLocalePreferenceKey), 'en');
+  });
+
+  test('live persist writes LocaleManager so resume cannot clobber it', () async {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    const channel = MethodChannel(kAppLocalesChannelName);
+    List<Object?>? seen;
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
+      if (call.method == kAppLocalesGetMethod) {
+        return <String, Object?>{
+          'apiSupported': true,
+          'sdkInt': 36,
+          'followsSystem': true,
+          'overrideTags': <String>[],
+          'configurationTags': <String>[],
+        };
+      }
+      expect(call.method, kAppLocalesSetMethod);
+      seen = (call.arguments as Map)['tags'] as List<Object?>?;
+      return <String, Object?>{
+        'apiSupported': true,
+        'sdkInt': 36,
+        'followsSystem': seen!.isEmpty,
+        'overrideTags': seen!.cast<String>(),
+        'configurationTags': <String>[],
+      };
+    });
+    addTearDown(() {
+      binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      AppLocalesPlatform.live = false;
+    });
+
+    AppLocalesPlatform.live = true;
+    final container = await containerWith({kLocaleOsMigratedKey: true});
+    addTearDown(container.dispose);
+
+    final ok = await container
+        .read(localePreferenceProvider.notifier)
+        .set(LocalePreference.german);
+    expect(ok, isTrue);
+    expect(seen, ['de']);
+    final prefs = container.read(sharedPreferencesProvider);
+    expect(prefs.getString(kLocalePreferenceKey), 'de');
+    expect(prefs.getBool(kLocaleOsMigratedKey), isTrue);
+
+    seen = null;
+    await container
+        .read(localePreferenceProvider.notifier)
+        .set(LocalePreference.system);
+    expect(seen, isEmpty);
+  });
+
+  test('live=false persist does not invoke LocaleManager', () async {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    const channel = MethodChannel(kAppLocalesChannelName);
+    var calls = 0;
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
+      calls += 1;
+      return null;
+    });
+    addTearDown(() {
+      binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      AppLocalesPlatform.live = false;
+    });
+    AppLocalesPlatform.live = false;
+    final container = await containerWith({});
+    addTearDown(container.dispose);
+    final ok = await container
+        .read(localePreferenceProvider.notifier)
+        .set(LocalePreference.english);
+    expect(ok, isTrue);
+    expect(calls, 0);
   });
 }
 

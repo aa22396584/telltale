@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/app_locales_platform.dart';
 import 'core/field_evidence/platform_metadata.dart';
 import 'core/form_factor.dart';
 import 'core/licenses/powertrain_battery_licenses.dart';
@@ -20,6 +21,7 @@ import 'state/telemetry_runtime.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppLocalesPlatform.live = true;
   registerPowertrainBatteryLicenses();
 
   // Preferences are loaded before the first frame so every provider that

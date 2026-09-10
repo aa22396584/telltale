@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/locale_resolution.dart';
+import '../../state/language_switch_guard.dart';
 import '../../state/locale_settings.dart';
 
 /// The options, each written in its own language.
@@ -61,6 +62,17 @@ class LanguagePicker extends ConsumerWidget {
             ),
             selected: current == value,
             onTap: () async {
+              if (value == current) return;
+              final block = ref.read(languageSwitchBlockProvider);
+              if (block != LanguageSwitchBlock.none) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(languageSwitchBlockText(l10n, block)),
+                  ),
+                );
+                return;
+              }
               final ok = await ref
                   .read(localePreferenceProvider.notifier)
                   .set(value);

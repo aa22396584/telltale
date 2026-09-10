@@ -15,9 +15,14 @@ void main() {
     binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, handler);
   }
 
-  tearDown(() => mock(null));
+  setUp(() => AppLocalesPlatform.live = true);
+  tearDown(() {
+    mock(null);
+    AppLocalesPlatform.live = false;
+  });
 
-  test('an unregistered channel is unsupported, not English', () async {
+  test('live=false is unsupported, not English', () async {
+    AppLocalesPlatform.live = false;
     final snapshot = await AppLocalesPlatform.get();
     expect(snapshot.apiSupported, isFalse);
     expect(snapshot.followsSystem, isTrue);

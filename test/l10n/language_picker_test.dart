@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/l10n/generated/app_localizations_en.dart';
+import 'package:torque_obd/state/language_switch_guard.dart';
 import 'package:torque_obd/state/locale_settings.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
@@ -167,5 +169,69 @@ void main() {
     expect(session.connects, 0);
     expect(session.state.isConnected, isFalse);
     expect(session.state.isBusy, isFalse);
+  });
+
+  testWidgets('a dirty PID editor blocks the picker without writing prefs', (
+    tester,
+  ) async {
+    final prefs = await prefsWith({});
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          languageSwitchBlockProvider.overrideWithValue(
+            LanguageSwitchBlock.pidEditorDirty,
+          ),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(body: LanguagePicker()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('locale_traditionalChinese')));
+    await tester.pump();
+
+    expect(
+      find.text(AppLocalizationsEn().pidEditorDiscardBody),
+      findsOneWidget,
+    );
+    expect(prefs.getString(kLocalePreferenceKey), isNull);
+  });
+
+  testWidgets('recording blocks the picker without writing prefs', (
+    tester,
+  ) async {
+    final prefs = await prefsWith({});
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          languageSwitchBlockProvider.overrideWithValue(
+            LanguageSwitchBlock.recording,
+          ),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(body: LanguagePicker()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump();
+
+    expect(
+      find.text(AppLocalizationsEn().telemetryBlockedByRecorder),
+      findsOneWidget,
+    );
+    expect(prefs.getString(kLocalePreferenceKey), isNull);
   });
 }
