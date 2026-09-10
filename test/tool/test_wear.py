@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""#47 leftover: Wear OS lane is fail-closed not-run.
+"""#47 leftover: Wear OS lane is fail-closed without an identified watch.
 
-Do not invoke Flutter, open a Wear emulator, invent a device id, or walk
-a watch. Host-entry wear_shell tests do not substitute for this lane.
+Do not invent a device id or walk a phone. Host-entry wear_shell tests
+do not substitute for this lane. emulator-5554 and emulator-5556 are
+phones and must not pass.
 """
 
 from __future__ import annotations
@@ -15,7 +16,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from wear import GateError, main, validate_wear_report  # noqa: E402
+from wear import (  # noqa: E402
+    CASE_ID,
+    GateError,
+    connect_dump_belongs_to_package,
+    main,
+    validate_wear_report,
+)
 
 
 def _software(**overrides):
@@ -24,6 +31,24 @@ def _software(**overrides):
         "engine": "host-entry",
         "observations": 20,
         "device": "",
+    }
+    report.update(overrides)
+    return report
+
+
+def _executed(**overrides):
+    report = {
+        "lane": "wear",
+        "device": "emulator-5558",
+        "fingerprint": "google/sdk_gwear64_arm64/emu64a",
+        "command": ["adb", "-s", "emulator-5558", "exec-out", "screencap", "-p"],
+        "exit": 0,
+        "connect_shown": True,
+        "case_ids": [CASE_ID],
+        "screenshot_sha256": "a" * 64,
+        "runner_head_sha": "b" * 40,
+        "installed_version_name": "1.0.12-rig",
+        "apk_matches_runner_head": False,
     }
     report.update(overrides)
     return report
@@ -38,10 +63,100 @@ class WearLaneTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_wear_report({"lane": "wear", "device": ""})
 
-    def test_wear_with_a_device_is_still_not_run(self):
+    def test_wear_refuses_the_field_phone(self):
         with self.assertRaises(GateError) as raised:
-            validate_wear_report({"lane": "wear", "device": "wear-emulator-api35"})
-        self.assertIn("not-run", str(raised.exception))
+            validate_wear_report({"lane": "wear", "device": "R5CX10VFFBA"})
+        self.assertIn("field phone", str(raised.exception))
+
+    def test_wear_refuses_the_phone_emulator(self):
+        with self.assertRaises(GateError) as raised:
+            validate_wear_report(_executed(device="emulator-5554"))
+        self.assertIn("5554", str(raised.exception))
+
+    def test_wear_refuses_quietinbox(self):
+        with self.assertRaises(GateError) as raised:
+            validate_wear_report(_executed(device="emulator-5556"))
+        self.assertIn("5556", str(raised.exception))
+
+    def test_phone_fingerprint_is_not_wear(self):
+        with self.assertRaises(GateError) as raised:
+            validate_wear_report(
+                _executed(fingerprint="google/sdk_gphone64_arm64/emu64a")
+            )
+        self.assertIn("Wear", str(raised.exception))
+
+    def test_executed_wear_report_passes(self):
+        self.assertEqual(
+            validate_wear_report(_executed())["device"],
+            "emulator-5558",
+        )
+
+    def test_execute_field_phone_is_refused(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(
+                    [
+                        "--output",
+                        str(output),
+                        "--execute",
+                        "--serial",
+                        "R5CX10VFFBA",
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "wear.json").exists())
+
+    def test_execute_phone_emulator_is_refused(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(
+                    [
+                        "--output",
+                        str(output),
+                        "--execute",
+                        "--serial",
+                        "emulator-5554",
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "wear.json").exists())
+
+    def test_execute_quietinbox_is_refused(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(
+                    [
+                        "--output",
+                        str(output),
+                        "--execute",
+                        "--serial",
+                        "emulator-5556",
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "wear.json").exists())
+
+    def test_connect_markers_without_package_are_not_ours(self):
+        xml = (
+            '<node package="com.android.systemui" text="BLE adapters" />'
+        )
+        self.assertFalse(
+            connect_dump_belongs_to_package(xml, "com.cbstudio.telltale")
+        )
+
+    def test_connect_markers_with_package_are_ours(self):
+        xml = (
+            '<node package="com.cbstudio.telltale" text="Demo simulator" />'
+        )
+        self.assertTrue(
+            connect_dump_belongs_to_package(xml, "com.cbstudio.telltale")
+        )
 
     def test_wear_lane_is_not_run(self):
         with tempfile.TemporaryDirectory() as raw:
