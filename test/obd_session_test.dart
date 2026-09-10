@@ -53,6 +53,26 @@ void main() {
       expect(container.read(obdSessionProvider).isConnected, isFalse);
     });
 
+    test('link loss keeps requestedProtocol after the client is gone', () async {
+      final container = await _container();
+      addTearDown(container.dispose);
+
+      final session = container.read(obdSessionProvider.notifier);
+      expect(await session.connectDemo(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(session.client!.requestedProtocol, '0');
+      expect(container.read(obdSessionProvider).requestedProtocol, '0');
+
+      session.client!.onConnectionLost!();
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(session.client, isNull);
+      expect(
+        container.read(obdSessionProvider).requestedProtocol,
+        '0',
+        reason: 'handshake history must keep ATSP after engine teardown',
+      );
+    });
+
     test(
       'every critical handshake step succeeds against the simulator',
       () async {
