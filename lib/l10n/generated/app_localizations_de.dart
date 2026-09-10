@@ -1497,6 +1497,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Torque-kompatible CSV-Datei exportieren';
 
   @override
+  String get pidManagerExportHumanReport =>
+      'Menschenlesbaren PID-Bericht exportieren';
+
+  @override
   String get pidManagerHeadline => 'PID-Manager';
 
   @override
@@ -4364,6 +4368,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get shareTorqueSubsetCsvSubject =>
       'Torque-kompatible PID-Definitionen';
+
+  @override
+  String get shareHumanReportCsvSubject =>
+      'Menschenlesbarer PID-Bericht für Telltale';
 
   @override
   String get transcriptExportUnidentified => 'Der Export ist fehlgeschlagen.';
