@@ -312,10 +312,20 @@ class PollingEngine {
   int _capabilityDiscoveryEpoch = 0;
   bool _running = false;
 
-  /// Last Mode 01 command's PID count on the wire, or null this connection.
+  /// Highest Mode 01 PID packing observed on the wire this connection.
   ///
-  /// Retired by [start]. Profile-response commands do not write it.
+  /// A new engine starts at null. [start] does not clear it (resume).
+  /// Profile-response commands do not write it.
   int? _lastMode01PidCount;
+
+  void _noteMode01Packed(String command) {
+    final count = mode01PidCountOnWire(command);
+    if (count == null) return;
+    final previous = _lastMode01PidCount;
+    if (previous == null || count > previous) {
+      _lastMode01PidCount = count;
+    }
+  }
 
   Stream<TelemetrySnapshot> get snapshots => _snapshots.stream;
 
@@ -2467,7 +2477,7 @@ class PollingEngine {
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
     final ObdResponse response;
-    client.beginWriteAudit();
+    final clearAudit = client.beginWriteAudit();
     try {
       response = await client.sendGlobal('04', owner: owner);
     } on OperationRetiredException {
@@ -2492,7 +2502,7 @@ class PollingEngine {
       // reached the transport then `04` never went out. Asked as a window
       // rather than as "the last write", because the header restore runs even
       // when the service write failed.
-      final reached = client.wroteSinceAudit('04');
+      final reached = client.wroteSinceAudit(clearAudit, '04');
       throw DtcReadException(
         reached
             ? 'The clear was sent, then the connection dropped, so it is not known whether the vehicle cleared. '
@@ -4099,6 +4109,7 @@ class PollingEngine {
     }
 
     final ObdResponse response;
+    final pollAudit = client.beginWriteAudit();
     try {
       // Header and query in one chain slot, so nothing else can execute
       // against a header that was selected for this batch.
@@ -4110,21 +4121,7 @@ class PollingEngine {
               header: header,
               timeout: client.commandTimeout,
             );
-      // Only after the client method returns. Counting before it would treat
-      // OperationRetiredException / a failed ATSH as an observed batch — a
-      // grouped command that never reached the bus. A timeout after the PID
-      // write is a leftover; this path records answered Mode 01 commands.
-      final mode01Count = mode01PidCountOnWire(command);
-      if (mode01Count != null) {
-        final previous = _lastMode01PidCount;
-        // Keep the highest packing this connection. A later singleton
-        // (unbatchable 010F sitting at the queue head) must not erase an
-        // earlier grouped Mode 01 command — that is the observation the
-        // pill is allowed to show. A new engine starts at null.
-        if (previous == null || mode01Count > previous) {
-          _lastMode01PidCount = mode01Count;
-        }
-      }
+      _noteMode01Packed(command);
       if (epoch != null && epoch != _epoch) return;
       // The definitions this request was built from are gone, so its answer
       // describes a question nobody is asking any more. Writing it to the
@@ -4148,7 +4145,13 @@ class PollingEngine {
       _publish(epoch);
       return;
     } on Object {
-      // A timeout or dropped link — the watchdog owns recovery, so just yield.
+      // Timeout or dropped link after the PID query may already be on the
+      // wire. `wroteSinceAudit` is the same fact Mode 04 uses: ATSH/ATH1
+      // can fail without the service bytes ever leaving, and a flush
+      // timeout can happen after they have. Count only the latter.
+      if (client.wroteSinceAudit(pollAudit, command)) {
+        _noteMode01Packed(command);
+      }
       await Future<void>.delayed(const Duration(milliseconds: 200));
       return;
     }

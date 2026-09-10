@@ -171,6 +171,7 @@ class AdapterFaults {
     this.refuseHeaders = false,
     this.refuseHeadersOff = false,
     this.refuseHeaderSwitch = false,
+    this.swallowGroupedMode01 = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -247,6 +248,12 @@ class AdapterFaults {
   /// and the reply comes back from a controller nobody asked, looking exactly
   /// like the right one.
   final bool refuseHeaderSwitch;
+
+  /// Answer grouped Mode 01 commands (`010C0D…`) with data but no prompt.
+  ///
+  /// The PID bytes have reached the adapter; the client times out waiting for
+  /// `>`. Used to prove the dashboard still records observed batching.
+  final bool swallowGroupedMode01;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -583,7 +590,11 @@ class FakeElm327 extends BaseObdTransport {
     if (command == 'ATE0') _echo = false;
     if (command == 'ATE1' || command == 'ATZ' || command == 'ATD') _echo = true;
 
-    final emit = faults.swallowPromptFor.contains(command)
+    final swallowGrouped =
+        faults.swallowGroupedMode01 &&
+        command.startsWith('01') &&
+        command.length > 4;
+    final emit = (faults.swallowPromptFor.contains(command) || swallowGrouped)
         ? reply.replaceAll('>', '')
         : reply;
 

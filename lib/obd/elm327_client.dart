@@ -79,8 +79,7 @@ enum Elm327ErrorCode {
     // goes unanswered surfaced as "this vehicle does not support that
     // PID", in the same tree that says elsewhere, correctly, that silence
     // is not a clean answer.
-    Elm327ErrorCode.noData =>
-      'No reply arrived — it may be temporary silence, or the vehicle may not support this.',
+    Elm327ErrorCode.noData => 'No reply arrived — it may be temporary silence, or the vehicle may not support this.',
     Elm327ErrorCode.busInitError => 'Bus initialisation failed.',
     Elm327ErrorCode.canError => 'CAN bus error.',
     Elm327ErrorCode.unableToConnect =>
@@ -354,8 +353,7 @@ enum InitNote {
 /// The wording [InitNote] replaced, kept for [InitProgress.detail].
 String initNoteText(InitNote note) => switch (note) {
   InitNote.aborted => 'Stopped after an earlier step failed.',
-  InitNote.notAcknowledged =>
-    'The adapter did not acknowledge this command.',
+  InitNote.notAcknowledged => 'The adapter did not acknowledge this command.',
   InitNote.ecuSilent => 'The ECU did not answer.',
   InitNote.ecuRefusedSupportQuery =>
     'The ECU refused the support query (negative response).',
@@ -366,8 +364,7 @@ String initNoteText(InitNote note) => switch (note) {
   InitNote.pidEchoMismatch =>
     'The reply echoes a different PID from the one that was asked for.',
   InitNote.timedOut => 'Timed out.',
-  InitNote.unexpected =>
-    'This step failed with an unexpected error. The full error is kept in the transcript.',
+  InitNote.unexpected => 'This step failed with an unexpected error. The full error is kept in the transcript.',
 };
 
 /// Requires the literal `OK` acknowledgement a state-changing AT command owes.
@@ -1291,6 +1288,7 @@ class Elm327Client {
     // Kept for the watchdog, which must not give up before the command does.
     _pendingDeadline = timeout;
     _pendingTimeout = Timer(timeout, _onCommandTimeout);
+    final previousEpoch = _writeEpochByCommand[normalised];
 
     try {
       // Its own deadline, because a write can block forever with nothing
@@ -1313,7 +1311,7 @@ class Elm327Client {
       // 04 that may have reached the adapter must not be offered as a free
       // retry, and one that provably did not must not be locked away — so the
       // fact is recorded where it is known instead of guessed where it is not.
-      _writesSinceAudit.add(normalised);
+      _writeEpochByCommand[normalised] = _writeAuditEpoch;
       // Recorded before the write, not after it. A write that never returns is
       // the case worth having on record, and recording on success would be the
       // one time the transcript stays silent.
@@ -1331,7 +1329,13 @@ class Elm327Client {
       // Without this, a `04` rejected at that guard was reported as sent, so
       // the clear locked its button over a Mode 04 that provably never
       // happened and asked for a rescan that could settle nothing.
-      if (e is WriteRefusedException) _writesSinceAudit.remove(normalised);
+      if (e is WriteRefusedException) {
+        if (previousEpoch == null) {
+          _writeEpochByCommand.remove(normalised);
+        } else {
+          _writeEpochByCommand[normalised] = previousEpoch;
+        }
+      }
       _pendingTimeout?.cancel();
       _pendingTimeout = null;
       _pending = null;
@@ -1409,7 +1413,9 @@ class Elm327Client {
   /// marked out of sync and resynchronised before anything else is sent.
   void _onCommandTimeout() {
     _outOfSync = true;
-    _failPending(TimeoutException('Timed out waiting for a reply', commandTimeout));
+    _failPending(
+      TimeoutException('Timed out waiting for a reply', commandTimeout),
+    );
   }
 
   /// Waits out whatever the adapter still owes us, then clears the desync.
@@ -1705,13 +1711,13 @@ class Elm327Client {
         // disconnecting the session on behalf of work nobody was waiting for.
         if (!(mayTransmit?.call(owner) ?? true)) {
           throw const OperationRetiredException(
-        'This session has ended or gone to the background, so the command was not sent.',
-      );
+            'This session has ended or gone to the background, so the command was not sent.',
+          );
         }
         if (deadline != null && !deadline.isAfter(DateTime.now())) {
           throw TimeoutException(
-          'The time limit for this operation has passed, so $command was not sent.',
-        );
+            'The time limit for this operation has passed, so $command was not sent.',
+          );
         }
         if (_outOfSync) await _resync(deadline: deadline);
 
@@ -1954,8 +1960,14 @@ class Elm327Client {
   String? _currentHeader;
   static const String kDefaultHeaderValue = '7E0';
 
-  /// Commands whose bytes have been handed to [transport] since
-  /// [beginWriteAudit].
+  /// Epoch of the most recent [beginWriteAudit] call.
+  ///
+  /// Each operation gets its own token. Dashboard polling and Mode 04 both
+  /// ask "did these bytes leave?", and clearing one shared set from each poll
+  /// batch would hide a Mode 04 that had already reached the adapter.
+  int _writeAuditEpoch = 0;
+
+  /// Last audit epoch at which each command's bytes were handed to [transport].
   ///
   /// See the note in `_sendNow`: a failure *after* a write leaves the outcome
   /// unknown, and a failure before it is proof the command never went out.
@@ -1968,14 +1980,22 @@ class Elm327Client {
   /// service and `ATH0`, and the header restore runs even when the service
   /// write failed — so the last thing written is never the thing being asked
   /// about.
-  final Set<String> _writesSinceAudit = {};
+  final Map<String, int> _writeEpochByCommand = {};
 
-  /// Starts a new window for [wroteSinceAudit].
-  void beginWriteAudit() => _writesSinceAudit.clear();
+  /// Starts a new window for [wroteSinceAudit] and returns its token.
+  ///
+  /// A command written at epoch E is visible to every window whose token is
+  /// `<= E`. A later poll batch may open its own window without hiding a
+  /// Mode 04 that already left. A second clear still cannot inherit the first
+  /// attempt's `04`.
+  int beginWriteAudit() => ++_writeAuditEpoch;
 
-  /// Whether [command]'s bytes reached the transport during this window.
-  bool wroteSinceAudit(String command) =>
-      _writesSinceAudit.contains(command.trim().toUpperCase());
+  /// Whether [command]'s bytes reached the transport in [audit]'s window.
+  bool wroteSinceAudit(int audit, String command) {
+    final key = command.trim().toUpperCase().replaceAll(' ', '');
+    final at = _writeEpochByCommand[key];
+    return at != null && at >= audit;
+  }
 
   /// The adapter's persistent configuration, read once per connection.
   ///
