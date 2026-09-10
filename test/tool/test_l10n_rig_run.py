@@ -100,6 +100,73 @@ class L10nRigRunnerTest(unittest.TestCase):
         self.assertIn("mutually exclusive", text)
         self.assertIn("--overflow", text)
         self.assertIn("--wear", text)
+        self.assertIn("--screenshot", text)
+
+
+    def test_screenshot_flag_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(["--screenshot", "--output", str(output)]),
+                2,
+            )
+            self.assertFalse((output / "screenshot.json").exists())
+            self.assertFalse((output / "wear.json").exists())
+            self.assertFalse((output / "overflow.json").exists())
+
+    def test_combined_screenshot_and_wear_clean_each_requested_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            (output / "screenshot.json").write_text(
+                '{"lane":"screenshot","device":"planted"}',
+                encoding="utf-8",
+            )
+            (output / "wear.json").write_text(
+                '{"lane":"wear","device":"planted"}',
+                encoding="utf-8",
+            )
+            leftover = output / "overflow.json"
+            leftover.write_text("{}", encoding="utf-8")
+            self.assertEqual(
+                main(
+                    [
+                        "--screenshot",
+                        "--wear",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "screenshot.json").exists())
+            self.assertFalse((output / "wear.json").exists())
+            self.assertTrue(
+                leftover.exists(),
+                msg="a lane that was not requested must not be swept as a side effect",
+            )
+
+    def test_combined_screenshot_flags_delete_dangling_symlinks(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            screenshot = output / "screenshot.json"
+            wear = output / "wear.json"
+            screenshot.symlink_to(output / "missing-screenshot.json")
+            wear.symlink_to(output / "missing-wear.json")
+            self.assertEqual(
+                main(
+                    [
+                        "--screenshot",
+                        "--wear",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse(screenshot.exists())
+            self.assertFalse(screenshot.is_symlink())
+            self.assertFalse(wear.exists())
+            self.assertFalse(wear.is_symlink())
 
 
     def test_wear_flag_is_not_run(self):
