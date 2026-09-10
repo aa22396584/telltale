@@ -235,4 +235,52 @@ void main() {
     );
     await engine.dispose();
   });
+
+  test(
+    'a grouped Mode 01 write whose reply times out is still observed',
+    () async {
+      // sendAddressed / sendGlobal can throw after the PID query has left.
+      // Counting only a parsed success would drop Batched polling for a
+      // command that did go on the wire. Discovery 0100/0120/0140 still
+      // get a prompt; only grouped Mode 01 commands lose `>`.
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        faults: const AdapterFaults(swallowGroupedMode01: true),
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+          ),
+        ],
+      );
+      final engine = await _connect(transport);
+      await engine.discoverSupportedPids();
+      engine.setActivePids([PidLibrary.engineRpm, PidLibrary.vehicleSpeed]);
+      engine.start();
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      await engine.stop();
+
+      final batched = transport.commandLog
+          .where((c) => c.toUpperCase().startsWith('01') && c.length > 4)
+          .where((c) => c != '0100' && c != '0120' && c != '0140')
+          .toList();
+      expect(
+        batched,
+        isNotEmpty,
+        reason:
+            'this fixture must write a grouped Mode 01 command even though '
+            'the prompt never arrives. Commands: ${transport.commandLog}',
+      );
+      expect(
+        engine.current.lastMode01PidCount,
+        greaterThanOrEqualTo(2),
+        reason:
+            'a timeout after the PID write is still an observed batch. '
+            'Commands: ${transport.commandLog}',
+      );
+      await engine.dispose();
+    },
+  );
 }
