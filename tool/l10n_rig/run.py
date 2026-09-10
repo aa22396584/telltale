@@ -91,7 +91,12 @@ def main(argv: list[str] | None = None) -> int:
             forwarded.extend(["--serial", args.serial])
         return overflow_main(forwarded)
     if args.wear:
-        return wear_main(["--output", str(args.output)])
+        forwarded = ["--output", str(args.output)]
+        if args.execute:
+            forwarded.append("--execute")
+        if args.serial:
+            forwarded.extend(["--serial", args.serial])
+        return wear_main(forwarded)
     if args.screenshot:
         forwarded = ["--output", str(args.output)]
         if args.execute:
