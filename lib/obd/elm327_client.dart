@@ -1295,6 +1295,7 @@ class Elm327Client {
     _pendingDeadline = timeout;
     _pendingTimeout = Timer(timeout, _onCommandTimeout);
     final previousEpoch = _writeEpochByCommand[normalised];
+    final previousRequested = requestedProtocol;
 
     try {
       // Its own deadline, because a write can block forever with nothing
@@ -1322,10 +1323,13 @@ class Elm327Client {
       // the case worth having on record, and recording on success would be the
       // one time the transcript stays silent.
       transcript.recordWrite(wire);
-      await transport.write(wire).timeout(_withinDeadline(writeTimeout));
+      // ATSP is a request the moment the bytes are handed over. `socket.add`
+      // can deliver them before `flush` throws or times out; waiting for the
+      // Future would omit a protocol the adapter may already have settled.
       if (normalised.startsWith('ATSP') && normalised.length > 4) {
         requestedProtocol = normalised.substring(4);
       }
+      await transport.write(wire).timeout(_withinDeadline(writeTimeout));
     } on Object catch (e) {
       // …and taken back only when the transport says it never started.
       //
@@ -1344,6 +1348,7 @@ class Elm327Client {
         } else {
           _writeEpochByCommand[normalised] = previousEpoch;
         }
+        requestedProtocol = previousRequested;
       }
       _pendingTimeout?.cancel();
       _pendingTimeout = null;
