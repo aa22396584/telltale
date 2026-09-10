@@ -1044,6 +1044,22 @@ void main() {
         thrownBy(() => engine.evaluateBytes('BARO()', const [])).issue,
         FormulaIssue.unsupportedConstruct,
       );
+      // Unselected mapped expressions are not reduced. A=2 matches the
+      // second pair; evaluating 1/(A-2) first would throw divisionByZero.
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:1=1/(A-2):2=200)', const [2]),
+        closeTo(200.0, 1e-9),
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('LOOKUP(A:0:1=100:not-a-pair)', const [1]),
+        ).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        FormulaEngine.preflight('LOOKUP(A:0:1=100:not-a-pair)')!.issue,
+        FormulaIssue.unparsableTerm,
+      );
     });
 
     test('CLOSEST() is nearest numeric key, not LOOKUP exact-or-default', () {
@@ -1101,6 +1117,16 @@ void main() {
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
         FormulaIssue.unsupportedConstruct,
+      );
+      expect(
+        thrownBy(
+          () => engine.evaluateBytes('CLOSEST(A:0:1=100:255=1/0)', const [1]),
+        ).issue,
+        FormulaIssue.divisionByZero,
+      );
+      expect(
+        FormulaEngine.preflight('CLOSEST(A:0:1=100:255=1/0)')!.issue,
+        FormulaIssue.divisionByZero,
       );
     });
 
