@@ -1364,7 +1364,7 @@ class _HandshakePanel extends ConsumerWidget {
                       ? client.requestedProtocol
                       : connection.requestedProtocol,
                   responders: client?.knownResponders ?? const {},
-                  testRig: session.requiresSimulatedEvidence,
+                  testRig: connection.simulatedEvidence,
                 );
               }(),
             ),

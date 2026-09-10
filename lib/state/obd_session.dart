@@ -120,6 +120,13 @@ class ObdConnectionState {
   /// gone. Distinct from [protocol] (ATDP description). Empty until read.
   final String protocolNumber;
 
+  /// Whether this attempt is software-lane evidence (Demo or the no-car rig).
+  ///
+  /// Frozen onto the handshake record at the tap, not derived later from
+  /// the previous session's evidence: a handover publishes the new kind
+  /// before that evidence is replaced.
+  final bool simulatedEvidence;
+
   /// What the connection is waiting on right now, for the phase where nothing
   /// else moves — the transport's own attempt, before any handshake step has
   /// been sent.
@@ -162,6 +169,7 @@ class ObdConnectionState {
     this.protocol = '',
     this.requestedProtocol = '',
     this.protocolNumber = '',
+    this.simulatedEvidence = false,
     this.detail = '',
     this.batteryVoltage,
     this.error,
@@ -184,6 +192,7 @@ class ObdConnectionState {
     String? protocol,
     String? requestedProtocol,
     String? protocolNumber,
+    bool? simulatedEvidence,
     String? detail,
     double? batteryVoltage,
     String? error,
@@ -201,6 +210,7 @@ class ObdConnectionState {
       protocol: protocol ?? this.protocol,
       requestedProtocol: requestedProtocol ?? this.requestedProtocol,
       protocolNumber: protocolNumber ?? this.protocolNumber,
+      simulatedEvidence: simulatedEvidence ?? this.simulatedEvidence,
       detail: detail ?? this.detail,
       batteryVoltage: batteryVoltage ?? this.batteryVoltage,
       error: clearError ? null : (error ?? this.error),
@@ -296,6 +306,9 @@ class ObdSession extends Notifier<ObdConnectionState> {
   /// `false` means only that this production app connection is eligible for
   /// field evidence; it is never a claim that a physical vehicle was proven.
   bool get requiresSimulatedEvidence => _currentSessionIsTestRig;
+
+  bool _simulatedEvidenceFor(TransportKind kind) =>
+      testRigBuild || kind == TransportKind.demo;
 
   StreamSubscription<InitProgress>? _initSub;
   StreamSubscription<TelemetrySnapshot>? _snapshotSub;
@@ -1038,6 +1051,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
         phase: ConnectionPhase.connecting,
         kind: kind,
         deviceName: transport.displayName,
+        simulatedEvidence: _simulatedEvidenceFor(kind),
         detail: 'Stopping the previous connection, one moment…',
         activity: ObdConnectionActivity.abortingPreviousConnection,
       );
@@ -1229,6 +1243,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       phase: ConnectionPhase.connecting,
       kind: kind,
       deviceName: transport.displayName,
+      simulatedEvidence: _simulatedEvidenceFor(kind),
     );
 
     // The transcript is the *attempt's*, not the client's.
