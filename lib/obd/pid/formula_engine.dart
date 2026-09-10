@@ -947,167 +947,8 @@ class FormulaEngine {
         .replaceAll(_cosSentinel, 'COS(')
         .replaceAll(_tanSentinel, 'TAN(');
 
-    // Alternating, not one pass each in a fixed order.
-    //
-    // Both patterns exclude parentheses so that each pass necessarily collapses
-    // an *innermost* call. Running ABS once and then LOG10 once therefore made
-    // exactly one nesting order work: `LOG10(ABS(A))` reduced, `ABS(LOG10(A))`
-    // did not — ABS could not see past the inner parentheses on its pass, and
-    // by the time LOG10 had removed them ABS was over. The formula was refused
-    // at authoring time with nothing wrong in it.
-    //
-    // `_unwrapFunctionParens` handles the other shape a user writes by habit,
-    // `ABS((A-1))`, where the argument is parenthesised for its own sake.
-    //
-    // Each pass either shrinks the string or leaves it alone, so the loop ends.
-    var previous = '';
-    var guard = 0;
-    while (previous != s) {
-      if (++guard > 64) {
-        throw FormulaException(
-          '公式的函式巢狀太深',
-          equation,
-          issue: FormulaIssue.functionNestingTooDeep,
-        );
-      }
-      previous = s;
-      s = _applyFunction(s, _absPattern, equation, (v) => v.abs());
-      // `LOG10` of zero or a negative number is undefined, and answering 0
-      // makes an impossible input look like an ordinary reading:
-      // `LOG10(A-128)` with `A = 0` displayed a confident 0 rather than
-      // admitting the expression has no value there.
-      s = _applyFunction(s, _log10Pattern, equation, (v) {
-        if (v <= 0) {
-          throw FormulaException(
-            'LOG10 的引數必須大於 0（收到 $v）',
-            equation,
-            issue: FormulaIssue.log10NonPositiveArgument,
-            argument: v,
-          );
-        }
-        return math.log(v) / math.ln10;
-      });
-      // Wiki `LOG` is ln, not LOG10. Answering LOG10's value here would be a
-      // confident wrong number for every argument except 1.
-      s = _applyPrefixedFunction(s, _logPattern, equation, (v) {
-        if (v <= 0) {
-          throw FormulaException(
-            'LOG 的引數必須大於 0（收到 $v）',
-            equation,
-            issue: FormulaIssue.logNonPositiveArgument,
-            argument: v,
-          );
-        }
-        return math.log(v);
-      });
-      // Wiki LOG1P is ln(1+x), matching Java Math.log1p. Dart 3.13 has no
-      // math.log1p. `log(1+v)` rounds 1+1e-16 to 1 and answers 0 — a
-      // confident wrong number the formatter was built not to invent.
-      s = _applyPrefixedFunction(s, _log1pPattern, equation, (v) {
-        if (!v.isFinite || v <= -1) {
-          throw FormulaException(
-            '運算結果不是有效數值',
-            equation,
-            issue: FormulaIssue.resultNotFinite,
-          );
-        }
-        return _log1p(v);
-      });
-      // Wiki SIGNED16(value) is 16-bit two's complement of that number, not
-      // 8-bit SIGNED(A) and not INT16(A:B). Java `(short)` of the toward-zero
-      // integer; non-finite is refused rather than becoming 0.
-      s = _applyUnaryNamedFunction(s, 'SIGNED16', equation, _signed16);
-      // Wiki SIGNED8(value) is the same 8-bit conversion as SIGNED(letter).
-      s = _applyUnaryNamedFunction(s, 'SIGNED8', equation, _signed8);
-      // Wiki SIGNED24(value) is 24-bit two's complement, not SIGNED8/16.
-      s = _applyUnaryNamedFunction(s, 'SIGNED24', equation, _signed24);
-      // Wiki SIGNED32(value) is 32-bit two's complement, not SIGNED8/16/24.
-      s = _applyUnaryNamedFunction(s, 'SIGNED32', equation, _signed32);
-      // Wiki FLOAT32(A:B:C:D) is IEEE754 binary32. A is the most significant
-      // byte. Inf/NaN is refused rather than becoming 0.
-      s = _applyNaryFunction(s, 'FLOAT32', equation, 4, _float32);
-      // Wiki INT(value) converts to an integer toward zero, not floor and
-      // not INT16(A:B). Non-finite is refused rather than becoming 0.
-      s = _applyUnaryNamedFunction(s, 'INT', equation, _int);
-      // Wiki FLOAT64(A:B:C:D:E:F:G:H) is IEEE754 binary64. A is the most
-      // significant byte. Inf/NaN is refused rather than becoming 0.
-      s = _applyNaryFunction(s, 'FLOAT64', equation, 8, _float64);
-      // Wiki INT24(A:B:C) is an unsigned 24-bit int. A is the most
-      // significant byte. Not SIGNED24 and not INT16.
-      s = _applyNaryFunction(s, 'INT24', equation, 3, _int24);
-      // Wiki INT32(A:B:C:D) is an unsigned 32-bit int. A is the most
-      // significant byte. Not SIGNED32 and not INT16.
-      s = _applyNaryFunction(s, 'INT32', equation, 4, _int32);
-      // Wiki RANDOM() is a number between 0 and 1. Dart Random.nextDouble
-      // matches Java Math.random: [0, 1). Arguments are not a call.
-      s = _applyNaryFunction(s, 'RANDOM', equation, 0, _randomCall);
-      s = _applyFunction(s, _sqrtPattern, equation, (v) {
-        if (v < 0) {
-          throw FormulaException(
-            'SQRT 的引數必須大於或等於 0（收到 $v）',
-            equation,
-            issue: FormulaIssue.sqrtNegativeArgument,
-            argument: v,
-          );
-        }
-        return math.sqrt(v);
-      });
-      // Wiki does not name the unit. Dart/Java `sin` is radians; answering
-      // degrees here would be a confident wrong number for every nonzero
-      // argument.
-      s = _applyPrefixedFunction(s, _sinPattern, equation, math.sin);
-      s = _applyPrefixedFunction(s, _cosPattern, equation, math.cos);
-      s = _applyPrefixedFunction(s, _tanPattern, equation, math.tan);
-      s = _applyBinaryFunction(
-        s,
-        'MIN',
-        equation,
-        (a, b) => math.min(a, b),
-      );
-      s = _applyBinaryFunction(
-        s,
-        'MAX',
-        equation,
-        (a, b) => math.max(a, b),
-      );
-      s = _applyBinaryFunction(
-        s,
-        'BIT',
-        equation,
-        (value, bit) {
-          // toInt() on NaN/infinity throws UnsupportedError, which the
-          // poller does not catch — the previous reading stays on the
-          // gauge. Preflight uses small sample bytes, so BIT(A^B:0) can
-          // look well-formed and still overflow on live data.
-          if (!value.isFinite) {
-            throw FormulaException(
-              '運算結果不是有效數值',
-              equation,
-              issue: FormulaIssue.resultNotFinite,
-            );
-          }
-          if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
-            throw FormulaException(
-              '無法解析 "$bit"',
-              equation,
-              issue: FormulaIssue.unparsableTerm,
-              term: bit.toString(),
-            );
-          }
-          return ((value.toInt() >> bit.toInt()) & 1).toDouble();
-        },
-      );
-      // Wiki LOOKUP(value:default:key=val:…). Numeric exact `=` and range
-      // `~` only. Quoted strings are a display-side PID substitution this
-      // engine does not implement. Empty default is 0 on no match.
-      s = _applyLookupFunction(s, equation);
-      // Wiki CLOSEST(value:default:key=val:…). Nearest numeric key, not
-      // LOOKUP exact/range. Quoted strings stay unparsableTerm.
-      s = _applyClosestFunction(s, equation);
-      s = _unwrapFunctionParens(s, equation);
-    }
-
-    return s;
+    // Alternating, not one pass each in a fixed order — see `_collapseFragment`.
+    return _collapseFragment(s, equation);
   }
 
   /// A function whose argument is itself parenthesised: `ABS((A-1))`.
@@ -1505,7 +1346,11 @@ class FormulaEngine {
     var s = input;
     var guard = 0;
     while (true) {
-      final call = _innermostBinaryCall(s, 'LOOKUP');
+      final call = _innermostBinaryCall(
+        s,
+        'LOOKUP',
+        skipIfInnerHasFunction: false,
+      );
       if (call == null) return s;
       if (++guard > 64) {
         throw FormulaException(
@@ -1531,19 +1376,21 @@ class FormulaEngine {
           term: call.inner,
         );
       }
-      final value = _reduce(parts[0], source);
-      final fallback = parts[1].isEmpty ? 0.0 : _reduce(parts[1], source);
+      final value = _evaluateFragment(parts[0], source);
       final rows = [
         for (var i = 2; i < parts.length; i++)
           _parseLookupPair(parts[i], source),
       ];
-      var matched = fallback;
+      String? mappedText;
       for (final row in rows) {
         if (_lookupRowMatches(row, value, source)) {
-          matched = _reduce(row.mapped, source);
+          mappedText = row.mapped;
           break;
         }
       }
+      final matched = mappedText != null
+          ? _evaluateFragment(mappedText, source)
+          : (parts[1].isEmpty ? 0.0 : _evaluateFragment(parts[1], source));
       s = s.replaceRange(call.start, call.end, _format(matched));
     }
   }
@@ -1613,8 +1460,9 @@ class FormulaEngine {
   /// `LOG10(`, `LOG(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
   static ({int start, int end, String inner})? _innermostBinaryCall(
     String input,
-    String name,
-  ) {
+    String name, {
+    bool skipIfInnerHasFunction = true,
+  }) {
     final needle = '$name(';
     var from = 0;
     while (true) {
@@ -1644,7 +1492,7 @@ class FormulaEngine {
         continue;
       }
       final inner = input.substring(start + needle.length, end - 1);
-      if (!_innerStillHasFunction(inner)) {
+      if (!skipIfInnerHasFunction || !_innerStillHasFunction(inner)) {
         return (start: start, end: end, inner: inner);
       }
       from = start + 1;
@@ -1884,11 +1732,116 @@ class FormulaEngine {
     String source,
   ) {
     if (row.exact != null) {
-      return _reduce(row.exact!, source) == value;
+      return _evaluateFragment(row.exact!, source) == value;
     }
-    final lo = _reduce(row.lo!, source);
-    final hi = _reduce(row.hi!, source);
+    final lo = _evaluateFragment(row.lo!, source);
+    final hi = _evaluateFragment(row.hi!, source);
     return value >= lo && value <= hi;
+  }
+
+  /// Collapse named calls in a LOOKUP fragment, then arithmetic-reduce.
+  /// Used so an unselected `LOG10(A-2)` is never passed through `_preprocess`.
+  double _evaluateFragment(String expression, String source) {
+    return _reduce(_collapseFragment(expression, source), source);
+  }
+
+  /// One function-reduction loop over a substring that already had letters
+  /// substituted. Recurses into nested LOOKUP/CLOSEST through the same pass.
+  String _collapseFragment(String input, String source) {
+    var s = input;
+    var previous = '';
+    var guard = 0;
+    while (previous != s) {
+      if (++guard > 64) {
+        throw FormulaException(
+          '公式的函式巢狀太深',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      previous = s;
+      s = _applyLookupFunction(s, source);
+      s = _applyFunction(s, _absPattern, source, (v) => v.abs());
+      s = _applyFunction(s, _log10Pattern, source, (v) {
+        if (v <= 0) {
+          throw FormulaException(
+            'LOG10 的引數必須大於 0（收到 $v）',
+            source,
+            issue: FormulaIssue.log10NonPositiveArgument,
+            argument: v,
+          );
+        }
+        return math.log(v) / math.ln10;
+      });
+      s = _applyPrefixedFunction(s, _logPattern, source, (v) {
+        if (v <= 0) {
+          throw FormulaException(
+            'LOG 的引數必須大於 0（收到 $v）',
+            source,
+            issue: FormulaIssue.logNonPositiveArgument,
+            argument: v,
+          );
+        }
+        return math.log(v);
+      });
+      s = _applyPrefixedFunction(s, _log1pPattern, source, (v) {
+        if (!v.isFinite || v <= -1) {
+          throw FormulaException(
+            '運算結果不是有效數值',
+            source,
+            issue: FormulaIssue.resultNotFinite,
+          );
+        }
+        return _log1p(v);
+      });
+      s = _applyUnaryNamedFunction(s, 'SIGNED16', source, _signed16);
+      s = _applyUnaryNamedFunction(s, 'SIGNED8', source, _signed8);
+      s = _applyUnaryNamedFunction(s, 'SIGNED24', source, _signed24);
+      s = _applyUnaryNamedFunction(s, 'SIGNED32', source, _signed32);
+      s = _applyNaryFunction(s, 'FLOAT32', source, 4, _float32);
+      s = _applyUnaryNamedFunction(s, 'INT', source, _int);
+      s = _applyNaryFunction(s, 'FLOAT64', source, 8, _float64);
+      s = _applyNaryFunction(s, 'INT24', source, 3, _int24);
+      s = _applyNaryFunction(s, 'INT32', source, 4, _int32);
+      s = _applyNaryFunction(s, 'RANDOM', source, 0, _randomCall);
+      s = _applyFunction(s, _sqrtPattern, source, (v) {
+        if (v < 0) {
+          throw FormulaException(
+            'SQRT 的引數必須大於或等於 0（收到 $v）',
+            source,
+            issue: FormulaIssue.sqrtNegativeArgument,
+            argument: v,
+          );
+        }
+        return math.sqrt(v);
+      });
+      s = _applyPrefixedFunction(s, _sinPattern, source, math.sin);
+      s = _applyPrefixedFunction(s, _cosPattern, source, math.cos);
+      s = _applyPrefixedFunction(s, _tanPattern, source, math.tan);
+      s = _applyBinaryFunction(s, 'MIN', source, math.min);
+      s = _applyBinaryFunction(s, 'MAX', source, math.max);
+      s = _applyBinaryFunction(s, 'BIT', source, (value, bit) {
+        if (!value.isFinite) {
+          throw FormulaException(
+            '運算結果不是有效數值',
+            source,
+            issue: FormulaIssue.resultNotFinite,
+          );
+        }
+        if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
+          throw FormulaException(
+            '無法解析 "$bit"',
+            source,
+            issue: FormulaIssue.unparsableTerm,
+            term: bit.toString(),
+          );
+        }
+        return ((value.toInt() >> bit.toInt()) & 1).toDouble();
+      });
+      s = _applyClosestFunction(s, source);
+      s = _unwrapFunctionParens(s, source);
+    }
+    return s;
   }
 
   double _reduce(String expression, String source) {
