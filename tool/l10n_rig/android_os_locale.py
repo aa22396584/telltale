@@ -93,6 +93,20 @@ def validate_android_os_locale_report(report: object) -> dict:
     command = report.get("command")
     if not isinstance(command, list) or not command:
         raise GateError("android-os-locale missing executed command")
+    runner = report.get("runner_head_sha")
+    if not isinstance(runner, str) or len(runner) != 40:
+        raise GateError("android-os-locale missing runner HEAD")
+    version = report.get("installed_version_name")
+    if not isinstance(version, str) or not version.strip():
+        raise GateError("android-os-locale missing installed versionName")
+    if report.get("localeconfig_via_shell") is not True:
+        raise GateError(
+            "android-os-locale must record that LocaleConfig was applied via shell"
+        )
+    if report.get("apk_matches_runner_head") is True:
+        raise GateError(
+            "android-os-locale must not claim the installed APK is this checkout"
+        )
     return report
 
 
@@ -170,7 +184,7 @@ def _set_app_locales(serial: str, locales: str) -> None:
         "set-app-localeconfig",
         PACKAGE,
         "--locales",
-        "en,zh-Hant",
+        "en,zh-Hant,de",
     )
     if config.returncode != 0:
         raise GateError("android-os-locale could not set LocaleConfig")
@@ -270,6 +284,15 @@ def _clear_app_locales(serial: str) -> None:
     _run(serial, "shell", "input", "keyevent", "KEYCODE_HOME")
 
 
+def _installed_version_name(serial: str) -> str:
+    dumped = _run(serial, "shell", "dumpsys", "package", PACKAGE)
+    for line in (dumped.stdout or "").splitlines():
+        line = line.strip()
+        if line.startswith("versionName="):
+            return line.split("=", 1)[1].strip()
+    raise GateError("android-os-locale could not read installed versionName")
+
+
 def _git_head() -> str:
     completed = subprocess.run(
         ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -322,7 +345,10 @@ def _execute(serial: str, output: Path) -> dict:
             "en-US": en_digest,
             "zh-Hant-TW": zh_digest,
         },
-        "head_sha": _git_head(),
+        "runner_head_sha": _git_head(),
+        "installed_version_name": _installed_version_name(serial),
+        "localeconfig_via_shell": True,
+        "apk_matches_runner_head": False,
     }
 
 

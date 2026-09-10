@@ -48,7 +48,10 @@ def _pass(**overrides):
         "process_recreated": True,
         "case_ids": list(CASE_IDS),
         "screenshots": {"en-US": "a" * 64, "zh-Hant-TW": "b" * 64},
-        "head_sha": "c" * 40,
+        "runner_head_sha": "c" * 40,
+        "installed_version_name": "1.0.12-rig",
+        "localeconfig_via_shell": True,
+        "apk_matches_runner_head": False,
     }
     report.update(overrides)
     return report
@@ -86,6 +89,10 @@ class AndroidOsLocaleLaneTest(unittest.TestCase):
     def test_missing_chinese_copy_is_not_pass(self):
         with self.assertRaises(GateError):
             validate_android_os_locale_report(_pass(chinese_seen=False))
+
+    def test_claiming_the_apk_is_this_checkout_is_not_pass(self):
+        with self.assertRaises(GateError):
+            validate_android_os_locale_report(_pass(apk_matches_runner_head=True))
 
     def test_android_os_locale_lane_is_not_run(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -193,6 +200,7 @@ class AndroidOsLocaleLaneTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn('android:name="en"', xml)
         self.assertIn('android:name="zh-Hant"', xml)
+        self.assertIn('android:name="de"', xml)
         self.assertNotIn("zh-Hans", xml)
         self.assertNotIn("zh-CN", xml)
         manifest = (
