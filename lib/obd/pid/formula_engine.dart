@@ -1747,6 +1747,11 @@ class FormulaEngine {
   /// Collapse named calls in a LOOKUP fragment, then arithmetic-reduce.
   /// Used so an unselected `LOG10(A-2)` is never passed through `_preprocess`.
   double _evaluateFragment(String expression, String source) {
+    // A number or arithmetic fragment is not a function pass. Charging it
+    // made a 70-row LOOKUP throw functionNestingTooDeep without nesting.
+    if (!_innerStillHasFunction(expression)) {
+      return _reduce(expression, source);
+    }
     return _reduce(_collapseFragment(expression, source), source);
   }
 
