@@ -1679,5 +1679,54 @@ class CampaignQueueTest(unittest.TestCase):
         self.assertNotIn("WS-02", ready)
 
 
+class CurrentCampaignTest(unittest.TestCase):
+    def test_shipped_campaign_validates_with_real_fixture_hashes(self) -> None:
+        path = ROOT / "tool" / "workshop" / "campaign.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        errors, ready = validate_plan.validate_plan(
+            data, plan_path=path, check_artifacts=True, campaign=True
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(ready, ["CURRENT-278"])
+        self.assertRegex(str(data.get("audited_sha") or ""), r"^[0-9a-f]{40}$")
+        self.assertNotIn("base_sha", data["tasks"][0])
+        self.assertNotEqual(
+            path.resolve(),
+            (ROOT / "tool" / "workshop" / "plan.json").resolve(),
+        )
+
+    def test_seed_plan_is_still_not_a_campaign(self) -> None:
+        path = ROOT / "tool" / "workshop" / "plan.json"
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                str(path),
+                "--campaign",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("required_evidence", completed.stderr)
+
+    def test_assert_official_reporter_exits_zero(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tool" / "workshop" / "assert_official_reporter.py"),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        self.assertIn("invented rejected", completed.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
+
