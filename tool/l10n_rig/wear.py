@@ -192,12 +192,16 @@ def _ui_xml(serial: str) -> str:
     return (completed.stdout or b"").decode("utf-8", "replace")
 
 
+def connect_dump_belongs_to_package(xml: str, package: str) -> bool:
+    return package in xml and any(marker in xml for marker in CONNECT_MARKERS)
+
+
 def _wait_for_connect(serial: str, package: str, timeout_s: float = 60.0) -> str:
     deadline = time.time() + timeout_s
     last = ""
     while time.time() < deadline:
         last = _ui_xml(serial)
-        if any(marker in last for marker in CONNECT_MARKERS):
+        if connect_dump_belongs_to_package(last, package):
             return last
         time.sleep(1.0)
     raise GateError("wear connect screen did not appear")

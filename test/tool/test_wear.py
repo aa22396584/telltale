@@ -16,7 +16,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from wear import CASE_ID, GateError, main, validate_wear_report  # noqa: E402
+from wear import (  # noqa: E402
+    CASE_ID,
+    GateError,
+    connect_dump_belongs_to_package,
+    main,
+    validate_wear_report,
+)
 
 
 def _software(**overrides):
@@ -135,6 +141,22 @@ class WearLaneTest(unittest.TestCase):
                 2,
             )
             self.assertFalse((output / "wear.json").exists())
+
+    def test_connect_markers_without_package_are_not_ours(self):
+        xml = (
+            '<node package="com.android.systemui" text="BLE adapters" />'
+        )
+        self.assertFalse(
+            connect_dump_belongs_to_package(xml, "com.cbstudio.telltale")
+        )
+
+    def test_connect_markers_with_package_are_ours(self):
+        xml = (
+            '<node package="com.cbstudio.telltale" text="Demo simulator" />'
+        )
+        self.assertTrue(
+            connect_dump_belongs_to_package(xml, "com.cbstudio.telltale")
+        )
 
     def test_wear_lane_is_not_run(self):
         with tempfile.TemporaryDirectory() as raw:
