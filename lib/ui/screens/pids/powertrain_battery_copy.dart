@@ -16,6 +16,7 @@
 library;
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../obd/powertrain_battery/profile_catalog_validator.dart';
 import '../../../obd/powertrain_battery/profile_pid_installer.dart';
 import '../../../state/powertrain_battery_profiles.dart';
 
@@ -68,6 +69,18 @@ String powertrainProbeRefusalText(
 /// One whole sentence per install refusal. Exhaustive: a new
 /// [PowertrainProfileInstallIssue] must fail to compile here rather than
 /// fall back to `exception.message`.
+/// Connection-confirm refusals. [PowertrainBatteryProfileIssue.message] is
+/// an English diagnostic for the catalog log; the snack must not interpolate
+/// it. Unknown codes use [AppLocalizations.powertrainProfileNotVerified]
+/// rather than the engine sentence.
+String powertrainProfileIssueText(
+  AppLocalizations l10n,
+  PowertrainBatteryProfileIssue issue,
+) => switch (issue.code) {
+  'vehicle_year_out_of_range' => l10n.powertrainInstallYearOutOfRange,
+  _ => l10n.powertrainProfileNotVerified,
+};
+
 String powertrainInstallIssueText(
   AppLocalizations l10n,
   PowertrainProfileInstallIssue issue,

@@ -230,6 +230,63 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a year-range refusal snacks localized copy, not the engine diagnostic',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final installSnap = snapshotOfProfiles([_profileJson()]);
+      final catalogSnap = snapshotOfProfiles([
+        {
+          ..._profileJson(),
+          'year_from': 1990,
+          'year_to': 1990,
+        },
+      ]);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          obdSessionProvider.overrideWith(_ConnectedObdSession.new),
+          powertrainBatteryCatalogLoaderProvider.overrideWithValue(
+            () async => catalogSnap,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(pidRegistryProvider.notifier)
+          .installPowertrainProfile(installSnap, _profileId, vehicleYear: 2021);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: localizedMaterialApp(
+            locale: const Locale('en'),
+            theme: AppTheme.dark(),
+            home: const Scaffold(body: PowertrainProfileConfirmBanner()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('powertrain_confirm_connection_banner-profile')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('powertrain_confirm_connection_accept')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('selected vehicle year'), findsNothing);
+      expect(
+        find.textContaining(
+          'Cannot install: that model year is outside this profile',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('a live grant hides the banner', (tester) async {
     final (container, snapshot) = await pumpBanner(tester);
     addTearDown(container.dispose);

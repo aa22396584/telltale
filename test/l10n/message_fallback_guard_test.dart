@@ -68,6 +68,17 @@ void main() {
   });
 
   test(
+    'the connection-confirm banner does not interpolate profile-issue.message',
+    () {
+      final code = _code(
+        'lib/ui/widgets/powertrain_profile_confirm_banner.dart',
+      );
+      expect(code.contains('issues.first.message'), isFalse);
+      expect(code.contains('.message,'), isFalse);
+    },
+  );
+
+  test(
     'clear disconnect copy does not interpolate TransportException.message',
     () {
       final code = _code('lib/obd/polling_engine.dart');

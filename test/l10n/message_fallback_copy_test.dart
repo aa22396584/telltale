@@ -9,6 +9,7 @@ import 'package:torque_obd/l10n/generated/app_localizations.dart';
 import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
+import 'package:torque_obd/obd/powertrain_battery/profile_catalog_validator.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
 import 'package:torque_obd/obd/transport/ble_transport.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -88,6 +89,32 @@ void main() {
     for (final text in _installEnglish.values) {
       expect(chinese.hasMatch(text), isFalse, reason: text);
     }
+  });
+
+  test(
+    'a year-range profile issue uses install copy, not the engine diagnostic',
+    () {
+      const issue = PowertrainBatteryProfileIssue(
+        code: 'vehicle_year_out_of_range',
+        path: 'year_from/year_to',
+        message: 'selected vehicle year 2021 is outside this profile range',
+      );
+      final text = powertrainProfileIssueText(_en, issue);
+      expect(text, _en.powertrainInstallYearOutOfRange);
+      expect(text, isNot(contains('selected vehicle year')));
+      expect(chinese.hasMatch(text), isFalse);
+    },
+  );
+
+  test('an unknown profile issue code does not leak the engine sentence', () {
+    const issue = PowertrainBatteryProfileIssue(
+      code: 'missing_profile_id',
+      path: 'id',
+      message: 'profile id is required',
+    );
+    final text = powertrainProfileIssueText(_en, issue);
+    expect(text, _en.powertrainProfileNotVerified);
+    expect(text, isNot(contains('profile id is required')));
   });
 
   test(
