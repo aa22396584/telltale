@@ -98,6 +98,73 @@ class L10nRigRunnerTest(unittest.TestCase):
         self.assertIn("--native-dialog", text)
         self.assertIn("--android-os-locale", text)
         self.assertIn("mutually exclusive", text)
+        self.assertIn("--overflow", text)
+
+
+    def test_overflow_flag_is_not_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(["--overflow", "--output", str(output)]),
+                2,
+            )
+            self.assertFalse((output / "overflow.json").exists())
+            self.assertFalse((output / "native-dialog.json").exists())
+            self.assertFalse((output / "android-os-locale.json").exists())
+
+    def test_combined_overflow_and_native_dialog_clean_each_requested_report(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            (output / "overflow.json").write_text(
+                '{"lane":"overflow","device":"planted"}',
+                encoding="utf-8",
+            )
+            (output / "native-dialog.json").write_text(
+                '{"lane":"native-dialog","device":"planted"}',
+                encoding="utf-8",
+            )
+            leftover = output / "android-os-locale.json"
+            leftover.write_text("{}", encoding="utf-8")
+            self.assertEqual(
+                main(
+                    [
+                        "--overflow",
+                        "--native-dialog",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "overflow.json").exists())
+            self.assertFalse((output / "native-dialog.json").exists())
+            self.assertTrue(
+                leftover.exists(),
+                msg="a lane that was not requested must not be swept as a side effect",
+            )
+
+    def test_combined_overflow_flags_delete_dangling_symlinks(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            overflow = output / "overflow.json"
+            native = output / "native-dialog.json"
+            overflow.symlink_to(output / "missing-overflow.json")
+            native.symlink_to(output / "missing-native.json")
+            self.assertEqual(
+                main(
+                    [
+                        "--overflow",
+                        "--native-dialog",
+                        "--output",
+                        str(output),
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse(overflow.exists())
+            self.assertFalse(overflow.is_symlink())
+            self.assertFalse(native.exists())
+            self.assertFalse(native.is_symlink())
 
 
 if __name__ == "__main__":
