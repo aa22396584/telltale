@@ -55,7 +55,7 @@ void main() {
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
     for (final equation in [
-      'INT16(A:B)',
+      'EWMAF(A)',
     ]) {
       final failure = FormulaEngine.preflight(equation);
       expect(failure, isNotNull, reason: equation);
@@ -68,6 +68,13 @@ void main() {
       expect(failure.term, isNot('ABS'), reason: equation);
       expect(failure.term, isNot('LOG10'), reason: equation);
     }
+  });
+
+  test('INT16 is unclaimed, not (A*255)+B and not (A*256)+B', () {
+    final failure = FormulaEngine.preflight('INT16(A:B)');
+    expect(failure, isNotNull);
+    expect(failure!.issue, FormulaIssue.int16Unclaimed);
+    expect(failure.term, 'INT16');
   });
 
   test('BARO() is the psi wiki form, not generic unsupportedConstruct', () {
@@ -117,7 +124,7 @@ void main() {
     expect(result.errors.single.lineNumber, 4);
     expect(
       result.errors.single.preflight!.issue,
-      FormulaIssue.unsupportedConstruct,
+      FormulaIssue.int16Unclaimed,
     );
     expect(result.errors.single.preflight!.term, 'INT16');
   });

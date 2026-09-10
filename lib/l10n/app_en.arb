@@ -3322,6 +3322,10 @@
   "@pidFormulaBaroParenFormUnsupported": {
     "description": "FormulaIssue.baroParenFormUnsupported. Wiki BARO() is psi from the phone or ECU baro. BARO without parentheses is the ECU cache. Not evaluated as 0 and not as kPa."
   },
+  "pidFormulaInt16Unclaimed": "INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is not (A*256)+B. Write one of those identities explicitly.",
+  "@pidFormulaInt16Unclaimed": {
+    "description": "FormulaIssue.int16Unclaimed. Wiki INT16(A:B) cites (A*255)+B. Conventional big-endian is (A*256)+B. Neither is evaluated. The two identities stay as written."
+  },
   "pidFormulaDependencyControllerUnknown": "{reference} cannot be resolved here, because which controller that PID belongs to is not known.",
   "@pidFormulaDependencyControllerUnknown": {
     "description": "FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.",

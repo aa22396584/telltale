@@ -67,7 +67,9 @@ These wiki names are detected as `NAME(` and fail as
 are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
-`INT16`
+
+`INT16` is `FormulaIssue.int16Unclaimed`, not `unsupportedConstruct`.
+The wiki sentence is not an executable oracle.
 
 `BARO()` is `FormulaIssue.baroParenFormUnsupported`, not
 `unsupportedConstruct`. The wiki function reads the Android barometer or

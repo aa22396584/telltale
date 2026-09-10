@@ -6332,6 +6332,12 @@ abstract class AppLocalizations {
   /// **'BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.'**
   String get pidFormulaBaroParenFormUnsupported;
 
+  /// FormulaIssue.int16Unclaimed. Wiki INT16(A:B) cites (A*255)+B. Conventional big-endian is (A*256)+B. Neither is evaluated. The two identities stay as written.
+  ///
+  /// In en, this message translates to:
+  /// **'INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is not (A*256)+B. Write one of those identities explicitly.'**
+  String get pidFormulaInt16Unclaimed;
+
   /// FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.
   ///
   /// In en, this message translates to:
