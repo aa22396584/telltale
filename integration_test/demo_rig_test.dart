@@ -26,6 +26,8 @@ import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_reader.dart';
 import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
+import 'package:torque_obd/ui/screens/telemetry/telemetry_session_detail_screen.dart';
+import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
 
 import 'rig_support.dart';
 
@@ -273,7 +275,10 @@ Future<void> _recordAndInspectTelemetryJourney(WidgetTester tester) async {
   // Share sink captures the immutable coordinator hand-off without opening an
   // Android chooser or claiming external delivery.
   final history = find.byKey(const ValueKey('telemetry-open-history'));
-  final completedDashboard = find.byType(CustomScrollView);
+  final completedDashboard = find.descendant(
+    of: find.byType(DashboardScreen),
+    matching: find.byType(CustomScrollView),
+  );
   expect(completedDashboard, findsOneWidget);
   final completedDashboardScrollable = find.descendant(
     of: completedDashboard,
@@ -295,31 +300,84 @@ Future<void> _recordAndInspectTelemetryJourney(WidgetTester tester) async {
   expect(
     await pumpUntil(
       tester,
-      () => find.byType(ListView).evaluate().isNotEmpty,
+      () => find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty,
+      timeout: const Duration(seconds: 20),
+    ),
+    isTrue,
+    reason: 'root History did not open TelemetrySessionsScreen',
+  );
+  expect(
+    await pumpUntil(
+      tester,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionsScreen),
+            matching: find.byType(ListView),
+          )
+          .evaluate()
+          .isNotEmpty,
       timeout: const Duration(seconds: 20),
     ),
     isTrue,
     reason: 'root History did not load its local library',
   );
-  final historyList = find.byType(ListView);
+  final historyList = find.descendant(
+    of: find.byType(TelemetrySessionsScreen),
+    matching: find.byType(ListView),
+  );
   expect(historyList, findsOneWidget);
   final historyScrollable = find.descendant(
     of: historyList,
     matching: find.byType(Scrollable),
   );
   expect(historyScrollable, findsOneWidget);
-  final sessionTile = find.byIcon(Icons.chevron_right);
+  final sessionTile = find.descendant(
+    of: find.byType(TelemetrySessionsScreen),
+    matching: find.byIcon(Icons.chevron_right),
+  );
   await tester.scrollUntilVisible(
     sessionTile,
     200,
     scrollable: historyScrollable,
   );
   expect(sessionTile, findsOneWidget);
-  expect(find.text('本機紀錄'), findsOneWidget);
-  expect(find.textContaining('${result.valueCount} 筆有效值'), findsOneWidget);
-  expect(find.textContaining('${result.statusCount} 個狀態'), findsOneWidget);
-  expect(find.textContaining('${result.gapCount} 個缺口'), findsOneWidget);
-  expect(find.textContaining('內建模擬'), findsOneWidget);
+  expect(
+    find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('本機紀錄'),
+    ),
+    findsOneWidget,
+  );
+  // Quota chip and session tile both print these counts.
+  final historyCopy = find.byType(TelemetrySessionsScreen);
+  expect(
+    find.descendant(
+      of: historyCopy,
+      matching: find.textContaining('${result.valueCount} 筆有效值'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: historyCopy,
+      matching: find.textContaining('${result.statusCount} 個狀態'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: historyCopy,
+      matching: find.textContaining('${result.gapCount} 個缺口'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: historyCopy,
+      matching: find.textContaining('內建模擬'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
   debugPrint('DEMO_RIG phase=history');
 
   await tester.tap(sessionTile.last);
@@ -327,13 +385,21 @@ Future<void> _recordAndInspectTelemetryJourney(WidgetTester tester) async {
   expect(
     await pumpUntil(
       tester,
-      () => find.text('紀錄回放').evaluate().isNotEmpty,
+      () => find.byType(TelemetrySessionDetailScreen).evaluate().isNotEmpty,
       timeout: const Duration(seconds: 20),
     ),
     isTrue,
     reason: 'root replay route did not load the completed Demo session',
   );
-  final replayList = find.byType(ListView);
+  final replay = find.byType(TelemetrySessionDetailScreen);
+  expect(
+    find.descendant(of: replay, matching: find.text('紀錄回放')),
+    findsOneWidget,
+  );
+  final replayList = find.descendant(
+    of: replay,
+    matching: find.byType(ListView),
+  );
   expect(
     await pumpUntil(
       tester,
@@ -350,19 +416,46 @@ Future<void> _recordAndInspectTelemetryJourney(WidgetTester tester) async {
   );
   expect(replayScrollable, findsOneWidget);
   await tester.scrollUntilVisible(
-    find.text('離線抽樣回放'),
+    find.descendant(of: replay, matching: find.text('離線抽樣回放')),
     200,
     scrollable: replayScrollable,
   );
-  expect(find.text('離線抽樣回放'), findsOneWidget);
-  expect(find.text('內建模擬'), findsOneWidget);
   expect(
-    find.text('${header.transport.name} · ${header.protocol}'),
+    find.descendant(of: replay, matching: find.text('離線抽樣回放')),
     findsOneWidget,
   );
-  expect(find.text('${result.valueCount} 筆有效值'), findsOneWidget);
-  expect(find.text('${result.statusCount} 個狀態'), findsOneWidget);
-  expect(find.text('${result.gapCount} 個缺口'), findsOneWidget);
+  expect(
+    find.descendant(of: replay, matching: find.text('內建模擬')),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: replay,
+      matching: find.text('${header.transport.name} · ${header.protocol}'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: replay,
+      matching: find.text('${result.valueCount} 筆有效值'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: replay,
+      matching: find.text('${result.statusCount} 個狀態'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
+  expect(
+    find.descendant(
+      of: replay,
+      matching: find.text('${result.gapCount} 個缺口'),
+    ),
+    findsAtLeastNWidgets(1),
+  );
   debugPrint('DEMO_RIG phase=replay');
 
   await tester.tap(find.text('16x'));

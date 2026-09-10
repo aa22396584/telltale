@@ -1,0 +1,9 @@
+More of the app speaks the language you chose, including German.
+
+Connect shows four facts: how you are linked, which protocol answered, which ECUs replied, and what that is based on. Demo is named as software.
+
+The dashboard reports how many sensors the adapter packed in one reply.
+
+A Samsung Note 3 with no Vulkan driver no longer dies at launch.
+
+Fixed: adapter failures printed Traditional Chinese in an English build. Refusing Location could be named as Bluetooth.
