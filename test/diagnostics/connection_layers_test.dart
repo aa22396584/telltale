@@ -73,6 +73,30 @@ void main() {
     expect(report.evidence, ConnectionLayerValue.unknown);
   });
 
+  test('requested protocol 5 and observed 6 are both retained', () {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      requestedProtocol: '5',
+      protocol: '6',
+    );
+    expect(report.requestedProtocol, '5');
+    expect(report.observedProtocol, '6');
+    expect(report.requestedProtocol, isNot(equals(report.observedProtocol)));
+    expect(report.protocol, ConnectionLayerValue.observed);
+  });
+
+  test('a requested protocol with no ATDP answer stays requested, observed unknown',
+      () {
+    final report = ConnectionLayerReport.fromConnection(
+      kind: TransportKind.bluetoothLe,
+      requestedProtocol: '5',
+      protocol: '',
+    );
+    expect(report.requestedProtocol, '5');
+    expect(report.observedProtocol, isEmpty);
+    expect(report.protocol, ConnectionLayerValue.unknown);
+  });
+
   test('link loss does not erase observed transport, protocol or ECU', () {
     // Handshake history keeps kind/protocol/responders after the socket
     // drops. Wiping them because `connected` is false would make the

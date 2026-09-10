@@ -30,6 +30,8 @@ final class ConnectionLayerReport {
     required this.protocol,
     required this.ecu,
     required this.evidence,
+    this.requestedProtocol = '',
+    this.observedProtocol = '',
   });
 
   final ConnectionLayerValue transport;
@@ -37,13 +39,23 @@ final class ConnectionLayerReport {
   final ConnectionLayerValue ecu;
   final ConnectionLayerValue evidence;
 
+  /// What was asked of the adapter (`ATSPn`), which may differ from ATDPN.
+  final String requestedProtocol;
+
+  /// What the adapter actually settled on (`ATDP` / `ATDPN`).
+  final String observedProtocol;
+
   factory ConnectionLayerReport.fromConnection({
     TransportKind? kind,
     String protocol = '',
+    String requestedProtocol = '',
     Set<String> responders = const {},
   }) {
     // Each layer is its own input. A dropped socket is not permission to
-    // forget a protocol or ECU that already answered.
+    // forget a protocol or ECU that already answered. Requested and
+    // observed stay two strings: ATSP 5 vs ATDPN 6 is a fact, not a merge.
+    final observed = protocol.trim();
+    final requested = requestedProtocol.trim();
     return ConnectionLayerReport(
       transport: switch (kind) {
         TransportKind.demo => ConnectionLayerValue.demo,
@@ -52,7 +64,7 @@ final class ConnectionLayerReport {
         TransportKind.wifi => ConnectionLayerValue.wifi,
         null => ConnectionLayerValue.unknown,
       },
-      protocol: protocol.trim().isEmpty
+      protocol: observed.isEmpty
           ? ConnectionLayerValue.unknown
           : ConnectionLayerValue.observed,
       ecu: responders.isEmpty
@@ -61,6 +73,8 @@ final class ConnectionLayerReport {
       evidence: kind == TransportKind.demo
           ? ConnectionLayerValue.software
           : ConnectionLayerValue.unknown,
+      requestedProtocol: requested,
+      observedProtocol: observed,
     );
   }
 }
