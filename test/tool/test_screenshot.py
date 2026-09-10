@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tool" / "l10n_rig"))
 
-from screenshot import GateError, main, validate_screenshot_report  # noqa: E402
+from screenshot import CASE_ID, GateError, main, validate_screenshot_report  # noqa: E402
 
 
 def _software(**overrides):
@@ -38,12 +38,45 @@ class ScreenshotLaneTest(unittest.TestCase):
         with self.assertRaises(GateError):
             validate_screenshot_report({"lane": "screenshot", "device": ""})
 
-    def test_screenshot_with_a_device_is_still_not_run(self):
+    def test_screenshot_refuses_the_field_phone(self):
         with self.assertRaises(GateError) as raised:
             validate_screenshot_report(
                 {"lane": "screenshot", "device": "R5CX10VFFBA"}
             )
-        self.assertIn("not-run", str(raised.exception))
+        self.assertIn("field phone", str(raised.exception))
+
+    def test_executed_connect_screenshot_passes(self):
+        report = {
+            "lane": "screenshot",
+            "device": "emulator-5554",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a",
+            "command": ["adb", "exec-out", "screencap", "-p"],
+            "exit": 0,
+            "connect_shown": True,
+            "case_ids": [CASE_ID],
+            "screenshot_sha256": "a" * 64,
+            "runner_head_sha": "b" * 40,
+            "installed_version_name": "1.0.12-rig",
+            "apk_matches_runner_head": False,
+        }
+        self.assertEqual(validate_screenshot_report(report)["device"], "emulator-5554")
+
+    def test_execute_quietinbox_emulator_is_refused(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw)
+            self.assertEqual(
+                main(
+                    [
+                        "--output",
+                        str(output),
+                        "--execute",
+                        "--serial",
+                        "emulator-5556",
+                    ]
+                ),
+                2,
+            )
+            self.assertFalse((output / "screenshot.json").exists())
 
     def test_screenshot_lane_is_not_run(self):
         with tempfile.TemporaryDirectory() as raw:

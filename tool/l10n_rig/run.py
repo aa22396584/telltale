@@ -84,11 +84,21 @@ def main(argv: list[str] | None = None) -> int:
             forwarded.extend(["--serial", args.serial])
         return android_os_locale_main(forwarded)
     if args.overflow:
-        return overflow_main(["--output", str(args.output)])
+        forwarded = ["--output", str(args.output)]
+        if args.execute:
+            forwarded.append("--execute")
+        if args.serial:
+            forwarded.extend(["--serial", args.serial])
+        return overflow_main(forwarded)
     if args.wear:
         return wear_main(["--output", str(args.output)])
     if args.screenshot:
-        return screenshot_main(["--output", str(args.output)])
+        forwarded = ["--output", str(args.output)]
+        if args.execute:
+            forwarded.append("--execute")
+        if args.serial:
+            forwarded.extend(["--serial", args.serial])
+        return screenshot_main(forwarded)
     print(
         "native-dialog, android-os-locale, overflow, wear and screenshot "
         "lanes are not-run without an identified device",
