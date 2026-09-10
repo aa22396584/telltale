@@ -1355,7 +1355,9 @@ class _HandshakePanel extends ConsumerWidget {
                 final observed = client != null &&
                         client.protocolNumber.isNotEmpty
                     ? client.protocolNumber
-                    : connection.protocol;
+                    : (connection.protocolNumber.isNotEmpty
+                          ? connection.protocolNumber
+                          : connection.protocol);
                 return ConnectionLayerReport.fromConnection(
                   kind: connection.kind,
                   protocol: observed,
