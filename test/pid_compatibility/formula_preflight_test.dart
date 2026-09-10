@@ -49,12 +49,13 @@ void main() {
     expect(FormulaEngine.preflight('LOOKUP(A:0:1=100)'), isNull);
     expect(FormulaEngine.preflight('LOOKUP(A::0~3=4)'), isNull);
     expect(FormulaEngine.preflight('LOOKUP((A-1):0:0=50)'), isNull);
+    expect(FormulaEngine.preflight('CLOSEST(A:0:1=100:255=200)'), isNull);
+    expect(FormulaEngine.preflight('CLOSEST((A-1):0:0=50)'), isNull);
   });
 
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
     for (final equation in [
       'INT16(A:B)',
-      'CLOSEST(A:A:1=0)',
       'BARO()',
     ]) {
       final failure = FormulaEngine.preflight(equation);
@@ -100,7 +101,7 @@ void main() {
         'Name,ShortName,ModeAndPID,Equation,Min Value,Max Value,Units,Header\r\n'
         'Boost,BST,010B,A-BARO,0,300,kPa,7E0\r\n'
         'Clip,CLP,010C,MIN(A:B),0,255,,7E0\r\n'
-        'Closest,CLS,010D,CLOSEST(A:A:1=0),0,8000,rpm,7E0\r\n';
+        'Int16,I16,010D,INT16(A:B),0,8000,rpm,7E0\r\n';
     final result = PidCsv.parse(wire);
     expect(result.pids, hasLength(2));
     expect(result.pids.map((p) => p.equation), ['A-BARO', 'MIN(A:B)']);
@@ -111,7 +112,7 @@ void main() {
       result.errors.single.preflight!.issue,
       FormulaIssue.unsupportedConstruct,
     );
-    expect(result.errors.single.preflight!.term, 'CLOSEST');
+    expect(result.errors.single.preflight!.term, 'INT16');
   });
 
   test('a missing live VAL reading is not an import syntax error', () {

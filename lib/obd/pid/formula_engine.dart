@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `CLOSEST()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `CLOSEST()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -387,6 +387,7 @@ class FormulaEngine {
   static const String _int32Sentinel = '\u0019(';
   static const String _randomSentinel = '\u001a(';
   static const String _lookupSentinel = '\u001b(';
+  static const String _closestSentinel = '\u001c(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -876,6 +877,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_lookupSentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('CLOSEST'),
+          (m) => '${m.group(1)}$_closestSentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('BIT'),
           (m) => '${m.group(1)}$_bitSentinel',
         )
@@ -937,6 +942,7 @@ class FormulaEngine {
         .replaceAll(_maxSentinel, 'MAX(')
         .replaceAll(_bitSentinel, 'BIT(')
         .replaceAll(_lookupSentinel, 'LOOKUP(')
+        .replaceAll(_closestSentinel, 'CLOSEST(')
         .replaceAll(_sinSentinel, 'SIN(')
         .replaceAll(_cosSentinel, 'COS(')
         .replaceAll(_tanSentinel, 'TAN(');
@@ -1095,6 +1101,9 @@ class FormulaEngine {
       // `~` only. Quoted strings are a display-side PID substitution this
       // engine does not implement. Empty default is 0 on no match.
       s = _applyLookupFunction(s, equation);
+      // Wiki CLOSEST(value:default:key=val:…). Nearest numeric key, not
+      // LOOKUP exact/range. Quoted strings stay unparsableTerm.
+      s = _applyClosestFunction(s, equation);
       s = _unwrapFunctionParens(s, equation);
     }
 
@@ -1536,6 +1545,62 @@ class FormulaEngine {
     }
   }
 
+  /// Wiki `CLOSEST(value:default:key=val:…)`. Nearest numeric key wins; a
+  /// tie keeps the earlier pair. Default is unused when any pair exists.
+  /// Quoted strings are display-side PID substitution, not this engine.
+  /// Colon is the only argument separator.
+  String _applyClosestFunction(String input, String source) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final call = _innermostBinaryCall(s, 'CLOSEST');
+      if (call == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          '公式的函式巢狀太深',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      if (call.inner.contains("'") || call.inner.contains('"')) {
+        throw FormulaException(
+          '無法解析 "${call.inner}"',
+          source,
+          issue: FormulaIssue.unparsableTerm,
+          term: call.inner,
+        );
+      }
+      final parts = _splitLookupArgs(call.inner);
+      if (parts == null) {
+        throw FormulaException(
+          '無法解析 "${call.inner}"',
+          source,
+          issue: FormulaIssue.unparsableTerm,
+          term: call.inner,
+        );
+      }
+      final value = _reduce(parts[0], source);
+      final mappings = [
+        for (var i = 2; i < parts.length; i++)
+          _splitExactMapping(parts[i], source),
+      ];
+      var bestIndex = 0;
+      var bestDistance = (_reduce(mappings[0].key, source) - value).abs();
+      for (var i = 1; i < mappings.length; i++) {
+        final distance = (_reduce(mappings[i].key, source) - value).abs();
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = i;
+        }
+      }
+      s = s.replaceRange(
+        call.start,
+        call.end,
+        _format(_reduce(mappings[bestIndex].mapped, source)),
+      );
+    }
+  }
+
   /// Leftmost `NAME(...)` whose argument list does not still contain `ABS(`,
   /// `LOG10(`, `LOG(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
   static ({int start, int end, String inner})? _innermostBinaryCall(
@@ -1600,7 +1665,8 @@ class FormulaEngine {
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
       inner.contains('BIT(') ||
-      inner.contains('LOOKUP(');
+      inner.contains('LOOKUP(') ||
+      inner.contains('CLOSEST(');
 
   static bool _isIdentChar(int unit) =>
       (unit >= 0x30 && unit <= 0x39) ||
@@ -1693,6 +1759,42 @@ class FormulaEngine {
       if (parts[i].isEmpty) return null;
     }
     return parts;
+  }
+
+  /// Splits `key=val` on the first top-level `=`. Range `~` is not a
+  /// CLOSEST operator; a `~` in the key is left for `_reduce` to refuse.
+  ({String key, String mapped}) _splitExactMapping(String pair, String source) {
+    var depth = 0;
+    var eq = -1;
+    for (var i = 0; i < pair.length; i++) {
+      final c = pair[i];
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && c == '=' && eq < 0) {
+        eq = i;
+      }
+    }
+    if (eq < 0 || depth != 0) {
+      throw FormulaException(
+        '無法解析 "$pair"',
+        source,
+        issue: FormulaIssue.unparsableTerm,
+        term: pair,
+      );
+    }
+    final key = pair.substring(0, eq).trim();
+    final mapped = pair.substring(eq + 1).trim();
+    if (key.isEmpty || mapped.isEmpty) {
+      throw FormulaException(
+        '無法解析 "$pair"',
+        source,
+        issue: FormulaIssue.unparsableTerm,
+        term: pair,
+      );
+    }
+    return (key: key, mapped: mapped);
   }
 
   /// Exact `key=val` or inclusive range `lo~hi=val`. First match wins.
@@ -2161,12 +2263,12 @@ class _Operator {
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
 /// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. `LOOKUP()`
-/// is numeric exact/`~` range matching. INT16 compatibility is still
-/// unclaimed (#79).
+/// is numeric exact/`~` range matching. `CLOSEST()` is nearest numeric key.
+/// INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
   r'INT16|'
-  r'CLOSEST|BARO)\s*\(',
+  r'BARO)\s*\(',
   caseSensitive: false,
 );
 

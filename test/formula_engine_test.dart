@@ -960,11 +960,6 @@ void main() {
         FormulaIssue.unsupportedConstruct,
       );
       expect(
-        thrownBy(() => seeded.evaluateBytes('CLOSEST(A:A:1=0:255=1)', const [1]))
-            .issue,
-        FormulaIssue.unsupportedConstruct,
-      );
-      expect(
         thrownBy(() => seeded.evaluateBytes('BARO()', const [])).issue,
         FormulaIssue.unsupportedConstruct,
       );
@@ -1040,9 +1035,71 @@ void main() {
         thrownBy(() => engine.evaluateBytes('LOOKUP(A:0)', const [1])).issue,
         FormulaIssue.unparsableTerm,
       );
+      // LOOKUP without an exact/range hit is the default, not the nearest key.
       expect(
-        thrownBy(() => engine.evaluateBytes('CLOSEST(A:A:1=0)', const [1]))
+        engine.evaluateBytes('LOOKUP(A:0:1=100)', const [2]),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('BARO()', const [])).issue,
+        FormulaIssue.unsupportedConstruct,
+      );
+    });
+
+    test('CLOSEST() is nearest numeric key, not LOOKUP exact-or-default', () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('CLOSEST(A:0:1=100:255=200)', const [1]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('CLOSEST(A:0:1=100:255=200)', const [2]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('CLOSEST(A:0:1=100:255=200)', const [200]),
+        closeTo(200.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('CLOSEST(A:0:1=100:255=200)', const [128]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('CLOSEST(A:A:1=100)', const [2]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('CLOSEST((A-1):0:0=50)', const [1]),
+        closeTo(50.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('ABS(CLOSEST(A:0:1=-3))', const [1]),
+        closeTo(3.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2CLOSEST(A:0:1=100)', const [1]))
             .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('CLOSEST(A:0:1=\'x\')', const [1]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('CLOSEST(A:0)', const [1])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
         FormulaIssue.unsupportedConstruct,
       );
     });
