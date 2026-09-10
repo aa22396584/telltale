@@ -4386,4 +4386,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionLayerWifi => 'Wi-Fi';
+
+  @override
+  String connectionLayerRequestedObserved(String requested, String observed) {
+    return 'asked $requested, settled $observed';
+  }
 }

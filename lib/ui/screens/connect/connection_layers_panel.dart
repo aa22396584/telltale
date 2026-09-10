@@ -33,6 +33,7 @@ class ConnectionLayersPanel extends StatelessWidget {
           kind: ConnectionLayerKind.protocol,
           value: report.protocol,
           l10n: l10n,
+          detail: connectionLayerProtocolDetail(l10n, report),
         ),
         _row(
           context,
@@ -55,6 +56,7 @@ class ConnectionLayersPanel extends StatelessWidget {
     required ConnectionLayerKind kind,
     required ConnectionLayerValue value,
     required AppLocalizations l10n,
+    String? detail,
   }) {
     return Padding(
       padding: const EdgeInsets.only(top: Spacing.sm),
@@ -70,7 +72,7 @@ class ConnectionLayersPanel extends StatelessWidget {
               ),
             ),
             Text(
-              connectionLayerValueText(l10n, value),
+              detail ?? connectionLayerValueText(l10n, value),
               style: context.texts.bodySmall,
             ),
           ],

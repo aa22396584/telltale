@@ -1129,5 +1129,6 @@
   "connectionLayerDemo": "Simulator",
   "connectionLayerBle": "Bluetooth Low Energy",
   "connectionLayerClassic": "klassisches Bluetooth",
-  "connectionLayerWifi": "WLAN"
+  "connectionLayerWifi": "WLAN",
+  "connectionLayerRequestedObserved": "angefordert {requested}, gemessen {observed}"
 }

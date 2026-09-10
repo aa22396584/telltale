@@ -97,6 +97,30 @@ void main() {
       expect(await client.connect(), isTrue);
       expect(client.protocolNumber, contains('6'));
     });
+
+    test('ATSP0 is retained as requestedProtocol after a real handshake',
+        () async {
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [_canEcm()],
+      );
+      final client = _clientFor(transport);
+      expect(await client.connect(), isTrue);
+      expect(client.requestedProtocol, '0');
+    });
+
+    test('a later ATSP5 replaces the requested protocol, not the observed one',
+        () async {
+      final transport = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [_canEcm()],
+      );
+      final client = _clientFor(transport);
+      expect(await client.connect(), isTrue);
+      await client.send('ATSP5');
+      expect(client.requestedProtocol, '5');
+      expect(client.protocolNumber, contains('6'));
+    });
   });
 
   group('state-changing AT commands must be acknowledged', () {

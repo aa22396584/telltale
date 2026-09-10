@@ -3898,6 +3898,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectionLayerWifi => '無線網路';
+
+  @override
+  String connectionLayerRequestedObserved(String requested, String observed) {
+    return '要求 $requested，實際 $observed';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7793,4 +7798,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectionLayerWifi => '無線網路';
+
+  @override
+  String connectionLayerRequestedObserved(String requested, String observed) {
+    return '要求 $requested，實際 $observed';
+  }
 }

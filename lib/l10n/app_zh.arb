@@ -1132,5 +1132,6 @@
   "connectionLayerDemo": "內建模擬器",
   "connectionLayerBle": "藍牙 LE",
   "connectionLayerClassic": "藍牙 Classic",
-  "connectionLayerWifi": "無線網路"
+  "connectionLayerWifi": "無線網路",
+  "connectionLayerRequestedObserved": "要求 {requested}，實際 {observed}"
 }
