@@ -4472,4 +4472,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String connectionLayerRequestedObserved(String requested, String observed) {
     return 'angefordert $requested, gemessen $observed';
   }
+
+  @override
+  String get connectionLayerKwpSubtypeUnknown =>
+      'KWP, 5-Baud und Fast nicht unterscheidbar';
 }

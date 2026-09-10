@@ -6,6 +6,7 @@ library;
 
 import '../../../diagnostics/connection_layers.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../obd/addressing.dart';
 
 String connectionLayerTitle(AppLocalizations l10n, ConnectionLayerKind kind) =>
     switch (kind) {
@@ -19,6 +20,9 @@ String? connectionLayerProtocolDetail(
   AppLocalizations l10n,
   ConnectionLayerReport report,
 ) {
+  if (report.kwpInit == KwpInit.unknown) {
+    return l10n.connectionLayerKwpSubtypeUnknown;
+  }
   if (report.requestedProtocol.isEmpty || report.observedProtocol.isEmpty) {
     return null;
   }

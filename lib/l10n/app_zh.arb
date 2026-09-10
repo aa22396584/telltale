@@ -1133,5 +1133,6 @@
   "connectionLayerBle": "藍牙 LE",
   "connectionLayerClassic": "藍牙 Classic",
   "connectionLayerWifi": "無線網路",
-  "connectionLayerRequestedObserved": "要求 {requested}，實際 {observed}"
+  "connectionLayerRequestedObserved": "要求 {requested}，實際 {observed}",
+  "connectionLayerKwpSubtypeUnknown": "KWP，5-baud 與 fast 無法分辨"
 }

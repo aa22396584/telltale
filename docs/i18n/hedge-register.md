@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-59 entries. Every entry that names a **Shipped as** key is checked against the shipped
+60 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -699,3 +699,13 @@ maintainer.
 **Shipped as** `dtcClearDialogTitle` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/dtc/dtc_screen.dart:117`, the title of the dialog entries 11 and 27 are both about. It must not gain scope: 'Clear all fault codes?' or 「清除所有故障碼？」 over-claims, because permanent codes (Mode 0A) are not cleared and `dtcClearDialogBody` says so a few lines below — a title is read first and remembered, and one that promises what the body withdraws is where entry 27's mistranslation gets its start. It must stay a question, and it must name what is destroyed: 'Clear?' or 'Reset' leaves the reader to guess whether the thing at the point of no return is the codes, the readiness monitors, or the recording.
+
+### 60. KWP，5-baud 與 fast 無法分辨
+
+**繁體中文** — KWP，5-baud 與 fast 無法分辨
+
+**English** — KWP, 5-baud vs fast not distinguished
+
+**Shipped as** `connectionLayerKwpSubtypeUnknown` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/connect/connection_layer_copy.dart:23`, the Connect protocol row when `ATDP` names ISO 14230-4 / KWP and `ATDPN` is not 4 or 5. The datasheet sentence can print KWP FAST; that is still not protocol 5. Softened to 'KWP' or 'ISO 14230-4' it looks like the init is known. 5-baud and fast stay those words in every language.

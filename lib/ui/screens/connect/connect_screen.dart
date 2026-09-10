@@ -1350,15 +1350,18 @@ class _HandshakePanel extends ConsumerWidget {
               report: () {
                 final session = ref.read(obdSessionProvider.notifier);
                 final client = session.engine?.client;
-                final observed = client != null &&
+                final number = client != null &&
                         client.protocolNumber.isNotEmpty
                     ? client.protocolNumber
-                    : (connection.protocolNumber.isNotEmpty
-                          ? connection.protocolNumber
-                          : connection.protocol);
+                    : connection.protocolNumber;
+                final description = connection.protocol;
+                final observed =
+                    number.isNotEmpty ? number : description;
                 return ConnectionLayerReport.fromConnection(
                   kind: connection.kind,
                   protocol: observed,
+                  protocolNumber: number,
+                  protocolDescription: description,
                   requestedProtocol:
                       client != null && client.requestedProtocol.isNotEmpty
                       ? client.requestedProtocol
