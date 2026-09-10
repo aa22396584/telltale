@@ -77,7 +77,12 @@ def main(argv: list[str] | None = None) -> int:
             forwarded.extend(["--serial", args.serial])
         return native_dialog_main(forwarded)
     if args.android_os_locale:
-        return android_os_locale_main(["--output", str(args.output)])
+        forwarded = ["--output", str(args.output)]
+        if args.execute:
+            forwarded.append("--execute")
+        if args.serial:
+            forwarded.extend(["--serial", args.serial])
+        return android_os_locale_main(forwarded)
     if args.overflow:
         return overflow_main(["--output", str(args.output)])
     if args.wear:
