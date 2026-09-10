@@ -4062,6 +4062,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der gemessene Umgebungsdruck ist veraltet, sodass dieser Wert nicht berechnet werden kann.';
 
   @override
+  String get pidFormulaBaroParenFormUnsupported =>
+      'BARO() ist der Android-Barometer- / ECU-Baro-Wert in psi, den dieser Dialekt nicht implementiert. Für den zwischengespeicherten Umgebungsdruck BARO ohne Klammern verwenden.';
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '„$reference“ lässt sich hier nicht auflösen, weil nicht bekannt ist, zu welchem Steuergerät diese PID gehört.';
   }

@@ -56,7 +56,6 @@ void main() {
   test('named Torque wiki functions are unsupportedConstruct, not a typo', () {
     for (final equation in [
       'INT16(A:B)',
-      'BARO()',
     ]) {
       final failure = FormulaEngine.preflight(equation);
       expect(failure, isNotNull, reason: equation);
@@ -69,6 +68,14 @@ void main() {
       expect(failure.term, isNot('ABS'), reason: equation);
       expect(failure.term, isNot('LOG10'), reason: equation);
     }
+  });
+
+  test('BARO() is the psi wiki form, not generic unsupportedConstruct', () {
+    final failure = FormulaEngine.preflight('BARO()');
+    expect(failure, isNotNull);
+    expect(failure!.issue, FormulaIssue.baroParenFormUnsupported);
+    expect(failure.term, 'BARO()');
+    expect(FormulaEngine.preflight('A-BARO'), isNull);
   });
 
   test('LOG10 is not classified as LOG', () {

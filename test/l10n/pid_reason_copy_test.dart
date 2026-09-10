@@ -92,6 +92,10 @@ const _formulaEnglish = <FormulaIssue, String>{
   FormulaIssue.baroMeasurementStale:
       'The ambient pressure reading is out of date, so this cannot be '
       'calculated.',
+  FormulaIssue.baroParenFormUnsupported:
+      'BARO() is the Android barometer / ECU baro in psi, which this dialect '
+      'does not implement. Use BARO without parentheses for cached ambient '
+      'pressure.',
   FormulaIssue.dependencyControllerUnknown:
       'VAL{0133} cannot be resolved here, because which controller that PID '
       'belongs to is not known.',
@@ -127,6 +131,8 @@ const _formulaChinese = <FormulaIssue, String>{
       '有兩個定義同時提供大氣壓力，數值可能是其中任何一個，因此無法採用。請移除其中一個測量大氣壓力的錶。',
   FormulaIssue.baroNotYetMeasured: '尚未取得大氣壓力量測值，無法計算。',
   FormulaIssue.baroMeasurementStale: '大氣壓力量測值已過期，無法計算。',
+  FormulaIssue.baroParenFormUnsupported:
+      'BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。',
   FormulaIssue.dependencyControllerUnknown:
       '這裡無法解析 VAL{0133}，因為無法判斷那個 PID 屬於哪一個控制器。',
   FormulaIssue.dependencyTwoDefinitions:
