@@ -66,16 +66,16 @@ void main() {
       final returnSession = source.indexOf('return sessionId');
       expect(sessionIdAssign, greaterThan(0));
       expect(returnSession, greaterThan(sessionIdAssign));
-      final disconnectAfterRecord = source.indexOf(
-        'disconnect()',
-        sessionIdAssign,
-      );
+      // Demo speed > 5 blocks History. The helper may disconnect so the
+      // library can list the recording; Settings disconnect copy still
+      // requires a live session after History.
+      final reconnect = source.indexOf('connectDemo()', exactCall);
       expect(
-        disconnectAfterRecord == -1 || disconnectAfterRecord > returnSession,
-        isTrue,
-        reason:
-            'recording helper must keep Demo connected for Settings disconnect copy',
+        reconnect,
+        greaterThan(exactCall),
+        reason: 'journey must reconnect Demo after History for Settings copy',
       );
+      expect(disconnectCall, greaterThan(reconnect));
     },
   );
 

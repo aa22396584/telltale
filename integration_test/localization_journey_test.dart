@@ -11,15 +11,20 @@
 /// skip that looks like a pass.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/state/locale_settings.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_recorder.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_reader.dart';
+import 'package:torque_obd/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_session_detail_screen.dart';
 import 'package:torque_obd/ui/screens/telemetry/telemetry_sessions_screen.dart';
@@ -129,37 +134,79 @@ Future<String> _recordShortDemoSession(WidgetTester tester) async {
   expect(sessionId, isNotNull);
   expect(TelemetrySessionReader.isOpaqueId(sessionId!), isTrue);
 
-  // Keep Demo connected. Settings disconnect copy is the leftover
-  // assertion after History; disconnecting here would retitle the
-  // button to Connect and make that wait time out.
+  // History is blocked while Demo is classified moving (speed > 5 km/h).
+  // A short recording leaves the simulator in acceleration, so keep the
+  // leftover Settings disconnect copy for after History by reconnecting
+  // there instead of holding this live session open.
+  await session.disconnect();
+  await tester.pump();
   expect(
     container.read(obdSessionProvider).phase,
-    ConnectionPhase.connected,
-    reason: 'Demo must stay connected after the recorded session',
+    ConnectionPhase.disconnected,
+    reason: 'Demo must disconnect so History can list the recording',
   );
   return sessionId;
 }
 
-Future<void> _openHistory(WidgetTester tester) async {
-  final history = find.byKey(const ValueKey('telemetry-history'));
-  await tester.pump(const Duration(milliseconds: 300));
-  if (history.evaluate().isEmpty || history.hitTestable().evaluate().isEmpty) {
-    final dashboard = find.byType(CustomScrollView);
-    expect(dashboard, findsWidgets);
-    await tester.scrollUntilVisible(
-      history,
-      400,
-      scrollable: find
-          .descendant(of: dashboard.first, matching: find.byType(Scrollable))
-          .first,
-    );
+Finder _dashboardVerticalScrollable() {
+  return find.descendant(
+    of: find.byType(DashboardScreen),
+    matching: find.byWidgetPredicate(
+      (widget) =>
+          widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      description: 'dashboard vertical Scrollable',
+    ),
+  );
+}
+
+/// Recording scrolls the dashboard down to Stop. The toolbar History control
+/// lives in an earlier sliver and can leave the cache, so
+/// [WidgetController.scrollUntilVisible] (which only drags toward later
+/// slivers) never finds it and then throws `Bad state: No element`.
+Future<void> _revealDashboardTop(WidgetTester tester) async {
+  final scrollable = _dashboardVerticalScrollable();
+  if (scrollable.evaluate().isEmpty) {
+    return;
   }
-  expect(history, findsOneWidget);
-  await Scrollable.ensureVisible(tester.element(history), alignment: 0.5);
-  await tester.pump(const Duration(milliseconds: 100));
-  final visible = history.hitTestable();
-  expect(visible, findsOneWidget);
-  await tester.tap(visible);
+  final position = tester.state<ScrollableState>(scrollable.first).position;
+  if (position.pixels == 0) {
+    return;
+  }
+  position.jumpTo(0);
+  await tester.pump();
+}
+
+Future<void> _openHistory(WidgetTester tester) async {
+  expect(
+    await pumpUntil(
+      tester,
+      () => find.byType(DashboardScreen).evaluate().isNotEmpty,
+    ),
+    isTrue,
+    reason: 'DashboardScreen is not in the tree after recording',
+  );
+
+  final fromOutcome = find.byKey(const ValueKey('telemetry-open-history'));
+  final toolbar = find.byKey(const ValueKey('telemetry-history'));
+
+  if (fromOutcome.hitTestable().evaluate().isNotEmpty) {
+    await tester.tap(fromOutcome.hitTestable());
+  } else {
+    await _revealDashboardTop(tester);
+    expect(
+      await pumpUntil(
+        tester,
+        () => toolbar.evaluate().isNotEmpty,
+        timeout: const Duration(seconds: 10),
+      ),
+      isTrue,
+      reason: 'toolbar History control never re-entered the tree',
+    );
+    await Scrollable.ensureVisible(tester.element(toolbar), alignment: 0.5);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(toolbar.hitTestable(), findsOneWidget);
+    await tester.tap(toolbar.hitTestable());
+  }
   await tester.pump();
   expect(
     await pumpUntil(
@@ -173,16 +220,31 @@ Future<void> _openHistory(WidgetTester tester) async {
 
 Future<void> _openExactRecording(WidgetTester tester, String sessionId) async {
   expect(
+    find.byType(TelemetrySessionsScreen),
+    findsOneWidget,
+    reason: 'History route is not showing TelemetrySessionsScreen',
+  );
+  expect(
     await pumpUntil(
       tester,
-      () => find.byType(ListTile).evaluate().isNotEmpty,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionsScreen),
+            matching: find.byType(ListTile),
+          )
+          .evaluate()
+          .isNotEmpty,
       timeout: const Duration(seconds: 20),
     ),
     isTrue,
     reason: 'History did not list the recorded session $sessionId',
   );
-  await GoRouter.of(tester.element(find.byType(TelemetrySessionsScreen)))
-      .push('${TelemetrySessionsScreen.path}/$sessionId');
+  // go_router.push completes only when the pushed route is popped. Awaiting
+  // it deadlocks the journey until the widget timeout.
+  unawaited(
+    GoRouter.of(tester.element(find.byType(TelemetrySessionsScreen)))
+        .push('${TelemetrySessionsScreen.path}/$sessionId'),
+  );
   await tester.pump();
   expect(
     await pumpUntil(
@@ -202,11 +264,11 @@ Future<void> _leaveReplayToShell(WidgetTester tester) async {
   if (find.byType(TelemetrySessionDetailScreen).evaluate().isNotEmpty) {
     Navigator.of(tester.element(find.byType(TelemetrySessionDetailScreen)))
         .pop();
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   }
   if (find.byType(TelemetrySessionsScreen).evaluate().isNotEmpty) {
     Navigator.of(tester.element(find.byType(TelemetrySessionsScreen))).pop();
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   }
   expect(
     await pumpUntil(
@@ -214,6 +276,7 @@ Future<void> _leaveReplayToShell(WidgetTester tester) async {
       () =>
           _navLabel('設定').hitTestable().evaluate().isNotEmpty ||
           _navLabel('Settings').hitTestable().evaluate().isNotEmpty,
+      timeout: const Duration(seconds: 20),
     ),
     isTrue,
     reason: 'shell navigation did not become hit-testable after leaving Replay',
@@ -240,13 +303,90 @@ Finder _settingsVerticalScrollable() {
       .first;
 }
 
+Future<void> _revealSettingsTop(WidgetTester tester) async {
+  final scrollable = _settingsVerticalScrollable();
+  if (scrollable.evaluate().isEmpty) {
+    return;
+  }
+  final position = tester.state<ScrollableState>(scrollable).position;
+  if (position.pixels == 0) {
+    return;
+  }
+  position.jumpTo(0);
+  await tester.pump();
+}
+
+/// [WidgetController.scrollUntilVisible] can leave the locale row under the
+/// NavigationBar, so a tap at that offset never invokes onTap.
+Future<void> _tapLocaleOnSettings(
+  WidgetTester tester,
+  Key key,
+  LocalePreference expected,
+) async {
+  final locale = find.descendant(
+    of: find.byType(SettingsScreen),
+    matching: find.byKey(key),
+  );
+  await tester.scrollUntilVisible(
+    locale,
+    400,
+    scrollable: _settingsVerticalScrollable(),
+  );
+  final viewHeight =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio;
+  final maxY = viewHeight - 140;
+  var tapped = false;
+  for (var i = 0; i < 10; i++) {
+    await Scrollable.ensureVisible(tester.element(locale), alignment: 0.2);
+    await tester.pump(const Duration(milliseconds: 80));
+    final hittable = locale.hitTestable();
+    if (hittable.evaluate().isEmpty) {
+      await tester.drag(_settingsVerticalScrollable(), const Offset(0, -160));
+      await tester.pump();
+      continue;
+    }
+    final center = tester.getCenter(hittable);
+    if (center.dy > maxY) {
+      await tester.drag(_settingsVerticalScrollable(), const Offset(0, -160));
+      await tester.pump();
+      continue;
+    }
+    await tester.tapAt(center);
+    await tester.pump();
+    tapped = true;
+    break;
+  }
+  expect(
+    tapped,
+    isTrue,
+    reason: 'locale control $key stayed under the navigation bar',
+  );
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(MaterialApp)),
+    listen: false,
+  );
+  expect(
+    await pumpUntil(
+      tester,
+      () => container.read(localePreferenceProvider) == expected,
+      timeout: const Duration(seconds: 15),
+    ),
+    isTrue,
+    reason:
+        'tapping $key on Settings left locale at '
+        '${container.read(localePreferenceProvider)}',
+  );
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
     'language switch before connect, then Demo, record, History, disconnect',
     (tester) async {
+      debugPrint('JOURNEY startCleanRigApp');
       await startCleanRigApp(tester);
+      debugPrint('JOURNEY connect screen');
 
       expect(find.text('選擇連線方式'), findsOneWidget);
       expect(find.text('Choose a connection'), findsNothing);
@@ -281,24 +421,46 @@ void main() {
       );
       expect(find.text('Choose a connection'), findsNothing);
 
+      debugPrint('JOURNEY connectDemoRig');
       await connectDemoRig(tester);
+      debugPrint('JOURNEY record');
       final sessionId = await _recordShortDemoSession(tester);
+      debugPrint('JOURNEY openHistory');
       await _openHistory(tester);
+      debugPrint('JOURNEY historyOpened');
+      debugPrint('JOURNEY exactRecording');
       await _openExactRecording(tester, sessionId);
+      debugPrint('JOURNEY detailOpen');
       expect(find.byType(TelemetrySessionDetailScreen), findsOneWidget);
 
+      debugPrint('JOURNEY leaveReplay');
       await _leaveReplayToShell(tester);
+      debugPrint('JOURNEY backOnShell');
       final container = ProviderScope.containerOf(
         tester.element(find.byType(MaterialApp)),
         listen: false,
       );
+      debugPrint('JOURNEY reconnectDemo');
+      final reconnect = container
+          .read(obdSessionProvider.notifier)
+          .connectDemo();
       expect(
-        container.read(obdSessionProvider).phase,
-        ConnectionPhase.connected,
+        await pumpUntil(
+          tester,
+          () =>
+              container.read(obdSessionProvider).phase ==
+              ConnectionPhase.connected,
+          timeout: const Duration(seconds: 30),
+          step: const Duration(milliseconds: 25),
+        ),
+        isTrue,
         reason:
-            'Demo must stay connected after History so Settings can show disconnect copy',
+            'Demo did not reconnect after History for Settings disconnect copy',
       );
+      expect(await reconnect, isTrue);
+      debugPrint('JOURNEY tapSettings');
       await _tapNav(tester, '設定');
+      debugPrint('JOURNEY settingsOpen');
       expect(
         await pumpUntil(
           tester,
@@ -314,20 +476,27 @@ void main() {
         reason: 'Settings did not show 中斷連線 after Demo record',
       );
 
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('locale_english')),
-        400,
-        scrollable: _settingsVerticalScrollable(),
+      debugPrint('JOURNEY switchEnglish');
+      await _tapLocaleOnSettings(
+        tester,
+        const Key('locale_english'),
+        LocalePreference.english,
       );
-      await tester.tap(find.byKey(const Key('locale_english')));
-      await tester.pump(const Duration(milliseconds: 500));
-
+      // Scrolling to the locale row can deactivate the connection sliver.
+      // Reveal the top before asking for Disconnect, or the finder is empty.
+      await _revealSettingsTop(tester);
       final englishDisconnect = _disconnectOnSettings('Disconnect');
-      await tester.scrollUntilVisible(
-        englishDisconnect,
-        -400,
-        scrollable: _settingsVerticalScrollable(),
+      expect(
+        await pumpUntil(tester, () => englishDisconnect.evaluate().isNotEmpty),
+        isTrue,
+        reason: 'Settings did not show Disconnect after language switch',
       );
+      debugPrint('JOURNEY englishDisconnect');
+      await Scrollable.ensureVisible(
+        tester.element(englishDisconnect),
+        alignment: 0.5,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
       expect(
         englishDisconnect.hitTestable(),
         findsOneWidget,
@@ -335,5 +504,6 @@ void main() {
       );
       expect(_disconnectOnSettings('中斷連線'), findsNothing);
     },
+    timeout: const Timeout(Duration(minutes: 5)),
   );
 }
