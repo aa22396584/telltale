@@ -1080,6 +1080,12 @@ void main() {
         thrownBy(() => engine.evaluateBytes(tooDeep, const [])).issue,
         FormulaIssue.functionNestingTooDeep,
       );
+      final wide = List<String>.generate(70, (i) => '${i + 1}=${(i + 1) * 10}')
+          .join(':');
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:$wide)', const [70]),
+        closeTo(700.0, 1e-9),
+      );
     });
 
     test('CLOSEST() is nearest numeric key, not LOOKUP exact-or-default', () {
