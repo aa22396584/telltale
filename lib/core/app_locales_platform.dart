@@ -49,9 +49,13 @@ final class AppLocalesSnapshot {
 abstract final class AppLocalesPlatform {
   static MethodChannel channel = const MethodChannel(kAppLocalesChannelName);
 
+  static const _timeout = Duration(milliseconds: 500);
+
   static Future<AppLocalesSnapshot> get() async {
     try {
-      final raw = await channel.invokeMethod<Object?>(kAppLocalesGetMethod);
+      final raw = await channel
+          .invokeMethod<Object?>(kAppLocalesGetMethod)
+          .timeout(_timeout);
       if (raw is Map) {
         return AppLocalesSnapshot.fromPlatformMap(raw);
       }
@@ -67,10 +71,12 @@ abstract final class AppLocalesPlatform {
   /// LocaleManager. A rejected tag list returns null.
   static Future<AppLocalesSnapshot?> setOverrideTags(List<String> tags) async {
     try {
-      final raw = await channel.invokeMethod<Object?>(
-        kAppLocalesSetMethod,
-        <String, Object?>{'tags': tags},
-      );
+      final raw = await channel
+          .invokeMethod<Object?>(
+            kAppLocalesSetMethod,
+            <String, Object?>{'tags': tags},
+          )
+          .timeout(_timeout);
       if (raw is Map) {
         return AppLocalesSnapshot.fromPlatformMap(raw);
       }
