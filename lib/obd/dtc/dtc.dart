@@ -351,7 +351,9 @@ abstract final class DtcDecoder {
       // A legacy bus has no count byte, and a bare `43` there really is a
       // controller with nothing to report.
       if (hasCountByte) {
-        throw StateError('故障碼回應只有服務位元組，沒有數量位元組');
+        throw StateError(
+          'The fault-code reply is only the service byte — the count byte never arrived',
+        );
       }
       return const [];
     }
@@ -371,7 +373,7 @@ abstract final class DtcDecoder {
         // Announced more codes than arrived. Reporting the ones that did
         // arrive presents a truncated read as a finished scan.
         throw StateError(
-          '故障碼回應宣告 $declared 筆，實際資料不足（需要 $needed 位元組，收到 ${bytes.length}）',
+          'The fault-code reply declared $declared code(s) but the payload is short (need $needed bytes, got ${bytes.length})',
         );
       }
 
@@ -387,7 +389,9 @@ abstract final class DtcDecoder {
       // padding; it is the visible end of something that did not all arrive.
       for (var i = needed; i < bytes.length; i++) {
         if (bytes[i] != 0) {
-          throw StateError('故障碼回應宣告 $declared 筆，卻在宣告範圍外帶有資料');
+          throw StateError(
+            'The fault-code reply declared $declared code(s) but carries data past that window',
+          );
         }
       }
 
@@ -398,7 +402,9 @@ abstract final class DtcDecoder {
     // — `43 FF` is half of a code, and returning an empty list for it is
     // indistinguishable from a genuinely clean scan.
     if ((end - offset).isOdd) {
-      throw StateError('故障碼回應長度為奇數，最後一個位元組不完整（截斷的回覆）');
+      throw StateError(
+        'The fault-code reply length is odd — the last byte is a truncated code',
+      );
     }
 
     final codes = <Dtc>[];
@@ -409,7 +415,9 @@ abstract final class DtcDecoder {
     }
 
     if (declared >= 0 && codes.length != declared) {
-      throw StateError('故障碼回應宣告 $declared 筆，實際解出 ${codes.length} 筆');
+      throw StateError(
+        'The fault-code reply declared $declared code(s) but decoded ${codes.length}',
+      );
     }
     return codes;
   }
