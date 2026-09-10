@@ -6,6 +6,8 @@
 /// software. A production session without field attestation stays unknown.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/connection_layers.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
@@ -38,5 +40,13 @@ void main() {
     );
     expect(report.evidence, ConnectionLayerValue.software);
     expect(report.evidence, isNot(ConnectionLayerValue.field));
+  });
+
+  test('the Connect screen feeds session simulated-evidence into the report', () {
+    final source = File(
+      'lib/ui/screens/connect/connect_screen.dart',
+    ).readAsStringSync();
+    expect(source.contains('testRig:'), isTrue);
+    expect(source.contains('requiresSimulatedEvidence'), isTrue);
   });
 }

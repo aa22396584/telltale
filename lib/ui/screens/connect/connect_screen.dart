@@ -1348,10 +1348,8 @@ class _HandshakePanel extends ConsumerWidget {
             const SizedBox(height: Spacing.md),
             ConnectionLayersPanel(
               report: () {
-                final client = ref
-                    .read(obdSessionProvider.notifier)
-                    .engine
-                    ?.client;
+                final session = ref.read(obdSessionProvider.notifier);
+                final client = session.engine?.client;
                 final observed = client != null &&
                         client.protocolNumber.isNotEmpty
                     ? client.protocolNumber
@@ -1366,6 +1364,7 @@ class _HandshakePanel extends ConsumerWidget {
                       ? client.requestedProtocol
                       : connection.requestedProtocol,
                   responders: client?.knownResponders ?? const {},
+                  testRig: session.requiresSimulatedEvidence,
                 );
               }(),
             ),
