@@ -397,6 +397,10 @@ class FormulaEngine {
   /// a binary subtraction.
   static const String _unaryContext = '+-*/%^&|<>(=';
 
+  /// Shared across LOOKUP fragment recursion so a selected nested
+  /// `LOOKUP` cannot reset the 64-pass function budget.
+  int _functionPasses = 0;
+
   /// Keys whose value cannot be attributed to one definition.
   final Set<String> _ambiguous = {};
 
@@ -682,6 +686,7 @@ class FormulaEngine {
     DateTime? now, [
     Duration? elapsed,
   ]) {
+    _functionPasses = 0;
     var s = equation.replaceAll(' ', '').toUpperCase();
     // Normalise the Unicode minus that sneaks in from copy-pasted formulas.
     s = s.replaceAll('−', '-');
@@ -1750,9 +1755,8 @@ class FormulaEngine {
   String _collapseFragment(String input, String source) {
     var s = input;
     var previous = '';
-    var guard = 0;
     while (previous != s) {
-      if (++guard > 64) {
+      if (++_functionPasses > 64) {
         throw FormulaException(
           '公式的函式巢狀太深',
           source,
