@@ -3754,5 +3754,30 @@
   "powertrainAuthorizeYearOutOfRange": "That model year is outside this profile's documented year range.",
   "@powertrainAuthorizeYearOutOfRange": {
     "description": "Connection-confirm refusal when an installed profile's saved vehicle year is outside the catalog range. Not an install sentence; install copy stays on powertrainInstallYearOutOfRange."
-  }
+  },
+  "connectionLayerTransport": "Transport",
+  "@connectionLayerTransport": {
+    "description": "Connect diagnostic row: phone↔adapter path. Distinct from protocol, ECU answers, and evidence."
+  },
+  "connectionLayerProtocol": "Protocol",
+  "@connectionLayerProtocol": {
+    "description": "Connect diagnostic row: adapter-settled bus protocol. Empty is unknown, not AUTO."
+  },
+  "connectionLayerEcu": "ECU replies",
+  "@connectionLayerEcu": {
+    "description": "Connect diagnostic row: controllers that answered. No answers is not observed, not unsupported."
+  },
+  "connectionLayerEvidence": "Evidence",
+  "@connectionLayerEvidence": {
+    "description": "Connect diagnostic row: software/bench/field. Demo is software, never field."
+  },
+  "connectionLayerUnknown": "Unknown",
+  "connectionLayerNotObserved": "Not observed",
+  "connectionLayerObserved": "Observed",
+  "connectionLayerAnswered": "Answered",
+  "connectionLayerSoftware": "Software",
+  "connectionLayerDemo": "Demo",
+  "connectionLayerBle": "Bluetooth LE",
+  "connectionLayerClassic": "Bluetooth Classic",
+  "connectionLayerWifi": "Wi-Fi"
 }

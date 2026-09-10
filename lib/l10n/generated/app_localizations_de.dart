@@ -4428,4 +4428,43 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get powertrainAuthorizeYearOutOfRange =>
       'Das Modelljahr liegt außerhalb des für dieses Profil dokumentierten Jahresbereichs.';
+
+  @override
+  String get connectionLayerTransport => 'Verbindungsweg';
+
+  @override
+  String get connectionLayerProtocol => 'Protokoll';
+
+  @override
+  String get connectionLayerEcu => 'Steuergerät-Antworten';
+
+  @override
+  String get connectionLayerEvidence => 'Nachweis';
+
+  @override
+  String get connectionLayerUnknown => 'Unbekannt';
+
+  @override
+  String get connectionLayerNotObserved => 'Nicht beobachtet';
+
+  @override
+  String get connectionLayerObserved => 'Beobachtet';
+
+  @override
+  String get connectionLayerAnswered => 'Beantwortet';
+
+  @override
+  String get connectionLayerSoftware => 'Programm';
+
+  @override
+  String get connectionLayerDemo => 'Simulator';
+
+  @override
+  String get connectionLayerBle => 'Bluetooth Low Energy';
+
+  @override
+  String get connectionLayerClassic => 'klassisches Bluetooth';
+
+  @override
+  String get connectionLayerWifi => 'WLAN';
 }

@@ -1119,5 +1119,18 @@
   "telemetrySessionStorageFailed": "本機儲存作業失敗",
   "telemetrySessionShareFailed": "無法準備或開啟分享",
   "pidMutationPersistFailed": "自訂 PID 清單無法寫入。沒有任何變更。",
-  "powertrainAuthorizeYearOutOfRange": "該年式不在這個設定檔記載的年份範圍內。"
+  "powertrainAuthorizeYearOutOfRange": "該年式不在這個設定檔記載的年份範圍內。",
+  "connectionLayerTransport": "連線方式",
+  "connectionLayerProtocol": "協定",
+  "connectionLayerEcu": "控制器回應",
+  "connectionLayerEvidence": "證據",
+  "connectionLayerUnknown": "未知",
+  "connectionLayerNotObserved": "未觀察到",
+  "connectionLayerObserved": "已觀察",
+  "connectionLayerAnswered": "有回應",
+  "connectionLayerSoftware": "軟體",
+  "connectionLayerDemo": "內建模擬器",
+  "connectionLayerBle": "藍牙 LE",
+  "connectionLayerClassic": "藍牙 Classic",
+  "connectionLayerWifi": "無線網路"
 }

@@ -28,7 +28,9 @@ import '../../../obd/transport/obd_transport.dart';
 import '../../../obd/transport/serial_transport.dart';
 import '../../../obd/transport/wifi_transport.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../diagnostics/connection_layers.dart';
 import '../../../state/obd_session.dart';
+import 'connection_layers_panel.dart';
 import 'transport_kind_copy.dart';
 import '../../../state/settings.dart';
 import '../../widgets/language_picker.dart';
@@ -446,9 +448,8 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                               AppLocalizations.of(context),
                               connection,
                             ) ??
-                            AppLocalizations.of(
-                              context,
-                            ).connectIssueConnectionSetupFailed,
+                            AppLocalizations.of(context)
+                                .connectIssueConnectionSetupFailed,
                       ),
                       const SizedBox(height: Spacing.md),
                       // Where the failure is, not two screens away behind a
@@ -739,7 +740,10 @@ class _TransportCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          transportKindTitle(AppLocalizations.of(context), kind),
+                          transportKindTitle(
+                            AppLocalizations.of(context),
+                            kind,
+                          ),
                           style: context.texts.titleMedium,
                         ),
                         const SizedBox(height: 2),
@@ -941,7 +945,9 @@ class _DeviceListBody extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: openAppSettings,
                 icon: const Icon(Icons.settings_outlined, size: 18),
-                label: Text(AppLocalizations.of(context).connectOpenSystemSettings),
+                label: Text(
+                  AppLocalizations.of(context).connectOpenSystemSettings,
+                ),
               ),
             ),
         ],
@@ -1130,7 +1136,8 @@ class _BleBodyState extends State<_BleBody> {
           FlutterError.reportError(_bleScanFlutterError(e, stack));
           if (mounted) {
             setState(
-              () => _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
+              () =>
+                  _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
             );
           }
         },
@@ -1337,6 +1344,22 @@ class _HandshakePanel extends ConsumerWidget {
             // one that just failed.
             ...steps.reversed.take(5).map((step) => _StepRow(progress: step)),
           ],
+          if (connection.kind != null || connection.protocol.isNotEmpty) ...[
+            const SizedBox(height: Spacing.md),
+            ConnectionLayersPanel(
+              report: ConnectionLayerReport.fromConnection(
+                kind: connection.kind,
+                protocol: connection.protocol,
+                responders:
+                    ref
+                        .read(obdSessionProvider.notifier)
+                        .engine
+                        ?.client
+                        .knownResponders ??
+                    const {},
+              ),
+            ),
+          ],
           // A way out.
           //
           // There was none: no cancel, no back, and the wizard is the app's
@@ -1482,7 +1505,10 @@ class _LastAdapterCard extends ConsumerWidget {
               children: [
                 Icon(Icons.history, size: 18, color: palette.accent),
                 const SizedBox(width: Spacing.xs),
-                Text(l10n.connectLastAdapterTitle, style: context.texts.titleSmall),
+                Text(
+                  l10n.connectLastAdapterTitle,
+                  style: context.texts.titleSmall,
+                ),
               ],
             ),
             const SizedBox(height: Spacing.xs),

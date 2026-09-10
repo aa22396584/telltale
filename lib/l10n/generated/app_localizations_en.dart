@@ -4347,4 +4347,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get powertrainAuthorizeYearOutOfRange =>
       'That model year is outside this profile\'s documented year range.';
+
+  @override
+  String get connectionLayerTransport => 'Transport';
+
+  @override
+  String get connectionLayerProtocol => 'Protocol';
+
+  @override
+  String get connectionLayerEcu => 'ECU replies';
+
+  @override
+  String get connectionLayerEvidence => 'Evidence';
+
+  @override
+  String get connectionLayerUnknown => 'Unknown';
+
+  @override
+  String get connectionLayerNotObserved => 'Not observed';
+
+  @override
+  String get connectionLayerObserved => 'Observed';
+
+  @override
+  String get connectionLayerAnswered => 'Answered';
+
+  @override
+  String get connectionLayerSoftware => 'Software';
+
+  @override
+  String get connectionLayerDemo => 'Demo';
+
+  @override
+  String get connectionLayerBle => 'Bluetooth LE';
+
+  @override
+  String get connectionLayerClassic => 'Bluetooth Classic';
+
+  @override
+  String get connectionLayerWifi => 'Wi-Fi';
 }
