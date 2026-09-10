@@ -682,6 +682,7 @@ void main() {
       {
         'powertrainProbeRefusalText',
         'powertrainInstallIssueText',
+        'powertrainProfileIssueText',
         'pidMutationFailureText',
       },
       reason: 'a copy function was added or renamed',
@@ -722,6 +723,8 @@ void main() {
       // interpolated error.message. Driven by message_fallback_copy_test.dart.
       'lib/ui/screens/pids/powertrain_battery_catalog_screen.dart '
           '-> powertrainInstallIssueText x1',
+      'lib/ui/widgets/powertrain_profile_confirm_banner.dart '
+          '-> powertrainProfileIssueText x1',
       // the recording lock on save and on confirmed delete —
       // pid_editor_test.dart
       'lib/ui/screens/pids/pid_editor_screen.dart -> pidMutationFailureText x1',

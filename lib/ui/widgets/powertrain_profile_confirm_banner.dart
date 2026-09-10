@@ -11,6 +11,7 @@ import '../../state/obd_session.dart';
 import '../../state/pid_registry.dart';
 import '../../state/powertrain_battery_profiles.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../screens/pids/powertrain_battery_copy.dart';
 import 'panel.dart';
 
 /// Shown on the dashboard while a connection is live and an installed
@@ -204,7 +205,7 @@ class _ConfirmRow extends ConsumerWidget {
               : l10n.powertrainAuthorizationRefused(
                   result == null || result.issues.isEmpty
                       ? l10n.powertrainProfileNotVerified
-                      : result.issues.first.message,
+                      : powertrainProfileIssueText(l10n, result.issues.first),
                 ),
         ),
       ),
