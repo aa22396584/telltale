@@ -1,0 +1,10 @@
+{"protocolVersion":"0.1.1","runnerVersion":"1.31.1","pid":85237,"type":"start","time":0}
+{"suite":{"id":0,"platform":"vm","path":"/fixture/tool/workshop/fixtures/reporter_fail_test.dart"},"type":"suite","time":0}
+{"test":{"id":1,"name":"loading /fixture/tool/workshop/fixtures/reporter_fail_test.dart","suiteID":0,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":0}
+{"count":1,"time":2,"type":"allSuites"}
+{"testID":1,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":977}
+{"group":{"id":2,"suiteID":0,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":1,"line":null,"column":null,"url":null},"type":"group","time":979}
+{"test":{"id":3,"name":"workshop reporter intentional failure","suiteID":0,"groupIDs":[2],"metadata":{"skip":false,"skipReason":null},"line":4,"column":3,"url":"file:///fixture/tool/workshop/fixtures/reporter_fail_test.dart"},"type":"testStart","time":979}
+{"testID":3,"error":"Expected: <2>\n  Actual: <1>\n","stackTrace":"package:matcher                                     expect\npackage:flutter_test/src/widget_tester.dart 473:18  expect\ntool/workshop/fixtures/reporter_fail_test.dart 5:5  main.<fn>\n","isFailure":true,"type":"error","time":997}
+{"testID":3,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":997}
+{"success":false,"type":"done","time":1009}

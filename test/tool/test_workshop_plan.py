@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -63,6 +65,67 @@ def _plan(tasks: list[dict]) -> dict:
         "policy": "USABILITY-R2",
         "repository": "ImL1s/telltale",
         "tasks": tasks,
+    }
+
+
+def _official_stream(
+    names: list[str],
+    *,
+    hidden: set[int] | None = None,
+    skipped: set[int] | None = None,
+    suite_ids: list[int] | None = None,
+) -> str:
+    """Build a Dart JSON-reporter stream with nested testStart.test objects."""
+    hidden_ids = hidden or set()
+    skipped_ids = skipped or set()
+    events: list[dict] = [
+        {"type": "start", "time": 0, "protocolVersion": "0.1.1", "pid": 1},
+    ]
+    for index, name in enumerate(names, start=1):
+        suite_id = suite_ids[index - 1] if suite_ids is not None else 0
+        events.append(
+            {
+                "type": "testStart",
+                "time": 0,
+                "test": {
+                    "id": index,
+                    "name": name,
+                    "suiteID": suite_id,
+                    "groupIDs": [],
+                    "metadata": {
+                        "skip": index in skipped_ids,
+                        "skipReason": None,
+                    },
+                },
+            }
+        )
+        events.append(
+            {
+                "type": "testDone",
+                "time": 1,
+                "testID": index,
+                "result": "success",
+                "hidden": index in hidden_ids,
+                "skipped": index in skipped_ids,
+            }
+        )
+    events.append({"type": "done", "time": 2, "success": True})
+    return "\n".join(json.dumps(event) for event in events)
+
+
+def _completed_flutter(stdout: str) -> dict:
+    return {
+        "status": "completed",
+        "completed": True,
+        "evidence": [
+            {
+                "argv": ["flutter", "test", "--reporter", "json", "test/foo_test.dart"],
+                "exit": 0,
+                "stdout": stdout,
+            }
+        ],
+        "unrun": [],
+        "head_sha": "a" * 40,
     }
 
 
@@ -547,21 +610,7 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         self.assertTrue(any("unknown" in error for error in errors), msg=errors)
 
     def test_flutter_json_success_counts_as_executed(self) -> None:
-        stdout = "\n".join(
-            [
-                json.dumps(
-                    {
-                        "type": "test",
-                        "id": 1,
-                        "name": "coolant temperature: A-40",
-                    }
-                ),
-                json.dumps(
-                    {"type": "testDone", "testID": 1, "result": "success"}
-                ),
-                json.dumps({"type": "done", "success": True}),
-            ]
-        )
+        stdout = _official_stream(["coolant temperature: A-40"])
         errors = validate_plan.validate_handoff(
             {
                 "status": "completed",
@@ -607,29 +656,9 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         )
 
     def test_flutter_json_hidden_test_is_not_a_case_id(self) -> None:
-        stdout = "\n".join(
-            [
-                json.dumps({"type": "test", "id": 0, "name": "loading /foo_test.dart"}),
-                json.dumps(
-                    {
-                        "type": "testDone",
-                        "testID": 0,
-                        "result": "success",
-                        "hidden": True,
-                    }
-                ),
-                json.dumps(
-                    {
-                        "type": "test",
-                        "id": 1,
-                        "name": "coolant temperature: A-40",
-                    }
-                ),
-                json.dumps(
-                    {"type": "testDone", "testID": 1, "result": "success"}
-                ),
-                json.dumps({"type": "done", "success": True}),
-            ]
+        stdout = _official_stream(
+            ["loading /foo_test.dart", "coolant temperature: A-40"],
+            hidden={1},
         )
         errors = validate_plan.validate_handoff(
             {
@@ -684,25 +713,9 @@ class ArtifactAndHandoffTest(unittest.TestCase):
         self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
 
     def test_flutter_json_skipped_flag_is_not_executed(self) -> None:
-        stdout = "\n".join(
-            [
-                json.dumps(
-                    {
-                        "type": "test",
-                        "id": 1,
-                        "name": "coolant temperature: A-40",
-                    }
-                ),
-                json.dumps(
-                    {
-                        "type": "testDone",
-                        "testID": 1,
-                        "result": "success",
-                        "skipped": True,
-                    }
-                ),
-                json.dumps({"type": "done", "success": True}),
-            ]
+        stdout = _official_stream(
+            ["coolant temperature: A-40"],
+            skipped={1},
         )
         errors = validate_plan.validate_handoff(
             {
@@ -915,6 +928,278 @@ class ArtifactAndHandoffTest(unittest.TestCase):
             any("truncated" in error for error in errors),
             msg=errors,
         )
+
+    def test_official_testStart_success_is_accepted(self) -> None:
+        stdout = _official_stream(["coolant temperature: A-40"])
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            ["coolant temperature: A-40"],
+        )
+        self.assertEqual(validate_plan.parse_flutter_counts(stdout), (1, 0))
+
+    def test_invented_top_level_test_event_cannot_stand_in_for_testStart(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "test",
+                        "id": 1,
+                        "name": "coolant temperature: A-40",
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 1, "result": "success"}
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(
+            any("case" in error for error in errors),
+            msg=errors,
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+
+    def test_official_hidden_testStart_is_not_a_case_id(self) -> None:
+        stdout = _official_stream(
+            ["loading /foo_test.dart", "coolant temperature: A-40"],
+            hidden={1},
+        )
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            ["coolant temperature: A-40"],
+        )
+
+    def test_same_name_in_different_suites_keeps_both_executions(self) -> None:
+        stdout = _official_stream(
+            ["smoke", "smoke"],
+            suite_ids=[0, 1],
+        )
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            ["smoke", "smoke"],
+        )
+        self.assertEqual(validate_plan.parse_flutter_counts(stdout), (2, 0))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+
+    def test_duplicate_terminal_id_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 1, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 1, "result": "success"}
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 1, "result": "success"}
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
+    def test_unknown_terminal_id_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 1, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 99, "result": "success"}
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
+    def test_boolean_test_id_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": True, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "testDone",
+                        "testID": True,
+                        "result": "success",
+                    }
+                ),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
+    def test_malformed_json_object_line_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 1, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                '{"type":"testDone","testID":1',
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(
+            any(
+                "case" in error or "incomplete" in error or "unknown" in error
+                for error in errors
+            ),
+            msg=errors,
+        )
+
+    def test_error_after_testDone_before_done_cannot_complete(self) -> None:
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "testStart",
+                        "test": {"id": 1, "name": "smoke", "suiteID": 0},
+                    }
+                ),
+                json.dumps(
+                    {"type": "testDone", "testID": 1, "result": "success"}
+                ),
+                json.dumps({"type": "error", "testID": 1, "error": "late"}),
+                json.dumps({"type": "done", "success": True}),
+            ]
+        )
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertTrue(any("case" in error for error in errors), msg=errors)
+
+    def test_captured_official_success_fixture_is_accepted(self) -> None:
+        fixture = ROOT / "test" / "tool" / "fixtures" / "official-success.jsonl"
+        stdout = fixture.read_text(encoding="utf-8")
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            ["independent reporter success"],
+        )
+
+    def test_captured_pinned_sdk_fnv1a64_reporter_is_accepted(self) -> None:
+        fixture = (
+            ROOT / "test" / "tool" / "fixtures" / "fnv1a64_reporter_capture.jsonl"
+        )
+        stdout = fixture.read_text(encoding="utf-8")
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            [
+                "FNV-1a 64 preserves canonical vectors",
+                "FNV-1a 64 is invariant across arbitrary stream chunks",
+            ],
+        )
+        self.assertEqual(validate_plan.parse_flutter_counts(stdout), (2, 0))
+
+    def test_captured_failing_reporter_cannot_complete_even_with_counts(self) -> None:
+        fixture = ROOT / "test" / "tool" / "fixtures" / "reporter_fail_capture.jsonl"
+        stdout = fixture.read_text(encoding="utf-8")
+        payload = _completed_flutter(stdout)
+        payload["evidence"][0]["executed"] = 1
+        payload["evidence"][0]["skipped"] = 0
+        payload["evidence"][0]["exit"] = 0
+        errors = validate_plan.validate_handoff(payload)
+        self.assertTrue(errors, msg=errors)
+        self.assertIsNone(validate_plan.parse_flutter_case_ids(stdout))
+
+
+def _pinned_flutter() -> Path | None:
+    pinned = Path.home() / "fvm" / "versions" / "3.47.0" / "bin" / "flutter"
+    if pinned.is_file() and os.access(pinned, os.X_OK):
+        return pinned
+    found = shutil.which("flutter")
+    return Path(found) if found else None
+
+
+class PinnedSdkReporterCaptureTest(unittest.TestCase):
+    """Run the pinned SDK. Skip only when that binary is absent."""
+
+    flutter: Path | None
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.flutter = _pinned_flutter()
+
+    def test_live_fnv1a64_json_reporter_completes_handoff(self) -> None:
+        if self.flutter is None:
+            self.skipTest("pinned Flutter SDK is not available")
+        proc = subprocess.run(
+            [
+                str(self.flutter),
+                "test",
+                "--reporter",
+                "json",
+                "test/fnv1a64_test.dart",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr[-2000:])
+        stdout = proc.stdout
+        self.assertEqual(
+            validate_plan.parse_flutter_case_ids(stdout),
+            [
+                "FNV-1a 64 preserves canonical vectors",
+                "FNV-1a 64 is invariant across arbitrary stream chunks",
+            ],
+        )
+        errors = validate_plan.validate_handoff(_completed_flutter(stdout))
+        self.assertEqual(errors, [], msg=errors)
+
+    def test_live_failing_reporter_cannot_complete(self) -> None:
+        if self.flutter is None:
+            self.skipTest("pinned Flutter SDK is not available")
+        proc = subprocess.run(
+            [
+                str(self.flutter),
+                "test",
+                "--reporter",
+                "json",
+                "tool/workshop/fixtures/reporter_fail_test.dart",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        payload = _completed_flutter(proc.stdout)
+        payload["evidence"][0]["exit"] = proc.returncode
+        payload["evidence"][0]["executed"] = 1
+        payload["evidence"][0]["skipped"] = 0
+        errors = validate_plan.validate_handoff(payload)
+        self.assertTrue(errors, msg=errors)
 
 
 class FlutterAllowlistTest(unittest.TestCase):
