@@ -1859,6 +1859,29 @@ class CampaignRunnerTest(unittest.TestCase):
             self.assertIn("required evidence", str(ctx.exception))
             self.assertFalse(handoff.exists())
 
+    def test_shipped_campaign_command_writes_completed_handoff(self) -> None:
+        campaign = ROOT / "tool" / "workshop" / "campaign.json"
+        with tempfile.TemporaryDirectory() as raw:
+            handoff = Path(raw) / "handoff.json"
+            code = run_task.run_task(
+                campaign,
+                "CURRENT-278",
+                handoff_path=handoff,
+                timeout=30,
+                campaign=True,
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(handoff.read_text(encoding="utf-8"))
+            self.assertTrue(payload["completed"])
+            self.assertEqual(payload["task"], "CURRENT-278")
+            self.assertEqual(payload["issue"], 278)
+            self.assertEqual(payload["unrun"], [])
+            self.assertEqual(payload["failed"], [])
+            errors = validate_plan.validate_handoff(payload)
+            self.assertEqual(errors, [], msg=errors)
+            self.assertIn("invented rejected", payload["evidence"][0]["stdout"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -800,6 +800,7 @@ jobs:
             tool/obd_test_rig/freeze_frame_reference.py \
             tool/obd_test_rig/test_freeze_frame_reference.py \
             tool/workshop/assert_chaos_jsonl.py \
+            tool/workshop/assert_official_reporter.py \
             tool/workshop/assert_skip_manifest.py \
             tool/workshop/count_dart_tests.py \
             tool/workshop/test_workshop.py \

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "policy": "USABILITY-R2",
+  "repository": "ImL1s/telltale",
+  "epic": 11,
+  "audited_sha": "3547d9c7406e4a87329d40d1454ddab7a3aa4379",
+  "notes": "Current #11 campaign after the official testStart parser landed. tool/workshop/plan.json remains the historical seed and is not this file. Do not copy empty required_evidence from the seed. Hashes are of committed reporter captures, not invented.",
+  "tasks": [
+    {
+      "id": "CURRENT-278",
+      "issue": 278,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/278",
+      "priority": "P1",
+      "status": "pending",
+      "depends_on": [],
+      "writable_dirs": [
+        "docs/workshop/current/parser/"
+      ],
+      "run_commands": [
+        [
+          "python3",
+          "tool/workshop/assert_official_reporter.py"
+        ]
+      ],
+      "required_evidence": [
+        {
+          "path": "test/tool/fixtures/official-success.jsonl",
+          "sha256": "ac07f367ef8703bba10f198f85b3424143b2e5956c5304976928bf725d41dc58",
+          "required": true
+        },
+        {
+          "path": "test/tool/fixtures/fnv1a64_reporter_capture.jsonl",
+          "sha256": "9ec587566bb3ab2ed10ee0969d78f5193446b70d7a67af433488d8b70703376a",
+          "required": true
+        },
+        {
+          "path": "test/tool/fixtures/fnv1a64_reporter_capture.meta.json",
+          "sha256": "a92c4d6aed0247fd501e7359268dcd290c99f764606228390357f135af52d77b",
+          "required": true
+        },
+        {
+          "path": "test/tool/fixtures/reporter_fail_capture.jsonl",
+          "sha256": "27f0a423083bd3fab2a274cbb9b97f2f2778e1632cab75d1343fde0e72b00931",
+          "required": true
+        }
+      ],
+      "hardware_or_license_blockers": [],
+      "reviewer_role": "implementation",
+      "done_criteria": "assert_official_reporter.py exits 0: official success and pinned-SDK capture yield required case IDs, the failing capture yields none, invented type=test identities are rejected. A skipped required test is a failure.",
+      "base_sha": "3547d9c7406e4a87329d40d1454ddab7a3aa4379"
+    },
+    {
+      "id": "CURRENT-47-NATIVE",
+      "issue": 47,
+      "issue_url": "https://github.com/ImL1s/telltale/issues/47",
+      "priority": "P1",
+      "status": "blocked",
+      "depends_on": [],
+      "writable_dirs": [
+        "docs/workshop/current/native-dialog/"
+      ],
+      "run_commands": [],
+      "required_evidence": [],
+      "hardware_or_license_blockers": [
+        "identified disposable AOSP native OS share-chooser / permission-dialog instrumentation; Flutter integration_test cannot drive that UI"
+      ],
+      "reviewer_role": "review",
+      "done_criteria": "Native OS dialogs are walked on an identified device. Missing hardware is blocked, not a required pass."
+    }
+  ]
+}
