@@ -1359,7 +1359,10 @@ class _HandshakePanel extends ConsumerWidget {
                 return ConnectionLayerReport.fromConnection(
                   kind: connection.kind,
                   protocol: observed,
-                  requestedProtocol: client?.requestedProtocol ?? '',
+                  requestedProtocol:
+                      client != null && client.requestedProtocol.isNotEmpty
+                      ? client.requestedProtocol
+                      : connection.requestedProtocol,
                   responders: client?.knownResponders ?? const {},
                 );
               }(),

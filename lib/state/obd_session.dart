@@ -111,6 +111,10 @@ class ObdConnectionState {
   final String deviceName;
   final String protocol;
 
+  /// Last `ATSPn` that left the app this session, kept after the client is
+  /// gone. Distinct from [protocol] (ATDP / ATDPN). Empty until a write.
+  final String requestedProtocol;
+
   /// What the connection is waiting on right now, for the phase where nothing
   /// else moves — the transport's own attempt, before any handshake step has
   /// been sent.
@@ -151,6 +155,7 @@ class ObdConnectionState {
     this.kind,
     this.deviceName = '',
     this.protocol = '',
+    this.requestedProtocol = '',
     this.detail = '',
     this.batteryVoltage,
     this.error,
@@ -171,6 +176,7 @@ class ObdConnectionState {
     TransportKind? kind,
     String? deviceName,
     String? protocol,
+    String? requestedProtocol,
     String? detail,
     double? batteryVoltage,
     String? error,
@@ -186,6 +192,7 @@ class ObdConnectionState {
       kind: kind ?? this.kind,
       deviceName: deviceName ?? this.deviceName,
       protocol: protocol ?? this.protocol,
+      requestedProtocol: requestedProtocol ?? this.requestedProtocol,
       detail: detail ?? this.detail,
       batteryVoltage: batteryVoltage ?? this.batteryVoltage,
       error: clearError ? null : (error ?? this.error),
@@ -1390,6 +1397,7 @@ class ObdSession extends Notifier<ObdConnectionState> {
       phase: ConnectionPhase.connected,
       deviceName: transport.displayName,
       protocol: _sessionProtocol,
+      requestedProtocol: client.requestedProtocol,
       batteryVoltage: client.batteryVoltage,
       clearError: true,
     );
@@ -1487,8 +1495,11 @@ class ObdSession extends Notifier<ObdConnectionState> {
         .read(powertrainExperimentalProbeConsentsProvider.notifier)
         .invalidateForVehicleBoundary();
     ref.read(vehicleIdentityProvider.notifier).reset();
+    // Copy ATSP off the client before teardown clears `_engine`. kind and
+    // protocol already live on this record; requested must too.
     state = state.copyWith(
       phase: ConnectionPhase.failed,
+      requestedProtocol: _client?.requestedProtocol ?? state.requestedProtocol,
       error:
           'The adapter stopped responding and the connection has been dropped.',
       issue: ObdConnectionIssue.adapterStoppedResponding,
