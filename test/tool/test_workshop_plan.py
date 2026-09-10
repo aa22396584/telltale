@@ -1246,6 +1246,98 @@ class CampaignQueueTest(unittest.TestCase):
         self.assertEqual(errors, [], msg=errors)
         self.assertEqual(ready, ["WS-01"])
 
+    def test_campaign_optional_only_evidence_is_not_enough(self) -> None:
+        errors, _ = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[
+                            {
+                                "path": "missing.json",
+                                "sha256": "a" * 64,
+                                "required": False,
+                            }
+                        ],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any("required evidence" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_campaign_one_required_artifact_allows_optional_peers(self) -> None:
+        errors, ready = validate_plan.validate_plan(
+            _plan(
+                [
+                    _minimal_task(
+                        "WS-01",
+                        9,
+                        evidence=[
+                            {
+                                "path": "docs/workshop/capabilities.json",
+                                "sha256": "a" * 64,
+                            },
+                            {
+                                "path": "missing.json",
+                                "sha256": "b" * 64,
+                                "required": False,
+                            },
+                        ],
+                    )
+                ]
+            ),
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertEqual(errors, [], msg=errors)
+        self.assertEqual(ready, ["WS-01"])
+
+    def test_campaign_completed_blocked_task_is_not_pass(self) -> None:
+        data = _plan(
+            [
+                _minimal_task(
+                    "WS-01",
+                    9,
+                    commands=[],
+                    blockers=["needs a licensed adapter"],
+                    status="completed",
+                ),
+                _minimal_task(
+                    "WS-02",
+                    10,
+                    depends_on=[9],
+                    evidence=[
+                        {
+                            "path": "docs/workshop/capabilities.json",
+                            "sha256": "a" * 64,
+                        }
+                    ],
+                ),
+            ]
+        )
+        errors, ready = validate_plan.validate_plan(
+            data,
+            plan_path=ROOT / "tool" / "workshop" / "plan.json",
+            check_artifacts=False,
+            campaign=True,
+        )
+        self.assertTrue(
+            any(
+                "WS-01" in error and "cannot be completed" in error
+                for error in errors
+            ),
+            msg=errors,
+        )
+        self.assertNotIn("WS-02", ready)
+
 
 if __name__ == "__main__":
     unittest.main()

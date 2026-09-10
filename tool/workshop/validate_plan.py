@@ -367,11 +367,16 @@ def validate_plan(
             evidence = _as_list(
                 raw.get("required_evidence", []), f"{ident}.required_evidence"
             )
+            if campaign and blockers and status == "completed":
+                raise PlanError(
+                    f"{ident}: campaign blocked task cannot be completed"
+                )
             if campaign and commands and not blockers:
                 if not evidence:
                     raise PlanError(
                         f"{ident}: campaign software task needs required_evidence"
                     )
+                required_items = 0
                 for item in evidence:
                     if not isinstance(item, dict):
                         raise PlanError(
@@ -385,6 +390,18 @@ def validate_plan(
                         raise PlanError(
                             f"{ident}: campaign evidence sha256 must be 64 hex"
                         )
+                    flag = item.get("required", True)
+                    if flag is False:
+                        continue
+                    if flag is not True:
+                        raise PlanError(
+                            f"{ident}: campaign evidence required must be boolean"
+                        )
+                    required_items += 1
+                if required_items == 0:
+                    raise PlanError(
+                        f"{ident}: campaign software task needs required evidence"
+                    )
             reviewer = raw.get("reviewer_role")
             if reviewer not in ALLOWED_REVIEWER:
                 raise PlanError(f"{ident}: reviewer_role must be implementation or review")

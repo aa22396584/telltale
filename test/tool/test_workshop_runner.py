@@ -1787,6 +1787,36 @@ class CampaignRunnerTest(unittest.TestCase):
             payload = json.loads(handoff.read_text(encoding="utf-8"))
             self.assertTrue(payload["completed"])
 
+    def test_campaign_optional_only_evidence_cannot_complete(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            plan = _plan(
+                tmp,
+                commands=[["python3", "tool/workshop/probe.py"]],
+            )
+            probe = tmp / "tool" / "workshop" / "probe.py"
+            digest = hashlib.sha256(probe.read_bytes()).hexdigest()
+            data = json.loads(plan.read_text(encoding="utf-8"))
+            data["tasks"][0]["required_evidence"] = [
+                {
+                    "path": "missing.json",
+                    "sha256": digest,
+                    "required": False,
+                }
+            ]
+            plan.write_text(json.dumps(data), encoding="utf-8")
+            handoff = tmp / "handoff.json"
+            with self.assertRaises(run_task.RunnerError) as ctx:
+                run_task.run_task(
+                    plan,
+                    "WS-01",
+                    handoff_path=handoff,
+                    timeout=5,
+                    campaign=True,
+                )
+            self.assertIn("required evidence", str(ctx.exception))
+            self.assertFalse(handoff.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
