@@ -1,9 +1,11 @@
 package com.cbstudio.telltale
 
+import android.app.LocaleManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
+import android.os.LocaleList
 import android.os.StatFs
 import android.os.SystemClock
 import android.util.Log
@@ -168,6 +170,17 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(null)
                 }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            APP_LOCALES_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getAppLocales" -> result.success(readAppLocales())
+                "setAppLocales" -> setAppLocales(_stringList(call.argument("tags")), result)
                 else -> result.notImplemented()
             }
         }
@@ -365,6 +378,90 @@ class MainActivity : FlutterActivity() {
         return manager
     }
 
+    /**
+     * LocaleManager is the authority on API 33+. Configuration locales are
+     * reported separately and are never treated as the pre-override system
+     * list — after an override they *are* the override.
+     */
+    private fun readAppLocales(): Map<String, Any> {
+        val sdk = Build.VERSION.SDK_INT
+        val configurationTags = configurationLanguageTags()
+        if (!AppLocalePolicy.apiSupported(sdk)) {
+            return mapOf(
+                "apiSupported" to false,
+                "sdkInt" to sdk,
+                "followsSystem" to true,
+                "overrideTags" to emptyList<String>(),
+                "configurationTags" to configurationTags,
+            )
+        }
+        val app = localeManagerOrNull()?.applicationLocales ?: LocaleList.getEmptyLocaleList()
+        val overrideTags = languageTags(app)
+        val override = AppLocalePolicy.overrideFromLocaleListTags(overrideTags)
+        return mapOf(
+            "apiSupported" to true,
+            "sdkInt" to sdk,
+            "followsSystem" to override.followsSystem,
+            "overrideTags" to override.tags,
+            "configurationTags" to configurationTags,
+        )
+    }
+
+    private fun setAppLocales(tags: List<String>, result: MethodChannel.Result) {
+        val sdk = Build.VERSION.SDK_INT
+        if (!AppLocalePolicy.apiSupported(sdk)) {
+            result.error(
+                "below_api_33",
+                "LocaleManager applicationLocales requires API 33",
+                mapOf("sdkInt" to sdk),
+            )
+            return
+        }
+        val requested = tags
+        val override = AppLocalePolicy.overrideFromRequestedTags(requested)
+        if (override == null) {
+            result.error(
+                "unsupported_locale",
+                "not a shipped UI locale",
+                mapOf("tags" to requested),
+            )
+            return
+        }
+        val manager = localeManagerOrNull()
+        if (manager == null) {
+            result.error("no_locale_manager", "LocaleManager is unavailable", null)
+            return
+        }
+        val encoded = AppLocalePolicy.languageTagsForLocaleList(override)
+        manager.applicationLocales =
+            if (encoded.isEmpty()) LocaleList.getEmptyLocaleList()
+            else LocaleList.forLanguageTags(encoded)
+        result.success(readAppLocales())
+    }
+
+    private fun localeManagerOrNull(): LocaleManager? {
+        if (!AppLocalePolicy.apiSupported(Build.VERSION.SDK_INT)) return null
+        return getSystemService(LocaleManager::class.java)
+    }
+
+    private fun configurationLanguageTags(): List<String> {
+        val config = resources.configuration
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            languageTags(config.locales)
+        } else {
+            @Suppress("DEPRECATION")
+            listOfNotNull(config.locale?.toLanguageTag())
+        }
+    }
+
+    private fun languageTags(list: LocaleList): List<String> =
+        (0 until list.size()).mapNotNull { index -> list[index]?.toLanguageTag() }
+
+    private fun _stringList(raw: Any?): List<String> {
+        val items = raw as? List<*> ?: return emptyList()
+        return items.mapNotNull { item -> item as? String }
+    }
+
     @Suppress("DEPRECATION")
     private fun platformMetadata(): Map<String, Any> {
         val packageInfo = packageManager.getPackageInfo(packageName, 0)
@@ -432,6 +529,7 @@ class MainActivity : FlutterActivity() {
         const val SCREEN_WAKE_CHANNEL = "com.cbstudio.telltale/screen_wake"
         const val ELAPSED_REALTIME_CHANNEL = "com.cbstudio.telltale/elapsed_realtime"
         const val FORM_FACTOR_CHANNEL = "com.cbstudio.telltale/form_factor"
+        const val APP_LOCALES_CHANNEL = "com.cbstudio.telltale/app_locales"
         const val UNKNOWN = "unknown"
     }
 }
