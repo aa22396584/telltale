@@ -203,4 +203,36 @@ void main() {
     );
     await second.dispose();
   });
+
+  test('a retired send before the PID write does not claim a batch', () async {
+    // sendAddressed can throw OperationRetiredException before ATSH or the
+    // query. Counting before the client method would let the dashboard say
+    // Batched polling for a command that never reached the bus.
+    final transport = FakeElm327(
+      protocol: BusProtocol.can11,
+      ecus: [
+        FakeEcu(
+          name: 'ECM',
+          requestId: '7E0',
+          responseId: '7E8',
+          responses: _physicsReplies(),
+        ),
+      ],
+    );
+    final engine = await _connect(transport);
+    await engine.discoverSupportedPids();
+    engine.client.mayTransmit = (_) => false;
+    engine.setActivePids([PidLibrary.engineRpm, PidLibrary.vehicleSpeed]);
+    engine.start();
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await engine.stop();
+    expect(
+      engine.current.lastMode01PidCount,
+      isNull,
+      reason:
+          'nothing Mode 01 was written after discovery. '
+          'Commands: ${transport.commandLog}',
+    );
+    await engine.dispose();
+  });
 }
