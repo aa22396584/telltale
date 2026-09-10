@@ -2477,7 +2477,7 @@ class PollingEngine {
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
     final ObdResponse response;
-    client.beginWriteAudit();
+    final clearAudit = client.beginWriteAudit();
     try {
       response = await client.sendGlobal('04', owner: owner);
     } on OperationRetiredException {
@@ -2502,7 +2502,7 @@ class PollingEngine {
       // reached the transport then `04` never went out. Asked as a window
       // rather than as "the last write", because the header restore runs even
       // when the service write failed.
-      final reached = client.wroteSinceAudit('04');
+      final reached = client.wroteSinceAudit(clearAudit, '04');
       throw DtcReadException(
         reached
             ? 'The clear was sent, then the connection dropped, so it is not known whether the vehicle cleared. '
@@ -4109,7 +4109,7 @@ class PollingEngine {
     }
 
     final ObdResponse response;
-    client.beginWriteAudit();
+    final pollAudit = client.beginWriteAudit();
     try {
       // Header and query in one chain slot, so nothing else can execute
       // against a header that was selected for this batch.
@@ -4149,7 +4149,7 @@ class PollingEngine {
       // wire. `wroteSinceAudit` is the same fact Mode 04 uses: ATSH/ATH1
       // can fail without the service bytes ever leaving, and a flush
       // timeout can happen after they have. Count only the latter.
-      if (client.wroteSinceAudit(command)) {
+      if (client.wroteSinceAudit(pollAudit, command)) {
         _noteMode01Packed(command);
       }
       await Future<void>.delayed(const Duration(milliseconds: 200));
