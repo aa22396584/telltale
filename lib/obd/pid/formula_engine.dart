@@ -1,13 +1,13 @@
 /// Evaluates the arithmetic a PID definition carries.
 ///
 /// The dialect is the one OBD2 apps have converged on and users already write
-/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `VAL{}`,
+/// by hand: `A`..`N` bind to the reply's data bytes, with `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `VAL{}`,
 /// `BARO`, `ABS()`, `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()` and `BIT()` on top. Accepting it means
 /// somebody's existing formula for their car works here without being retyped.
 ///
 /// Evaluation is two-phase:
 ///   1. [_preprocess] binds `A`..`N` to response bytes and resolves the
-///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `VAL{}`, `BARO`, `ABS()`,
+///      non-arithmetic constructs — `SIGNED()`, `SIGNED8()`, `SIGNED16()`, `SIGNED24()`, `SIGNED32()`, `FLOAT32()`, `FLOAT64()`, `INT()`, `INT24()`, `INT32()`, `RANDOM()`, `LOOKUP()`, `VAL{}`, `BARO`, `ABS()`,
 ///      `LOG10()`, `LOG()`, `LOG1P()`, `SQRT()`, `SIN()`, `COS()`, `TAN()`, `MIN()`, `MAX()`, `BIT()` — leaving a pure arithmetic string.
 ///   2. [_reduce] collapses that string by repeatedly splitting on the
 ///      lowest-binding operator, recursing into each side.
@@ -386,6 +386,7 @@ class FormulaEngine {
   static const String _int24Sentinel = '\u0018(';
   static const String _int32Sentinel = '\u0019(';
   static const String _randomSentinel = '\u001a(';
+  static const String _lookupSentinel = '\u001b(';
   static const String _bitSentinel = '\u0007(';
   static const String _sinSentinel = '\u0008(';
   static const String _cosSentinel = '\u000e(';
@@ -871,6 +872,10 @@ class FormulaEngine {
           (m) => '${m.group(1)}$_maxSentinel',
         )
         .replaceAllMapped(
+          _namedCallPattern('LOOKUP'),
+          (m) => '${m.group(1)}$_lookupSentinel',
+        )
+        .replaceAllMapped(
           _namedCallPattern('BIT'),
           (m) => '${m.group(1)}$_bitSentinel',
         )
@@ -931,6 +936,7 @@ class FormulaEngine {
         .replaceAll(_minSentinel, 'MIN(')
         .replaceAll(_maxSentinel, 'MAX(')
         .replaceAll(_bitSentinel, 'BIT(')
+        .replaceAll(_lookupSentinel, 'LOOKUP(')
         .replaceAll(_sinSentinel, 'SIN(')
         .replaceAll(_cosSentinel, 'COS(')
         .replaceAll(_tanSentinel, 'TAN(');
@@ -1085,6 +1091,10 @@ class FormulaEngine {
           return ((value.toInt() >> bit.toInt()) & 1).toDouble();
         },
       );
+      // Wiki LOOKUP(value:default:key=val:…). Numeric exact `=` and range
+      // `~` only. Quoted strings are a display-side PID substitution this
+      // engine does not implement. Empty default is 0 on no match.
+      s = _applyLookupFunction(s, equation);
       s = _unwrapFunctionParens(s, equation);
     }
 
@@ -1478,6 +1488,54 @@ class FormulaEngine {
     }
   }
 
+  /// Wiki `LOOKUP(value:default:key=val:…)`. Numeric exact `=` and inclusive
+  /// range `~` only. Quoted strings are a display-side PID substitution this
+  /// engine does not implement. Empty default is 0 on no match. Colon is the
+  /// only argument separator; a comma form is not a LOOKUP call.
+  String _applyLookupFunction(String input, String source) {
+    var s = input;
+    var guard = 0;
+    while (true) {
+      final call = _innermostBinaryCall(s, 'LOOKUP');
+      if (call == null) return s;
+      if (++guard > 64) {
+        throw FormulaException(
+          '公式的函式巢狀太深',
+          source,
+          issue: FormulaIssue.functionNestingTooDeep,
+        );
+      }
+      if (call.inner.contains("'") || call.inner.contains('"')) {
+        throw FormulaException(
+          '無法解析 "${call.inner}"',
+          source,
+          issue: FormulaIssue.unparsableTerm,
+          term: call.inner,
+        );
+      }
+      final parts = _splitLookupArgs(call.inner);
+      if (parts == null) {
+        throw FormulaException(
+          '無法解析 "${call.inner}"',
+          source,
+          issue: FormulaIssue.unparsableTerm,
+          term: call.inner,
+        );
+      }
+      final value = _reduce(parts[0], source);
+      final fallback = parts[1].isEmpty ? 0.0 : _reduce(parts[1], source);
+      var matched = fallback;
+      for (var i = 2; i < parts.length; i++) {
+        final mapped = _matchLookupPair(parts[i], value, source);
+        if (mapped != null) {
+          matched = mapped;
+          break;
+        }
+      }
+      s = s.replaceRange(call.start, call.end, _format(matched));
+    }
+  }
+
   /// Leftmost `NAME(...)` whose argument list does not still contain `ABS(`,
   /// `LOG10(`, `LOG(`, `MIN(` or `MAX(`. Grouping parentheses are allowed.
   static ({int start, int end, String inner})? _innermostBinaryCall(
@@ -1541,7 +1599,8 @@ class FormulaEngine {
       inner.contains('FLOAT64(') ||
       inner.contains('MIN(') ||
       inner.contains('MAX(') ||
-      inner.contains('BIT(');
+      inner.contains('BIT(') ||
+      inner.contains('LOOKUP(');
 
   static bool _isIdentChar(int unit) =>
       (unit >= 0x30 && unit <= 0x39) ||
@@ -1604,6 +1663,108 @@ class FormulaEngine {
     parts.add(last);
     if (parts.length != arity) return null;
     return parts;
+  }
+
+  /// Splits `value:default:pair:…` on top-level colons.
+  ///
+  /// At least three sides. The value and every mapping pair are nonempty;
+  /// the default may be empty (`LOOKUP(A::1=100)`). A comma is not a
+  /// separator — wiki LOOKUP is colon-shaped, and `=` / `~` live inside pairs.
+  static List<String>? _splitLookupArgs(String inner) {
+    final parts = <String>[];
+    var start = 0;
+    var depth = 0;
+    for (var i = 0; i < inner.length; i++) {
+      final c = inner[i];
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && c == ':') {
+        parts.add(inner.substring(start, i).trim());
+        start = i + 1;
+      }
+    }
+    if (depth != 0) return null;
+    parts.add(inner.substring(start).trim());
+    if (parts.length < 3) return null;
+    if (parts[0].isEmpty) return null;
+    for (var i = 2; i < parts.length; i++) {
+      if (parts[i].isEmpty) return null;
+    }
+    return parts;
+  }
+
+  /// Exact `key=val` or inclusive range `lo~hi=val`. First match wins.
+  /// A pair without `=`, an empty side, or a second `~` is not a mapping.
+  double? _matchLookupPair(String pair, double value, String source) {
+    var depth = 0;
+    var eq = -1;
+    for (var i = 0; i < pair.length; i++) {
+      final c = pair[i];
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && c == '=' && eq < 0) {
+        eq = i;
+      }
+    }
+    if (eq < 0 || depth != 0) {
+      throw FormulaException(
+        '無法解析 "$pair"',
+        source,
+        issue: FormulaIssue.unparsableTerm,
+        term: pair,
+      );
+    }
+    final key = pair.substring(0, eq).trim();
+    final mappedText = pair.substring(eq + 1).trim();
+    if (key.isEmpty || mappedText.isEmpty) {
+      throw FormulaException(
+        '無法解析 "$pair"',
+        source,
+        issue: FormulaIssue.unparsableTerm,
+        term: pair,
+      );
+    }
+    final mapped = _reduce(mappedText, source);
+    var tilde = -1;
+    depth = 0;
+    for (var i = 0; i < key.length; i++) {
+      final c = key[i];
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (depth == 0 && c == '~') {
+        if (tilde != -1) {
+          throw FormulaException(
+            '無法解析 "$pair"',
+            source,
+            issue: FormulaIssue.unparsableTerm,
+            term: pair,
+          );
+        }
+        tilde = i;
+      }
+    }
+    if (tilde < 0) {
+      return _reduce(key, source) == value ? mapped : null;
+    }
+    final loText = key.substring(0, tilde).trim();
+    final hiText = key.substring(tilde + 1).trim();
+    if (loText.isEmpty || hiText.isEmpty) {
+      throw FormulaException(
+        '無法解析 "$pair"',
+        source,
+        issue: FormulaIssue.unparsableTerm,
+        term: pair,
+      );
+    }
+    final lo = _reduce(loText, source);
+    final hi = _reduce(hiText, source);
+    return value >= lo && value <= hi ? mapped : null;
   }
 
   double _reduce(String expression, String source) {
@@ -1999,12 +2160,13 @@ class _Operator {
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
-/// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. INT16
-/// compatibility is still unclaimed (#79).
+/// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. `LOOKUP()`
+/// is numeric exact/`~` range matching. INT16 compatibility is still
+/// unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
   r'INT16|'
-  r'LOOKUP|CLOSEST|BARO)\s*\(',
+  r'CLOSEST|BARO)\s*\(',
   caseSensitive: false,
 );
 

@@ -48,6 +48,7 @@ past the payload is `byteBeyondResponse`, not zero.
 | `SIN(x)` / `COS(x)` / `TAN(x)` | unary | Radians, matching Java `Math.sin`/`cos`/`tan`. Not degrees. `2SIN(0)` is `unparsableTerm`, not 20. |
 | `MIN(a:b)` / `MAX(a:b)` | arity 2 | Wiki colon form. A single comma (`MAX(A,B)`) is accepted. Arguments may be grouped (`MIN((A+1):B)`). Empty sides or a second top-level separator are `unparsableTerm`, not a number. |
 | `BIT(value:bit)` | arity 2 | Wiki colon form. Returns 0 or 1. A negative or non-integer bit index is `unparsableTerm`, not 0. |
+| `LOOKUP(value:default:key=val:…)` | n-ary colon | Wiki numeric table. Exact `=` and inclusive range `~` (`0~3=4`). First matching pair wins; no match uses `default`. Empty default is 0. Grouped value `LOOKUP((A-1):0:0=50)` is accepted. Quoted strings (`'x'`) are display-side PID substitution, not this engine — `unparsableTerm`. Fewer than one mapping pair (`LOOKUP(A:0)`) is `unparsableTerm`. `2LOOKUP(…)` is not a call. Comma is not a separator. Not `CLOSEST`. |
 
 Authoring (`FormulaEngine.preflight`) uses stand-in bytes and `VAL`/`BARO`
 samples so a well-formed formula can be saved before a live reading exists.
@@ -66,10 +67,10 @@ are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
 `INT16`
-`LOOKUP` `CLOSEST` `BARO()`
+`CLOSEST` `BARO()`
 
 `LOG10` is not classified as `LOG`. `SIGNED8(x)` is the same 8-bit
-conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `RANDOM()` is `[0, 1)`, not `BARO()`. `BARO` without parentheses is the identifier above; `BARO()` is
+conversion as `SIGNED(A)`, not `SIGNED16`. `SIGNED16(x)` is not classified as `SIGNED` or `INT16`. `SIGNED24(x)` is 24-bit, not `SIGNED16`. `SIGNED32(x)` is 32-bit, not `SIGNED24`. `FLOAT32(A:B:C:D)` is not `FLOAT64`. `FLOAT64` is not `FLOAT32`. `INT(x)` is not `INT16`. `INT24(A:B:C)` is unsigned 24-bit, not `SIGNED24`. `INT32(A:B:C:D)` is unsigned 32-bit, not `SIGNED32`. `RANDOM()` is `[0, 1)`, not `BARO()`. `LOOKUP(A:0:1=100)` is numeric exact/`~` range matching, not `CLOSEST`. `BARO` without parentheses is the identifier above; `BARO()` is
 the wiki function that reads the Android barometer or ECU baro **in psi**,
 which this engine does not implement.
 

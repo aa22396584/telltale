@@ -960,7 +960,7 @@ void main() {
         FormulaIssue.unsupportedConstruct,
       );
       expect(
-        thrownBy(() => seeded.evaluateBytes('LOOKUP(A:0:1=100)', const [1]))
+        thrownBy(() => seeded.evaluateBytes('CLOSEST(A:A:1=0:255=1)', const [1]))
             .issue,
         FormulaIssue.unsupportedConstruct,
       );
@@ -976,6 +976,74 @@ void main() {
           ),
         ).issue,
         FormulaIssue.resultNotFinite,
+      );
+    });
+
+    test('LOOKUP() is numeric exact and range matching, not CLOSEST or BARO()',
+        () {
+      FormulaException thrownBy(void Function() body) {
+        try {
+          body();
+        } on FormulaException catch (e) {
+          return e;
+        }
+        fail('expected a FormulaException');
+      }
+
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:1=100)', const [1]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:1=100)', const [2]),
+        closeTo(0.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A:A:1=100)', const [2]),
+        closeTo(2.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:1=100:2=200)', const [2]),
+        closeTo(200.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A::0~3=4:4~5=7)', const [2]),
+        closeTo(4.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A:0:0~3=4:4~5=7)', const [5]),
+        closeTo(7.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP(A::1=100)', const [1]),
+        closeTo(100.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('LOOKUP((A-1):0:0=50)', const [1]),
+        closeTo(50.0, 1e-9),
+      );
+      expect(
+        engine.evaluateBytes('ABS(LOOKUP(A:0:1=-3))', const [1]),
+        closeTo(3.0, 1e-9),
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('2LOOKUP(A:0:1=100)', const [1]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOOKUP(A:0:1=\'x\')', const [1]))
+            .issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('LOOKUP(A:0)', const [1])).issue,
+        FormulaIssue.unparsableTerm,
+      );
+      expect(
+        thrownBy(() => engine.evaluateBytes('CLOSEST(A:A:1=0)', const [1]))
+            .issue,
+        FormulaIssue.unsupportedConstruct,
       );
     });
 
