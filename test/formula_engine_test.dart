@@ -296,7 +296,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).term,
@@ -435,7 +435,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         engine.evaluateBytes('ABS(SIGNED24(8388608))', const []),
@@ -493,7 +493,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         engine.evaluateBytes('ABS(SIGNED32(2147483648))', const []),
@@ -607,7 +607,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         engine.evaluateBytes(
@@ -667,7 +667,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
@@ -753,7 +753,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         thrownBy(
@@ -838,7 +838,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         engine.evaluateBytes('INT32(A:B:C:D)', const [1, 2, 3, 4]),
@@ -919,7 +919,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
     });
 
@@ -957,7 +957,7 @@ void main() {
       );
       expect(
         thrownBy(() => seeded.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         thrownBy(() => seeded.evaluateBytes('BARO()', const [])).issue,
@@ -1142,7 +1142,7 @@ void main() {
       );
       expect(
         thrownBy(() => engine.evaluateBytes('INT16(A:B)', const [1, 2])).issue,
-        FormulaIssue.unsupportedConstruct,
+        FormulaIssue.int16Unclaimed,
       );
       expect(
         thrownBy(

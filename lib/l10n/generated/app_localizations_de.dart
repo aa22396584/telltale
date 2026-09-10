@@ -4066,6 +4066,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'BARO() ist der Android-Barometer- / ECU-Baro-Wert in psi, den dieser Dialekt nicht implementiert. Für den zwischengespeicherten Umgebungsdruck BARO ohne Klammern verwenden.';
 
   @override
+  String get pidFormulaInt16Unclaimed =>
+      'INT16 ist unbeansprucht: das Wiki sagt, es könne (A*255)+B ersetzen, das ist nicht (A*256)+B. Eine dieser Identitäten explizit schreiben.';
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '„$reference“ lässt sich hier nicht auflösen, weil nicht bekannt ist, zu welchem Steuergerät diese PID gehört.';
   }

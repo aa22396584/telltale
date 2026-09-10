@@ -3993,6 +3993,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'BARO() is the Android barometer / ECU baro in psi, which this dialect does not implement. Use BARO without parentheses for cached ambient pressure.';
 
   @override
+  String get pidFormulaInt16Unclaimed =>
+      'INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is not (A*256)+B. Write one of those identities explicitly.';
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '$reference cannot be resolved here, because which controller that PID belongs to is not known.';
   }

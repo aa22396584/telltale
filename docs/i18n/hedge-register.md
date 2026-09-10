@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-61 entries. Every entry that names a **Shipped as** key is checked against the shipped
+62 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -719,3 +719,13 @@ maintainer.
 **Shipped as** `pidFormulaBaroParenFormUnsupported` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:67`, the PID editor sentence when a formula writes `BARO()`. Softened to 'BARO is not supported' it hides that `A-BARO` still evaluates, and that the wiki form is psi not kPa. BARO(), BARO and psi stay those tokens in every language.
+
+### 62. INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。
+
+**繁體中文** — INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。
+
+**English** — INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is not (A*256)+B. Write one of those identities explicitly.
+
+**Shipped as** `pidFormulaInt16Unclaimed` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:69`, the PID editor sentence when a formula writes `INT16(A:B)`. Softened to 'INT16 is not supported' it hides that (A*255)+B and (A*256)+B are different numbers. INT16, (A*255)+B and (A*256)+B stay those tokens in every language. Not evaluated as either.

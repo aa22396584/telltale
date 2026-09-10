@@ -96,6 +96,9 @@ const _formulaEnglish = <FormulaIssue, String>{
       'BARO() is the Android barometer / ECU baro in psi, which this dialect '
       'does not implement. Use BARO without parentheses for cached ambient '
       'pressure.',
+  FormulaIssue.int16Unclaimed:
+      'INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is '
+      'not (A*256)+B. Write one of those identities explicitly.',
   FormulaIssue.dependencyControllerUnknown:
       'VAL{0133} cannot be resolved here, because which controller that PID '
       'belongs to is not known.',
@@ -133,6 +136,8 @@ const _formulaChinese = <FormulaIssue, String>{
   FormulaIssue.baroMeasurementStale: '大氣壓力量測值已過期，無法計算。',
   FormulaIssue.baroParenFormUnsupported:
       'BARO() 是 Android 氣壓計／ECU 大氣壓（psi），這個方言沒有實作。要用快取的大氣壓力請寫不帶括號的 BARO。',
+  FormulaIssue.int16Unclaimed:
+      'INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。',
   FormulaIssue.dependencyControllerUnknown:
       '這裡無法解析 VAL{0133}，因為無法判斷那個 PID 屬於哪一個控制器。',
   FormulaIssue.dependencyTwoDefinitions:

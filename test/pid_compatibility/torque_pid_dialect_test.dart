@@ -17,7 +17,6 @@ const _unsupportedWikiNames = <String>[
   'TDLY',
   'RDLY',
   'TOT',
-  'INT16',
 ];
 
 void main() {
@@ -112,9 +111,19 @@ void main() {
 
   test('INT16 is refused rather than evaluated as (A*255)+B or (A*256)+B', () {
     final failure = FormulaEngine.preflight('INT16(A:B)');
-    expect(failure!.issue, FormulaIssue.unsupportedConstruct);
+    expect(failure!.issue, FormulaIssue.int16Unclaimed);
     expect(failure.term, 'INT16');
     expect(FormulaEngine().evaluateBytes('(A*256)+B', const [1, 2]), 258);
     expect(FormulaEngine().evaluateBytes('(A*255)+B', const [1, 2]), 257);
+    expect(
+      () => FormulaEngine().evaluateBytes('INT16(A:B)', const [1, 2]),
+      throwsA(
+        isA<FormulaException>().having(
+          (e) => e.issue,
+          'issue',
+          FormulaIssue.int16Unclaimed,
+        ),
+      ),
+    );
   });
 }

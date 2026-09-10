@@ -100,6 +100,10 @@ enum FormulaIssue {
   /// identifier, which is cached ambient pressure. Not evaluated as 0.
   baroParenFormUnsupported,
 
+  /// Wiki `INT16(A:B)` is unclaimed: `(A*255)+B` is not `(A*256)+B`.
+  /// Not evaluated as either identity.
+  int16Unclaimed,
+
   /// `VAL{...}` was used with no requesting PID. Carries the referenced key.
   dependencyControllerUnknown,
 
@@ -557,6 +561,14 @@ class FormulaEngine {
         equation,
         issue: FormulaIssue.baroParenFormUnsupported,
         term: 'BARO()',
+      );
+    }
+    if (_int16Unclaimed(equation)) {
+      throw FormulaException(
+        '此方言不認領 INT16',
+        equation,
+        issue: FormulaIssue.int16Unclaimed,
+        term: 'INT16',
       );
     }
     final unsupported = _unsupportedTorqueFunction(equation);
@@ -2255,16 +2267,15 @@ class _Operator {
 /// `LOG10`/`LOG1P` are not `LOG`, `INT16` is not `INT`, `SIGNED16` is not
 /// `SIGNED` or `SIGNED8`, `BARO` without a parenthesis is the ECU cache
 /// identifier we do implement. Wiki `BARO()` is [FormulaIssue.baroParenFormUnsupported],
-/// not this list. `MIN`/`MAX` are implemented as arity-2 colon
+/// not this list. Wiki `INT16` is [FormulaIssue.int16Unclaimed], not this
+/// list. `MIN`/`MAX` are implemented as arity-2 colon
 /// or comma. `FLOAT32` is IEEE754 binary32 from four inputs. `INT` is
 /// toward-zero truncation. `FLOAT64` is IEEE754 binary64 from eight inputs.
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
 /// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. `LOOKUP()`
 /// is numeric exact/`~` range matching. `CLOSEST()` is nearest numeric key.
-/// INT16 compatibility is still unclaimed (#79).
 final _unsupportedTorqueFunctionPattern = RegExp(
-  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT|'
-  r'INT16)\s*\(',
+  r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT)\s*\(',
   caseSensitive: false,
 );
 
@@ -2272,6 +2283,11 @@ final _baroParenFormPattern = RegExp(r'\bBARO\s*\(', caseSensitive: false);
 
 bool _baroParenForm(String equation) =>
     _baroParenFormPattern.hasMatch(equation);
+
+final _int16UnclaimedPattern = RegExp(r'\bINT16\s*\(', caseSensitive: false);
+
+bool _int16Unclaimed(String equation) =>
+    _int16UnclaimedPattern.hasMatch(equation);
 
 String? _unsupportedTorqueFunction(String equation) {
   final match = _unsupportedTorqueFunctionPattern.firstMatch(equation);
