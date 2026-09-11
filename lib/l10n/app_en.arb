@@ -3326,9 +3326,9 @@
   "@pidFormulaInt16Unclaimed": {
     "description": "FormulaIssue.int16Unclaimed. Wiki INT16(A:B) cites (A*255)+B. Conventional big-endian is (A*256)+B. Neither is evaluated. The two identities stay as written."
   },
-  "pidFormulaTimeWindowUnsupported": "{term} is a delay or average Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.",
+  "pidFormulaTimeWindowUnsupported": "{term} is a delay, average, or totalizer Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.",
   "@pidFormulaTimeWindowUnsupported": {
-    "description": "FormulaIssue.timeWindowUnsupported. {term} is EWMAF, TAVG, RAVG, AVG, TDLY, RDLY or TOT. AVG is not MIN/MAX. TDLY is not 0. Not evaluated.",
+    "description": "FormulaIssue.timeWindowUnsupported. {term} is EWMAF, TAVG, RAVG, AVG, TDLY, RDLY or TOT. TOT is a totalizer, not a delay or average. AVG is not MIN/MAX. TDLY is not 0. Not evaluated.",
     "placeholders": {
       "term": { "type": "String" }
     }

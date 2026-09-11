@@ -105,7 +105,8 @@ enum FormulaIssue {
   int16Unclaimed,
 
   /// Wiki delay/average/window functions: EWMAF, TAVG, RAVG, AVG, TDLY,
-  /// RDLY, TOT. Not 0 and not MIN/MAX. Carries the function name.
+  /// RDLY, TOT. TOT is a totalizer, not a delay or average. Not 0 and
+  /// not MIN/MAX. Carries the function name.
   timeWindowUnsupported,
 
   /// `VAL{...}` was used with no requesting PID. Carries the referenced key.

@@ -3538,7 +3538,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String pidFormulaTimeWindowUnsupported(String term) {
-    return '$term 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
+    return '$term 是這個方言尚未實作的延遲、平均或 totalizer Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
   }
 
   @override
@@ -7454,7 +7454,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String pidFormulaTimeWindowUnsupported(String term) {
-    return '$term 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
+    return '$term 是這個方言尚未實作的延遲、平均或 totalizer Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
   }
 
   @override

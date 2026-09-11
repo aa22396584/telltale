@@ -730,12 +730,12 @@ maintainer.
 
 **Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:69`, the PID editor sentence when a formula writes `INT16(A:B)`. Softened to 'INT16 is not supported' it hides that (A*255)+B and (A*256)+B are different numbers. INT16, (A*255)+B and (A*256)+B stay those tokens in every language. Not evaluated as either.
 
-### 63. 延遲或平均 Torque 函式不是 0，也不是 MIN 或 MAX
+### 63. 延遲、平均或 totalizer Torque 函式不是 0，也不是 MIN 或 MAX
 
-**繁體中文** — {term} 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。
+**繁體中文** — {term} 是這個方言尚未實作的延遲、平均或 totalizer Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。
 
-**English** — {term} is a delay or average Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.
+**English** — {term} is a delay, average, or totalizer Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.
 
 **Shipped as** `pidFormulaTimeWindowUnsupported` (lib/l10n/app_en.arb).
 
-**Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:70`, the PID editor sentence when a formula writes `AVG`, `TDLY` or the rest of the wiki delay/average family. Softened to 'not supported' it hides that AVG is not MIN/MAX and TDLY is not 0. MIN, MAX and 0 stay those tokens in every language.
+**Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:70`, the PID editor sentence when a formula writes `AVG`, `TDLY` or `TOT`. Softened to 'delay or average' it gives TOT the wrong meaning: Torque's TOT is a totalizer. Softened to 'not supported' it hides that AVG is not MIN/MAX and TDLY is not 0. MIN, MAX, 0 and totalizer stay those tokens in every language.

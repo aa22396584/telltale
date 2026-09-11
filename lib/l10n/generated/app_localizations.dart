@@ -6338,10 +6338,10 @@ abstract class AppLocalizations {
   /// **'INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is not (A*256)+B. Write one of those identities explicitly.'**
   String get pidFormulaInt16Unclaimed;
 
-  /// FormulaIssue.timeWindowUnsupported. {term} is EWMAF, TAVG, RAVG, AVG, TDLY, RDLY or TOT. AVG is not MIN/MAX. TDLY is not 0. Not evaluated.
+  /// FormulaIssue.timeWindowUnsupported. {term} is EWMAF, TAVG, RAVG, AVG, TDLY, RDLY or TOT. TOT is a totalizer, not a delay or average. AVG is not MIN/MAX. TDLY is not 0. Not evaluated.
   ///
   /// In en, this message translates to:
-  /// **'{term} is a delay or average Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.'**
+  /// **'{term} is a delay, average, or totalizer Torque function this dialect does not implement, so it cannot be evaluated here. It is not 0 and not MIN or MAX.'**
   String pidFormulaTimeWindowUnsupported(String term);
 
   /// FormulaIssue.dependencyControllerUnknown. {reference} is the whole VAL{...} token, composed in pid_formula_copy.dart rather than written here, because braces are ARB placeholder syntax and the token must stay byte-identical in both languages.

@@ -100,9 +100,9 @@ const _formulaEnglish = <FormulaIssue, String>{
       'INT16 is unclaimed: the wiki says it can replace (A*255)+B, which is '
       'not (A*256)+B. Write one of those identities explicitly.',
   FormulaIssue.timeWindowUnsupported:
-      'A@B is a delay or average Torque function this dialect does not '
-      'implement, so it cannot be evaluated here. It is not 0 and not MIN or '
-      'MAX.',
+      'A@B is a delay, average, or totalizer Torque function this dialect '
+      'does not implement, so it cannot be evaluated here. It is not 0 and '
+      'not MIN or MAX.',
   FormulaIssue.dependencyControllerUnknown:
       'VAL{0133} cannot be resolved here, because which controller that PID '
       'belongs to is not known.',
@@ -143,7 +143,7 @@ const _formulaChinese = <FormulaIssue, String>{
   FormulaIssue.int16Unclaimed:
       'INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。',
   FormulaIssue.timeWindowUnsupported:
-      'A@B 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。',
+      'A@B 是這個方言尚未實作的延遲、平均或 totalizer Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。',
   FormulaIssue.dependencyControllerUnknown:
       '這裡無法解析 VAL{0133}，因為無法判斷那個 PID 屬於哪一個控制器。',
   FormulaIssue.dependencyTwoDefinitions:
@@ -360,6 +360,21 @@ void main() {
     _importChinese,
     import,
   );
+
+  test('TOT copy names a totalizer, not only delay or average', () {
+    final text = formulaIssueText(
+      en,
+      const FormulaException(
+        '',
+        'TOT(A)',
+        issue: FormulaIssue.timeWindowUnsupported,
+        term: 'TOT',
+      ),
+    )!;
+    expect(text, contains('TOT'));
+    expect(text, contains('totalizer'));
+    expect(text, isNot(contains('delay or average Torque')));
+  });
 
   test('a null identifier renders nothing rather than the engine sentence', () {
     // The editor maps a null identifier to `pidFormulaUnidentified`, not
