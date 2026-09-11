@@ -158,25 +158,28 @@ void _expectUnscaledText(WidgetTester tester) {
 
 int _stampTick = 0;
 
-/// Distinct timestamps in the recent past: the screen ignores a reading whose
-/// timestamp equals the last one it consumed, and a timestamp even one
-/// microsecond in the future is stale (`wallAge.isNegative`). Adding the
-/// uniqueness tick to `DateTime.now()` made every sample after the first
-/// abort a staged/running run before FakeAsync advanced.
-TelemetrySnapshot _speedSnapshot(double kmh, {Duration age = Duration.zero}) =>
-    TelemetrySnapshot(
-      readings: {
-        PidLibrary.vehicleSpeed.id: Reading(
-          pid: PidLibrary.vehicleSpeed,
-          value: kmh,
-          rawBytes: [kmh.round().clamp(0, 255)],
-          timestamp: DateTime.now()
-              .subtract(const Duration(milliseconds: 50))
-              .add(Duration(milliseconds: _stampTick++))
-              .subtract(age),
-        ),
-      },
-    );
+/// Distinct observation ticks in the recent past.
+///
+/// The controller ignores a reading whose [Reading.receivedElapsed] equals
+/// the last one it consumed. Wall UTC is display metadata; a timestamp even
+/// one microsecond in the future is stale (`wallAge.isNegative`).
+TelemetrySnapshot _speedSnapshot(double kmh, {Duration age = Duration.zero}) {
+  final tick = _stampTick++;
+  return TelemetrySnapshot(
+    readings: {
+      PidLibrary.vehicleSpeed.id: Reading(
+        pid: PidLibrary.vehicleSpeed,
+        value: kmh,
+        rawBytes: [kmh.round().clamp(0, 255)],
+        timestamp: DateTime.now()
+            .subtract(const Duration(milliseconds: 50))
+            .add(Duration(milliseconds: tick))
+            .subtract(age),
+        receivedElapsed: Duration(milliseconds: tick),
+      ),
+    },
+  );
+}
 
 Future<StreamController<TelemetrySnapshot>> _pumpPerformance(
   WidgetTester tester, {

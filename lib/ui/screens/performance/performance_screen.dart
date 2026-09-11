@@ -19,31 +19,7 @@ import '../../../obd/telemetry.dart';
 import '../../../state/obd_session.dart';
 import '../../widgets/gauges/dial_gauge.dart';
 import '../../widgets/panel.dart';
-
-enum RunState {
-  idle,
-
-  /// Armed, but the vehicle is still moving. Timing cannot begin from here —
-  /// arming at 70 km/h and starting immediately would record 0→50 and 0→60 as
-  /// having taken no time at all, which is worse than refusing to time.
-  awaitingStandstill,
-
-  /// Stationary and ready. The clock starts on the first sample that shows
-  /// movement, because a driver cannot press a button and launch at once.
-  staged,
-
-  running,
-  finished,
-
-  /// The speed signal stopped while a run was in progress.
-  ///
-  /// A distinct state rather than a silent return to idle. The old behaviour
-  /// erased elapsed time, splits and the trace the moment the reading went
-  /// stale — which happens on a disconnect, and takes the evidence of the run
-  /// with it. What was measured before the signal went is still what was
-  /// measured; it just cannot be completed.
-  aborted,
-}
+import 'acceleration_run_controller.dart';
 
 class PerformanceScreen extends ConsumerStatefulWidget {
   const PerformanceScreen({super.key});
@@ -55,21 +31,18 @@ class PerformanceScreen extends ConsumerStatefulWidget {
 }
 
 class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
-  static const List<int> _targets = [50, 60, 80, 100];
-
-  RunState _state = RunState.idle;
-  int _target = 100;
-  DateTime? _startedAt;
-  Duration? _elapsed;
-  double _peakSpeed = 0;
-  final Map<int, Duration> _splits = {};
-
-  /// (seconds since launch, km/h) samples for the trace chart.
-  final List<FlSpot> _trace = [];
+  final AccelerationRunController _run = AccelerationRunController();
 
   /// A provider subscription rather than a raw stream one, so this screen
   /// shares the heartbeat that makes staleness observable.
   ProviderSubscription<AsyncValue<TelemetrySnapshot>>? _sub;
+
+  AccelerationRunState get _state => _run.state;
+  int get _target => _run.targetKmh;
+  Duration? get _elapsed => _run.elapsed;
+  double get _peakSpeed => _run.peakSpeed;
+  Map<int, Duration> get _splits => _run.splits;
+  List<FlSpot> get _trace => _run.trace;
 
   @override
   void dispose() {
@@ -77,157 +50,48 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
     super.dispose();
   }
 
-  /// Speed at or below which the vehicle counts as stopped, in km/h. OBD road
-  /// speed is a whole number, so anything under 2 is a genuine standstill.
-  static const double _standstillKmh = 1;
-  static const double _launchKmh = 2;
-
   void _arm() {
-    setState(() {
-      _state = RunState.awaitingStandstill;
-      _startedAt = null;
-      _elapsed = null;
-      _peakSpeed = 0;
-      _splits.clear();
-      _trace.clear();
-    });
-
+    setState(_run.arm);
     _sub?.close();
     // The heartbeat source, not the raw engine stream. Subscribing directly
     // meant that when snapshots simply stopped — no teardown, no event — this
     // screen received no clock tick with which to notice, and a run could stay
-    // in `RunState.running` indefinitely against a signal that had gone.
+    // in `running` indefinitely against a signal that had gone.
     _sub = ref.listenManual(telemetryProvider, (_, next) {
       final snapshot = next.value;
       if (snapshot != null) _onSample(snapshot);
     });
   }
 
-  /// Timestamp of the last speed reading actually consumed.
-  ///
-  /// Snapshots are published on every PID completion, not only speed ones, so
-  /// the same speed value arrives many times over. Recording each arrival would
-  /// grow the trace without bound and flatten the chart with duplicate points.
-  DateTime? _lastConsumedSpeedAt;
-
-  /// How long speed may be *absent* before a run is abandoned.
-  ///
-  /// Long enough to ride out one dropped reply and short enough that a link
-  /// which has actually gone is noticed within a second of the gauges saying
-  /// so.
-  static const Duration _speedAbsenceGrace = Duration(milliseconds: 1500);
-
   void _onSample(TelemetrySnapshot snapshot) {
-    // The subscription is cancelled in dispose(), but cancellation is async and
-    // an event already in flight can still land here after the screen is gone.
     if (!mounted) return;
-    void abort() {
-      if (_state == RunState.running || _state == RunState.staged) {
-        // Kept, not erased. The splits and trace recorded before the signal
-        // went are real measurements, and a driver who has just made a run
-        // deserves to see how far it got rather than a screen that quietly
-        // returns to the start.
-        setState(() => _state = RunState.aborted);
-        // Terminal, like `finished`. Nothing that arrives now can move the
-        // state, so the samples were being decoded and discarded for the rest
-        // of the screen's life.
-        _sub?.close();
-        _sub = null;
-      }
-    }
-
+    final before = _run.state;
     final reading = snapshot[PidLibrary.vehicleSpeed.id];
     if (reading == null) {
-      // Absence and staleness are different here, and treating them alike made
-      // the abort threshold a single `NO DATA`.
-      //
-      // The poller removes a reading on the *first* strike of three, so a
-      // momentary unstable reply — ordinary on a marginal Bluetooth link —
-      // emptied the map, `isStale` answered true for the missing entry, and a
-      // run in progress went to a terminal `aborted` that needs re-staging.
-      // The fragility of a 0-100 timer was out of all proportion to the actual
-      // signal quality.
-      //
-      // So an absence is aged rather than acted on. A link that has genuinely
-      // gone stops producing samples entirely, and this fires a moment later.
-      final last = _lastConsumedSpeedAt;
-      if (last == null ||
-          DateTime.now().difference(last) > _speedAbsenceGrace) {
-        abort();
-      }
-      return;
+      _run.ingestAbsence(nowElapsed: snapshot.elapsedNow?.call());
+    } else if (snapshot.isStale(PidLibrary.vehicleSpeed)) {
+      _run.ingestStale();
+    } else {
+      _run.ingestSpeed(
+        kmh: reading.value,
+        receivedElapsed: reading.receivedElapsed,
+      );
     }
-
-    // A reading that is present but old is different: the sensor answered and
-    // the answer describes a moment that has passed. Timing a run against that
-    // produces a confident number from a sensor that stopped answering half
-    // way down the road, so it aborts at once.
-    if (snapshot.isStale(PidLibrary.vehicleSpeed)) {
-      abort();
-      return;
+    final after = _run.state;
+    if (after == AccelerationRunState.finished ||
+        after == AccelerationRunState.aborted) {
+      _sub?.close();
+      _sub = null;
     }
-    if (reading.timestamp == _lastConsumedSpeedAt) return;
-    _lastConsumedSpeedAt = reading.timestamp;
-    final speed = reading.value;
-
-    switch (_state) {
-      // A finished or abandoned run is not listening for anything; the driver
-      // arms the next one explicitly.
-      case RunState.idle:
-      case RunState.finished:
-      case RunState.aborted:
-        break;
-      case RunState.awaitingStandstill:
-        if (speed <= _standstillKmh) {
-          setState(() => _state = RunState.staged);
-        }
-      case RunState.staged:
-        if (speed >= _launchKmh) {
-          setState(() {
-            _state = RunState.running;
-            _startedAt = DateTime.now();
-          });
-        }
-      case RunState.running:
-        final startedAt = _startedAt;
-        if (startedAt == null) return;
-        final elapsed = DateTime.now().difference(startedAt);
-
-        setState(() {
-          _peakSpeed = speed > _peakSpeed ? speed : _peakSpeed;
-          _elapsed = elapsed;
-          _trace.add(FlSpot(elapsed.inMilliseconds / 1000, speed));
-          // A run that never reaches its target would otherwise accumulate
-          // points for as long as the car keeps moving.
-          if (_trace.length > _maxTracePoints) _trace.removeAt(0);
-          for (final split in _targets) {
-            if (speed >= split && !_splits.containsKey(split)) {
-              _splits[split] = elapsed;
-            }
-          }
-          if (speed >= _target) {
-            _state = RunState.finished;
-            _sub?.close();
-          }
-        });
+    if (before != after || after == AccelerationRunState.running) {
+      setState(() {});
     }
   }
 
   void _reset() {
     _sub?.close();
-    setState(() {
-      _state = RunState.idle;
-      _startedAt = null;
-      _elapsed = null;
-      _peakSpeed = 0;
-      _splits.clear();
-      _trace.clear();
-    });
+    setState(_run.reset);
   }
-
-  /// Roughly two minutes at ten samples a second — far longer than any real
-  /// 0-100 run, short enough that a forgotten session cannot grow unbounded.
-  static const int _maxTracePoints = 1200;
 
   /// One decimal, because that is what the sampling supports.
   ///
@@ -302,32 +166,34 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
 
             Panel(
               accent: switch (_state) {
-                RunState.running => palette.warning,
-                RunState.finished => palette.success,
-                RunState.aborted => palette.danger,
+                AccelerationRunState.running => palette.warning,
+                AccelerationRunState.finished => palette.success,
+                AccelerationRunState.aborted => palette.danger,
                 _ => palette.accent,
               },
-              isActive: _state != RunState.idle,
+              isActive: _state != AccelerationRunState.idle,
               child: Column(
                 children: [
                   Text(
                     switch (_state) {
-                      RunState.idle => l10n.performanceStateIdle,
+                      AccelerationRunState.idle => l10n.performanceStateIdle,
                       // Two different sentences on purpose. A speed that reads
                       // above standstill is an observation; no speed at all is
                       // the app admitting it cannot tell, and a driver must be
                       // able to tell those apart from the panel alone.
-                      RunState.awaitingStandstill => hasSpeed
+                      AccelerationRunState.awaitingStandstill => hasSpeed
                           ? l10n.performanceStateAwaitingStandstill(
                               speed.toStringAsFixed(0),
                             )
                           : l10n.performanceStateAwaitingSpeedSignal,
-                      RunState.staged => l10n.performanceStateStaged,
-                      RunState.running => l10n.performanceStateRunning,
-                      RunState.finished => l10n.performanceStateFinished(
-                        _target,
-                      ),
-                      RunState.aborted => l10n.performanceStateAborted,
+                      AccelerationRunState.staged =>
+                        l10n.performanceStateStaged,
+                      AccelerationRunState.running =>
+                        l10n.performanceStateRunning,
+                      AccelerationRunState.finished =>
+                        l10n.performanceStateFinished(_target),
+                      AccelerationRunState.aborted =>
+                        l10n.performanceStateAborted,
                     },
                     style: context.texts.labelSmall,
                   ),
@@ -336,9 +202,9 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
                     _format(_elapsed),
                     style: AppTypography.readout(palette, 56).copyWith(
                       color: switch (_state) {
-                        RunState.finished => palette.success,
-                        RunState.running => palette.warning,
-                        RunState.aborted => palette.danger,
+                        AccelerationRunState.finished => palette.success,
+                        AccelerationRunState.running => palette.warning,
+                        AccelerationRunState.aborted => palette.danger,
                         _ => palette.textPrimary,
                       },
                     ),
@@ -355,13 +221,13 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
             SectionHeading(l10n.performanceTargetSpeedHeading),
             SegmentedButton<int>(
               segments: [
-                for (final target in _targets)
+                for (final target in AccelerationRunController.splitTargetsKmh)
                   ButtonSegment(value: target, label: Text('$target')),
               ],
               selected: {_target},
-              onSelectionChanged: _state == RunState.running
+              onSelectionChanged: _state == AccelerationRunState.running
                   ? null
-                  : (s) => setState(() => _target = s.first),
+                  : (s) => setState(() => _run.targetKmh = s.first),
               showSelectedIcon: false,
             ),
             const SizedBox(height: Spacing.lg),
@@ -382,7 +248,8 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
               Panel(
                 child: Column(
                   children: [
-                    for (final target in _targets)
+                    for (final target
+                        in AccelerationRunController.splitTargetsKmh)
                       if (_splits.containsKey(target))
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
@@ -420,7 +287,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
               const SizedBox(height: Spacing.lg),
             ],
 
-            if (_state == RunState.idle) ...[
+            if (_state == AccelerationRunState.idle) ...[
               FilledButton.icon(
                 // Arming without a live speed stream produces a run that never
                 // starts, or one that starts on whichever number arrives first.
