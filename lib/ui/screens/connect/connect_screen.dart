@@ -28,6 +28,7 @@ import '../../../obd/transport/obd_transport.dart';
 import '../../../obd/transport/serial_transport.dart';
 import '../../../obd/transport/wifi_transport.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../diagnostics/connection_failure_actions.dart';
 import '../../../diagnostics/connection_layers.dart';
 import '../../../state/obd_session.dart';
 import 'connection_layers_panel.dart';
@@ -36,6 +37,7 @@ import '../../../state/settings.dart';
 import '../../widgets/language_picker.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/telemetry/telemetry_connect_recorder_status.dart';
+import 'connection_failure_copy.dart';
 import 'handshake_copy.dart';
 import '../../widgets/telemetry/telemetry_history_entry.dart';
 import '../../widgets/telemetry/telemetry_startup_recovery_notice.dart';
@@ -450,6 +452,18 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                             ) ??
                             AppLocalizations.of(context)
                                 .connectIssueConnectionSetupFailed,
+                        action: () {
+                          final mapped = connectionFailureAction(
+                            adapterError: connection.issueStep?.errorCode,
+                            note: connection.issueStep?.note,
+                            transport: connection.transportIssue,
+                          );
+                          if (mapped == null) return null;
+                          return connectionFailureActionText(
+                            AppLocalizations.of(context),
+                            mapped,
+                          );
+                        }(),
                       ),
                       const SizedBox(height: Spacing.md),
                       // Where the failure is, not two screens away behind a
@@ -1459,9 +1473,10 @@ class _StepRow extends StatelessWidget {
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
+  const _ErrorBanner({required this.message, this.action});
 
   final String message;
+  final String? action;
 
   @override
   Widget build(BuildContext context) {
@@ -1479,11 +1494,25 @@ class _ErrorBanner extends StatelessWidget {
           Icon(Icons.error_outline, color: palette.danger, size: 20),
           const SizedBox(width: Spacing.md),
           Expanded(
-            child: Text(
-              message,
-              style: context.texts.bodyMedium?.copyWith(
-                color: palette.textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: context.texts.bodyMedium?.copyWith(
+                    color: palette.textPrimary,
+                  ),
+                ),
+                if (action != null) ...[
+                  const SizedBox(height: Spacing.sm),
+                  Text(
+                    action!,
+                    style: context.texts.bodySmall?.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

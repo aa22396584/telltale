@@ -1134,5 +1134,11 @@
   "connectionLayerClassic": "klassisches Bluetooth",
   "connectionLayerWifi": "WLAN",
   "connectionLayerRequestedObserved": "angefordert {requested}, gemessen {observed}",
-  "connectionLayerKwpSubtypeUnknown": "KWP, 5-Baud und Fast nicht unterscheidbar"
+  "connectionLayerKwpSubtypeUnknown": "KWP, 5-Baud und Fast nicht unterscheidbar",
+  "connectionFailureOpenSettings": "Systemeinstellungen öffnen.",
+  "connectionFailureTurnRadioOn": "Bluetooth einschalten.",
+  "connectionFailureCheckDistanceOrPower": "Der Adapter ist möglicherweise außer Reichweite oder ohne Strom. Das ist eine mögliche Ursache, kein Befund.",
+  "connectionFailureCheckIgnitionProtocolAdapter": "Zündung, Protokoll oder Adapterfähigkeit prüfen. Stille ist kein Beweis, dass das Fahrzeug kein OBD hat.",
+  "connectionFailureRetryOrAuto": "Erneut versuchen oder das Protokoll auf Auto setzen.",
+  "connectionFailureKeepInvalidAndExport": "Die Antwort ist ungültig. Ungültig lassen und die begrenzte Diagnose exportieren; das ist keine Messung."
 }

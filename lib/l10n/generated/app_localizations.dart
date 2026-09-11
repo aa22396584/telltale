@@ -6931,6 +6931,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'KWP, 5-baud vs fast not distinguished'**
   String get connectionLayerKwpSubtypeUnknown;
+
+  /// ConnectionFailureAction.openSettings. Permission permanently denied.
+  ///
+  /// In en, this message translates to:
+  /// **'Open system settings.'**
+  String get connectionFailureOpenSettings;
+
+  /// ConnectionFailureAction.turnRadioOn. Radio off.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn Bluetooth on.'**
+  String get connectionFailureTurnRadioOn;
+
+  /// ConnectionFailureAction.checkDistanceOrPower. Distance and power are possible causes, not a claim that the adapter is dead.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter may be out of range or unpowered. That is a possible cause, not a finding.'**
+  String get connectionFailureCheckDistanceOrPower;
+
+  /// ConnectionFailureAction.checkIgnitionProtocolAdapter. Adapter is up, ECU silent. Not 'the car has no OBD'.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the ignition, the protocol, or the adapter\'s capability. Silence is not proof the vehicle has no OBD.'**
+  String get connectionFailureCheckIgnitionProtocolAdapter;
+
+  /// ConnectionFailureAction.retryOrAuto. BUS INIT. Not vehicle unsupported. Auto stays that word.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry, or set the protocol to Auto.'**
+  String get connectionFailureRetryOrAuto;
+
+  /// ConnectionFailureAction.keepInvalidAndExport. DATA ERROR / malformed handshake reply. Not a sensor value.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.'**
+  String get connectionFailureKeepInvalidAndExport;
 }
 
 class _AppLocalizationsDelegate

@@ -4489,4 +4489,26 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get connectionLayerKwpSubtypeUnknown =>
       'KWP, 5-Baud und Fast nicht unterscheidbar';
+
+  @override
+  String get connectionFailureOpenSettings => 'Systemeinstellungen öffnen.';
+
+  @override
+  String get connectionFailureTurnRadioOn => 'Bluetooth einschalten.';
+
+  @override
+  String get connectionFailureCheckDistanceOrPower =>
+      'Der Adapter ist möglicherweise außer Reichweite oder ohne Strom. Das ist eine mögliche Ursache, kein Befund.';
+
+  @override
+  String get connectionFailureCheckIgnitionProtocolAdapter =>
+      'Zündung, Protokoll oder Adapterfähigkeit prüfen. Stille ist kein Beweis, dass das Fahrzeug kein OBD hat.';
+
+  @override
+  String get connectionFailureRetryOrAuto =>
+      'Erneut versuchen oder das Protokoll auf Auto setzen.';
+
+  @override
+  String get connectionFailureKeepInvalidAndExport =>
+      'Die Antwort ist ungültig. Ungültig lassen und die begrenzte Diagnose exportieren; das ist keine Messung.';
 }

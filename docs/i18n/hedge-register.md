@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-63 entries. Every entry that names a **Shipped as** key is checked against the shipped
+66 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -739,3 +739,33 @@ maintainer.
 **Shipped as** `pidFormulaTimeWindowUnsupported` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/pids/pid_formula_copy.dart:70`, the PID editor sentence when a formula writes `AVG`, `TDLY` or `TOT`. Softened to 'delay or average' it gives TOT the wrong meaning: Torque's TOT is a totalizer. Softened to 'not supported' it hides that AVG is not MIN/MAX and TDLY is not 0. MIN, MAX, 0 and totalizer stay those tokens in every language.
+
+### 64. 適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。
+
+**繁體中文** — 適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。
+
+**English** — The adapter may be out of range or unpowered. That is a possible cause, not a finding.
+
+**Shipped as** `connectionFailureCheckDistanceOrPower` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/connect/connection_failure_copy.dart:14`, Connect action when the phone cannot reach the adapter. Softened to 'the adapter is dead' it is a finding the evidence does not support. Distance and power stay possible causes.
+
+### 65. 請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。
+
+**繁體中文** — 請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。
+
+**English** — Check the ignition, the protocol, or the adapter's capability. Silence is not proof the vehicle has no OBD.
+
+**Shipped as** `connectionFailureCheckIgnitionProtocolAdapter` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/connect/connection_failure_copy.dart:16`, Connect action when the adapter is up and the ECU is silent. Softened to 'this car has no OBD' it is a finding AT commands cannot make. OBD stays that token.
+
+### 66. 這筆回應無效。維持無效並匯出有限診斷；它不是讀數。
+
+**繁體中文** — 這筆回應無效。維持無效並匯出有限診斷；它不是讀數。
+
+**English** — The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.
+
+**Shipped as** `connectionFailureKeepInvalidAndExport` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/connect/connection_failure_copy.dart:19`, Connect action on DATA ERROR or a malformed handshake reply. Softened to a sensor value it is a plausible wrong number. Invalid stays invalid.

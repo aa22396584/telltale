@@ -4408,4 +4408,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectionLayerKwpSubtypeUnknown =>
       'KWP, 5-baud vs fast not distinguished';
+
+  @override
+  String get connectionFailureOpenSettings => 'Open system settings.';
+
+  @override
+  String get connectionFailureTurnRadioOn => 'Turn Bluetooth on.';
+
+  @override
+  String get connectionFailureCheckDistanceOrPower =>
+      'The adapter may be out of range or unpowered. That is a possible cause, not a finding.';
+
+  @override
+  String get connectionFailureCheckIgnitionProtocolAdapter =>
+      'Check the ignition, the protocol, or the adapter\'s capability. Silence is not proof the vehicle has no OBD.';
+
+  @override
+  String get connectionFailureRetryOrAuto =>
+      'Retry, or set the protocol to Auto.';
+
+  @override
+  String get connectionFailureKeepInvalidAndExport =>
+      'The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.';
 }

@@ -1137,5 +1137,11 @@
   "connectionLayerClassic": "藍牙 Classic",
   "connectionLayerWifi": "無線網路",
   "connectionLayerRequestedObserved": "要求 {requested}，實際 {observed}",
-  "connectionLayerKwpSubtypeUnknown": "KWP，5-baud 與 fast 無法分辨"
+  "connectionLayerKwpSubtypeUnknown": "KWP，5-baud 與 fast 無法分辨",
+  "connectionFailureOpenSettings": "開啟系統設定。",
+  "connectionFailureTurnRadioOn": "請開啟藍牙。",
+  "connectionFailureCheckDistanceOrPower": "適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。",
+  "connectionFailureCheckIgnitionProtocolAdapter": "請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。",
+  "connectionFailureRetryOrAuto": "請重試，或把協定設成 Auto。",
+  "connectionFailureKeepInvalidAndExport": "這筆回應無效。維持無效並匯出有限診斷；它不是讀數。"
 }
