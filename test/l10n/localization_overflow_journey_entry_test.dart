@@ -39,6 +39,7 @@ void main() {
     expect(source.contains('_revealLazyDashboard'), isTrue);
     expect(source.contains('locale_english'), isTrue);
     expect(source.contains('locale_german'), isTrue);
+    expect(source.contains('_tapLocaleOnSettings'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);
