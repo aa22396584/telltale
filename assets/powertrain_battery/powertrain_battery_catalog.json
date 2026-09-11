@@ -8816,7 +8816,8 @@
         "Exact-length contract verified against pinned MY2024/MY2025 captures: 220101 declares 0x3E (59-byte payload), 220105 declares 0x2E (43-byte payload) from responder 7EC.",
         "Pack current is installed as SIGNED against the OBDb signalset's unsigned marking: the signalset's own capture expectation of 6540.2 A on frame FF 7A is physically absurd, while signed gives -13.4 A. Promotion to community must re-verify the sign against an independent source.",
         "Pack voltage bounds inherit the E-GMP family physics limits; the EV9 pack topology (99.8 kWh, ~552 V nominal) is not pinned by the source. Captures observed 534.5-611.1 V, comfortably inside the bounds.",
-        "Battery inlet temperature and the 0105 offset-28 deterioration signal are excluded (family decode disagreement / intra-OBDb semantic contradiction)."
+        "Battery inlet temperature and the 0105 offset-28 deterioration signal are excluded (family decode disagreement / intra-OBDb semantic contradiction).",
+        "2026-09-11 re-evaluation: OBDb/Kia-EV9 HEAD is still 85d8cff25e849a6e421cda20cbadfd4630fe85e7; signalset SHA-256 is unchanged at dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975; MY2024/MY2025 220101/220105 capture hashes and generations.yaml are unchanged. Official OVMS HEAD is still 85074a0ae7a983b308c6e2e081185492527ee073 (99 components: Kia Niro EV and Soul EV, no EV9). meatpiHQ/wican-fw vehicle_profiles/kia has ev6/niro/soul and no ev9.json. iternio/ev-obd-pids has no EV9 file. The unsigned OBDb capture expectation of 6540.2 A on 0xFF7A remains; the shipped SIGNED decode is still -13.4 A. Disposition remains RETAIN EXPERIMENTAL; year_from/year_to stay 2024–2025."
       ],
       "status": "experimental",
       "evidence": "sourceBacked",

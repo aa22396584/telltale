@@ -273,6 +273,12 @@ real-car captures:
 All licensed evidence is one organization, so the subset stays experimental:
 it may be installed as unverified PIDs and is not community-corroborated.
 
+2026-09-11 re-evaluation: `OBDb/Kia-EV9` HEAD is unchanged at
+`85d8cff25e849a6e421cda20cbadfd4630fe85e7`. Official OVMS
+`85074a0ae7a983b308c6e2e081185492527ee073` still has no EV9 module.
+`meatpiHQ/wican-fw` has no `ev9.json`. Pack current remains the signed
+repair of OBDb's unsigned 6540.2 A capture expectation.
+
 ### MG4 Electric community corroboration
 
 - `OBDb/MG-MG4`, pinned at `271f098e5020ca0be109db68dc277d7bfa962c1e`;

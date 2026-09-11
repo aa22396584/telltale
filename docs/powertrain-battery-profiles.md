@@ -243,6 +243,25 @@ out rather than corrupting values. Hyundai Ioniq Electric was researched but
 ships nothing — no licensed source provides exact payload-length evidence for
 its Mode 21 block.
 
+### Kia EV9 (E-GMP) — experimental
+
+Capture-verified Mode 22 map on `7E4`/`7EC`: `220101` (59-byte payload) and
+`220105` (43-byte payload). Pack current ships **signed** because OBDb's
+signalset marks the byte pair unsigned and then expects 6540.2 A on frame
+`FF 7A`; signed decode is −13.4 A. Only one licensed family (OBDb) lists
+the EV9, so the entry stays experimental. Mode 22 means it may be installed
+as unverified PIDs; it is not community-corroborated. Battery inlet
+temperature and the `0105` offset-28 deterioration signal stay excluded.
+
+2026-09-11 re-evaluation: the OBDb signalset hash is unchanged at HEAD
+`85d8cff25e849a6e421cda20cbadfd4630fe85e7`. Official
+`openvehicles/Open-Vehicle-Monitoring-System-3` HEAD is still
+`85074a0ae7a983b308c6e2e081185492527ee073` and has no EV9 module.
+`meatpiHQ/wican-fw` `vehicle_profiles/kia` has EV6/Niro/Soul and no
+`ev9.json`. `iternio/ev-obd-pids` has no EV9 file. The unsigned 6540.2 A
+capture expectation is unchanged. Disposition remains RETAIN EXPERIMENTAL;
+`year_from`/`year_to` stay 2024–2025.
+
 ### Lexus RX450hL — experimental
 
 The executable subset is limited to the pinned
