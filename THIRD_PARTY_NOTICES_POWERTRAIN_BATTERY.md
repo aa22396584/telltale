@@ -58,6 +58,15 @@ years 2021–2022, and unresolved PID `98` are excluded. The 2026-09
 cross-source review found no independent confirmation of the claimed byte
 windows, so the subset is one-shot experimental only and cannot be installed.
 
+2026-09-11 re-evaluation: `NathanNam/obd2-logger` HEAD is unchanged at
+`f93d7a0afb1cfb8aff9681a7db33db46d55804a2`. Consulted disagreeing family:
+`Ircama/ELM327-emulator@73873172ecc162455fe5278b87f9b274e836927b`
+`elm/obd_message.py` SHA-256
+`dacc06ec40d56435324738a6ba0255929253e853d3c19d053ba9b460065e6f97`
+(`2161`/`2162` MG temperature, `2195` internal resistance). Official OVMS
+has no Lexus/RX module. Ircama is CC BY-NC-SA 4.0 and is not copied into
+the executable map.
+
 ### Chevrolet Bolt metadata
 
 - `iternio/ev-obd-pids`, pinned at
