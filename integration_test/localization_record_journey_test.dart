@@ -84,5 +84,38 @@ void main() {
       reason: 'dashboard recorder did not show Start recording after switching language',
     );
     expect(find.text('開始紀錄'), findsNothing);
+
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Dashboard');
+    final germanStart = await pumpUntil(
+      tester,
+      () => find.text('Aufnahme starten').evaluate().isNotEmpty,
+    );
+    expect(
+      germanStart,
+      isTrue,
+      reason:
+          'dashboard recorder did not show Aufnahme starten after switching to German',
+    );
+    expect(find.text('Start recording'), findsNothing);
+    expect(find.text('開始紀錄'), findsNothing);
   });
 }

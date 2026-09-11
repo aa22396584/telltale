@@ -103,5 +103,27 @@ void main() {
       reason: 'Settings did not show Disconnect on SettingsScreen after language switch',
     );
     expect(_disconnectOnSettings('中斷連線'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: _settingsVerticalScrollable(),
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final german = _disconnectOnSettings('Trennen');
+    await tester.scrollUntilVisible(
+      german,
+      -400,
+      scrollable: _settingsVerticalScrollable(),
+    );
+    expect(
+      german.hitTestable(),
+      findsOneWidget,
+      reason: 'Settings did not show Trennen after switching to German',
+    );
+    expect(_disconnectOnSettings('Disconnect'), findsNothing);
+    expect(_disconnectOnSettings('中斷連線'), findsNothing);
   });
 }
