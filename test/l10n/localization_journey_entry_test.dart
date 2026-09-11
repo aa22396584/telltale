@@ -26,8 +26,10 @@ void main() {
     expect(source.contains('connect_language_entry'), isTrue);
     expect(source.contains('locale_english'), isTrue);
     expect(source.contains('locale_traditionalChinese'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('Choose a connection'), isTrue);
     expect(source.contains('選擇連線方式'), isTrue);
+    expect(source.contains('Wählen Sie eine Verbindung aus'), isTrue);
     expect(source.contains('connectDemoRig'), isTrue);
     expect(source.contains('Navigator.of'), isTrue);
     expect(source.contains('.pop()'), isTrue);
@@ -50,6 +52,7 @@ void main() {
       expect(source.contains('find.byType(ListTile).first'), isFalse);
       expect(source.contains('中斷連線'), isTrue);
       expect(source.contains('Disconnect'), isTrue);
+      expect(source.contains('Trennen'), isTrue);
       expect(source.contains('TelemetryExportSheet'), isFalse);
       expect(source.contains('ConnectionPhase.connected'), isTrue);
       final demoCall = source.indexOf('await connectDemoRig(tester');
