@@ -17,7 +17,7 @@ Pinned 2026-09-11 against the live EEA Datahub.
 | Record UUID | `b4044b06-2e6b-4f8e-a6e6-66e0e98bb0dd` |
 | DOI | https://doi.org/10.2909/b4044b06-2e6b-4f8e-a6e6-66e0e98bb0dd |
 | SQL table | `[CO2Emission].[latest].[co2cars_2025Pv31]` |
-| Published | 2025-06-25 (Datahub “Published: 25 Jun 2026”) |
+| Published | 2026-06-25 (Datahub “Published: 25 Jun 2026”; [EEA press release](https://www.eea.europa.eu/en/newsroom/news/average-co2-emissions-from-new-cars-and-vans-significantly-decreased-in-2025) the same calendar day for 2025 provisional cars) |
 | Series last modified | 2026-08-19 |
 | Status | `P` = provisional (`Version_file` `v31`) |
 | Table definition | `Table-definition-cars-2025-Provisional.xlsx` SHA-256 `aa9caf445886466cec99e56da80316c92c0ff19bf23b0a98480f7ba61f2112b3` size 20765 |

@@ -26,6 +26,12 @@ void main() {
       contains('aa9caf445886466cec99e56da80316c92c0ff19bf23b0a98480f7ba61f2112b3'),
     );
     expect(characterization, contains('CC BY 4.0'));
+    expect(characterization, contains('| Published | 2026-06-25'));
+    expect(
+      characterization,
+      isNot(contains('2025-06-25')),
+      reason: 'publication is 2026-06-25; 2025 is the monitoring year, not the pin date',
+    );
     expect(characterization, contains('Do not bundle'));
   });
 
