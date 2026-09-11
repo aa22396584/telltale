@@ -51,6 +51,23 @@ void main() {
     expect(code.contains('session.client?.transcript.recordNote'), isFalse);
   });
 
+  test('dtc_scan whole-vehicle unresolved identity carries the set', () {
+    final code = _code('lib/state/dtc_scan.dart');
+    final source = File('lib/state/dtc_scan.dart').readAsStringSync();
+    expect(code.contains('session.openIdentityQuestions'), isTrue);
+    expect(code.contains('session.engine?.openIdentityQuestions'), isFalse);
+    expect(
+      code.contains('unresolvedSources: Set.unmodifiable(unresolved)'),
+      isTrue,
+    );
+    expect(
+      source.contains('There are \${unresolved.length}'),
+      isFalse,
+      reason: 'count in a full English sentence is what the panel used to '
+          'drop, leaving only the generic no-answer kind',
+    );
+  });
+
   test('the category panel does not interpolate DtcReadException.message', () {
     final code = _code('lib/ui/screens/dtc/dtc_screen.dart');
     expect(code.contains('failure.message'), isFalse);

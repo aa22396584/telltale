@@ -11,6 +11,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:torque_obd/l10n/generated/app_localizations_en.dart';
 import 'package:torque_obd/obd/dtc/dtc.dart';
 import 'package:torque_obd/obd/freeze_frame.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
@@ -19,6 +20,7 @@ import 'package:torque_obd/obd/readiness.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/dtc_scan.dart';
 import 'package:torque_obd/state/obd_session.dart';
+import 'package:torque_obd/ui/screens/dtc/dtc_copy.dart';
 
 const _misfire = Dtc(
   code: 'P0301',
@@ -225,6 +227,37 @@ void main() {
     });
   });
 
+  group('unresolved identity is structured for the panel', () {
+    test('scan carries unresolvedSources so copy maps ARB, not kind fallback',
+        () async {
+      // scan() really asks session.openIdentityQuestions after every category
+      // has staged. The screen maps unresolvedSources; interpolating a full
+      // English sentence into DtcReadException.message and omitting the set
+      // is how an English reader was shown the generic "no answer" while the
+      // transcript held the only copy of the addresses.
+      late _UnresolvedIdentity built;
+      final container = ProviderContainer(overrides: [
+        obdSessionProvider.overrideWith(() => built = _UnresolvedIdentity()),
+      ]);
+      addTearDown(container.dispose);
+
+      await container.read(dtcScanProvider.notifier).scan();
+      final failure =
+          container.read(dtcScanProvider).results[DtcKind.stored]!.failure;
+      expect(failure, isNotNull);
+      expect(failure!.unresolvedSources, {'18'});
+      expect(failure.message, contains('unrecognised addresses: 18'));
+      expect(failure.message.contains('There are'), isFalse);
+      final en = AppLocalizationsEn();
+      expect(
+        dtcCategoryFailureText(en, failure),
+        en.dtcCategoryUnresolvedSources(1, '18'),
+      );
+      expect(built.readDtcsCalls, greaterThan(0),
+          reason: 'produced by the real scan, not a hand-built exception');
+    });
+  });
+
   group('MIL disagreement is transcript-only English', () {
     test('a count mismatch keeps the engine sentence off the Chinese screen',
         () async {
@@ -264,6 +297,12 @@ class _NoCodes extends _ScriptedSession {
     readDtcsCalls++;
     return const [];
   }
+}
+
+/// A named reply the scan could not attribute to a controller.
+class _UnresolvedIdentity extends _ScriptedSession {
+  @override
+  Set<String> get openIdentityQuestions => const {'18'};
 }
 
 /// PID 01 claims two confirmed codes; Mode 03 only returns one.
