@@ -80,12 +80,12 @@ json/dict. These numbers do **not** accept an aggregation contract.
 | --- | --- |
 | `SELECT COUNT(*) AS n` | **10833597** (reconfirmed) |
 | Sample row | Hyundai i20, `M (kg)` 1140, `Mt` 1237, `Ep (KW)` 74, `R` 1, `Dr` 2025-08-13 |
-| `COUNT(DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)])` | **66736** |
-| `COUNT(DISTINCT TAN, Ft, [Ec (cm3)])` | **17063** |
-| `COUNT(DISTINCT Mh, Cn, T, Va, Ve, Ft, [Ec (cm3)], Year)` | **63841** |
-| `COUNT(DISTINCT Mk, Cn, Ft)` | **10067** |
+| `SELECT COUNT(*) AS n FROM (SELECT DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)] FROM …) AS d` | **66736** |
+| `SELECT COUNT(*) AS n FROM (SELECT DISTINCT TAN, Ft, [Ec (cm3)] FROM …) AS d` | **17063** |
+| `SELECT COUNT(*) AS n FROM (SELECT DISTINCT Mh, Cn, T, Va, Ve, Ft, [Ec (cm3)], Year FROM …) AS d` | **63841** |
+| `SELECT COUNT(*) AS n FROM (SELECT DISTINCT Mk, Cn, Ft FROM …) AS d` | **10067** |
 | `SELECT TOP 1000 *` JSON body | 693 460 bytes in 2.6 s |
-| Full-table JSON size (linear from that TOP 1000) | **7 512 666 176 bytes** (~7.51 GiB) — estimate, not a local dump |
+| Full-table JSON size (linear from that TOP 1000) | **7 512 666 176 bytes** (~7.00 GiB / ~7.51 GB decimal) — estimate, not a local dump |
 | Canada snapshot (for scale) | 12 971 rows / 1.6 MB |
 
 Homologation-tuple prototype (not a catalog, not reviewed for identity):
@@ -109,7 +109,7 @@ The first DISTINCT row is `Mk=''`, `Cn=''`, `T=''`, `Va=''`, `Ve=''`,
 this key as a configuration identity.
 
 Parser memory of the **full 10 833 597-row registration table** as a local
-file remains **not-run**: that dump was not downloaded. The 7.51 GiB JSON
+file remains **not-run**: that dump was not downloaded. The ~7.00 GiB JSON
 estimate and the Canada-scale comparison are why it stays off
 `assets/vehicle_catalog/`. On-device lookup of 10.8 million registration
 rows is still rejected. The 28.8 ns figure is only the 66 736-key

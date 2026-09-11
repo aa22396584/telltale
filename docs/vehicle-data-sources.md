@@ -188,9 +188,9 @@ provisional table `[CO2Emission].[latest].[co2cars_2025Pv31]` (DOI
 
 That table is **registration-oriented**. It is not bundled. A 2026-09-11
 Discodata measurement counted 66 736 distinct
-`(Mk, Cn, T, Va, Ve, Ft, Ec)` tuples and estimated ~7.51 GiB for the
-full-table JSON; those numbers do not accept an aggregate and do not
-change the no-bundle decision. `M (kg)` is mass
+`(Mk, Cn, T, Va, Ve, Ft, Ec)` tuples and estimated ~7.00 GiB
+(7 512 666 176 bytes) for the full-table JSON; those numbers do not
+accept an aggregate and do not change the no-bundle decision. `M (kg)` is mass
 in running order, `Mt` is WLTP test mass, and `Ep (KW)` is engine power —
 three different source attributes, none of them curb mass or wheel
 horsepower. The monitoring table has no VIN column; the separate Article 12

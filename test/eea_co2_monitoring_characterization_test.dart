@@ -69,6 +69,18 @@ void main() {
     expect(characterization, contains('7 330 901'));
     expect(characterization, contains('28.8 ns'));
     expect(characterization, contains('7 512 666 176 bytes'));
+    expect(characterization, contains('~7.00 GiB'));
+    expect(
+      characterization,
+      contains(
+        'SELECT COUNT(*) AS n FROM (SELECT DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)] FROM …) AS d',
+      ),
+      reason: 'SQL Server COUNT(DISTINCT) takes one expression; the derived table is what was run',
+    );
+    expect(
+      characterization,
+      isNot(contains('COUNT(DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)])')),
+    );
     expect(
       characterization,
       contains(
