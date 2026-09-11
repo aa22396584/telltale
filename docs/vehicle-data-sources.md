@@ -180,12 +180,19 @@ python3 -m unittest discover -s test/tool -p 'test_update_ca_vehicle_catalog.py'
 ### European Environment Agency CO2 monitoring
 
 The EEA publishes official
-[CO2 monitoring data for new passenger cars](https://www.eea.europa.eu/en/datahub/datahubitem-view/fa8b1229-3db6-495d-b18e-9c9b3267c02b)
-reported under Regulation (EU) 2019/631. It covers new registrations in the
-reporting European countries and includes homologation-oriented fields such as
-manufacturer, type/variant/version, emissions, mass, engine capacity, and power.
-It is annual registration/compliance data, not an all-years global catalog;
-reported identifiers and variants require careful market-specific matching.
+[CO2 monitoring data for new passenger cars](https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-18)
+reported under Regulation (EU) 2019/631. Stage C of #331 pinned the 2025
+provisional table `[CO2Emission].[latest].[co2cars_2025Pv31]` (DOI
+[10.2909/b4044b06-2e6b-4f8e-a6e6-66e0e98bb0dd](https://doi.org/10.2909/b4044b06-2e6b-4f8e-a6e6-66e0e98bb0dd),
+10 833 597 rows, CC BY 4.0 via the [EEA legal notice](https://www.eea.europa.eu/legal/copyright)).
+
+That table is **registration-oriented**. It is not bundled. `M (kg)` is mass
+in running order, `Mt` is WLTP test mass, and `Ep (KW)` is engine power —
+three different source attributes, none of them curb mass or wheel
+horsepower. The monitoring table has no VIN column; the separate Article 12
+real-world product does, and must not be fetched. The full characterization
+and the no-bundle decision are in
+[`docs/catalog/eea-2019-631-characterization.md`](catalog/eea-2019-631-characterization.md).
 
 ### Japan Ministry of Land, Infrastructure, Transport and Tourism
 
