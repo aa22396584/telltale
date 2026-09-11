@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../diagnostics/availability.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../obd/pid/pid.dart';
+import '../../../obd/telemetry.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_profile.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_catalog.dart';
 import '../../../obd/powertrain_battery/powertrain_battery_probe.dart';
@@ -16,6 +19,7 @@ import '../../../state/pid_registry.dart';
 import '../../../state/powertrain_battery_profiles.dart';
 import '../../../state/powertrain_battery_experiments.dart';
 import '../../widgets/panel.dart';
+import '../../widgets/status/datum_status_copy.dart';
 import 'pid_mutation_copy.dart';
 import 'powertrain_battery_copy.dart';
 
@@ -134,7 +138,7 @@ class _PowertrainBatteryCatalogScreenState
         commandKey: command.wireKey,
         vehicleYear: year,
       );
-      if (mounted) await _showProbeResult(result);
+      if (mounted) await _showProbeResult(result, profile.status);
     } on PowertrainProbeRefusedException catch (refused) {
       // Caught before the arm below, and deliberately not reported to
       // `FlutterError`. A refusal is an outcome this code chose — not
@@ -510,62 +514,14 @@ class _PowertrainBatteryCatalogScreenState
 
   Future<void> _showProbeResult(
     PowertrainBatteryProbeResult result,
+    PowertrainProfileStatus profileStatus,
   ) => showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(
-        result.passed
-            ? AppLocalizations.of(context).powertrainProbePassedTitle
-            : AppLocalizations.of(context).powertrainProbeRefusedTitle,
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'catalog ${result.catalogSha256.substring(0, 12)}…\n'
-              'source ${result.sourceRevision.substring(0, 12)}…\n'
-              'TX ${result.command?.requestHeader ?? '—'} '
-              '${result.command?.modeAndIdentifier ?? '—'}\n'
-              'RX ${result.responder ?? '—'}',
-            ),
-            const SizedBox(height: Spacing.sm),
-            if (result.rawResponseBytes.isNotEmpty)
-              SelectableText(
-                'RAW ${_hex(result.rawResponseBytes)}',
-                key: const Key('powertrain_probe_raw_result'),
-              ),
-            if (result.passed) ...[
-              const SizedBox(height: Spacing.sm),
-              Text(AppLocalizations.of(context).powertrainProbeChecksPassed),
-              for (final reading in result.readings)
-                Text(
-                  '${reading.signal.name}: ${reading.value} '
-                  '${reading.signal.unit} · bytes ${_hex(reading.rawBytes)}',
-                ),
-            ] else ...[
-              const SizedBox(height: Spacing.sm),
-              Text('${result.failure?.name}: ${result.detail}'),
-              Text(
-                AppLocalizations.of(context).powertrainProbeNoValuePublished,
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(AppLocalizations.of(context).powertrainClose),
-        ),
-      ],
+    builder: (context) => PowertrainProbeResultDialog(
+      result: result,
+      profileStatus: profileStatus,
     ),
   );
-
-  static String _hex(Iterable<int> bytes) => bytes
-      .map((byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
-      .join(' ');
 
   void _snack(String message) {
     if (!mounted) return;
@@ -946,6 +902,122 @@ class _ProfileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The one-shot probe's numeric surface. Successful decodes are never a
+/// bare number: every value here is labelled with the same badges the
+/// dashboard uses for that profile's evidence kind.
+class PowertrainProbeResultDialog extends StatelessWidget {
+  const PowertrainProbeResultDialog({
+    super.key,
+    required this.result,
+    required this.profileStatus,
+  });
+
+  final PowertrainBatteryProbeResult result;
+  final PowertrainProfileStatus profileStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(
+        result.passed
+            ? l10n.powertrainProbePassedTitle
+            : l10n.powertrainProbeRefusedTitle,
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'catalog ${result.catalogSha256.substring(0, 12)}…\n'
+              'source ${result.sourceRevision.substring(0, 12)}…\n'
+              'TX ${result.command?.requestHeader ?? '—'} '
+              '${result.command?.modeAndIdentifier ?? '—'}\n'
+              'RX ${result.responder ?? '—'}',
+            ),
+            const SizedBox(height: Spacing.sm),
+            if (result.rawResponseBytes.isNotEmpty)
+              SelectableText(
+                'RAW ${_probeHex(result.rawResponseBytes)}',
+                key: const Key('powertrain_probe_raw_result'),
+              ),
+            if (result.passed) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(
+                powertrainProbeResultBadgeText(
+                  l10n,
+                  profileStatus,
+                  result: result,
+                ),
+                key: const Key('powertrain_probe_unverified_stamp'),
+              ),
+              Text(l10n.powertrainProbeChecksPassed),
+              for (final reading in result.readings)
+                Text(
+                  '${reading.signal.name}: ${reading.value} '
+                  '${reading.signal.unit} · bytes ${_probeHex(reading.rawBytes)}',
+                ),
+            ] else ...[
+              const SizedBox(height: Spacing.sm),
+              Text('${result.failure?.name}: ${result.detail}'),
+              Text(l10n.powertrainProbeNoValuePublished),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.powertrainClose),
+        ),
+      ],
+    );
+  }
+}
+
+String _probeHex(Iterable<int> bytes) => bytes
+    .map((byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
+    .join(' ');
+
+/// Badge line for a successful one-shot decode, joined the same way the
+/// dashboard joins [datumBadgeText].
+///
+/// [result] must be the successful probe: without a [Reading],
+/// [AvailabilityPolicy.forPid] takes the no-reading path and stamps
+/// `Partial` on a decode the dialog already presented as passed.
+String powertrainProbeResultBadgeText(
+  AppLocalizations l10n,
+  PowertrainProfileStatus status, {
+  required PowertrainBatteryProbeResult result,
+}) {
+  final probeReading = result.readings.isEmpty ? null : result.readings.first;
+  final commandPid = Pid(
+    name: 'probe',
+    shortName: 'probe',
+    modeAndPid: result.command?.modeAndIdentifier ?? '0100',
+    equation: 'A',
+    minValue: probeReading?.signal.minValue ?? 0,
+    maxValue: probeReading?.signal.maxValue ?? 100,
+    units: probeReading?.signal.unit ?? '',
+    evidenceKind: status.name,
+  );
+  return datumBadgeText(
+    l10n,
+    AvailabilityPolicy.forPid(
+      pid: commandPid,
+      reading: probeReading == null
+          ? null
+          : Reading(
+              pid: commandPid,
+              value: probeReading.value,
+              rawBytes: probeReading.rawBytes,
+              timestamp: result.capturedAt,
+            ),
+    ),
+  );
 }
 
 /// Provenance and installability copy, keyed off the catalog enums.

@@ -241,6 +241,71 @@ void main() {
     },
   );
 
+  test(
+    'experimental evidence survives CSV and JSON and never upgrades to fieldVerified',
+    () {
+      final experimental = _signal(
+        id: 'exp-soc',
+        name: 'Pack SOC',
+        request: '01 5B',
+        isCustom: false,
+        maximum: 100,
+        evidenceKind: 'experimental',
+      );
+      final header = TelemetrySessionHeader(
+        sessionId: '0123456789abcdef0123456789abcdef',
+        startedAtUtc: DateTime.utc(2026),
+        source: TelemetrySource.fieldAppConnection,
+        transport: TransportKind.bluetoothLe,
+        protocol: 'AUTO',
+        signals: [experimental],
+      );
+      final events = <TelemetryEvent>[
+        TelemetryEvent.value(
+          observedAtUtc: DateTime.utc(2026),
+          sourceTimestampUtc: DateTime.utc(2026),
+          elapsedUs: 0,
+          pidId: experimental.definition.id,
+          value: 50,
+        ),
+      ];
+      final prefix = TelemetrySessionCodec.encodePrefix(header, events);
+      final session = TelemetrySession(
+        header: header,
+        events: events,
+        footer: TelemetrySessionFooter(
+          endedAtUtc: DateTime.utc(2026, 1, 1, 0, 1),
+          terminalReason: TelemetryTerminalReason.user,
+          valueCount: 1,
+          statusCount: 0,
+          gapCount: 0,
+          bytesBeforeFooter: prefix.length,
+        ),
+      );
+
+      final csv = TelemetryExportCodec.encodeCsv(session);
+      final experimentalRows = csv
+          .split('\r\n')
+          .where((line) => line.contains('exp-soc') && !line.startsWith('#'))
+          .toList();
+      expect(experimentalRows, isNotEmpty);
+      for (final row in experimentalRows) {
+        expect(row, contains(',experimental,'));
+        expect(row, isNot(contains('fieldVerified')));
+      }
+      expect(csv, isNot(contains('fieldVerified')));
+      final json = utf8.decode(TelemetryExportCodec.encodeJson(session));
+      expect(json, contains('"evidence":"experimental"'));
+      expect(json, isNot(contains('"evidence":"fieldVerified"')));
+      final status = AvailabilityPolicy.forRecordedEvent(
+        definition: experimental.definition,
+        event: events.single,
+      );
+      expect(status.evidence, EvidenceKind.experimental);
+      expect(status.evidence, isNot(EvidenceKind.fieldVerified));
+    },
+  );
+
   test('derived estimates export as 估算 with formula', () {
     const profile = VehicleProfile(massKg: 1280);
     final hp = freezePidDefinition(

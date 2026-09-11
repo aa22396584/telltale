@@ -1574,7 +1574,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String powertrainCatalogCounts(int profiles, int probeable) {
-    return 'Profiles: $profiles · Experimental one-shot reads: $probeable';
+    return 'Profiles: $profiles · One-shot reads: $probeable';
   }
 
   @override
@@ -1594,7 +1594,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get powertrainCatalogScopeNote =>
-      'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.';
+      'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command. Mode 22 experimental entries may be installed and polled, but every value is labelled unverified; Mode 21 experimental is read once per confirmation.';
 
   @override
   String get powertrainCatalogSearchHint =>

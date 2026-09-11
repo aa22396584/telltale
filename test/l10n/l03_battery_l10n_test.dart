@@ -54,6 +54,8 @@ const _secondarySha =
     '2222222222222222222222222222222222222222222222222222222222222222';
 const _experimentalSha =
     '3333333333333333333333333333333333333333333333333333333333333333';
+const _experimentalMode22Sha =
+    '4444444444444444444444444444444444444444444444444444444444444444';
 const _revision = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 Map<String, Object?> _source({
@@ -178,6 +180,45 @@ final _catalogJson = jsonEncode({
       ],
     },
     {
+      // Mode 22 experimental may install and poll; the pill must stay
+      // distinct from the Mode 21 probe-only row above.
+      'id': 'experimental-bev',
+      'display_name': 'Example Experimental BEV',
+      'description': 'Pollable experimental decode, labelled unverified.',
+      'limitations': ['No independent corroboration; unverified on this vehicle.'],
+      'status': 'experimental',
+      'evidence': 'sourceBacked',
+      'market': 'Synthetic laboratory',
+      'make': 'Example',
+      'model': 'Experimental BEV',
+      'year_from': 2022,
+      'year_to': 2022,
+      'variant': 'fixture-v1',
+      'powertrain': 'BEV',
+      'identity_evidence': {
+        'market': 'exact',
+        'year': 'exact',
+        'model': 'exact',
+        'variant': 'exact',
+      },
+      'source': _source(
+        name: 'Capture archive',
+        path: 'captures/mode22.json',
+        sha: _experimentalMode22Sha,
+        locator: '22B046',
+      ),
+      'commands': [
+        {
+          'request_header': '781',
+          'expected_responder': '789',
+          'mode': '22',
+          'identifier': 'B046',
+          'payload_length': 2,
+          'signals': [_signal('raw-soc', 'Raw SOC')],
+        },
+      ],
+    },
+    {
       'id': 'research-phev',
       'display_name': 'Example Research PHEV',
       'description': 'Identity index with no executable command.',
@@ -209,9 +250,9 @@ String get _manifestJson => jsonEncode({
   'catalog_file': 'powertrain_battery_catalog.json',
   'sha256': PowertrainBatteryCatalogAsset.sha256Hex(utf8.encode(_catalogJson)),
   'size_bytes': utf8.encode(_catalogJson).length,
-  'profile_count': 3,
-  'signal_count': 2,
-  'counts_by_powertrain': {'BEV': 1, 'HEV': 1, 'PHEV': 1},
+  'profile_count': 4,
+  'signal_count': 3,
+  'counts_by_powertrain': {'BEV': 2, 'HEV': 1, 'PHEV': 1},
 });
 
 PowertrainBatteryCatalogSnapshot get _snapshot =>
@@ -312,6 +353,7 @@ void main() {
 
   final en = lookupAppLocalizations(englishLocale);
   final zh = lookupAppLocalizations(traditionalChineseLocale);
+  final de = lookupAppLocalizations(germanLocale);
 
   group('English fits a phone-width card', () {
     testWidgets('the whole screen lays out at 360dp', (tester) async {
@@ -404,6 +446,14 @@ void main() {
       // The list, then each tier on its own: the list virtualizes, so a card
       // that never scrolls into view is never swept.
       expect(find.text('Example Community BEV'), findsOneWidget);
+      expect(find.text('Profiles: 4 · One-shot reads: 3'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'Mode 22 experimental entries may be installed and polled, '
+          'but every value is labelled unverified',
+        ),
+        findsOneWidget,
+      );
       _expectNoChinese(tester, 'the catalog list');
       for (final tier in ['Research', 'Experimental', 'Community']) {
         await _search(tester, tier);
@@ -427,7 +477,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The one-shot laboratory: command chooser, then the consent dialog.
-      await _search(tester, 'Experimental');
+      await _search(tester, 'Example Experimental HEV');
       final probe = find.byKey(const Key('powertrain_probe_experimental-hev'));
       await tester.ensureVisible(probe);
       await tester.tap(probe);
@@ -469,6 +519,34 @@ void main() {
       expect(find.text(en.powertrainNoMatchTitle), findsOneWidget);
       _expectNoChinese(tester, 'the empty search result');
     });
+
+    testWidgets(
+      'Mode 22 experimental install dialog names unverified on this vehicle',
+      (tester) async {
+        final container = await _pump(tester, locale: englishLocale);
+        addTearDown(container.dispose);
+        await _search(tester, 'Example Experimental BEV');
+        expect(find.text('Experimental · unverified'), findsOneWidget);
+        await tester.ensureVisible(
+          find.byKey(const Key('powertrain_install_experimental-bev')),
+        );
+        await tester.tap(
+          find.byKey(const Key('powertrain_install_experimental-bev')),
+        );
+        await tester.pumpAndSettle();
+        final disclosure = tester
+            .widget<Text>(
+              find.byKey(const Key('powertrain_install_disclosure')),
+            )
+            .data!;
+        expect(disclosure, contains('unverified on this vehicle'));
+        await tester.tap(find.text(en.powertrainCancel));
+        await tester.pumpAndSettle();
+
+        await _search(tester, 'Example Experimental HEV');
+        expect(find.text('Experimental · read once'), findsOneWidget);
+      },
+    );
   });
 
   group('the Traditional Chinese build keeps its hedges', () {
@@ -492,8 +570,8 @@ void main() {
         find.descendant(of: research, matching: find.text('僅研究，不會查詢')),
         findsOneWidget,
       );
-      // The experimental row is labelled one-shot read-only, not installable.
-      await _search(tester, 'Experimental');
+      // The Mode 21 experimental row is labelled one-shot, not installable.
+      await _search(tester, 'Example Experimental HEV');
       final experimental = find.byKey(
         const Key('powertrain_profile_experimental-hev'),
       );
@@ -502,6 +580,30 @@ void main() {
         find.descendant(of: experimental, matching: find.text('實驗單次唯讀')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('Mode 22 experimental install keeps 本車未驗證', (tester) async {
+      final container = await _pump(tester, locale: traditionalChineseLocale);
+      addTearDown(container.dispose);
+      await _search(tester, 'Example Experimental BEV');
+      final experimental = find.byKey(
+        const Key('powertrain_profile_experimental-bev'),
+      );
+      await tester.ensureVisible(experimental);
+      expect(
+        find.descendant(of: experimental, matching: find.text('實驗 · 未驗證')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const Key('powertrain_install_experimental-bev')),
+      );
+      await tester.pumpAndSettle();
+      final disclosure = tester
+          .widget<Text>(find.byKey(const Key('powertrain_install_disclosure')))
+          .data!;
+      expect(disclosure, contains('本車未驗證'));
+      await tester.tap(find.text(zh.powertrainCancel));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('the install disclosure keeps its per-connection demand', (
@@ -536,7 +638,7 @@ void main() {
         connected: true,
       );
       addTearDown(container.dispose);
-      await _search(tester, 'Experimental');
+      await _search(tester, 'Example Experimental HEV');
       final probe = find.byKey(const Key('powertrain_probe_experimental-hev'));
       await tester.ensureVisible(probe);
       await tester.tap(probe);
@@ -861,6 +963,66 @@ void main() {
       }
       // No thousands separator: a model year is an identifier, not a quantity.
       expect(en.powertrainVehicleYearFixed(2021), isNot(contains('2,021')));
+    });
+
+    test('catalog scope note names Mode 22 poll vs Mode 21 one-shot', () {
+      // Hand-typed. Reading the ARB back into the expectation would agree
+      // with any transposition of Mode 22 and Mode 21.
+      expect(
+        en.powertrainCatalogScopeNote,
+        'The catalog is wide, but “we found data” is not “your car is '
+        'supported”. Research-only entries never carry a command. Mode 22 '
+        'experimental entries may be installed and polled, but every value '
+        'is labelled unverified; Mode 21 experimental is read once per '
+        'confirmation.',
+      );
+      expect(
+        zh.powertrainCatalogScopeNote,
+        '目錄很廣，但「找到資料」不等於「已支援」。僅研究項目永遠沒有指令。'
+        'Mode 22 實驗項目可安裝並輪詢，但每個數值都標為未驗證；'
+        'Mode 21 實驗項目每次確認後只讀一次。',
+      );
+      expect(
+        de.powertrainCatalogScopeNote,
+        'Der Katalog ist umfangreich, doch „wir haben Daten gefunden“ bedeutet '
+        'nicht, dass „Ihr Fahrzeug unterstützt wird“. Einträge, die ausschließlich '
+        'zu Forschungszwecken dienen, enthalten niemals einen Befehl. Mode 22 '
+        'experimental-Einträge dürfen installiert und periodisch gelesen '
+        'werden, jeder Wert wird jedoch als nicht verifiziert gekennzeichnet; '
+        'Mode 21 experimental wird nach jeder Bestätigung einmal gelesen.',
+      );
+      expect(en.powertrainCatalogScopeNote, contains('Mode 22'));
+      expect(en.powertrainCatalogScopeNote, contains('Mode 21'));
+      expect(zh.powertrainCatalogScopeNote, contains('Mode 22'));
+      expect(zh.powertrainCatalogScopeNote, contains('Mode 21'));
+      expect(de.powertrainCatalogScopeNote, contains('Mode 22'));
+      expect(de.powertrainCatalogScopeNote, contains('Mode 21'));
+    });
+
+    test('catalog counts name one-shot reads, not experimental-only', () {
+      expect(
+        en.powertrainCatalogCounts(221, 16),
+        'Profiles: 221 · One-shot reads: 16',
+      );
+      expect(zh.powertrainCatalogCounts(221, 16), '221 個車型 · 16 個可單次讀取');
+      expect(
+        de.powertrainCatalogCounts(221, 16),
+        'Profile: 221 · Einmal-Lesevorgänge: 16',
+      );
+      expect(
+        en.powertrainCatalogCounts(221, 16).toLowerCase(),
+        isNot(contains('experimental one-shot')),
+      );
+    });
+
+    test('experimental pills stay distinct, hand-typed', () {
+      expect(en.powertrainStatusExperimental, 'Experimental · unverified');
+      expect(
+        en.powertrainStatusExperimentalProbeOnly,
+        'Experimental · read once',
+      );
+      expect(zh.powertrainStatusExperimental, '實驗 · 未驗證');
+      expect(zh.powertrainStatusExperimentalProbeOnly, '實驗單次唯讀');
     });
   });
 }

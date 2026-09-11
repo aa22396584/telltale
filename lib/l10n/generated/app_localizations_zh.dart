@@ -1405,7 +1405,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String powertrainCatalogCounts(int profiles, int probeable) {
-    return '$profiles 個車型 · $probeable 個實驗單次唯讀';
+    return '$profiles 個車型 · $probeable 個可單次讀取';
   }
 
   @override
@@ -1422,7 +1422,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get powertrainCatalogScopeNote =>
-      '目錄很廣，但「找到資料」不等於「已支援」。僅研究項目永遠沒有指令；實驗項目也只能逐次確認後讀一條。';
+      '目錄很廣，但「找到資料」不等於「已支援」。僅研究項目永遠沒有指令。Mode 22 實驗項目可安裝並輪詢，但每個數值都標為未驗證；Mode 21 實驗項目每次確認後只讀一次。';
 
   @override
   String get powertrainCatalogSearchHint => '搜尋品牌、車型、版本或市場…';
@@ -5373,7 +5373,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String powertrainCatalogCounts(int profiles, int probeable) {
-    return '$profiles 個車型 · $probeable 個實驗單次唯讀';
+    return '$profiles 個車型 · $probeable 個可單次讀取';
   }
 
   @override
@@ -5390,7 +5390,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get powertrainCatalogScopeNote =>
-      '目錄很廣，但「找到資料」不等於「已支援」。僅研究項目永遠沒有指令；實驗項目也只能逐次確認後讀一條。';
+      '目錄很廣，但「找到資料」不等於「已支援」。僅研究項目永遠沒有指令。Mode 22 實驗項目可安裝並輪詢，但每個數值都標為未驗證；Mode 21 實驗項目每次確認後只讀一次。';
 
   @override
   String get powertrainCatalogSearchHint => '搜尋品牌、車型、版本或市場…';

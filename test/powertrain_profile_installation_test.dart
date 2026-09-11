@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:torque_obd/diagnostics/availability.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
 import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/obd/pid/priority_tier.dart';
@@ -196,6 +197,13 @@ void main() {
         _profileOf(_profileJson(status: 'experimental')),
       );
       expect(pids, isNotEmpty);
+      for (final pid in pids) {
+        expect(pid.evidenceKind, 'experimental');
+        final status = AvailabilityPolicy.forPid(pid: pid);
+        expect(status.evidence, EvidenceKind.experimental);
+        expect(status.badges, contains(DatumBadge.experimental));
+        expect(status.badges, contains(DatumBadge.unverifiedOnThisVehicle));
+      }
     });
 
     test('community without independent corroboration cannot install', () {
@@ -467,6 +475,31 @@ void main() {
       expect(registry.profilePids, hasLength(2));
       expect(registry.installedVehicleYear(_profileId), 2021);
     });
+
+    test(
+      'restore of an experimental Mode 22 profile keeps evidenceKind experimental',
+      () async {
+        final (container, _) = await _container({
+          _installsKey: [
+            jsonEncode({'profile_id': _profileId, 'vehicle_year': 2021}),
+          ],
+        });
+        addTearDown(container.dispose);
+        final registry = container.read(pidRegistryProvider.notifier);
+        expect(registry.profilePids, isEmpty);
+
+        await registry.restoreInstalledProfiles(
+          snapshotOfProfiles([
+            _profileJson(status: 'experimental'),
+          ]).catalog,
+        );
+
+        expect(registry.profilePids, isNotEmpty);
+        for (final pid in registry.profilePids) {
+          expect(pid.evidenceKind, 'experimental');
+        }
+      },
+    );
 
     test('restore drops a reference the catalog no longer honors', () async {
       final (container, prefs) = await _container({

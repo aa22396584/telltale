@@ -3,10 +3,13 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/availability.dart';
+import 'package:torque_obd/l10n/generated/app_localizations.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
 import 'package:torque_obd/obd/pid/pid.dart';
 import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_catalog.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_catalog_validator.dart';
 import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
+import 'package:torque_obd/ui/widgets/status/datum_status_copy.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -39,18 +42,18 @@ void main() {
         expect(validation.canInstall, isTrue, reason: profile.id);
         final pids = PowertrainProfilePidInstaller.build(profile);
         expect(pids, isNotEmpty, reason: profile.id);
-        final status = AvailabilityPolicy.forPid(
-          pid: pids.first,
-          catalogStatus: profile.status,
-        );
+        expect(pids.first.evidenceKind, 'experimental', reason: profile.id);
+        final status = AvailabilityPolicy.forPid(pid: pids.first);
         expect(status.evidence, EvidenceKind.experimental);
+        expect(status.badges, contains(DatumBadge.experimental));
         expect(
           status.badges,
-          anyOf(
-            contains(DatumBadge.unverified),
-            contains(DatumBadge.unverifiedOnThisVehicle),
-          ),
+          contains(DatumBadge.unverifiedOnThisVehicle),
         );
+        final en = lookupAppLocalizations(englishLocale);
+        final badge = datumBadgeText(en, status);
+        expect(badge, contains('Experimental'));
+        expect(badge, contains('Unverified on this vehicle'));
       }
     },
   );

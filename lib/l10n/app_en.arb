@@ -1399,9 +1399,9 @@
     }
   },
   "powertrainCancel": "Cancel",
-  "powertrainCatalogCounts": "Profiles: {profiles} · Experimental one-shot reads: {probeable}",
+  "powertrainCatalogCounts": "Profiles: {profiles} · One-shot reads: {probeable}",
   "@powertrainCatalogCounts": {
-    "description": "Both counts are derived from the verified catalog; never spell a number into the copy. English uses a label form because neither count has a fixed plurality.",
+    "description": "Both counts are derived from the verified catalog; never spell a number into the copy. {probeable} is every profile the one-shot laboratory may read (community and experimental with commands), not experimental-only. English uses a label form because neither count has a fixed plurality.",
     "placeholders": {
       "profiles": {
         "type": "int"
@@ -1418,9 +1418,9 @@
   "powertrainCatalogLoadFailedTitle": "Offline catalog could not load",
   "powertrainCatalogNotVerified": "The catalog has not passed verification, so nothing can be installed.",
   "powertrainCatalogRevalidate": "Verify again",
-  "powertrainCatalogScopeNote": "The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.",
+  "powertrainCatalogScopeNote": "The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command. Mode 22 experimental entries may be installed and polled, but every value is labelled unverified; Mode 21 experimental is read once per confirmation.",
   "@powertrainCatalogScopeNote": {
-    "description": "Load-bearing: separates 'a candidate exists' from 'this works on your car'. Never drop either half."
+    "description": "Load-bearing: separates 'a candidate exists' from 'this works on your car'. Mode 22 and Mode 21 stay byte-identical. Never drop the unverified label on installable experimental, and never say Mode 21 can be polled."
   },
   "powertrainCatalogSearchHint": "Search make, model, variant or market…",
   "powertrainCatalogTitle": "Powertrain battery catalog",

@@ -12,11 +12,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:torque_obd/core/theme/app_theme.dart';
+import 'package:torque_obd/l10n/locale_resolution.dart';
+import 'package:torque_obd/obd/pid/pid.dart';
+import 'package:torque_obd/obd/pid/pid_library.dart';
+import 'package:torque_obd/obd/powertrain_battery/profile_pid_installer.dart';
 import 'package:torque_obd/obd/telemetry.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/state/obd_session.dart';
 import 'package:torque_obd/state/pid_registry.dart';
-import 'package:torque_obd/obd/pid/pid_library.dart';
 import 'package:torque_obd/state/powertrain_battery_profiles.dart';
 import 'package:torque_obd/ui/wear/wear_shell.dart';
 import 'package:torque_obd/ui/widgets/gauges/dial_gauge.dart';
@@ -46,12 +49,17 @@ final class _FixedSession extends ObdSession {
   }
 }
 
-Map<String, Object?> _wearProfileJson(String id, {double socScale = 10}) => {
+Map<String, Object?> _wearProfileJson(
+  String id, {
+  double socScale = 10,
+  String status = 'community',
+  bool includePackVoltage = false,
+}) => {
   'id': id,
   'display_name': 'Profile $id',
-  'description': 'Installable community fixture.',
+  'description': 'Installable $status fixture.',
   'limitations': ['fixture'],
-  'status': 'community',
+  'status': status,
   'evidence': 'sourceBacked',
   'market': 'Australia',
   'make': 'MG',
@@ -75,17 +83,19 @@ Map<String, Object?> _wearProfileJson(String id, {double socScale = 10}) => {
     'locator': '22B046',
     'artifact_sha256': 'b' * 64,
   },
-  'secondary_sources': [
-    {
-      'name': 'independent-$id',
-      'url': 'https://example.invalid/other-$id',
-      'revision': 'c' * 40,
-      'license': 'MIT',
-      'path': 'poller.cpp',
-      'locator': 'poll table',
-      'artifact_sha256': 'd' * 64,
-    },
-  ],
+  'secondary_sources': status == 'community'
+      ? [
+          {
+            'name': 'independent-$id',
+            'url': 'https://example.invalid/other-$id',
+            'revision': 'c' * 40,
+            'license': 'MIT',
+            'path': 'poller.cpp',
+            'locator': 'poll table',
+            'artifact_sha256': 'd' * 64,
+          },
+        ]
+      : <Object?>[],
   'commands': [
     {
       'request_header': '781',
@@ -108,6 +118,28 @@ Map<String, Object?> _wearProfileJson(String id, {double socScale = 10}) => {
         },
       ],
     },
+    if (includePackVoltage)
+      {
+        'request_header': '781',
+        'expected_responder': '789',
+        'mode': '22',
+        'identifier': 'B047',
+        'payload_length': 2,
+        'signals': [
+          {
+            'id': 'pack_voltage',
+            'name': 'Pack voltage',
+            'offset': 0,
+            'width': 2,
+            'equation': '(A*256+B)/10',
+            'unit': 'V',
+            'min_value': 0,
+            'max_value': 500,
+            'semantic_kind': 'packVoltage',
+            'recommended': true,
+          },
+        ],
+      },
   ],
 };
 
@@ -547,4 +579,252 @@ void main() {
       expect(container.read(powertrainProfileAuthorizationsProvider), isEmpty);
     },
   );
+
+  testWidgets(
+    'experimental Mode 22 battery readings are labelled unverified',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final catalogSnapshot = snapshotOfProfiles([
+        _wearProfileJson(
+          'aa-exp',
+          status: 'experimental',
+          includePackVoltage: true,
+        ),
+      ]);
+      final telemetryController = StreamController<TelemetrySnapshot>.broadcast();
+      addTearDown(telemetryController.close);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          obdSessionProvider.overrideWith(
+            () => _FixedSession(
+              const ObdConnectionState(
+                phase: ConnectionPhase.connected,
+                kind: TransportKind.demo,
+                deviceName: 'Demo ECU',
+                protocol: 'ISO 15765-4 CAN 11/500',
+              ),
+            ),
+          ),
+          powertrainBatteryCatalogLoaderProvider.overrideWithValue(
+            () async => catalogSnapshot,
+          ),
+          telemetryProvider.overrideWith((ref) => telemetryController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      final registry = container.read(pidRegistryProvider.notifier);
+      await registry.installPowertrainProfile(
+        catalogSnapshot,
+        'aa-exp',
+        vehicleYear: 2021,
+      );
+      final socPid = registry.profilePids.singleWhere(
+        (pid) =>
+            pid.ownerProfileId == 'aa-exp' &&
+            pid.sourceSignalId == 'soc_display',
+      );
+      final voltsPid = registry.profilePids.singleWhere(
+        (pid) =>
+            pid.ownerProfileId == 'aa-exp' &&
+            pid.sourceSignalId == 'pack_voltage',
+      );
+      expect(socPid.evidenceKind, 'experimental');
+      expect(voltsPid.evidenceKind, 'experimental');
+
+      tester.view.physicalSize = const Size(454, 454);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: localizedMaterialApp(
+            theme: AppTheme.dark(),
+            locale: englishLocale,
+            home: const WearShell(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      telemetryController.add(
+        TelemetrySnapshot(
+          readings: {
+            socPid.id: Reading(
+              pid: socPid,
+              value: 50,
+              rawBytes: const [0x01, 0xF4],
+              timestamp: DateTime.now(),
+            ),
+            voltsPid.id: Reading(
+              pid: voltsPid,
+              value: 350,
+              rawBytes: const [0x0D, 0xAC],
+              timestamp: DateTime.now(),
+            ),
+          },
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.fling(
+        find.byKey(const Key('wear_dial')),
+        const Offset(-200, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('wear_confirm_vehicle')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('wear_confirm_vehicle_accept')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('wear_battery_soc')), findsOneWidget);
+      expect(find.text('50.0'), findsOneWidget);
+      expect(find.byKey(const Key('wear_battery_soc_badge')), findsOneWidget);
+      expect(find.textContaining('Experimental'), findsWidgets);
+      expect(find.textContaining('Unverified on this vehicle'), findsWidgets);
+
+      final socBadge = tester.widget<Text>(
+        find.byKey(const Key('wear_battery_soc_badge')),
+      );
+      final voltsBadge = tester.widget<Text>(
+        find.byKey(const Key('wear_battery_volts_badge')),
+      );
+      expect(socBadge.data, contains('Experimental'));
+      expect(socBadge.data, contains('Unverified on this vehicle'));
+      expect(voltsBadge.data, contains('Experimental'));
+      expect(voltsBadge.data, contains('Unverified on this vehicle'));
+      expect(socBadge.maxLines, isNull);
+      expect(voltsBadge.maxLines, isNull);
+      expect(socBadge.overflow, isNot(TextOverflow.ellipsis));
+      expect(voltsBadge.overflow, isNot(TextOverflow.ellipsis));
+      expect(
+        tester.getSize(find.byKey(const Key('wear_battery_volts_badge'))).width,
+        closeTo(
+          tester.getSize(find.byKey(const Key('wear_battery_soc_badge'))).width,
+          1,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'a standard OBD PID on the battery page is not labelled unverified on this vehicle',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final catalogSnapshot = snapshotOfProfiles([
+        _wearProfileJson('aa-exp', status: 'experimental'),
+      ]);
+      final experimentalPids = PowertrainProfilePidInstaller.build(
+        catalogSnapshot.catalog.profiles.single,
+      );
+      final socPid = experimentalPids.single;
+      final standardPid = PidLibrary.controlModuleVoltage.copyWith(
+        ownerProfileId: 'aa-exp',
+        sourceSignalId: 'pack_voltage',
+        sourceRevision: socPid.sourceRevision,
+      );
+      final now = DateTime.now();
+      final telemetryController = StreamController<TelemetrySnapshot>.broadcast();
+      addTearDown(telemetryController.close);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          obdSessionProvider.overrideWith(
+            () => _FixedSession(
+              const ObdConnectionState(
+                phase: ConnectionPhase.connected,
+                kind: TransportKind.bluetoothLe,
+                deviceName: 'OBDLink CX',
+                protocol: 'ISO 15765-4 CAN 11/500',
+              ),
+            ),
+          ),
+          powertrainBatteryCatalogLoaderProvider.overrideWithValue(
+            () async => catalogSnapshot,
+          ),
+          pidRegistryProvider.overrideWith(
+            () => _FixedPidRegistry([
+              ...PidLibrary.all,
+              socPid,
+              standardPid,
+            ]),
+          ),
+          telemetryProvider.overrideWith((ref) => telemetryController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      container
+          .read(powertrainProfileAuthorizationsProvider.notifier)
+          .authorize(
+            snapshot: catalogSnapshot,
+            profileId: 'aa-exp',
+            vehicleYear: 2021,
+            connectionGeneration: 0,
+          );
+
+      tester.view.physicalSize = const Size(454, 454);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: localizedMaterialApp(
+            theme: AppTheme.dark(),
+            locale: englishLocale,
+            home: const WearShell(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      telemetryController.add(
+        TelemetrySnapshot(
+          readings: {
+            socPid.id: Reading(
+              pid: socPid,
+              value: 50,
+              rawBytes: const [0x01, 0xF4],
+              timestamp: now,
+            ),
+            standardPid.id: Reading(
+              pid: standardPid,
+              value: 12.4,
+              rawBytes: const [0x7C],
+              timestamp: now,
+            ),
+          },
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.fling(
+        find.byKey(const Key('wear_dial')),
+        const Offset(-200, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('wear_battery_soc')), findsOneWidget);
+      final socBadge = tester.widget<Text>(
+        find.byKey(const Key('wear_battery_soc_badge')),
+      ).data!;
+      expect(socBadge, contains('Experimental'));
+      expect(socBadge, contains('Unverified on this vehicle'));
+      final voltsBadge = tester.widget<Text>(
+        find.byKey(const Key('wear_battery_volts_badge')),
+      ).data!;
+      expect(voltsBadge, isNot(contains('Unverified on this vehicle')));
+      expect(voltsBadge, isNot(contains('Experimental')));
+    },
+  );
+}
+
+final class _FixedPidRegistry extends PidRegistry {
+  _FixedPidRegistry(this._pids);
+
+  final List<Pid> _pids;
+
+  @override
+  List<Pid> build() => List<Pid>.from(_pids);
 }

@@ -142,7 +142,7 @@ void main() {
     );
 
     test(
-      'only the cross-corroborated community entries are installable',
+      'community and pollable experimental entries are installable; Mode 21 experimental is not',
       () async {
         final snapshot = await PowertrainBatteryCatalogAsset.load(rootBundle);
         const validator = PowertrainBatteryProfileCatalogValidator();
@@ -150,26 +150,43 @@ void main() {
           (profile) => validator.validateProfile(profile).canInstall,
         );
 
+        const community = {
+          'mg-zs-ev-au-2021',
+          'mg-mg4-2022-2026',
+          'mg-mg5-ev-2020-2023',
+          'byd-atto3-2022-2024-community',
+          'hyundai-ioniq5-egmp-2021-2024-community',
+          'kia-ev6-egmp-2022-2024-community',
+          'hyundai-kona-electric-os-2019-2023-community',
+          'kia-niro-ev-de-2019-2022-community',
+          'volkswagen-eup-gen2-2020-2023-community',
+          'renault-zoe-ph1-2012-2019-community',
+          'hyundai-ioniq6-egmp-2022-2024-community',
+          'kia-soul-ev-sk3-2020-community',
+        };
+        const experimentalMode22 = {
+          'toyota-etnga-bev-2022-2024',
+          'toyota-prius-tnga-2016-2026',
+          'kia-ev9-egmp-2024-2025-experimental',
+        };
         expect(
           installable.map((profile) => profile.id).toSet(),
-          containsAll({
-            'mg-zs-ev-au-2021',
-            'mg-mg4-2022-2026',
-            'mg-mg5-ev-2020-2023',
-            'byd-atto3-2022-2024-community',
-            'hyundai-ioniq5-egmp-2021-2024-community',
-            'kia-ev6-egmp-2022-2024-community',
-            'hyundai-kona-electric-os-2019-2023-community',
-            'kia-niro-ev-de-2019-2022-community',
-            'volkswagen-eup-gen2-2020-2023-community',
-            'renault-zoe-ph1-2012-2019-community',
-            'hyundai-ioniq6-egmp-2022-2024-community',
-            'kia-soul-ev-sk3-2020-community',
-            'toyota-etnga-bev-2022-2024',
-            'toyota-prius-tnga-2016-2026',
-            'kia-ev9-egmp-2024-2025-experimental',
-          }),
+          {...community, ...experimentalMode22},
         );
+        for (final id in community) {
+          expect(
+            snapshot.catalog.profiles.singleWhere((p) => p.id == id).status,
+            PowertrainProfileStatus.community,
+            reason: id,
+          );
+        }
+        for (final id in experimentalMode22) {
+          expect(
+            snapshot.catalog.profiles.singleWhere((p) => p.id == id).status,
+            PowertrainProfileStatus.experimental,
+            reason: id,
+          );
+        }
         expect(
           installable.map((profile) => profile.id),
           isNot(contains('lexus-rx450hl-2020-source-vehicle')),

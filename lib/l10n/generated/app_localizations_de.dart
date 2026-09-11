@@ -1597,7 +1597,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String powertrainCatalogCounts(int profiles, int probeable) {
-    return 'Profile: $profiles · Experimentelle Einmal-Lesevorgänge: $probeable';
+    return 'Profile: $profiles · Einmal-Lesevorgänge: $probeable';
   }
 
   @override
@@ -1617,7 +1617,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get powertrainCatalogScopeNote =>
-      'Der Katalog ist umfangreich, doch „wir haben Daten gefunden“ bedeutet nicht, dass „Ihr Fahrzeug unterstützt wird“. Einträge, die ausschließlich zu Forschungszwecken dienen, enthalten niemals einen Befehl; experimental-Einträge lesen weiterhin jeweils einen Befehl nach dem anderen ein, wobei jeder Befehl nach einer eigenen Bestätigung folgt.';
+      'Der Katalog ist umfangreich, doch „wir haben Daten gefunden“ bedeutet nicht, dass „Ihr Fahrzeug unterstützt wird“. Einträge, die ausschließlich zu Forschungszwecken dienen, enthalten niemals einen Befehl. Mode 22 experimental-Einträge dürfen installiert und periodisch gelesen werden, jeder Wert wird jedoch als nicht verifiziert gekennzeichnet; Mode 21 experimental wird nach jeder Bestätigung einmal gelesen.';
 
   @override
   String get powertrainCatalogSearchHint =>

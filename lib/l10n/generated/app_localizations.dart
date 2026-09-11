@@ -2561,10 +2561,10 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get powertrainCancel;
 
-  /// Both counts are derived from the verified catalog; never spell a number into the copy. English uses a label form because neither count has a fixed plurality.
+  /// Both counts are derived from the verified catalog; never spell a number into the copy. {probeable} is every profile the one-shot laboratory may read (community and experimental with commands), not experimental-only. English uses a label form because neither count has a fixed plurality.
   ///
   /// In en, this message translates to:
-  /// **'Profiles: {profiles} · Experimental one-shot reads: {probeable}'**
+  /// **'Profiles: {profiles} · One-shot reads: {probeable}'**
   String powertrainCatalogCounts(int profiles, int probeable);
 
   /// Fail-closed: says what did NOT happen. Never soften to 'try again later'.
@@ -2591,10 +2591,10 @@ abstract class AppLocalizations {
   /// **'Verify again'**
   String get powertrainCatalogRevalidate;
 
-  /// Load-bearing: separates 'a candidate exists' from 'this works on your car'. Never drop either half.
+  /// Load-bearing: separates 'a candidate exists' from 'this works on your car'. Mode 22 and Mode 21 stay byte-identical. Never drop the unverified label on installable experimental, and never say Mode 21 can be polled.
   ///
   /// In en, this message translates to:
-  /// **'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command; experimental entries still read one command at a time, each after its own confirmation.'**
+  /// **'The catalog is wide, but “we found data” is not “your car is supported”. Research-only entries never carry a command. Mode 22 experimental entries may be installed and polled, but every value is labelled unverified; Mode 21 experimental is read once per confirmation.'**
   String get powertrainCatalogScopeNote;
 
   /// No description provided for @powertrainCatalogSearchHint.

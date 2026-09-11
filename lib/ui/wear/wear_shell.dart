@@ -25,6 +25,7 @@ import '../../core/ble_scan_permissions.dart';
 import '../../core/screen_wake.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../diagnostics/availability.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../obd/pid/pid.dart';
 import '../../obd/pid/pid_library.dart';
@@ -37,6 +38,7 @@ import '../../state/obd_session.dart';
 import '../../state/pid_registry.dart';
 import '../../state/powertrain_battery_profiles.dart';
 import '../widgets/gauges/dial_gauge.dart';
+import '../widgets/status/datum_status_copy.dart';
 import 'wear_permission_copy.dart';
 
 class WearShell extends ConsumerStatefulWidget {
@@ -620,6 +622,7 @@ class _WearBatteryPage extends ConsumerWidget {
 
     final snapshot =
         ref.watch(telemetryProvider).value ?? const TelemetrySnapshot();
+    final demo = ref.watch(obdSessionProvider).kind == TransportKind.demo;
     final soc = _bySignal(profilePids, const [
       'soc_display',
       'soc_bms',
@@ -641,25 +644,68 @@ class _WearBatteryPage extends ConsumerWidget {
     }
 
     return _RoundInset(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('SOC', style: context.texts.labelSmall),
-          Text(
-            value(soc, 1),
-            key: const Key('wear_battery_soc'),
-            style: context.texts.displayLarge,
-          ),
-          Text('%', style: context.texts.labelSmall),
-          const SizedBox(height: Spacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _MiniNumber(label: 'Pack V', text: value(volts, 1)),
-              _MiniNumber(label: 'Pack A', text: value(amps, 1)),
-            ],
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The round inset is ~173 logical pixels; the badge line is the
+          // same sentence the phone dashboard paints. Scale the stack down
+          // rather than drop the label or invent a shorter join.
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('SOC', style: context.texts.labelSmall),
+                  Text(
+                    value(soc, 1),
+                    key: const Key('wear_battery_soc'),
+                    style: context.texts.displayLarge,
+                  ),
+                  Text('%', style: context.texts.labelSmall),
+                  _WearPidBadge(
+                    pid: soc,
+                    snapshot: snapshot,
+                    demo: demo,
+                    badgeKey: const Key('wear_battery_soc_badge'),
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MiniNumber(
+                          label: 'Pack V',
+                          text: value(volts, 1),
+                        ),
+                      ),
+                      Expanded(
+                        child: _MiniNumber(
+                          label: 'Pack A',
+                          text: value(amps, 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Full inset width: a half-column with ellipsis can drop
+                  // "Unverified on this vehicle" (and German "nicht
+                  // verifiziert") before the driver ever sees it.
+                  _WearPidBadge(
+                    pid: volts,
+                    snapshot: snapshot,
+                    demo: demo,
+                    badgeKey: const Key('wear_battery_volts_badge'),
+                  ),
+                  _WearPidBadge(
+                    pid: amps,
+                    snapshot: snapshot,
+                    demo: demo,
+                    badgeKey: const Key('wear_battery_amps_badge'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -725,6 +771,55 @@ class _MiniNumber extends StatelessWidget {
       Text(label, style: context.texts.labelSmall),
     ],
   );
+}
+
+/// Per-PID provenance, joined the same way the phone dashboard joins it.
+///
+/// A glance surface has no room for a second sentence, so this is the badge
+/// line itself — never a new join, never a new tier.
+class _WearPidBadge extends StatelessWidget {
+  const _WearPidBadge({
+    required this.pid,
+    required this.snapshot,
+    required this.demo,
+    required this.badgeKey,
+  });
+
+  final Pid? pid;
+  final TelemetrySnapshot snapshot;
+  final bool demo;
+  final Key badgeKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = pid;
+    if (shown == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    final status = AvailabilityPolicy.forPid(
+      pid: shown,
+      reading: snapshot[shown.id],
+      fault: snapshot.faults[shown.id],
+      isStale: snapshot.isStale(shown),
+      demo: demo,
+      catalogStatus: switch (shown.evidenceKind) {
+        'community' => PowertrainProfileStatus.community,
+        'experimental' => PowertrainProfileStatus.experimental,
+        'ready' => PowertrainProfileStatus.ready,
+        _ => null,
+      },
+    );
+    final text = datumBadgeText(l10n, status);
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: Spacing.xs),
+      child: Text(
+        text,
+        key: badgeKey,
+        textAlign: TextAlign.center,
+        style: context.texts.labelSmall,
+      ),
+    );
+  }
 }
 
 /// Insets content away from a round bezel without measuring the shape: the

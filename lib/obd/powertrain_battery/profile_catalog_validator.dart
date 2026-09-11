@@ -559,10 +559,11 @@ final class PowertrainBatteryProfileValidation {
 
   /// Whether the one-shot probe flow may read this profile's commands.
   ///
-  /// Experimental entries have no other read path. Community entries are
-  /// also probe-eligible — a consented single read is strictly less exposure
-  /// than the periodic polling they already qualify for, and it lets a
-  /// driver try one value before installing. Probing never installs.
+  /// Community entries are probe-eligible — a consented single read is
+  /// strictly less exposure than the periodic polling they already qualify
+  /// for, and it lets a driver try one value before installing. Pollable
+  /// (Mode 22) experimental entries also install as unverified PIDs; Mode 21
+  /// experimental is probe-only. Probing never installs.
   bool get canProbe =>
       issues.isEmpty &&
       (profile.status == PowertrainProfileStatus.experimental ||
