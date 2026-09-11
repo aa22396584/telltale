@@ -537,7 +537,7 @@
   "settingsCatalogScope": "Der beigefügte Snapshot enthält die offiziellen U.S. EPA Find-a-Car-Daten; er deckt lediglich den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen ab, nicht jedoch alle Marken oder Modelljahre weltweit.",
   "settingsCatalogVerifying": "Der Offline-Katalog wird überprüft…",
   "settingsCatalogChooseMarket": "Wählen Sie, welcher offizielle Katalog durchsucht wird",
-  "settingsCatalogMarketTw": "Taiwan (MOEA Energy Administration)",
+  "settingsCatalogMarketTw": "Taiwan (MOEA-Energieverwaltung)",
   "settingsCatalogMarketUs": "Vereinigte Staaten (EPA)",
   "settingsTwCertificationYear": "Zulassungsjahr",
   "settingsTwMake": "Taiwan-Marke",

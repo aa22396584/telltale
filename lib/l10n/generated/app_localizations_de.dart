@@ -2087,7 +2087,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wählen Sie, welcher offizielle Katalog durchsucht wird';
 
   @override
-  String get settingsCatalogMarketTw => 'Taiwan (MOEA Energy Administration)';
+  String get settingsCatalogMarketTw => 'Taiwan (MOEA-Energieverwaltung)';
 
   @override
   String get settingsCatalogMarketUs => 'Vereinigte Staaten (EPA)';
