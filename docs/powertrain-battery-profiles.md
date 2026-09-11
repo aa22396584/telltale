@@ -263,6 +263,12 @@ on 7D2, while the Kezar family (OVMS `vehicle_toyota_etnga` plus
 (96-cell, capture-verified); MY2025+ bZ4X lists `1F5B` unsupported. The EPA
 stub `toyota-bz4x-us-2023-2025` stays identity-only.
 
+2026-09-11 re-evaluation: the OBDb signalset hash is unchanged at HEAD
+`32e8e29a3ccdb396be63c2dadc21b79b0950dff1`. Official
+`openvehicles/Open-Vehicle-Monitoring-System-3` has no etnga module; the
+Kezar OVMS tree is a fork (`kezarjg/Open-Vehicle-Monitoring-System-3`).
+Disposition remains RETAIN EXPERIMENTAL; `year_to` stays 2024.
+
 ### Nissan Leaf and Mitsubishi Outlander PHEV — researched, not shipped
 
 Both have corroborated read contracts in licensed sources, but every source

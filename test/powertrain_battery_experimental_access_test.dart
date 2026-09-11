@@ -392,7 +392,7 @@ void main() {
       final rehashedManifest = manifestJson
           .replaceFirst(
             snapshot.catalogSha256,
-            'c5793f2022aac561da43c1b37c5788d5415a9230a4fcf7a02ce98ced51fb390b',
+            '1e3701a3dbc6e3702053b53e6d0a743772a8830193571639fc0a0fd5646ec81d',
           )
           .replaceFirst(
             '"size_bytes": $storedSize',

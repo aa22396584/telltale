@@ -186,24 +186,27 @@ void main() {
     }
   });
 
-  test('an out-of-physics Atto 3 pack voltage is kept as a finite 異常', () async {
-    // LE 100 V sits under the 200 V floor.
-    final readings = await _pollProfile(
-      atto3Pids,
-      requestId: '7E7',
-      responseId: '7EF',
-      responses: const {
-        '220005': [0x62, 0x00, 0x05, 0x4B],
-        '220008': [0x62, 0x00, 0x08, 0x64, 0x00],
-        '220009': [0x62, 0x00, 0x09, 0xEC, 0x13],
-        '220032': [0x62, 0x00, 0x32, 0x41],
-      },
-    );
-    final voltage = atto3Pids.singleWhere(
-      (pid) => pid.sourceSignalId == 'pack_voltage',
-    );
-    expect(readings[voltage.id], isNotNull);
-  });
+  test(
+    'an out-of-physics Atto 3 pack voltage is kept as a finite 異常',
+    () async {
+      // LE 100 V sits under the 200 V floor.
+      final readings = await _pollProfile(
+        atto3Pids,
+        requestId: '7E7',
+        responseId: '7EF',
+        responses: const {
+          '220005': [0x62, 0x00, 0x05, 0x4B],
+          '220008': [0x62, 0x00, 0x08, 0x64, 0x00],
+          '220009': [0x62, 0x00, 0x09, 0xEC, 0x13],
+          '220032': [0x62, 0x00, 0x32, 0x41],
+        },
+      );
+      final voltage = atto3Pids.singleWhere(
+        (pid) => pid.sourceSignalId == 'pack_voltage',
+      );
+      expect(readings[voltage.id], isNotNull);
+    },
+  );
 
   test('e-TNGA experimental 1F5B/106C decode pinned capture bytes', () async {
     final snapshot = await PowertrainBatteryCatalogAsset.load(rootBundle);
@@ -260,6 +263,39 @@ void main() {
       '1F5B',
       '106C',
     });
+  });
+
+  test('e-TNGA 1F5B from 74F is refused, not decoded as bms_soc', () async {
+    final snapshot = await PowertrainBatteryCatalogAsset.load(rootBundle);
+    final etnga = snapshot.catalog.profiles.singleWhere(
+      (profile) => profile.id == 'toyota-etnga-bev-2022-2024',
+    );
+    final command = etnga.commands.singleWhere(
+      (candidate) => candidate.modeAndIdentifier == '221F5B',
+    );
+    expect(command.requestHeader, '7D2');
+    expect(command.expectedResponder, '7DA');
+
+    final wrong = PowertrainBatteryProbe.decode(
+      profile: etnga,
+      command: command,
+      catalogSha256: snapshot.catalogSha256,
+      response: const ObdResponse(
+        bytes: [0x62, 0x1F, 0x5B, 0x9D],
+        frames: [
+          ObdFrame([0x62, 0x1F, 0x5B, 0x9D], sourceId: '74F'),
+        ],
+        headersEnabled: true,
+      ),
+    );
+    expect(wrong.passed, isFalse);
+    expect(wrong.failure, PowertrainBatteryProbeFailure.responderMismatch);
+    expect(wrong.readings, isEmpty);
+    expect(
+      wrong.readings.any((reading) => reading.signal.id == 'bms_soc'),
+      isFalse,
+    );
+    expect(wrong.responder, '74F');
   });
 
   test(

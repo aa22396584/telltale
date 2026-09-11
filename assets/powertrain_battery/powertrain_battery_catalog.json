@@ -1827,7 +1827,8 @@
         "Subaru-Solterra OBDb signalset is empty; Solterra identity for this entry is the shared e-TNGA platform plus OVMS docs and Solterra command_support, not a Solterra-specific decode.",
         "toyota-prius-tnga-2016-2026 is a related HEV on 7D2 and is not a second BEV family.",
         "The EPA stub toyota-bz4x-us-2023-2025 is identity-only and is not this executable window (its 2025 year sits on the facelift).",
-        "Telltale has not physically validated bZ4X or Solterra."
+        "Telltale has not physically validated bZ4X or Solterra.",
+        "2026-09-11 re-evaluation: OBDb Toyota-bZ4X signalset hash is unchanged at HEAD 32e8e29a3ccdb396be63c2dadc21b79b0950dff1 (only 2023 command_support drifted, adding SAE Mode 01 rows). Kezar etnga-obd@817da3ec8ab83bf31f000b0d1c85716280ccd843 still places 1F5B/1F9A on Battery ECU 747/74F while OBDb captures them on 7D2/7DA — formula agrees, header disagrees, so 1F5B stays experimental and 1F9A stays withheld. Kezar OVMS fork 21474124189f8b6483467c6accfd74381d233bed polls 1F5B on 747 and 1F9A on 7D2 (intra-family split); official OVMS has no etnga module. WiCAN and iternio have no bZ4X file; Subaru-Solterra signalset is empty; MY2025/2026 OBDb scans mark 1F5B/106C unsupported, so year_to stays 2024."
       ],
       "status": "experimental",
       "evidence": "sourceBacked",
@@ -1851,7 +1852,25 @@
         "license": "CC-BY-SA-4.0",
         "path": "signalsets/v3/default.json",
         "locator": "7D2 221F5B / 22106C with tests/test_cases/{2023,2024} real-car captures",
-        "artifact_sha256": "11e8b5957fe6ec9643f6d9afb62494e135aebb9a8c6e737c0ccd873d34b2cfdb"
+        "artifact_sha256": "11e8b5957fe6ec9643f6d9afb62494e135aebb9a8c6e737c0ccd873d34b2cfdb",
+        "capture_artifacts": [
+          {
+            "path": "tests/test_cases/2023/commands/7D2.7DA.221F5B|fc=1.yaml",
+            "sha256": "c02e5306f403bcd72c6aa0a14ea1ba6e8c4f463ac84b02795da42e1d4692bb44"
+          },
+          {
+            "path": "tests/test_cases/2023/commands/7D2.7DA.22106C|fc=1.yaml",
+            "sha256": "475756f35244a38d2b80e989255f4647eaffbfe157a813ce626693e24896376f"
+          },
+          {
+            "path": "tests/test_cases/2024/commands/7D2.7DA.221F5B|fc=1.yaml",
+            "sha256": "c4ab86c21c7e331a542968188781cc3076c239faa187b4250d38fe7db49539ea"
+          },
+          {
+            "path": "tests/test_cases/2024/commands/7D2.7DA.22106C|fc=1.yaml",
+            "sha256": "6dee61bd1525e38c552eb3959a35bcb8b5d1df369580fd5469d9ceddfd74d70f"
+          }
+        ]
       },
       "commands": [
         {

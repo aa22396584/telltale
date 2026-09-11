@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "catalog_file": "powertrain_battery_catalog.json",
-  "sha256": "40d9668c9dc2b60debc8f70c91d0d2f9442c8950a2052de3cc8f89f9b62585dd",
-  "size_bytes": 437290,
+  "sha256": "a15d4bb2154eed184ad62299ac610d3f6a189082652cd237f4e147017c1f81c4",
+  "size_bytes": 438820,
   "profile_count": 221,
   "signal_count": 157,
   "counts_by_powertrain": {

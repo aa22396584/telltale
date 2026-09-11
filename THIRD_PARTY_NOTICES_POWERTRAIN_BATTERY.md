@@ -178,9 +178,52 @@ experimental only and cannot be installed.
 
 Two Mode 22 commands (`1F5B`, `106C` on `7D2`/`7DA`) become three bounded
 signals, verified against the repository's pinned MY2023/2024 real-car
-captures. A second family (Kezar) agrees the `1F5B` formula but polls a
-different header, so the subset stays one-shot experimental and cannot be
-installed. `1F9A` is not shipped.
+captures:
+
+- `tests/test_cases/2023/commands/7D2.7DA.221F5B|fc=1.yaml` SHA-256
+  `c02e5306f403bcd72c6aa0a14ea1ba6e8c4f463ac84b02795da42e1d4692bb44`
+- `tests/test_cases/2023/commands/7D2.7DA.22106C|fc=1.yaml` SHA-256
+  `475756f35244a38d2b80e989255f4647eaffbfe157a813ce626693e24896376f`
+- `tests/test_cases/2024/commands/7D2.7DA.221F5B|fc=1.yaml` SHA-256
+  `c4ab86c21c7e331a542968188781cc3076c239faa187b4250d38fe7db49539ea`
+- `tests/test_cases/2024/commands/7D2.7DA.22106C|fc=1.yaml` SHA-256
+  `6dee61bd1525e38c552eb3959a35bcb8b5d1df369580fd5469d9ceddfd74d70f`
+
+A second family (Kezar) agrees the `1F5B` formula but polls a different
+header, so the subset stays experimental. `1F9A` is not shipped.
+
+Consulted, disagreeing family — **not counted as community corroboration**,
+and `7D2`/`7DA` are not merged with `747`/`74F`:
+
+- `kezarjg/etnga-obd`, pinned at `817da3ec8ab83bf31f000b0d1c85716280ccd843`.
+  Dual licence: `bin/` MIT; `docs/`, `ecus/`, and `messages` are CC-BY-4.0
+  (`SPDX-License-Identifier: CC-BY-4.0`, LICENSE SHA-256
+  `1171fcd1652f1f988c1bbeb4725d3cfb09f43c6bf140d9d4fc66e875fe27cae7`).
+  Decoded knowledge from etnga-obd (https://github.com/kezarjg/etnga-obd),
+  licensed under CC-BY-4.0.
+  CC-BY-4.0: <https://creativecommons.org/licenses/by/4.0/>
+  - `ecus/ev-battery.md` SHA-256
+    `7b88e91c23a5ddeb84edf13138bd4ed88c68d5e0d42b5e4ab5bb234aefc6d0a8`
+    — `1F5B` and `1F9A` on Battery ECU `0x747`/`0x74F`, ISO-TP standard,
+    service `0x22`, SoC = byte×100/255.
+  - `ecus/ev.md` SHA-256
+    `e17df203ecebc8f5ecb8166a1eadd433545babee3d1039cc4de186603dd8a02b`
+    — EV ECU `0x7D2`/`0x7DA`; lists `0x106C` length 3 with no min/max formula.
+
+- `kezarjg/Open-Vehicle-Monitoring-System-3` (fork, same author), pinned at
+  `21474124189f8b6483467c6accfd74381d233bed` (MIT,
+  Copyright (c) 2011-2017 Open Vehicles).
+  - `vehicle/OVMS.V3/components/vehicle_toyota_etnga/src/vehicle_toyota_etnga.cpp`
+    SHA-256
+    `0814ae0c3e4d448eb9545bebbef8f758e25adf13d87d30deb3b6f8bd08b8466d`
+    — polls `1F5B` on `747`/`74F` and `1F9A` on `7D2`/`7DA` (`ISOTP_STD`,
+    no `106C`).
+  - `vehicle/OVMS.V3/components/vehicle_toyota_etnga/src/etnga_metrics.cpp`
+    SHA-256
+    `9d66c15130f352b78545065d8884bde4985f51ca42ef2bff25bef0e61c5cd907`.
+
+Official `openvehicles/Open-Vehicle-Monitoring-System-3` master
+`85074a0ae7a983b308c6e2e081185492527ee073` has no etnga module.
 
 ### MG4 Electric community corroboration
 
