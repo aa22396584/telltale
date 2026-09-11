@@ -71,6 +71,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
   List<DiscoveredDevice> _devices = const [];
   bool _scanning = false;
   String? _scanError;
+  BleScanIssue? _scanIssue;
 
   /// Remembered between launches.
   ///
@@ -224,6 +225,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
     setState(() {
       _scanning = true;
       _scanError = null;
+      _scanIssue = null;
     });
     try {
       // Windows/Linux Classic is Bluetooth SPP serial (COM / rfcomm).
@@ -241,16 +243,20 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
       // Listing bonded devices is not a scan, and must not ask as if it were.
       if (!await _ensurePermissions(forScanning: false)) {
         if (!mounted) return;
-        setState(
-          () => _scanError = _permissionPermanentlyDenied
+        setState(() {
+          _scanIssue = BleScanIssue.permissionNeeded;
+          _scanError = _permissionPermanentlyDenied
               ? l10n.connectBluetoothPermissionDeniedForever
-              : l10n.connectBluetoothPermissionNeededForPairedList,
-        );
+              : l10n.connectBluetoothPermissionNeededForPairedList;
+        });
         return;
       }
       if (!await ClassicTransport.isAdapterEnabled()) {
         if (!mounted) return;
-        setState(() => _scanError = l10n.connectBluetoothOff);
+        setState(() {
+          _scanIssue = BleScanIssue.poweredOff;
+          _scanError = l10n.connectBluetoothOff;
+        });
         return;
       }
       final devices = await ClassicTransport.pairedDevices();
@@ -457,6 +463,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                             adapterError: connection.issueStep?.errorCode,
                             note: connection.issueStep?.note,
                             transport: connection.transportIssue,
+                            command: connection.issueStep?.step.command,
                           );
                           if (mapped == null) return null;
                           return connectionFailureActionText(
@@ -552,6 +559,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
         devices: _devices,
         scanning: _scanning,
         error: _scanError,
+        scanIssue: _scanIssue,
         emptyHint: classicDeviceListEmptyHint(
           l10n,
           serialHost: sppSerialHostSupported,
@@ -915,6 +923,7 @@ class _DeviceListBody extends StatelessWidget {
     required this.emptyHint,
     required this.onRefresh,
     required this.onSelect,
+    this.scanIssue,
     this.listHint,
     this.showSettingsAction = false,
   });
@@ -922,6 +931,7 @@ class _DeviceListBody extends StatelessWidget {
   final List<DiscoveredDevice> devices;
   final bool scanning;
   final String? error;
+  final BleScanIssue? scanIssue;
   final bool showSettingsAction;
   final String emptyHint;
 
@@ -953,6 +963,19 @@ class _DeviceListBody extends StatelessWidget {
               style: context.texts.bodyMedium?.copyWith(color: palette.warning),
             ),
           ),
+          if (connectionFailureAction(scan: scanIssue) case final mapped?)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Spacing.sm),
+              child: Text(
+                connectionFailureActionText(
+                  AppLocalizations.of(context),
+                  mapped,
+                ),
+                style: context.texts.bodySmall?.copyWith(
+                  color: palette.textSecondary,
+                ),
+              ),
+            ),
           if (showSettingsAction)
             Padding(
               padding: const EdgeInsets.only(bottom: Spacing.md),
@@ -1099,6 +1122,7 @@ class _BleBodyState extends State<_BleBody> {
   /// yet with an explanation of a failure that has not happened.
   bool _scanned = false;
   String? _error;
+  BleScanIssue? _scanIssue;
   bool _permanentlyDenied = false;
   final List<_BleEntry> _found = [];
   StreamSubscription<_BleEntry>? _sub;
@@ -1118,6 +1142,7 @@ class _BleBodyState extends State<_BleBody> {
       if (!mounted) return;
       setState(() {
         _permanentlyDenied = widget.isPermanentlyDenied();
+        _scanIssue = BleScanIssue.permissionNeeded;
         _error = _permanentlyDenied
             ? l10n.connectBlePermissionDeniedForever
             : l10n.connectBlePermissionNeeded;
@@ -1127,6 +1152,7 @@ class _BleBodyState extends State<_BleBody> {
     setState(() {
       _scanning = true;
       _error = null;
+      _scanIssue = null;
       _found.clear();
     });
 
@@ -1149,10 +1175,11 @@ class _BleBodyState extends State<_BleBody> {
         onError: (Object e, StackTrace stack) {
           FlutterError.reportError(_bleScanFlutterError(e, stack));
           if (mounted) {
-            setState(
-              () =>
-                  _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e)),
-            );
+            setState(() {
+              final issue = BleTransport.scanIssueFor(e);
+              _scanIssue = issue;
+              _error = bleScanIssueText(l10n, issue);
+            });
           }
         },
         onDone: () {
@@ -1168,7 +1195,9 @@ class _BleBodyState extends State<_BleBody> {
       FlutterError.reportError(_bleScanFlutterError(e, stack));
       if (mounted) {
         setState(() {
-          _error = bleScanIssueText(l10n, BleTransport.scanIssueFor(e));
+          final issue = BleTransport.scanIssueFor(e);
+          _scanIssue = issue;
+          _error = bleScanIssueText(l10n, issue);
           _scanning = false;
           _scanned = true;
         });
@@ -1190,6 +1219,15 @@ class _BleBodyState extends State<_BleBody> {
             _error!,
             style: context.texts.bodyMedium?.copyWith(color: palette.warning),
           ),
+          if (connectionFailureAction(scan: _scanIssue) case final mapped?) ...[
+            const SizedBox(height: Spacing.sm),
+            Text(
+              connectionFailureActionText(l10n, mapped),
+              style: context.texts.bodySmall?.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+          ],
           if (_permanentlyDenied) ...[
             const SizedBox(height: Spacing.md),
             OutlinedButton.icon(
@@ -1364,13 +1402,12 @@ class _HandshakePanel extends ConsumerWidget {
               report: () {
                 final session = ref.read(obdSessionProvider.notifier);
                 final client = session.engine?.client;
-                final number = client != null &&
-                        client.protocolNumber.isNotEmpty
+                final number =
+                    client != null && client.protocolNumber.isNotEmpty
                     ? client.protocolNumber
                     : connection.protocolNumber;
                 final description = connection.protocol;
-                final observed =
-                    number.isNotEmpty ? number : description;
+                final observed = number.isNotEmpty ? number : description;
                 return ConnectionLayerReport.fromConnection(
                   kind: connection.kind,
                   protocol: observed,
