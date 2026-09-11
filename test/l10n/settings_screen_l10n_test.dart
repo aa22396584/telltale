@@ -571,6 +571,8 @@ void main() {
     await _pumpSettings(tester, locale: _englishLocale, catalog: catalog);
     await tester.tap(find.text('Choose from the official catalog'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('United States (EPA)'));
+    await tester.pumpAndSettle();
     final english = _ownedRenderedText(tester);
     expect(
       english.where(_cjk.hasMatch),
@@ -592,6 +594,8 @@ void main() {
 
     await _pumpSettings(tester, locale: _traditionalChinese, catalog: catalog);
     await tester.tap(find.text('從官方目錄選擇'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('美國（EPA）'));
     await tester.pumpAndSettle();
     final chineseBody = _ownedRenderedText(tester).join('\n');
     expect(chineseBody, contains('僅限美國市場'));

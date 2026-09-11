@@ -2083,6 +2083,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCatalogVerifying => 'Der Offline-Katalog wird überprüft…';
 
   @override
+  String get settingsCatalogChooseMarket =>
+      'Wählen Sie, welcher offizielle Katalog durchsucht wird';
+
+  @override
+  String get settingsCatalogMarketTw => 'Taiwan (MOEA-Energieverwaltung)';
+
+  @override
+  String get settingsCatalogMarketUs => 'Vereinigte Staaten (EPA)';
+
+  @override
+  String get settingsTwCertificationYear => 'Zulassungsjahr';
+
+  @override
+  String get settingsTwMake => 'Taiwan-Marke';
+
+  @override
+  String settingsTwPickerScope(int firstYear, int lastYear) {
+    return 'Nur taiwanische Zertifizierungszeilen für $firstYear–$lastYear. Das Jahr ist das Kalenderjahr der Energy Administration, kein U.S.-Modelljahr. Ein gleicher Name ist keine EPA-Konfiguration.';
+  }
+
+  @override
+  String get settingsTwPickerTitle =>
+      'Offizieller taiwanischer Fahrzeugkatalog';
+
+  @override
+  String get settingsTwReferenceMassNotCurb =>
+      'Die Referenzfahrzeugmasse ist keine Leergewichtsmasse und wird nicht angewendet.';
+
+  @override
+  String settingsTwWillApplyOnly(String fields) {
+    return 'Es wird nur $fields angewendet. Referenzmasse, VE, Cd, Stirnfläche, Crr und Getriebewirkungsgrad bleiben ungeklärt.';
+  }
+
+  @override
   String get settingsClose => 'Schließen';
 
   @override

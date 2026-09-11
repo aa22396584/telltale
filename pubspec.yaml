@@ -134,6 +134,8 @@ flutter:
     - assets/powertrain_battery/powertrain_battery_catalog.manifest.json
     - assets/vehicle_catalog/us_epa_vehicles.csv
     - assets/vehicle_catalog/us_epa_vehicles.manifest.json
+    - assets/vehicle_catalog/tw_moeaea_vehicles.csv
+    - assets/vehicle_catalog/tw_moeaea_vehicles.manifest.json
 
   # Fonts are bundled rather than fetched at runtime: demo mode must work with
   # no network, and a runtime fetch shows a fallback-font flash on first frame.

@@ -211,6 +211,7 @@ jobs:
           python3 -m py_compile \
             tool/update_us_vehicle_catalog.py \
             tool/update_us_vpic_makes.py \
+            tool/update_tw_vehicle_catalog.py \
             tool/oracle_guard/assert_no_skips.py
           python3 -m unittest discover \
             -s test/tool -p 'test_*.py' -v
