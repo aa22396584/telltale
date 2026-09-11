@@ -3979,6 +3979,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Anfrage kann auf dem Bus, den dieses Fahrzeug nutzt, nicht bearbeitet werden, daher wurde sie nicht gesendet. Ein erneuter Versuch wird daran nichts ändern.';
 
   @override
+  String get settingsManualCommandCustomFlowControlRejected =>
+      'Der Adapter hat einen Befehl zur benutzerdefinierten Flusssteuerung abgelehnt, daher wurde der angeforderte Modus nicht angewendet und keine Messung erzeugt.';
+
+  @override
+  String get settingsManualCommandFlowControlRestoreFailed =>
+      'Der Adapter hat die Wiederherstellung der Standard-Flusssteuerung (ATFCSM0) abgelehnt, daher ist die Abfrage gestoppt, bis Sie die Verbindung erneut herstellen.';
+
+  @override
+  String get settingsManualCommandExtendedAddressingUnavailable =>
+      'Erweiterte Adressierung ist auf diesem ELM327-Pfad nicht verfügbar.';
+
+  @override
+  String get settingsManualCommandRawIsoTpModeUnavailable =>
+      'Host-sichtbare ISO-TP-Reassemblierung ist auf diesem ELM327-Pfad nicht verfügbar.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Es wurde nichts eingegeben, daher wurde auch nichts gesendet.';
 

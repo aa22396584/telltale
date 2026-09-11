@@ -3190,6 +3190,22 @@
   "@settingsManualCommandRequestUnaddressable": {
     "description": "TransportIssue.requestUnaddressable. Structural: no header on this bus reaches the named controller. Distinct from queryHeaderRefused, where the adapter declined ATSH, and from notConnected, where there is no link."
   },
+  "settingsManualCommandCustomFlowControlRejected": "The adapter refused a custom flow-control command, so the requested mode was not applied and no measurement was produced.",
+  "@settingsManualCommandCustomFlowControlRejected": {
+    "description": "TransportIssue.customFlowControlRejected. The adapter answered ATFCSH, ATFCSD or ATFCSM1|2 with '?'. Distinct from unknownCommand as a generic adapter status and from busError: nothing was asked of the vehicle, and no decoded value may be shown."
+  },
+  "settingsManualCommandFlowControlRestoreFailed": "The adapter refused to restore default flow control (ATFCSM0), so polling is stopped until you reconnect.",
+  "@settingsManualCommandFlowControlRestoreFailed": {
+    "description": "TransportIssue.flowControlRestoreFailed. ATFCSM0 did not answer OK. Distinct from customFlowControlRejected: the apply already failed or finished, and default FC could not be put back. ATFCSM0 is a machine token."
+  },
+  "settingsManualCommandExtendedAddressingUnavailable": "Extended addressing is not available on this ELM327 path.",
+  "@settingsManualCommandExtendedAddressingUnavailable": {
+    "description": "TransportIssue.extendedAddressingUnavailable. Always-unavailable in the typed-FC slice; ATCEA is not implemented. Named so capability reporting cannot claim it."
+  },
+  "settingsManualCommandRawIsoTpModeUnavailable": "Host-visible ISO-TP reassembly is not available on this ELM327 path.",
+  "@settingsManualCommandRawIsoTpModeUnavailable": {
+    "description": "TransportIssue.rawIsoTpModeUnavailable. Always-unavailable in the typed-FC slice; ATCAF0 host reassembly is deferred. Named so capability reporting cannot claim it. ISO-TP is a machine token."
+  },
   "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
   "@manualCommandRefusedEmpty": {
     "description": "ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything."

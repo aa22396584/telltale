@@ -3452,6 +3452,22 @@ class AppLocalizationsZh extends AppLocalizations {
       '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
 
   @override
+  String get settingsManualCommandCustomFlowControlRejected =>
+      '轉接器拒絕了自訂 Flow Control 指令，因此未套用所要求的模式，也沒有產生任何量測值。';
+
+  @override
+  String get settingsManualCommandFlowControlRestoreFailed =>
+      '轉接器拒絕還原預設 Flow Control（ATFCSM0），因此已停止輪詢，請重新連線後再試。';
+
+  @override
+  String get settingsManualCommandExtendedAddressingUnavailable =>
+      '此 ELM327 路徑不提供延伸定址。';
+
+  @override
+  String get settingsManualCommandRawIsoTpModeUnavailable =>
+      '此 ELM327 路徑不提供主機可見的 ISO-TP 重組。';
+
+  @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';
 
   @override
@@ -7446,6 +7462,22 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandRequestUnaddressable =>
       '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
+
+  @override
+  String get settingsManualCommandCustomFlowControlRejected =>
+      '轉接器拒絕了自訂 Flow Control 指令，因此未套用所要求的模式，也沒有產生任何量測值。';
+
+  @override
+  String get settingsManualCommandFlowControlRestoreFailed =>
+      '轉接器拒絕還原預設 Flow Control（ATFCSM0），因此已停止輪詢，請重新連線後再試。';
+
+  @override
+  String get settingsManualCommandExtendedAddressingUnavailable =>
+      '此 ELM327 路徑不提供延伸定址。';
+
+  @override
+  String get settingsManualCommandRawIsoTpModeUnavailable =>
+      '此 ELM327 路徑不提供主機可見的 ISO-TP 重組。';
 
   @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';

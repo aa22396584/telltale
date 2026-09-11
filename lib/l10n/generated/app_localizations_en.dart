@@ -3906,6 +3906,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.';
 
   @override
+  String get settingsManualCommandCustomFlowControlRejected =>
+      'The adapter refused a custom flow-control command, so the requested mode was not applied and no measurement was produced.';
+
+  @override
+  String get settingsManualCommandFlowControlRestoreFailed =>
+      'The adapter refused to restore default flow control (ATFCSM0), so polling is stopped until you reconnect.';
+
+  @override
+  String get settingsManualCommandExtendedAddressingUnavailable =>
+      'Extended addressing is not available on this ELM327 path.';
+
+  @override
+  String get settingsManualCommandRawIsoTpModeUnavailable =>
+      'Host-visible ISO-TP reassembly is not available on this ELM327 path.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Nothing was typed, so nothing was sent.';
 

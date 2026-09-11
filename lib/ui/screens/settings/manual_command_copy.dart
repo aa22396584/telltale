@@ -126,6 +126,14 @@ String? commandIssueText(
       l10n.commandFailureWholeVehicleHeaderRefused(named),
     TransportIssue.legacyScanWouldBePartial =>
       l10n.commandFailureLegacyScanWouldBePartial(named),
+    TransportIssue.customFlowControlRejected =>
+      l10n.settingsManualCommandCustomFlowControlRejected,
+    TransportIssue.flowControlRestoreFailed =>
+      l10n.settingsManualCommandFlowControlRestoreFailed,
+    TransportIssue.extendedAddressingUnavailable =>
+      l10n.settingsManualCommandExtendedAddressingUnavailable,
+    TransportIssue.rawIsoTpModeUnavailable =>
+      l10n.settingsManualCommandRawIsoTpModeUnavailable,
 
     // The connect screen's half, delegated rather than duplicated.
     TransportIssue.cancelled ||

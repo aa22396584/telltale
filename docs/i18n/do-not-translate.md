@@ -11,7 +11,7 @@ translation makes them unfindable.
 The rule is not "leave English words alone". `adapter` is translated (轉接器); `ATCFC0` is
 not. The line is whether the token is *addressed to a machine or a search*, or to a person.
 
-227 tokens.
+228 tokens.
 
 ## AT commands and ELM327 control
 - `ATZ`
@@ -35,6 +35,7 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `ATCRA 7B0`
 - `ATPPS`
 - `ATFCSM1`
+- `ATFCSM0`
 - `ATH1`
 - `CFC0`
 - `CFC1`

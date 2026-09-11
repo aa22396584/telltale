@@ -114,6 +114,22 @@ const _expected = <TransportIssue, (String, String)>{
     'older bus with no standard address that reaches every controller',
     '沒有能觸及每個控制器的標準位址',
   ),
+  TransportIssue.customFlowControlRejected: (
+    'refused a custom flow-control command',
+    '拒絕了自訂 Flow Control 指令',
+  ),
+  TransportIssue.flowControlRestoreFailed: (
+    'restore default flow control (ATFCSM0)',
+    '還原預設 Flow Control（ATFCSM0）',
+  ),
+  TransportIssue.extendedAddressingUnavailable: (
+    'Extended addressing is not available',
+    '不提供延伸定址',
+  ),
+  TransportIssue.rawIsoTpModeUnavailable: (
+    'Host-visible ISO-TP reassembly is not available',
+    '不提供主機可見的 ISO-TP 重組',
+  ),
 };
 
 void main() {

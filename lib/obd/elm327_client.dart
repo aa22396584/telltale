@@ -14,6 +14,7 @@ import 'dart:convert';
 
 import 'adapter_identity.dart';
 import 'addressing.dart';
+import 'elm_flow_control.dart';
 import 'transport/obd_transport.dart';
 import 'programmable_parameters.dart';
 import 'transcript.dart';
@@ -749,6 +750,8 @@ class Elm327Client {
   /// marked critical failed.
   Future<bool> connect() async {
     _transportLost = false;
+    _flowControlRestoreFailed = false;
+    _flowControlState = const ElmFlowControlAutomatic();
     await transport.connect();
     transcript.recordNote(
       'Connection established: ${transport.displayName} (${transport.kind.label})',
@@ -922,6 +925,15 @@ class Elm327Client {
     // looking for. `_onBytes(const [])` is also how this class re-enters
     // itself to drain a buffered second reply; an empty chunk records nothing.
     transcript.recordRead(chunk);
+    // Count only through the first prompt in this chunk. A coalesced read
+    // can carry the next reply after `>`; those bytes belong to the next
+    // frame, the same way `_buffer` framing below peels at the first `>`.
+    final promptInChunk = chunk.indexOf(_promptByte);
+    if (chunk.isNotEmpty) {
+      _pendingWireBytes += promptInChunk == -1
+          ? chunk.length
+          : promptInChunk + 1;
+    }
     // The datasheet notes an ELM327 may occasionally insert a NULL byte into
     // the stream and instructs host software to discard them. With a
     // whitelist parser a stray 0x00 inside `41 0C 1A F8` invalidates the whole
@@ -946,6 +958,10 @@ class Elm327Client {
     final draining = _draining;
     if (draining != null) {
       // A genuine prompt — this is what the drain was waiting for.
+      // The frame is not parsed, but its raw length still counts against
+      // a flow-control budget that has to refuse another write.
+      _resyncDrainedWireBytes = _pendingWireBytes;
+      _pendingWireBytes = 0;
       if (!draining.isCompleted) draining.complete(true);
       return;
     }
@@ -963,8 +979,15 @@ class Elm327Client {
       return;
     }
 
+    _lastReplyWireBytes = _pendingWireBytes;
+    _pendingWireBytes = 0;
     final response = _parse(frame);
     _completePending(response);
+
+    // Remainder after this chunk's prompt is the next frame's raw prefix.
+    if (promptInChunk != -1 && promptInChunk + 1 < chunk.length) {
+      _pendingWireBytes += chunk.length - (promptInChunk + 1);
+    }
 
     // More than one prompt can arrive in a single chunk when the adapter is
     // catching up; keep draining so the surplus never lands on a later command.
@@ -1180,6 +1203,12 @@ class Elm327Client {
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
+        if (_flowControlRestoreFailed) {
+          throw const TransportException(
+            ElmFlowControlMessages.restoreFailed,
+            issue: TransportIssue.flowControlRestoreFailed,
+          );
+        }
         if (_outOfSync) await _resync();
         completer.complete(await _sendNow(command, timeout ?? commandTimeout));
       } on Object catch (e, st) {
@@ -1233,6 +1262,12 @@ class Elm327Client {
         issue: TransportIssue.notConnected,
       );
     }
+    if (_flowControlRestoreFailed) {
+      throw const TransportException(
+        ElmFlowControlMessages.restoreFailed,
+        issue: TransportIssue.flowControlRestoreFailed,
+      );
+    }
     // Refused before a transaction starts, never in the middle of one.
     //
     // `sendOnHeader` is two writes: `ATSH`, then the query. Once the adapter
@@ -1276,6 +1311,8 @@ class Elm327Client {
       if (left < timeout) timeout = left;
     }
     _buffer.clear();
+    _pendingWireBytes = 0;
+    _lastReplyWireBytes = 0;
     _searchExtended = false;
     _pendingSeen = 0;
     // Cancel before overwriting: if the previous write threw, its timer is
@@ -1350,6 +1387,8 @@ class Elm327Client {
         }
         requestedProtocol = previousRequested;
       }
+      final replyAlreadyArrived =
+          _pending == null || _pending!.isCompleted;
       _pendingTimeout?.cancel();
       _pendingTimeout = null;
       _pending = null;
@@ -1374,10 +1413,16 @@ class Elm327Client {
       //
       // So the timestamp stays — it is what the watchdog counts silence
       // against — and the link is marked out of sync so the next command
-      // drains before it writes. The only writes that are *provably* unsent
-      // are the ones rejected before `transport.write` was ever called, and
-      // those are handled above, where the proof is.
-      _outOfSync = true;
+      // drains before it writes. Two cases stay in sync: a pre-wire
+      // `WriteRefusedException` (the adapter was never asked), and a
+      // completed reply followed by a non-timeout write error (the prompt
+      // already arrived; a late flush failure must not skip the restore
+      // that still has to walk). A write *timeout* is still unknown even
+      // when a reply arrived first — R7 H-01 — so that path resyncs.
+      if (e is! WriteRefusedException &&
+          (e is TimeoutException || !replyAlreadyArrived)) {
+        _outOfSync = true;
+      }
       rethrow;
     }
 
@@ -1396,7 +1441,14 @@ class Elm327Client {
   /// `ATH0` left the client believing headers were off while every polling
   /// reply arrived with one, and the whitelist discarded all of them.
   void _applyRenderingState(String normalised, ObdResponse response) {
-    if (normalised == 'ATZ' || normalised == 'ATD') {
+    if (normalised == 'ATZ' || normalised == 'ATD' || normalised == 'ATWS') {
+      // A refused reset did not restore SM0. Claiming automatic here would
+      // let send() poll under leftover SM1/SM2. ATZ prints a banner, not
+      // `OK`; ATD/ATWS print `OK` when they take.
+      final resetAccepted = normalised == 'ATZ'
+          ? response.errorCode != Elm327ErrorCode.unknownCommand
+          : _saidOk(response);
+      if (!resetAccepted) return;
       // A reset restores the documented defaults regardless of what it prints
       // — `ATZ` answers with the version string, not `OK`.
       _headersOn = false;
@@ -1408,9 +1460,23 @@ class Elm327Client {
       // builds a fresh client; it is the same defect class as the lost `ATSH`
       // reply, and half a reset is how that one survived.
       _currentHeader = null;
+      // Same defaulting as headers: AT Z / AT D restore FC to SM0. AT WS is
+      // the same reset in the datasheet; treated as automatic when observed.
+      _flowControlState = const ElmFlowControlAutomatic();
       return;
     }
     if (!_saidOk(response)) return;
+    if (normalised == 'ATPC') {
+      // Persistence of FC after protocol close is not documented.
+      // If custom was installed, polling must stop: the adapter may
+      // still be in SM1/SM2 and this client no longer claims it.
+      // Only after a literal `OK` — `?` left the protocol and FC alone.
+      if (_flowControlState is ElmFlowControlCustom) {
+        _flowControlRestoreFailed = true;
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      return;
+    }
     if (normalised == 'ATH1') {
       _headersOn = true;
     } else if (normalised == 'ATH0') {
@@ -1449,6 +1515,7 @@ class Elm327Client {
     // is what was happening.
     transcript.recordNote('Connection is out of sync, starting realignment');
     _buffer.clear();
+    _resyncDrainedWireBytes = 0;
     final drain = Completer<bool>();
     _draining = drain;
 
@@ -1963,6 +2030,548 @@ class Elm327Client {
     return completer.future;
   }
 
+  /// Programs the adapter's ISO 15765-4 flow-control frames from a typed
+  /// config, then restores defaults on any non-`OK`.
+  ///
+  /// Commands go through [_commandChain] / [_sendNow]. State becomes `custom`
+  /// only after every apply command answers a literal `OK`. A `?`, timeout,
+  /// disconnect or budget miss leaves the mode unclaimed (`unknown`) and runs
+  /// `ATFCSM0` before this method returns, except when the link is already
+  /// gone.
+  Future<ElmFlowControlOutcome> applyFlowControl(
+    ElmFlowControlConfig config, {
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmFlowControlConfig.defaultBudget,
+    );
+    final completer = Completer<ElmFlowControlOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _applyFlowControlNow(
+            config,
+            owner: owner,
+            deadline: deadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends `ATFCSM0` and requires a literal `OK` before ordinary polling may
+  /// continue. Uses [completesCommittedTransaction] so a retired lease cannot
+  /// leave custom FC installed.
+  Future<ElmFlowControlOutcome> restoreFlowControl({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmFlowControlConfig.defaultBudget,
+    );
+    final completer = Completer<ElmFlowControlOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        if (_flowControlRestoreFailed) {
+          throw const TransportException(
+            ElmFlowControlMessages.restoreFailed,
+            issue: TransportIssue.flowControlRestoreFailed,
+          );
+        }
+        completer.complete(
+          await _restoreFlowControlNow(
+            deadline: deadline,
+            remainingWrites: ElmFlowControlConfig.maxRestoreCommands,
+            responseBytesUsed: 0,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// An automatic apply that never wrote `ATFCSM0` while the adapter is
+  /// already custom must fail closed. `budgetExceeded` plus the prior custom
+  /// state would let later `send()` poll under stale flow control.
+  ElmFlowControlOutcome? _unstartedAutomaticApplyWhileCustom(
+    ElmFlowControlConfig config,
+    ElmFlowControlState priorState,
+  ) {
+    if (config.mode != ElmFlowControlMode.automatic ||
+        priorState is! ElmFlowControlCustom) {
+      return null;
+    }
+    _flowControlState = const ElmFlowControlUnknown();
+    _flowControlRestoreFailed = true;
+    return ElmFlowControlOutcome(
+      result: ElmFlowControlResult.restoreFailed,
+      state: _flowControlState,
+    );
+  }
+
+  Future<ElmFlowControlOutcome> _applyFlowControlNow(
+    ElmFlowControlConfig config, {
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    final priorState = _flowControlState;
+    if (_flowControlRestoreFailed) {
+      throw const TransportException(
+        ElmFlowControlMessages.restoreFailed,
+        issue: TransportIssue.flowControlRestoreFailed,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      final closed = _unstartedAutomaticApplyWhileCustom(config, priorState);
+      if (closed != null) return closed;
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      final closed = _unstartedAutomaticApplyWhileCustom(config, priorState);
+      if (closed != null) return closed;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.budgetExceeded,
+        state: _flowControlState,
+      );
+    }
+    var bytes = 0;
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on TimeoutException {
+        // The drain window was the caller budget. Automatic is still
+        // known; do not throw and do not stick. Custom still fail-closes
+        // — the adapter may still be in that mode.
+        if (priorState is ElmFlowControlAutomatic) {
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.budgetExceeded,
+            state: priorState,
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        _flowControlRestoreFailed = true;
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreFailed,
+          state: _flowControlState,
+        );
+      }
+      bytes = _resyncDrainedWireBytes;
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      // Prompt arrived on the last tick; `_resync` returned after the
+      // budget. The adapter is still in [priorState]. Restore would see
+      // unknown (the loop used to clobber it) and stick the session.
+      // Applying automatic while custom is the restore itself — cannot
+      // start means the adapter stayed custom.
+      final closed = _unstartedAutomaticApplyWhileCustom(config, priorState);
+      if (closed != null) return closed;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.budgetExceeded,
+        state: priorState,
+      );
+    }
+    if (bytes > ElmFlowControlConfig.maxResponseBytes) {
+      // No ATFC* left this apply. If custom is already on the adapter,
+      // losing that fact while still allowing send() is a silent poll
+      // under stale FC. Fail closed. Automatic stays automatic.
+      if (priorState is ElmFlowControlCustom) {
+        _flowControlState = const ElmFlowControlUnknown();
+        _flowControlRestoreFailed = true;
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreFailed,
+          state: _flowControlState,
+        );
+      }
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.budgetExceeded,
+        state: priorState,
+      );
+    }
+    if (!config.compatibleWith(addressing)) {
+      throw ArgumentError(
+        'flow-control config does not match the detected CAN addressing',
+      );
+    }
+
+    final commands = config.toAtCommands();
+    if (commands.length > ElmFlowControlConfig.maxApplyCommands) {
+      _flowControlState = const ElmFlowControlUnknown();
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.budgetExceeded,
+        state: _flowControlState,
+      );
+    }
+
+    var writes = 0;
+    var started = false;
+    var retiredMidApply = false;
+    ElmFlowControlResult? failure;
+
+    for (final command in commands) {
+      if (DateTime.now().isAfter(deadline) ||
+          writes >= ElmFlowControlConfig.maxApplyCommands ||
+          bytes > ElmFlowControlConfig.maxResponseBytes) {
+        if (writes == 0) {
+          final closed = _unstartedAutomaticApplyWhileCustom(
+            config,
+            priorState,
+          );
+          if (closed != null) return closed;
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.budgetExceeded,
+            state: priorState,
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        failure = ElmFlowControlResult.budgetExceeded;
+        break;
+      }
+      if (!(mayTransmit?.call(owner) ?? true)) {
+        if (!started) {
+          final closed = _unstartedAutomaticApplyWhileCustom(
+            config,
+            priorState,
+          );
+          if (closed != null) return closed;
+          throw const OperationRetiredException(
+            'This session has ended or gone to the background, so the command was not sent.',
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        retiredMidApply = true;
+        break;
+      }
+      if (!started) {
+        if (!(config.mode == ElmFlowControlMode.automatic &&
+            priorState is ElmFlowControlAutomatic)) {
+          _flowControlState = const ElmFlowControlUnknown();
+        }
+        started = true;
+      }
+      writes++;
+      try {
+        final response = await _sendNow(
+          command,
+          commandTimeout,
+          owner: owner,
+          deadline: deadline,
+        );
+        bytes += _flowControlResponseBytes(response);
+        if (!_saidOk(response)) {
+          if (config.mode == ElmFlowControlMode.automatic &&
+              priorState is ElmFlowControlAutomatic) {
+            _flowControlState = priorState;
+            return ElmFlowControlOutcome(
+              result: ElmFlowControlResult.restoreRejected,
+              state: priorState,
+            );
+          }
+          _flowControlState = const ElmFlowControlUnknown();
+          failure = ElmFlowControlResult.rejectedUnknownCommand;
+          break;
+        }
+        if (bytes > ElmFlowControlConfig.maxResponseBytes) {
+          _flowControlState = const ElmFlowControlUnknown();
+          failure = ElmFlowControlResult.budgetExceeded;
+          break;
+        }
+      } on TimeoutException catch (e) {
+        // `_sendNow` refuses a write when the deadline is already gone,
+        // before `transport.write`. That is unsent, same as the first-write
+        // WriteRefused path: restore would stick a session that never left
+        // [priorState].
+        if (writes <= 1 && (e.message?.contains('was not sent') ?? false)) {
+          _flowControlState = priorState;
+          final closed = _unstartedAutomaticApplyWhileCustom(
+            config,
+            priorState,
+          );
+          if (closed != null) return closed;
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.budgetExceeded,
+            state: priorState,
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        failure = ElmFlowControlResult.timedOut;
+        break;
+      } on WriteRefusedException {
+        // Pre-wire: `_sendNow` never handed bytes over. Restoring would
+        // resync for a prompt the adapter does not owe, then stick the
+        // session. A later command in the same apply may already have
+        // programmed SH/SD, so only the first write rethrows.
+        if (writes <= 1) {
+          _flowControlState = priorState;
+          final closed = _unstartedAutomaticApplyWhileCustom(
+            config,
+            priorState,
+          );
+          if (closed != null) return closed;
+          rethrow;
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        failure = ElmFlowControlResult.unconfirmedWrite;
+        break;
+      } on OperationRetiredException {
+        if (!started) rethrow;
+        _flowControlState = const ElmFlowControlUnknown();
+        retiredMidApply = true;
+        break;
+      } on Object catch (e) {
+        _flowControlState = const ElmFlowControlUnknown();
+        // A fast adapter can complete the prompt before flush/plugin
+        // throws. That frame is already in `_lastReplyWireBytes`; charge
+        // it before restore decides whether another write is allowed.
+        bytes += _lastReplyWireBytes;
+        // Production Wi-Fi/BLE/classic writes rethrow the native
+        // `socket.flush()` / plugin object. `_sendNow` does not wrap it.
+        // Exception type is not evidence the adapter never saw ATFC*.
+        // Restore defaults the same way a timeout does. Only a link that
+        // is actually down skips ATFCSM0 — there is nowhere to send it.
+        if (!transport.isConnected ||
+            (e is TransportException &&
+                e.issue == TransportIssue.linkDroppedMidSession)) {
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.disconnected,
+            state: _flowControlState,
+          );
+        }
+        failure = ElmFlowControlResult.unconfirmedWrite;
+        break;
+      }
+    }
+
+    if (failure == null &&
+        !retiredMidApply &&
+        !(mayTransmit?.call(owner) ?? true)) {
+      _flowControlState = const ElmFlowControlUnknown();
+      retiredMidApply = true;
+    }
+
+    if (failure == null && !retiredMidApply) {
+      _flowControlState = config.mode == ElmFlowControlMode.automatic
+          ? const ElmFlowControlAutomatic()
+          : ElmFlowControlCustom(config);
+      return ElmFlowControlOutcome(
+        result: config.mode == ElmFlowControlMode.automatic
+            ? ElmFlowControlResult.restored
+            : ElmFlowControlResult.applied,
+        state: _flowControlState,
+      );
+    }
+
+    final restored = await _restoreFlowControlNow(
+      deadline: deadline,
+      remainingWrites: ElmFlowControlConfig.maxApplyCommands - writes,
+      responseBytesUsed: bytes,
+    );
+    if (restored.result == ElmFlowControlResult.restoreFailed ||
+        restored.result == ElmFlowControlResult.disconnected) {
+      return restored;
+    }
+    if (retiredMidApply) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    return ElmFlowControlOutcome(
+      result: failure!,
+      state: _flowControlState,
+    );
+  }
+
+  Future<ElmFlowControlOutcome> _restoreFlowControlNow({
+    required DateTime deadline,
+    required int remainingWrites,
+    required int responseBytesUsed,
+  }) async {
+    if (!transport.isConnected) {
+      _flowControlState = const ElmFlowControlUnknown();
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.disconnected,
+        state: _flowControlState,
+      );
+    }
+    if (remainingWrites < 1 ||
+        DateTime.now().isAfter(deadline) ||
+        responseBytesUsed > ElmFlowControlConfig.maxResponseBytes) {
+      // Deadline expired (or the budget was already spent) before this
+      // restore wrote anything. Automatic is still known; do not stick
+      // the session. Custom / unknown still fail closed — the adapter
+      // may still be in the mode we meant to leave.
+      if (_flowControlState is ElmFlowControlAutomatic) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.budgetExceeded,
+          state: _flowControlState,
+        );
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    }
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on Object catch (e) {
+        if (_flowControlState is ElmFlowControlAutomatic &&
+            e is TimeoutException) {
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.budgetExceeded,
+            state: _flowControlState,
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        _flowControlRestoreFailed = true;
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreFailed,
+          state: _flowControlState,
+        );
+      }
+      responseBytesUsed += _resyncDrainedWireBytes;
+      if (responseBytesUsed > ElmFlowControlConfig.maxResponseBytes) {
+        if (_flowControlState is ElmFlowControlAutomatic) {
+          return ElmFlowControlOutcome(
+            result: ElmFlowControlResult.budgetExceeded,
+            state: _flowControlState,
+          );
+        }
+        _flowControlState = const ElmFlowControlUnknown();
+        _flowControlRestoreFailed = true;
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreFailed,
+          state: _flowControlState,
+        );
+      }
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      if (_flowControlState is ElmFlowControlAutomatic) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.budgetExceeded,
+          state: _flowControlState,
+        );
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    }
+    try {
+      final response = await _sendNow(
+        ElmFlowControlConfig.restoreCommand,
+        commandTimeout,
+        deadline: deadline,
+        completesCommittedTransaction: true,
+      );
+      responseBytesUsed += _flowControlResponseBytes(response);
+      if (responseBytesUsed > ElmFlowControlConfig.maxResponseBytes) {
+        _flowControlState = const ElmFlowControlUnknown();
+        _flowControlRestoreFailed = true;
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreFailed,
+          state: _flowControlState,
+        );
+      }
+      if (_saidOk(response)) {
+        _flowControlState = const ElmFlowControlAutomatic();
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restored,
+          state: _flowControlState,
+        );
+      }
+      // A rejected ATFCSM0 cannot install SM1/SM2. Redundant restore
+      // while already automatic must not sticky-fail later send().
+      if (_flowControlState is ElmFlowControlAutomatic) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreRejected,
+          state: _flowControlState,
+        );
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    } on TimeoutException catch (e) {
+      if (_flowControlState is ElmFlowControlAutomatic &&
+          (e.message?.contains('was not sent') ?? false)) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.budgetExceeded,
+          state: _flowControlState,
+        );
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    } on WriteRefusedException {
+      if (_flowControlState is ElmFlowControlAutomatic) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.restoreRejected,
+          state: _flowControlState,
+        );
+      }
+      _flowControlState = const ElmFlowControlUnknown();
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    } on Object catch (e) {
+      _flowControlState = const ElmFlowControlUnknown();
+      // Native flush/plugin errors are not `TransportException`. A live
+      // link that refused ATFCSM0 this way still needs the sticky stop;
+      // WriteRefusedException also carries notConnected while the socket
+      // can still be up. Only an actually-down link skips the flag.
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        return ElmFlowControlOutcome(
+          result: ElmFlowControlResult.disconnected,
+          state: _flowControlState,
+        );
+      }
+      _flowControlRestoreFailed = true;
+      return ElmFlowControlOutcome(
+        result: ElmFlowControlResult.restoreFailed,
+        state: _flowControlState,
+      );
+    }
+  }
+
+  int _flowControlResponseBytes(ObdResponse response) {
+    if (_lastReplyWireBytes > 0) return _lastReplyWireBytes;
+    if (response.rawLines.isEmpty) return 0;
+    var n = 0;
+    for (final line in response.rawLines) {
+      n += line.length;
+    }
+    n += response.rawLines.length;
+    n += 1;
+    return n;
+  }
+
   /// The header the adapter has *confirmed*, or null while that is unknown.
   ///
   /// Starting this at `7E0` was a claim the app had no evidence for: nothing
@@ -1973,6 +2582,37 @@ class Elm327Client {
   /// actually had. Unknown until acknowledged is the honest state.
   String? _currentHeader;
   static const String kDefaultHeaderValue = '7E0';
+
+  /// Flow-control programming this client has confirmed, or [ElmFlowControlUnknown]
+  /// after a write whose acknowledgement was not a literal `OK`.
+  ///
+  /// A fresh client is [ElmFlowControlAutomatic]: that is the adapter default
+  /// and this instance has not sent `AT FC SM 1|2`. A new [Elm327Client] is
+  /// built per connect in `ObdSession`, so custom state cannot leak into the
+  /// next vehicle or generation.
+  ElmFlowControlState _flowControlState = const ElmFlowControlAutomatic();
+
+  /// Set when `ATFCSM0` restore does not answer `OK`. Ordinary polling is
+  /// refused until this client is replaced by a reconnect.
+  bool _flowControlRestoreFailed = false;
+
+  /// Byte length of the last prompt-delimited frame, before `_parse` drops
+  /// NULs and command echoes.
+  int _lastReplyWireBytes = 0;
+  int _pendingWireBytes = 0;
+
+  /// Raw bytes of the prompt `_resync` drained, or 0 if the window expired.
+  int _resyncDrainedWireBytes = 0;
+
+  ElmFlowControlState get flowControlState => _flowControlState;
+
+  bool get flowControlRestoreFailed => _flowControlRestoreFailed;
+
+  /// `ATCEA` is not implemented in this slice.
+  bool get supportsExtendedAddressing => false;
+
+  /// Host-visible ISO-TP (`ATCAF0`) is not implemented in this slice.
+  bool get supportsHostVisibleIsoTp => false;
 
   /// Epoch of the most recent [beginWriteAudit] call.
   ///

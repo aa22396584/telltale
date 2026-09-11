@@ -268,7 +268,11 @@ String? transportIssueText(
   TransportIssue.legacyScanWouldBePartial ||
   TransportIssue.linkStoppedResponding ||
   TransportIssue.operationRetired ||
-  TransportIssue.requestUnaddressable => null,
+  TransportIssue.requestUnaddressable ||
+  TransportIssue.customFlowControlRejected ||
+  TransportIssue.flowControlRestoreFailed ||
+  TransportIssue.extendedAddressingUnavailable ||
+  TransportIssue.rawIsoTpModeUnavailable => null,
 };
 
 /// The line under a busy spinner, or null when there is nothing to say.

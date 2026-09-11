@@ -266,6 +266,24 @@ enum TransportIssue {
   /// The request cannot be addressed on this bus. Retrying will not help:
   /// there is no header that would reach the controller it names.
   requestUnaddressable,
+
+  /// The adapter refused a typed custom flow-control command (`ATFCSH` /
+  /// `ATFCSD` / `ATFCSM1|2`). The requested mode is not active and no
+  /// measurement may be produced from that attempt.
+  customFlowControlRejected,
+
+  /// `ATFCSM0` did not answer a literal `OK`, so default flow control was
+  /// not restored. Ordinary polling is refused until reconnect.
+  flowControlRestoreFailed,
+
+  /// Extended addressing (`ATCEA`) is not implemented on this ELM327 path.
+  /// Always unavailable in this slice; named so capability reporting cannot
+  /// claim it.
+  extendedAddressingUnavailable,
+
+  /// Host-visible ISO-TP (`ATCAF0` and a host assembler) is not implemented
+  /// on this ELM327 path. Always unavailable in this slice.
+  rawIsoTpModeUnavailable,
 }
 
 /// Raised for link-level failures.

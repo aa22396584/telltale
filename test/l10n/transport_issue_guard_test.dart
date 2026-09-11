@@ -107,6 +107,10 @@ const _commandPath = <TransportIssue>{
   TransportIssue.linkStoppedResponding,
   TransportIssue.operationRetired,
   TransportIssue.requestUnaddressable,
+  TransportIssue.customFlowControlRejected,
+  TransportIssue.flowControlRestoreFailed,
+  TransportIssue.extendedAddressingUnavailable,
+  TransportIssue.rawIsoTpModeUnavailable,
 };
 
 /// The identifiers whose throw must also carry the address its sentence names.

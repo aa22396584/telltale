@@ -172,6 +172,10 @@ class AdapterFaults {
     this.refuseHeadersOff = false,
     this.refuseHeaderSwitch = false,
     this.swallowGroupedMode01 = false,
+    this.refuseFlowControl = false,
+    this.refuseFlowControlRestore = false,
+    this.dropAfterFlowControlHeader = false,
+    this.delayFlowControlReply = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -254,6 +258,21 @@ class AdapterFaults {
   /// The PID bytes have reached the adapter; the client times out waiting for
   /// `>`. Used to prove the dashboard still records observed batching.
   final bool swallowGroupedMode01;
+
+  /// Answers `?` to `ATFCSH` / `ATFCSD` / `ATFCSM1|2`. `ATFCSM0` still
+  /// restores unless [refuseFlowControlRestore] is also set.
+  final bool refuseFlowControl;
+
+  /// Answers `?` to `ATFCSM0`.
+  final bool refuseFlowControlRestore;
+
+  /// Accepts `ATFCSH` then drops the link before any reply.
+  final bool dropAfterFlowControlHeader;
+
+  /// Delays `ATFCSH` / `ATFCSD` / `ATFCSM1|2` long enough to miss a short
+  /// command timeout. `ATFCSM0` is not delayed, so a restore after timeout
+  /// can still be observed.
+  final bool delayFlowControlReply;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -449,6 +468,11 @@ class FakeElm327 extends BaseObdTransport {
   /// only ever exercises the first.
   Set<String> failWriteAfterAcceptingFor = const {};
 
+  /// Same accept-then-fail shape as [failWriteAfterAcceptingFor], but throws a
+  /// raw [Exception] the way `WifiTransport.write` lets `socket.flush()`
+  /// propagate — not a [TransportException].
+  Set<String> failWriteAfterAcceptingWithNativeErrorFor = const {};
+
   /// The opposite fault: `write` refuses at its own precondition, before any
   /// byte is accepted.
   ///
@@ -493,6 +517,9 @@ class FakeElm327 extends BaseObdTransport {
   bool _headersOn = false;
   bool _searchPending = true;
   String? _header;
+  String? _fcHeader;
+  List<int>? _fcData;
+  int _fcMode = 0;
   final List<Timer> _scheduled = [];
 
   @override
@@ -526,6 +553,16 @@ class FakeElm327 extends BaseObdTransport {
   /// had: an un-addressed request reached one controller instead of all of
   /// them, so a fixture with two ECUs answered the handshake with one.
   String get activeHeader => _header ?? protocol.functionalHeader;
+
+  /// Last `ATFCSH` value the adapter accepted, or null after SM0 / reset.
+  String? get flowControlHeader => _fcHeader;
+
+  /// Last `ATFCSD` bytes the adapter accepted.
+  List<int>? get flowControlData =>
+      _fcData == null ? null : List<int>.unmodifiable(_fcData!);
+
+  /// Last `ATFCSM` mode the adapter accepted (`0`, `1`, or `2`).
+  int get flowControlMode => _fcMode;
 
   @override
   Future<void> write(List<int> data) async {
@@ -561,6 +598,14 @@ class FakeElm327 extends BaseObdTransport {
       _acceptAndAnswer(raw);
       throw const TransportException('connection reset by peer', issue: null);
     }
+    if (failWriteAfterAcceptingWithNativeErrorFor.contains(raw.toUpperCase())) {
+      _acceptAndAnswer(raw);
+      // Production flush is awaited after `socket.add`. A fast adapter
+      // can deliver its prompt before that Future reports the native
+      // error; yield so the scheduled reply lands first.
+      await Future<void>.delayed(Duration.zero);
+      throw Exception('native flush failed');
+    }
     if (stallWriteCompletion) {
       // The shape a real TCP write actually has, and the one the stall knob
       // above cannot express: `socket.add` takes the bytes immediately and
@@ -578,6 +623,10 @@ class FakeElm327 extends BaseObdTransport {
   void _acceptAndAnswer(String raw) {
     final command = raw.toUpperCase().replaceAll(' ', '');
     commandLog.add(command);
+    if (faults.dropAfterFlowControlHeader && command.startsWith('ATFCSH')) {
+      setConnected(false);
+      return;
+    }
 
     final body = _respond(command);
 
@@ -605,7 +654,12 @@ class FakeElm327 extends BaseObdTransport {
       }
     }
 
-    final latency = slowCommands[command] ?? responseLatency;
+    var latency = slowCommands[command] ?? responseLatency;
+    if (faults.delayFlowControlReply &&
+        command.startsWith('ATFC') &&
+        command != 'ATFCSM0') {
+      latency = const Duration(milliseconds: 800);
+    }
 
     // "Wait, I'm busy", sent while the controller is still working and
     // *before* the terminal reply, with no prompt after it — which is the
@@ -718,6 +772,7 @@ class FakeElm327 extends BaseObdTransport {
       _searchPending = requiresProtocolSearch;
       _headersOn = false;
       _header = null;
+      _resetFlowControl();
       return '$identity\r\r>';
     }
     if (command == 'ATI') return '$identity\r>';
@@ -801,7 +856,51 @@ class FakeElm327 extends BaseObdTransport {
 
     if (command.startsWith('ATCRA')) return 'OK\r>';
 
+    if (command.startsWith('ATFCSH')) {
+      if (faults.refuseFlowControl) return '?\r>';
+      final value = command.substring(6);
+      if (value.length != protocol.headerDigits) return '?\r>';
+      if (!RegExp(r'^[0-9A-F]+$').hasMatch(value)) return '?\r>';
+      _fcHeader = value;
+      return 'OK\r>';
+    }
+    if (command.startsWith('ATFCSD')) {
+      if (faults.refuseFlowControl) return '?\r>';
+      final hex = command.substring(6);
+      if (hex.length < 2 || hex.length > 10 || hex.length.isOdd) return '?\r>';
+      if (!RegExp(r'^[0-9A-F]+$').hasMatch(hex)) return '?\r>';
+      final bytes = <int>[];
+      for (var i = 0; i < hex.length; i += 2) {
+        bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
+      }
+      _fcData = bytes;
+      return 'OK\r>';
+    }
+    if (command.startsWith('ATFCSM')) {
+      final mode = command.substring(6);
+      if (mode != '0' && mode != '1' && mode != '2') return '?\r>';
+      if (mode == '0') {
+        if (faults.refuseFlowControlRestore) return '?\r>';
+        _resetFlowControl();
+        return 'OK\r>';
+      }
+      if (faults.refuseFlowControl) return '?\r>';
+      if (mode == '1' && (_fcHeader == null || _fcData == null)) {
+        // Datasheet: SM1 before SH+SD answers `?`.
+        return '?\r>';
+      }
+      if (mode == '2' && _fcData == null) return '?\r>';
+      _fcMode = int.parse(mode);
+      return 'OK\r>';
+    }
+
     return '${faults.unknownAtReply}\r>';
+  }
+
+  void _resetFlowControl() {
+    _fcHeader = null;
+    _fcData = null;
+    _fcMode = 0;
   }
 
   // -------------------------------------------------------------- OBD ----

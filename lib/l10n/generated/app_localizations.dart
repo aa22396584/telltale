@@ -6221,6 +6221,30 @@ abstract class AppLocalizations {
   /// **'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.'**
   String get settingsManualCommandRequestUnaddressable;
 
+  /// TransportIssue.customFlowControlRejected. The adapter answered ATFCSH, ATFCSD or ATFCSM1|2 with '?'. Distinct from unknownCommand as a generic adapter status and from busError: nothing was asked of the vehicle, and no decoded value may be shown.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused a custom flow-control command, so the requested mode was not applied and no measurement was produced.'**
+  String get settingsManualCommandCustomFlowControlRejected;
+
+  /// TransportIssue.flowControlRestoreFailed. ATFCSM0 did not answer OK. Distinct from customFlowControlRejected: the apply already failed or finished, and default FC could not be put back. ATFCSM0 is a machine token.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to restore default flow control (ATFCSM0), so polling is stopped until you reconnect.'**
+  String get settingsManualCommandFlowControlRestoreFailed;
+
+  /// TransportIssue.extendedAddressingUnavailable. Always-unavailable in the typed-FC slice; ATCEA is not implemented. Named so capability reporting cannot claim it.
+  ///
+  /// In en, this message translates to:
+  /// **'Extended addressing is not available on this ELM327 path.'**
+  String get settingsManualCommandExtendedAddressingUnavailable;
+
+  /// TransportIssue.rawIsoTpModeUnavailable. Always-unavailable in the typed-FC slice; ATCAF0 host reassembly is deferred. Named so capability reporting cannot claim it. ISO-TP is a machine token.
+  ///
+  /// In en, this message translates to:
+  /// **'Host-visible ISO-TP reassembly is not available on this ELM327 path.'**
+  String get settingsManualCommandRawIsoTpModeUnavailable;
+
   /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
   ///
   /// In en, this message translates to:
