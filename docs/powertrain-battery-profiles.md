@@ -365,6 +365,10 @@ See [Powertrain battery catalog third-party notices](../THIRD_PARTY_NOTICES_POWE
 for source-specific attribution, transformation notes, reuse terms, and the
 non-endorsement boundary.
 
+A catalog-derived evidence/disposition matrix and fail-closed validator live
+under `tool/powertrain_evidence/`. They are not Flutter assets and are not read
+by app runtime. See that directory's README for generate/validate commands.
+
 ## Verification boundary
 
 Unit, parser, widget, integration, phone, and synthetic-rig tests can

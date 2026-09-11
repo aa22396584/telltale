@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "id": "tesla-model-3-pre-highland",
+      "aliases": ["Tesla Model 3 pre-Highland", "tesla-model3-2017-2023"],
+      "generation": "pre-Highland",
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["tesla-model3-2017-2023"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "tesla-model-3-highland",
+      "aliases": ["Tesla Model 3 Highland", "tesla-model3-highland-2023-2026"],
+      "generation": "Highland",
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["tesla-model3-highland-2023-2026"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "tesla-model-y",
+      "aliases": ["Tesla Model Y", "tesla-model-y-long-range-awd-us-2020-2026"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["tesla-model-y-long-range-awd-us-2020-2026"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-atto3-post-2024-10",
+      "aliases": ["BYD Atto 3 post-2024.10", "Yuan Plus post-2024.10"],
+      "firmware_scope": "firmware 2024.10 and later",
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-seagull-dolphin-mini",
+      "aliases": ["BYD Seagull", "Dolphin Mini", "Surf"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-dolphin",
+      "aliases": ["BYD Dolphin"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-atto2-yuan-up",
+      "aliases": ["BYD Atto 2", "Yuan Up"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-seal",
+      "aliases": ["BYD Seal"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-seal-u-song",
+      "aliases": ["BYD Seal U", "Song"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "byd-sealion",
+      "aliases": ["BYD Sealion"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "geely-galaxy-xingyuan",
+      "aliases": ["Geely Galaxy Xingyuan"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "zeekr",
+      "aliases": ["Zeekr"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "wuling-hongguang-mini-ev",
+      "aliases": ["Wuling Hongguang Mini EV"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "xiaomi-su7",
+      "aliases": ["Xiaomi SU7"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "xiaomi-yu7",
+      "aliases": ["Xiaomi YU7"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "xpeng",
+      "aliases": ["XPeng"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "volkswagen-id3-meb",
+      "aliases": ["VW ID.3", "volkswagen-id3-2020-2026"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["volkswagen-id3-2020-2026"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "volkswagen-id4-meb",
+      "aliases": ["VW ID.4", "volkswagen-id4-2020-2026"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["volkswagen-id4-2020-2026"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "renault-current-ev",
+      "aliases": ["Renault current EV families"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["renault-zoe-gen2-2020-2024"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "hyundai-kia-egmp-beyond-shipped-community",
+      "aliases": ["Hyundai/Kia E-GMP nameplates beyond shipped community profiles"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "hyundai-ioniq5-2025-2026",
+        "kia-ev9-egmp-2024-2025-experimental"
+      ],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "nissan-leaf",
+      "aliases": ["Nissan Leaf"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "nissan-leaf-ze0-2010-2017",
+        "nissan-leaf-ze1-2017-2026"
+      ],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "nissan-ariya",
+      "aliases": ["Nissan Ariya", "nissan-ariya-fwd-63kwh-us-2025-2026"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": ["nissan-ariya-fwd-63kwh-us-2025-2026"],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "bmw-electrified",
+      "aliases": ["BMW electrified families"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "bmw-i3-bev-2013-2016",
+        "bmw-i3-bev-2017-2018",
+        "bmw-i3-bev-2019-2022"
+      ],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    },
+    {
+      "id": "mg-zs-ev-mk2",
+      "aliases": ["MG ZS EV Mk2", "MG ZS EV facelift"],
+      "disposition": "unknown",
+      "blocker": "not yet researched",
+      "evidence_date": "2026-09-11",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "source_families": [],
+      "signals": [],
+      "priority": {
+        "source": "ImL1s/telltale#332 seed priority set",
+        "as_of": "2026-09-11",
+        "scope": "globally important or currently requested electrified families",
+        "method": "issue enumeration; not a sales rank or evidence tier"
+      }
+    }
+  ]
+}

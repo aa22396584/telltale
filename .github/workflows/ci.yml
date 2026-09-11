@@ -217,6 +217,37 @@ jobs:
           python3 -m unittest discover \
             -s test/tool -p 'test_*.py' -v
 
+  powertrain-evidence:
+    name: powertrain evidence matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.4"
+          architecture: x64
+
+      # Research tooling only. The matrix is not a Flutter asset and is not
+      # read by app runtime. This job claims .github/workflows/ci.yml for an
+      # additive job; it does not change existing jobs.
+      - name: Generate, test, and validate the evidence matrix
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tool/powertrain_evidence/generate_matrix.py \
+            tool/powertrain_evidence/validate_matrix.py \
+            tool/powertrain_evidence/schema.py
+          python3 -m unittest discover \
+            -s tool/powertrain_evidence -p 'test_*.py' -v
+          python3 tool/powertrain_evidence/generate_matrix.py --check
+          python3 tool/powertrain_evidence/validate_matrix.py
+
   apple:
     name: Apple build + functional smoke
     runs-on: macos-latest
