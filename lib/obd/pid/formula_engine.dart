@@ -555,7 +555,7 @@ class FormulaEngine {
   }) {
     if (equation.trim().isEmpty) {
       throw FormulaException(
-        '公式是空的',
+        'Formula is empty',
         equation,
         issue: FormulaIssue.emptyFormula,
       );
@@ -1325,7 +1325,7 @@ class FormulaEngine {
       final parts = _splitBinaryArgs(call.inner);
       if (parts == null) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1361,7 +1361,7 @@ class FormulaEngine {
       final parts = _splitNaryArgs(call.inner, arity);
       if (parts == null) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1395,7 +1395,7 @@ class FormulaEngine {
       }
       if (call.inner.contains("'") || call.inner.contains('"')) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1404,7 +1404,7 @@ class FormulaEngine {
       final parts = _splitLookupArgs(call.inner);
       if (parts == null) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1448,7 +1448,7 @@ class FormulaEngine {
       }
       if (call.inner.contains("'") || call.inner.contains('"')) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1457,7 +1457,7 @@ class FormulaEngine {
       final parts = _splitLookupArgs(call.inner);
       if (parts == null) {
         throw FormulaException(
-          '無法解析 "${call.inner}"',
+          'Cannot parse "${call.inner}"',
           source,
           issue: FormulaIssue.unparsableTerm,
           term: call.inner,
@@ -1668,7 +1668,7 @@ class FormulaEngine {
     }
     if (eq < 0 || depth != 0) {
       throw FormulaException(
-        '無法解析 "$pair"',
+        'Cannot parse "$pair"',
         source,
         issue: FormulaIssue.unparsableTerm,
         term: pair,
@@ -1678,7 +1678,7 @@ class FormulaEngine {
     final mapped = pair.substring(eq + 1).trim();
     if (key.isEmpty || mapped.isEmpty) {
       throw FormulaException(
-        '無法解析 "$pair"',
+        'Cannot parse "$pair"',
         source,
         issue: FormulaIssue.unparsableTerm,
         term: pair,
@@ -1708,7 +1708,7 @@ class FormulaEngine {
     }
     if (eq < 0 || depth != 0) {
       throw FormulaException(
-        '無法解析 "$pair"',
+        'Cannot parse "$pair"',
         source,
         issue: FormulaIssue.unparsableTerm,
         term: pair,
@@ -1718,7 +1718,7 @@ class FormulaEngine {
     final mapped = pair.substring(eq + 1).trim();
     if (key.isEmpty || mapped.isEmpty) {
       throw FormulaException(
-        '無法解析 "$pair"',
+        'Cannot parse "$pair"',
         source,
         issue: FormulaIssue.unparsableTerm,
         term: pair,
@@ -1735,7 +1735,7 @@ class FormulaEngine {
       } else if (depth == 0 && c == '~') {
         if (tilde != -1) {
           throw FormulaException(
-            '無法解析 "$pair"',
+            'Cannot parse "$pair"',
             source,
             issue: FormulaIssue.unparsableTerm,
             term: pair,
@@ -1751,7 +1751,7 @@ class FormulaEngine {
     final hi = key.substring(tilde + 1).trim();
     if (lo.isEmpty || hi.isEmpty) {
       throw FormulaException(
-        '無法解析 "$pair"',
+        'Cannot parse "$pair"',
         source,
         issue: FormulaIssue.unparsableTerm,
         term: pair,
@@ -1868,7 +1868,7 @@ class FormulaEngine {
         }
         if (!bit.isFinite || bit != bit.truncateToDouble() || bit < 0) {
           throw FormulaException(
-            '無法解析 "$bit"',
+            'Cannot parse "$bit"',
             source,
             issue: FormulaIssue.unparsableTerm,
             term: bit.toString(),
@@ -1886,7 +1886,7 @@ class FormulaEngine {
     var s = expression.trim();
     if (s.isEmpty) {
       throw FormulaException(
-        '子運算式是空的',
+        'Empty sub-expression',
         source,
         issue: FormulaIssue.emptySubExpression,
       );
@@ -1905,7 +1905,7 @@ class FormulaEngine {
       final close = s.indexOf(')');
       if (close == -1) {
         throw FormulaException(
-          '括號沒有配對',
+          'Unbalanced parentheses',
           source,
           issue: FormulaIssue.unbalancedParentheses,
         );
@@ -1913,7 +1913,7 @@ class FormulaEngine {
       final open = s.lastIndexOf('(', close);
       if (open == -1) {
         throw FormulaException(
-          '括號沒有配對',
+          'Unbalanced parentheses',
           source,
           issue: FormulaIssue.unbalancedParentheses,
         );
@@ -1967,7 +1967,7 @@ class FormulaEngine {
     if (s.startsWith('!')) return _reduce(s.substring(1), source) == 0.0 ? 1.0 : 0.0;
 
     throw FormulaException(
-      '無法解析 "$s"',
+      'Cannot parse "$s"',
       source,
       issue: FormulaIssue.unparsableTerm,
       term: s,
