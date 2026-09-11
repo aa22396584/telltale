@@ -120,13 +120,23 @@ FuelType? _exactFuelType(CaVehicleConfiguration configuration) {
   // which leaves hybrid fuel unresolved. NRCan ICE files have no atvType
   // column; the official model string is the marker that is present.
   if (configuration.resourceClass != 'ice') return null;
-  if (configuration.model.toLowerCase().contains('hybrid')) return null;
+  if (_officialIceHybridModel(configuration.model)) return null;
   return switch (configuration.fuelType.trim()) {
     'X' || 'Z' => FuelType.gasoline,
     'D' => FuelType.diesel,
     'E' => FuelType.ethanolE85,
     _ => null,
   };
+}
+
+/// NRCan ICE names for electric-assist vehicles that the physics model cannot
+/// express. `Hybrid` in the official model is one marker. `Prius` is the other
+/// in this snapshot: the HEV rows are filed as `Prius` / `Prius AWD` /
+/// `Prius c` without the word Hybrid.
+bool _officialIceHybridModel(String model) {
+  final lower = model.trim().toLowerCase();
+  if (lower.contains('hybrid')) return true;
+  return lower == 'prius' || lower.startsWith('prius ');
 }
 
 SourcedField<T> _reusableAssumption<T>(

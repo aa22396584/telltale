@@ -4,6 +4,8 @@ import csv
 import importlib.util
 import io
 from pathlib import Path
+import stat
+import tempfile
 import unittest
 from unittest import mock
 
@@ -189,6 +191,47 @@ class CaVehicleCatalogUpdaterTest(unittest.TestCase):
         with self.assertRaises(self.updater.CatalogError) as raised:
             self.updater.normalized_catalog([(resource, ice)])
         self.assertIn("duplicate ca_id", str(raised.exception))
+
+    def test_atomic_write_replaces_file_with_stable_permissions_and_no_temp_file(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "ca_nrcan_vehicles.csv"
+            output.write_bytes(b"old")
+            self.updater.write_atomic(output, b"new")
+            self.assertEqual(output.read_bytes(), b"new")
+            self.assertEqual(stat.S_IMODE(output.stat().st_mode), 0o644)
+            self.assertEqual(list(Path(directory).glob(".*.tmp")), [])
+
+    def test_atomic_write_preserves_old_file_and_cleans_temp_when_replace_fails(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "ca_nrcan_vehicles.csv"
+            output.write_bytes(b"old")
+            with mock.patch.object(
+                self.updater.os, "replace", side_effect=OSError("replace failed")
+            ):
+                with self.assertRaisesRegex(OSError, "replace failed"):
+                    self.updater.write_atomic(output, b"new")
+            self.assertEqual(output.read_bytes(), b"old")
+            self.assertEqual(list(Path(directory).glob(".*.tmp")), [])
+
+    def test_write_outputs_replaces_catalog_and_manifest_atomically(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            catalog_path = output_dir / self.updater.CATALOG_FILENAME
+            manifest_path = output_dir / self.updater.MANIFEST_FILENAME
+            catalog_path.write_bytes(b"old-catalog")
+            manifest_path.write_text("old-manifest\n", encoding="utf-8")
+            self.updater.write_outputs(
+                output_dir,
+                b"new-catalog",
+                {"schema_version": 1},
+            )
+            self.assertEqual(catalog_path.read_bytes(), b"new-catalog")
+            self.assertIn('"schema_version": 1', manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(list(output_dir.glob(".*.tmp")), [])
 
 
 if __name__ == "__main__":
