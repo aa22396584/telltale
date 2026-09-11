@@ -131,6 +131,17 @@ void main() {
       responder: '7E8',
     );
     expect(decoded.tests, isEmpty);
+    expect(decoded.responder, '7E8');
+    expect(decoded.supportedMids, {0x01});
+  });
+
+  test('a second controller support mask keeps its own responder', () {
+    const payload = <int>[0x46, 0x00, 0x80, 0x00, 0x00, 0x00];
+    final decoded = Mode06CanDecoder.decode(
+      payload: payload,
+      responder: '7E9',
+    );
+    expect(decoded.responder, '7E9');
     expect(decoded.supportedMids, {0x01});
   });
 
@@ -141,6 +152,7 @@ void main() {
       responder: '7E8',
     );
     expect(decoded.tests, isEmpty);
+    expect(decoded.responder, '7E8');
     expect(decoded.supportedMids, {0xE0});
   });
 

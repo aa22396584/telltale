@@ -49,10 +49,12 @@ final class Mode06TestResult {
 
 final class Mode06CanResponse {
   const Mode06CanResponse({
+    required this.responder,
     required this.tests,
     required this.supportedMids,
   });
 
+  final String responder;
   final List<Mode06TestResult> tests;
   final Set<int> supportedMids;
 }
@@ -105,12 +107,16 @@ abstract final class Mode06CanDecoder {
     }
     final mid = payload[1];
     if (_supportMids.contains(mid)) {
-      return _decodeSupport(payload, mid);
+      return _decodeSupport(payload, mid, responder);
     }
     return _decodeTests(payload, responder);
   }
 
-  static Mode06CanResponse _decodeSupport(List<int> payload, int mid) {
+  static Mode06CanResponse _decodeSupport(
+    List<int> payload,
+    int mid,
+    String responder,
+  ) {
     if (payload.length != 6) {
       throw const Mode06DecodeException(
         'Mode 06 support mask must be SID, MID and four mask bytes',
@@ -129,6 +135,7 @@ abstract final class Mode06CanDecoder {
       }
     }
     return Mode06CanResponse(
+      responder: responder,
       tests: const [],
       supportedMids: Set.unmodifiable(supported),
     );
@@ -146,6 +153,7 @@ abstract final class Mode06CanDecoder {
       tests.add(_decodeTest(body.sublist(offset, offset + _testBlock), responder));
     }
     return Mode06CanResponse(
+      responder: responder,
       tests: List.unmodifiable(tests),
       supportedMids: const {},
     );
