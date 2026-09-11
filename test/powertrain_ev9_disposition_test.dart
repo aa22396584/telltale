@@ -14,9 +14,15 @@ import 'package:torque_obd/obd/powertrain_battery/powertrain_battery_profile.dar
 import 'package:torque_obd/obd/powertrain_battery/profile_catalog_validator.dart';
 
 const _ev9Id = 'kia-ev9-egmp-2024-2025-experimental';
+const _ioniq5CommunityId = 'hyundai-ioniq5-egmp-2021-2024-community';
+const _ioniq5IndexId = 'hyundai-ioniq5-2021-2024';
+const _ev6CommunityId = 'kia-ev6-egmp-2022-2024-community';
+const _ev6IndexId = 'kia-ev6-2021-2026';
 const _obdbArtifactSha256 =
     'dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975';
 const _obdbRevision = '85d8cff25e849a6e421cda20cbadfd4630fe85e7';
+const _packCurrentEquation = '(SIGNED(A)*256+B)/10';
+const _evDashRevision = 'c8c1e2d3acd6afa4719fa78b10359cd6708c72b2';
 
 const _capturePins = <String, String>{
   'tests/test_cases/2024/commands/7E4.7EC.220101|fc=1.yaml':
@@ -85,7 +91,9 @@ void main() {
         .singleWhere((command) => command.identifier == '0101')
         .signals
         .singleWhere((signal) => signal.id == 'pack_current');
-    expect(current.equation, '(SIGNED(A)*256+B)/10');
+    expect(current.equation, _packCurrentEquation);
+    expect(current.equation, contains('SIGNED'));
+    expect(current.equation, contains('/10'));
   });
 
   test('EV9 secondary_sources stays empty', () {
@@ -129,5 +137,53 @@ void main() {
     expect(limitations, contains('no EV9'));
     expect(limitations, contains('6540.2 A'));
     expect(limitations, contains('-13.4 A'));
+    expect(limitations, contains(_evDashRevision));
+    expect(limitations, contains('inverts pack-current polarity'));
+    expect(limitations, contains('AutoVakt'));
+    expect(limitations, contains('0105 offset-28 stay withheld'));
+  });
+
+  test('EV9 ships no inlet temperature or 0105 offset-28 signal', () {
+    final ids = [
+      for (final command in profile.commands)
+        for (final signal in command.signals) signal.id,
+    ];
+    expect(ids, isNot(contains('battery_inlet_temp')));
+    expect(ids, isNot(contains('inlet_temp')));
+    expect(ids.any((id) => id.toLowerCase().contains('inlet')), isFalse);
+    final cmd0105 = profile.commands.singleWhere(
+      (candidate) => candidate.identifier == '0105',
+    );
+    expect([
+      for (final signal in cmd0105.signals) signal.offset,
+    ], isNot(contains(28)));
+  });
+
+  test('EV9 does not cite Ioniq 5 or EV6 profile ids as sources', () {
+    const foreignIds = [
+      _ioniq5CommunityId,
+      _ioniq5IndexId,
+      _ev6CommunityId,
+      _ev6IndexId,
+    ];
+    final fields = [
+      profile.source.name,
+      profile.source.url,
+      profile.source.path,
+      profile.source.locator,
+      profile.source.revision,
+    ];
+    for (final id in foreignIds) {
+      for (final field in fields) {
+        expect(field, isNot(contains(id)), reason: field);
+      }
+      for (final secondary in profile.secondarySources) {
+        expect(secondary.name, isNot(contains(id)));
+        expect(secondary.url, isNot(contains(id)));
+        expect(secondary.path, isNot(contains(id)));
+        expect(secondary.locator, isNot(contains(id)));
+        expect(secondary.revision, isNot(contains(id)));
+      }
+    }
   });
 }

@@ -333,4 +333,73 @@ void main() {
     );
     expect(current.value, closeTo(-13.4, 0.0001));
   });
+
+  test(
+    'EV9 0101 from 7EA or 7E8 is refused, not decoded as pack_current',
+    () async {
+      final snapshot = await PowertrainBatteryCatalogAsset.load(rootBundle);
+      final ev9 = snapshot.catalog.profiles.singleWhere(
+        (profile) => profile.id == 'kia-ev9-egmp-2024-2025-experimental',
+      );
+      final command = ev9.commands.singleWhere(
+        (candidate) => candidate.modeAndIdentifier == '220101',
+      );
+      expect(command.requestHeader, '7E4');
+      expect(command.expectedResponder, '7EC');
+
+      for (final responder in const ['7EA', '7E8']) {
+        final wrong = PowertrainBatteryProbe.decode(
+          profile: ev9,
+          command: command,
+          catalogSha256: snapshot.catalogSha256,
+          response: ObdResponse(
+            bytes: _p0101,
+            frames: [ObdFrame(_p0101, sourceId: responder)],
+            headersEnabled: true,
+          ),
+        );
+        expect(wrong.passed, isFalse, reason: responder);
+        expect(
+          wrong.failure,
+          PowertrainBatteryProbeFailure.responderMismatch,
+          reason: responder,
+        );
+        expect(wrong.readings, isEmpty, reason: responder);
+        expect(
+          wrong.readings.any((reading) => reading.signal.id == 'pack_current'),
+          isFalse,
+          reason: responder,
+        );
+        expect(wrong.responder, responder);
+      }
+    },
+  );
+
+  test('EV9 0101 shorter than 59 payload bytes fails closed', () async {
+    final snapshot = await PowertrainBatteryCatalogAsset.load(rootBundle);
+    final ev9 = snapshot.catalog.profiles.singleWhere(
+      (profile) => profile.id == 'kia-ev9-egmp-2024-2025-experimental',
+    );
+    final command = ev9.commands.singleWhere(
+      (candidate) => candidate.modeAndIdentifier == '220101',
+    );
+    final short = _p0101.sublist(0, 40);
+    final result = PowertrainBatteryProbe.decode(
+      profile: ev9,
+      command: command,
+      catalogSha256: snapshot.catalogSha256,
+      response: ObdResponse(
+        bytes: short,
+        frames: [ObdFrame(short, sourceId: '7EC')],
+        headersEnabled: true,
+      ),
+    );
+    expect(result.passed, isFalse);
+    expect(result.failure, PowertrainBatteryProbeFailure.payloadLengthMismatch);
+    expect(result.readings, isEmpty);
+    expect(
+      result.readings.any((reading) => reading.signal.id == 'pack_current'),
+      isFalse,
+    );
+  });
 }

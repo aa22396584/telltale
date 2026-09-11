@@ -259,8 +259,12 @@ temperature and the `0105` offset-28 deterioration signal stay excluded.
 `85074a0ae7a983b308c6e2e081185492527ee073` and has no EV9 module.
 `meatpiHQ/wican-fw` `vehicle_profiles/kia` has EV6/Niro/Soul and no
 `ev9.json`. `iternio/ev-obd-pids` has no EV9 file. The unsigned 6540.2 A
-capture expectation is unchanged. Disposition remains RETAIN EXPERIMENTAL;
-`year_from`/`year_to` stay 2024–2025.
+capture expectation is unchanged. Consulted `nickn17/evDash`
+`c8c1e2d3acd6afa4719fa78b10359cd6708c72b2` (`src/CarKiaEV9.cpp`) inverts
+pack-current polarity and is not counted. AutoVakt `kia_ev9.json` is an
+Ioniq 5/6 clone plus `ATFCSM1` boilerplate and is excluded. Inlet
+temperature and 0105 offset-28 stay withheld. Disposition remains RETAIN
+EXPERIMENTAL; `year_from`/`year_to` stay 2024–2025.
 
 ### Lexus RX450hL — experimental
 

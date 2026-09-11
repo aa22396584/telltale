@@ -288,6 +288,19 @@ it may be installed as unverified PIDs and is not community-corroborated.
 `meatpiHQ/wican-fw` has no `ev9.json`. Pack current remains the signed
 repair of OBDb's unsigned 6540.2 A capture expectation.
 
+Consulted, disagreeing family — **not counted as community corroboration**;
+polarity disagrees (evDash negates the signed `/10` decode) and Telltale
+does not send its `021003`/`3E00` session commands:
+
+- `nickn17/evDash`, pinned at `c8c1e2d3acd6afa4719fa78b10359cd6708c72b2`.
+  Licence: MIT, Copyright (c) 2020 NiCK.n17
+  (LICENSE SHA-256
+  `9dd9f5db06cebd36aa1918b925481f67804742fd6ed9361d83c7990f9c870e9d`).
+  - `src/CarKiaEV9.cpp` SHA-256
+    `7aeaf84a910a26d0b08bc579e8eb3f3cb3a7f77dccb53283e810feee157aa2d5`
+    — model-explicit E-GMP parser; 220101 current is
+    `-hexToDecFromResponse(26,30,2,true)/10.0`.
+
 ### MG4 Electric community corroboration
 
 - `OBDb/MG-MG4`, pinned at `271f098e5020ca0be109db68dc277d7bfa962c1e`;

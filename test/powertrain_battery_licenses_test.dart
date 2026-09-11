@@ -36,5 +36,13 @@ void main() {
         'dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975',
       ),
     );
+    expect(text, contains('c8c1e2d3acd6afa4719fa78b10359cd6708c72b2'));
+    expect(
+      text,
+      contains(
+        '7aeaf84a910a26d0b08bc579e8eb3f3cb3a7f77dccb53283e810feee157aa2d5',
+      ),
+    );
+    expect(text, contains('MIT'));
   });
 }
