@@ -70,6 +70,41 @@ the artifact, not that they walked it, which is what this file is for. A
 weaker claim that is true beats a stronger one nobody can check, and the price
 of keeping it is one sentence in the release notes saying which claim it is.
 
+## 2026-09-11 — 1.0.14 release APK on Galaxy S24 Ultra (Pixel_9 installed)
+
+Device walk attested: 1.0.14
+
+Samsung `R5CX10VFFBA` (zh-TW) and emulator-5554 `Pixel_9` (APK installed;
+the photographed walk is the S24 Ultra). Built `app-field-release.apk` from
+`release/1.0.14` with `-PallowUnsignedRelease=true` so it could overlay the
+debug-signed 1.0.13 already on the phone — uninstalling that install would
+wipe `dataDir`, which this walk does not. **The walked binary is debug-signed
+and is not the artifact CI or Play publishes**; the walk establishes
+behaviour, not the release signature. emulator-5556 was not used.
+
+`dumpsys package` after install, read from the package manager: both devices
+`versionCode=15 versionName=1.0.14`. `logcat` on the phone pid: zero
+`E/flutter`, zero `FATAL EXCEPTION`, zero `RenderFlex` / `MissingPluginException`.
+
+Walked on the phone, changelog flows: language picker lists Deutsch beside
+English, 繁體中文 and the system default, before any connection. Affiliate
+line still 蝦皮 in zh-TW. Demo ECU live gauges (`Demo ECU (2.0L Turbo I4)`,
+`AUTO, ISO 15765-4 (CAN 11/500)`, **批次讀取**, `72 PIDs/s`, `14.1 V`).
+Fault codes: 3 codes, VIN `1D4GP00R55B123456`, freeze-frame cause `P0301`
+so the Mode 02 gate was exercised, readiness monitors present. Settings
+market sheet lists 美國（EPA） and 臺灣（經濟部能源署）. Taiwan picker
+hedges that the year is a certification calendar year not a U.S. model year,
+that namesakes are not EPA configurations, and that 參考車重 is not curb
+mass. Applied `2023 HONDA CIVIC TOP-E · A1 · 5D` — provenance reads
+`官方精確 1/8` / `MOEA Energy Administration` and `只會套用：排氣量`.
+No crash. No adapter, no vehicle.
+
+Harness: `integration_test/demo_rig_test.dart` PASS on `R5CX10VFFBA` and
+on `emulator-5554`. `tool/telemetry_lifecycle_rig/run.sh` PASS on both.
+`integration_test/wifi_rig_test.dart` PASS on `R5CX10VFFBA` against Ircama
+on `192.168.1.109:35000` (phone `wlan0` `192.168.1.142/24`). BLE peripheral
+rig not run — needs a second machine.
+
 ## 2026-09-11 — 1.0.13 release APK on Pixel_9 and Galaxy S24 Ultra
 
 Device walk attested: 1.0.13

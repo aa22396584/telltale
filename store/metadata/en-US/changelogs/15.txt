@@ -1,0 +1,1 @@
+Settings can pick a Taiwan Energy Administration identity (cc→litres only; reference mass is not curb weight). A failed connection now names one next step. LOOKUP/CLOSEST formulas evaluate. BARO(), INT16 and time-window formulas are refused instead of becoming a plausible wrong number. 0100 NO DATA is not proof the vehicle has no OBD.
