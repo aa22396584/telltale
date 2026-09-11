@@ -59,23 +59,44 @@ void main() {
     expect(text.toLowerCase(), isNot(contains('broken')));
   });
 
-  test('adapter up but no ECU is ignition, protocol, or adapter capability', () {
-    expect(
-      connectionFailureAction(note: InitNote.ecuSilent),
-      ConnectionFailureAction.checkIgnitionProtocolAdapter,
-    );
-    expect(
-      connectionFailureAction(adapterError: Elm327ErrorCode.unableToConnect),
-      ConnectionFailureAction.checkIgnitionProtocolAdapter,
-    );
-    final text = connectionFailureActionText(
-      en,
-      ConnectionFailureAction.checkIgnitionProtocolAdapter,
-    );
-    expect(text.toLowerCase(), contains('ignition'));
-    expect(text.toLowerCase(), contains('protocol'));
-    expect(text, contains('not proof the vehicle has no OBD'));
-  });
+  test(
+    'adapter up but no ECU is ignition, protocol, or adapter capability',
+    () {
+      expect(
+        connectionFailureAction(note: InitNote.ecuSilent),
+        ConnectionFailureAction.checkIgnitionProtocolAdapter,
+      );
+      expect(
+        connectionFailureAction(adapterError: Elm327ErrorCode.unableToConnect),
+        ConnectionFailureAction.checkIgnitionProtocolAdapter,
+      );
+      expect(
+        connectionFailureAction(
+          adapterError: Elm327ErrorCode.noData,
+          command: '0100',
+        ),
+        ConnectionFailureAction.checkIgnitionProtocolAdapter,
+      );
+      expect(
+        connectionFailureAction(adapterError: Elm327ErrorCode.noData),
+        isNull,
+      );
+      expect(
+        connectionFailureAction(
+          adapterError: Elm327ErrorCode.noData,
+          command: '010C',
+        ),
+        isNull,
+      );
+      final text = connectionFailureActionText(
+        en,
+        ConnectionFailureAction.checkIgnitionProtocolAdapter,
+      );
+      expect(text.toLowerCase(), contains('ignition'));
+      expect(text.toLowerCase(), contains('protocol'));
+      expect(text, contains('not proof the vehicle has no OBD'));
+    },
+  );
 
   test('BUS INIT maps to retry or Auto, not vehicle unsupported', () {
     expect(
@@ -106,10 +127,17 @@ void main() {
   });
 
   test('the Connect error banner reads the mapping', () {
-    final source = File(
-      'lib/ui/screens/connect/connect_screen.dart',
-    ).readAsStringSync();
+    final source = File('lib/ui/screens/connect/connect_screen.dart')
+        .readAsStringSync();
     expect(source.contains('connectionFailureAction('), isTrue);
     expect(source.contains('connectionFailureActionText('), isTrue);
+    expect(
+      source.contains('command: connection.issueStep?.step.command'),
+      isTrue,
+    );
+    expect(source.contains('scan: scanIssue'), isTrue);
+    expect(source.contains('scan: _scanIssue'), isTrue);
+    expect(source.contains('BleScanIssue.permissionNeeded'), isTrue);
+    expect(source.contains('BleScanIssue.poweredOff'), isTrue);
   });
 }

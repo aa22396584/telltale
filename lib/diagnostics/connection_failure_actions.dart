@@ -26,6 +26,7 @@ ConnectionFailureAction? connectionFailureAction({
   Elm327ErrorCode? adapterError,
   InitNote? note,
   TransportIssue? transport,
+  String? command,
 }) {
   if (scan == BleScanIssue.permissionNeeded) {
     return ConnectionFailureAction.openSettings;
@@ -43,7 +44,8 @@ ConnectionFailureAction? connectionFailureAction({
     return ConnectionFailureAction.retryOrAuto;
   }
   if (adapterError == Elm327ErrorCode.unableToConnect ||
-      note == InitNote.ecuSilent) {
+      note == InitNote.ecuSilent ||
+      (adapterError == Elm327ErrorCode.noData && command == '0100')) {
     return ConnectionFailureAction.checkIgnitionProtocolAdapter;
   }
   if (transport == TransportIssue.wifiHostUnreachable ||
