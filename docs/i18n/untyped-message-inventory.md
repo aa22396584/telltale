@@ -24,7 +24,7 @@ transcripts/export are listed only to keep the census honest.
 | ~~`obd/transport/wifi_transport.dart`~~ | No longer interpolates `e.message`; connect screen maps `TransportIssue`. |
 | ~~`ui/screens/pids/powertrain_battery_catalog_screen.dart`~~ | Snack maps `PowertrainProfileInstallIssue`. |
 | ~~`ui/screens/pids/pid_editor_screen.dart`~~ | Falls back to `pidFormulaUnidentified`, not `e.message`. |
-| ~~`state/dtc_scan.dart`~~ | Stores `DtcClearNotice` / `DtcScanBanner`; screen maps them. Category `DtcReadException.message` fallback remains. |
+| ~~`state/dtc_scan.dart`~~ | Stores `DtcClearNotice` / `DtcScanBanner`; screen maps them. Category panel maps `dtcCategoryFailureText`; `failure.message` is forbidden. |
 | `obd/polling_engine.dart` | `DtcReadException` still wraps `e.message` for the transcript; the category screen maps identifiers/kind |
 | `obd/transport/ble_transport.dart` | `userFacingScanFailure` returns `error.message` for `BleRadioUnavailableException` (transcript-only) |
 | ~~`obd/transport/classic_transport.dart`~~ | `message_fallback_guard` forbids `error.message`; no connect-path interpolation |
