@@ -25,12 +25,17 @@ transcripts/export are listed only to keep the census honest.
 | ~~`ui/screens/pids/powertrain_battery_catalog_screen.dart`~~ | Snack maps `PowertrainProfileInstallIssue`. |
 | ~~`ui/screens/pids/pid_editor_screen.dart`~~ | Falls back to `pidFormulaUnidentified`, not `e.message`. |
 | ~~`state/dtc_scan.dart`~~ | Stores `DtcClearNotice` / `DtcScanBanner`; screen maps them. Category `DtcReadException.message` fallback remains. |
-| `obd/polling_engine.dart` | Chinese status interpolates exception text |
-| `obd/transport/ble_transport.dart`, `classic_transport.dart` | platform `error.message` into connect path |
-| `obd/pid/formula_engine.dart`, `pid_csv.dart` | diagnostic/export, not a locale screen |
-| `ui/screens/dtc/dtc_screen.dart` `_failureSentence` | Category failures with no `transportIssue` still render `failure.message` |
+| `obd/polling_engine.dart` | `DtcReadException` still wraps `e.message` for the transcript; the category screen maps identifiers/kind |
+| `obd/transport/ble_transport.dart` | `userFacingScanFailure` returns `error.message` for `BleRadioUnavailableException` (transcript-only) |
+| ~~`obd/transport/classic_transport.dart`~~ | `message_fallback_guard` forbids `error.message`; no connect-path interpolation |
+| `obd/pid/formula_engine.dart` | diagnostic wrap of `e.message`; not a locale screen |
+| `obd/pid/pid_csv.dart` | export diagnostic `e.message`; not a locale screen |
+| ~~`ui/screens/dtc/dtc_screen.dart` `_failureSentence`~~ | Maps `dtcCategoryFailureText`; `message_fallback_guard` forbids `failure.message` |
 
 ## Not closed
 
 #45 stays open: reachable untyped messages remain. #128 closed the two
-manual-command bakers; it did not empty this list.
+manual-command bakers; it did not empty this list. The category panel and
+classic-transport connect path are no longer remaining interpolations;
+`test/l10n/untyped_message_inventory_test.dart` holds this table to the
+code it still names.
