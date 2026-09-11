@@ -7778,7 +7778,8 @@
         "The classic 7E2 Mode 21 Prius tables circulating in forums exist only in unlicensed sources and are not shipped.",
         "No battery temperature, capacity, or SoH DID appears in any licensed Toyota source; nothing is guessed to fill the gap.",
         "The battery ECU 747 per-cell block is excluded: aggregating 56-96 cell voltages is beyond the installed formula engine.",
-        "Gen3 (2010-2015) responds to these DIDs on a real car per an OBDb support scan, but no value captures exist for it; formulas are unverified there."
+        "Gen3 (2010-2015) responds to these DIDs on a real car per an OBDb support scan, but no value captures exist for it; formulas are unverified there.",
+        "2026-09-11 re-evaluation: OBDb/Toyota-Prius HEAD is still 0a8c4ec72be860861548a3aeb2be007eecd83941; signalset SHA-256 is unchanged at e037a50ab2f256e5f2668aefc63c1ddb30b7686c372be199b3421972b933bd4b. Value captures for 7D2 221F5B/221F9A/22106C exist for MY2016/2017/2019/2022/2024/2025 in that same repository. Official openvehicles/Open-Vehicle-Monitoring-System-3 has no Prius module (99 components; only vehicle_toyotarav4ev among Toyota). iternio/ev-obd-pids has no Prius file. OBDb/Toyota-Corolla Hybrid 1F5B captures are the same organization, not a second family. 747/74F captures in this repo are 220103/22182E cell-block, not a second family for the shipped DIDs. Disposition remains RETAIN EXPERIMENTAL; year_from/year_to stay 2016–2026."
       ],
       "status": "experimental",
       "evidence": "sourceBacked",
@@ -7801,8 +7802,46 @@
         "revision": "0a8c4ec72be860861548a3aeb2be007eecd83941",
         "license": "CC-BY-SA-4.0",
         "path": "signalsets/v3/default.json",
-        "locator": "hybrid battery signals for 7D2 221F5B/221F9A/22106C, with tests/test_cases/2022 real-car captures",
-        "artifact_sha256": "e037a50ab2f256e5f2668aefc63c1ddb30b7686c372be199b3421972b933bd4b"
+        "locator": "hybrid battery signals for 7D2 221F5B/221F9A/22106C, with tests/test_cases/{2022,2024,2025} real-car captures",
+        "artifact_sha256": "e037a50ab2f256e5f2668aefc63c1ddb30b7686c372be199b3421972b933bd4b",
+        "capture_artifacts": [
+          {
+            "path": "tests/test_cases/2022/commands/7D2.7DA.221F5B|fc=1.yaml",
+            "sha256": "af5e20e780de2301cc9ea36573693f3a741f076c28660fd2b54fb0803dfa724a"
+          },
+          {
+            "path": "tests/test_cases/2022/commands/7D2.7DA.221F9A.yaml",
+            "sha256": "1f8580d24165148d7bd3381c186f5930963f6ebf690cf60a1e9315cf5196a1d9"
+          },
+          {
+            "path": "tests/test_cases/2022/commands/7D2.22106C|fc=1.yaml",
+            "sha256": "c38d484fdfe129320d0761953aa1307deedd1d6480ca0350a32903b3402fb319"
+          },
+          {
+            "path": "tests/test_cases/2024/commands/7D2.7DA.221F5B|fc=1.yaml",
+            "sha256": "0adf705a837eaa9e3a35c8d1f29b32fbb0c5771ec1cc17a75fdcf73d8db996c6"
+          },
+          {
+            "path": "tests/test_cases/2024/commands/7D2.7DA.221F9A.yaml",
+            "sha256": "d875fc777502c62f680822e4d74b8c45f29010c8afc0b8112d6bb637c3df2f2e"
+          },
+          {
+            "path": "tests/test_cases/2024/commands/7D2.22106C|fc=1.yaml",
+            "sha256": "31301ac259f9ec5451fc7a58aa5e1a88ca1e50a21159f9c6f924f441b9155f24"
+          },
+          {
+            "path": "tests/test_cases/2025/commands/7D2.7DA.221F5B|fc=1.yaml",
+            "sha256": "5d428ca89c6b88c62c82806eb9ee8d03c3ebb5dc9fd8421a0d29ffe9cd1ff2a5"
+          },
+          {
+            "path": "tests/test_cases/2025/commands/7D2.7DA.221F9A.yaml",
+            "sha256": "87f8f9538679e15b4ed89da4c0f869c4ac5643fc94e34b0744a5d3d1710663e3"
+          },
+          {
+            "path": "tests/test_cases/2025/commands/7D2.22106C|fc=1.yaml",
+            "sha256": "7107565c0881ece40cabef721054882689e619b8127bc45cfaea0230acc552af"
+          }
+        ]
       },
       "commands": [
         {

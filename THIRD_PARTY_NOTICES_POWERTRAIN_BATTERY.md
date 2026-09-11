@@ -168,7 +168,27 @@ CC BY-SA 4.0:
   `e037a50ab2f256e5f2668aefc63c1ddb30b7686c372be199b3421972b933bd4b`.
 
 Three Mode 22 commands (`1F5B`, `1F9A`, `106C` on `7D2`/`7DA`) become five
-bounded signals, verified against the repository's pinned real-car captures.
+bounded signals, verified against the repository's pinned real-car captures:
+
+- `tests/test_cases/2022/commands/7D2.7DA.221F5B|fc=1.yaml` SHA-256
+  `af5e20e780de2301cc9ea36573693f3a741f076c28660fd2b54fb0803dfa724a`
+- `tests/test_cases/2022/commands/7D2.7DA.221F9A.yaml` SHA-256
+  `1f8580d24165148d7bd3381c186f5930963f6ebf690cf60a1e9315cf5196a1d9`
+- `tests/test_cases/2022/commands/7D2.22106C|fc=1.yaml` SHA-256
+  `c38d484fdfe129320d0761953aa1307deedd1d6480ca0350a32903b3402fb319`
+- `tests/test_cases/2024/commands/7D2.7DA.221F5B|fc=1.yaml` SHA-256
+  `0adf705a837eaa9e3a35c8d1f29b32fbb0c5771ec1cc17a75fdcf73d8db996c6`
+- `tests/test_cases/2024/commands/7D2.7DA.221F9A.yaml` SHA-256
+  `d875fc777502c62f680822e4d74b8c45f29010c8afc0b8112d6bb637c3df2f2e`
+- `tests/test_cases/2024/commands/7D2.22106C|fc=1.yaml` SHA-256
+  `31301ac259f9ec5451fc7a58aa5e1a88ca1e50a21159f9c6f924f441b9155f24`
+- `tests/test_cases/2025/commands/7D2.7DA.221F5B|fc=1.yaml` SHA-256
+  `5d428ca89c6b88c62c82806eb9ee8d03c3ebb5dc9fd8421a0d29ffe9cd1ff2a5`
+- `tests/test_cases/2025/commands/7D2.7DA.221F9A.yaml` SHA-256
+  `87f8f9538679e15b4ed89da4c0f869c4ac5643fc94e34b0744a5d3d1710663e3`
+- `tests/test_cases/2025/commands/7D2.22106C|fc=1.yaml` SHA-256
+  `7107565c0881ece40cabef721054882689e619b8127bc45cfaea0230acc552af`
+
 All licensed evidence is one organization, so the subset stays experimental:
 it may be installed as unverified PIDs and is not community-corroborated.
 
