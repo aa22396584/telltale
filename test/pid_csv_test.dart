@@ -838,6 +838,29 @@ void _reorderedColumns() {
       },
     );
 
+    test(
+      'an incomplete named header with ModeAndPID still refuses the file',
+      () {
+        // Codex P2 on the first follow-up: `ModeAndPID,Units,ShortName,
+        // Min Value` is a header vocabulary, not a positional Name.
+        // Parsing it by index would upsert a mis-mapped PID.
+        final result = PidCsv.parse(
+          'ModeAndPID,Units,ShortName,Min Value\r\n'
+          '0105,C,Coolant,-40\r\n',
+        );
+        expect(result.pids, isEmpty);
+        expect(result.errors, hasLength(1));
+        expect(
+          result.errors.single.issue,
+          PidCsvIssue.missingRequiredColumns,
+        );
+        expect(
+          result.errors.single.columns,
+          containsAll(['Name', 'Equation']),
+        );
+      },
+    );
+
     test('no header row still means positional, as it always did', () {
       const csv = 'Trans Temp,TTemp,2211A6,A-40,-40,215,°C,7E1\r\n';
       final result = PidCsv.parse(csv);
