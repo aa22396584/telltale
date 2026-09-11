@@ -197,6 +197,11 @@ abstract final class PidCsv {
   /// be degraded by accepting somebody else's name for the same thing.
   static const Map<String, String> _aliases = {'obdheader': 'header'};
 
+  static final Set<String> _headerVocabulary = {
+    for (final name in header) _key(name),
+    ..._aliases.keys,
+  };
+
   static const List<String> header = [
     'Name',
     'ShortName',
@@ -428,8 +433,30 @@ abstract final class PidCsv {
     var columns = <String, int>{
       for (var i = 0; i < header.length; i++) _key(header[i]): i,
     };
-    if (firstKeys.isNotEmpty &&
-        (firstKeys.first == 'name' || firstKeys.contains('modeandpid'))) {
+    // `_key` turns `Mode And PID` / `mode_and_pid` into `modeandpid` in any
+    // cell. A headerless positional row can carry that as ShortName (or
+    // Name) and must stay positional. Named mode from `modeandpid` therefore
+    // also needs another `_required` marker — `name` or `equation` — which
+    // the three-column named files have and the eight-cell positional rows
+    // do not. A first cell that is already `name` is still a header.
+    //
+    // A first row that is clearly a header vocabulary (`ModeAndPID,Units,
+    // ShortName,Min Value`) without Name/Equation must still be named so
+    // it fails `missingRequiredColumns` instead of being parsed as
+    // positional fields. Two header-like tokens is not enough: that is
+    // still the positional Torque row whose ShortName _keys to
+    // `modeandpid`.
+    final headerLikeCount = firstKeys
+        .where(_headerVocabulary.contains)
+        .toSet()
+        .length;
+    final namedHeader = firstKeys.isNotEmpty &&
+        (firstKeys.first == 'name' ||
+            (firstKeys.contains('modeandpid') &&
+                (firstKeys.contains('name') ||
+                    firstKeys.contains('equation') ||
+                    headerLikeCount >= 3)));
+    if (namedHeader) {
       startIndex = 1;
       final named = <String, int>{};
       final duplicated = <String>{};

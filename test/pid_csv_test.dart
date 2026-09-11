@@ -790,6 +790,77 @@ void _reorderedColumns() {
       },
     );
 
+    test(
+      'a positional row whose free-text cell _keys to modeandpid still imports',
+      () {
+        // `_key` strips spaces, so `Mode And PID` in ShortName is the same
+        // token as the column name. Named mode needs a second `_required`
+        // marker (`name` or `equation`) — a headerless eight-cell Torque row
+        // has neither. Assert the imported fields, not only that the row
+        // was not refused: a remap into a different PID would also be empty
+        // errors.
+        Pid assertPositional(String csv) {
+          final result = PidCsv.parse(csv);
+          expect(result.errors, isEmpty, reason: csv);
+          expect(result.pids, hasLength(1), reason: csv);
+          return result.pids.single;
+        }
+
+        final spaced = assertPositional(
+          'Coolant,Mode And PID,0105,A-40,-40,215,C,7E0\r\n',
+        );
+        expect(spaced.name, 'Coolant');
+        expect(spaced.shortName, 'Mode And PID');
+        expect(spaced.modeAndPid, '0105');
+        expect(spaced.equation, 'A-40');
+        expect(spaced.minValue, -40);
+        expect(spaced.maxValue, 215);
+        expect(spaced.units, 'C');
+        expect(spaced.header, '7E0');
+
+        final underscored = assertPositional(
+          'Coolant,mode_and_pid,0105,A-40,-40,215,C,7E0\r\n',
+        );
+        expect(underscored.name, 'Coolant');
+        expect(underscored.shortName, 'mode_and_pid');
+        expect(underscored.modeAndPid, '0105');
+        expect(underscored.equation, 'A-40');
+        expect(underscored.header, '7E0');
+
+        final nameCell = assertPositional(
+          'Mode And PID,Coolant,0105,A-40,-40,215,C,7E0\r\n',
+        );
+        expect(nameCell.name, 'Mode And PID');
+        expect(nameCell.shortName, 'Coolant');
+        expect(nameCell.modeAndPid, '0105');
+        expect(nameCell.equation, 'A-40');
+        expect(nameCell.header, '7E0');
+      },
+    );
+
+    test(
+      'an incomplete named header with ModeAndPID still refuses the file',
+      () {
+        // Codex P2 on the first follow-up: `ModeAndPID,Units,ShortName,
+        // Min Value` is a header vocabulary, not a positional Name.
+        // Parsing it by index would upsert a mis-mapped PID.
+        final result = PidCsv.parse(
+          'ModeAndPID,Units,ShortName,Min Value\r\n'
+          '0105,C,Coolant,-40\r\n',
+        );
+        expect(result.pids, isEmpty);
+        expect(result.errors, hasLength(1));
+        expect(
+          result.errors.single.issue,
+          PidCsvIssue.missingRequiredColumns,
+        );
+        expect(
+          result.errors.single.columns,
+          containsAll(['Name', 'Equation']),
+        );
+      },
+    );
+
     test('no header row still means positional, as it always did', () {
       const csv = 'Trans Temp,TTemp,2211A6,A-40,-40,215,°C,7E1\r\n';
       final result = PidCsv.parse(csv);
