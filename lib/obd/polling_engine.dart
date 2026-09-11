@@ -3729,6 +3729,12 @@ class PollingEngine {
 
           await elapsedClock?.sync();
           await _refreshVoltageIfDue();
+          // `popBatch` reads `canBatch`. The gate used to be applied only
+          // inside `_pollBatch`, after the drain, so the first cycle after a
+          // completed discovery was always a singleton. A fixture (or ECU)
+          // that answers the grouped request and not that singleton then
+          // published `noAnswer` for every member and never recovered.
+          _applyBatchingGate();
           _refillQueue();
           final batch = scheduler.popBatch();
           if (batch.isEmpty) {
@@ -3996,6 +4002,19 @@ class PollingEngine {
   /// definition while carrying different wire bytes.
   Map<String, Pid> _authorizedProfileDefinitions = const {};
 
+  /// Permission to group Mode 01 PIDs, recomputed before every drain.
+  ///
+  /// `PriorityScheduler.canBatch` is documented as "recomputed before every
+  /// command". `_pollBatch` still refreshes it at send time, but `popBatch`
+  /// has already decided the membership by then. Discovery can run beside
+  /// the first cycles; once a support block has answered, the next drain
+  /// must be allowed to group.
+  void _applyBatchingGate() {
+    scheduler.canBatch =
+        client.addressing.isCan && _verifiedSupportBlocks.isNotEmpty;
+    scheduler.isBatchable = _isBatchable;
+  }
+
   Future<void> _pollBatch(List<QueuedRequest> batch, [int? epoch]) async {
     // Absolute sink guard for catalog/profile commands. Filtering the active
     // set is not sufficient because a caller can inject a scheduler carrying
@@ -4055,9 +4074,7 @@ class PollingEngine {
     // came back short, and disabled fast mode for the rest of the session:
     // precisely the failure the gate was added to prevent, reached by the
     // other door.
-    scheduler.canBatch =
-        client.addressing.isCan && _verifiedSupportBlocks.isNotEmpty;
-    scheduler.isBatchable = _isBatchable;
+    _applyBatchingGate();
 
     final command = scheduler.buildCommand(batch);
     if (command.isEmpty) return;

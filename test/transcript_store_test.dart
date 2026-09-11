@@ -122,11 +122,24 @@ void main() {
       file.writeAsStringSync(original);
       final descriptor = await _store().openStreaming();
       expect(descriptor, isNotNull);
+      addTearDown(descriptor!.close);
       final next = File('${file.path}.next')..writeAsStringSync(replacement);
-      next.renameSync(file.path);
+      try {
+        next.renameSync(file.path);
+      } on FileSystemException catch (error) {
+        // Windows will not replace a path whose inode is still open. The
+        // descriptor still has to stream the validated bytes; POSIX is
+        // the host that can actually swap the path under the handle.
+        expect(
+          Platform.isWindows,
+          isTrue,
+          reason: 'replacing an open recovered-transcript handle must work '
+              'on POSIX; got $error',
+        );
+      }
 
       final streamed = utf8.decode(
-        (await descriptor!.open(maxChunkBytes: 7).toList())
+        (await descriptor.open(maxChunkBytes: 7).toList())
             .expand((chunk) => chunk)
             .toList(),
       );

@@ -22,6 +22,8 @@ import 'package:torque_obd/telemetry/session/telemetry_session_codec.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_exporter.dart';
 import 'package:torque_obd/telemetry/session/telemetry_session_reader.dart';
 
+import 'support/posix_path.dart';
+
 void main() {
   test(
     'five production entry methods preserve canonical bytes and metadata',
@@ -263,11 +265,11 @@ void main() {
             text.contains('AppShareRequest.lazy(')) {
           // Constructor declarations are the request type boundary itself.
           if (!entity.path.endsWith('app_share_coordinator.dart')) {
-            requestSites.add(entity.path);
+            requestSites.add(posixPath(entity.path));
           }
         }
         if (text.contains('SharePlus.instance.share')) {
-          nativeSites.add(entity.path);
+          nativeSites.add(posixPath(entity.path));
         }
       }
       expect(requestSites.toSet(), {

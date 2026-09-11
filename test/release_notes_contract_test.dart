@@ -21,6 +21,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/posix_shell.dart';
+
 const _notesScript = 'tool/release/release_notes.sh';
 const _gateScript = 'tool/release/require_device_walk.sh';
 const _workflow = '.github/workflows/release.yml';
@@ -57,10 +59,31 @@ const _sha = 'b1946ac92492d2347c6235b4d2611184b1946ac92492d2347c6235b4d2611184';
 const _fingerprint =
     '7e97b3dd0b3f11a9a593cf8d182d49032490022938cecaafde90b53d5825414d';
 
+PosixShell? _discoveredShell;
+bool _lookedForShell = false;
+
+/// Git-for-Windows or WSL on Windows; `bash` from PATH elsewhere.
+///
+/// The WindowsApps `bash.exe` stub is not used: it drops Dart's
+/// `environment:` map, so every notes invocation died with `TAG is required`.
+PosixShell _bash() {
+  if (!_lookedForShell) {
+    _discoveredShell = PosixShell.discover();
+    _lookedForShell = true;
+  }
+  final shell = _discoveredShell;
+  if (shell != null) return shell;
+  markTestSkipped(
+    'No Git-for-Windows or WSL bash on this Windows host; '
+    'Linux/macOS always run these scripts.',
+  );
+  throw StateError('skipped');
+}
+
 ProcessResult _notes(String mode, {required String tag, String? changelog}) =>
-    Process.runSync(
-      'bash',
-      [_notesScript, mode],
+    _bash().runScript(
+      _notesScript,
+      [mode],
       environment: {
         'TAG': tag,
         'APP_VERSION': '1.0.12+13',
@@ -313,9 +336,9 @@ void main() {
         'APK_SHA256',
         'APK_FINGERPRINT',
       ]) {
-        final r = Process.runSync(
-          'bash',
-          [_notesScript, 'notes'],
+        final r = _bash().runScript(
+          _notesScript,
+          ['notes'],
           environment: {
             'TAG': 'v1.0.12',
             'APP_VERSION': '1.0.12+13',
@@ -330,8 +353,11 @@ void main() {
     });
 
     test('an unknown mode is refused rather than guessed', () {
-      final r = Process.runSync('bash', [_notesScript, 'flagg'],
-          environment: {'TAG': 'v1.0.12'});
+      final r = _bash().runScript(
+        _notesScript,
+        ['flagg'],
+        environment: {'TAG': 'v1.0.12'},
+      );
       expect(r.exitCode, 2);
       expect(r.stderr, contains('usage:'));
     });
@@ -872,8 +898,8 @@ void main() {
       // Deterministic on both: awk cannot read the file at all.
       final unreadable = File('${tmp.path}/unreadable.md')
         ..writeAsStringSync('## 9.9.9\n\n- REAL\n');
-      Process.runSync('chmod', ['000', unreadable.path]);
-      addTearDown(() => Process.runSync('chmod', ['644', unreadable.path]));
+      _bash().chmod('000', unreadable.path);
+      addTearDown(() => _bash().chmod('644', unreadable.path));
       for (final mode in ['changelog', 'notes']) {
         final r = _notes(mode, tag: 'v9.9.9', changelog: unreadable.path);
         expect(r.exitCode, isNot(0), reason: '$mode must refuse');
@@ -893,9 +919,9 @@ void main() {
         // Byte encodings: the script may echo the offending byte on stderr
         // and Dart's own decoder throws on it, which would fail this test for
         // a reason that has nothing to do with the script.
-        final r = Process.runSync(
-          'bash',
-          [_notesScript, mode],
+        final r = _bash().runScript(
+          _notesScript,
+          [mode],
           environment: {
             'TAG': 'v9.9.9',
             'APP_VERSION': '9.9.9+1',
@@ -1076,9 +1102,9 @@ void main() {
       return f.path;
     }
 
-    ProcessResult gate(String tag, [String? evidence]) => Process.runSync(
-          'bash',
-          [_gateScript, tag, ?evidence],
+    ProcessResult gate(String tag, [String? evidence]) => _bash().runScript(
+          _gateScript,
+          [tag, ?evidence],
         );
 
     test('the attestation line clears the gate', () {
@@ -1220,7 +1246,7 @@ void main() {
 
     test('an unreadable file is named as unreadable, not as empty', () {
       final f = fixture('Device walk attested: 1.0.12\n');
-      Process.runSync('chmod', ['000', f]);
+      _bash().chmod('000', f);
       var readable = true;
       try {
         File(f).readAsStringSync();
@@ -1239,7 +1265,7 @@ void main() {
         expect(r.stdout, isNot(contains('has no\n')),
             reason: 'an unreadable file is not a missing entry');
       }
-      Process.runSync('chmod', ['644', f]);
+      _bash().chmod('644', f);
     });
 
     test('a missing evidence file is a failure, not an empty pass', () {

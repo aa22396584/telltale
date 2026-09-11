@@ -44,6 +44,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/dart_source_reader.dart';
+import '../support/posix_path.dart';
 
 /// Every Dart file under `lib/`, because a throw is not confined to the file
 /// that declares the exception. `polling_engine.dart` already catches
@@ -340,7 +341,7 @@ void _pointerTests() {
     final sites = <String>{};
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (copyFiles.contains(entity.path)) continue;
+      if (copyFiles.contains(posixPath(entity.path))) continue;
       final code = codeOnly(entity.readAsStringSync());
       for (final name in exported) {
         // Counted, not merely detected. `pid_editor_screen.dart` calls
@@ -349,7 +350,7 @@ void _pointerTests() {
         // entry, so deleting one of the two would not move it. The count is
         // what makes each call site individually visible.
         final n = RegExp('\\b$name\\s*\\(').allMatches(code).length;
-        if (n > 0) sites.add('${entity.path} -> $name x$n');
+        if (n > 0) sites.add('${posixPath(entity.path)} -> $name x$n');
       }
     }
 

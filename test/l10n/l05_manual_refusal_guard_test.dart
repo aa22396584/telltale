@@ -36,6 +36,7 @@ import 'package:torque_obd/state/manual_command_refusal.dart';
 
 import '../support/cjk.dart';
 import '../support/dart_source_reader.dart';
+import '../support/posix_path.dart';
 
 /// The engine half of the refusal path: files whose string literals must hold
 /// no Chinese.
@@ -273,11 +274,11 @@ void main() {
     final sites = <String>{};
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == copyFile) continue;
+      if (posixPath(entity.path) == copyFile) continue;
       final code = codeOnly(entity.readAsStringSync());
       for (final name in exported) {
         final n = RegExp('\\b$name\\s*\\(').allMatches(code).length;
-        if (n > 0) sites.add('${entity.path} -> $name x$n');
+        if (n > 0) sites.add('${posixPath(entity.path)} -> $name x$n');
       }
     }
 

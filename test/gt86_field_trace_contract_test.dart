@@ -60,6 +60,12 @@ class _Gt86FieldTraceTransport extends BaseObdTransport {
       return;
     }
 
+    final single = _mode01SingleReply(command);
+    if (single != null) {
+      emitBytes(ascii.encode('$single\r>'));
+      return;
+    }
+
     if (command == '010C0D04110B10') {
       // Headers-off ELM rendering: a three-hex-digit ISO-TP length followed
       // by numbered segments. The prompt is deliberately its own chunk.
@@ -98,6 +104,21 @@ class _Gt86FieldTraceTransport extends BaseObdTransport {
     };
     emitBytes(ascii.encode('$reply\r>'));
   }
+
+  /// Per-PID Mode 01 answers matching the six-PID ISO-TP payload.
+  ///
+  /// A real ECU answers `010C` as well as the grouped request. The field
+  /// fixture originally answered only `010C0D04110B10`; a first-cycle
+  /// singleton then poisoned every subsequent member with `NO DATA`.
+  static String? _mode01SingleReply(String command) => switch (command) {
+        '010C' => '410C1AF8',
+        '010D' => '410D00',
+        '0104' => '410433',
+        '0111' => '411120',
+        '010B' => '410B64',
+        '0110' => '41100190',
+        _ => null,
+      };
 }
 
 void main() {
@@ -274,6 +295,7 @@ void main() {
       final directBatchCount = transport.commands
           .where((command) => command == '010C0D04110B10')
           .length;
+      final pollStart = transport.commands.length;
       engine
         ..setActivePids(const [
           PidLibrary.engineRpm,
@@ -311,6 +333,23 @@ void main() {
             .length,
         greaterThan(directBatchCount),
         reason: 'PollingEngine must split and publish the real six-PID batch',
+      );
+      final firstMode01Poll = transport.commands
+          .sublist(pollStart)
+          .where(
+            (command) =>
+                command.startsWith('01') &&
+                command != '0100' &&
+                command != '0120' &&
+                command != '0140' &&
+                command != '0160',
+          )
+          .first;
+      expect(
+        firstMode01Poll,
+        '010C0D04110B10',
+        reason: 'after discovery, the first Mode 01 drain must be the grouped '
+            'request, not a singleton that the field fixture never answered',
       );
       await engine.dispose();
     },

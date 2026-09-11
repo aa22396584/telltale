@@ -98,9 +98,23 @@ attestation="^Device walk attested: ${escaped}[[:space:]]*$"
 # pipeline as failed, so a line that IS present is read as absent. Reproduced
 # with a 20,000-line file; today's fits the pipe buffer and passes, and this
 # file gains an entry every release.
-if grep -qE "$attestation" "$EVIDENCE"; then
+#
+# `[ -r ]` is not enough on every host. Git-for-Windows bash reports an NTFS
+# file as readable after an ACL deny that Dart and awk both honour, then
+# grep's "cannot open" (exit 2) used to fall through as "has no line" — an
+# unreadable attestation file named as a missing walk. Capture the status
+# rather than treating every non-zero as absence.
+set +e
+grep -qE "$attestation" "$EVIDENCE"
+grep_status=$?
+set -e
+if [ "$grep_status" -eq 0 ]; then
   echo "device walk attested for $version in $EVIDENCE"
   exit 0
+fi
+if [ "$grep_status" -ge 2 ]; then
+  echo "::error::$EVIDENCE exists but cannot be read"
+  exit 1
 fi
 
 echo "::error::Full release $TAG claims a device walk, but $EVIDENCE has no"

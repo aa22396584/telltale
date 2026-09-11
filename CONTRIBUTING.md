@@ -50,28 +50,37 @@ is zero.
 
 ## The tests that skip, and why the number matters
 
-`flutter test` reports around **14 skipped** without a simulator. That is not
-slack — it is exactly the externally driven oracle files, which skip unless
-their required emulator or fault proxy is running and explicitly enabled:
+`flutter test` reports **16 skipped** without a simulator on Linux, macOS,
+and Windows hosts that have Git-for-Windows or a usable WSL. That is not
+slack — it is 15 discovered oracle cases (emulator 6, freeze-frame 7,
+chaos 1, chaos-poll 1) plus one battery TCP rig skip. Those files skip unless
+their required emulator, fault proxy, or loopback peer is running and
+explicitly enabled:
 
 | suite | tests | simulator |
 |---|---|---|
-| `test/emulator_integration_test.dart` | discovered | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
-| `test/freeze_frame_oracle_test.dart` | discovered | project-owned `tool/obd_test_rig/freeze_frame_reference.py` |
-| `test/chaos_oracle_test.dart` | discovered | Ircama through `tool/obd_test_rig/chaos_proxy.py` |
-| `test/chaos_poll_oracle_test.dart` | discovered | armed close after the first live poll |
+| `test/emulator_integration_test.dart` | 6 | [Ircama/ELM327-emulator](https://github.com/Ircama/ELM327-emulator) |
+| `test/freeze_frame_oracle_test.dart` | 7 | project-owned `tool/obd_test_rig/freeze_frame_reference.py` |
+| `test/chaos_oracle_test.dart` | 1 | Ircama through `tool/obd_test_rig/chaos_proxy.py` |
+| `test/chaos_poll_oracle_test.dart` | 1 | armed close after the first live poll |
+| `test/powertrain_battery_tcp_integration_test.dart` | 1 | `tool/powertrain_battery_rig/simulator.py` |
 
 Case counts are produced by `tool/workshop/count_dart_tests.py` from the files
 themselves. Public CI feeds that number to `tool/oracle_guard/assert_no_skips.py`.
 Do not type a replacement integer into the workflow to make a skip look green.
 
 **A skipped test and a passing test print the same summary and both exit 0.**
-That is why the number is worth knowing: `~14` is the expected default and `~8`
-means Ircama alone is running; other counts deserve inspection. CI does not
-rely on reading the number — it parses each oracle's JSON report, keeps the
-Flutter process exit code, and fails the job if a test was skipped rather than
-run. The chaos job also verifies the exact commands that reached the proxy
-before each injected fault.
+That is why the number is worth knowing: **16** is the expected default when
+a POSIX shell is available (always on Linux/macOS CI) and **10** means Ircama
+alone is running; other counts deserve inspection. A Windows host with
+neither Git-for-Windows nor a usable WSL additionally skips the release-notes
+contract (`test/release_notes_contract_test.dart`) and the POSIX-shell
+helpers that need bash; that extra skip is false on Linux/macOS, so
+`count_dart_tests.py` and `assert_no_skips.py` keep counting the same cases.
+CI does not rely on reading the number — it parses each oracle's JSON report,
+keeps the Flutter process exit code, and fails the job if a test was skipped
+rather than run. The chaos job also verifies the exact commands that reached
+the proxy before each injected fault.
 
 To run the first suite yourself:
 
