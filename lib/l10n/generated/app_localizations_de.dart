@@ -2077,7 +2077,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCatalogScope =>
-      'Der beigefügte Snapshot enthält die offiziellen U.S. EPA Find-a-Car-Daten; er deckt lediglich den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen ab, nicht jedoch alle Marken oder Modelljahre weltweit.';
+      'Die beigefügten Snapshots enthalten offizielle U.S.-EPA-Find-a-Car-, taiwanische MOEA- und kanadische NRCan-Daten; jeder gilt nur für den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen, nicht für alle Marken oder Modelljahre weltweit.';
 
   @override
   String get settingsCatalogVerifying => 'Der Offline-Katalog wird überprüft…';
@@ -4545,4 +4545,33 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get connectionFailureKeepInvalidAndExport =>
       'Die Antwort ist ungültig. Ungültig lassen und die begrenzte Diagnose exportieren; das ist keine Messung.';
+
+  @override
+  String get settingsCatalogMarketCa => 'Kanada (NRCan)';
+
+  @override
+  String get settingsCaPickerTitle => 'Offizieller kanadischer Fahrzeugkatalog';
+
+  @override
+  String settingsCaPickerScope(int firstYear, int lastYear) {
+    return 'Kanadische Fuel-Consumption-Ratings-Zeilen nur für $firstYear–$lastYear. ICE, Batterie-elektrisch und Plug-in-Hybrid bleiben getrennte Klassen. Ein gleicher Marken-/Modellstring ist keine EPA- oder Taiwan-Konfiguration.';
+  }
+
+  @override
+  String get settingsCaMotorNotPower =>
+      'Motorleistung in Kilowatt ist keine Radleistung und wird nicht übernommen.';
+
+  @override
+  String get settingsCaClassIce => 'Verbrennungsmotor';
+
+  @override
+  String get settingsCaClassBev => 'Batterieelektrisch';
+
+  @override
+  String get settingsCaClassPhev => 'Plug-in-Hybrid';
+
+  @override
+  String settingsCaWillApplyOnly(String fields) {
+    return 'Nur $fields werden übernommen. Motor-kW, Verbrauch, Reichweite, CO2, VE, Cd, Stirnfläche, Crr und Getriebewirkungsgrad bleiben unbestimmt.';
+  }
 }

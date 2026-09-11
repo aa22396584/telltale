@@ -14,6 +14,8 @@ import '../../../obd/physics/vehicle_profile.dart';
 import '../../../obd/physics/vehicle_evidence.dart';
 import '../../../obd/transport/obd_transport.dart'
     show TransportException, TransportKind;
+import '../../../obd/vehicle_catalog/ca_vehicle_catalog.dart';
+import '../../../obd/vehicle_catalog/ca_vehicle_profile.dart';
 import '../../../obd/vehicle_catalog/tw_vehicle_catalog.dart';
 import '../../../obd/vehicle_catalog/tw_vehicle_profile.dart';
 import '../../../obd/vehicle_catalog/us_vehicle_catalog.dart';
@@ -110,6 +112,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _loadingVehicleCatalog = false;
   Future<UsVehicleCatalog>? _vehicleCatalogFuture;
   Future<TwVehicleCatalog>? _twVehicleCatalogFuture;
+  Future<CaVehicleCatalog>? _caVehicleCatalogFuture;
 
   @override
   void dispose() {
@@ -179,6 +182,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: Text(l10n.settingsCatalogMarketTw),
               onTap: () => Navigator.pop(context, 'TW'),
             ),
+            ListTile(
+              key: const Key('catalog_market_ca'),
+              title: Text(l10n.settingsCatalogMarketCa),
+              onTap: () => Navigator.pop(context, 'CA'),
+            ),
           ],
         ),
       ),
@@ -186,6 +194,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (market == null || !mounted) return;
     if (market == 'TW') {
       await _selectTaiwanVehicle();
+      return;
+    }
+    if (market == 'CA') {
+      await _selectCanadaVehicle();
       return;
     }
     setState(() => _loadingVehicleCatalog = true);
@@ -277,6 +289,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final application = applyTwConfiguration(
       catalog,
       twId: configuration.twId,
+      baseProfile: ref.read(vehicleProfileProvider),
+    );
+    if (application.verifiedFieldKeys.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.settingsCatalogNothingApplicable)),
+      );
+      return;
+    }
+    await ref.read(vehicleProfileProvider.notifier).update(application.profile);
+  }
+
+  Future<void> _selectCanadaVehicle() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _loadingVehicleCatalog = true);
+    CaVehicleCatalog catalog;
+    try {
+      _caVehicleCatalogFuture ??= ref.read(caVehicleCatalogLoaderProvider)();
+      catalog = await _caVehicleCatalogFuture!;
+    } on CaVehicleCatalogException {
+      _caVehicleCatalogFuture = null;
+      if (!mounted) return;
+      setState(() => _loadingVehicleCatalog = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.settingsCatalogCorrupt)));
+      return;
+    } on Object catch (error, stack) {
+      _caVehicleCatalogFuture = null;
+      if (mounted) setState(() => _loadingVehicleCatalog = false);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'Telltale vehicle catalog',
+          context: ErrorDescription(
+            'while loading the bundled Canada vehicle catalog',
+          ),
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _loadingVehicleCatalog = false);
+    final configuration = await showModalBottomSheet<CaVehicleConfiguration>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _CaVehiclePicker(catalog: catalog),
+    );
+    if (configuration == null || !mounted) return;
+    final application = applyCaConfiguration(
+      catalog,
+      caId: configuration.caId,
       baseProfile: ref.read(vehicleProfileProvider),
     );
     if (application.verifiedFieldKeys.isEmpty) {
@@ -1202,6 +1265,211 @@ class _TwVehiclePickerState extends State<_TwVehiclePicker> {
                   application.verifiedFieldKeys.isEmpty
                       ? l10n.settingsEpaNoSafeFields
                       : l10n.settingsTwWillApplyOnly(
+                          _UsEpaVehiclePickerState._verifiedFieldLabels(
+                            l10n,
+                            application.verifiedFieldKeys,
+                          ),
+                        ),
+                  style: context.texts.bodySmall,
+                ),
+              const SizedBox(height: Spacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _configuration == null
+                      ? null
+                      : application!.verifiedFieldKeys.isEmpty
+                      ? () => Navigator.pop(context)
+                      : () => Navigator.pop(context, _configuration),
+                  child: Text(
+                    application == null
+                        ? l10n.settingsEpaChooseExact
+                        : application.verifiedFieldKeys.isEmpty
+                        ? l10n.settingsEpaCloseNoFields
+                        : l10n.settingsEpaApplyFields(
+                            application.verifiedFieldKeys.length,
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CaVehiclePicker extends StatefulWidget {
+  const _CaVehiclePicker({required this.catalog});
+
+  final CaVehicleCatalog catalog;
+
+  @override
+  State<_CaVehiclePicker> createState() => _CaVehiclePickerState();
+}
+
+class _CaVehiclePickerState extends State<_CaVehiclePicker> {
+  int? _year;
+  String? _make;
+  String? _model;
+  CaVehicleConfiguration? _configuration;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final years = widget.catalog.years.reversed.toList(growable: false);
+    final makes = _year == null
+        ? const <String>[]
+        : widget.catalog.makes(year: _year);
+    final models = _year == null || _make == null
+        ? const <String>[]
+        : widget.catalog.models(year: _year!, make: _make!);
+    final configurations = _year == null || _make == null || _model == null
+        ? const <CaVehicleConfiguration>[]
+        : widget.catalog.configurations(
+            year: _year!,
+            make: _make!,
+            model: _model!,
+          );
+    final application = _configuration == null
+        ? null
+        : applyCaConfiguration(widget.catalog, caId: _configuration!.caId);
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.86,
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.settingsCaPickerTitle,
+                      style: context.texts.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    tooltip: l10n.settingsClose,
+                  ),
+                ],
+              ),
+              Text(
+                l10n.settingsCaPickerScope(
+                  widget.catalog.years.first,
+                  widget.catalog.years.last,
+                ),
+                style: context.texts.bodySmall,
+              ),
+              const SizedBox(height: Spacing.sm),
+              Text(
+                l10n.settingsCaMotorNotPower,
+                style: context.texts.bodySmall,
+              ),
+              const SizedBox(height: Spacing.md),
+              _CatalogDropdown<int>(
+                dropdownKey: const Key('ca_year'),
+                label: l10n.settingsEpaYear,
+                value: _year,
+                values: years,
+                display: (value) => '$value',
+                onChanged: (value) => setState(() {
+                  _year = value;
+                  _make = null;
+                  _model = null;
+                  _configuration = null;
+                }),
+              ),
+              const SizedBox(height: Spacing.sm),
+              _CatalogDropdown<String>(
+                dropdownKey: const Key('ca_make'),
+                label: l10n.settingsEpaMake,
+                value: _make,
+                values: makes,
+                display: (value) => value,
+                onChanged: _year == null
+                    ? null
+                    : (value) => setState(() {
+                        _make = value;
+                        _model = null;
+                        _configuration = null;
+                      }),
+              ),
+              const SizedBox(height: Spacing.sm),
+              _CatalogDropdown<String>(
+                dropdownKey: const Key('ca_model'),
+                label: l10n.settingsEpaModel,
+                value: _model,
+                values: models,
+                display: (value) => value,
+                onChanged: _make == null
+                    ? null
+                    : (value) => setState(() {
+                        _model = value;
+                        _configuration = null;
+                      }),
+              ),
+              const SizedBox(height: Spacing.md),
+              Expanded(
+                child: configurations.isEmpty
+                    ? Center(
+                        child: Text(
+                          _model == null
+                              ? l10n.settingsEpaPickInOrder
+                              : l10n.settingsEpaNoConfigurations,
+                          style: context.texts.bodySmall,
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: configurations.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: Spacing.xs),
+                        itemBuilder: (context, index) {
+                          final item = configurations[index];
+                          final selected = item.caId == _configuration?.caId;
+                          final litres = item.displacementL;
+                          final classLabel = switch (item.resourceClass) {
+                            'ice' => l10n.settingsCaClassIce,
+                            'bev' => l10n.settingsCaClassBev,
+                            'phev' => l10n.settingsCaClassPhev,
+                            _ => item.resourceClass,
+                          };
+                          return ListTile(
+                            key: Key('ca_config_${item.caId}'),
+                            selected: selected,
+                            onTap: () => setState(() => _configuration = item),
+                            leading: Icon(
+                              selected
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                            ),
+                            title: Text(
+                              [
+                                classLabel,
+                                if (litres != null)
+                                  '${litres.toStringAsFixed(3)} L',
+                                if (item.transmission.isNotEmpty)
+                                  item.transmission,
+                              ].join(' · '),
+                            ),
+                            subtitle: Text(
+                              '${item.vehicleClass} · ${item.caId}',
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: Spacing.sm),
+              if (application != null)
+                Text(
+                  application.verifiedFieldKeys.isEmpty
+                      ? l10n.settingsEpaNoSafeFields
+                      : l10n.settingsCaWillApplyOnly(
                           _UsEpaVehiclePickerState._verifiedFieldLabels(
                             l10n,
                             application.verifiedFieldKeys,

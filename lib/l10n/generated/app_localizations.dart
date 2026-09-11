@@ -3308,7 +3308,7 @@ abstract class AppLocalizations {
   /// Scopes the catalog. Must not read as global coverage.
   ///
   /// In en, this message translates to:
-  /// **'The bundled snapshot is the official U.S. EPA Find-a-Car data; it covers only that market and the configurations inside the snapshot, not every brand or model year worldwide.'**
+  /// **'The bundled snapshots are official U.S. EPA Find-a-Car, Taiwan MOEA, and Canada NRCan data; each covers only that market and the configurations inside its snapshot, not every brand or model year worldwide.'**
   String get settingsCatalogScope;
 
   /// No description provided for @settingsCatalogVerifying.
@@ -7021,6 +7021,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.'**
   String get connectionFailureKeepInvalidAndExport;
+
+  /// No description provided for @settingsCatalogMarketCa.
+  ///
+  /// In en, this message translates to:
+  /// **'Canada (NRCan)'**
+  String get settingsCatalogMarketCa;
+
+  /// No description provided for @settingsCaPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Canada vehicle catalog'**
+  String get settingsCaPickerTitle;
+
+  /// Stops CA/US/TW namesake join. ICE/BEV/PHEV are not collapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Canada-market Fuel Consumption Ratings rows for {firstYear}–{lastYear} only. ICE, battery-electric, and plug-in hybrid stay separate classes. A matching make/model string is not an EPA or Taiwan configuration.'**
+  String settingsCaPickerScope(int firstYear, int lastYear);
+
+  /// No description provided for @settingsCaMotorNotPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Motor power in kilowatts is not wheel horsepower and is not applied.'**
+  String get settingsCaMotorNotPower;
+
+  /// No description provided for @settingsCaClassIce.
+  ///
+  /// In en, this message translates to:
+  /// **'ICE'**
+  String get settingsCaClassIce;
+
+  /// No description provided for @settingsCaClassBev.
+  ///
+  /// In en, this message translates to:
+  /// **'BEV'**
+  String get settingsCaClassBev;
+
+  /// No description provided for @settingsCaClassPhev.
+  ///
+  /// In en, this message translates to:
+  /// **'PHEV'**
+  String get settingsCaClassPhev;
+
+  /// No description provided for @settingsCaWillApplyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {fields} will be applied. Motor kW, fuel consumption, range, CO2, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.'**
+  String settingsCaWillApplyOnly(String fields);
 }
 
 class _AppLocalizationsDelegate

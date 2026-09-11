@@ -1835,7 +1835,7 @@
     "description": "Says what did NOT happen: no partial application."
   },
   "settingsCatalogNothingApplicable": "This official configuration has no field that can be applied safely to the current formulas; the existing profile is unchanged.",
-  "settingsCatalogScope": "The bundled snapshot is the official U.S. EPA Find-a-Car data; it covers only that market and the configurations inside the snapshot, not every brand or model year worldwide.",
+  "settingsCatalogScope": "The bundled snapshots are official U.S. EPA Find-a-Car, Taiwan MOEA, and Canada NRCan data; each covers only that market and the configurations inside its snapshot, not every brand or model year worldwide.",
   "@settingsCatalogScope": {
     "description": "Scopes the catalog. Must not read as global coverage."
   },
@@ -3854,5 +3854,26 @@
   "connectionFailureKeepInvalidAndExport": "The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.",
   "@connectionFailureKeepInvalidAndExport": {
     "description": "ConnectionFailureAction.keepInvalidAndExport. DATA ERROR / malformed handshake reply. Not a sensor value."
+  },
+  "settingsCatalogMarketCa": "Canada (NRCan)",
+  "settingsCaPickerTitle": "Official Canada vehicle catalog",
+  "settingsCaPickerScope": "Canada-market Fuel Consumption Ratings rows for {firstYear}–{lastYear} only. ICE, battery-electric, and plug-in hybrid stay separate classes. A matching make/model string is not an EPA or Taiwan configuration.",
+  "@settingsCaPickerScope": {
+    "description": "Stops CA/US/TW namesake join. ICE/BEV/PHEV are not collapsed.",
+    "placeholders": {
+      "firstYear": { "type": "int" },
+      "lastYear": { "type": "int" }
+    }
+  },
+  "settingsCaMotorNotPower": "Motor power in kilowatts is not wheel horsepower and is not applied.",
+  "settingsCaClassIce": "ICE",
+  "settingsCaClassBev": "BEV",
+  "settingsCaClassPhev": "PHEV",
+  "settingsCaWillApplyOnly": "Only {fields} will be applied. Motor kW, fuel consumption, range, CO2, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.",
+  "@settingsCaWillApplyOnly": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
   }
+
 }

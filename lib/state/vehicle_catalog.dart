@@ -3,11 +3,13 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../obd/vehicle_catalog/ca_vehicle_catalog.dart';
 import '../obd/vehicle_catalog/tw_vehicle_catalog.dart';
 import '../obd/vehicle_catalog/us_vehicle_catalog.dart';
 
 typedef UsVehicleCatalogLoader = Future<UsVehicleCatalog> Function();
 typedef TwVehicleCatalogLoader = Future<TwVehicleCatalog> Function();
+typedef CaVehicleCatalogLoader = Future<CaVehicleCatalog> Function();
 
 final usVehicleCatalogLoaderProvider = Provider<UsVehicleCatalogLoader>(
   (ref) => UsVehicleCatalog.load,
@@ -15,4 +17,8 @@ final usVehicleCatalogLoaderProvider = Provider<UsVehicleCatalogLoader>(
 
 final twVehicleCatalogLoaderProvider = Provider<TwVehicleCatalogLoader>(
   (ref) => TwVehicleCatalog.load,
+);
+
+final caVehicleCatalogLoaderProvider = Provider<CaVehicleCatalogLoader>(
+  (ref) => CaVehicleCatalog.load,
 );
