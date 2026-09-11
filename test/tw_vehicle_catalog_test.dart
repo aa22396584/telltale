@@ -104,33 +104,37 @@ void main() {
     );
   });
 
-  test('a Taiwan TOYOTA row is not an EPA configuration', () async {
+  test('Taiwan and US Tesla Model S Plaid rows stay in separate markets', () async {
     final tw = await TwVehicleCatalog.load(rootBundle);
     final us = await UsVehicleCatalog.load(rootBundle);
-    final twToyota = tw.makes().where((name) => name == 'TOYOTA').toList();
-    final usToyota = us.makes().where((name) => name == 'Toyota').toList();
-    expect(twToyota, isNotEmpty);
-    expect(usToyota, isNotEmpty);
-    final twYear = tw.years.last;
-    final twModels = tw.models(year: twYear, make: 'TOYOTA');
-    expect(twModels, isNotEmpty);
-    final twRow = tw
-        .configurations(year: twYear, make: 'TOYOTA', model: twModels.first)
-        .first;
-    expect(us.byEpaId(int.tryParse(twRow.twId) ?? -1), isNull);
-    final applied = applyTwConfiguration(tw, twId: twRow.twId);
+    // Hand-typed from the bundled CSVs: same display make/model, distinct ids.
+    const twId = 'dfd8f99292b5638e';
+    const usEpaId = 49742;
+    final twRow = tw.byTwId(twId);
+    final usRow = us.byEpaId(usEpaId);
+    expect(twRow, isNotNull);
+    expect(usRow, isNotNull);
+    expect(twRow!.twId, twId);
+    expect(twRow.make, 'Tesla');
+    expect(twRow.model, 'Model S Plaid');
+    expect(TwVehicleConfiguration.market, 'TW');
+    expect(usRow!.epaId, usEpaId);
+    expect(usRow.make, 'Tesla');
+    expect(usRow.model, 'Model S Plaid');
+
+    expect(tw.byTwId('$usEpaId'), isNull);
+    expect(int.tryParse(twId), isNull);
+    expect(
+      () => applyTwConfiguration(tw, twId: '$usEpaId'),
+      throwsA(isA<TwVehicleCatalogException>()),
+    );
+
+    final applied = applyTwConfiguration(tw, twId: twId);
     expect(applied.profile.massField.isVerifiedExact, isFalse);
     expect(
       applied.profile.massField.origin,
       isNot(VehicleFieldOrigin.officialRegistry),
     );
-    if (applied.verifiedFieldKeys.contains('displacementL')) {
-      expect(applied.profile.displacementField.evidence?.market, 'Taiwan');
-      expect(
-        applied.profile.displacementField.evidence?.sourceId,
-        'tw-moeaea-6032',
-      );
-    }
   });
 
   test('reference mass is not applied as curb mass', () {

@@ -6,8 +6,10 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import struct
 import unittest
 import zipfile
+import zlib
 
 
 APP_DIR = Path(__file__).resolve().parents[2]
@@ -35,6 +37,79 @@ def zip_bytes(members: dict[str, bytes]) -> bytes:
         for name, data in members.items():
             bundle.writestr(name, data)
     return output.getvalue()
+
+
+def stored_zip(members: list[tuple[bytes, bytes, int] | tuple[bytes, bytes, int, bytes]]) -> bytes:
+    """ZIP_STORED archive with explicit name bytes and general-purpose flags.
+
+    zipfile.ZipFile.writestr always sets flag 0x800 for non-ASCII names, which
+    cannot reproduce the official 6032 Big5/cp950 layout.
+    """
+    locals_blob = b""
+    centrals = b""
+    offset = 0
+    for item in members:
+        name_bytes, data, flag = item[0], item[1], item[2]
+        extra = item[3] if len(item) > 3 else b""
+        crc = zlib.crc32(data) & 0xFFFFFFFF
+        size = len(data)
+        local = struct.pack(
+            "<IHHHHHIIIHH",
+            0x04034B50,
+            20,
+            flag,
+            0,
+            0,
+            0,
+            crc,
+            size,
+            size,
+            len(name_bytes),
+            len(extra),
+        )
+        local += name_bytes + extra + data
+        central = struct.pack(
+            "<IHHHHHHIIIHHHHHII",
+            0x02014B50,
+            20,
+            20,
+            flag,
+            0,
+            0,
+            0,
+            crc,
+            size,
+            size,
+            len(name_bytes),
+            len(extra),
+            0,
+            0,
+            0,
+            0,
+            offset,
+        )
+        central += name_bytes + extra
+        locals_blob += local
+        centrals += central
+        offset += len(local)
+    eocd = struct.pack(
+        "<IHHHHIIH",
+        0x06054B50,
+        0,
+        0,
+        len(members),
+        len(members),
+        len(centrals),
+        len(locals_blob),
+        0,
+    )
+    return locals_blob + centrals + eocd
+
+
+def unicode_path_extra(name_bytes: bytes, unicode_name: str) -> bytes:
+    utf8 = unicode_name.encode("utf-8")
+    payload = struct.pack("<BL", 1, zlib.crc32(name_bytes) & 0xFFFFFFFF) + utf8
+    return struct.pack("<HH", 0x7075, len(payload)) + payload
 
 
 INDEX_11163 = (
@@ -105,6 +180,36 @@ CHANGED_SCHEMA_CSV = """國產小客車車型耗能證明115年7月核發資料
 not_make,not_model
 x,y
 """.encode("utf-8-sig")
+
+# Hand-typed from official 6032 member
+# 耗能證明106年3月核發資料/國產小客車車型耗能證明106年3月核發資料.csv
+# (classified: filename does not contain 無車型; body cell is 本月份無資料).
+CLASSIFIED_EMPTY_MONTH_NO_DATA = """國產小客車車型耗能證明106年3月核發資料,,,,,,,,,,,,
+,,,,,,,,,,,,油耗單位：公里/公升
+廠    牌,車        型,排檔,門,排氣量,參考車,耗能,市區,非市區,油耗,申請,耗能證明,能源效率
+,,型式,數,(c.c.),重(kg),標準,油耗,油耗,測試值,單位,核發日期,等    級
+本月份無資料,,,,,,,,,,,,
+""".encode("utf-8-sig")
+
+# Hand-typed from official 6032 member
+# 耗能證明110年1月核發資料/國產小客車車型耗能證明110年1月核發資料.csv
+# (classified; body cell is 無車型資料).
+CLASSIFIED_EMPTY_MONTH_NO_MODEL = """國產小客車車型耗能證明110年1月核發資料,,,,,,,,,,,,
+,,,,,,,,,,,,能效單位：公里/公升
+廠    牌,車        型,排檔,門,排氣量,參考車,能效,市區,非市區,能效,申請,耗能證明,能源效率
+,,型式,數,(c.c.),重(kg),標準,能效,能效,測試值,單位,核發日期,等    級
+無車型資料,,,,,,,,,,,,
+""".encode("utf-8-sig")
+
+HEADER_ONLY_CSV = """國產小客車車型耗能證明115年7月核發資料,,,,,,,,,,,,
+廠    牌,車        型,排檔,門,排氣量,參考車,能效,市區,非市區,能效,申請,耗能證明,能源效率
+,,型式,數,(c.c.),重(kg),標準,能效,能效,測試值,單位,核發日期,等    級
+""".encode("utf-8-sig")
+
+CP950_PASSENGER_NAME = (
+    "耗能證明115年7月核發資料/國產小客車車型耗能證明115年7月核發資料.csv"
+)
+UTF8_EV_NAME = "耗能證明115年7月核發資料/小客車電動車能效標示115年7月核發資料.csv"
 
 
 class TwVehicleCatalogUpdaterTest(unittest.TestCase):
@@ -248,6 +353,119 @@ class TwVehicleCatalogUpdaterTest(unittest.TestCase):
         rows = list(csv.DictReader(io.StringIO(catalog.decode("utf-8"))))
         self.assertEqual(len(rows), 2)
         self.assertTrue(all(row["market"] == "TW" for row in rows))
+
+    def test_mixed_archive_unparsed_member_fails_closed(self) -> None:
+        good_name = "耗能證明115年7月核發資料/國產小客車車型耗能證明115年7月核發資料.csv"
+        bad_name = "耗能證明115年8月核發資料/國產小客車車型耗能證明115年8月核發資料.csv"
+        good = zip_bytes({good_name: PASSENGER_CSV})
+        mixed = zip_bytes(
+            {
+                good_name: PASSENGER_CSV,
+                bad_name: CHANGED_SCHEMA_CSV,
+            }
+        )
+        catalog_good, stats_good, _ = self.u.parse_6032_zip(good)
+        self.assertEqual(stats_good["row_count"], 2)
+        with self.assertRaises(self.u.CatalogError) as raised:
+            self.u.parse_6032_zip(mixed)
+        message = str(raised.exception)
+        self.assertIn(bad_name, message)
+        self.assertIn("produced no identity rows", message)
+        self.assertEqual(sha256(catalog_good), sha256(self.u.parse_6032_zip(good)[0]))
+
+    def test_explicit_empty_month_body_markers_accepted(self) -> None:
+        archive = zip_bytes(
+            {
+                "耗能證明115年7月核發資料/國產小客車車型耗能證明115年7月核發資料.csv": PASSENGER_CSV,
+                "耗能證明106年3月核發資料/國產小客車車型耗能證明106年3月核發資料.csv": CLASSIFIED_EMPTY_MONTH_NO_DATA,
+                "耗能證明110年1月核發資料/國產小客車車型耗能證明110年1月核發資料.csv": CLASSIFIED_EMPTY_MONTH_NO_MODEL,
+            }
+        )
+        catalog, stats, _ = self.u.parse_6032_zip(archive)
+        rows = list(csv.DictReader(io.StringIO(catalog.decode("utf-8"))))
+        self.assertEqual(stats["row_count"], 2)
+        self.assertEqual({row["make"] for row in rows}, {"本田", "TOYOTA"})
+        self.assertIn("本月份無資料", CLASSIFIED_EMPTY_MONTH_NO_DATA.decode("utf-8-sig"))
+        self.assertIn("無車型資料", CLASSIFIED_EMPTY_MONTH_NO_MODEL.decode("utf-8-sig"))
+
+    def test_classified_header_only_without_empty_marker_fails_closed(self) -> None:
+        archive = zip_bytes(
+            {
+                "耗能證明115年7月核發資料/國產小客車車型耗能證明115年7月核發資料.csv": HEADER_ONLY_CSV,
+            }
+        )
+        with self.assertRaises(self.u.CatalogError) as raised:
+            self.u.parse_6032_zip(archive)
+        self.assertIn("produced no identity rows", str(raised.exception))
+
+    def test_cp950_member_names_without_utf8_flag_parse(self) -> None:
+        archive = stored_zip(
+            [
+                (CP950_PASSENGER_NAME.encode("cp950"), PASSENGER_CSV, 0),
+            ]
+        )
+        with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+            info = bundle.infolist()[0]
+            self.assertEqual(info.flag_bits & 0x800, 0)
+            self.assertNotIn("小客車", info.filename)
+        catalog, stats, names = self.u.parse_6032_zip(archive)
+        self.assertEqual(stats["row_count"], 2)
+        self.assertEqual(names, [CP950_PASSENGER_NAME])
+        rows = list(csv.DictReader(io.StringIO(catalog.decode("utf-8"))))
+        self.assertEqual(rows[0]["source_file"], Path(CP950_PASSENGER_NAME).name)
+        self.assertEqual(rows[0]["market"], "TW")
+
+    def test_undecodable_member_name_fails_closed(self) -> None:
+        archive = stored_zip(
+            [
+                (b"\x81.csv", PASSENGER_CSV, 0),
+            ]
+        )
+        with self.assertRaises(self.u.CatalogError) as raised:
+            self.u.parse_6032_zip(archive)
+        self.assertIn("undecodable zip member name", str(raised.exception))
+
+    def test_already_unicode_name_without_utf8_flag_is_kept(self) -> None:
+        info = zipfile.ZipInfo()
+        info.filename = CP950_PASSENGER_NAME
+        info.flag_bits = 0
+        with self.assertRaises(UnicodeEncodeError):
+            info.filename.encode("cp437")
+        self.assertEqual(self.u.decode_zip_member_name(info), CP950_PASSENGER_NAME)
+
+    def test_unicode_path_extra_without_utf8_flag_parses(self) -> None:
+        name_bytes = CP950_PASSENGER_NAME.encode("cp950")
+        extra = unicode_path_extra(name_bytes, CP950_PASSENGER_NAME)
+        archive = stored_zip(
+            [
+                (name_bytes, PASSENGER_CSV, 0, extra),
+            ]
+        )
+        catalog, stats, names = self.u.parse_6032_zip(archive)
+        self.assertEqual(stats["row_count"], 2)
+        self.assertEqual(names, [CP950_PASSENGER_NAME])
+        rows = list(csv.DictReader(io.StringIO(catalog.decode("utf-8"))))
+        self.assertEqual(rows[0]["source_file"], Path(CP950_PASSENGER_NAME).name)
+
+    def test_utf8_flagged_and_cp950_members_parse(self) -> None:
+        archive = stored_zip(
+            [
+                (CP950_PASSENGER_NAME.encode("cp950"), PASSENGER_CSV, 0),
+                (UTF8_EV_NAME.encode("utf-8"), EV_CSV, 0x800),
+            ]
+        )
+        with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+            flags = {info.filename: info.flag_bits & 0x800 for info in bundle.infolist()}
+            self.assertEqual(flags[bundle.infolist()[0].filename], 0)
+            self.assertEqual(flags[UTF8_EV_NAME], 0x800)
+        catalog, stats, names = self.u.parse_6032_zip(archive)
+        self.assertEqual(stats["row_count"], 3)
+        self.assertEqual(names, [CP950_PASSENGER_NAME, UTF8_EV_NAME])
+        rows = list(csv.DictReader(io.StringIO(catalog.decode("utf-8"))))
+        self.assertEqual({row["make"] for row in rows}, {"本田", "TOYOTA", "MINI"})
+        mini = next(row for row in rows if row["make"] == "MINI")
+        self.assertEqual(mini["powertrain"], "bev")
+        self.assertEqual(mini["source_file"], Path(UTF8_EV_NAME).name)
 
 
 if __name__ == "__main__":

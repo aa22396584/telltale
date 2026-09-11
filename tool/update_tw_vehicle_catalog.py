@@ -75,6 +75,18 @@ class CatalogError(RuntimeError):
     """Raised when the official Taiwan source cannot be safely normalized."""
 
 
+# ZIP general-purpose bit 11. Official dataset 6032 leaves it unset and stores
+# member names as Big5/cp950; Python's zipfile then decodes those bytes as CP437.
+_ZIP_UTF8_NAME_FLAG = 0x800
+
+# Observed on the pinned 6032 archive (SHA-256 da6b72a1…, 896 members):
+# empty passenger-car months are either named *(本月無車型資料)* or, when the
+# filename is an ordinary 國產小客車 CSV, the body contains one of these cells.
+# A recognised header with zero data rows and neither marker is not empty.
+EMPTY_MONTH_FILENAME_MARKER = "無車型"
+EMPTY_MONTH_BODY_MARKERS = ("本月份無資料", "無車型資料")
+
+
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -157,7 +169,7 @@ def _looks_like_header(row: Sequence[str]) -> bool:
 
 def _skip_non_data(row: Sequence[str]) -> bool:
     joined = "".join(row)
-    if "本月份無資料" in joined:
+    if "本月份無資料" in joined or "無車型資料" in joined:
         return True
     if "能效單位" in joined or "油耗單位" in joined:
         return True
@@ -209,9 +221,41 @@ def _cell(row: Sequence[str], index: int | None) -> str:
     return (row[index] or "").strip()
 
 
+def decode_zip_member_name(info: zipfile.ZipInfo) -> str:
+    """Decode a 6032 zip member name.
+
+    Entries with the UTF-8 name flag keep zipfile's UTF-8 filename. Entries
+    without it were stored as cp950; zipfile exposes them as CP437, so the
+    original bytes are recovered and decoded as cp950. Python 3.12+ may
+    already have replaced the filename from extra field 0x7075; that name
+    is not CP437 and is kept. Bytes that decode as CP437 but not cp950 are
+    a hard error — the official archive is not silently skipped.
+    """
+    if info.flag_bits & _ZIP_UTF8_NAME_FLAG:
+        return info.filename
+    try:
+        recovered = info.filename.encode("cp437")
+    except UnicodeEncodeError:
+        return info.filename
+    try:
+        return recovered.decode("cp950")
+    except UnicodeDecodeError as error:
+        raise CatalogError(
+            f"undecodable zip member name {info.filename!r}: {error}"
+        ) from error
+
+
+def is_explicit_empty_month(*, name: str, data: bytes) -> bool:
+    """True only for empty-month shapes observed in the official 6032 zip."""
+    if EMPTY_MONTH_FILENAME_MARKER in Path(name).name:
+        return True
+    text = _decode_text(data, name)
+    return any(marker in text for marker in EMPTY_MONTH_BODY_MARKERS)
+
+
 def _classify_member(name: str) -> tuple[str, str, str] | None:
     filename = Path(name).name
-    if "無車型" in filename:
+    if EMPTY_MONTH_FILENAME_MARKER in filename:
         return None
     if "機車" in filename:
         return None
@@ -375,24 +419,32 @@ def parse_6032_zip(archive: bytes) -> tuple[bytes, dict[str, int], list[str]]:
 
     collected: list[dict[str, str]] = []
     parsed_files = 0
+    decoded_names: list[str] = []
     for info in members:
-        classified = _classify_member(info.filename)
+        name = decode_zip_member_name(info)
+        decoded_names.append(name)
+        classified = _classify_member(name)
         if classified is None:
             continue
         if info.file_size <= 0:
-            raise CatalogError(f"{info.filename} is empty")
+            raise CatalogError(f"{name} is empty")
         origin, vehicle_class, powertrain = classified
         parsed_files += 1
-        collected.extend(
-            parse_member_csv(
-                name=info.filename,
-                data=bundle.read(info),
-                origin=origin,
-                vehicle_class=vehicle_class,
-                powertrain=powertrain,
-                folder_year_ce=_folder_issue_year(info.filename),
-            )
+        data = bundle.read(info)
+        rows = parse_member_csv(
+            name=name,
+            data=data,
+            origin=origin,
+            vehicle_class=vehicle_class,
+            powertrain=powertrain,
+            folder_year_ce=_folder_issue_year(name),
         )
+        if not rows and not is_explicit_empty_month(name=name, data=data):
+            raise CatalogError(
+                f"{name} is a classified passenger-car table but "
+                "produced no identity rows"
+            )
+        collected.extend(rows)
 
     if parsed_files == 0:
         raise CatalogError("6032 zip contains no passenger-car tables")
@@ -472,7 +524,7 @@ def parse_6032_zip(archive: bytes) -> tuple[bytes, dict[str, int], list[str]]:
         "year_min": min(years),
         "year_max": max(years),
     }
-    return catalog, statistics, [info.filename for info in members]
+    return catalog, statistics, decoded_names
 
 
 def dataset_download_url(metadata: Mapping[str, object], dataset_id: int) -> str:
