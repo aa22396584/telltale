@@ -78,6 +78,40 @@ void main() {
     expect(run.elapsed, isNotNull);
   });
 
+  test('a missing or reset monotonic clock aborts rather than using zero', () {
+    final run = AccelerationRunController();
+    run.arm();
+    run.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
+    run.ingestSpeed(kmh: 3, receivedElapsed: const Duration(milliseconds: 100));
+    run.ingestSpeed(kmh: 55, receivedElapsed: const Duration(seconds: 4));
+    expect(run.state, AccelerationRunState.running);
+
+    run.ingestAbsence();
+    expect(run.state, AccelerationRunState.aborted);
+    expect(run.splits[50], isNotNull);
+
+    final reset = AccelerationRunController();
+    reset.arm();
+    reset.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
+    reset.ingestSpeed(kmh: 3, receivedElapsed: const Duration(milliseconds: 100));
+    reset.ingestSpeed(kmh: 55, receivedElapsed: const Duration(seconds: 4));
+    reset.ingestAbsence(nowElapsed: Duration.zero);
+    expect(reset.state, AccelerationRunState.aborted);
+
+    final newConnection = AccelerationRunController();
+    newConnection.arm();
+    newConnection.ingestSpeed(
+      kmh: 0,
+      receivedElapsed: const Duration(seconds: 8),
+    );
+    newConnection.ingestSpeed(
+      kmh: 3,
+      receivedElapsed: const Duration(seconds: 8, milliseconds: 200),
+    );
+    newConnection.ingestSpeed(kmh: 40, receivedElapsed: Duration.zero);
+    expect(newConnection.state, AccelerationRunState.aborted);
+  });
+
   test('a stale sample aborts immediately', () {
     final run = AccelerationRunController();
     run.arm();

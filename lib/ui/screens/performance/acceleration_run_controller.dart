@@ -118,13 +118,20 @@ final class AccelerationRunController {
   }
 
   /// Heartbeat with no speed reading. [nowElapsed] is the connection tick.
-  void ingestAbsence({required Duration nowElapsed}) {
+  ///
+  /// A missing or reset tick (new connection stopwatch) is not `Duration.zero`.
+  /// Zero minus a prior consumed tick is negative and would skip the grace
+  /// check, leaving the run alive across teardown.
+  void ingestAbsence({Duration? nowElapsed}) {
     if (_state != AccelerationRunState.running &&
         _state != AccelerationRunState.staged) {
       return;
     }
     final last = _lastConsumedElapsed;
-    if (last == null || nowElapsed - last > speedAbsenceGrace) {
+    if (nowElapsed == null ||
+        last == null ||
+        nowElapsed < last ||
+        nowElapsed - last > speedAbsenceGrace) {
       _abort();
     }
   }
@@ -151,6 +158,10 @@ final class AccelerationRunController {
         break;
     }
     if (_lastConsumedElapsed == receivedElapsed) return;
+    if (_lastConsumedElapsed != null && receivedElapsed < _lastConsumedElapsed!) {
+      _abort();
+      return;
+    }
     _lastConsumedElapsed = receivedElapsed;
 
     switch (_state) {

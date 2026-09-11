@@ -68,9 +68,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
     final before = _run.state;
     final reading = snapshot[PidLibrary.vehicleSpeed.id];
     if (reading == null) {
-      _run.ingestAbsence(
-        nowElapsed: snapshot.elapsedNow?.call() ?? Duration.zero,
-      );
+      _run.ingestAbsence(nowElapsed: snapshot.elapsedNow?.call());
     } else if (snapshot.isStale(PidLibrary.vehicleSpeed)) {
       _run.ingestStale();
     } else {
