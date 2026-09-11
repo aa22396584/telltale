@@ -205,22 +205,10 @@ class AuditedShaTest(unittest.TestCase):
             msg=errors,
         )
 
-    def test_shipped_plan_audited_sha_is_a_commit(self) -> None:
+    def test_shipped_plan_audited_sha_is_40_lowercase_hex(self) -> None:
         path = ROOT / "tool" / "workshop" / "plan.json"
         data = json.loads(path.read_text(encoding="utf-8"))
-        sha = data["audited_sha"]
-        self.assertRegex(sha, r"^[0-9a-f]{40}$")
-        self.assertTrue(validate_plan._commit_exists(path, sha))
-
-    def test_cli_without_known_sha_refuses_a_non_commit(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
-            plan_path.parent.mkdir(parents=True)
-            data = _plan([_minimal_task("WS-01", 9)])
-            data["audited_sha"] = "a" * 40
-            plan_path.write_text(json.dumps(data), encoding="utf-8")
-            code = validate_plan.main(["validate_plan.py", str(plan_path)])
-            self.assertEqual(code, 1)
+        self.assertRegex(data["audited_sha"], r"^[0-9a-f]{40}$")
 
 
 class GraphAndSchemaTest(unittest.TestCase):

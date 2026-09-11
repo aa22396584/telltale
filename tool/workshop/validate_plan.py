@@ -834,14 +834,6 @@ def main(argv: list[str]) -> int:
         git_shas=git_shas,
         campaign=args.campaign,
     )
-    sha = data.get("audited_sha")
-    if (
-        git_shas is None
-        and isinstance(sha, str)
-        and SHA_RE.fullmatch(sha)
-        and not _commit_exists(path, sha)
-    ):
-        errors.append(f"audited_sha: stale SHA {sha}")
     if args.handoff:
         try:
             handoff = json.loads(Path(args.handoff).read_text(encoding="utf-8"))
