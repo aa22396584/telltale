@@ -3452,6 +3452,21 @@ class AppLocalizationsZh extends AppLocalizations {
       '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
 
   @override
+  String get commandFailureBusJ1939 =>
+      '這條匯流排是 SAE J1939（重型商用車與機械），不是本 App 讀取的 OBD2 診斷協定，因此無法讀取這次查詢。';
+
+  @override
+  String commandFailureUserCanFramingUnknown(
+    String protocol,
+    String parameter,
+  ) {
+    return '轉接器設成自訂 CAN 協定 $protocol，其框架由 $parameter 決定。轉接器沒有回報該設定，因此無法確認匯流排格式，也不能安全解碼這次查詢。';
+  }
+
+  @override
+  String get commandFailureBusUndetermined => '車輛匯流排協定尚未確定，因此無法安全解碼這次查詢。請重新連線。';
+
+  @override
   String get settingsManualCommandCustomFlowControlRejected =>
       '轉接器拒絕了自訂 Flow Control 指令，因此未套用所要求的模式，也沒有產生任何量測值。';
 
@@ -7481,6 +7496,21 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandRequestUnaddressable =>
       '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。再試一次也不會改變。';
+
+  @override
+  String get commandFailureBusJ1939 =>
+      '這條匯流排是 SAE J1939（重型商用車與機械），不是本 App 讀取的 OBD2 診斷協定，因此無法讀取這次查詢。';
+
+  @override
+  String commandFailureUserCanFramingUnknown(
+    String protocol,
+    String parameter,
+  ) {
+    return '轉接器設成自訂 CAN 協定 $protocol，其框架由 $parameter 決定。轉接器沒有回報該設定，因此無法確認匯流排格式，也不能安全解碼這次查詢。';
+  }
+
+  @override
+  String get commandFailureBusUndetermined => '車輛匯流排協定尚未確定，因此無法安全解碼這次查詢。請重新連線。';
 
   @override
   String get settingsManualCommandCustomFlowControlRejected =>

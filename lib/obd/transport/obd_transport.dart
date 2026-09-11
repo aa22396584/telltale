@@ -267,6 +267,11 @@ enum TransportIssue {
   /// there is no header that would reach the controller it names.
   requestUnaddressable,
 
+  /// This bus is not SAE J1979 / ISO 15765-4 OBD2, so Mode 03/04/09 cannot
+  /// be asked. [TransportException.issueDetail] names which case:
+  /// `J1939`, user-CAN `B`/`C`, or `undetermined`.
+  busNotObd2,
+
   /// The adapter refused a typed custom flow-control command (`ATFCSH` /
   /// `ATFCSD` / `ATFCSM1|2`). The requested mode is not active and no
   /// measurement may be produced from that attempt.

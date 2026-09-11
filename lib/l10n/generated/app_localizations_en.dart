@@ -3906,6 +3906,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.';
 
   @override
+  String get commandFailureBusJ1939 =>
+      'This bus is SAE J1939 (heavy commercial vehicles and machinery), not the OBD2 diagnostic protocol this app reads, so this query cannot be read.';
+
+  @override
+  String commandFailureUserCanFramingUnknown(
+    String protocol,
+    String parameter,
+  ) {
+    return 'This adapter is set to user-defined CAN protocol $protocol, whose framing is decided by $parameter. The adapter did not report that setting, so the bus format cannot be confirmed and this query cannot be decoded safely.';
+  }
+
+  @override
+  String get commandFailureBusUndetermined =>
+      'The vehicle bus protocol is not yet determined, so this query cannot be decoded safely. Reconnect.';
+
+  @override
   String get settingsManualCommandCustomFlowControlRejected =>
       'The adapter refused a custom flow-control command, so the requested mode was not applied and no measurement was produced.';
 

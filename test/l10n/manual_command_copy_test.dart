@@ -102,6 +102,10 @@ const _expected = <TransportIssue, (String, String)>{
     'This request cannot be addressed on the bus this vehicle is using, so it was not sent.',
     '這條要求在這輛車使用的匯流排上無法定址，因此沒有送出。',
   ),
+  TransportIssue.busNotObd2: (
+    'The vehicle bus protocol is not yet determined',
+    '車輛匯流排協定尚未確定',
+  ),
   TransportIssue.queryHeaderRefused: (
     'refused to aim this request at controller 7E1',
     '拒絕將這條要求對準到控制器 7E1',

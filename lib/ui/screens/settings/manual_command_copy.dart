@@ -118,6 +118,12 @@ String? commandIssueText(
       l10n.settingsManualCommandOperationRetired,
     TransportIssue.requestUnaddressable =>
       l10n.settingsManualCommandRequestUnaddressable,
+    TransportIssue.busNotObd2 => switch (named) {
+      'J1939' => l10n.commandFailureBusJ1939,
+      'B' => l10n.commandFailureUserCanFramingUnknown('B', 'PP 2C'),
+      'C' => l10n.commandFailureUserCanFramingUnknown('C', 'PP 2E'),
+      _ => l10n.commandFailureBusUndetermined,
+    },
 
     // The three whose sentence names an address.
     TransportIssue.queryHeaderRefused =>

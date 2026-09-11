@@ -3979,6 +3979,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Anfrage kann auf dem Bus, den dieses Fahrzeug nutzt, nicht bearbeitet werden, daher wurde sie nicht gesendet. Ein erneuter Versuch wird daran nichts ändern.';
 
   @override
+  String get commandFailureBusJ1939 =>
+      'Dieser Bus ist SAE J1939 (schwere Nutzfahrzeuge und Maschinen), nicht das OBD2-Diagnoseprotokoll, das diese App liest. Diese Abfrage kann daher nicht gelesen werden.';
+
+  @override
+  String commandFailureUserCanFramingUnknown(
+    String protocol,
+    String parameter,
+  ) {
+    return 'Dieser Adapter ist auf das benutzerdefinierte CAN-Protokoll $protocol eingestellt, dessen Framing von $parameter festgelegt wird. Der Adapter hat diese Einstellung nicht gemeldet, daher kann das Busformat nicht bestätigt und diese Abfrage nicht sicher dekodiert werden.';
+  }
+
+  @override
+  String get commandFailureBusUndetermined =>
+      'Das Fahrzeug-Busprotokoll ist noch nicht bestimmt, daher kann diese Abfrage nicht sicher dekodiert werden. Bitte erneut verbinden.';
+
+  @override
   String get settingsManualCommandCustomFlowControlRejected =>
       'Der Adapter hat einen Befehl zur benutzerdefinierten Flusssteuerung abgelehnt, daher wurde der angeforderte Modus nicht angewendet und keine Messung erzeugt.';
 
