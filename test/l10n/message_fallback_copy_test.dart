@@ -388,6 +388,35 @@ void main() {
     expect(text, isNot(contains('1 controller')));
   });
 
+  test('MIL count mismatch is mapped, not the English transcript', () {
+    const failure = DtcReadException(
+      'Controller 7E8 reported 2 confirmed fault codes, but Mode 03 only read 1.',
+      kind: DtcReadFailure.noAnswer,
+      milDisagreementSources: {'7E8'},
+      milClaimedCount: 2,
+      milObservedCount: 1,
+    );
+    final text = dtcCategoryFailureText(_en, failure);
+    expect(chinese.hasMatch(text), isFalse);
+    expect(text, isNot(_en.dtcCategoryNoAnswer));
+    expect(
+      text,
+      _en.dtcCategoryMilCountMismatch('7E8', 2, 1),
+    );
+  });
+
+  test('MIL lamp-on with no codes is mapped, not the English transcript', () {
+    const failure = DtcReadException(
+      'Controller 7E8 reported that the malfunction indicator is lit, but none of its fault codes were read.',
+      kind: DtcReadFailure.noAnswer,
+      milDisagreementSources: {'7E8'},
+      milObservedCount: 0,
+    );
+    final text = dtcCategoryFailureText(_en, failure);
+    expect(text, _en.dtcCategoryMilLitNoCodes('7E8'));
+    expect(text, isNot(_en.dtcCategoryNoAnswer));
+  });
+
   test(
     'unrecognised response counts are mapped without the decoder sentence',
     () {

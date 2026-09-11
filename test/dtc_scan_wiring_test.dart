@@ -286,6 +286,20 @@ void main() {
       expect(built.readDtcsCalls, greaterThan(0),
           reason: 'the disagreement is produced by the real scan, not a '
               'hand-built exception');
+      // The panel maps structured fields, not kind. kind is noAnswer, so
+      // omitting the controller/counts made every locale show generic
+      // "this category did not answer" while the transcript held the only
+      // copy of 7E8 / 2 / 1.
+      expect(failure.milDisagreementSources, {'7E8'});
+      expect(failure.milClaimedCount, 2);
+      expect(failure.milObservedCount, 1);
+      final en = AppLocalizationsEn();
+      expect(
+        dtcCategoryFailureText(en, failure),
+        en.dtcCategoryMilCountMismatch('7E8', 2, 1),
+      );
+      expect(dtcCategoryFailureText(en, failure), isNot(en.dtcCategoryNoAnswer));
+      expect(dtcCategoryFailureText(en, failure).contains('控制器'), isFalse);
     });
   });
 }

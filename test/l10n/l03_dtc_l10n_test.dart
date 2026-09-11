@@ -936,6 +936,21 @@ void main() {
         _zh.dtcCategoryUnrecognisedResponses(2, 1),
       ),
       (
+        'dtcCategoryMilCountMismatch',
+        _en.dtcCategoryMilCountMismatch('7E8', 2, 1),
+        _zh.dtcCategoryMilCountMismatch('7E8', 2, 1),
+      ),
+      (
+        'dtcCategoryMilLitNoCodes',
+        _en.dtcCategoryMilLitNoCodes('7E8'),
+        _zh.dtcCategoryMilLitNoCodes('7E8'),
+      ),
+      (
+        'dtcCategoryMilDisagreement',
+        _en.dtcCategoryMilDisagreement('7E8, 7E9'),
+        _zh.dtcCategoryMilDisagreement('7E8, 7E9'),
+      ),
+      (
         'dtcClearUnresolvedSources',
         _en.dtcClearUnresolvedSources(1, 'BE'),
         _zh.dtcClearUnresolvedSources(1, 'BE'),
@@ -1030,6 +1045,11 @@ void main() {
       expect(l10n.dtcCategoryPendingControllers(2, 4), contains('2'));
       expect(l10n.dtcCategoryPendingControllers(2, 4), contains('4'));
       expect(l10n.dtcClearUnresolvedSources(1, 'BE'), contains('BE'));
+      expect(l10n.dtcCategoryMilCountMismatch('7E8', 2, 1), contains('7E8'));
+      expect(l10n.dtcCategoryMilCountMismatch('7E8', 2, 1), contains('2'));
+      expect(l10n.dtcCategoryMilCountMismatch('7E8', 2, 1), contains('1'));
+      expect(l10n.dtcCategoryMilLitNoCodes('7E8'), contains('7E8'));
+      expect(l10n.dtcCategoryMilDisagreement('7E8, 7E9'), contains('7E8'));
     }
     // English needs the singular to read as English; Chinese has one form.
     expect(_en.dtcTotalCodes(1), isNot(contains('codes')));

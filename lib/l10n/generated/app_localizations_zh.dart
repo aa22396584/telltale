@@ -3754,6 +3754,25 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String dtcCategoryMilCountMismatch(
+    String controller,
+    int claimed,
+    int observed,
+  ) {
+    return '$controller 回報有 $claimed 筆已確認故障碼，但這次掃描只讀到 $observed 筆。請以車輛儀表為準，並洽維修廠。';
+  }
+
+  @override
+  String dtcCategoryMilLitNoCodes(String controller) {
+    return '$controller 回報故障燈亮著，但沒有讀到它所屬的故障碼。請以車輛儀表為準，並洽維修廠。';
+  }
+
+  @override
+  String dtcCategoryMilDisagreement(String controllers) {
+    return '車輛自身狀態與讀到的故障碼不符（$controllers）。請以車輛儀表為準，並洽維修廠。';
+  }
+
+  @override
   String get connectPairedListFailed => '無法讀取已配對的藍牙清單。請確認藍牙已開啟後再試。';
 
   @override
@@ -7763,6 +7782,25 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String dtcCategoryUnrecognisedResponses(int count, int answered) {
     return '有 $count 筆回應無法辨識（$answered 個已回應）。其餘結果仍然有效，但這次掃描並不完整。';
+  }
+
+  @override
+  String dtcCategoryMilCountMismatch(
+    String controller,
+    int claimed,
+    int observed,
+  ) {
+    return '$controller 回報有 $claimed 筆已確認故障碼，但這次掃描只讀到 $observed 筆。請以車輛儀表為準，並洽維修廠。';
+  }
+
+  @override
+  String dtcCategoryMilLitNoCodes(String controller) {
+    return '$controller 回報故障燈亮著，但沒有讀到它所屬的故障碼。請以車輛儀表為準，並洽維修廠。';
+  }
+
+  @override
+  String dtcCategoryMilDisagreement(String controllers) {
+    return '車輛自身狀態與讀到的故障碼不符（$controllers）。請以車輛儀表為準，並洽維修廠。';
   }
 
   @override

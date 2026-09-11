@@ -4226,6 +4226,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String dtcCategoryMilCountMismatch(
+    String controller,
+    int claimed,
+    int observed,
+  ) {
+    return '$controller reported $claimed confirmed fault codes, but this scan only read $observed. Trust the dashboard lamp, and see a workshop.';
+  }
+
+  @override
+  String dtcCategoryMilLitNoCodes(String controller) {
+    return '$controller reported that the malfunction indicator is lit, but none of its fault codes were read. Trust the dashboard lamp, and see a workshop.';
+  }
+
+  @override
+  String dtcCategoryMilDisagreement(String controllers) {
+    return 'The vehicle\'s own status does not match the fault codes that were read ($controllers). Trust the dashboard lamp, and see a workshop.';
+  }
+
+  @override
   String get connectPairedListFailed =>
       'The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.';
 

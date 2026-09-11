@@ -51,6 +51,16 @@ void main() {
     expect(code.contains('session.client?.transcript.recordNote'), isFalse);
   });
 
+  test('dtc_scan MIL disagreement carries sources and counts', () {
+    final code = _code('lib/state/dtc_scan.dart');
+    expect(
+      code.contains('milDisagreementSources: Set.unmodifiable(milSources)'),
+      isTrue,
+    );
+    expect(code.contains('milClaimedCount: sole?.confirmedCount ?? 0'), isTrue);
+    expect(code.contains('milObservedCount: soleObserved'), isTrue);
+  });
+
   test('dtc_scan whole-vehicle unresolved identity carries the set', () {
     final code = _code('lib/state/dtc_scan.dart');
     final source = File('lib/state/dtc_scan.dart').readAsStringSync();
@@ -155,6 +165,9 @@ void main() {
     expect(code.contains('dtcCategoryRefusedControllers'), isTrue);
     expect(code.contains('dtcCategoryPendingControllers'), isTrue);
     expect(code.contains('dtcCategoryUnrecognisedResponses'), isTrue);
+    expect(code.contains('dtcCategoryMilCountMismatch'), isTrue);
+    expect(code.contains('dtcCategoryMilLitNoCodes'), isTrue);
+    expect(code.contains('dtcCategoryMilDisagreement'), isTrue);
     expect(code.contains('dtcClearUnresolvedSourcesDoNotRepeat'), isTrue);
     expect(code.contains('failure.message'), isFalse);
   });
