@@ -5925,18 +5925,31 @@
   "research": [
     {
       "aliases": [
-        "BMW electrified families"
+        "BMW i3",
+        "bmw-i3-bev-2013-2016"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Every consulted i3 SME poll uses ISO 15765-2 extended addressing (request 6F1 with target 0x07, response 607, ATCEA/ATFCSM). Telltale's ELM stack cannot send that framing. OBDb/BMW-i3 signalset uses hdr 6F1 / eax 07; WiCAN i3.json uses ATCEA07. Catalog i3 BEV rows stay research-only. i4/iX are not this row: i4 OBDb is extended-address VSS/odo only; iX signalset is empty.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "bmw-i3-bev-2013-2016",
         "bmw-i3-bev-2017-2018",
         "bmw-i3-bev-2019-2022"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "i3 I01 SME extended addressing; no 11-bit ISO-TP alternative pinned",
       "id": "bmw-electrified",
+      "independence_rationale": "OBDb/BMW-i3 and meatpiHQ/wican-fw are distinct orgs/repos. They independently require extended addressing on 6F1/607. OVMS vehicle_bmwi3 is a third native-stack implementation and is not counted as an 11-bit ELM family.",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "Pinned families are CC-BY-SA-4.0, Apache-2.0, and/or GPL-3.0; transport-blocked finding only; no command import"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "Consulted OBDb/BMW-i4 @ 0654cd3f (extended-address VSS/odo; no BMS DID imported).",
+        "Consulted OBDb/BMW-iX @ 89686ccb empty signalset.",
+        "Catalog BMW X5/i8 EPA rows are identity-only and are not this i3 transport finding."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -5944,19 +5957,51 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "95f3923e8ec0da2b6b280985543503b545c31cb63f4c07cbac066a7c391278ed",
+          "family": "obdb/bmw-i3",
+          "id": "obdb-bmw-i3",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation (I01) / 94 Ah / 120 Ah locators",
+          "name": "OBDb/BMW-i3",
+          "path": "generations.yaml",
+          "revision": "c0abf66de1070be9af8d577a946073e4bf95a243",
+          "role": "primary",
+          "url": "https://github.com/OBDb/BMW-i3/tree/c0abf66de1070be9af8d577a946073e4bf95a243"
+        },
+        {
+          "artifact_sha256": "acb440e76dd8fe666685dc93804dcf8f4761de4336b9af9e223f64d3a3881aa5",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-bmw-i3",
+          "license": "GPL-3.0",
+          "locator": "ATCEA07 ATTAF1 ATSH6F1 ATCRA607 ATFCSM1",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/bmw/i3.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "corroborating",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2013,
+      "year_to": 2022
     },
     {
       "aliases": [
         "BYD Atto 2",
         "Yuan Up"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb/BYD-Atto-2 repo. Atto 2 appears only as one alias on WiCAN byd_202410_update.json among many e-Platform/DM nameplates, explicitly before 2024.10. That is platform extrapolation, not a pinable Atto 2 contract. No OVMS/iternio file.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no nameplate-specific public DID map; 2026 is snapshot ceiling",
       "id": "byd-atto2-yuan-up",
+      "market": "Global",
+      "notes": [
+        "Consulted WiCAN byd_202410_update.json @ bc3ae6d4 (multi-model pre-2024.10 alias list; not counted)."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -5964,20 +6009,28 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
     },
     {
       "aliases": [
         "BYD Atto 3 post-2024.10",
         "Yuan Plus post-2024.10"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Researched: no public post-2024.10 Atto 3 / Yuan Plus Mode 22 map at pinned WiCAN/OVMS/OBDb/iternio revisions. WiCAN vehicle_profiles/byd/byd_202410_update.json @ bc3ae6d4 is explicitly 'EU version, only before 2024.10 update' and is a multi-nameplate alias list, not a post-update contract. Must not inherit byd-atto3-2022-2024-community. Community limitations record DID 1FFC as excluded live SoC on the pre-update map; that mention is not a post-update wire contract.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
-      "firmware_scope": "firmware 2024.10 and later",
+      "firmware_scope": "firmware 2024.10 and later; no pinned post-update DID map",
       "id": "byd-atto3-post-2024-10",
+      "market": "Global",
+      "notes": [
+        "Consulted WiCAN byd_202410_update.json @ bc3ae6d4 sha256 884a967ddcde195b953fe9070119561c6defde0f22866834260b3a65746c1116 (pre-update only).",
+        "Consulted OVMS vehicle_byd_atto3 @ 587a91d7 (pre-2024.10 community primary; does not poll 1FFC as live SoC).",
+        "Consulted OBDb/BYD-Atto-3 @ f0991d8c empty signalset."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -5985,18 +6038,29 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
     },
     {
       "aliases": [
         "BYD Dolphin"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Only meatpiHQ/wican-fw vehicle_profiles/byd/dolphin.json names Dolphin as its own file (car_model Dolphin/Shark). That is one family. byd_202410_update.json aliases Dolphin among many e-Platform models before 2024.10 and is the same WiCAN family, not independence. No OBDb/BYD-Dolphin repo. No wire contract copied.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "single-family",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "WiCAN dolphin.json only; not the multi-model 2024.10 alias file",
       "id": "byd-dolphin",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "meatpiHQ/wican-fw GPL-3.0 at the catalog-pinned revision; recorded as a single family, not copied into commands"
+      },
+      "market": "Global",
+      "notes": [
+        "Must not inherit byd-atto3-2022-2024-community."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6004,7 +6068,22 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "97091a3811c6b50ec6508172d8105e8afdc4802693a5ee79e6852067dae137f5",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-byd-dolphin",
+          "license": "GPL-3.0",
+          "locator": "car_model BYD: Dolphin/Shark",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/byd/dolphin.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "primary",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2021,
+      "year_to": 2026
     },
     {
       "aliases": [
@@ -6012,12 +6091,21 @@
         "Dolphin Mini",
         "Surf"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/BYD-Dolphin-Mini generations.yaml is identity (Seagull / Dolphin Mini) with an empty signalset. No Seagull file in WiCAN byd/, no OVMS module, no iternio BYD folder. The WiCAN byd_202410_update.json multi-model alias list is platform extrapolation and is not counted.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb/BYD-Dolphin-Mini identity only; empty signalset",
       "id": "byd-seagull-dolphin-mini",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Must not inherit byd-atto3-2022-2024-community."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6025,18 +6113,42 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "9bcc73480cb42fddafe92d65c7dd7e81ea323832b11f31af7ee6e88d8523d35f",
+          "family": "obdb/byd-dolphin-mini",
+          "id": "obdb-byd-dolphin-mini",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/BYD-Dolphin-Mini",
+          "path": "generations.yaml",
+          "revision": "a55b5d2c3f149094b7c80542200867cc47133ebf",
+          "role": "primary",
+          "url": "https://github.com/OBDb/BYD-Dolphin-Mini/tree/a55b5d2c3f149094b7c80542200867cc47133ebf"
+        }
+      ],
+      "year_from": 2023,
+      "year_to": 2026
     },
     {
       "aliases": [
         "BYD Seal"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Only WiCAN vehicle_profiles/byd/seal.json names Seal as its own file. No OBDb/BYD-Seal repo. The 2024.10 alias list is the same WiCAN family and is not independence. No wire contract copied.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "single-family",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "WiCAN seal.json only; not the multi-model 2024.10 alias file",
       "id": "byd-seal",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "meatpiHQ/wican-fw GPL-3.0 at the catalog-pinned revision; recorded as a single family, not copied into commands"
+      },
+      "market": "Global",
+      "notes": [
+        "Must not inherit byd-atto3-2022-2024-community."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6044,19 +6156,39 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "9e5a63365cb0bf44bfd3d9f7b8278f980abb1b3f590dc1ea35f0f36802d16147",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-byd-seal",
+          "license": "GPL-3.0",
+          "locator": "car_model BYD: Seal",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/byd/seal.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "primary",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2022,
+      "year_to": 2026
     },
     {
       "aliases": [
         "BYD Seal U",
         "Song"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb/BYD-Seal or OBDb/BYD-Song repo. Seal U appears only on the WiCAN multi-model pre-2024.10 alias list. OBDb/BYD-Sealion-6 is a different nameplate (Song Plus / Sealion 6 identity) and is not counted here. No nameplate-specific DID map.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no nameplate-specific public DID map",
       "id": "byd-seal-u-song",
+      "market": "Global",
+      "notes": [
+        "Must not inherit byd-atto3-2022-2024-community or byd-sealion."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6064,18 +6196,30 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2020,
+      "year_to": 2026
     },
     {
       "aliases": [
-        "BYD Sealion"
+        "BYD Sealion",
+        "BYD Sealion 6"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/BYD-Sealion-6 generations.yaml is identity (Wikipedia Song Plus reference; DM/PHEV generations) with an empty signalset. WiCAN byd_202410_update.json aliases Sealion / Sealion 7 EV on the pre-2024.10 multi-model list and is not a Sealion-specific family. No BEV Sealion 07 DID map pinned.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb/BYD-Sealion-6 identity only; empty signalset",
       "id": "byd-sealion",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Must not inherit byd-atto3-2022-2024-community."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6083,18 +6227,81 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "d65097d4fcf01adc56c2e5b42a98ce4820f2da1fbadd8d3cdee34a2f8995abd3",
+          "family": "obdb/byd-sealion-6",
+          "id": "obdb-byd-sealion-6",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation (Pre-facelift)",
+          "name": "OBDb/BYD-Sealion-6",
+          "path": "generations.yaml",
+          "revision": "98490648a2dd4fc08192a3214b17ae1998102a95",
+          "role": "primary",
+          "url": "https://github.com/OBDb/BYD-Sealion-6/tree/98490648a2dd4fc08192a3214b17ae1998102a95"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Cupra Born",
+        "cupra-born-2021-2026"
+      ],
+      "blocker": "Catalog profile is sourced from iternio MEB.json (cupra:born* alias). WiCAN ev_meb.json lists Cupra Born in the same multi-nameplate string. Dated separately; 29-bit gateway remains outside the installable subset. No commands copied.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "cupra-born-2021-2026"
+      ],
+      "disposition": "transport-blocked",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no sibling-specific DID pin",
+      "id": "cupra-born-meb",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "iternio/ev-obd-pids Apache-2.0 at the catalog-pinned revision; recorded as one family, not copied into commands"
+      },
+      "market": "source-unspecified",
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-born",
+          "license": "Apache-2.0",
+          "locator": "catalog locator cupra:born* alias",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        }
+      ],
+      "year_from": 2021,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Geely Galaxy Xingyuan"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb Geely/Galaxy/Xingyuan repo. WiCAN vehicle_profiles/geely/ contains only geometry.json (Geometry C), a different nameplate. No OVMS Geely Galaxy module (vehicle_maple60s is not Xingyuan). No iternio Geely folder.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no public OBD/UDS DID map found at research date",
       "id": "geely-galaxy-xingyuan",
+      "market": "China",
+      "notes": [
+        "Consulted WiCAN geometry.json @ bc3ae6d4 sha256 913fc5d8e81ea13dc254ce55ad05c98d3120181ca58fa3fb76a7bf90e12bf719 (Geometry C; not counted as Xingyuan)."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6102,21 +6309,27 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
     },
     {
       "aliases": [
-        "Hyundai/Kia E-GMP nameplates beyond shipped community profiles"
+        "Hyundai Ioniq 9",
+        "IONIQ 9"
       ],
-      "blocker": "not yet researched",
-      "catalog_presence": "present",
-      "catalog_profile_ids": [
-        "hyundai-ioniq5-2025-2026",
-        "kia-ev9-egmp-2024-2025-experimental"
-      ],
-      "disposition": "unknown",
+      "blocker": "Only WiCAN vehicle_profiles/hyundai/ioniq9.json names Ioniq 9. No OBDb/Hyundai-IONIQ-9 repo. Must not inherit Ioniq 5/6 community. No wire contract copied.",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "single-family",
       "evidence_date": "2026-09-11",
-      "id": "hyundai-kia-egmp-beyond-shipped-community",
+      "firmware_scope": "WiCAN ioniq9.json only",
+      "id": "hyundai-ioniq9",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "meatpiHQ/wican-fw GPL-3.0 at the catalog-pinned revision; recorded as a single family, not copied into commands"
+      },
+      "market": "Global",
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6124,19 +6337,179 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "c8ce174bbb454c66f6a841aa827ac1e23b3b9645a9457cad02ab66f7ce27f1db",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-ioniq9",
+          "license": "GPL-3.0",
+          "locator": "car_model Hyundai: Ioniq9",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/hyundai/ioniq9.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "primary",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2025,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Hyundai IONIQ 5 facelift 2025",
+        "hyundai-ioniq5-2025-2026"
+      ],
+      "blocker": "OBDb/Hyundai-IONIQ-5 generations.yaml First Generation facelift is identity for 2025+; the catalog research profile has no commands. Must not inherit hyundai-ioniq5-egmp-2021-2024-community. EV9, EV3, and Ioniq 9 are separate research rows.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "hyundai-ioniq5-2025-2026"
+      ],
+      "disposition": "identity-only",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb First Generation facelift locator; no facelift DID pin",
+      "id": "hyundai-kia-egmp-beyond-shipped-community",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "Catalog community Ioniq 5 2021-2024 is unchanged and is not this row.",
+        "WiCAN ioniq5-6.json is the shipped-generation family file, not facelift-specific evidence."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "3720de5275f025ef9c936f94faf2c2a1f768e0aae0608955ab5887305960df2f",
+          "family": "obdb/hyundai-ioniq-5",
+          "id": "obdb-ioniq5-facelift",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation facelift",
+          "name": "OBDb/Hyundai-IONIQ-5",
+          "path": "generations.yaml",
+          "revision": "138b32573fc396a9347c0dc47dbd5aab2c8e6f0c",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Hyundai-IONIQ-5/tree/138b32573fc396a9347c0dc47dbd5aab2c8e6f0c"
+        }
+      ],
+      "year_from": 2025,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Kia EV3"
+      ],
+      "blocker": "OBDb/Kia-EV3 generations.yaml is identity from 2024 with an empty signalset. No WiCAN ev3.json (kia/ has ev6/niro/soul only). Must not inherit EV6/Ioniq 5 community or EV9 experimental.",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "identity-only",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb/Kia-EV3 identity only; empty signalset",
+      "id": "kia-ev3",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "e771e865d7380221fe9c295b902f9c422cf6b6135bd96082257d693d249e54b8",
+          "family": "obdb/kia-ev3",
+          "id": "obdb-kia-ev3",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/Kia-EV3",
+          "path": "generations.yaml",
+          "revision": "5880b8209f9ea47fb2cca1aa3519a078343b638f",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Kia-EV3/tree/5880b8209f9ea47fb2cca1aa3519a078343b638f"
+        }
+      ],
+      "year_from": 2024,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Kia EV9",
+        "kia-ev9-egmp-2024-2025-experimental"
+      ],
+      "blocker": "Catalog already ships experimental kia-ev9-egmp-2024-2025-experimental from one family (OBDb/Kia-EV9). WiCAN/OVMS/iternio have no EV9 file at the catalog-pinned revisions. This research row records that single-family bar; it does not re-state or invent the shipped wire contract and cannot promote community.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "kia-ev9-egmp-2024-2025-experimental",
+        "kia-ev9-long-range-awd-us-2024-2026"
+      ],
+      "disposition": "single-family",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb/Kia-EV9 signalset + captures already pinned on the experimental catalog profile",
+      "id": "kia-ev9",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Must not inherit Ioniq 5 / Ioniq 6 / EV6 community profiles.",
+        "kia-ev9-long-range-awd-us-2024-2026 is EPA identity only."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975",
+          "family": "obdb/kia-ev9",
+          "id": "obdb-kia-ev9",
+          "license": "CC-BY-SA-4.0",
+          "locator": "catalog experimental profile; MY2024/MY2025 220101/220105 captures",
+          "name": "OBDb/Kia-EV9",
+          "path": "signalsets/v3/default.json",
+          "revision": "85d8cff25e849a6e421cda20cbadfd4630fe85e7",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Kia-EV9/tree/85d8cff25e849a6e421cda20cbadfd4630fe85e7"
+        }
+      ],
+      "year_from": 2024,
+      "year_to": 2025
     },
     {
       "aliases": [
         "MG ZS EV Mk2",
         "MG ZS EV facelift"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/MG-ZS-EV generations.yaml has First Generation Facelift from 2021 and a signalset that mentions 7E5 as well as Mk1 781. That is one family. Must not inherit mg-zs-ev-au-2021 / Mk1 community (781/789). OVMS vehicle_mgev is the Mk1 corroboration family and does not qualify the facelift. No wire contract copied.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "single-family",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb First Generation Facelift; Mk1 781/789 community must not be inherited",
       "id": "mg-zs-ev-mk2",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "OBDb signalset sha256 165e6c905d434732563f5b6f9b0acb4d37aa914668be1c71a2f501b1fcd24a49 consulted; not imported.",
+        "Mk1 community profile mg-zs-ev-au-2021 is unchanged."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6144,21 +6517,46 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "df4fcffa0f9e7834b3e507f0bce4a449a02c7af28d41a446bdf1b10995fd5a51",
+          "family": "obdb/mg-zs-ev",
+          "id": "obdb-mg-zs-ev",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation Facelift",
+          "name": "OBDb/MG-ZS-EV",
+          "path": "generations.yaml",
+          "revision": "1f7c0c008417f09098e3b21bc4b1806b5d727c6c",
+          "role": "primary",
+          "url": "https://github.com/OBDb/MG-ZS-EV/tree/1f7c0c008417f09098e3b21bc4b1806b5d727c6c"
+        }
+      ],
+      "year_from": 2021,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Nissan Ariya",
         "nissan-ariya-fwd-63kwh-us-2025-2026"
       ],
-      "blocker": "not yet researched",
+      "blocker": "The only open BMS-named map is WiCAN vehicle_profiles/nissan/ariya.json @ bc3ae6d4 (29-bit 18DADBF1/18DAF1DB plus ATFCSM1). OBDb/Nissan-Ariya signalset is empty; catalog notes command_support shows 11-bit TPMS/odo and lists Leaf-style 79B/7BB as unsupported. Official OVMS has Leaf only. Catalog EPA row is identity, not a DID map. No commands copied.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "nissan-ariya-fwd-63kwh-us-2025-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "WiCAN 29-bit ISO-TP + custom flow control; no 11-bit pack path",
       "id": "nissan-ariya",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "meatpiHQ/wican-fw GPL-3.0 at the catalog-pinned revision; recorded as a single family, not copied into commands"
+      },
+      "market": "United States",
+      "notes": [
+        "Catalog EPA identity pin remains on nissan-ariya-fwd-63kwh-us-2025-2026; no diagnostic fields.",
+        "OBDb/Nissan-Ariya @ 78d0704f empty signalset."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6166,21 +6564,46 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "ffad338366ba24f9b9c0110d765c303df881b0782188e6df6538b4c2b1627784",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-ariya",
+          "license": "GPL-3.0",
+          "locator": "ATSP7 ATSHDADBF1 ATCRA18DAF1DB ATFCSM1",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/nissan/ariya.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "primary",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2025,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Nissan Leaf"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Licensed sources describe a Leaf LBC read on 79B/7BB, but every consulted implementation drives it with custom ELM flow control (ATFCSM1) and app-side ISO-TP reassembly, which Telltale does not implement. Catalog ZE0/ZE1 entries stay research-only; nothing is shipped rather than shipped broken. No commands copied.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "nissan-leaf-ze0-2010-2017",
         "nissan-leaf-ze1-2017-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "ZE0/ZE1 LBC 79B/7BB with custom flow control; not in the installable subset",
       "id": "nissan-leaf",
+      "independence_rationale": "OBDb/Nissan-Leaf and meatpiHQ/wican-fw are distinct orgs/repos. They agree the LBC path uses 79B/7BB with custom ELM flow control. OVMS vehicle_nissanleaf is native-CAN firmware and is not counted as a second ELM DID family.",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "Pinned families are CC-BY-SA-4.0, Apache-2.0, and/or GPL-3.0; transport-blocked finding only; no command import"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "Official OVMS vehicle_nissanleaf @ 587a91d7 consulted; native CAN, not imported."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6188,20 +6611,84 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "c978645b9d6f2bd257bcf8e4b6583dff37e5a0646a26383d2c1a796095819506",
+          "family": "obdb/nissan-leaf",
+          "id": "obdb-nissan-leaf",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation (ZE0) and Second Generation (ZE1)",
+          "name": "OBDb/Nissan-Leaf",
+          "path": "generations.yaml",
+          "revision": "28438d2d826d9ba149684447dccef9db22061cf9",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Nissan-Leaf/tree/28438d2d826d9ba149684447dccef9db22061cf9"
+        },
+        {
+          "artifact_sha256": "72a456c4338deccac9e6fdf1fd2d5048f42dee450ac77795e027faf147f02307",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-leaf-ze1",
+          "license": "GPL-3.0",
+          "locator": "ATSH79B ATCRA7BB ATFCSM1",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/nissan/leaf-ze1.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "corroborating",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2010,
+      "year_to": 2026
     },
     {
       "aliases": [
-        "Renault current EV families"
+        "Renault 5 E-Tech"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb/Renault-5 repo. WiCAN megane.json aliases Renault 5 with Megane, Scenic, Renault 4, Master, and Nissan Ariya on a 29-bit 015B path; that list is platform extrapolation and is not a Renault 5 identity or DID map. Must not inherit Megane or Zoe Ph1/Ph2.",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "no-source",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "no nameplate-specific public DID map at research date",
+      "id": "renault-5-e-tech",
+      "market": "source-unspecified",
+      "notes": [
+        "Consulted WiCAN vehicle_profiles/renault/megane.json @ bc3ae6d4 (multi-nameplate alias list; not counted)."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Renault Zoe Ph2",
+        "renault-zoe-gen2-2020-2024"
+      ],
+      "blocker": "iternio renault/zoe2.json addresses Ph2/ZE50 exclusively through 29-bit identifiers (ATCP18 / ATSP7 / 18DADAF1 and 18DADBF1) plus session 1003 and ATFCSM1. Catalog records the Ph1 community DID map does not carry over. OVMS vehicle_renaultzoe_ph2 exists and is not counted as an 11-bit ELM map. No commands copied. Ph1 community profile is unchanged and must not be inherited.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "renault-zoe-gen2-2020-2024"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "Zoe Ph2 / ZE50 29-bit LBC/EVC; Ph1 map must not be inherited",
       "id": "renault-current-ev",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "iternio/ev-obd-pids Apache-2.0 at the catalog-pinned revision; recorded as one family, not copied into commands"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "Consulted OVMS vehicle_renaultzoe_ph2 @ 587a91d7 (29-bit / vehicle-CAN integration; not a second ELM family).",
+        "WiCAN megane.json aliases Ariya/Scenic/R5/R4/Megane/Master on 29-bit 015B and is not counted as Zoe Ph2 or as a Renault current-EV DID map."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6209,22 +6696,160 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "462df9a07e92c59510d314a32ca92aaba467cf88bb02896626d76cb486ac3bc9",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-zoe2",
+          "license": "Apache-2.0",
+          "locator": "renault:zoe:20*",
+          "name": "iternio/ev-obd-pids",
+          "path": "renault/zoe2.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2024
+    },
+    {
+      "aliases": [
+        "Renault Megane E-Tech"
+      ],
+      "blocker": "OBDb/Renault-Megane-E-Tech generations.yaml is identity from 2022 with an empty signalset. WiCAN megane.json is a 29-bit ISO-TP 015B profile that aliases Nissan Ariya together with Scenic/R5/R4/Megane/Master — platform extrapolation, not a Megane wire contract. No iternio Megane file (renault/ has zoe.json and zoe2.json only).",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "identity-only",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb Megane E-Tech identity only; empty signalset",
+      "id": "renault-megane-e-tech",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "Must not inherit renault-zoe-ph1-2012-2019-community or Zoe Ph2.",
+        "Scenic E-Tech and Renault 5 E-Tech are separate rows; they are not Megane aliases."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "2fd774914985caf8600a366f4d9152ef23e0f09d39e426dc84c7c7247179f606",
+          "family": "obdb/renault-megane-e-tech",
+          "id": "obdb-renault-megane",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/Renault-Megane-E-Tech",
+          "path": "generations.yaml",
+          "revision": "4f1336e36236714340ece3fa9f6cfe50f0c0cba6",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Renault-Megane-E-Tech/tree/4f1336e36236714340ece3fa9f6cfe50f0c0cba6"
+        }
+      ],
+      "year_from": 2022,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Renault Scenic E-Tech"
+      ],
+      "blocker": "No OBDb/Renault-Scenic repo. WiCAN megane.json aliases Scenic with Megane, Renault 5, Renault 4, Master, and Nissan Ariya on a 29-bit 015B path; that list is platform extrapolation and is not a Scenic identity or DID map. Must not inherit Megane or Zoe Ph1/Ph2.",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "no-source",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "no nameplate-specific public DID map at research date",
+      "id": "renault-scenic-e-tech",
+      "market": "source-unspecified",
+      "notes": [
+        "Consulted WiCAN vehicle_profiles/renault/megane.json @ bc3ae6d4 (multi-nameplate alias list; not counted)."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "Skoda Enyaq",
+        "skoda-enyaq-2020-2026"
+      ],
+      "blocker": "Catalog profile is sourced from iternio MEB.json (skoda:enyaq* alias). WiCAN ev_meb.json lists Enyaq in the same multi-nameplate string. Dated separately; 29-bit gateway remains outside the installable subset. No commands copied.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "skoda-enyaq-2020-2026"
+      ],
+      "disposition": "transport-blocked",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no sibling-specific DID pin",
+      "id": "skoda-enyaq-meb",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "iternio/ev-obd-pids Apache-2.0 at the catalog-pinned revision; recorded as one family, not copied into commands"
+      },
+      "market": "source-unspecified",
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-enyaq",
+          "license": "Apache-2.0",
+          "locator": "catalog locator skoda:enyaq* alias",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Tesla Model 3 Highland",
         "tesla-model3-highland-2023-2026"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/Tesla-Model-3 generations.yaml pins Second Generation (Highland) from 2023 with no end year; the same empty signalset as pre-Highland. No separate Highland DID map. Catalog year_to 2026 is the snapshot ceiling, not a documented production end.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "tesla-model3-highland-2023-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb Second Generation (Highland); no firmware/DID pin",
       "generation": "Highland",
       "id": "tesla-model-3-highland",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Same OBDb repo as pre-Highland is one family, not two.",
+        "Pre-Highland contracts must not be inherited."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6232,22 +6857,48 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "35322671b3c0d835cbd5980c8bde51b6c4a918ee89c199fc31bb8f53be82a45a",
+          "family": "obdb/tesla-model-3",
+          "id": "obdb-tesla-model-3-highland",
+          "license": "CC-BY-SA-4.0",
+          "locator": "Second Generation (Highland)",
+          "name": "OBDb/Tesla-Model-3",
+          "path": "generations.yaml",
+          "revision": "8c9b0e64700ea46f462c960ceefc989aa0096e5b",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Tesla-Model-3/tree/8c9b0e64700ea46f462c960ceefc989aa0096e5b"
+        }
+      ],
+      "year_from": 2023,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Tesla Model 3 pre-Highland",
         "tesla-model3-2017-2023"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/Tesla-Model-3 generations.yaml pins First Generation 2017-2023; signalsets/v3/default.json is an empty commands array. OVMS vehicle_teslamodel3 is native CAN, not a second ELM/UDS DID map. No iternio Tesla file and no WiCAN tesla profile at the pinned revisions. Tesla fleet-telemetry/cloud fields are not an OBD map. No qualifying bounded-read contract.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "tesla-model3-2017-2023"
       ],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb First Generation locator only; no firmware/DID pin",
       "generation": "pre-Highland",
       "id": "tesla-model-3-pre-highland",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Highland is a separate research row; do not merge generations.",
+        "Consulted OVMS vehicle_teslamodel3 @ 587a91d7 (native CAN listener).",
+        "Empty OBDb signalset sha256 238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6255,21 +6906,47 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "35322671b3c0d835cbd5980c8bde51b6c4a918ee89c199fc31bb8f53be82a45a",
+          "family": "obdb/tesla-model-3",
+          "id": "obdb-tesla-model-3",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/Tesla-Model-3",
+          "path": "generations.yaml",
+          "revision": "8c9b0e64700ea46f462c960ceefc989aa0096e5b",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Tesla-Model-3/tree/8c9b0e64700ea46f462c960ceefc989aa0096e5b"
+        }
+      ],
+      "year_from": 2017,
+      "year_to": 2023
     },
     {
       "aliases": [
-        "Tesla Model Y",
+        "Tesla Model Y first generation",
         "tesla-model-y-long-range-awd-us-2020-2026"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/Tesla-Model-Y generations.yaml First Generation is 2020-2024 with an empty signalset. The catalog EPA row is an identity string for Model Y Long Range AWD MY2020-2026 and carries no diagnostic contract. Juniper is a separate research row.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "tesla-model-y-long-range-awd-us-2020-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb First Generation (pre-Juniper); no firmware/DID pin",
+      "generation": "pre-Juniper",
       "id": "tesla-model-y",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Catalog EPA identity tesla-model-y-long-range-awd-us-2020-2026 spans Juniper years; it is not a diagnostic split.",
+        "Empty OBDb signalset sha256 238a166bd90e6a2fea544e105fd6037e17b6e0b692d44f70ff8ce8c221907515."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6277,21 +6954,135 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "1c8e6ecea0ac714d3524f315e7ef85aee8f46a7f509304df3602f2455951a63c",
+          "family": "obdb/tesla-model-y",
+          "id": "obdb-tesla-model-y",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/Tesla-Model-Y",
+          "path": "generations.yaml",
+          "revision": "2db09febefbb629527eaf61994b4ac380cd18d25",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Tesla-Model-Y/tree/2db09febefbb629527eaf61994b4ac380cd18d25"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2024
+    },
+    {
+      "aliases": [
+        "Tesla Model Y Juniper",
+        "Tesla Model Y Highland-equivalent"
+      ],
+      "blocker": "OBDb/Tesla-Model-Y generations.yaml Second Generation (Juniper Refresh) starts 2025; signalset remains empty. No Juniper-specific catalog profile and no OBD/UDS DID map. Do not inherit pre-Juniper identity.",
+      "catalog_presence": "absent",
+      "catalog_profile_ids": [],
+      "disposition": "identity-only",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb Second Generation (Juniper Refresh); no firmware/DID pin",
+      "generation": "Juniper",
+      "id": "tesla-model-y-juniper",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Same OBDb repo as first-generation Model Y is one family, not two."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "1c8e6ecea0ac714d3524f315e7ef85aee8f46a7f509304df3602f2455951a63c",
+          "family": "obdb/tesla-model-y",
+          "id": "obdb-tesla-model-y-juniper",
+          "license": "CC-BY-SA-4.0",
+          "locator": "Second Generation (Juniper Refresh)",
+          "name": "OBDb/Tesla-Model-Y",
+          "path": "generations.yaml",
+          "revision": "2db09febefbb629527eaf61994b4ac380cd18d25",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Tesla-Model-Y/tree/2db09febefbb629527eaf61994b4ac380cd18d25"
+        }
+      ],
+      "year_from": 2025,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "VW ID. Buzz",
+        "volkswagen-id-buzz-2022-2026"
+      ],
+      "blocker": "Catalog profile is sourced from iternio MEB.json (volkswagen:id* alias). WiCAN ev_meb.json lists ID.Buzz in the same multi-nameplate string. Dated separately; 29-bit gateway remains outside the installable subset. No commands copied.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "volkswagen-id-buzz-2022-2026"
+      ],
+      "disposition": "transport-blocked",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no sibling-specific DID pin",
+      "id": "volkswagen-id-buzz-meb",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "iternio/ev-obd-pids Apache-2.0 at the catalog-pinned revision; recorded as one family, not copied into commands"
+      },
+      "market": "source-unspecified",
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-id-buzz",
+          "license": "Apache-2.0",
+          "locator": "catalog locator volkswagen:id* alias for ID. Buzz",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        }
+      ],
+      "year_from": 2022,
+      "year_to": 2026
     },
     {
       "aliases": [
         "VW ID.3",
         "volkswagen-id3-2020-2026"
       ],
-      "blocker": "not yet researched",
+      "blocker": "iternio volkswagen/MEB.json and WiCAN ev_meb.json both require ISO 15765 29-bit gateway addressing (ATSP7 / ATCP17 / 17FC007B/17FE007B) plus custom flow-control init. Telltale's installable subset has no that path. WiCAN ev_meb.json car_model aliases many MEB siblings in one file; that list is not sibling-specific wire evidence and must not be inherited by ID.4/ID.5/Born/Enyaq/Buzz. OBDb/Volkswagen-ID3 signalset is empty. No commands copied.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "volkswagen-id3-2020-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no 11-bit pack-telemetry path pinned",
       "id": "volkswagen-id3-meb",
+      "independence_rationale": "iternio/ev-obd-pids and meatpiHQ/wican-fw are distinct GitHub orgs and repositories, not forks of each other. They independently require the same 29-bit MEB gateway pair. Shared platform aliases inside each file are not a third family and are not sibling inheritance.",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "Pinned families are CC-BY-SA-4.0, Apache-2.0, and/or GPL-3.0; transport-blocked finding only; no command import"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "OBDb/Volkswagen-ID3 @ 9f4ab845 empty signalset; not used as ID.4 evidence.",
+        "Do not inherit this row onto other MEB nameplates."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6299,21 +7090,58 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-id3",
+          "license": "Apache-2.0",
+          "locator": "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        },
+        {
+          "artifact_sha256": "7355c159c20afca957ee486dc7585e7323a57f98124bcecf5a5bc45379985108",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-ev-meb-id3",
+          "license": "GPL-3.0",
+          "locator": "car_model lists ID.3 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/vw/ev_meb.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "corroborating",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2026
     },
     {
       "aliases": [
         "VW ID.4",
         "volkswagen-id4-2020-2026"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Same 29-bit MEB gateway blocker as the ID.3 row, dated from this nameplate's catalog locator (volkswagen:id* / ID.4 in the WiCAN alias list). OBDb/Volkswagen-ID.4 has a large 11-bit-heavy signalset (hdr 710 among others); catalog review records 11-bit endpoints as exposing no pack telemetry. This row does not inherit ID.3 and does not copy either file's formulas.",
       "catalog_presence": "present",
       "catalog_profile_ids": [
         "volkswagen-id4-2020-2026"
       ],
-      "disposition": "unknown",
+      "disposition": "transport-blocked",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no 11-bit pack-telemetry path pinned",
       "id": "volkswagen-id4-meb",
+      "independence_rationale": "iternio/ev-obd-pids and meatpiHQ/wican-fw are distinct GitHub orgs and repositories, not forks of each other. They independently require the same 29-bit MEB gateway pair. This is not inheritance from the ID.3 research row.",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "Pinned families are CC-BY-SA-4.0, Apache-2.0, and/or GPL-3.0; transport-blocked finding only; no command import"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "OBDb/Volkswagen-ID.4 @ 91314a8b signalset sha256 447f46870b83ddb20ee0b3dade385a2e9405b3c97762426773c583c171cdb294 consulted; not imported."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6321,18 +7149,93 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-id4",
+          "license": "Apache-2.0",
+          "locator": "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        },
+        {
+          "artifact_sha256": "7355c159c20afca957ee486dc7585e7323a57f98124bcecf5a5bc45379985108",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-ev-meb-id4",
+          "license": "GPL-3.0",
+          "locator": "car_model lists ID.4 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/vw/ev_meb.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "corroborating",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2020,
+      "year_to": 2026
+    },
+    {
+      "aliases": [
+        "VW ID.5",
+        "volkswagen-id5-2021-2026"
+      ],
+      "blocker": "Catalog profile is sourced from the same iternio MEB.json alias file. WiCAN ev_meb.json lists ID.5 in the same multi-nameplate string. Dated separately so ID.3/ID.4 transport findings are not inherited as a qualified sibling contract. 29-bit gateway remains outside the installable subset. No commands copied.",
+      "catalog_presence": "present",
+      "catalog_profile_ids": [
+        "volkswagen-id5-2021-2026"
+      ],
+      "disposition": "transport-blocked",
+      "evidence_date": "2026-09-11",
+      "firmware_scope": "MEB 29-bit gateway pair; no sibling-specific DID pin",
+      "id": "volkswagen-id5-meb",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "iternio/ev-obd-pids Apache-2.0 at the catalog-pinned revision; recorded as one family, not copied into commands"
+      },
+      "market": "source-unspecified",
+      "notes": [
+        "WiCAN ev_meb.json lists ID.5 in a platform alias string; same WiCAN family as the ID.3/ID.4 pins, not a second family."
+      ],
+      "priority": {
+        "as_of": "2026-09-11",
+        "method": "issue enumeration; not a sales rank or evidence tier",
+        "scope": "globally important or currently requested electrified families",
+        "source": "ImL1s/telltale#332 seed priority set"
+      },
+      "signals": [],
+      "source_families": [
+        {
+          "artifact_sha256": "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+          "family": "iternio/ev-obd-pids",
+          "id": "iternio-meb-id5",
+          "license": "Apache-2.0",
+          "locator": "catalog locator volkswagen:id* alias for ID.5",
+          "name": "iternio/ev-obd-pids",
+          "path": "volkswagen/MEB.json",
+          "revision": "c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+          "role": "primary",
+          "url": "https://github.com/iternio/ev-obd-pids/tree/c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        }
+      ],
+      "year_from": 2021,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Wuling Hongguang Mini EV"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb Wuling repo, no WiCAN wuling profile, no iternio folder, no OVMS module at the pinned revisions.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no public OBD/UDS DID map found at research date",
       "id": "wuling-hongguang-mini-ev",
+      "market": "China",
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6340,18 +7243,22 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2020,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Xiaomi SU7"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb Xiaomi/SU7 repo, no WiCAN xiaomi profile, no iternio folder, no OVMS module at the pinned revisions.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no public OBD/UDS DID map found at research date",
       "id": "xiaomi-su7",
+      "market": "China",
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6359,18 +7266,22 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2024,
+      "year_to": 2026
     },
     {
       "aliases": [
         "Xiaomi YU7"
       ],
-      "blocker": "not yet researched",
+      "blocker": "No OBDb Xiaomi/YU7 repo, no WiCAN xiaomi profile, no iternio folder, no OVMS module at the pinned revisions. SU7 absence is not evidence for YU7 and is not inherited.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "no-source",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "no public OBD/UDS DID map found at research date",
       "id": "xiaomi-yu7",
+      "market": "China",
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6378,18 +7289,27 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [],
+      "year_from": 2025,
+      "year_to": 2026
     },
     {
       "aliases": [
-        "XPeng"
+        "XPeng",
+        "XPeng G6"
       ],
-      "blocker": "not yet researched",
+      "blocker": "Only WiCAN vehicle_profiles/xpeng/xpeng_g6.json exists at the pin (car_model P5/P7/G6/G9/X9 on 704/784 with ATFCSM1). That alias list is one family and is not per-nameplate corroboration. No OBDb XPeng repo. No wire contract copied.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "single-family",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "WiCAN xpeng_g6.json alias list P5/P7/G6/G9/X9 only",
       "id": "xpeng",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "meatpiHQ/wican-fw GPL-3.0 at the catalog-pinned revision; recorded as a single family, not copied into commands"
+      },
+      "market": "Global",
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6397,18 +7317,43 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "801b31d911524313645e59594ce9e28049a87af2ae59ec56dfcc85a276d9654d",
+          "family": "meatpihq/wican-fw",
+          "id": "wican-xpeng-g6",
+          "license": "GPL-3.0",
+          "locator": "car_model Xpeng: P5/P7/G6/G9/X9",
+          "name": "meatpiHQ/wican-fw",
+          "path": "vehicle_profiles/xpeng/xpeng_g6.json",
+          "revision": "bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+          "role": "primary",
+          "url": "https://github.com/meatpiHQ/wican-fw/tree/bc3ae6d4ad09f32b96ca101b31950e4fbf56b825"
+        }
+      ],
+      "year_from": 2021,
+      "year_to": 2026
     },
     {
       "aliases": [
-        "Zeekr"
+        "Zeekr",
+        "Zeekr 009"
       ],
-      "blocker": "not yet researched",
+      "blocker": "OBDb/Zeekr-009 generations.yaml is identity with an empty signalset. WiCAN zeekr-001.json is a different nameplate and uses 29-bit custom addressing (ATSP7 / ATCP1D / ATSHD01635); it is not a second family for 009 and is not an 11-bit executable path.",
       "catalog_presence": "absent",
       "catalog_profile_ids": [],
-      "disposition": "unknown",
+      "disposition": "identity-only",
       "evidence_date": "2026-09-11",
+      "firmware_scope": "OBDb/Zeekr-009 identity only; empty signalset",
       "id": "zeekr",
+      "licence_redistribution": {
+        "decision": "compatible",
+        "rationale": "OBDb CC-BY-SA-4.0 used as identity/search only; empty or unimported signalset; not a redistribution of a Telltale wire map"
+      },
+      "market": "Global",
+      "notes": [
+        "Consulted WiCAN zeekr-001.json @ bc3ae6d4 sha256 e6b95dbea56b5ce2c1981df003775026abbc84b099b6cd92e988eca2564fe244 (001; 29-bit custom; not counted for 009)."
+      ],
       "priority": {
         "as_of": "2026-09-11",
         "method": "issue enumeration; not a sales rank or evidence tier",
@@ -6416,7 +7361,22 @@
         "source": "ImL1s/telltale#332 seed priority set"
       },
       "signals": [],
-      "source_families": []
+      "source_families": [
+        {
+          "artifact_sha256": "509b521426a7859975c5611dd7dbca25107ade58a85e10c2a0b8dbecc177ac30",
+          "family": "obdb/zeekr-009",
+          "id": "obdb-zeekr-009",
+          "license": "CC-BY-SA-4.0",
+          "locator": "First Generation",
+          "name": "OBDb/Zeekr-009",
+          "path": "generations.yaml",
+          "revision": "a2b4936a68eecec76c461efdb17b0cc721483646",
+          "role": "primary",
+          "url": "https://github.com/OBDb/Zeekr-009/tree/a2b4936a68eecec76c461efdb17b0cc721483646"
+        }
+      ],
+      "year_from": 2022,
+      "year_to": 2026
     }
   ],
   "schema_version": 1

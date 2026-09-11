@@ -40,6 +40,11 @@ Research `disposition` is one of: `unknown`, `no-source`, `identity-only`, `sing
 
 `unknown` rows may have empty `source_families` and empty `signals`. They must not carry a wire contract.
 
+The #332 seed priority set is dated. `unknown` remains only for nameplates
+that have not been researched. Slice 2 records sources, hashes, licence
+decisions, independence, and blockers without copying unverified DID/formula
+contracts into `commands` or `signals`. Promotion remains a later PR.
+
 ## Source family derivation
 
 `family` is not a free-form label. The validator derives it with

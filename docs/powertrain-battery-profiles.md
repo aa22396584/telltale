@@ -367,7 +367,11 @@ non-endorsement boundary.
 
 A catalog-derived evidence/disposition matrix and fail-closed validator live
 under `tool/powertrain_evidence/`. They are not Flutter assets and are not read
-by app runtime. See that directory's README for generate/validate commands.
+by app runtime. The #332 seed priority set in `research/rows.json` now has
+dated dispositions (identity-only, no-source, single-family, or
+transport-blocked). Sales ranks stay in `priority` metadata. The matrix still
+cannot change catalog status or invent a wire contract. See that directory's
+README for generate/validate commands.
 
 ## Verification boundary
 
