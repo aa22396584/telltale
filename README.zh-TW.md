@@ -55,9 +55,10 @@ GitHub APK 使用社群簽章，無法更新 Google Play 版，也無法由 Play
   （MG ZS EV Mk1、MG4 Electric、MG5 EV、BYD Atto 3、Hyundai Ioniq 5／Ioniq 6、
   Kia EV6、Hyundai Kona Electric、Kia Niro EV、Kia Soul EV、Renault Zoe Ph1、
   VW e-up! gen2——唯讀 BMS 儀表，每條公式都經至少兩個獨立實作逐 byte 比對，
-  安裝時需確認車輛身分，且每次連線都要重新確認車輛才會開始讀取）；四筆是
-  只能走單次實驗室的 `experimental`（Lexus RX450hL、Toyota Prius TNGA、
-  Kia EV9、Toyota bZ4X／Subaru Solterra e-TNGA）。
+  安裝時需確認車輛身分，且每次連線都要重新確認車輛才會開始讀取）；四筆
+  `experimental`（Lexus RX450hL、Toyota Prius TNGA、Kia EV9、Toyota bZ4X／
+  Subaru Solterra e-TNGA）。其中三筆 Mode 22（Prius、EV9、e-TNGA）可安裝，
+  並標成實驗 · 本車未驗證；Lexus 的 Mode 21 對照只能走單次實驗室。
   可執行子集合計 157 個有邊界的唯讀訊號；動力分布為 BEV 89、FCEV 5、
   HEV 48、MHEV 7、PHEV 69、REEV 3
 - 內建經完整性檢查、完全離線的美國 EPA Find-a-Car 快照：50,242 筆精確配置、

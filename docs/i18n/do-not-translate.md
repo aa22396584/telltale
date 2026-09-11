@@ -204,7 +204,7 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `classicTransportAvailable`
 - `fastMode`
 - `PIDs/s`
-- `schema v3 / schema-v3 (README.md:58; NOTE docs/README.md:13 still says schema-v2 — stale, do not propagate)`
+- `schema v3 / schema-v3 (README.md:58; docs/README.md:13)`
 - `Elm327Client.initSequence`
 - `lib/obd/addressing.dart`
 - `BusAddressing.shouldTransmit`

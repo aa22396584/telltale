@@ -65,10 +65,11 @@ export anything you need first because uninstalling removes local app data.
   implementations, gated behind an install-time identity acknowledgement and
   a fresh per-connection vehicle confirmation), and four opt-in
   `experimental` entries (Lexus RX450hL, Toyota Prius TNGA, Kia EV9,
-  Toyota bZ4X / Subaru Solterra e-TNGA)
-  restricted to the one-shot laboratory. The executable subset totals 157
-  bounded read-only signals; the powertrain split is BEV 89, FCEV 5, HEV 48,
-  MHEV 7, PHEV 69, and REEV 3
+  Toyota bZ4X / Subaru Solterra e-TNGA). Three Mode 22 maps (Prius, EV9,
+  e-TNGA) may be installed, labelled Experimental · Unverified on this
+  vehicle; the Lexus Mode 21 map stays in the one-shot laboratory. The
+  executable subset totals 157 bounded read-only signals; the powertrain
+  split is BEV 89, FCEV 5, HEV 48, MHEV 7, PHEV 69, and REEV 3
 - An integrity-checked, fully offline U.S. EPA Find-a-Car snapshot with 50,242
   exact configurations across 146 make labels and model years 1984–2027. Only
   source fields whose meaning matches the physics profile are applied; the app

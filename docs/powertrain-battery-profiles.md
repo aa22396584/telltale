@@ -10,17 +10,20 @@ Telltale supports that vehicle or has verified its battery-management system
 
 ## Current catalog snapshot
 
-The bundled **schema v3** snapshot contains **221 source-backed profiles**:
+The bundled **schema v3** snapshot contains **221 source-backed profiles**.
+The last column is `community` plus pollable (Mode 22) `experimental`.
+Mode 21 experimental is not in that column. The snapshot has no `ready`
+profile.
 
-| Powertrain | Profiles | Research-only | Experimental | Installable (community) |
+| Powertrain | Profiles | Research-only | Experimental | Installable |
 | --- | ---: | ---: | ---: | ---: |
-| BEV | 89 | 75 | 2 | 12 |
+| BEV | 89 | 75 | 2 | 14 |
 | FCEV | 5 | 5 | 0 | 0 |
-| HEV | 48 | 46 | 2 | 0 |
+| HEV | 48 | 46 | 2 | 1 |
 | MHEV | 7 | 7 | 0 | 0 |
 | PHEV | 69 | 69 | 0 | 0 |
 | REEV | 3 | 3 | 0 | 0 |
-| **Total** | **221** | **205** | **4** | **12** |
+| **Total** | **221** | **205** | **4** | **15** |
 
 The **205 `researchOnly` profiles are metadata indexes with no commands**.
 They cover identity and discovery evidence but cannot query a vehicle.
@@ -36,9 +39,14 @@ a per-connection vehicle confirmation before a single request is sent.
 
 The **4 `experimental` profiles** (Lexus RX450hL 2020 source vehicle, Toyota
 Prius TNGA, Kia EV9, Toyota bZ4X / Subaru Solterra e-TNGA first gen) carry
-pinned read-only commands usable only through the
-opt-in one-shot laboratory. Experimental commands cannot be installed,
-enabled for polling, or added to the dashboard. The EV9's only evidence
+pinned read-only commands. Three of them (Prius TNGA, Kia EV9, e-TNGA)
+use only Mode 22, so `canInstall` accepts them as runtime PIDs; every
+derived value gets the Experimental and Unverified-on-this-vehicle
+badges ("Experimental · Unverified on this vehicle"). They are not
+community-corroborated. The Lexus RX450hL map is Mode 21, which
+`PollableServices` refuses as a gauge service, so it stays probe-only:
+one-shot laboratory, consent-gated, never installed, polled, persisted, or
+shown on the dashboard. The EV9's only evidence
 family is OBDb, whose signalset marks the pack current unsigned even though
 its own capture then decodes to an absurd 6540 A; the entry ships the
 physically coherent signed decode and records the upstream disagreement.
@@ -65,7 +73,7 @@ split; the capture-verified 7D2 subset ships as experimental
 | --- | --- |
 | `ready` | Reserved for a profile that completed the project's installable acceptance process with a physical-vehicle run. The current snapshot contains none. |
 | `community` | A source-backed read-only mapping whose every formula and byte window is confirmed by at least one source independent of the primary, with pinned artifact hashes. Installable after an install-time identity acknowledgement and a fresh per-connection vehicle confirmation; also eligible for one-shot lab reads. The current snapshot contains twelve. |
-| `experimental` | A pinned, bounded candidate eligible only for the opt-in one-shot laboratory. It cannot be installed, polled, persisted as telemetry, or shown on the dashboard. The current snapshot contains four. |
+| `experimental` | A pinned, bounded candidate. Pollable (Mode 22) commands may be installed as runtime PIDs; derived values carry the Experimental and Unverified-on-this-vehicle badges and are not community-corroborated. Mode 21 remains probe-only (one-shot laboratory; never installed, polled, persisted, or dashboarded). The current snapshot contains four: three Mode 22 and one Mode 21. |
 | `researchOnly` | A source or identity index with no executable commands. It cannot be installed or query a vehicle. The current snapshot contains 205. |
 
 `evidence` records where an entry's evidence came from; it never overrides the
@@ -114,8 +122,10 @@ plausible values before inclusion.
 Installation is deliberately split from trust in the vehicle at the other end
 of the adapter:
 
-1. In the catalog, the driver picks a community profile, confirms the exact
-   model year and acknowledges the identity scope. This installs read-only
+1. In the catalog, the driver picks a `community` profile or a pollable
+   (Mode 22) `experimental` profile, confirms the exact model year and
+   acknowledges the identity scope. Experimental installs stay labelled
+   unverified and are not community-corroborated. This installs read-only
    PID definitions into the PID manager — nothing more.
 2. Installed definitions persist only as `{profile_id, vehicle_year}`
    references. On every app start they are rebuilt from the SHA-256-verified
@@ -249,8 +259,9 @@ SoC, pack voltage, signed pack current, and block SoC. Every formula decodes
 OBDb's pinned real-car captures (Prius MY2022/2024/2025; Corolla Hybrid
 confirms 1F5B for 2023–2025), but all licensed evidence is a single
 organization, so the entry is experimental until an independent source
-appears. The forum-circulated 7E2 Mode 21 tables exist only in unlicensed
-sources and are not shipped.
+appears. Mode 22 means it may be installed as unverified PIDs; it is not
+community-corroborated. The forum-circulated 7E2 Mode 21 tables exist
+only in unlicensed sources and are not shipped.
 
 ### Toyota bZ4X / Subaru Solterra (e-TNGA) — experimental
 
@@ -267,7 +278,9 @@ stub `toyota-bz4x-us-2023-2025` stays identity-only.
 `32e8e29a3ccdb396be63c2dadc21b79b0950dff1`. Official
 `openvehicles/Open-Vehicle-Monitoring-System-3` has no etnga module; the
 Kezar OVMS tree is a fork (`kezarjg/Open-Vehicle-Monitoring-System-3`).
-Disposition remains RETAIN EXPERIMENTAL; `year_to` stays 2024.
+Disposition remains RETAIN EXPERIMENTAL; `year_to` stays 2024. The
+shipped 7D2 subset may be installed as unverified PIDs; it is not
+community-corroborated.
 
 ### Nissan Leaf and Mitsubishi Outlander PHEV — researched, not shipped
 

@@ -2,8 +2,10 @@
 
 The bundled schema-v3 powertrain battery catalog is a curated index of **221
 source-backed profiles**: 205 metadata-only `researchOnly` entries, twelve
-cross-corroborated installable `community` entries, and four one-shot
-`experimental` entries. The executable subset contains 157 bounded signals.
+cross-corroborated installable `community` entries, and four `experimental`
+entries (three pollable Mode 22 maps that may be installed as unverified
+PIDs, and one Mode 21 map that remains laboratory-only). The executable
+subset contains 157 bounded signals.
 The current snapshot has no `ready` profile.
 
 Telltale does not claim that any entry is supported. Community entries are
@@ -167,8 +169,8 @@ CC BY-SA 4.0:
 
 Three Mode 22 commands (`1F5B`, `1F9A`, `106C` on `7D2`/`7DA`) become five
 bounded signals, verified against the repository's pinned real-car captures.
-All licensed evidence is one organization, so the subset is one-shot
-experimental only and cannot be installed.
+All licensed evidence is one organization, so the subset stays experimental:
+it may be installed as unverified PIDs and is not community-corroborated.
 
 ### Toyota bZ4X / Subaru Solterra e-TNGA experimental subset
 
@@ -190,7 +192,8 @@ captures:
   `6dee61bd1525e38c552eb3959a35bcb8b5d1df369580fd5469d9ceddfd74d70f`
 
 A second family (Kezar) agrees the `1F5B` formula but polls a different
-header, so the subset stays experimental. `1F9A` is not shipped.
+header, so the subset stays experimental: installable as unverified PIDs,
+not community-corroborated. `1F9A` is not shipped.
 
 Consulted, disagreeing family — **not counted as community corroboration**,
 and `7D2`/`7DA` are not merged with `747`/`74F`:
@@ -224,6 +227,31 @@ and `7D2`/`7DA` are not merged with `747`/`74F`:
 
 Official `openvehicles/Open-Vehicle-Monitoring-System-3` master
 `85074a0ae7a983b308c6e2e081185492527ee073` has no etnga module.
+
+### Kia EV9 (E-GMP) experimental subset
+
+- `OBDb/Kia-EV9`, pinned at `85d8cff25e849a6e421cda20cbadfd4630fe85e7`;
+  signalset artifact SHA-256
+  `dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975`.
+  Licence: CC-BY-SA-4.0. Source path: `signalsets/v3/default.json`.
+
+Two Mode 22 commands (`0101`, `0105` on `7E4`/`7EC`) become sixteen
+bounded signals, verified against the repository's pinned MY2024/MY2025
+real-car captures:
+
+- `tests/test_cases/2024/commands/7E4.7EC.220101|fc=1.yaml` SHA-256
+  `4f9f9dc234749313a119630219cb1208a62b86792c03b6bb364172ba7f273538`
+- `tests/test_cases/2024/commands/7E4.7EC.220105|fc=1.yaml` SHA-256
+  `1ca0d53a21c12613033b8dc0f535dbefd75799e89395c766ef4f916d44a026b1`
+- `tests/test_cases/2025/commands/7E4.7EC.220101|fc=1.yaml` SHA-256
+  `0c3679bd49a3caf5e0c1d20472244970e301aabf0948042c3b8eb3a623528df7`
+- `tests/test_cases/2025/commands/7E4.7EC.220105|fc=1.yaml` SHA-256
+  `0ebd4ee425214f5e3a45190d7c2c8b6eeec42d3cdf329f77729cac18241d6aff`
+- `generations.yaml` SHA-256
+  `4ac04ffbd255d96181b0899a848352c2212c558669a78e5fafd46f3611a2c209`
+
+All licensed evidence is one organization, so the subset stays experimental:
+it may be installed as unverified PIDs and is not community-corroborated.
 
 ### MG4 Electric community corroboration
 
@@ -284,6 +312,11 @@ limitations. No EPA entry contributes a vehicle command.
   exact identity evidence, and an install-time plus per-connection driver
   confirmation. `ready` additionally requires real-vehicle evidence and
   remains empty.
+- Pollable (Mode 22) `experimental` entries may also install when every
+  command is a bounded read `PollableServices` accepts; every derived value
+  is labelled unverified. They are not community-corroborated. Mode 21
+  experimental stays laboratory-only: never installed, polled, persisted,
+  or dashboarded.
 - Vehicle year, market, make, model, variant, and powertrain metadata are
   applicability gates, not compatibility promises.
 - Real vehicle behavior still depends on vehicle generation, market, adapter,

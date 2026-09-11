@@ -10,8 +10,9 @@ certifications of an adapter, diagnosis, repair, vehicle, or safety outcome.
   combinations, purchase-link disclosures, and the limits of each observation.
 - [Field guide](field-guide.zh-TW.md) — choosing a transport, collecting useful
   evidence, and troubleshooting safely at the vehicle (Traditional Chinese).
-- [Powertrain battery profiles](powertrain-battery-profiles.md) — schema-v2
-  catalog coverage, the opt-in one-shot experimental laboratory, source and
+- [Powertrain battery profiles](powertrain-battery-profiles.md) — schema-v3
+  catalog coverage, installable community and pollable-experimental maps
+  labelled unverified, the Mode 21 one-shot laboratory, source and
   installability labels, consent gates, provenance, and physical-validation
   boundaries.
 - [Privacy policy](../PRIVACY.md) — local data, permissions, diagnostic exports,

@@ -29,5 +29,12 @@ void main() {
     expect(text, contains('817da3ec8ab83bf31f000b0d1c85716280ccd843'));
     expect(text, contains('21474124189f8b6483467c6accfd74381d233bed'));
     expect(text, contains('CC-BY-4.0'));
+    expect(text, contains('85d8cff25e849a6e421cda20cbadfd4630fe85e7'));
+    expect(
+      text,
+      contains(
+        'dd9e4c5c5009f96bfcc9711ea49aab7e0a7fa3aaf7f693b37f2cdcd8c7bfb975',
+      ),
+    );
   });
 }
