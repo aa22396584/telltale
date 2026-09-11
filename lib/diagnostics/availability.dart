@@ -369,6 +369,7 @@ class DatumStatus {
     'quality': quality.name,
     'operation_risk': operationRisk.name,
     if (reason != null && reason!.isNotEmpty) 'reason': reason!,
+    if (reasonCode != null) 'reason_code': reasonCode!.name,
     if (formula != null && formula!.isNotEmpty) 'formula': formula!,
     if (assumptions != null && assumptions!.isNotEmpty)
       'assumptions': assumptions!,

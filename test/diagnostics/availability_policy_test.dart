@@ -210,6 +210,11 @@ void main() {
         expect(status.reason, sentence, reason: '${entry.key}');
         expect(status.reasonCode, code, reason: '${entry.key}');
         expect(status.exportFields['reason'], sentence, reason: '${entry.key}');
+        expect(
+          status.exportFields['reason_code'],
+          code.name,
+          reason: '${entry.key}',
+        );
         expect(status.availability, FeatureAvailability.unavailable);
         expect(status.isNumericSuccess, isFalse);
         expect(

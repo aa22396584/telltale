@@ -402,6 +402,63 @@ void main() {
     expect(legacy.assumptions, '估算使用記錄當下的車輛設定');
     expect(legacy.reason, isNull);
   });
+
+  test(
+    'shipped JSON export carries reason_code beside the frozen Chinese sentence',
+    () {
+      // encodeJson is the file a person actually shares. It used to write
+      // `reason` and nothing that said which DatumReason it was, so an English
+      // reader comparing the file against the phone had only a Chinese
+      // sentence to match to an English dialog. #45's export contract is
+      // stable codes in the file; the sentence stays frozen for #46.
+      final signal = _signal(
+        id: 'soc',
+        name: 'SOC',
+        request: '01 5B',
+        isCustom: false,
+        maximum: 100,
+        evidenceKind: 'community',
+      );
+      final header = TelemetrySessionHeader(
+        sessionId: '0123456789abcdef0123456789abcdef',
+        startedAtUtc: DateTime.utc(2026),
+        source: TelemetrySource.demo,
+        transport: TransportKind.demo,
+        protocol: 'AUTO',
+        signals: [signal],
+      );
+      final events = <TelemetryEvent>[
+        TelemetryEvent.value(
+          observedAtUtc: DateTime.utc(2026),
+          sourceTimestampUtc: DateTime.utc(2026),
+          elapsedUs: 0,
+          pidId: signal.definition.id,
+          value: 140,
+          quality: TelemetryQuality.outOfReferenceRange,
+        ),
+      ];
+      final prefix = TelemetrySessionCodec.encodePrefix(header, events);
+      final session = TelemetrySession(
+        header: header,
+        events: events,
+        footer: TelemetrySessionFooter(
+          endedAtUtc: DateTime.utc(2026, 1, 1, 0, 1),
+          terminalReason: TelemetryTerminalReason.user,
+          valueCount: 1,
+          statusCount: 0,
+          gapCount: 0,
+          bytesBeforeFooter: prefix.length,
+        ),
+      );
+      final json = utf8.decode(TelemetryExportCodec.encodeJson(session));
+      expect(json, contains('"reason":"超出一般參考範圍，已保留"'));
+      expect(json, contains('"reason_code":"outOfReferenceRangeKept"'));
+      final decoded = jsonDecode(json) as Map<String, dynamic>;
+      final event = (decoded['events'] as List).single as Map<String, dynamic>;
+      expect(event['reason'], '超出一般參考範圍，已保留');
+      expect(event['reason_code'], 'outOfReferenceRangeKept');
+    },
+  );
 }
 
 final class _MemorySource implements TelemetryChunkSource {
