@@ -4071,7 +4071,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String pidFormulaTimeWindowUnsupported(String term) {
-    return '$term ist eine Delay- oder Average-Torque-Funktion, die dieser Dialekt nicht implementiert, und kann hier nicht ausgewertet werden. Es ist nicht 0 und nicht MIN oder MAX.';
+    return '$term ist eine Delay-, Average- oder Totalizer-Torque-Funktion, die dieser Dialekt nicht implementiert, und kann hier nicht ausgewertet werden. Es ist nicht 0 und nicht MIN oder MAX.';
   }
 
   @override

@@ -69,6 +69,7 @@ These wiki names are detected as `NAME(` and fail as
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
 
 `AVG(A:B)` is not `(A+B)/2` and not `MIN(A:B)`. `TDLY` is not 0.
+`TOT` is a totalizer, not a delay or average.
 
 `INT16` is `FormulaIssue.int16Unclaimed`, not `unsupportedConstruct`.
 The wiki sentence is not an executable oracle.
