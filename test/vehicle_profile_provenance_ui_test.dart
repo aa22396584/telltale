@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:torque_obd/core/field_evidence/platform_metadata.dart';
 import 'package:torque_obd/obd/physics/vehicle_evidence.dart';
 import 'package:torque_obd/obd/physics/vehicle_profile.dart';
+import 'package:torque_obd/obd/session_evidence.dart';
 import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/obd/vehicle_catalog/us_vehicle_catalog.dart';
 import 'package:torque_obd/state/obd_session.dart';
@@ -15,6 +17,7 @@ import 'package:torque_obd/state/settings.dart';
 import 'package:torque_obd/state/vehicle_catalog.dart';
 import 'package:torque_obd/state/vehicle_identity.dart';
 import 'package:torque_obd/ui/screens/settings/settings_screen.dart';
+
 import 'support/localized_app.dart';
 
 const _epaEvidence = EvidenceRef(
@@ -235,6 +238,28 @@ void main() {
 
     expect(find.textContaining('官方精確 2 / 8 欄'), findsOneWidget);
     expect(find.textContaining('2020 Alpha Roadster'), findsOneWidget);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsScreen)),
+    );
+    final profile = container.read(vehicleProfileProvider);
+    expect(profile.displacementField.isVerifiedExact, isTrue);
+    expect(profile.displacementField.evidence?.locator, 'epa_id=1');
+    expect(profile.displacementField.evidence?.sha256, catalog.snapshotSha256);
+    expect(profile.massField.isVerifiedExact, isFalse);
+    final header = SessionEvidenceMetadata(
+      sessionId: 'settings-apply-1',
+      startedAt: DateTime.utc(2026, 9, 12),
+      platform: PlatformMetadata.unknown(),
+      vehicleProfile: profile,
+      transportKind: 'Wi-Fi',
+      deviceName: 'OBD-II',
+    ).renderHeader();
+    expect(header, contains('epa_id=1'));
+    expect(header, contains(catalog.snapshotSha256));
+    expect(header, contains('證據.排氣量'));
+    expect(header, isNot(contains('證據.車重')));
+    expect(header, isNot(contains('epa_id=12345')));
   });
 
   testWidgets(
