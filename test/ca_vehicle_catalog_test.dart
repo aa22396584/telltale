@@ -18,13 +18,14 @@ const _csv =
     'dddddddddddddddd,CA,ice,2024,Ford,F-150,Pickup,5.0,8,A10,D,,my2024-ice.csv\n'
     'eeeeeeeeeeeeeeee,CA,ice,2024,Chevrolet,Impala,Full-size,3.6,6,A6,E,,my2024-ice.csv\n'
     'nnnnnnnnnnnnnnnn,CA,ice,2014,Honda,Civic,Compact,1.8,4,M5,N,,my2012-2024-ice.csv\n'
-    'hhhhhhhhhhhhhhhh,CA,ice,2015,Acura,ILX Hybrid,Compact,1.5,4,AV7,Z,,my2015-2024-fuel-consumption-ratings.csv\n';
+    'hhhhhhhhhhhhhhhh,CA,ice,2015,Acura,ILX Hybrid,Compact,1.5,4,AV7,Z,,my2015-2024-fuel-consumption-ratings.csv\n'
+    'pppppppppppppppp,CA,ice,2015,Toyota,Prius,Mid-size,1.8,4,AV,X,,my2015-2024-fuel-consumption-ratings.csv\n';
 
 String _manifest({
   String? sha256,
   int? sizeBytes,
-  int rowCount = 7,
-  int uniqueMakeCount = 5,
+  int rowCount = 8,
+  int uniqueMakeCount = 6,
   int yearMin = 2013,
   int yearMax = 2024,
 }) => jsonEncode({
@@ -52,7 +53,7 @@ void main() {
       manifestJson: _manifest(),
       csv: _csv,
     );
-    expect(catalog.length, 7);
+    expect(catalog.length, 8);
     expect(CaVehicleConfiguration.market, 'CA');
     final ice = catalog.byCaId('aaaaaaaaaaaaaaaa')!;
     final bev = catalog.byCaId('bbbbbbbbbbbbbbbb')!;
@@ -201,6 +202,44 @@ void main() {
       );
       expect(applied.verifiedFieldKeys, {'displacementL'});
       expect(applied.profile.displacementL, closeTo(1.5, 0.0001));
+    },
+  );
+
+  test('ICE Prius without Hybrid in the official model stays unresolved', () {
+    final catalog = CaVehicleCatalog.fromStrings(
+      manifestJson: _manifest(),
+      csv: _csv,
+    );
+    final prius = applyCaConfiguration(catalog, caId: 'pppppppppppppppp');
+    expect(prius.configuration.model, 'Prius');
+    expect(prius.configuration.resourceClass, 'ice');
+    expect(prius.configuration.fuelType, 'X');
+    expect(prius.verifiedFieldKeys.contains('fuelType'), isFalse);
+    expect(prius.profile.fuelTypeField.isVerifiedExact, isFalse);
+    expect(prius.verifiedFieldKeys, {'displacementL'});
+    expect(prius.profile.displacementL, closeTo(1.8, 0.0001));
+  });
+
+  test(
+    'bundled ICE Prius without Hybrid in the official model stays unresolved',
+    () async {
+      final catalog = await CaVehicleCatalog.load(rootBundle);
+      const caId = '075564af5c59073f';
+      final row = catalog.byCaId(caId)!;
+      expect(row.make, 'Toyota');
+      expect(row.model, 'Prius');
+      expect(row.resourceClass, 'ice');
+      expect(row.fuelType, 'X');
+
+      final applied = applyCaConfiguration(catalog, caId: caId);
+      expect(applied.verifiedFieldKeys.contains('fuelType'), isFalse);
+      expect(applied.profile.fuelTypeField.isVerifiedExact, isFalse);
+      expect(
+        applied.profile.fuelTypeField.origin,
+        isNot(VehicleFieldOrigin.officialRegistry),
+      );
+      expect(applied.verifiedFieldKeys, {'displacementL'});
+      expect(applied.profile.displacementL, closeTo(1.8, 0.0001));
     },
   );
 }

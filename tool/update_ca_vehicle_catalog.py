@@ -14,6 +14,8 @@ import csv
 import hashlib
 import io
 import json
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping, Sequence
@@ -464,16 +466,41 @@ def _manifest_for_compare(manifest: Mapping[str, object]) -> dict[str, object]:
     return cloned
 
 
+def write_atomic(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as output:
+            temporary_path = Path(output.name)
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
+        os.chmod(temporary_path, 0o644)
+        os.replace(temporary_path, path)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 def write_outputs(
     output_dir: Path,
     catalog: bytes,
     manifest: Mapping[str, object],
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / CATALOG_FILENAME).write_bytes(catalog)
-    (output_dir / MANIFEST_FILENAME).write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    write_atomic(output_dir / CATALOG_FILENAME, catalog)
+    write_atomic(
+        output_dir / MANIFEST_FILENAME,
+        (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode(
+            "utf-8"
+        ),
     )
 
 
