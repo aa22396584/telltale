@@ -34,13 +34,13 @@
 // Splitting the table fixed that and, on the first attempt, quietly threw away
 // something else. While one table served both legs, `producer.reason ==
 // datumReasonLabel(zhHant, code)` came free by transitivity. Two tables removed
-// the bridge, and nothing else replaces it: [DatumStatus.exportFields] writes
-// `reason` — the sentence — and no code beside it, and nothing anywhere writes
-// `reasonCode` into an export. **The sentence is the only join key a person
-// comparing an evidence file against a phone has.** Reword
+// the bridge. [DatumStatus.exportFields] now writes `reason_code` beside the
+// frozen sentence, which is the join key #45 asked for. The wording equality
+// still holds for a Chinese reader comparing file and phone. Reword
 // `lib/diagnostics/availability.dart` and `_exported` together and the file
-// would have said 車輛匯流排通訊錯誤 while the phone said 匯流排錯誤, with
-// nothing to match them by and every test green.
+// would have said 車輛匯流排通訊錯誤 while the phone said 匯流排錯誤. The
+// code still joins them; the wording leg is what keeps the sentences the
+// same fact for a reader who compares those, not the identifier.
 //
 // So the equality is a leg now rather than an accident. It is not the single
 // table coming back: `_screen` is still pinned to the shipped ARB and
@@ -293,12 +293,11 @@ void main() {
   });
 
   test('a reader sees one sentence in the file and on the phone', () {
-    // The export carries no code: [DatumStatus.exportFields] writes `reason`
-    // and nothing that says which reason it is. So the sentence itself is the
-    // join key — two people comparing an evidence file against a phone have
-    // only the wording to match on, and the moment the two wordings differ
-    // without a decision behind it, they cannot tell they are looking at the
-    // same fact.
+    // The file now also carries `reason_code`. The sentence is still the
+    // frozen #46 wording; the code is the join key #45 asked for, so an
+    // English reader can match the file to the phone without reading
+    // Chinese. The wording equality below still holds for a Chinese
+    // reader comparing file and phone.
     //
     // While one table served both legs this came free by transitivity. It does
     // not any more, so it is written down.
@@ -350,6 +349,11 @@ void main() {
         _exported[code],
         reason: '${produced.label} exports "${status.reason}" while the '
             'code beside it is $code — "${_exported[code]}"',
+      );
+      expect(
+        status.exportFields['reason_code'],
+        code.name,
+        reason: '${produced.label} must write the identifier into the file',
       );
     }
     // The walk seeing nothing must not read as success.

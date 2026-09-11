@@ -413,6 +413,7 @@ void main() {
       final fields = status.exportFields;
       // Issue #46 owns these three; this wave must not have moved them.
       expect(fields['reason'], '假設尚未確認，仍可估算');
+      expect(fields['reason_code'], 'assumptionsUnconfirmed');
       expect(fields['formula'], AvailabilityPolicy.horsepowerFormula);
       expect(fields['assumptions'], contains('通用預設'));
       expect(fields.keys, isNot(contains('badges')));
