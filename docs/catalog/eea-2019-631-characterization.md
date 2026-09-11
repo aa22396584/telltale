@@ -71,14 +71,53 @@ No aggregation/deduplication rule is accepted in this characterization.
 
 ## 5. Size / memory / lookup
 
+Measured 2026-09-11 against the live Discodata SQL REST endpoint
+`https://discodata.eea.europa.eu/sql` (GET `query=`), table
+`[CO2Emission].[latest].[co2cars_2025Pv31]`. Host: macOS, `python3`
+json/dict. These numbers do **not** accept an aggregation contract.
+
 | Measurement | Value |
 | --- | --- |
-| Provisional 2025 passenger-car rows | 10 833 597 |
-| Sample row | Hyundai i20, `M (kg)` 1140, `Mt` 1237, `Ep (KW)` 74, `R` 1 |
-| Flutter asset | Not practical: an order of magnitude above the Canada snapshot (12 971 rows / 1.6 MB) even before CSV expansion |
+| `SELECT COUNT(*) AS n` | **10833597** (reconfirmed) |
+| Sample row | Hyundai i20, `M (kg)` 1140, `Mt` 1237, `Ep (KW)` 74, `R` 1, `Dr` 2025-08-13 |
+| `COUNT(DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)])` | **66736** |
+| `COUNT(DISTINCT TAN, Ft, [Ec (cm3)])` | **17063** |
+| `COUNT(DISTINCT Mh, Cn, T, Va, Ve, Ft, [Ec (cm3)], Year)` | **63841** |
+| `COUNT(DISTINCT Mk, Cn, Ft)` | **10067** |
+| `SELECT TOP 1000 *` JSON body | 693 460 bytes in 2.6 s |
+| Full-table JSON size (linear from that TOP 1000) | **7 512 666 176 bytes** (~7.51 GiB) — estimate, not a local dump |
+| Canada snapshot (for scale) | 12 971 rows / 1.6 MB |
 
-Parser memory and on-device lookup of 10.8 million registration rows are
-rejected without a reviewed aggregate.
+Homologation-tuple prototype (not a catalog, not reviewed for identity):
+
+```sql
+SELECT DISTINCT Mk, Cn, T, Va, Ve, Ft, [Ec (cm3)] AS Ec
+FROM [CO2Emission].[latest].[co2cars_2025Pv31]
+```
+
+| Prototype measurement | Value |
+| --- | --- |
+| Rows returned | 66736 (matches the COUNT) |
+| JSON body | 7 330 901 bytes in 6.229 s |
+| `json.loads` | 0.165 s, tracemalloc peak 46 866 834 bytes |
+| `dict` index build | 0.020 s, 66736 keys |
+| 100 000 hit lookups | 0.002882 s (**28.8 ns**/lookup) |
+| 10 000 miss lookups | 0.000089 s (**8.9 ns**/lookup) |
+
+The first DISTINCT row is `Mk=''`, `Cn=''`, `T=''`, `Va=''`, `Ve=''`,
+`Ft='petrol'`, `Ec=1481`. Empty commercial-name tuples are enough to reject
+this key as a configuration identity.
+
+Parser memory of the **full 10 833 597-row registration table** as a local
+file remains **not-run**: that dump was not downloaded. The 7.51 GiB JSON
+estimate and the Canada-scale comparison are why it stays off
+`assets/vehicle_catalog/`. On-device lookup of 10.8 million registration
+rows is still rejected. The 28.8 ns figure is only the 66 736-key
+prototype dict on this host.
+
+Flutter asset: still not practical. 66 736 homologation tuples are closer
+to the Canada snapshot in *count*, but they are not a reviewed identity
+and they were not written to the tree.
 
 ## 6. Bundle decision
 
