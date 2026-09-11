@@ -2,7 +2,13 @@
 ///
 /// Engine size in litres is the same quantity as [VehicleProfile.displacementL]
 /// when it is a positive finite number in range. Motor kW is not wheel
-/// horsepower. Fuel type, consumption, range, and CO2 are never copied.
+/// horsepower. Consumption, range, and CO2 are never copied.
+///
+/// NRCan fuel codes
+/// (https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/personal-vehicles/understanding-tables):
+/// `X` regular gasoline, `Z` premium gasoline, `D` diesel, `E` E85, `B`
+/// electricity, `N` natural gas. Only a single exact letter that matches a
+/// [FuelType] is copied. Dual codes (`B/X|X`) and `B`/`N` stay unresolved.
 library;
 
 import '../physics/vehicle_evidence.dart';
@@ -43,7 +49,19 @@ CaProfileApplication applyCaConfiguration(
           evidence: evidence,
         )
       : null;
-  final keys = <String>{if (exactDisplacement != null) 'displacementL'};
+  final mappedFuel = _exactFuelType(configuration.fuelType);
+  final exactFuel = mappedFuel == null
+      ? null
+      : SourcedField<FuelType>(
+          value: mappedFuel,
+          origin: VehicleFieldOrigin.officialRegistry,
+          resolution: EvidenceResolution.verifiedExact,
+          evidence: evidence,
+        );
+  final keys = <String>{
+    if (exactDisplacement != null) 'displacementL',
+    if (exactFuel != null) 'fuelType',
+  };
   const defaults = VehicleProfile();
   final previous = (baseProfile ?? defaults).unconfirmed();
   final base = VehicleProfile.sourced(
@@ -83,7 +101,7 @@ CaProfileApplication applyCaConfiguration(
       displacementL: exactDisplacement ?? base.displacementField,
       massKg: base.massField,
       volumetricEfficiency: base.volumetricEfficiencyField,
-      fuelType: base.fuelTypeField,
+      fuelType: exactFuel ?? base.fuelTypeField,
       drivetrain: base.drivetrainField,
       dragCoefficient: base.dragCoefficientField,
       frontalAreaM2: base.frontalAreaField,
@@ -91,6 +109,15 @@ CaProfileApplication applyCaConfiguration(
     ),
     verifiedFieldKeys: Set.unmodifiable(keys),
   );
+}
+
+FuelType? _exactFuelType(String code) {
+  return switch (code.trim()) {
+    'X' || 'Z' => FuelType.gasoline,
+    'D' => FuelType.diesel,
+    'E' => FuelType.ethanolE85,
+    _ => null,
+  };
 }
 
 SourcedField<T> _reusableAssumption<T>(
