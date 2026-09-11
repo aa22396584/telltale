@@ -17,13 +17,14 @@ const _csv =
     'cccccccccccccccc,CA,phev,2013,Ford,Fusion Energi,Mid-size,2.0,4,AV,B/X|X,35,my2012-2026-plug-in-hybrid-electric-vehicles.csv\n'
     'dddddddddddddddd,CA,ice,2024,Ford,F-150,Pickup,5.0,8,A10,D,,my2024-ice.csv\n'
     'eeeeeeeeeeeeeeee,CA,ice,2024,Chevrolet,Impala,Full-size,3.6,6,A6,E,,my2024-ice.csv\n'
-    'nnnnnnnnnnnnnnnn,CA,ice,2014,Honda,Civic,Compact,1.8,4,M5,N,,my2012-2024-ice.csv\n';
+    'nnnnnnnnnnnnnnnn,CA,ice,2014,Honda,Civic,Compact,1.8,4,M5,N,,my2012-2024-ice.csv\n'
+    'hhhhhhhhhhhhhhhh,CA,ice,2015,Acura,ILX Hybrid,Compact,1.5,4,AV7,Z,,my2015-2024-fuel-consumption-ratings.csv\n';
 
 String _manifest({
   String? sha256,
   int? sizeBytes,
-  int rowCount = 6,
-  int uniqueMakeCount = 4,
+  int rowCount = 7,
+  int uniqueMakeCount = 5,
   int yearMin = 2013,
   int yearMax = 2024,
 }) => jsonEncode({
@@ -51,7 +52,7 @@ void main() {
       manifestJson: _manifest(),
       csv: _csv,
     );
-    expect(catalog.length, 6);
+    expect(catalog.length, 7);
     expect(CaVehicleConfiguration.market, 'CA');
     final ice = catalog.byCaId('aaaaaaaaaaaaaaaa')!;
     final bev = catalog.byCaId('bbbbbbbbbbbbbbbb')!;
@@ -161,5 +162,21 @@ void main() {
 
     final dual = applyCaConfiguration(catalog, caId: 'cccccccccccccccc');
     expect(dual.verifiedFieldKeys.contains('fuelType'), isFalse);
+  });
+
+  test('ICE conventional hybrid rows do not verify combustion-only fuel', () {
+    final catalog = CaVehicleCatalog.fromStrings(
+      manifestJson: _manifest(),
+      csv: _csv,
+    );
+    final hybrid = applyCaConfiguration(catalog, caId: 'hhhhhhhhhhhhhhhh');
+    expect(hybrid.configuration.resourceClass, 'ice');
+    expect(hybrid.configuration.fuelType, 'Z');
+    expect(hybrid.verifiedFieldKeys.contains('fuelType'), isFalse);
+    expect(hybrid.profile.fuelTypeField.isVerifiedExact, isFalse);
+    expect(
+      hybrid.profile.fuelTypeField.origin,
+      isNot(VehicleFieldOrigin.officialRegistry),
+    );
   });
 }
