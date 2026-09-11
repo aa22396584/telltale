@@ -749,6 +749,47 @@ void _reorderedColumns() {
       );
     });
 
+    test(
+      'a three-column Name/ModeAndPID/Equation header is not a cell-count miss',
+      () {
+        // `_required` is Name/ModeAndPID/Equation. The conventional spelling
+        // already imports. Header detection used trim+lowercase *before*
+        // `_key()`, so a spreadsheet that writes `Mode And PID` (the same
+        // column, spaces kept) was classified as positional and then refused
+        // by `row.length < 4` — a complete named contract reported as too
+        // few cells. Name is not first, so `first.first == 'name'` cannot
+        // rescue it.
+        const spaced =
+            'Mode And PID,Name,Equation\r\n0105,Coolant,A-40\r\n';
+        final spacedResult = PidCsv.parse(spaced);
+        expect(
+          spacedResult.errors.map((e) => e.issue),
+          isNot(contains(PidCsvIssue.rowTooFewColumns)),
+          reason:
+              'a named three-column file is missing no required mapped '
+              'value; cell count is the positional rule',
+        );
+        expect(spacedResult.errors, isEmpty);
+        expect(spacedResult.pids, hasLength(1));
+        expect(spacedResult.pids.single.name, 'Coolant');
+        expect(spacedResult.pids.single.modeAndPid, '0105');
+        expect(spacedResult.pids.single.equation, 'A-40');
+
+        const underscored =
+            'mode_and_pid,name,equation\r\n0105,Coolant,A-40\r\n';
+        final underscoredResult = PidCsv.parse(underscored);
+        expect(underscoredResult.errors, isEmpty);
+        expect(underscoredResult.pids.single.modeAndPid, '0105');
+
+        // Headerless three cells are still too few for the positional layout.
+        final positional = PidCsv.parse('Coolant,0105,A-40\r\n');
+        expect(
+          positional.errors.single.issue,
+          PidCsvIssue.rowTooFewColumns,
+        );
+      },
+    );
+
     test('no header row still means positional, as it always did', () {
       const csv = 'Trans Temp,TTemp,2211A6,A-40,-40,215,°C,7E1\r\n';
       final result = PidCsv.parse(csv);

@@ -395,7 +395,12 @@ abstract final class PidCsv {
     final first = rows.first
         .map((c) => c.toString().trim().toLowerCase())
         .toList();
-    if (first.isNotEmpty && _key(first.first) == 'telltalehumanreport') {
+    // Same normalisation the named map uses. Trim+lowercase alone leaves
+    // `Mode And PID` as three tokens, so the row was classified positional
+    // and then refused by the four-cell floor even though `_required` is
+    // Name/ModeAndPID/Equation.
+    final firstKeys = [for (final cell in first) _key(cell)];
+    if (firstKeys.isNotEmpty && firstKeys.first == 'telltalehumanreport') {
       return PidCsvResult(
         pids: const [],
         errors: [
@@ -423,8 +428,8 @@ abstract final class PidCsv {
     var columns = <String, int>{
       for (var i = 0; i < header.length; i++) _key(header[i]): i,
     };
-    if (first.isNotEmpty &&
-        (first.first == 'name' || first.contains('modeandpid'))) {
+    if (firstKeys.isNotEmpty &&
+        (firstKeys.first == 'name' || firstKeys.contains('modeandpid'))) {
       startIndex = 1;
       final named = <String, int>{};
       final duplicated = <String>{};
