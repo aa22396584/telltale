@@ -83,5 +83,37 @@ void main() {
       reason: 'PID screen did not show PID manager after switching language',
     );
     expect(find.text('PID 管理'), findsNothing);
+
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'PID');
+    final germanHeadline = await pumpUntil(
+      tester,
+      () => find.text('PID-Manager').evaluate().isNotEmpty,
+    );
+    expect(
+      germanHeadline,
+      isTrue,
+      reason: 'PID screen did not show PID-Manager after switching to German',
+    );
+    expect(find.text('PID manager'), findsNothing);
+    expect(find.text('PID 管理'), findsNothing);
   });
 }

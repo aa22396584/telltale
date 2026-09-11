@@ -408,6 +408,23 @@ void main() {
       );
       expect(find.text('選擇連線方式'), findsNothing);
 
+      await _selectLocale(tester, const Key('locale_german'));
+      final germanHeadline = await pumpUntil(
+        tester,
+        () => find
+            .text('Wählen Sie eine Verbindung aus')
+            .hitTestable()
+            .evaluate()
+            .isNotEmpty,
+      );
+      expect(
+        germanHeadline,
+        isTrue,
+        reason: 'switching to German before connect did not retitle the screen',
+      );
+      expect(find.text('Choose a connection'), findsNothing);
+      expect(find.text('選擇連線方式'), findsNothing);
+
       await _selectLocale(tester, const Key('locale_traditionalChinese'));
       final chineseHeadline = await pumpUntil(
         tester,
@@ -502,6 +519,22 @@ void main() {
         findsOneWidget,
         reason: 'Settings did not show Disconnect after language switch',
       );
+      expect(_disconnectOnSettings('中斷連線'), findsNothing);
+
+      debugPrint('JOURNEY switchGerman');
+      await _tapLocaleOnSettings(
+        tester,
+        const Key('locale_german'),
+        LocalePreference.german,
+      );
+      await _revealSettingsTop(tester);
+      final germanDisconnect = _disconnectOnSettings('Trennen');
+      expect(
+        await pumpUntil(tester, () => germanDisconnect.evaluate().isNotEmpty),
+        isTrue,
+        reason: 'Settings did not show Trennen after language switch',
+      );
+      expect(_disconnectOnSettings('Disconnect'), findsNothing);
       expect(_disconnectOnSettings('中斷連線'), findsNothing);
     },
     timeout: const Timeout(Duration(minutes: 5)),

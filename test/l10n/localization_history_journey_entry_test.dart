@@ -26,12 +26,14 @@ void main() {
   test('the journey opens History then switches language', () {
     expect(source.contains('本機紀錄'), isTrue);
     expect(source.contains('Local recordings'), isTrue);
+    expect(source.contains('Lokale Aufzeichnungen'), isTrue);
     expect(source.contains('telemetry-history'), isTrue);
     expect(source.contains('telemetry-open-history'), isFalse);
     expect(source.contains('TelemetrySessionsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('.pop()'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     final demoAt = source.indexOf('await connectDemoRig');
     final historyAt = source.indexOf('await _openHistory');

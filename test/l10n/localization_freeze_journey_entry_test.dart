@@ -30,7 +30,9 @@ void main() {
     expect(source.contains('開始掃描'), isTrue);
     expect(source.contains('故障發生當下的車況'), isTrue);
     expect(source.contains('The vehicle at the moment of the fault'), isTrue);
+    expect(source.contains('Das Fahrzeug im Moment des Fehlers'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);

@@ -26,7 +26,9 @@ void main() {
   test('the journey opens DTC then switches language', () {
     expect(source.contains('故障碼'), isTrue);
     expect(source.contains('Fault codes'), isTrue);
+    expect(source.contains('Fehlercodes'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('connectDemoRig');

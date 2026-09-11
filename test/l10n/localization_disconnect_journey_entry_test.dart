@@ -27,7 +27,9 @@ void main() {
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('中斷連線'), isTrue);
     expect(source.contains('Disconnect'), isTrue);
+    expect(source.contains('Trennen'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);
     expect(source.contains('scrollUntilVisible'), isTrue);

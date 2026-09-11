@@ -572,5 +572,38 @@ void main() {
       nativeFooter: nativeRead.sessionFooter!,
     );
     await _expectNativeUnchanged(native, originalBytes);
+
+    await _leaveExportToShell(tester);
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Dashboard');
+    await _openHistory(tester);
+    await _openExactRecording(tester, sessionId);
+    await _openExportSheet(tester, 'Exportieren');
+    await _expectSheetTitle(tester, 'Eine lokale Aufzeichnung exportieren');
+    expect(
+      find.descendant(
+        of: find.byType(TelemetryExportSheet),
+        matching: find.text('Export a local recording'),
+      ),
+      findsNothing,
+    );
   });
 }

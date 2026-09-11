@@ -60,6 +60,45 @@ Finder _settingsVerticalScrollable() {
       .first;
 }
 
+/// [WidgetController.scrollUntilVisible] can leave the locale row under the
+/// NavigationBar, so a tap at that offset never invokes onTap.
+Future<void> _tapLocaleOnSettings(WidgetTester tester, Key key) async {
+  final locale = find.descendant(
+    of: find.byType(SettingsScreen),
+    matching: find.byKey(key),
+  );
+  await tester.scrollUntilVisible(
+    locale,
+    400,
+    scrollable: _settingsVerticalScrollable(),
+  );
+  final viewHeight =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio;
+  final maxY = viewHeight - 140;
+  var tapped = false;
+  for (var i = 0; i < 10; i++) {
+    await Scrollable.ensureVisible(tester.element(locale), alignment: 0.2);
+    await tester.pump(const Duration(milliseconds: 80));
+    final hittable = locale.hitTestable();
+    if (hittable.evaluate().isEmpty) {
+      await tester.drag(_settingsVerticalScrollable(), const Offset(0, -160));
+      await tester.pump();
+      continue;
+    }
+    final center = tester.getCenter(hittable);
+    if (center.dy > maxY) {
+      await tester.drag(_settingsVerticalScrollable(), const Offset(0, -160));
+      await tester.pump();
+      continue;
+    }
+    await tester.tapAt(center);
+    await tester.pump();
+    tapped = true;
+    break;
+  }
+  expect(tapped, isTrue, reason: 'locale $key was not hit-testable');
+}
+
 Finder _dashboardVerticalScrollable() {
   return find
       .descendant(
@@ -176,6 +215,31 @@ void main() {
       expect(english.hitTestable(), findsOneWidget);
       expect(_gaugesOnDashboard('儀表'), findsNothing);
       await _revealLazyDashboard(tester, 'Estimated values');
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await _tapNav(tester, 'Settings');
+      await tester.pump(const Duration(milliseconds: 300));
+      await _tapLocaleOnSettings(tester, const Key('locale_german'));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await _tapNav(tester, 'Dashboard');
+      expect(
+        await pumpUntil(
+          tester,
+          () => find.byType(DashboardScreen).evaluate().isNotEmpty,
+        ),
+        isTrue,
+        reason: 'DashboardScreen did not open after switching to German',
+      );
+      final german = _gaugesOnDashboard('Instrumente');
+      expect(
+        await pumpUntil(tester, () => german.evaluate().isNotEmpty),
+        isTrue,
+        reason:
+            'Dashboard workspace switch did not show Instrumente after switching to German',
+      );
+      expect(_gaugesOnDashboard('Gauges'), findsNothing);
+      await _revealLazyDashboard(tester, 'Geschätzte Werte');
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(

@@ -26,7 +26,9 @@ void main() {
   test('the journey shows recorder copy then switches language', () {
     expect(source.contains('開始紀錄'), isTrue);
     expect(source.contains('Start recording'), isTrue);
+    expect(source.contains('Aufnahme starten'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('connectDemoRig');

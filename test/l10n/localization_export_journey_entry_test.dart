@@ -33,7 +33,9 @@ void main() {
     expect(source.contains('pumpUntil'), isTrue);
     expect(source.contains('匯出本機紀錄'), isTrue);
     expect(source.contains('Export a local recording'), isTrue);
+    expect(source.contains('Eine lokale Aufzeichnung exportieren'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('await connectDemoRig');

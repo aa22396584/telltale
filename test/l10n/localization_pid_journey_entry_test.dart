@@ -26,7 +26,9 @@ void main() {
   test('the journey opens PID then switches language', () {
     expect(source.contains('PID 管理'), isTrue);
     expect(source.contains('PID manager'), isTrue);
+    expect(source.contains('PID-Manager'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('connectDemoRig');
