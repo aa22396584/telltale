@@ -134,6 +134,30 @@ void main() {
     expect(decoded.supportedMids, {0x01});
   });
 
+  test('MID C0 support mask can advertise terminal test MID E0', () {
+    const payload = <int>[0x46, 0xC0, 0x00, 0x00, 0x00, 0x01];
+    final decoded = Mode06CanDecoder.decode(
+      payload: payload,
+      responder: '7E8',
+    );
+    expect(decoded.tests, isEmpty);
+    expect(decoded.supportedMids, {0xE0});
+  });
+
+  test('MID E0 is a test record, not a support page', () {
+    const payload = <int>[
+      0x46, 0xE0, 0x01, 0x0A, 0x00, 0x64, 0x00, 0x00, 0x00, 0xC8,
+    ];
+    final decoded = Mode06CanDecoder.decode(
+      payload: payload,
+      responder: '7E8',
+    );
+    expect(decoded.supportedMids, isEmpty);
+    expect(decoded.tests, hasLength(1));
+    expect(decoded.tests.single.mid, 0xE0);
+    expect(decoded.tests.single.value, closeTo(12.2, 1e-9));
+  });
+
   test('inconsistent min > max is unknown, not a pass', () {
     const payload = <int>[
       0x46, 0x01, 0x80, 0x0A, 0x00, 0x10, 0x00, 0x20, 0x00, 0x10,
