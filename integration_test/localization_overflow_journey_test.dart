@@ -178,6 +178,36 @@ void main() {
       await _revealLazyDashboard(tester, 'Estimated values');
       await tester.pump(const Duration(milliseconds: 300));
 
+      await _tapNav(tester, 'Settings');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('locale_german')),
+        400,
+        scrollable: _settingsVerticalScrollable(),
+      );
+      await tester.tap(find.byKey(const Key('locale_german')));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await _tapNav(tester, 'Dashboard');
+      expect(
+        await pumpUntil(
+          tester,
+          () => find.byType(DashboardScreen).evaluate().isNotEmpty,
+        ),
+        isTrue,
+        reason: 'DashboardScreen did not open after switching to German',
+      );
+      final german = _gaugesOnDashboard('Instrumente');
+      expect(
+        await pumpUntil(tester, () => german.evaluate().isNotEmpty),
+        isTrue,
+        reason:
+            'Dashboard workspace switch did not show Instrumente after switching to German',
+      );
+      expect(_gaugesOnDashboard('Gauges'), findsNothing);
+      await _revealLazyDashboard(tester, 'Geschätzte Werte');
+      await tester.pump(const Duration(milliseconds: 300));
+
       expect(
         overflows,
         isEmpty,

@@ -28,7 +28,9 @@ void main() {
     expect(source.contains('開始掃描'), isTrue);
     expect(source.contains('排放就緒狀態'), isTrue);
     expect(source.contains('Emissions readiness'), isTrue);
+    expect(source.contains('Emissionsbereitschaft'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);

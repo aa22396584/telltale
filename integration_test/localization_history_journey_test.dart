@@ -150,5 +150,51 @@ void main() {
       ),
       findsNothing,
     );
+
+    await _leaveHistory(tester);
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Dashboard');
+    await _openHistory(tester);
+    final germanTitle = await pumpUntil(
+      tester,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionsScreen),
+            matching: find.text('Lokale Aufzeichnungen'),
+          )
+          .evaluate()
+          .isNotEmpty,
+    );
+    expect(
+      germanTitle,
+      isTrue,
+      reason:
+          'History route did not show Lokale Aufzeichnungen after switching to German',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(TelemetrySessionsScreen),
+        matching: find.text('Local recordings'),
+      ),
+      findsNothing,
+    );
   });
 }

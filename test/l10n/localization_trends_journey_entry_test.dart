@@ -27,7 +27,9 @@ void main() {
     expect(source.contains('dashboard-workspace-switch'), isTrue);
     expect(source.contains('趨勢'), isTrue);
     expect(source.contains('Trends'), isTrue);
+    expect(source.contains('Instrumente'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     expect(source.contains('pumpUntil'), isTrue);

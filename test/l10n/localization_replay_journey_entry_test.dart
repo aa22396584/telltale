@@ -33,7 +33,9 @@ void main() {
     expect(source.contains('pumpUntil'), isTrue);
     expect(source.contains('紀錄回放'), isTrue);
     expect(source.contains('Recording replay'), isTrue);
+    expect(source.contains('Wiedergabe der Aufzeichnung'), isTrue);
     expect(source.contains('locale_english'), isTrue);
+    expect(source.contains('locale_german'), isTrue);
     expect(source.contains('SettingsScreen'), isTrue);
     expect(source.contains('find.descendant'), isTrue);
     final demoAt = source.indexOf('await connectDemoRig');

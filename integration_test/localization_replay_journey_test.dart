@@ -258,5 +258,52 @@ void main() {
       ),
       findsNothing,
     );
+
+    await _leaveReplayToShell(tester);
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Dashboard');
+    await _openHistory(tester);
+    await _openFirstRecording(tester);
+    final germanTitle = await pumpUntil(
+      tester,
+      () => find
+          .descendant(
+            of: find.byType(TelemetrySessionDetailScreen),
+            matching: find.text('Wiedergabe der Aufzeichnung'),
+          )
+          .evaluate()
+          .isNotEmpty,
+    );
+    expect(
+      germanTitle,
+      isTrue,
+      reason:
+          'Replay route did not show Wiedergabe der Aufzeichnung after switching to German',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(TelemetrySessionDetailScreen),
+        matching: find.text('Recording replay'),
+      ),
+      findsNothing,
+    );
   });
 }

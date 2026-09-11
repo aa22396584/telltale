@@ -183,12 +183,50 @@ void main() {
     await _dashboardDigest(tester, binding, 'dashboard-en');
     final englishSwitch = await _switchDigest(tester, 'switch-en');
 
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: _settingsVerticalScrollable(),
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Dashboard');
+    expect(
+      await pumpUntil(
+        tester,
+        () => find.byType(DashboardScreen).evaluate().isNotEmpty,
+      ),
+      isTrue,
+      reason: 'DashboardScreen did not open after switching to German',
+    );
+    final german = _gaugesOnDashboard('Instrumente');
+    expect(
+      await pumpUntil(tester, () => german.evaluate().isNotEmpty),
+      isTrue,
+      reason:
+          'Dashboard workspace switch did not show Instrumente after switching to German',
+    );
+    expect(_gaugesOnDashboard('Gauges'), findsNothing);
+    expect(_gaugesOnDashboard('儀表'), findsNothing);
+    await _dashboardDigest(tester, binding, 'dashboard-de');
+    final germanSwitch = await _switchDigest(tester, 'switch-de');
+
     expect(
       englishSwitch,
       isNot(equals(chineseSwitch)),
       reason:
           'language switch left workspace-switch pixels unchanged '
           '(zh-Hant=$chineseSwitch en=$englishSwitch)',
+    );
+    expect(
+      germanSwitch,
+      isNot(equals(englishSwitch)),
+      reason:
+          'German switch left workspace-switch pixels unchanged '
+          '(en=$englishSwitch de=$germanSwitch)',
     );
   });
 }

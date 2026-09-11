@@ -131,5 +131,48 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(english.hitTestable(), findsOneWidget);
     expect(_onDtc('排放就緒狀態'), findsNothing);
+
+    await _tapNav(tester, 'Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('locale_german')),
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.down,
+            ),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('locale_german')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await _tapNav(tester, 'Fehlercodes');
+    expect(
+      await pumpUntil(
+        tester,
+        () => find.byType(DtcScreen).evaluate().isNotEmpty,
+      ),
+      isTrue,
+      reason: 'DtcScreen did not open after switching to German',
+    );
+    await _startScanIfNeeded(tester, 'Scan starten');
+    final german = _onDtc('Emissionsbereitschaft');
+    expect(
+      await pumpUntil(
+        tester,
+        () => german.evaluate().isNotEmpty,
+        timeout: const Duration(seconds: 30),
+      ),
+      isTrue,
+      reason:
+          'DtcScreen did not show Emissionsbereitschaft after switching to German',
+    );
+    expect(_onDtc('Emissions readiness'), findsNothing);
+    expect(_onDtc('排放就緒狀態'), findsNothing);
   });
 }
