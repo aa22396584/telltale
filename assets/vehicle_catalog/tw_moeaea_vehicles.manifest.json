@@ -1,0 +1,84 @@
+{
+  "coverage": {
+    "does_not_assert": [
+      "global make/model completeness",
+      "U.S. EPA namesake identity",
+      "curb mass",
+      "mass in running order",
+      "test mass",
+      "wheel horsepower",
+      "drivetrain efficiency",
+      "drag coefficient",
+      "frontal area",
+      "volumetric efficiency"
+    ],
+    "market": "Taiwan",
+    "vehicle_scope": "Passenger-car energy-consumption certification rows from dataset 6032 monthly CSVs; 11163 is the annual guide PDF pin",
+    "year_policy": "issue_year_ce is the certification calendar year (ROC year + 1911), not a U.S. model year"
+  },
+  "dataset": "Taiwan MOEA Energy Administration vehicle identity",
+  "license": {
+    "name": "\u653f\u5e9c\u8cc7\u6599\u958b\u653e\u6388\u6b0a\u689d\u6b3e\u7b2c1\u7248",
+    "url": "https://data.gov.tw/license"
+  },
+  "output": {
+    "columns": [
+      "tw_id",
+      "market",
+      "origin",
+      "vehicle_class",
+      "powertrain",
+      "issue_year_ce",
+      "issue_date",
+      "make",
+      "model",
+      "transmission",
+      "doors",
+      "displacement_cc",
+      "reference_mass_kg",
+      "applicant",
+      "source_file"
+    ],
+    "file": "tw_moeaea_vehicles.csv",
+    "row_count": 2343,
+    "sha256": "97a4a4d14012c90204a124795a3286a96d91141075abfc37ab1f415da27b60cd",
+    "size_bytes": 409128,
+    "unique_make_count": 72,
+    "year_max": 2026,
+    "year_min": 2017
+  },
+  "schema_version": 1,
+  "source": {
+    "guide_11163": {
+      "agency": "\u7d93\u6fdf\u90e8\u80fd\u6e90\u7f72",
+      "api_url": "https://data.gov.tw/api/v2/rest/dataset/11163",
+      "artifact_content_type": "application/pdf",
+      "artifact_sha256": "4f0666ef18339bca855112c23866588ad5a274cf9b89a18c2909d7aaa197bbb9",
+      "artifact_size_bytes": 3281512,
+      "create_date": "20251120",
+      "dataset_id": 11163,
+      "file_name": "\u8eca\u8f1b\u6cb9\u8017\u6307\u5357",
+      "file_url": "https://www.moeaea.gov.tw/ECW/populace/opendata/wHandOpenData_File.ashx?set_id=26",
+      "index_sha256": "49af372921867c26a7349792ba1ae69dc55fc2d9c33172baeaa824bf07b4401e",
+      "index_size_bytes": 225,
+      "index_url": "https://www.moeaea.gov.tw/ECW/populace/opendata/wHandOpenData_File.ashx?set_id=331",
+      "landing_page": "https://data.gov.tw/dataset/11163"
+    },
+    "identity_6032": {
+      "agency": "\u7d93\u6fdf\u90e8\u80fd\u6e90\u7f72",
+      "api_url": "https://data.gov.tw/api/v2/rest/dataset/6032",
+      "artifact_content_type": "application/zip",
+      "artifact_sha256": "da6b72a1885d4a291b64ed2fc9094b6935e2eed96b830407e493a1df5cc1b687",
+      "artifact_size_bytes": 906193,
+      "create_date": "20250909",
+      "dataset_id": 6032,
+      "file_name": "\u8eca\u578b\u8017\u80fd\u8b49\u660e\u6838\u767c\u8cc7\u6599",
+      "file_url": "https://www.moeaea.gov.tw/ECW/populace/opendata/wHandOpenData_File.ashx?set_id=7",
+      "index_sha256": "4f00a77e00815eacf9e4507c76b2021e16f0e2e891fb7b8c6c9387d1afabdb2a",
+      "index_size_bytes": 236,
+      "index_url": "https://www.moeaea.gov.tw/ECW/populace/opendata/wHandOpenData_File.ashx?set_id=305",
+      "landing_page": "https://data.gov.tw/dataset/6032"
+    },
+    "retrieved_at_utc": "2026-09-11T02:09:14+00:00"
+  }
+}

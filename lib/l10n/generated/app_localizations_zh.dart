@@ -1840,6 +1840,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCatalogVerifying => '驗證離線目錄中…';
 
   @override
+  String get settingsCatalogChooseMarket => '選擇要瀏覽的官方目錄';
+
+  @override
+  String get settingsCatalogMarketTw => '臺灣（經濟部能源署）';
+
+  @override
+  String get settingsCatalogMarketUs => '美國（EPA）';
+
+  @override
+  String get settingsTwCertificationYear => '核發年份';
+
+  @override
+  String get settingsTwMake => '臺灣廠牌';
+
+  @override
+  String settingsTwPickerScope(int firstYear, int lastYear) {
+    return '僅含 $firstYear–$lastYear 的臺灣核發列。這個年份是能源署核發西元年，不是美國 model year。名稱相同也不等於 EPA 配置。';
+  }
+
+  @override
+  String get settingsTwPickerTitle => '臺灣官方車輛目錄';
+
+  @override
+  String get settingsTwReferenceMassNotCurb => '參考車重不是 curb mass，不會套用。';
+
+  @override
+  String settingsTwWillApplyOnly(String fields) {
+    return '只會套用：$fields。參考車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。';
+  }
+
+  @override
   String get settingsClose => '關閉';
 
   @override
@@ -5775,6 +5806,37 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsCatalogVerifying => '驗證離線目錄中…';
+
+  @override
+  String get settingsCatalogChooseMarket => '選擇要瀏覽的官方目錄';
+
+  @override
+  String get settingsCatalogMarketTw => '臺灣（經濟部能源署）';
+
+  @override
+  String get settingsCatalogMarketUs => '美國（EPA）';
+
+  @override
+  String get settingsTwCertificationYear => '核發年份';
+
+  @override
+  String get settingsTwMake => '臺灣廠牌';
+
+  @override
+  String settingsTwPickerScope(int firstYear, int lastYear) {
+    return '僅含 $firstYear–$lastYear 的臺灣核發列。這個年份是能源署核發西元年，不是美國 model year。名稱相同也不等於 EPA 配置。';
+  }
+
+  @override
+  String get settingsTwPickerTitle => '臺灣官方車輛目錄';
+
+  @override
+  String get settingsTwReferenceMassNotCurb => '參考車重不是 curb mass，不會套用。';
+
+  @override
+  String settingsTwWillApplyOnly(String fields) {
+    return '只會套用：$fields。參考車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。';
+  }
 
   @override
   String get settingsClose => '關閉';

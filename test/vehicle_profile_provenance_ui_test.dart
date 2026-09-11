@@ -212,6 +212,8 @@ void main() {
 
     await tester.tap(find.text('從官方目錄選擇'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('美國（EPA）'));
+    await tester.pumpAndSettle();
     expect(find.textContaining('僅限美國市場'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('us_epa_year')));
@@ -246,6 +248,8 @@ void main() {
 
       await tester.tap(find.text('從官方目錄選擇'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('美國（EPA）'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('us_epa_year')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('2020').last);
@@ -279,6 +283,8 @@ void main() {
           throw const UsVehicleCatalogException('bad fixture'),
     );
     await tester.tap(find.text('從官方目錄選擇'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('美國（EPA）'));
     await tester.pump();
     expect(find.textContaining('官方離線目錄損壞'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -292,6 +298,8 @@ void main() {
     try {
       FlutterError.onError = (details) => reported = details;
       await tester.tap(find.text('從官方目錄選擇'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('美國（EPA）'));
       await tester.pump();
     } finally {
       FlutterError.onError = originalOnError;

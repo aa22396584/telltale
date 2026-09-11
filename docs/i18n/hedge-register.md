@@ -12,7 +12,7 @@ outcome. Weakening a qualifier to improve rhythm is a defect.
 Entries marked **proposed** have no established English in the tree yet; the English is a
 reviewer's invention and needs maintainer sign-off before it ships.
 
-66 entries. Every entry that names a **Shipped as** key is checked against the shipped
+69 entries. Every entry that names a **Shipped as** key is checked against the shipped
 English by `test/l10n/hedge_register_guard_test.dart`, so adding a hedge here adds a guard.
 That count is read by the same file and compared with the headings below, because a number
 in prose that nothing verifies goes stale, and this one had.
@@ -769,3 +769,33 @@ maintainer.
 **Shipped as** `connectionFailureKeepInvalidAndExport` (lib/l10n/app_en.arb).
 
 **Why it is load-bearing.** `lib/ui/screens/connect/connection_failure_copy.dart:19`, Connect action on DATA ERROR or a malformed handshake reply. Softened to a sensor value it is a plausible wrong number. Invalid stays invalid.
+
+### 67. 這個年份是能源署核發西元年，不是美國 model year。名稱相同也不等於 EPA 配置。
+
+**繁體中文** — 僅含 {firstYear}–{lastYear} 的臺灣核發列。這個年份是能源署核發西元年，不是美國 model year。名稱相同也不等於 EPA 配置。
+
+**English** — Taiwan-market certification rows for {firstYear}–{lastYear} only. The year is the Energy Administration certification calendar year, not a U.S. model year. A matching make/model string is not an EPA configuration.
+
+**Shipped as** `settingsTwPickerScope` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** `lib/ui/screens/settings/settings_screen.dart`, the Taiwan picker scope. Softened to 'model year' it is a U.S. identity. Softened to omit EPA it invites a namesake join.
+
+### 68. 參考車重不是 curb mass，不會套用。
+
+**繁體中文** — 參考車重不是 curb mass，不會套用。
+
+**English** — Reference vehicle mass is not curb mass and is not applied.
+
+**Shipped as** `settingsTwReferenceMassNotCurb` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** The Taiwan picker, under the scope sentence. Softened to 'vehicle mass' it is copied into the physics profile. curb mass stays those words.
+
+### 69. 只會套用欄位。參考車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。
+
+**繁體中文** — 只會套用：{fields}。參考車重、VE、Cd、正面面積、Crr 與傳動效率仍保持未解析。
+
+**English** — Only {fields} will be applied. Reference mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.
+
+**Shipped as** `settingsTwWillApplyOnly` (lib/l10n/app_en.arb).
+
+**Why it is load-bearing.** The Taiwan apply sentence. Softened to omit reference mass it hides that 參考車重 was not mapped. VE, Cd and Crr stay as symbols.

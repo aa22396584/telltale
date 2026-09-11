@@ -125,11 +125,29 @@ their own size and integration costs.
 
 Taiwan's government open-data portal publishes dataset 11163,
 [車輛油耗指南](https://data.gov.tw/dataset/11163), from the Ministry of Economic
-Affairs Energy Administration. It covers fuel-consumption test results for
-approved vehicle models sold in Taiwan, is updated on an irregular schedule,
-and uses the Taiwan Government Open Data License 1.0. It is useful for Taiwan
-market evidence but is not a global identity catalog and does not guarantee the
-physical parameters required for derived power or torque estimates.
+Affairs Energy Administration, under 政府資料開放授權條款第 1 版. At the
+2026-09-11 retrieval the dataset index FileUrl was the annual PDF guidebook
+`114年車輛油耗指南` (SHA-256
+`4f0666ef18339bca855112c23866588ad5a274cf9b89a18c2909d7aaa197bbb9`). That PDF
+is pinned; it is not parsed into configuration rows.
+
+Passenger-car identity rows in `tw_moeaea_vehicles.csv` come from the same
+agency's official dataset 6032,
+[車型耗能證明核發資料](https://data.gov.tw/dataset/6032), monthly certification
+CSVs (ZIP SHA-256
+`da6b72a1885d4a291b64ed2fc9094b6935e2eed96b830407e493a1df5cc1b687`). The
+normalized snapshot has **2,343 exact Taiwan passenger-car rows, 72 make
+labels, certification years 2017–2026**. `issue_year_ce` is the certification
+calendar year, not a U.S. model year. 參考車重 stays `reference_mass_kg` and is
+not curb mass. A Taiwan make/model string is never joined to an EPA row.
+
+Update or reproduce it from the app tree:
+
+```bash
+python3 tool/update_tw_vehicle_catalog.py
+python3 tool/update_tw_vehicle_catalog.py --check
+python3 -m unittest discover -s test/tool -p 'test_update_tw_vehicle_catalog.py'
+```
 
 ### European Environment Agency CO2 monitoring
 

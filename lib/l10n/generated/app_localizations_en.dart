@@ -2054,6 +2054,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCatalogVerifying => 'Verifying the offline catalog…';
 
   @override
+  String get settingsCatalogChooseMarket =>
+      'Choose which official catalog to browse';
+
+  @override
+  String get settingsCatalogMarketTw => 'Taiwan (MOEA Energy Administration)';
+
+  @override
+  String get settingsCatalogMarketUs => 'United States (EPA)';
+
+  @override
+  String get settingsTwCertificationYear => 'Certification year';
+
+  @override
+  String get settingsTwMake => 'Taiwan make';
+
+  @override
+  String settingsTwPickerScope(int firstYear, int lastYear) {
+    return 'Taiwan-market certification rows for $firstYear–$lastYear only. The year is the Energy Administration certification calendar year, not a U.S. model year. A matching make/model string is not an EPA configuration.';
+  }
+
+  @override
+  String get settingsTwPickerTitle => 'Official Taiwan vehicle catalog';
+
+  @override
+  String get settingsTwReferenceMassNotCurb =>
+      'Reference vehicle mass is not curb mass and is not applied.';
+
+  @override
+  String settingsTwWillApplyOnly(String fields) {
+    return 'Only $fields will be applied. Reference mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.';
+  }
+
+  @override
   String get settingsClose => 'Close';
 
   @override

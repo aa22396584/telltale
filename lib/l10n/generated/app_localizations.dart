@@ -3317,6 +3317,60 @@ abstract class AppLocalizations {
   /// **'Verifying the offline catalog…'**
   String get settingsCatalogVerifying;
 
+  /// No description provided for @settingsCatalogChooseMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which official catalog to browse'**
+  String get settingsCatalogChooseMarket;
+
+  /// No description provided for @settingsCatalogMarketTw.
+  ///
+  /// In en, this message translates to:
+  /// **'Taiwan (MOEA Energy Administration)'**
+  String get settingsCatalogMarketTw;
+
+  /// No description provided for @settingsCatalogMarketUs.
+  ///
+  /// In en, this message translates to:
+  /// **'United States (EPA)'**
+  String get settingsCatalogMarketUs;
+
+  /// Not a U.S. model year. The year is ROC+1911 from the certification date.
+  ///
+  /// In en, this message translates to:
+  /// **'Certification year'**
+  String get settingsTwCertificationYear;
+
+  /// No description provided for @settingsTwMake.
+  ///
+  /// In en, this message translates to:
+  /// **'Taiwan make'**
+  String get settingsTwMake;
+
+  /// Stops TW/US namesake join and model-year confusion.
+  ///
+  /// In en, this message translates to:
+  /// **'Taiwan-market certification rows for {firstYear}–{lastYear} only. The year is the Energy Administration certification calendar year, not a U.S. model year. A matching make/model string is not an EPA configuration.'**
+  String settingsTwPickerScope(int firstYear, int lastYear);
+
+  /// No description provided for @settingsTwPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Taiwan vehicle catalog'**
+  String get settingsTwPickerTitle;
+
+  /// No description provided for @settingsTwReferenceMassNotCurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference vehicle mass is not curb mass and is not applied.'**
+  String get settingsTwReferenceMassNotCurb;
+
+  /// No description provided for @settingsTwWillApplyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {fields} will be applied. Reference mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.'**
+  String settingsTwWillApplyOnly(String fields);
+
   /// No description provided for @settingsClose.
   ///
   /// In en, this message translates to:

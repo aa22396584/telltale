@@ -1840,6 +1840,30 @@
     "description": "Scopes the catalog. Must not read as global coverage."
   },
   "settingsCatalogVerifying": "Verifying the offline catalog…",
+  "settingsCatalogChooseMarket": "Choose which official catalog to browse",
+  "settingsCatalogMarketTw": "Taiwan (MOEA Energy Administration)",
+  "settingsCatalogMarketUs": "United States (EPA)",
+  "settingsTwCertificationYear": "Certification year",
+  "@settingsTwCertificationYear": {
+    "description": "Not a U.S. model year. The year is ROC+1911 from the certification date."
+  },
+  "settingsTwMake": "Taiwan make",
+  "settingsTwPickerScope": "Taiwan-market certification rows for {firstYear}–{lastYear} only. The year is the Energy Administration certification calendar year, not a U.S. model year. A matching make/model string is not an EPA configuration.",
+  "@settingsTwPickerScope": {
+    "description": "Stops TW/US namesake join and model-year confusion.",
+    "placeholders": {
+      "firstYear": { "type": "int" },
+      "lastYear": { "type": "int" }
+    }
+  },
+  "settingsTwPickerTitle": "Official Taiwan vehicle catalog",
+  "settingsTwReferenceMassNotCurb": "Reference vehicle mass is not curb mass and is not applied.",
+  "settingsTwWillApplyOnly": "Only {fields} will be applied. Reference mass, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.",
+  "@settingsTwWillApplyOnly": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
   "settingsClose": "Close",
   "settingsConnectionSection": "Connection",
   "@settingsConnectionSection": {
