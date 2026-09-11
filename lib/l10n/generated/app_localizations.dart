@@ -3308,7 +3308,7 @@ abstract class AppLocalizations {
   /// Scopes the catalog. Must not read as global coverage.
   ///
   /// In en, this message translates to:
-  /// **'The bundled snapshots are official U.S. EPA Find-a-Car, Taiwan MOEA, and Canada NRCan data; each covers only that market and the configurations inside its snapshot, not every brand or model year worldwide.'**
+  /// **'Official catalogs: U.S. EPA, Taiwan MOEA, Canada NRCan. Each snapshot is that market only, not every brand or year worldwide.'**
   String get settingsCatalogScope;
 
   /// No description provided for @settingsCatalogVerifying.

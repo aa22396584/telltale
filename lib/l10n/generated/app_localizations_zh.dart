@@ -1834,7 +1834,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsCatalogScope =>
-      '目前內建美國 EPA Find-a-Car、臺灣經濟部能源署與加拿大 NRCan 官方快照；各自只代表該市場與快照內的配置，不是全球所有品牌或年式。';
+      '官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。';
 
   @override
   String get settingsCatalogVerifying => '驗證離線目錄中…';
@@ -5830,7 +5830,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsCatalogScope =>
-      '目前內建美國 EPA Find-a-Car、臺灣經濟部能源署與加拿大 NRCan 官方快照；各自只代表該市場與快照內的配置，不是全球所有品牌或年式。';
+      '官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。';
 
   @override
   String get settingsCatalogVerifying => '驗證離線目錄中…';

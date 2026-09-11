@@ -534,7 +534,7 @@
   "settingsCatalogChoose": "Wählen Sie aus dem offiziellen Katalog aus",
   "settingsCatalogCorrupt": "Der offizielle Offline-Katalog ist beschädigt oder konnte nicht geladen werden; es wurde nichts angewendet.",
   "settingsCatalogNothingApplicable": "Diese offizielle Konfiguration enthält kein Feld, das sicher auf die aktuellen Formeln angewendet werden kann; das bestehende Profil bleibt unverändert.",
-  "settingsCatalogScope": "Die beigefügten Snapshots enthalten offizielle U.S.-EPA-Find-a-Car-, taiwanische MOEA- und kanadische NRCan-Daten; jeder gilt nur für den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen, nicht für alle Marken oder Modelljahre weltweit.",
+  "settingsCatalogScope": "Offizielle Kataloge: U.S. EPA, Taiwan MOEA, Kanada NRCan. Jeder Snapshot gilt nur für diesen Markt, nicht für alle Marken oder Jahre weltweit.",
   "settingsCatalogVerifying": "Der Offline-Katalog wird überprüft…",
   "settingsCatalogChooseMarket": "Wählen Sie, welcher offizielle Katalog durchsucht wird",
   "settingsCatalogMarketTw": "Taiwan (MOEA-Energieverwaltung)",

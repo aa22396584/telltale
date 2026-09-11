@@ -507,7 +507,7 @@
   "settingsCatalogChoose": "從官方目錄選擇",
   "settingsCatalogCorrupt": "官方離線目錄損壞或無法載入，沒有套用任何資料。",
   "settingsCatalogNothingApplicable": "這筆官方配置沒有可安全套用到目前公式的欄位，原設定保持不變。",
-  "settingsCatalogScope": "目前內建美國 EPA Find-a-Car、臺灣經濟部能源署與加拿大 NRCan 官方快照；各自只代表該市場與快照內的配置，不是全球所有品牌或年式。",
+  "settingsCatalogScope": "官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。",
   "settingsCatalogVerifying": "驗證離線目錄中…",
   "settingsCatalogChooseMarket": "選擇要瀏覽的官方目錄",
   "settingsCatalogMarketTw": "臺灣（經濟部能源署）",

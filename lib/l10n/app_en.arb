@@ -1835,7 +1835,7 @@
     "description": "Says what did NOT happen: no partial application."
   },
   "settingsCatalogNothingApplicable": "This official configuration has no field that can be applied safely to the current formulas; the existing profile is unchanged.",
-  "settingsCatalogScope": "The bundled snapshots are official U.S. EPA Find-a-Car, Taiwan MOEA, and Canada NRCan data; each covers only that market and the configurations inside its snapshot, not every brand or model year worldwide.",
+  "settingsCatalogScope": "Official catalogs: U.S. EPA, Taiwan MOEA, Canada NRCan. Each snapshot is that market only, not every brand or year worldwide.",
   "@settingsCatalogScope": {
     "description": "Scopes the catalog. Must not read as global coverage."
   },

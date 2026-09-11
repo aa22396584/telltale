@@ -2077,7 +2077,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCatalogScope =>
-      'Die beigefügten Snapshots enthalten offizielle U.S.-EPA-Find-a-Car-, taiwanische MOEA- und kanadische NRCan-Daten; jeder gilt nur für den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen, nicht für alle Marken oder Modelljahre weltweit.';
+      'Offizielle Kataloge: U.S. EPA, Taiwan MOEA, Kanada NRCan. Jeder Snapshot gilt nur für diesen Markt, nicht für alle Marken oder Jahre weltweit.';
 
   @override
   String get settingsCatalogVerifying => 'Der Offline-Katalog wird überprüft…';
