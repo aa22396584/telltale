@@ -92,9 +92,9 @@ final class TripAccumulator {
   void add(TripSample sample) {
     if (!_usable(sample)) {
       _ignored.add(sample.id);
-      _last = null;
       return;
     }
+    sample = _sanitize(sample);
     final previous = _last;
     if (previous == null) {
       _last = sample;
@@ -146,7 +146,10 @@ final class TripAccumulator {
 
     final jointSpeed = speed0 != null && speed1 != null;
     final jointFuel = fuel0 != null && fuel1 != null && sameFuelSource;
-    if (jointSpeed && jointFuel) {
+    if (jointSpeed &&
+        jointFuel &&
+        sample.fuelSource == TripFuelSource.measured &&
+        previous.fuelSource == TripFuelSource.measured) {
       final average = (speed0 + speed1) / 2;
       _jointDistanceKm += average * hours;
       _jointFuelL += (fuel0 + fuel1) / 2 * hours;
@@ -155,14 +158,26 @@ final class TripAccumulator {
     _last = sample;
   }
 
+  static TripSample _sanitize(TripSample sample) {
+    final speed = _fieldUsable(sample.speedKmh) ? sample.speedKmh : null;
+    final fuel = _fieldUsable(sample.fuelRateLPerHour)
+        ? sample.fuelRateLPerHour
+        : null;
+    return TripSample(
+      id: sample.id,
+      elapsed: sample.elapsed,
+      sourceId: sample.sourceId,
+      speedKmh: speed,
+      fuelRateLPerHour: fuel,
+      fuelSource: fuel == null ? TripFuelSource.unavailable : sample.fuelSource,
+    );
+  }
+
   static bool _usable(TripSample sample) {
     if (sample.id.trim().isEmpty || sample.sourceId.trim().isEmpty) {
       return false;
     }
-    if (sample.elapsed.isNegative) return false;
-    if (!_fieldUsable(sample.speedKmh)) return false;
-    if (!_fieldUsable(sample.fuelRateLPerHour)) return false;
-    return true;
+    return !sample.elapsed.isNegative;
   }
 
   static bool _fieldUsable(double? value) {

@@ -203,7 +203,26 @@ void main() {
 
     expect(trip.totals.distanceKm, closeTo(1.0, 1e-9));
     expect(trip.totals.fuelL, closeTo(0.1, 1e-9));
-    expect(trip.ignoredSampleIds, contains('nan'));
+    expect(trip.ignoredSampleIds, isEmpty);
+  });
+
+  test('a malformed fuel sample does not drop a valid speed stream', () {
+    final trip = TripAccumulator();
+    trip.add(_sample(id: 'a', seconds: 0, speedKmh: 60, fuelRateLPerHour: 6));
+    trip.add(
+      _sample(
+        id: 'nan-fuel',
+        seconds: 1,
+        speedKmh: 60,
+        fuelRateLPerHour: double.nan,
+      ),
+    );
+    trip.add(_sample(id: 'b', seconds: 2, speedKmh: 60, fuelRateLPerHour: 6));
+
+    expect(trip.totals.distanceKm, closeTo(2 * 60 / 3600, 1e-9));
+    expect(trip.totals.fuelL, 0);
+    expect(trip.totals.litersPer100Km, isNull);
+    expect(trip.ignoredSampleIds, isEmpty);
   });
 
   test('a source or generation change starts a new interval without filling it', () {
@@ -254,6 +273,33 @@ void main() {
 
     expect(trip.totals.distanceKm, closeTo(1.0 + 60 / 3600, 1e-9));
     expect(trip.totals.fuelL, closeTo(0.1, 1e-9));
+    expect(trip.totals.litersPer100Km, closeTo(10.0, 1e-9));
+  });
+
+  test('measured then estimated runs do not blend into one L/100 km', () {
+    final trip = TripAccumulator();
+    _addEverySecond(
+      trip,
+      prefix: 'measured',
+      from: 0,
+      to: 60,
+      speedKmh: 60,
+      fuelRateLPerHour: 6,
+    );
+    _addEverySecond(
+      trip,
+      prefix: 'estimated',
+      from: 61,
+      to: 121,
+      speedKmh: 60,
+      fuelRateLPerHour: 12,
+      fuelSource: TripFuelSource.stoichiometricEstimate,
+    );
+
+    expect(trip.totals.distanceKm, closeTo(2.0 + 60 / 3600, 1e-9));
+    expect(trip.totals.fuelL, closeTo(0.1 + 0.2, 1e-9));
+    expect(trip.totals.jointDistanceKm, closeTo(1.0, 1e-9));
+    expect(trip.totals.jointFuelL, closeTo(0.1, 1e-9));
     expect(trip.totals.litersPer100Km, closeTo(10.0, 1e-9));
   });
 
