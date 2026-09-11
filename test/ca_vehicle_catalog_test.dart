@@ -179,4 +179,28 @@ void main() {
       isNot(VehicleFieldOrigin.officialRegistry),
     );
   });
+
+  test(
+    'bundled ICE conventional hybrid does not verify combustion-only fuel',
+    () async {
+      final catalog = await CaVehicleCatalog.load(rootBundle);
+      const caId = '61398502ad05c468';
+      final row = catalog.byCaId(caId)!;
+      expect(row.make, 'Acura');
+      expect(row.model, 'ILX Hybrid');
+      expect(row.resourceClass, 'ice');
+      expect(row.fuelType, 'Z');
+
+      final applied = applyCaConfiguration(catalog, caId: caId);
+      expect(applied.configuration.resourceClass, 'ice');
+      expect(applied.verifiedFieldKeys.contains('fuelType'), isFalse);
+      expect(applied.profile.fuelTypeField.isVerifiedExact, isFalse);
+      expect(
+        applied.profile.fuelTypeField.origin,
+        isNot(VehicleFieldOrigin.officialRegistry),
+      );
+      expect(applied.verifiedFieldKeys, {'displacementL'});
+      expect(applied.profile.displacementL, closeTo(1.5, 0.0001));
+    },
+  );
 }

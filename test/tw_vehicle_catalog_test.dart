@@ -129,7 +129,10 @@ void main() {
       throwsA(isA<TwVehicleCatalogException>()),
     );
 
+    expect(twRow.referenceMassKg, '2335.0');
     final applied = applyTwConfiguration(tw, twId: twId);
+    expect(applied.profile.massKg, isNot(2335.0));
+    expect(applied.verifiedFieldKeys.contains('massKg'), isFalse);
     expect(applied.profile.massField.isVerifiedExact, isFalse);
     expect(
       applied.profile.massField.origin,
@@ -151,5 +154,26 @@ void main() {
     expect(applied.profile.displacementL, closeTo(1.498, 0.0001));
     expect(applied.profile.massKg, 1280);
     expect(applied.profile.massField.isVerifiedExact, isFalse);
+  });
+
+  test('bundled 參考車重 is not applied as curb mass', () async {
+    final catalog = await TwVehicleCatalog.load(rootBundle);
+    const twId = '274955f18e285312';
+    final row = catalog.byTwId(twId)!;
+    expect(row.make, '本田');
+    expect(row.model, 'FIT 1.5 S T5SV');
+    expect(row.referenceMassKg, '1191.0');
+    expect(row.displacementL, closeTo(1.497, 0.0001));
+
+    final applied = applyTwConfiguration(catalog, twId: twId);
+    expect(applied.verifiedFieldKeys, {'displacementL'});
+    expect(applied.profile.displacementL, closeTo(1.497, 0.0001));
+    expect(applied.profile.massKg, 1500);
+    expect(applied.verifiedFieldKeys.contains('massKg'), isFalse);
+    expect(applied.profile.massField.isVerifiedExact, isFalse);
+    expect(
+      applied.profile.massField.origin,
+      isNot(VehicleFieldOrigin.officialRegistry),
+    );
   });
 }
