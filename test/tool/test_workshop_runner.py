@@ -70,6 +70,7 @@ def _plan(
         "schemaVersion": 1,
         "policy": "USABILITY-R2",
         "repository": "ImL1s/telltale",
+        "audited_sha": "a" * 40,
         "tasks": tasks,
     }
     path = workshop / "plan.json"
