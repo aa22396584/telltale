@@ -1455,6 +1455,8 @@ class _CaVehiclePickerState extends State<_CaVehiclePicker> {
                                   '${litres.toStringAsFixed(3)} L',
                                 if (item.transmission.isNotEmpty)
                                   item.transmission,
+                                if (item.fuelType.trim().isNotEmpty)
+                                  item.fuelType.trim(),
                               ].join(' · '),
                             ),
                             subtitle: Text(
