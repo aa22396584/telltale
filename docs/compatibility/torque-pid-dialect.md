@@ -63,10 +63,12 @@ dependencies.
 ## Unsupported
 
 These wiki names are detected as `NAME(` and fail as
-`FormulaIssue.unsupportedConstruct`. They are **not** evaluated as zero and
-are **not** stripped out of the equation.
+`FormulaIssue.timeWindowUnsupported`. They are **not** evaluated as zero,
+**not** `MIN`/`MAX`, and are **not** stripped out of the equation.
 
 `EWMAF` `TAVG` `RAVG` `AVG` `TDLY` `RDLY` `TOT`
+
+`AVG(A:B)` is not `(A+B)/2` and not `MIN(A:B)`. `TDLY` is not 0.
 
 `INT16` is `FormulaIssue.int16Unclaimed`, not `unsupportedConstruct`.
 The wiki sentence is not an executable oracle.

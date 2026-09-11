@@ -104,6 +104,10 @@ enum FormulaIssue {
   /// Not evaluated as either identity.
   int16Unclaimed,
 
+  /// Wiki delay/average/window functions: EWMAF, TAVG, RAVG, AVG, TDLY,
+  /// RDLY, TOT. Not 0 and not MIN/MAX. Carries the function name.
+  timeWindowUnsupported,
+
   /// `VAL{...}` was used with no requesting PID. Carries the referenced key.
   dependencyControllerUnknown,
 
@@ -571,13 +575,13 @@ class FormulaEngine {
         term: 'INT16',
       );
     }
-    final unsupported = _unsupportedTorqueFunction(equation);
-    if (unsupported != null) {
+    final timeWindow = _timeWindowTorqueFunction(equation);
+    if (timeWindow != null) {
       throw FormulaException(
-        '此方言不支援 $unsupported',
+        '此方言不支援 $timeWindow',
         equation,
-        issue: FormulaIssue.unsupportedConstruct,
-        term: unsupported,
+        issue: FormulaIssue.timeWindowUnsupported,
+        term: timeWindow,
       );
     }
     final double result;
@@ -2274,7 +2278,8 @@ class _Operator {
 /// `INT24` is an unsigned 24-bit int from three inputs. `INT32` is an
 /// unsigned 32-bit int from four inputs. `RANDOM()` is `[0, 1)`. `LOOKUP()`
 /// is numeric exact/`~` range matching. `CLOSEST()` is nearest numeric key.
-final _unsupportedTorqueFunctionPattern = RegExp(
+/// EWMAF/TAVG/RAVG/AVG/TDLY/RDLY/TOT are [FormulaIssue.timeWindowUnsupported].
+final _timeWindowTorqueFunctionPattern = RegExp(
   r'\b(EWMAF|TAVG|RAVG|AVG|TDLY|RDLY|TOT)\s*\(',
   caseSensitive: false,
 );
@@ -2289,7 +2294,7 @@ final _int16UnclaimedPattern = RegExp(r'\bINT16\s*\(', caseSensitive: false);
 bool _int16Unclaimed(String equation) =>
     _int16UnclaimedPattern.hasMatch(equation);
 
-String? _unsupportedTorqueFunction(String equation) {
-  final match = _unsupportedTorqueFunctionPattern.firstMatch(equation);
+String? _timeWindowTorqueFunction(String equation) {
+  final match = _timeWindowTorqueFunctionPattern.firstMatch(equation);
   return match?.group(1)?.toUpperCase();
 }

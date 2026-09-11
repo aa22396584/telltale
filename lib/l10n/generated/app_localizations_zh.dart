@@ -3537,6 +3537,11 @@ class AppLocalizationsZh extends AppLocalizations {
       'INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。';
 
   @override
+  String pidFormulaTimeWindowUnsupported(String term) {
+    return '$term 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
+  }
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '這裡無法解析 $reference，因為無法判斷那個 PID 屬於哪一個控制器。';
   }
@@ -7446,6 +7451,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get pidFormulaInt16Unclaimed =>
       'INT16 尚未被這個方言認領：wiki 寫可代替 (A*255)+B，那不是 (A*256)+B。請把其中一個等式直接寫進公式。';
+
+  @override
+  String pidFormulaTimeWindowUnsupported(String term) {
+    return '$term 是這個方言尚未實作的延遲或平均 Torque 函式，因此無法在這裡求值。它不是 0，也不是 MIN 或 MAX。';
+  }
 
   @override
   String pidFormulaDependencyControllerUnknown(String reference) {

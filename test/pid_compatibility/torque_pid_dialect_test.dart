@@ -35,12 +35,12 @@ void main() {
     },
   );
 
-  test('each documented unsupported wiki name is unsupportedConstruct', () {
+  test('each documented delay/average wiki name is timeWindowUnsupported', () {
     for (final name in _unsupportedWikiNames) {
       expect(doc, contains(name), reason: name);
       final failure = FormulaEngine.preflight('$name(A)');
       expect(failure, isNotNull, reason: name);
-      expect(failure!.issue, FormulaIssue.unsupportedConstruct, reason: name);
+      expect(failure!.issue, FormulaIssue.timeWindowUnsupported, reason: name);
       expect(failure.term, name, reason: name);
     }
     final baroCall = FormulaEngine.preflight('BARO()');
@@ -107,6 +107,34 @@ void main() {
     expect(FormulaEngine.preflight('CLOSEST((A-1):0:0=50)'), isNull);
     expect(FormulaEngine.preflight('MIN((A+1):B)'), isNull);
     expect(FormulaEngine.preflight('A-BARO'), isNull);
+  });
+
+  test('AVG is not MIN/MAX and TDLY is not 0', () {
+    expect(FormulaEngine.preflight('MIN(A:B)'), isNull);
+    expect(FormulaEngine.preflight('MAX(A:B)'), isNull);
+    final avg = FormulaEngine.preflight('AVG(A:B)');
+    expect(avg!.issue, FormulaIssue.timeWindowUnsupported);
+    expect(avg.term, 'AVG');
+    expect(
+      () => FormulaEngine().evaluateBytes('AVG(A:B)', const [10, 20]),
+      throwsA(
+        isA<FormulaException>().having(
+          (e) => e.issue,
+          'issue',
+          FormulaIssue.timeWindowUnsupported,
+        ),
+      ),
+    );
+    expect(
+      () => FormulaEngine().evaluateBytes('TDLY(A)', const [7]),
+      throwsA(
+        isA<FormulaException>().having(
+          (e) => e.issue,
+          'issue',
+          FormulaIssue.timeWindowUnsupported,
+        ),
+      ),
+    );
   });
 
   test('INT16 is refused rather than evaluated as (A*255)+B or (A*256)+B', () {

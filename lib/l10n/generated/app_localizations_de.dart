@@ -4070,6 +4070,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'INT16 ist unbeansprucht: das Wiki sagt, es könne (A*255)+B ersetzen, das ist nicht (A*256)+B. Eine dieser Identitäten explizit schreiben.';
 
   @override
+  String pidFormulaTimeWindowUnsupported(String term) {
+    return '$term ist eine Delay- oder Average-Torque-Funktion, die dieser Dialekt nicht implementiert, und kann hier nicht ausgewertet werden. Es ist nicht 0 und nicht MIN oder MAX.';
+  }
+
+  @override
   String pidFormulaDependencyControllerUnknown(String reference) {
     return '„$reference“ lässt sich hier nicht auflösen, weil nicht bekannt ist, zu welchem Steuergerät diese PID gehört.';
   }
