@@ -263,6 +263,17 @@ appears. Mode 22 means it may be installed as unverified PIDs; it is not
 community-corroborated. The forum-circulated 7E2 Mode 21 tables exist
 only in unlicensed sources and are not shipped.
 
+2026-09-11 re-evaluation: the OBDb signalset hash is unchanged at HEAD
+`0a8c4ec72be860861548a3aeb2be007eecd83941`. Official
+`openvehicles/Open-Vehicle-Monitoring-System-3` has no Prius module; the
+only Toyota component is `vehicle_toyotarav4ev`. `iternio/ev-obd-pids`
+has no Prius file. Corolla Hybrid 1F5B captures are the same OBDb
+organization. `747`/`74F` captures in the Prius repo are cell-block
+`220103`/`22182E`, not a second family for the shipped DIDs. Disposition
+remains RETAIN EXPERIMENTAL; `year_from`/`year_to` stay 2016–2026. The
+shipped 7D2 subset may be installed as unverified PIDs; it is not
+community-corroborated.
+
 ### Toyota bZ4X / Subaru Solterra (e-TNGA) — experimental
 
 Capture-verified SoC (`1F5B`) and block SoC (`106C`) from the hybrid

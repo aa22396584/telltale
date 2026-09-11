@@ -17,12 +17,14 @@ import 'package:torque_obd/obd/powertrain_battery/profile_catalog_validator.dart
 
 const _ev9Id = 'kia-ev9-egmp-2024-2025-experimental';
 const _lexusId = 'lexus-rx450hl-2020-source-vehicle';
+const _priusId = 'toyota-prius-tnga-2016-2026';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late PowertrainBatteryCatalog catalog;
   late Map<String, Object?> ev9Json;
+  late Map<String, Object?> priusJson;
 
   setUpAll(() async {
     final text = await rootBundle.loadString(
@@ -30,10 +32,13 @@ void main() {
     );
     catalog = PowertrainBatteryCatalog.fromJsonString(text);
     final decoded = jsonDecode(text) as Map<String, dynamic>;
+    final profiles = (decoded['profiles'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
     ev9Json = Map<String, Object?>.from(
-      (decoded['profiles'] as List<dynamic>)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((entry) => entry['id'] == _ev9Id),
+      profiles.singleWhere((entry) => entry['id'] == _ev9Id),
+    );
+    priusJson = Map<String, Object?>.from(
+      profiles.singleWhere((entry) => entry['id'] == _priusId),
     );
   });
 
@@ -224,6 +229,39 @@ void main() {
     );
     expect(validator.validateProfile(ev9).canInstall, isTrue);
     expect(validator.validateProfile(lexus).canInstall, isFalse);
+  });
+
+  test('Prius notices pin the catalog source revision, licence, and hashes', () {
+    final notices = File('THIRD_PARTY_NOTICES_POWERTRAIN_BATTERY.md')
+        .readAsStringSync();
+    final source = Map<String, Object?>.from(priusJson['source']! as Map);
+    expect(notices, contains('### Toyota Prius TNGA experimental subset'));
+    expect(notices, contains(source['name'] as String));
+    expect(notices, contains(source['revision'] as String));
+    expect(notices, contains(source['license'] as String));
+    expect(notices, contains(source['path'] as String));
+    expect(notices, contains(source['artifact_sha256'] as String));
+    for (final artifact in source['capture_artifacts']! as List<dynamic>) {
+      final row = Map<String, Object?>.from(artifact as Map);
+      expect(
+        notices,
+        contains(row['sha256'] as String),
+        reason: '${row['path']}',
+      );
+    }
+    expect(
+      notices,
+      contains(
+        'it may be installed as unverified PIDs and is not '
+        'community-corroborated.',
+      ),
+    );
+
+    const validator = PowertrainBatteryProfileCatalogValidator();
+    final prius = catalog.profiles.singleWhere(
+      (profile) => profile.id == _priusId,
+    );
+    expect(validator.validateProfile(prius).canInstall, isTrue);
   });
 }
 
