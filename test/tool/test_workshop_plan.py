@@ -64,6 +64,7 @@ def _plan(tasks: list[dict]) -> dict:
         "schemaVersion": 1,
         "policy": "USABILITY-R2",
         "repository": "ImL1s/telltale",
+        "audited_sha": "a" * 40,
         "tasks": tasks,
     }
 
@@ -161,6 +162,65 @@ class BundledPlanTest(unittest.TestCase):
         path = ROOT / "tool" / "workshop" / "plan.json"
         code = validate_plan.main(["validate_plan.py", str(path)])
         self.assertEqual(code, 0)
+
+
+class AuditedShaTest(unittest.TestCase):
+    def _errors(self, data: dict, **kwargs) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data,
+                plan_path=plan_path,
+                check_artifacts=kwargs.get("check_artifacts", False),
+                git_shas=kwargs.get("git_shas"),
+            )
+            return errors
+
+    def test_missing_audited_sha_fails(self) -> None:
+        data = _plan([_minimal_task("WS-01", 9)])
+        data.pop("audited_sha", None)
+        errors = self._errors(data)
+        self.assertTrue(
+            any("audited_sha" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_audited_sha_must_be_40_lowercase_hex(self) -> None:
+        data = _plan([_minimal_task("WS-01", 9)])
+        data["audited_sha"] = "FDA1DBC9CBAB107FE4473643A244F5319D96BB9F"
+        errors = self._errors(data)
+        self.assertTrue(
+            any("audited_sha" in error and "40 lowercase hex" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_unknown_audited_sha_fails_when_git_shas_supplied(self) -> None:
+        data = _plan([_minimal_task("WS-01", 9)])
+        data["audited_sha"] = "a" * 40
+        errors = self._errors(data, git_shas={"b" * 40})
+        self.assertTrue(
+            any("stale SHA" in error and "audited_sha" in error for error in errors),
+            msg=errors,
+        )
+
+    def test_shipped_plan_audited_sha_is_a_commit(self) -> None:
+        path = ROOT / "tool" / "workshop" / "plan.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        sha = data["audited_sha"]
+        self.assertRegex(sha, r"^[0-9a-f]{40}$")
+        self.assertTrue(validate_plan._commit_exists(path, sha))
+
+    def test_cli_without_known_sha_refuses_a_non_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
+            plan_path.parent.mkdir(parents=True)
+            data = _plan([_minimal_task("WS-01", 9)])
+            data["audited_sha"] = "a" * 40
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            code = validate_plan.main(["validate_plan.py", str(plan_path)])
+            self.assertEqual(code, 1)
 
 
 class GraphAndSchemaTest(unittest.TestCase):
@@ -430,7 +490,10 @@ class ArtifactAndHandoffTest(unittest.TestCase):
             data = _plan([task])
             plan_path.write_text(json.dumps(data), encoding="utf-8")
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=True
+                data,
+                plan_path=plan_path,
+                check_artifacts=True,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-01"])

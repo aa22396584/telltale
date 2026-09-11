@@ -36,6 +36,9 @@ same rule and cannot complete a seed task.
 
 The validator refuses missing dependencies, cycles, duplicate ids, path
 escape, stale SHAs, missing artifacts, hash mismatch, and skip-as-required-pass.
+`audited_sha` is required 40 lowercase hex. `--known-sha` treats listed
+values as existing; without it the CLI fails closed if that SHA is not a
+git commit.
 Ready tasks are those whose issue-number dependencies are `completed` and that
 do not share a writable directory with a lower-id peer (lease, not last-writer
 wins). Hardware/license blockers stay visible and never become PASS. Commands
