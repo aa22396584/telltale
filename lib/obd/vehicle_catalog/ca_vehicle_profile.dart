@@ -2,7 +2,16 @@
 ///
 /// Engine size in litres is the same quantity as [VehicleProfile.displacementL]
 /// when it is a positive finite number in range. Motor kW is not wheel
-/// horsepower. Fuel type, consumption, range, and CO2 are never copied.
+/// horsepower. Consumption, range, and CO2 are never copied.
+///
+/// NRCan fuel codes
+/// (https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/personal-vehicles/understanding-tables):
+/// `X` regular gasoline, `Z` premium gasoline, `D` diesel, `E` E85, `B`
+/// electricity, `N` natural gas. Only a single exact letter that matches a
+/// [FuelType] is copied, and only for ICE rows whose official model string
+/// does not contain `Hybrid`. Dual codes (`B/X|X`), `B`/`N`, BEV/PHEV rows,
+/// and conventional hybrids in the ICE file stay unresolved: [VehicleProfile]
+/// cannot express electric assistance.
 library;
 
 import '../physics/vehicle_evidence.dart';
@@ -43,7 +52,19 @@ CaProfileApplication applyCaConfiguration(
           evidence: evidence,
         )
       : null;
-  final keys = <String>{if (exactDisplacement != null) 'displacementL'};
+  final mappedFuel = _exactFuelType(configuration);
+  final exactFuel = mappedFuel == null
+      ? null
+      : SourcedField<FuelType>(
+          value: mappedFuel,
+          origin: VehicleFieldOrigin.officialRegistry,
+          resolution: EvidenceResolution.verifiedExact,
+          evidence: evidence,
+        );
+  final keys = <String>{
+    if (exactDisplacement != null) 'displacementL',
+    if (exactFuel != null) 'fuelType',
+  };
   const defaults = VehicleProfile();
   final previous = (baseProfile ?? defaults).unconfirmed();
   final base = VehicleProfile.sourced(
@@ -83,7 +104,7 @@ CaProfileApplication applyCaConfiguration(
       displacementL: exactDisplacement ?? base.displacementField,
       massKg: base.massField,
       volumetricEfficiency: base.volumetricEfficiencyField,
-      fuelType: base.fuelTypeField,
+      fuelType: exactFuel ?? base.fuelTypeField,
       drivetrain: base.drivetrainField,
       dragCoefficient: base.dragCoefficientField,
       frontalAreaM2: base.frontalAreaField,
@@ -91,6 +112,21 @@ CaProfileApplication applyCaConfiguration(
     ),
     verifiedFieldKeys: Set.unmodifiable(keys),
   );
+}
+
+FuelType? _exactFuelType(CaVehicleConfiguration configuration) {
+  // Conventional hybrids are filed as ICE with a single X/Z. The current
+  // physics model cannot express electric assistance, matching the US adapter
+  // which leaves hybrid fuel unresolved. NRCan ICE files have no atvType
+  // column; the official model string is the marker that is present.
+  if (configuration.resourceClass != 'ice') return null;
+  if (configuration.model.toLowerCase().contains('hybrid')) return null;
+  return switch (configuration.fuelType.trim()) {
+    'X' || 'Z' => FuelType.gasoline,
+    'D' => FuelType.diesel,
+    'E' => FuelType.ethanolE85,
+    _ => null,
+  };
 }
 
 SourcedField<T> _reusableAssumption<T>(
