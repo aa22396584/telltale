@@ -8,6 +8,52 @@ Dates are the date the build was made, not the date it reached anyone.
 
 ## Unreleased
 
+## 1.0.14 — 2026-09-11
+
+Google Play production target `1.0.14` / versionCode 15. GitHub community
+release `v1.0.14`. Play production is `1.0.13` / versionCode 14 as of this
+writing.
+
+### Added
+
+- Settings can pick a Taiwan passenger-car identity from the Ministry of
+  Economic Affairs Energy Administration snapshot, beside the existing U.S.
+  EPA list. The two markets are not namesakes of each other: a Taiwan row
+  that is missing is missing, not an EPA car with a similar name. The
+  bundled table is the monthly certification CSV (open-data dataset 6032).
+  The annual 車輛油耗指南 PDF (dataset 11163) is pinned as the guide, not
+  used as the configuration table. Displacement in cubic centimetres is
+  converted to litres because that unit is the same quantity; 參考車重 is
+  left as reference mass, not renamed as curb mass. The year on a row is
+  the certification calendar year (ROC year + 1911), not a U.S. model year.
+  (#331 Stage A, #337)
+- Torque-wiki `LOOKUP()` and `CLOSEST()` now evaluate. `LOOKUP` is exact
+  and range matching; a key that is not in the table is not the nearest
+  neighbour. `CLOSEST` is the nearest key. (#318–#323, #79 leftover)
+- A connection failure now names one next step instead of a transcript.
+  Missing a permission opens settings. A radio that is off asks to be
+  turned on. An adapter that never answers may be out of range or unpowered.
+  An adapter that is up while the ECU is silent points at ignition,
+  protocol, or the adapter. `BUS INIT` offers retry or Auto. A BLE scan
+  that failed is that scan, not a later protocol problem. `0100` returning
+  `NO DATA` is ECU silence — not proof the vehicle has no OBD. Other
+  `NO DATA` replies stay unmapped. (#51 leftover, #330, #336)
+
+### Fixed
+
+- KWP: the 5-baud and fast subtypes are distinguished from `ATDPN` 4 and 5.
+  A FAST line from `ATDP` alone does not settle the subtype. (#325)
+- `BARO()` with parentheses is a different quantity (phone barometer / ECU
+  baro in psi) and is refused rather than evaluated as the ECU's kPa cache.
+  (#326, #79 leftover)
+- `INT16` stays unclaimed. The wiki's `(A*255)+B` is not what a signed
+  16-bit word is, and inventing `(A*256)+B` here would still be a guess.
+  (#327, #79 leftover)
+- Delay and average wiki names (`TDLY`, `RDLY`, `TAVG`, `RAVG`, `AVG`,
+  `EWMAF`) are refused instead of being computed as `MIN`/`MAX`/0.
+  `TOT` is named as a totalizer, not as another delay or average. (#328, #329)
+- The four-row connection diagnostic can be copied as four lines. (#324)
+
 ## 1.0.13 — 2026-09-11
 
 Google Play production target `1.0.13` / versionCode 14. GitHub community
