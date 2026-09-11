@@ -269,6 +269,7 @@ String? transportIssueText(
   TransportIssue.linkStoppedResponding ||
   TransportIssue.operationRetired ||
   TransportIssue.requestUnaddressable ||
+  TransportIssue.busNotObd2 ||
   TransportIssue.customFlowControlRejected ||
   TransportIssue.flowControlRestoreFailed ||
   TransportIssue.extendedAddressingUnavailable ||

@@ -3190,6 +3190,22 @@
   "@settingsManualCommandRequestUnaddressable": {
     "description": "TransportIssue.requestUnaddressable. Structural: no header on this bus reaches the named controller. Distinct from queryHeaderRefused, where the adapter declined ATSH, and from notConnected, where there is no link."
   },
+  "commandFailureBusJ1939": "This bus is SAE J1939 (heavy commercial vehicles and machinery), not the OBD2 diagnostic protocol this app reads, so this query cannot be read.",
+  "@commandFailureBusJ1939": {
+    "description": "TransportIssue.busNotObd2 with issueDetail J1939. Distinct from requestUnaddressable (one controller) and from busProtocolUndetermined (reconnect may help). J1939 is determined and permanent."
+  },
+  "commandFailureUserCanFramingUnknown": "This adapter is set to user-defined CAN protocol {protocol}, whose framing is decided by {parameter}. The adapter did not report that setting, so the bus format cannot be confirmed and this query cannot be decoded safely.",
+  "@commandFailureUserCanFramingUnknown": {
+    "description": "TransportIssue.busNotObd2 with issueDetail B or C. {protocol} is B or C. {parameter} is PP 2C or PP 2E.",
+    "placeholders": {
+      "protocol": { "type": "String" },
+      "parameter": { "type": "String" }
+    }
+  },
+  "commandFailureBusUndetermined": "The vehicle bus protocol is not yet determined, so this query cannot be decoded safely. Reconnect.",
+  "@commandFailureBusUndetermined": {
+    "description": "TransportIssue.busNotObd2 with issueDetail undetermined. Temporary: reconnect may establish J1979. Distinct from J1939, which is permanent."
+  },
   "settingsManualCommandCustomFlowControlRejected": "The adapter refused a custom flow-control command, so the requested mode was not applied and no measurement was produced.",
   "@settingsManualCommandCustomFlowControlRejected": {
     "description": "TransportIssue.customFlowControlRejected. The adapter answered ATFCSH, ATFCSD or ATFCSM1|2 with '?'. Distinct from unknownCommand as a generic adapter status and from busError: nothing was asked of the vehicle, and no decoded value may be shown."

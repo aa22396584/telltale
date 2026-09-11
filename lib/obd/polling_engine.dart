@@ -1146,11 +1146,15 @@ class PollingEngine {
   /// That distinction is the whole point of `supportsObd2`, which was added
   /// with the J1939 split and then wired to nothing — so the refusal it
   /// existed for went on speaking with the other one's voice.
-  String? _busRefusal(String subject) {
+  ({String message, String detail})? _busRefusal(String subject) {
     if (client.addressing.family == ObdBusFamily.j1939) {
-      return 'This bus is SAE J1939 (heavy commercial vehicles and machinery), '
-          'not the OBD2 diagnostic protocol this app reads, so $subject '
-          'cannot be read.';
+      return (
+        message:
+            'This bus is SAE J1939 (heavy commercial vehicles and machinery), '
+            'not the OBD2 diagnostic protocol this app reads, so $subject '
+            'cannot be read.',
+        detail: 'J1939',
+      );
     }
     // Asked of the resolved addressing, not of the protocol letter.
     //
@@ -1170,15 +1174,34 @@ class PollingEngine {
       );
       if (protocol == 'B' || protocol == 'C') {
         final parameter = protocol == 'B' ? 'PP 2C' : 'PP 2E';
-        return 'This adapter is set to user-defined CAN protocol $protocol, '
-            'whose framing is decided by $parameter — the adapter did not '
-            'report that setting (no AT PPS reply), so the bus format cannot '
-            'be confirmed and $subject cannot be decoded safely.';
+        return (
+          message:
+              'This adapter is set to user-defined CAN protocol $protocol, '
+              'whose framing is decided by $parameter — the adapter did not '
+              'report that setting (no AT PPS reply), so the bus format cannot '
+              'be confirmed and $subject cannot be decoded safely.',
+          detail: protocol,
+        );
       }
-      return 'The vehicle bus protocol is not yet determined, so $subject '
-          'cannot be decoded safely. Reconnect.';
+      return (
+        message:
+            'The vehicle bus protocol is not yet determined, so $subject '
+            'cannot be decoded safely. Reconnect.',
+        detail: 'undetermined',
+      );
     }
     return null;
+  }
+
+  void _requireObd2Bus(String subject) {
+    final refusal = _busRefusal(subject);
+    if (refusal == null) return;
+    throw DtcReadException(
+      refusal.message,
+      kind: DtcReadFailure.error,
+      transportIssue: TransportIssue.busNotObd2,
+      issueDetail: refusal.detail,
+    );
   }
 
   /// Rejects a reply the adapter has contradicted itself about.
@@ -1760,8 +1783,7 @@ class PollingEngine {
     // `NO DATA` the question itself produced, so the user was told the vehicle
     // might not support the PID when the truth is that the app cannot speak
     // this bus at all.
-    final refusal = _busRefusal('fault codes');
-    if (refusal != null) throw DtcReadException(refusal);
+    _requireObd2Bus('fault codes');
 
     // Asked of the whole emissions system, not of the engine controller. A
     // physical request reaches the ECM alone, so a transmission fault never
@@ -2472,8 +2494,7 @@ class PollingEngine {
     // matters most: this is the request that changes the vehicle. A J1939 bus
     // has no Mode 04, and an undetermined one cannot be shown to have carried
     // the request at all.
-    final refusal = _busRefusal('fault codes');
-    if (refusal != null) throw DtcReadException(refusal);
+    _requireObd2Bus('fault codes');
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
     final ObdResponse response;
@@ -3192,8 +3213,7 @@ class PollingEngine {
     // next thing the screen offers is a clear — which destroys the frame that
     // was there all along and could not be read this time. One Mode 02 timeout
     // on a clone adapter, and the one record of the fault happening is gone.
-    final refusal = _busRefusal('freeze frame');
-    if (refusal != null) throw DtcReadException(refusal);
+    _requireObd2Bus('freeze frame');
     final owner = lifecycleEpoch?.call();
     _requireStillOwned(owner);
     client.knownResponders = _knownResponders ?? const {};
@@ -3501,8 +3521,7 @@ class PollingEngine {
     // one reassembled message — so an undetermined protocol means picking a
     // parser at random, and the failure mode is a plausible-looking 17
     // characters rather than an error.
-    final refusal = _busRefusal('VIN');
-    if (refusal != null) throw DtcReadException(refusal);
+    _requireObd2Bus('VIN');
     final response = await client.sendGlobal(
       '0902',
       owner: owner,

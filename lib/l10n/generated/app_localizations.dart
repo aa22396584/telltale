@@ -6221,6 +6221,24 @@ abstract class AppLocalizations {
   /// **'This request cannot be addressed on the bus this vehicle is using, so it was not sent. Trying again will not change that.'**
   String get settingsManualCommandRequestUnaddressable;
 
+  /// TransportIssue.busNotObd2 with issueDetail J1939. Distinct from requestUnaddressable (one controller) and from busProtocolUndetermined (reconnect may help). J1939 is determined and permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'This bus is SAE J1939 (heavy commercial vehicles and machinery), not the OBD2 diagnostic protocol this app reads, so this query cannot be read.'**
+  String get commandFailureBusJ1939;
+
+  /// TransportIssue.busNotObd2 with issueDetail B or C. {protocol} is B or C. {parameter} is PP 2C or PP 2E.
+  ///
+  /// In en, this message translates to:
+  /// **'This adapter is set to user-defined CAN protocol {protocol}, whose framing is decided by {parameter}. The adapter did not report that setting, so the bus format cannot be confirmed and this query cannot be decoded safely.'**
+  String commandFailureUserCanFramingUnknown(String protocol, String parameter);
+
+  /// TransportIssue.busNotObd2 with issueDetail undetermined. Temporary: reconnect may establish J1979. Distinct from J1939, which is permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'The vehicle bus protocol is not yet determined, so this query cannot be decoded safely. Reconnect.'**
+  String get commandFailureBusUndetermined;
+
   /// TransportIssue.customFlowControlRejected. The adapter answered ATFCSH, ATFCSD or ATFCSM1|2 with '?'. Distinct from unknownCommand as a generic adapter status and from busError: nothing was asked of the vehicle, and no decoded value may be shown.
   ///
   /// In en, this message translates to:
