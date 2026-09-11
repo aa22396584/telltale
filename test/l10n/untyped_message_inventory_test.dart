@@ -120,4 +120,20 @@ void main() {
       }
     }
   });
+
+  test('the remaining pid_csv row names the snack that interpolates e.message', () {
+    final remaining = _inventoryRows().where((row) => !row.struck);
+    final pidCsv = remaining.where(
+      (row) => _libPaths(row.site).contains('lib/obd/pid/pid_csv.dart'),
+    );
+    expect(pidCsv, isNotEmpty);
+    for (final row in pidCsv) {
+      expect(
+        row.kind.contains('not a locale screen'),
+        isFalse,
+        reason: 'malformed-CSV e.message reaches pidImportMalformedCsv',
+      );
+      expect(row.kind.contains('pidImportMalformedCsv'), isTrue);
+    }
+  });
 }

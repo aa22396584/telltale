@@ -29,7 +29,7 @@ transcripts/export are listed only to keep the census honest.
 | `obd/transport/ble_transport.dart` | `userFacingScanFailure` returns `error.message` for `BleRadioUnavailableException` (transcript-only) |
 | ~~`obd/transport/classic_transport.dart`~~ | `message_fallback_guard` forbids `error.message`; no connect-path interpolation |
 | `obd/pid/formula_engine.dart` | diagnostic wrap of `e.message`; not a locale screen |
-| `obd/pid/pid_csv.dart` | export diagnostic `e.message`; not a locale screen |
+| `obd/pid/pid_csv.dart` | malformed-CSV snack interpolates decoder `e.message` via `pidImportMalformedCsv` detail |
 | ~~`ui/screens/dtc/dtc_screen.dart` `_failureSentence`~~ | Maps `dtcCategoryFailureText`; `message_fallback_guard` forbids `failure.message` |
 
 ## Not closed
