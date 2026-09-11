@@ -428,8 +428,18 @@ abstract final class PidCsv {
     var columns = <String, int>{
       for (var i = 0; i < header.length; i++) _key(header[i]): i,
     };
-    if (firstKeys.isNotEmpty &&
-        (firstKeys.first == 'name' || firstKeys.contains('modeandpid'))) {
+    // `_key` turns `Mode And PID` / `mode_and_pid` into `modeandpid` in any
+    // cell. A headerless positional row can carry that as ShortName (or
+    // Name) and must stay positional. Named mode from `modeandpid` therefore
+    // also needs another `_required` marker — `name` or `equation` — which
+    // the three-column named files have and the eight-cell positional rows
+    // do not. A first cell that is already `name` is still a header.
+    final namedHeader = firstKeys.isNotEmpty &&
+        (firstKeys.first == 'name' ||
+            (firstKeys.contains('modeandpid') &&
+                (firstKeys.contains('name') ||
+                    firstKeys.contains('equation'))));
+    if (namedHeader) {
       startIndex = 1;
       final named = <String, int>{};
       final duplicated = <String>{};
