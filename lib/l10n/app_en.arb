@@ -3649,6 +3649,29 @@
       "answered": { "type": "int" }
     }
   },
+  "dtcCategoryMilCountMismatch": "{controller} reported {claimed} confirmed fault codes, but this scan only read {observed}. Trust the dashboard lamp, and see a workshop.",
+  "@dtcCategoryMilCountMismatch": {
+    "description": "Sole-controller PID 01 confirmed-count disagreed with Mode 03. Transcript stays English; screen maps these three values.",
+    "placeholders": {
+      "controller": { "type": "String" },
+      "claimed": { "type": "int" },
+      "observed": { "type": "int" }
+    }
+  },
+  "dtcCategoryMilLitNoCodes": "{controller} reported that the malfunction indicator is lit, but none of its fault codes were read. Trust the dashboard lamp, and see a workshop.",
+  "@dtcCategoryMilLitNoCodes": {
+    "description": "Sole-controller MIL on with zero Mode 03 codes for that module. Distinct from a confirmed-count mismatch.",
+    "placeholders": {
+      "controller": { "type": "String" }
+    }
+  },
+  "dtcCategoryMilDisagreement": "The vehicle's own status does not match the fault codes that were read ({controllers}). Trust the dashboard lamp, and see a workshop.",
+  "@dtcCategoryMilDisagreement": {
+    "description": "Two or more controllers disagreed with Mode 03; counts cannot share one pair.",
+    "placeholders": {
+      "controllers": { "type": "String" }
+    }
+  },
   "connectPairedListFailed": "The paired Bluetooth list could not be read. Check that Bluetooth is on, then try again.",
   "connectBleScanUnavailable": "Bluetooth is not usable right now. Wait a moment, then search again.",
   "connectBleScanBluez": "No usable BlueZ/D-Bus Bluetooth service was found. Install and start the bluetooth service, then try again.",

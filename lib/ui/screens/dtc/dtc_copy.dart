@@ -103,6 +103,21 @@ String dtcCategoryFailureText(AppLocalizations l10n, DtcReadException failure) {
       failure.answeredCount,
     );
   }
+  final mil = _namedSources(failure.milDisagreementSources);
+  if (mil.isNotEmpty) {
+    if (mil.length == 1 &&
+        failure.milClaimedCount > failure.milObservedCount) {
+      return l10n.dtcCategoryMilCountMismatch(
+        _controllerList(mil),
+        failure.milClaimedCount,
+        failure.milObservedCount,
+      );
+    }
+    if (mil.length == 1 && failure.milObservedCount == 0) {
+      return l10n.dtcCategoryMilLitNoCodes(_controllerList(mil));
+    }
+    return l10n.dtcCategoryMilDisagreement(_controllerList(mil));
+  }
   return switch (failure.kind) {
     DtcReadFailure.noAnswer => l10n.dtcCategoryNoAnswer,
     DtcReadFailure.error => l10n.dtcCategoryError,

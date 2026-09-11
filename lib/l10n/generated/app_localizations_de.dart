@@ -4301,6 +4301,25 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String dtcCategoryMilCountMismatch(
+    String controller,
+    int claimed,
+    int observed,
+  ) {
+    return '$controller hat $claimed bestätigte Fehlercodes gemeldet, dieser Scan hat jedoch nur $observed gelesen. Vertrauen Sie der Kontrollleuchte und suchen Sie eine Werkstatt auf.';
+  }
+
+  @override
+  String dtcCategoryMilLitNoCodes(String controller) {
+    return '$controller hat gemeldet, dass die Störungsleuchte leuchtet, es wurden jedoch keine Fehlercodes gelesen. Vertrauen Sie der Kontrollleuchte und suchen Sie eine Werkstatt auf.';
+  }
+
+  @override
+  String dtcCategoryMilDisagreement(String controllers) {
+    return 'Der Status des Fahrzeugs stimmt nicht mit den gelesenen Fehlercodes überein ($controllers). Vertrauen Sie der Kontrollleuchte und suchen Sie eine Werkstatt auf.';
+  }
+
+  @override
   String get connectPairedListFailed =>
       'Die Liste des gekoppelten Bluetooth konnte nicht gelesen werden. Bitte überprüfen Sie, ob Bluetooth eingeschaltet ist, und versuchen Sie es dann erneut.';
 

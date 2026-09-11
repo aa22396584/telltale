@@ -671,6 +671,9 @@ class DtcReadException implements Exception {
     this.heardAboutService = const {},
     this.silentSources = const {},
     this.unresolvedSources = const {},
+    this.milDisagreementSources = const {},
+    this.milClaimedCount = 0,
+    this.milObservedCount = 0,
     this.repeatWouldHarm = false,
     this.transportIssue,
     this.issueDetail,
@@ -754,6 +757,24 @@ class DtcReadException implements Exception {
   /// every named module answered. The transcript interpolates the count into
   /// Chinese; the screen maps this set.
   final Set<String> unresolvedSources;
+
+  /// Controllers whose PID 01 claim disagreed with the Mode 03 codes that
+  /// were actually read.
+  ///
+  /// Distinct from [silentSources] and [unresolvedSources]: those are
+  /// coverage questions about the exchange. This is the vehicle contradicting
+  /// itself — a lamp or a confirmed-count that Mode 03 did not produce.
+  /// The transcript interpolates the English sentence; the screen maps this
+  /// set and the two counts rather than [message].
+  final Set<String> milDisagreementSources;
+
+  /// PID 01 confirmed-count for the sole controller in
+  /// [milDisagreementSources]. Zero when more than one controller disagreed
+  /// or when the disagreement is lamp-on with no claimed count.
+  final int milClaimedCount;
+
+  /// Mode 03 codes attributed to that same sole controller.
+  final int milObservedCount;
 
   /// How many controllers explicitly refused this request (`7F` with an NRC
   /// other than 0x78). The transcript interpolates the count; the screen maps

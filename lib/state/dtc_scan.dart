@@ -622,6 +622,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
     // confirmed codes, so that is what it is checked against.
     if (mil != null) {
       final disagreements = <String>[];
+      final milSources = <String>{};
       final stored = results[DtcKind.stored];
       final storedCodes = stored == null
           ? const <Dtc>[]
@@ -642,11 +643,13 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         final mine =
             storedCodes.where((d) => d.sourceId == entry.key).length;
         if (summary.confirmedCount > mine) {
+          milSources.add(entry.key);
           disagreements.add(
             'Controller ${entry.key} reported ${summary.confirmedCount} '
             'confirmed fault codes, but Mode 03 only read $mine',
           );
         } else if (summary.milOn && mine == 0) {
+          milSources.add(entry.key);
           disagreements.add(
             'Controller ${entry.key} reported that the malfunction '
             'indicator is lit, but none of its fault codes were read',
@@ -654,6 +657,14 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
         }
       }
       if (disagreements.isNotEmpty && comparable) {
+        // Counts ride only for a sole controller. Two modules disagreeing
+        // cannot share one claimed/observed pair without inventing a
+        // coverage number; the panel then names the set.
+        final soleId = milSources.length == 1 ? milSources.first : null;
+        final sole = soleId == null ? null : mil.bySource[soleId];
+        final soleObserved = soleId == null
+            ? 0
+            : storedCodes.where((d) => d.sourceId == soleId).length;
         results[DtcKind.stored] = DtcCategoryResult.failed(
           DtcReadException(
             '${disagreements.join('; ')}. '
@@ -662,6 +673,9 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
             'query. Trust the dashboard lamp, and see a workshop.',
             kind: DtcReadFailure.noAnswer,
             partial: storedCodes,
+            milDisagreementSources: Set.unmodifiable(milSources),
+            milClaimedCount: sole?.confirmedCount ?? 0,
+            milObservedCount: soleObserved,
           ),
         );
       }

@@ -6656,6 +6656,28 @@ abstract class AppLocalizations {
   /// **'{count} response(s) could not be read ({answered} answered). The rest is still valid, but this scan is incomplete.'**
   String dtcCategoryUnrecognisedResponses(int count, int answered);
 
+  /// Sole-controller PID 01 confirmed-count disagreed with Mode 03. Transcript stays English; screen maps these three values.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} reported {claimed} confirmed fault codes, but this scan only read {observed}. Trust the dashboard lamp, and see a workshop.'**
+  String dtcCategoryMilCountMismatch(
+    String controller,
+    int claimed,
+    int observed,
+  );
+
+  /// Sole-controller MIL on with zero Mode 03 codes for that module. Distinct from a confirmed-count mismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'{controller} reported that the malfunction indicator is lit, but none of its fault codes were read. Trust the dashboard lamp, and see a workshop.'**
+  String dtcCategoryMilLitNoCodes(String controller);
+
+  /// Two or more controllers disagreed with Mode 03; counts cannot share one pair.
+  ///
+  /// In en, this message translates to:
+  /// **'The vehicle\'s own status does not match the fault codes that were read ({controllers}). Trust the dashboard lamp, and see a workshop.'**
+  String dtcCategoryMilDisagreement(String controllers);
+
   /// No description provided for @connectPairedListFailed.
   ///
   /// In en, this message translates to:
