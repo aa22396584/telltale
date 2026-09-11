@@ -6,7 +6,9 @@
 /// where the adapter supports it.
 ///
 /// Ordering, highest first: integer weight, then [PriorityTier] ordinal, then
-/// FIFO by enqueue time.
+/// FIFO by enqueue time, then a monotonic sequence so equal timestamps stay
+/// deterministic (Windows ~1 ms `DateTime` resolution, and any device that
+/// enqueues several PIDs in one tight loop).
 library;
 
 import 'pid.dart';
@@ -19,11 +21,16 @@ class QueuedRequest implements Comparable<QueuedRequest> {
   final int weight;
   final DateTime enqueuedAt;
 
+  /// Assigned once at first enqueue. Re-queue keeps this value so a
+  /// collided `enqueuedAt` still sorts in original FIFO order.
+  final int seq;
+
   QueuedRequest(
     this.pid,
     this.priority, {
     this.weight = 0,
     DateTime? enqueuedAt,
+    this.seq = 0,
   }) : enqueuedAt = enqueuedAt ?? DateTime.now();
 
   @override
@@ -32,7 +39,9 @@ class QueuedRequest implements Comparable<QueuedRequest> {
     if (priority.index != other.priority.index) {
       return other.priority.index.compareTo(priority.index);
     }
-    return enqueuedAt.compareTo(other.enqueuedAt);
+    final byTime = enqueuedAt.compareTo(other.enqueuedAt);
+    if (byTime != 0) return byTime;
+    return seq.compareTo(other.seq);
   }
 
   @override
@@ -56,6 +65,14 @@ class SchedulerStats {
 }
 
 class PriorityScheduler {
+  PriorityScheduler({DateTime Function()? now}) : now = now ?? DateTime.now;
+
+  /// Clock used to stamp [QueuedRequest.enqueuedAt]. Tests inject a frozen
+  /// instant to prove equal-timestamp FIFO.
+  final DateTime Function() now;
+
+  int _nextSeq = 0;
+
   /// Kept sorted on insert. A binary-search insert costs O(log n) to locate and
   /// O(n) to shift, which beats re-sorting the whole list per enqueue and is
   /// well within budget for the tens-of-PIDs queues this actually sees.
@@ -100,7 +117,15 @@ class PriorityScheduler {
   bool get isNotEmpty => _queue.isNotEmpty;
 
   void enqueue(Pid pid, PriorityTier priority, {int weight = 0}) {
-    _insertSorted(QueuedRequest(pid, priority, weight: weight));
+    _insertSorted(
+      QueuedRequest(
+        pid,
+        priority,
+        weight: weight,
+        enqueuedAt: now(),
+        seq: _nextSeq++,
+      ),
+    );
   }
 
   void enqueueRequest(QueuedRequest request) => _insertSorted(request);
@@ -213,6 +238,7 @@ class PriorityScheduler {
           old.priority,
           weight: old.weight,
           enqueuedAt: old.enqueuedAt,
+          seq: old.seq,
         );
       }
     }
