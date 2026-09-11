@@ -655,6 +655,13 @@ class ObdSession extends Notifier<ObdConnectionState> {
 
   PollingEngine? get engine => _engine;
 
+  /// Controllers the last fault-code exchange could not name.
+  ///
+  /// The scan layer asks this after every category has staged a result, so a
+  /// token nobody could name cannot be rendered as a whole-vehicle answer.
+  Set<String> get openIdentityQuestions =>
+      _engine?.openIdentityQuestions ?? const <String>{};
+
   /// The live client, for the two things that talk to the adapter directly:
   /// the transcript export and the manual command box.
   Elm327Client? get client => _client;

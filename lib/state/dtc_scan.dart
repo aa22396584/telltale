@@ -677,14 +677,20 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
     // happened to see it, so no category may be rendered as a whole-vehicle
     // result while one stands. Asked after every category has staged its
     // result, which is the only point where both are true.
-    final unresolved = session.engine?.openIdentityQuestions ?? const <String>{};
+    // Asked on the session, not `session.engine?`. A scan that went through
+    // the notifier is the only whole-vehicle reader, and the session is the
+    // object the notifier already holds; going through engine made a
+    // scripted session (and any live session whose engine had been dropped)
+    // look like every controller had a name. The set rides beside the
+    // English transcript so the panel maps ARB instead of falling through
+    // to the generic "no answer" while the addresses lived only in
+    // [DtcReadException.message].
+    final unresolved = session.openIdentityQuestions;
     if (fatal == null && unresolved.isNotEmpty) {
       final message =
-          'There are ${unresolved.length} replies whose controller could '
-          'not be identified (unrecognised addresses: '
-          '${unresolved.join(', ')}). The results that were read are still '
-          'valid, but this cannot be treated as a whole-vehicle result. '
-          'Scan again.';
+          'The results that were read are still valid, but this cannot be '
+          'treated as a whole-vehicle result (unrecognised addresses: '
+          '${unresolved.join(', ')}). Scan again.';
       for (final entry in results.entries.toList()) {
         if (!entry.value.answered) continue;
         results[entry.key] = DtcCategoryResult.failed(
@@ -692,6 +698,7 @@ class DtcScanNotifier extends Notifier<DtcScanState> {
             message,
             kind: DtcReadFailure.noAnswer,
             partial: entry.value.codes,
+            unresolvedSources: Set.unmodifiable(unresolved),
           ),
         );
       }
