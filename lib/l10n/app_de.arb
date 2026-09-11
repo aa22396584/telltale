@@ -534,7 +534,7 @@
   "settingsCatalogChoose": "Wählen Sie aus dem offiziellen Katalog aus",
   "settingsCatalogCorrupt": "Der offizielle Offline-Katalog ist beschädigt oder konnte nicht geladen werden; es wurde nichts angewendet.",
   "settingsCatalogNothingApplicable": "Diese offizielle Konfiguration enthält kein Feld, das sicher auf die aktuellen Formeln angewendet werden kann; das bestehende Profil bleibt unverändert.",
-  "settingsCatalogScope": "Der beigefügte Snapshot enthält die offiziellen U.S. EPA Find-a-Car-Daten; er deckt lediglich den jeweiligen Markt und die im Snapshot enthaltenen Konfigurationen ab, nicht jedoch alle Marken oder Modelljahre weltweit.",
+  "settingsCatalogScope": "Offizielle Kataloge: U.S. EPA, Taiwan MOEA, Kanada NRCan. Jeder Snapshot gilt nur für diesen Markt, nicht für alle Marken oder Jahre weltweit.",
   "settingsCatalogVerifying": "Der Offline-Katalog wird überprüft…",
   "settingsCatalogChooseMarket": "Wählen Sie, welcher offizielle Katalog durchsucht wird",
   "settingsCatalogMarketTw": "Taiwan (MOEA-Energieverwaltung)",
@@ -1149,5 +1149,26 @@
   "connectionFailureCheckDistanceOrPower": "Der Adapter ist möglicherweise außer Reichweite oder ohne Strom. Das ist eine mögliche Ursache, kein Befund.",
   "connectionFailureCheckIgnitionProtocolAdapter": "Zündung, Protokoll oder Adapterfähigkeit prüfen. Stille ist kein Beweis, dass das Fahrzeug kein OBD hat.",
   "connectionFailureRetryOrAuto": "Erneut versuchen oder das Protokoll auf Auto setzen.",
-  "connectionFailureKeepInvalidAndExport": "Die Antwort ist ungültig. Ungültig lassen und die begrenzte Diagnose exportieren; das ist keine Messung."
+  "connectionFailureKeepInvalidAndExport": "Die Antwort ist ungültig. Ungültig lassen und die begrenzte Diagnose exportieren; das ist keine Messung.",
+  "settingsCatalogMarketCa": "Kanada (NRCan)",
+  "settingsCaPickerTitle": "Offizieller kanadischer Fahrzeugkatalog",
+  "settingsCaPickerScope": "Kanadische Fuel-Consumption-Ratings-Zeilen nur für {firstYear}–{lastYear}. ICE, Batterie-elektrisch und Plug-in-Hybrid bleiben getrennte Klassen. Ein gleicher Marken-/Modellstring ist keine EPA- oder Taiwan-Konfiguration.",
+  "@settingsCaPickerScope": {
+    "description": "Stops CA/US/TW namesake join. ICE/BEV/PHEV are not collapsed.",
+    "placeholders": {
+      "firstYear": { "type": "int" },
+      "lastYear": { "type": "int" }
+    }
+  },
+  "settingsCaMotorNotPower": "Motorleistung in Kilowatt ist keine Radleistung und wird nicht übernommen.",
+  "settingsCaClassIce": "Verbrennungsmotor",
+  "settingsCaClassBev": "Batterieelektrisch",
+  "settingsCaClassPhev": "Plug-in-Hybrid",
+  "settingsCaWillApplyOnly": "Nur {fields} werden übernommen. Motor-kW, Verbrauch, Reichweite, CO2, VE, Cd, Stirnfläche, Crr und Getriebewirkungsgrad bleiben unbestimmt.",
+  "@settingsCaWillApplyOnly": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  }
+
 }

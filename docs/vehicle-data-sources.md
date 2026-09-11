@@ -149,6 +149,34 @@ python3 tool/update_tw_vehicle_catalog.py --check
 python3 -m unittest discover -s test/tool -p 'test_update_tw_vehicle_catalog.py'
 ```
 
+### Canada Natural Resources Canada Fuel Consumption Ratings
+
+Canada's Open Government portal publishes
+[Fuel consumption ratings](https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64)
+from Natural Resources Canada under the Open Government Licence – Canada.
+Official English CSVs keep ICE, battery-electric, and plug-in hybrid vehicles
+in separate files. Stage B copies identity descriptors only and does not
+collapse those classes because display names match.
+
+The normalized snapshot in `ca_nrcan_vehicles.csv` has **12,971 exact rows,
+52 make labels, model years 2012–2026** (11,358 ICE, 1,212 BEV, 401 PHEV).
+`model_year` is the NRCan model year. Motor kW is not wheel horsepower.
+Consumption, range, and CO₂ are not VehicleProfile fields. 1995–2014 5-cycle
+tables are excluded because NRCan states those ratings were generated from
+original ratings, not vehicle tests. A Canada make/model string is never joined
+to an EPA or Taiwan row.
+
+The 2025 ICE English CSV is windows-1252 at the pinned retrieval; the updater
+fails closed if that encoding pin no longer matches.
+
+Update or reproduce it from the app tree:
+
+```bash
+python3 tool/update_ca_vehicle_catalog.py
+python3 tool/update_ca_vehicle_catalog.py --check
+python3 -m unittest discover -s test/tool -p 'test_update_ca_vehicle_catalog.py'
+```
+
 ### European Environment Agency CO2 monitoring
 
 The EEA publishes official

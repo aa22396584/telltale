@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "dataset": "Canada NRCan Fuel Consumption Ratings vehicle identity",
+  "license": {
+    "name": "Open Government Licence - Canada",
+    "url": "https://open.canada.ca/en/open-government-licence-canada"
+  },
+  "coverage": {
+    "market": "Canada",
+    "vehicle_scope": "Light-duty vehicles for retail sale in Canada from the official English Fuel Consumption Ratings CSVs. ICE, BEV, and PHEV stay separate resource classes. 1995–2014 5-cycle approximations are excluded because NRCan states they were not vehicle-tested.",
+    "does_not_assert": [
+      "global make/model completeness",
+      "U.S. EPA namesake identity",
+      "Taiwan MOEA certification identity",
+      "curb mass",
+      "wheel horsepower",
+      "motor kW as wheel horsepower",
+      "fuel consumption as a VehicleProfile field",
+      "range",
+      "CO2",
+      "drivetrain efficiency"
+    ],
+    "year_policy": "model_year is the NRCan model year in the official CSV, not a U.S. EPA configuration and not a Taiwan certification year"
+  },
+  "source": {
+    "landing_page": "https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64",
+    "retrieved_at_utc": "2026-09-11T07:33:23+00:00",
+    "resources": [
+      {
+        "id": "ice_2026",
+        "resource_class": "ice",
+        "file_name": "my2026-fuel-consumption-ratings.csv",
+        "url": "https://open.canada.ca/data/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64/resource/9df1b18d-d036-4783-a61c-99f1f75b3ac5/download/my2026-fuel-consumption-ratings.csv",
+        "encoding": "utf-8-sig",
+        "sha256": "1282b385a804a7929182def43046bcdb63abc57f88a89c4900ade3052b8c8803",
+        "size_bytes": 52482
+      },
+      {
+        "id": "ice_2025",
+        "resource_class": "ice",
+        "file_name": "my2025-fuel-consumption-ratings.csv",
+        "url": "https://open.canada.ca/data/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64/resource/d589f2bc-9a85-4f65-be2f-20f17debfcb1/download/my2025-fuel-consumption-ratings.csv",
+        "encoding": "cp1252",
+        "sha256": "98fd85c3e870c25fc590005542c7d21dbe9a11c09a0fd8b18433dd0afca7e805",
+        "size_bytes": 60700
+      },
+      {
+        "id": "ice_2015_2024",
+        "resource_class": "ice",
+        "file_name": "my2015-2024-fuel-consumption-ratings.csv",
+        "url": "https://open.canada.ca/data/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64/resource/c98b9dc8-b23f-4cd8-8b19-e892da1e4688/download/my2015-2024-fuel-consumption-ratings.csv",
+        "encoding": "utf-8-sig",
+        "sha256": "2f496687b9a612adb3d83aaf4ee4356a0e47dcee9de1706aab157bf96d9aaa94",
+        "size_bytes": 812234
+      },
+      {
+        "id": "bev",
+        "resource_class": "bev",
+        "file_name": "my2012-2026-battery-electric-vehicles.csv",
+        "url": "https://open.canada.ca/data/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64/resource/026e45b4-eb63-451f-b34f-d9308ea3a3d9/download/my2012-2026-battery-electric-vehicles.csv",
+        "encoding": "utf-8-sig",
+        "sha256": "5325ac0a8ef361883458bbc61cc121819e1557daeb63534064eac7aa882ad102",
+        "size_bytes": 134407
+      },
+      {
+        "id": "phev",
+        "resource_class": "phev",
+        "file_name": "my2012-2026-plug-in-hybrid-electric-vehicles.csv",
+        "url": "https://open.canada.ca/data/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64/resource/8812228b-a6aa-4303-b3d0-66489225120d/download/my2012-2026-plug-in-hybrid-electric-vehicles.csv",
+        "encoding": "utf-8-sig",
+        "sha256": "72fcb98e82c4b977e00abb10941eca861c7e0fc6cf8fe2449e144da93b299c77",
+        "size_bytes": 52457
+      }
+    ]
+  },
+  "output": {
+    "file": "ca_nrcan_vehicles.csv",
+    "columns": [
+      "ca_id",
+      "market",
+      "resource_class",
+      "model_year",
+      "make",
+      "model",
+      "vehicle_class",
+      "engine_size_l",
+      "cylinders",
+      "transmission",
+      "fuel_type",
+      "motor_kw",
+      "source_file"
+    ],
+    "row_count": 12971,
+    "sha256": "a1cc03d1624d6094dd8fe70efcb10d4ea10b03ec372c807f20c2e16254d7e590",
+    "size_bytes": 1596665,
+    "unique_make_count": 52,
+    "year_min": 2012,
+    "year_max": 2026,
+    "ice_count": 11358,
+    "bev_count": 1212,
+    "phev_count": 401
+  }
+}

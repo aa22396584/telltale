@@ -2048,7 +2048,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCatalogScope =>
-      'The bundled snapshot is the official U.S. EPA Find-a-Car data; it covers only that market and the configurations inside the snapshot, not every brand or model year worldwide.';
+      'Official catalogs: U.S. EPA, Taiwan MOEA, Canada NRCan. Each snapshot is that market only, not every brand or year worldwide.';
 
   @override
   String get settingsCatalogVerifying => 'Verifying the offline catalog…';
@@ -4463,4 +4463,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectionFailureKeepInvalidAndExport =>
       'The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.';
+
+  @override
+  String get settingsCatalogMarketCa => 'Canada (NRCan)';
+
+  @override
+  String get settingsCaPickerTitle => 'Official Canada vehicle catalog';
+
+  @override
+  String settingsCaPickerScope(int firstYear, int lastYear) {
+    return 'Canada-market Fuel Consumption Ratings rows for $firstYear–$lastYear only. ICE, battery-electric, and plug-in hybrid stay separate classes. A matching make/model string is not an EPA or Taiwan configuration.';
+  }
+
+  @override
+  String get settingsCaMotorNotPower =>
+      'Motor power in kilowatts is not wheel horsepower and is not applied.';
+
+  @override
+  String get settingsCaClassIce => 'ICE';
+
+  @override
+  String get settingsCaClassBev => 'BEV';
+
+  @override
+  String get settingsCaClassPhev => 'PHEV';
+
+  @override
+  String settingsCaWillApplyOnly(String fields) {
+    return 'Only $fields will be applied. Motor kW, fuel consumption, range, CO2, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.';
+  }
 }

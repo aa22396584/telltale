@@ -77,6 +77,35 @@ not a U.S. model year. `reference_mass_kg` is 參考車重, not curb mass, not m
 in running order, and not test mass. A Taiwan make/model string is not a
 FuelEconomy.gov configuration.
 
+## Canada NRCan Fuel Consumption Ratings identity snapshot
+
+- Dataset: [Fuel consumption ratings](https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64)
+- Publisher: Natural Resources Canada
+- Licence: Open Government Licence – Canada
+  <https://open.canada.ca/en/open-government-licence-canada>
+- Retrieved: `2026-09-11T07:33:23+00:00`
+- English resources only (French files are not a second identity set):
+  - `my2026-fuel-consumption-ratings.csv` SHA-256
+    `1282b385a804a7929182def43046bcdb63abc57f88a89c4900ade3052b8c8803`
+  - `my2025-fuel-consumption-ratings.csv` SHA-256
+    `98fd85c3e870c25fc590005542c7d21dbe9a11c09a0fd8b18433dd0afca7e805`
+    (official bytes are windows-1252 / `cp1252`)
+  - `my2015-2024-fuel-consumption-ratings.csv` SHA-256
+    `2f496687b9a612adb3d83aaf4ee4356a0e47dcee9de1706aab157bf96d9aaa94`
+  - `my2012-2026-battery-electric-vehicles.csv` SHA-256
+    `5325ac0a8ef361883458bbc61cc121819e1557daeb63534064eac7aa882ad102`
+  - `my2012-2026-plug-in-hybrid-electric-vehicles.csv` SHA-256
+    `72fcb98e82c4b977e00abb10941eca861c7e0fc6cf8fe2449e144da93b299c77`
+- Normalized CSV SHA-256:
+  `a1cc03d1624d6094dd8fe70efcb10d4ea10b03ec372c807f20c2e16254d7e590`
+
+ICE, BEV, and PHEV remain separate `resource_class` values. Motor kW is not
+wheel horsepower. Fuel consumption, range, and CO₂ are not copied into the
+runtime physics profile. 1995–2014 5-cycle tables are excluded because NRCan
+states those ratings were generated from original ratings, not vehicle tests.
+A Canada make/model string is not an EPA configuration and not a Taiwan
+certification row.
+
 ## No endorsement or warranty
 
 EPA, DOE, ORNL, NHTSA, DOT, and the MOEA Energy Administration do not endorse

@@ -507,7 +507,7 @@
   "settingsCatalogChoose": "從官方目錄選擇",
   "settingsCatalogCorrupt": "官方離線目錄損壞或無法載入，沒有套用任何資料。",
   "settingsCatalogNothingApplicable": "這筆官方配置沒有可安全套用到目前公式的欄位，原設定保持不變。",
-  "settingsCatalogScope": "目前內建美國 EPA Find-a-Car 官方快照；只代表該市場與快照內的配置，不是全球所有品牌或年式。",
+  "settingsCatalogScope": "官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。",
   "settingsCatalogVerifying": "驗證離線目錄中…",
   "settingsCatalogChooseMarket": "選擇要瀏覽的官方目錄",
   "settingsCatalogMarketTw": "臺灣（經濟部能源署）",
@@ -1152,5 +1152,26 @@
   "connectionFailureCheckDistanceOrPower": "適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。",
   "connectionFailureCheckIgnitionProtocolAdapter": "請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。",
   "connectionFailureRetryOrAuto": "請重試，或把協定設成 Auto。",
-  "connectionFailureKeepInvalidAndExport": "這筆回應無效。維持無效並匯出有限診斷；它不是讀數。"
+  "connectionFailureKeepInvalidAndExport": "這筆回應無效。維持無效並匯出有限診斷；它不是讀數。",
+  "settingsCatalogMarketCa": "加拿大（NRCan）",
+  "settingsCaPickerTitle": "加拿大官方車輛目錄",
+  "settingsCaPickerScope": "僅 {firstYear}–{lastYear} 的加拿大油耗標示列。內燃機、電池電動與插電混合動力維持分開的資源類。相同廠牌／車名不是 EPA 或臺灣認證列。",
+  "@settingsCaPickerScope": {
+    "description": "Stops CA/US/TW namesake join. ICE/BEV/PHEV are not collapsed.",
+    "placeholders": {
+      "firstYear": { "type": "int" },
+      "lastYear": { "type": "int" }
+    }
+  },
+  "settingsCaMotorNotPower": "電機功率（kW）不是輪馬力，不會套用。",
+  "settingsCaClassIce": "內燃機",
+  "settingsCaClassBev": "電池電動",
+  "settingsCaClassPhev": "插電混合動力",
+  "settingsCaWillApplyOnly": "只會套用 {fields}。電機 kW、油耗、續航、CO2、VE、Cd、迎風面積、Crr 與傳動效率維持未解。",
+  "@settingsCaWillApplyOnly": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  }
+
 }

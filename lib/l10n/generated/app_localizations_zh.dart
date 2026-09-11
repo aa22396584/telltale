@@ -1834,7 +1834,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsCatalogScope =>
-      '目前內建美國 EPA Find-a-Car 官方快照；只代表該市場與快照內的配置，不是全球所有品牌或年式。';
+      '官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。';
 
   @override
   String get settingsCatalogVerifying => '驗證離線目錄中…';
@@ -3971,6 +3971,34 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get connectionFailureKeepInvalidAndExport =>
       '這筆回應無效。維持無效並匯出有限診斷；它不是讀數。';
+
+  @override
+  String get settingsCatalogMarketCa => '加拿大（NRCan）';
+
+  @override
+  String get settingsCaPickerTitle => '加拿大官方車輛目錄';
+
+  @override
+  String settingsCaPickerScope(int firstYear, int lastYear) {
+    return '僅 $firstYear–$lastYear 的加拿大油耗標示列。內燃機、電池電動與插電混合動力維持分開的資源類。相同廠牌／車名不是 EPA 或臺灣認證列。';
+  }
+
+  @override
+  String get settingsCaMotorNotPower => '電機功率（kW）不是輪馬力，不會套用。';
+
+  @override
+  String get settingsCaClassIce => '內燃機';
+
+  @override
+  String get settingsCaClassBev => '電池電動';
+
+  @override
+  String get settingsCaClassPhev => '插電混合動力';
+
+  @override
+  String settingsCaWillApplyOnly(String fields) {
+    return '只會套用 $fields。電機 kW、油耗、續航、CO2、VE、Cd、迎風面積、Crr 與傳動效率維持未解。';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5802,7 +5830,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsCatalogScope =>
-      '目前內建美國 EPA Find-a-Car 官方快照；只代表該市場與快照內的配置，不是全球所有品牌或年式。';
+      '官方目錄：美國 EPA、臺灣經濟部能源署、加拿大 NRCan。各快照只代表該市場，不是全球所有品牌或年式。';
 
   @override
   String get settingsCatalogVerifying => '驗證離線目錄中…';
@@ -7939,4 +7967,32 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get connectionFailureKeepInvalidAndExport =>
       '這筆回應無效。維持無效並匯出有限診斷；它不是讀數。';
+
+  @override
+  String get settingsCatalogMarketCa => '加拿大（NRCan）';
+
+  @override
+  String get settingsCaPickerTitle => '加拿大官方車輛目錄';
+
+  @override
+  String settingsCaPickerScope(int firstYear, int lastYear) {
+    return '僅 $firstYear–$lastYear 的加拿大油耗標示列。內燃機、電池電動與插電混合動力維持分開的資源類。相同廠牌／車名不是 EPA 或臺灣認證列。';
+  }
+
+  @override
+  String get settingsCaMotorNotPower => '電機功率（kW）不是輪馬力，不會套用。';
+
+  @override
+  String get settingsCaClassIce => '內燃機';
+
+  @override
+  String get settingsCaClassBev => '電池電動';
+
+  @override
+  String get settingsCaClassPhev => '插電混合動力';
+
+  @override
+  String settingsCaWillApplyOnly(String fields) {
+    return '只會套用 $fields。電機 kW、油耗、續航、CO2、VE、Cd、迎風面積、Crr 與傳動效率維持未解。';
+  }
 }
