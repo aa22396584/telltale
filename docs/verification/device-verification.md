@@ -97,7 +97,16 @@ hedges that the year is a certification calendar year not a U.S. model year,
 that namesakes are not EPA configurations, and that 參考車重 is not curb
 mass. Applied `2023 HONDA CIVIC TOP-E · A1 · 5D` — provenance reads
 `官方精確 1/8` / `MOEA Energy Administration` and `只會套用：排氣量`.
-No crash. No adapter, no vehicle.
+
+Connection-failure action on the phone: Wi-Fi to the default
+`192.168.0.10:35000` (not on this LAN) rendered the unreachable-adapter
+copy — 適配器可能太遠或沒有供電, named as a possible cause not a
+confirmed finding — with 匯出紀錄 / 含十六進位. BLE scan ran and listed
+nearby devices (WIN_DESKTOP and unnamed advertisements); that is a scan
+that found something, not a scan-failure mapping. The nearby-devices
+permission dialog was shown once. Radio-off, `BUS INIT`, adapter-up ECU
+silence, and `0100` NO DATA were not staged on this phone; those mapper
+rows remain widget-tested. No crash. No vehicle.
 
 Harness: `integration_test/demo_rig_test.dart` PASS on `R5CX10VFFBA` and
 on `emulator-5554`. `tool/telemetry_lifecycle_rig/run.sh` PASS on both.
