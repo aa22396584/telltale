@@ -271,6 +271,15 @@ cross-source review found **no independent confirmation of its byte
 windows** — the Ircama Toyota-hybrid oracle documents different semantics at
 the same identifiers — so the profile stays experimental and probe-only.
 
+2026-09-11 re-evaluation: `NathanNam/obd2-logger` HEAD is still
+`f93d7a0afb1cfb8aff9681a7db33db46d55804a2` and the artifact hash is
+unchanged. Official OVMS has no Lexus/RX module.
+`Ircama/ELM327-emulator@73873172ecc162455fe5278b87f9b274e836927b`
+still maps `2161`/`2162` to MG temperatures (`A - 40`) and `2195` to
+internal resistance. That is a consulted disagreement, not a second
+family. Disposition remains RETAIN EXPERIMENTAL; Mode 21 stays
+lab-only; `year_from`/`year_to` stay 2020. PID `98` stays excluded.
+
 ### Toyota Prius (TNGA) — experimental
 
 Capture-verified candidates from the hybrid control ECU (7D2/7DA Mode 22):
