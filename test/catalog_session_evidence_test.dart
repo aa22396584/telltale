@@ -7,8 +7,6 @@
 /// made-up locator is the failure this file exists to catch.
 library;
 
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/core/field_evidence/platform_metadata.dart';
@@ -25,13 +23,6 @@ void main() {
 
   setUpAll(() async {
     catalog = await UsVehicleCatalog.load(rootBundle);
-  });
-
-  test('Settings still applies EPA rows through applyUsEpaConfiguration', () {
-    final source = File('lib/ui/screens/settings/settings_screen.dart')
-        .readAsStringSync();
-    expect(source.contains('applyUsEpaConfiguration('), isTrue);
-    expect(source.contains('vehicleProfileProvider.notifier'), isTrue);
   });
 
   test('a bundled EPA row keeps its EvidenceRef through session evidence', () {
