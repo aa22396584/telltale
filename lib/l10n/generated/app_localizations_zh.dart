@@ -3919,6 +3919,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectionLayerKwpSubtypeUnknown => 'KWP，5-baud 與 fast 無法分辨';
+
+  @override
+  String get connectionFailureOpenSettings => '開啟系統設定。';
+
+  @override
+  String get connectionFailureTurnRadioOn => '請開啟藍牙。';
+
+  @override
+  String get connectionFailureCheckDistanceOrPower =>
+      '適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。';
+
+  @override
+  String get connectionFailureCheckIgnitionProtocolAdapter =>
+      '請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。';
+
+  @override
+  String get connectionFailureRetryOrAuto => '請重試，或把協定設成 Auto。';
+
+  @override
+  String get connectionFailureKeepInvalidAndExport =>
+      '這筆回應無效。維持無效並匯出有限診斷；它不是讀數。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -7835,4 +7856,25 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get connectionLayerKwpSubtypeUnknown => 'KWP，5-baud 與 fast 無法分辨';
+
+  @override
+  String get connectionFailureOpenSettings => '開啟系統設定。';
+
+  @override
+  String get connectionFailureTurnRadioOn => '請開啟藍牙。';
+
+  @override
+  String get connectionFailureCheckDistanceOrPower =>
+      '適配器可能太遠或沒有供電。那是可能的原因，不是已確認的發現。';
+
+  @override
+  String get connectionFailureCheckIgnitionProtocolAdapter =>
+      '請檢查電門、協定或適配器能力。沒有回應不能當成這輛車沒有 OBD。';
+
+  @override
+  String get connectionFailureRetryOrAuto => '請重試，或把協定設成 Auto。';
+
+  @override
+  String get connectionFailureKeepInvalidAndExport =>
+      '這筆回應無效。維持無效並匯出有限診斷；它不是讀數。';
 }

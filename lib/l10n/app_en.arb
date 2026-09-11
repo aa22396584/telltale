@@ -3806,5 +3806,29 @@
   "connectionLayerKwpSubtypeUnknown": "KWP, 5-baud vs fast not distinguished",
   "@connectionLayerKwpSubtypeUnknown": {
     "description": "Connect protocol row when ATDP names ISO 14230-4 / KWP but ATDPN is not 4 or 5. An ATDP sentence that includes KWP FAST is still not ATDPN 5."
+  },
+  "connectionFailureOpenSettings": "Open system settings.",
+  "@connectionFailureOpenSettings": {
+    "description": "ConnectionFailureAction.openSettings. Permission permanently denied."
+  },
+  "connectionFailureTurnRadioOn": "Turn Bluetooth on.",
+  "@connectionFailureTurnRadioOn": {
+    "description": "ConnectionFailureAction.turnRadioOn. Radio off."
+  },
+  "connectionFailureCheckDistanceOrPower": "The adapter may be out of range or unpowered. That is a possible cause, not a finding.",
+  "@connectionFailureCheckDistanceOrPower": {
+    "description": "ConnectionFailureAction.checkDistanceOrPower. Distance and power are possible causes, not a claim that the adapter is dead."
+  },
+  "connectionFailureCheckIgnitionProtocolAdapter": "Check the ignition, the protocol, or the adapter's capability. Silence is not proof the vehicle has no OBD.",
+  "@connectionFailureCheckIgnitionProtocolAdapter": {
+    "description": "ConnectionFailureAction.checkIgnitionProtocolAdapter. Adapter is up, ECU silent. Not 'the car has no OBD'."
+  },
+  "connectionFailureRetryOrAuto": "Retry, or set the protocol to Auto.",
+  "@connectionFailureRetryOrAuto": {
+    "description": "ConnectionFailureAction.retryOrAuto. BUS INIT. Not vehicle unsupported. Auto stays that word."
+  },
+  "connectionFailureKeepInvalidAndExport": "The reply is invalid. Keep it invalid and export the limited diagnostic; it is not a reading.",
+  "@connectionFailureKeepInvalidAndExport": {
+    "description": "ConnectionFailureAction.keepInvalidAndExport. DATA ERROR / malformed handshake reply. Not a sensor value."
   }
 }
