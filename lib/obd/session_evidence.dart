@@ -135,9 +135,13 @@ final class SessionEvidenceMetadata {
         .where((field) => field.resolution == resolution)
         .length;
     final buffer = StringBuffer()
-      ..writeln(testRig ? '# Telltale 無車測試馬具證據 v1' : '# Telltale 實車證據 v1');
+      ..writeln(
+        testRig ? '# Telltale 無車測試馬具證據 v1' : '# Telltale OBD 工作階段紀錄 v1',
+      );
     if (testRig) {
       buffer.writeln('# 證據來源：軟體 ELM327／ECU 測試馬具；不得視為實體轉接器或實車驗證。');
+    } else {
+      buffer.writeln('# 實體證據狀態：未驗證；不得視為實體轉接器或實車驗證。');
     }
     buffer
       ..writeln(

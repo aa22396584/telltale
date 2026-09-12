@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/core/field_evidence/platform_metadata.dart';
@@ -23,6 +24,31 @@ const _epaEvidence = EvidenceRef(
 
 void main() {
   group('field evidence header', () {
+    test('a production non-rig synthetic peer stays explicit about unverified physical evidence', () {
+      final evidence = SessionEvidenceMetadata(
+        sessionId: 'synthetic-peer-1',
+        startedAt: DateTime.utc(2026, 9, 12),
+        platform: const PlatformMetadata(
+          applicationId: 'com.cbstudio.telltale',
+          appVersion: '1.0.14',
+          appBuild: '15',
+          platform: 'android',
+          osVersion: '16',
+          manufacturer: 'Google',
+          model: 'Pixel 9',
+          sdkInt: '36',
+        ),
+        vehicleProfile: const VehicleProfile(),
+        transportKind: 'Wi-Fi',
+        deviceName: 'synthetic-elm327-peer',
+      );
+
+      expect(evidence.testRig, isFalse);
+      expect(evidence.renderHeader(), startsWith('# Telltale OBD 工作階段紀錄 v1\n'));
+      expect(evidence.renderHeader(), contains('# 實體證據狀態：未驗證；不得視為實體轉接器或實車驗證。'));
+      expect(evidence.renderHeader(), isNot(contains('# Telltale 實車證據')));
+    });
+
     test('renders a deterministic evidence manifest', () {
       const profile = VehicleProfile(
         displacementL: 1.8,
@@ -58,7 +84,8 @@ void main() {
       expect(
         evidence.renderHeader(),
         equals(
-          '# Telltale 實車證據 v1\n'
+          '# Telltale OBD 工作階段紀錄 v1\n'
+          '# 實體證據狀態：未驗證；不得視為實體轉接器或實車驗證。\n'
           '# 隱私提醒：內含原始車輛通訊，可能包含 VIN、轉接器與裝置識別資訊；'
           'App 不會主動上傳；系統備份依裝置設定，是否另行分享由你決定。\n'
           '# 工作階段：20260821T031405000Z-7\n'
@@ -333,5 +360,16 @@ void main() {
         expect(evidence['sha256'], _epaEvidence.sha256);
       },
     );
+  });
+
+  test('the field guide describes the current neutral session header', () {
+    final guide = File('docs/field-guide.zh-TW.md').readAsStringSync();
+    final prose = guide.replaceAll(RegExp(r'\s+'), ' ');
+    final compact = guide.replaceAll(RegExp(r'\s+'), '');
+
+    expect(prose, contains('Telltale OBD 工作階段紀錄 v1'));
+    expect(prose, contains('實體證據狀態：未驗證'));
+    expect(compact, contains('不得視為實體轉接器或實車驗證'));
+    expect(prose, isNot(contains('Telltale 實車證據 v1')));
   });
 }
