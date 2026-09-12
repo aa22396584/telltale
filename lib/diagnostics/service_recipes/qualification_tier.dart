@@ -31,6 +31,15 @@ enum EcuSupportStatus {
   unknown,
 }
 
+/// Target execution environment scope.
+enum ExecutionTargetScope {
+  /// Test bench or hardware-in-the-loop environment.
+  bench,
+
+  /// Production physical motor vehicle.
+  vehicle,
+}
+
 /// Actionable verdict returned by the active-test eligibility gate.
 enum ActiveTestEligibilityVerdict {
   /// All qualification, safety, and consent gates passed; eligible for execution.
@@ -51,7 +60,13 @@ enum ActiveTestEligibilityVerdict {
   /// Blocked: ECU support status is unknown (silence, NO DATA, or unprobed).
   blockedEcuSupportUnknown,
 
-  /// Blocked: Profile has not been qualified on physical bench or vehicle.
+  /// Blocked: Profile has not been qualified on physical bench.
+  blockedNotBenchQualified,
+
+  /// Blocked: Profile has not been qualified on target physical vehicle.
+  blockedNotVehicleQualified,
+
+  /// Blocked: Profile has not been qualified on bench or vehicle (legacy fallback).
   blockedNotBenchOrVehicleQualified,
 
   /// Blocked: Required live ECU preconditions are not met or stale.
@@ -62,6 +77,45 @@ enum ActiveTestEligibilityVerdict {
 
   /// Blocked: Required opaque authorization token is missing or invalid.
   blockedMissingAuthorizationToken,
+}
+
+/// Opaque authorization token strictly bound to an execution context (Issue #132).
+final class ActiveTestAuthorizationToken {
+  const ActiveTestAuthorizationToken({
+    required this.tokenId,
+    required this.recipeHash,
+    required this.targetCanHeader,
+    required this.connectionGeneration,
+    required this.expiresAt,
+    this.isUsed = false,
+  });
+
+  final String tokenId;
+  final String recipeHash;
+  final String targetCanHeader;
+  final int connectionGeneration;
+  final DateTime expiresAt;
+  final bool isUsed;
+
+  /// Verifies that this authorization token is valid and matches all active context bindings.
+  bool isValidFor({
+    required String expectedRecipeHash,
+    required String expectedTargetCanHeader,
+    required int currentConnectionGeneration,
+    required DateTime now,
+    BusAddressingType busType = BusAddressingType.can11Bit,
+  }) {
+    if (isUsed) return false;
+    if (tokenId.trim().isEmpty) return false;
+    if (now.isAfter(expiresAt)) return false;
+    if (recipeHash.trim() != expectedRecipeHash.trim()) return false;
+    if (!TransportAddressing.areHeadersEquivalent(
+        targetCanHeader, expectedTargetCanHeader, busType)) {
+      return false;
+    }
+    if (connectionGeneration != currentConnectionGeneration) return false;
+    return true;
+  }
 }
 
 /// Snapshot of the live qualification and support state for an active test.
@@ -102,6 +156,12 @@ final class ActiveTestEligibilityGate {
     required bool vehicleQualified,
     required bool preconditionsSatisfied,
     required bool operatorConsentGranted,
+    ExecutionTargetScope targetScope = ExecutionTargetScope.vehicle,
+    ActiveTestAuthorizationToken? authorizationToken,
+    bool requireAuthorizationToken = false,
+    int? currentConnectionGeneration,
+    DateTime? currentTime,
+    @Deprecated('Use authorizationToken instead')
     String? opaqueAuthorizationToken,
     bool requireOpaqueToken = false,
   }) {
@@ -131,9 +191,20 @@ final class ActiveTestEligibilityGate {
         break; // Continue to remaining gates.
     }
 
-    // Hardware qualification gate: must have bench or vehicle qualification.
-    if (!benchQualified && !vehicleQualified) {
-      return ActiveTestEligibilityVerdict.blockedNotBenchOrVehicleQualified;
+    // Hardware qualification gate: strictly separated by target environment scope.
+    // Bench qualification NEVER grants execution on a live vehicle!
+    switch (targetScope) {
+      case ExecutionTargetScope.bench:
+        if (!benchQualified) {
+          return ActiveTestEligibilityVerdict.blockedNotBenchQualified;
+        }
+      case ExecutionTargetScope.vehicle:
+        if (!benchQualified && !vehicleQualified) {
+          return ActiveTestEligibilityVerdict.blockedNotBenchOrVehicleQualified;
+        }
+        if (!vehicleQualified) {
+          return ActiveTestEligibilityVerdict.blockedNotVehicleQualified;
+        }
     }
 
     // Precondition gate: live ECU prerequisites must be met.
@@ -146,11 +217,25 @@ final class ActiveTestEligibilityGate {
       return ActiveTestEligibilityVerdict.blockedMissingConsent;
     }
 
-    // Authorization token gate (F6 / #132): opaque token must be verified before execution.
-    if (requireOpaqueToken &&
-        (opaqueAuthorizationToken == null ||
-            opaqueAuthorizationToken.trim().isEmpty)) {
-      return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
+    // Authorization token gate (F6 / #132):
+    // Token must be present, not used, not expired, and bound to recipe hash,
+    // CAN header, and connection generation.
+    final mustVerifyToken = requireAuthorizationToken || requireOpaqueToken;
+    if (mustVerifyToken) {
+      if (authorizationToken == null) {
+        return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
+      }
+      final now = currentTime ?? DateTime.now();
+      final connGen = currentConnectionGeneration ?? 1;
+      if (!authorizationToken.isValidFor(
+        expectedRecipeHash: profile.canonicalHash,
+        expectedTargetCanHeader: profile.addressing.targetEcuHeader,
+        currentConnectionGeneration: connGen,
+        now: now,
+        busType: profile.addressing.busType,
+      )) {
+        return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
+      }
     }
 
     return ActiveTestEligibilityVerdict.eligible;

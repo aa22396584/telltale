@@ -83,7 +83,7 @@ void main() {
       expect(reqDecoupled, '2F01120364FFEE');
 
       // When descriptor defines mask length 1, passing 2 bytes throws ArgumentError
-      const descriptorWithMask1 = UdsIoControlDescriptor(
+      final descriptorWithMask1 = UdsIoControlDescriptor(
         dataIdentifier: 0x0112,
         controlParameter: UdsIoControlParameter.shortTermAdjustment,
         controlStates: [
@@ -240,6 +240,26 @@ void main() {
       expect(zeroNrc, isA<UdsIoControlMalformed>());
       expect((zeroNrc as UdsIoControlMalformed).reason,
           UdsMalformedReason.invalidNrc);
+
+      // Negative response with unrecognized non-standard NRC 0x05
+      final nonStdNrc05 = UdsActiveCodec.parseIoControlResponse(
+        '7F 2F 05',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+      );
+      expect(nonStdNrc05, isA<UdsIoControlMalformed>());
+      expect((nonStdNrc05 as UdsIoControlMalformed).reason,
+          UdsMalformedReason.invalidNrc);
+
+      // Negative response with out-of-range NRC 0xFF
+      final nonStdNrcFF = UdsActiveCodec.parseIoControlResponse(
+        '7F 2F FF',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+      );
+      expect(nonStdNrcFF, isA<UdsIoControlMalformed>());
+      expect((nonStdNrcFF as UdsIoControlMalformed).reason,
+          UdsMalformedReason.invalidNrc);
     });
   });
 
@@ -389,6 +409,26 @@ void main() {
       expect(zeroNrc, isA<UdsRoutineMalformed>());
       expect((zeroNrc as UdsRoutineMalformed).reason,
           UdsMalformedReason.invalidNrc);
+
+      // Negative response with unrecognized non-standard NRC 0x05
+      final nonStdNrc05Routine = UdsActiveCodec.parseRoutineResponse(
+        '7F 31 05',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+      );
+      expect(nonStdNrc05Routine, isA<UdsRoutineMalformed>());
+      expect((nonStdNrc05Routine as UdsRoutineMalformed).reason,
+          UdsMalformedReason.invalidNrc);
+
+      // Negative response with out-of-range NRC 0xFF
+      final nonStdNrcFFRoutine = UdsActiveCodec.parseRoutineResponse(
+        '7F 31 FF',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+      );
+      expect(nonStdNrcFFRoutine, isA<UdsRoutineMalformed>());
+      expect((nonStdNrcFFRoutine as UdsRoutineMalformed).reason,
+          UdsMalformedReason.invalidNrc);
     });
 
     test('rejects out of range optionRecord bytes when encoding', () {
@@ -413,7 +453,7 @@ void main() {
 
   group('UdsActiveCodec response length contracts and literal vectors', () {
     test('enforces UDS 0x2F profile response length contract with literal vectors', () {
-      const descriptor = UdsIoControlDescriptor(
+      final descriptor = UdsIoControlDescriptor(
         dataIdentifier: 0x0112,
         controlParameter: UdsIoControlParameter.shortTermAdjustment,
         controlStates: [
@@ -468,7 +508,7 @@ void main() {
     });
 
     test('enforces UDS 0x31 routine response length contract with literal vectors', () {
-      const routineDesc = UdsRoutineDescriptor(
+      final routineDesc = UdsRoutineDescriptor(
         routineIdentifier: 0x0201,
         supportedSubfunctions: [
           UdsRoutineControlType.startRoutine,
@@ -530,6 +570,28 @@ void main() {
       expect(parseRes, isA<UdsIoControlSuccess>());
       expect((parseRes as UdsIoControlSuccess).controlStatusRecord,
           [0x10, 0x20]);
+    });
+
+    test('enforces collection immutability on parsed success results', () {
+      final res2F = UdsActiveCodec.parseIoControlResponse(
+        '6F 01 12 03 64',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+      );
+      expect(res2F, isA<UdsIoControlSuccess>());
+      final success2F = res2F as UdsIoControlSuccess;
+      expect(() => success2F.controlStatusRecord[0] = 0x99,
+          throwsUnsupportedError);
+
+      final res31 = UdsActiveCodec.parseRoutineResponse(
+        '71 01 02 01 00',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+      );
+      expect(res31, isA<UdsRoutineSuccess>());
+      final success31 = res31 as UdsRoutineSuccess;
+      expect(() => success31.routineStatusRecord[0] = 0x99,
+          throwsUnsupportedError);
     });
   });
 }

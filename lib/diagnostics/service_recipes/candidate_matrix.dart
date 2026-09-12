@@ -56,14 +56,27 @@ final class CandidateMatrixEntry {
 
 /// The active-test candidate matrix report.
 final class CandidateMatrix {
-  const CandidateMatrix({
+  CandidateMatrix({
+    required Iterable<CandidateMatrixEntry> entries,
+  }) : entries = List.unmodifiable(entries);
+
+  const CandidateMatrix.constant({
     required this.entries,
   });
 
   factory CandidateMatrix.fromProfiles(List<ActiveTestProfile> profiles) {
+    final seenIds = <String>{};
     final entries = <CandidateMatrixEntry>[];
 
     for (final profile in profiles) {
+      if (!seenIds.add(profile.profileId)) {
+        throw ArgumentError.value(
+          profile.profileId,
+          'profiles',
+          'Duplicate profile ID in CandidateMatrix: ${profile.profileId}',
+        );
+      }
+
       if (profile.provenanceKind == ProvenanceKind.syntheticFixture ||
           profile.evidenceTier == EvidenceQualificationTier.syntheticFixture ||
           profile.redistributionRights ==
@@ -131,25 +144,20 @@ final class CandidateMatrix {
   /// In the baseline release, this is explicitly FALSE (no live candidate).
   bool get hasLiveCandidates => liveCandidateCount > 0;
 
-  List<CandidateMatrixEntry> get simulationReadyEntries => entries
-      .where((e) => e.category == CandidateCategory.simulationReady)
-      .toList(growable: false);
+  List<CandidateMatrixEntry> get simulationReadyEntries => List.unmodifiable(
+      entries.where((e) => e.category == CandidateCategory.simulationReady));
 
-  List<CandidateMatrixEntry> get needsSourceEntries => entries
-      .where((e) => e.category == CandidateCategory.needsSource)
-      .toList(growable: false);
+  List<CandidateMatrixEntry> get needsSourceEntries => List.unmodifiable(
+      entries.where((e) => e.category == CandidateCategory.needsSource));
 
-  List<CandidateMatrixEntry> get needsBenchEntries => entries
-      .where((e) => e.category == CandidateCategory.needsBench)
-      .toList(growable: false);
+  List<CandidateMatrixEntry> get needsBenchEntries => List.unmodifiable(
+      entries.where((e) => e.category == CandidateCategory.needsBench));
 
-  List<CandidateMatrixEntry> get externalOnlyEntries => entries
-      .where((e) => e.category == CandidateCategory.externalOnly)
-      .toList(growable: false);
+  List<CandidateMatrixEntry> get externalOnlyEntries => List.unmodifiable(
+      entries.where((e) => e.category == CandidateCategory.externalOnly));
 
-  List<CandidateMatrixEntry> get qualifiedEntries => entries
-      .where((e) => e.category == CandidateCategory.qualified)
-      .toList(growable: false);
+  List<CandidateMatrixEntry> get qualifiedEntries => List.unmodifiable(
+      entries.where((e) => e.category == CandidateCategory.qualified));
 }
 
 /// Helper for loading and validating bundled active-test service recipes.

@@ -124,6 +124,7 @@ enum ProfileValidationReason {
   unknownSchemaVersion,
   wildcardEcuMatch,
   wildcardAddressing,
+  identicalArbitrationIdConflict,
   outOfRangeParameter,
   unboundedSteps,
   undocumentedRecovery,
@@ -209,6 +210,18 @@ final class TransportAddressing {
   bool matchesResponse(String header) =>
       areHeadersEquivalent(expectedResponseHeader, header, busType);
 
+  /// Whether target and response headers represent the identical arbitration ID.
+  bool get hasIdenticalArbitrationId {
+    final t = targetEcuHeader.trim().toUpperCase();
+    final r = expectedResponseHeader.trim().toUpperCase();
+    final targetId = parseCanId(t);
+    final responseId = parseCanId(r);
+    if (targetId != null && responseId != null && targetId == responseId) {
+      return true;
+    }
+    return false;
+  }
+
   bool get isWildcard {
     final t = targetEcuHeader.trim().toUpperCase();
     final r = expectedResponseHeader.trim().toUpperCase();
@@ -224,8 +237,6 @@ final class TransportAddressing {
     final targetId = parseCanId(t);
     final responseId = parseCanId(r);
     if (targetId == null || responseId == null) return true;
-    // Request and response cannot have identical arbitration IDs (e.g. 7E0 vs 07E0)
-    if (targetId == responseId) return true;
     switch (busType) {
       case BusAddressingType.can11Bit:
         if (targetId > 0x7FF || responseId > 0x7FF) return true;
@@ -267,7 +278,14 @@ final class TransportAddressing {
 
 /// Exact ECU and software applicability specification.
 final class EcuApplicability {
-  const EcuApplicability({
+  EcuApplicability({
+    required this.make,
+    required this.model,
+    required this.targetEcuName,
+    required Iterable<String> softwareVersions,
+  }) : softwareVersions = List.unmodifiable(softwareVersions);
+
+  const EcuApplicability.constant({
     required this.make,
     required this.model,
     required this.targetEcuName,
@@ -280,8 +298,7 @@ final class EcuApplicability {
       model: (json['model'] as String).trim(),
       targetEcuName: (json['target_ecu_name'] as String).trim(),
       softwareVersions: (json['software_versions'] as List<dynamic>)
-          .map((e) => (e as String).trim())
-          .toList(growable: false),
+          .map((e) => (e as String).trim()),
     );
   }
 
@@ -317,13 +334,25 @@ final class EcuApplicability {
         'make': make,
         'model': model,
         'target_ecu_name': targetEcuName,
-        'software_versions': softwareVersions,
+        'software_versions': List<String>.from(softwareVersions),
       };
 }
 
 /// Typed parameter definition within a command payload.
 final class ActiveTestParameterDefinition {
-  const ActiveTestParameterDefinition({
+  ActiveTestParameterDefinition({
+    required this.name,
+    required this.byteOffset,
+    required this.byteLength,
+    this.minPhysicalValue,
+    this.maxPhysicalValue,
+    this.unit,
+    Iterable<int>? allowedDiscreteValues,
+  }) : allowedDiscreteValues = allowedDiscreteValues == null
+            ? null
+            : List.unmodifiable(allowedDiscreteValues);
+
+  const ActiveTestParameterDefinition.constant({
     required this.name,
     required this.byteOffset,
     required this.byteLength,
@@ -341,10 +370,8 @@ final class ActiveTestParameterDefinition {
       minPhysicalValue: json['min_physical_value'] as num?,
       maxPhysicalValue: json['max_physical_value'] as num?,
       unit: json['unit'] as String?,
-      allowedDiscreteValues:
-          (json['allowed_discrete_values'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList(growable: false),
+      allowedDiscreteValues: (json['allowed_discrete_values'] as List<dynamic>?)
+          ?.map((e) => e as int),
     );
   }
 
@@ -387,7 +414,7 @@ final class ActiveTestParameterDefinition {
         if (maxPhysicalValue != null) 'max_physical_value': maxPhysicalValue,
         if (unit != null) 'unit': unit,
         if (allowedDiscreteValues != null)
-          'allowed_discrete_values': allowedDiscreteValues,
+          'allowed_discrete_values': List<int>.from(allowedDiscreteValues!),
       };
 }
 
@@ -416,7 +443,13 @@ sealed class ServiceDescriptor {
 
 /// Mode 08 descriptor for standardized OBD on-board system control.
 final class Mode08Descriptor extends ServiceDescriptor {
-  const Mode08Descriptor({
+  Mode08Descriptor({
+    required this.testId,
+    Iterable<ActiveTestParameterDefinition> parameters = const [],
+    this.expectedResponseBytes = 1,
+  }) : parameters = List.unmodifiable(parameters);
+
+  const Mode08Descriptor.constant({
     required this.testId,
     this.parameters = const [],
     this.expectedResponseBytes = 1,
@@ -427,8 +460,7 @@ final class Mode08Descriptor extends ServiceDescriptor {
       testId: json['test_id'] as int,
       parameters: (json['parameters'] as List<dynamic>?)
               ?.map((e) => ActiveTestParameterDefinition.fromJson(
-                  e as Map<String, dynamic>))
-              .toList(growable: false) ??
+                  e as Map<String, dynamic>)) ??
           const [],
       expectedResponseBytes: json['expected_response_bytes'] as int? ?? 1,
     );
@@ -473,7 +505,17 @@ final class Mode08Descriptor extends ServiceDescriptor {
 
 /// UDS 0x2F InputOutputControlByIdentifier descriptor.
 final class UdsIoControlDescriptor extends ServiceDescriptor {
-  const UdsIoControlDescriptor({
+  UdsIoControlDescriptor({
+    required this.dataIdentifier,
+    required this.controlParameter,
+    Iterable<ActiveTestParameterDefinition> controlStates = const [],
+    this.controlEnableMask,
+    this.controlMaskByteLength,
+    this.expectedResponseBytes,
+    required this.returnControlParameter,
+  }) : controlStates = List.unmodifiable(controlStates);
+
+  const UdsIoControlDescriptor.constant({
     required this.dataIdentifier,
     required this.controlParameter,
     this.controlStates = const [],
@@ -490,8 +532,7 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
           .byName(json['control_parameter'] as String),
       controlStates: (json['control_states'] as List<dynamic>?)
               ?.map((e) => ActiveTestParameterDefinition.fromJson(
-                  e as Map<String, dynamic>))
-              .toList(growable: false) ??
+                  e as Map<String, dynamic>)) ??
           const [],
       controlEnableMask: json['control_enable_mask'] as int?,
       controlMaskByteLength: json['control_mask_byte_length'] as int?,
@@ -572,7 +613,16 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
 
 /// UDS 0x31 RoutineControl descriptor.
 final class UdsRoutineDescriptor extends ServiceDescriptor {
-  const UdsRoutineDescriptor({
+  UdsRoutineDescriptor({
+    required this.routineIdentifier,
+    required Iterable<UdsRoutineControlType> supportedSubfunctions,
+    Iterable<ActiveTestParameterDefinition> startOptionParameters = const [],
+    this.expectedResponseBytes,
+    required this.hasDocumentedStop,
+  })  : supportedSubfunctions = List.unmodifiable(supportedSubfunctions),
+        startOptionParameters = List.unmodifiable(startOptionParameters);
+
+  const UdsRoutineDescriptor.constant({
     required this.routineIdentifier,
     required this.supportedSubfunctions,
     this.startOptionParameters = const [],
@@ -584,13 +634,11 @@ final class UdsRoutineDescriptor extends ServiceDescriptor {
     return UdsRoutineDescriptor(
       routineIdentifier: json['routine_identifier'] as int,
       supportedSubfunctions: (json['supported_subfunctions'] as List<dynamic>)
-          .map((e) => UdsRoutineControlType.values.byName(e as String))
-          .toList(growable: false),
+          .map((e) => UdsRoutineControlType.values.byName(e as String)),
       startOptionParameters: (json['start_option_parameters']
                   as List<dynamic>?)
               ?.map((e) => ActiveTestParameterDefinition.fromJson(
-                  e as Map<String, dynamic>))
-              .toList(growable: false) ??
+                  e as Map<String, dynamic>)) ??
           const [],
       expectedResponseBytes: json['expected_response_bytes'] as int?,
       hasDocumentedStop: json['has_documented_stop'] as bool,
@@ -860,7 +908,32 @@ final class RecoverySpecification {
 
 /// Immutable, declarative active-test profile.
 final class ActiveTestProfile {
-  const ActiveTestProfile({
+  ActiveTestProfile({
+    required this.profileId,
+    this.schemaVersion = 1,
+    required this.version,
+    required this.standard,
+    required this.sourceUrl,
+    required this.documentSection,
+    required this.redistributionRights,
+    required this.provenanceKind,
+    required this.addressing,
+    required this.applicability,
+    required this.sessionType,
+    this.requiredSecurityLevel,
+    required this.serviceDescriptor,
+    required Iterable<PreconditionRule> preconditions,
+    required this.constraints,
+    required this.recovery,
+    Iterable<PostconditionRule> postconditions = const [],
+    required this.evidenceTier,
+    this.isRevoked = false,
+    this.revocationReason,
+    required this.canonicalHash,
+  })  : preconditions = List.unmodifiable(preconditions),
+        postconditions = List.unmodifiable(postconditions);
+
+  const ActiveTestProfile.constant({
     required this.profileId,
     this.schemaVersion = 1,
     required this.version,
@@ -906,16 +979,14 @@ final class ActiveTestProfile {
       serviceDescriptor: ServiceDescriptor.fromJson(
           json['service_descriptor'] as Map<String, dynamic>),
       preconditions: (json['preconditions'] as List<dynamic>)
-          .map((e) => PreconditionRule.fromJson(e as Map<String, dynamic>))
-          .toList(growable: false),
+          .map((e) => PreconditionRule.fromJson(e as Map<String, dynamic>)),
       constraints: ExecutionConstraints.fromJson(
           json['constraints'] as Map<String, dynamic>),
       recovery: RecoverySpecification.fromJson(
           json['recovery'] as Map<String, dynamic>),
       postconditions: (json['postconditions'] as List<dynamic>?)
               ?.map((e) =>
-                  PostconditionRule.fromJson(e as Map<String, dynamic>))
-              .toList(growable: false) ??
+                  PostconditionRule.fromJson(e as Map<String, dynamic>)) ??
           const [],
       evidenceTier: EvidenceQualificationTier.values
           .byName(json['evidence_tier'] as String),
@@ -968,6 +1039,9 @@ final class ActiveTestProfile {
     }
     if (addressing.isWildcard) {
       errors.add(ProfileValidationReason.wildcardAddressing);
+    }
+    if (addressing.hasIdenticalArbitrationId) {
+      errors.add(ProfileValidationReason.identicalArbitrationIdConflict);
     }
     if (applicability.hasWildcard) {
       errors.add(ProfileValidationReason.wildcardEcuMatch);

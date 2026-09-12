@@ -25,14 +25,14 @@ void main() {
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
         ),
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
         sessionType: DiagnosticSessionType.defaultSession,
-        serviceDescriptor: const Mode08Descriptor(testId: 0x01),
+        serviceDescriptor: Mode08Descriptor(testId: 0x01),
         preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
@@ -273,8 +273,8 @@ void main() {
       expect(verdictEmptyToken,
           ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
 
-      // Passes when valid opaque token provided
-      final verdictValidToken = ActiveTestEligibilityGate.evaluate(
+      // Unverified raw string alone is NEVER trusted to execute
+      final verdictRawStringOnly = ActiveTestEligibilityGate.evaluate(
         profile: officialProfile,
         ecuSupport: EcuSupportStatus.supported,
         benchQualified: true,
@@ -282,9 +282,167 @@ void main() {
         preconditionsSatisfied: true,
         operatorConsentGranted: true,
         requireOpaqueToken: true,
-        opaqueAuthorizationToken: 'auth_tok_sec_132_live_xyz',
+        opaqueAuthorizationToken: 'unverified_raw_string',
+      );
+      expect(verdictRawStringOnly,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      final now = DateTime.utc(2026, 9, 12, 12, 0);
+      final validToken = ActiveTestAuthorizationToken(
+        tokenId: 'auth_tok_sec_132_live_xyz',
+        recipeHash: officialProfile.canonicalHash,
+        targetCanHeader: officialProfile.addressing.targetEcuHeader,
+        connectionGeneration: 1,
+        expiresAt: now.add(const Duration(minutes: 5)),
+      );
+
+      // Passes when verified, cryptographically bound authorization token provided
+      final verdictValidToken = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireAuthorizationToken: true,
+        authorizationToken: validToken,
+        currentConnectionGeneration: 1,
+        currentTime: now,
       );
       expect(verdictValidToken, ActiveTestEligibilityVerdict.eligible);
+
+      // Blocked when token is expired
+      final expiredToken = ActiveTestAuthorizationToken(
+        tokenId: 'auth_tok_expired',
+        recipeHash: officialProfile.canonicalHash,
+        targetCanHeader: officialProfile.addressing.targetEcuHeader,
+        connectionGeneration: 1,
+        expiresAt: now.subtract(const Duration(seconds: 1)),
+      );
+      final verdictExpired = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireAuthorizationToken: true,
+        authorizationToken: expiredToken,
+        currentConnectionGeneration: 1,
+        currentTime: now,
+      );
+      expect(verdictExpired,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      // Blocked when token is already used
+      final usedToken = ActiveTestAuthorizationToken(
+        tokenId: 'auth_tok_used',
+        recipeHash: officialProfile.canonicalHash,
+        targetCanHeader: officialProfile.addressing.targetEcuHeader,
+        connectionGeneration: 1,
+        expiresAt: now.add(const Duration(minutes: 5)),
+        isUsed: true,
+      );
+      final verdictUsed = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireAuthorizationToken: true,
+        authorizationToken: usedToken,
+        currentConnectionGeneration: 1,
+        currentTime: now,
+      );
+      expect(verdictUsed,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      // Blocked when recipe hash does not match
+      final wrongHashToken = ActiveTestAuthorizationToken(
+        tokenId: 'auth_tok_wrong_hash',
+        recipeHash: 'tampered_or_different_recipe_hash',
+        targetCanHeader: officialProfile.addressing.targetEcuHeader,
+        connectionGeneration: 1,
+        expiresAt: now.add(const Duration(minutes: 5)),
+      );
+      final verdictWrongHash = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireAuthorizationToken: true,
+        authorizationToken: wrongHashToken,
+        currentConnectionGeneration: 1,
+        currentTime: now,
+      );
+      expect(verdictWrongHash,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      // Blocked when connection generation does not match (session reset)
+      final verdictWrongConnGen = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireAuthorizationToken: true,
+        authorizationToken: validToken,
+        currentConnectionGeneration: 2, // New connection generation!
+        currentTime: now,
+      );
+      expect(verdictWrongConnGen,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+    });
+
+    test('ExecutionTargetScope strictly separates bench from live vehicle execution', () {
+      final officialProfile = createProfile(
+        id: 'official_evap_08',
+        provenance: ProvenanceKind.officialStandard,
+        rights: RedistributionRights.openPublicStandard,
+        tier: EvidenceQualificationTier.benchQualified,
+      );
+
+      // Bench qualified ONLY, attempting execution on vehicle: MUST BE BLOCKED!
+      final verdictVehicle = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: false,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        targetScope: ExecutionTargetScope.vehicle,
+      );
+      expect(verdictVehicle,
+          ActiveTestEligibilityVerdict.blockedNotVehicleQualified);
+
+      // Bench qualified executing in bench target scope: PASSES
+      final verdictBench = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: false,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        targetScope: ExecutionTargetScope.bench,
+      );
+      expect(verdictBench, ActiveTestEligibilityVerdict.eligible);
+
+      // Not bench qualified executing in bench target scope: BLOCKED
+      final verdictBenchBlocked = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: false,
+        vehicleQualified: false,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        targetScope: ExecutionTargetScope.bench,
+      );
+      expect(verdictBenchBlocked,
+          ActiveTestEligibilityVerdict.blockedNotBenchQualified);
     });
   });
 }

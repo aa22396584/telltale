@@ -25,14 +25,14 @@ void main() {
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
         ),
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
         sessionType: DiagnosticSessionType.defaultSession,
-        serviceDescriptor: const Mode08Descriptor(testId: 0x01),
+        serviceDescriptor: Mode08Descriptor(testId: 0x01),
         preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
@@ -160,7 +160,7 @@ void main() {
     });
 
     test('revoked profile is never counted as a live candidate even if qualified', () {
-      const unhashedRevoked = ActiveTestProfile(
+      final unhashedRevoked = ActiveTestProfile(
         profileId: 'revoked_pilot_01',
         schemaVersion: 1,
         version: '1.0.0',
@@ -169,7 +169,7 @@ void main() {
         documentSection: 'Section 8',
         redistributionRights: RedistributionRights.openPublicStandard,
         provenanceKind: ProvenanceKind.officialStandard,
-        addressing: TransportAddressing(
+        addressing: const TransportAddressing(
           busType: BusAddressingType.can11Bit,
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
@@ -178,19 +178,19 @@ void main() {
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
         sessionType: DiagnosticSessionType.defaultSession,
         serviceDescriptor: Mode08Descriptor(testId: 0x01),
-        preconditions: [
+        preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
             minValue: 0,
             maxValue: 0,
           ),
         ],
-        constraints: ExecutionConstraints(),
-        recovery: RecoverySpecification(
+        constraints: const ExecutionConstraints(),
+        recovery: const RecoverySpecification(
           releaseCommandDescription: 'stop',
           lossOfClientBehavior: 'timeout',
           watchdogTimeoutMs: 1000,
@@ -228,6 +228,54 @@ void main() {
       expect(matrix.hasLiveCandidates, isFalse);
       expect(matrix.qualifiedEntries.length, 1);
       expect(matrix.qualifiedEntries.first.isLiveCandidate, isFalse);
+    });
+
+    test('rejects duplicate profile IDs fail-closed', () {
+      final p1 = makeProfile(
+        id: 'dup_profile_01',
+        provenance: ProvenanceKind.officialStandard,
+        rights: RedistributionRights.openPublicStandard,
+        tier: EvidenceQualificationTier.needsBench,
+      );
+      final p1Duplicate = makeProfile(
+        id: 'dup_profile_01',
+        provenance: ProvenanceKind.officialStandard,
+        rights: RedistributionRights.openPublicStandard,
+        tier: EvidenceQualificationTier.needsBench,
+      );
+      expect(
+        () => CandidateMatrix.fromProfiles([p1, p1Duplicate]),
+        throwsArgumentError,
+      );
+    });
+
+    test('CandidateMatrix collections are strictly immutable', () {
+      final p1 = makeProfile(
+        id: 'matrix_immut_01',
+        provenance: ProvenanceKind.syntheticFixture,
+        rights: RedistributionRights.syntheticFixtureOnly,
+        tier: EvidenceQualificationTier.syntheticFixture,
+      );
+      final matrix = CandidateMatrix.fromProfiles([p1]);
+      expect(
+        () => (matrix.entries as dynamic).add(
+          CandidateMatrixEntry(
+            profile: p1,
+            category: CandidateCategory.simulationReady,
+            notes: 'injected',
+          ),
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (matrix.simulationReadyEntries as dynamic)[0] =
+            CandidateMatrixEntry(
+          profile: p1,
+          category: CandidateCategory.simulationReady,
+          notes: 'tampered',
+        ),
+        throwsUnsupportedError,
+      );
     });
   });
 }

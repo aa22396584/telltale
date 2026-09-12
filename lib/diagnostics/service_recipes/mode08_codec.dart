@@ -48,7 +48,14 @@ sealed class Mode08ParseResult {
 
 /// Successfully decoded supported TID bitmask.
 final class Mode08SupportSuccess extends Mode08ParseResult {
-  const Mode08SupportSuccess({
+  Mode08SupportSuccess({
+    required this.baseTid,
+    required this.bitmask,
+    required Iterable<int> supportedTids,
+    required this.hasNextBlock,
+  }) : supportedTids = Set.unmodifiable(supportedTids);
+
+  const Mode08SupportSuccess.constant({
     required this.baseTid,
     required this.bitmask,
     required this.supportedTids,
@@ -67,7 +74,12 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
 
 /// Successfully decoded Mode 08 active test execution response.
 final class Mode08ExecutionSuccess extends Mode08ParseResult {
-  const Mode08ExecutionSuccess({
+  Mode08ExecutionSuccess({
+    required this.testId,
+    required Iterable<int> dataBytes,
+  }) : dataBytes = List.unmodifiable(dataBytes);
+
+  const Mode08ExecutionSuccess.constant({
     required this.testId,
     required this.dataBytes,
   });
@@ -153,6 +165,18 @@ final class Mode08DiscoveryCodec {
     0xE0,
   };
 
+  /// Recognised NRCs for OBD-II Mode 08 (SAE J1979:2014 Section 8.8 / ISO 15031-5:2015 Clause 8.8).
+  static bool isRecognizedMode08Nrc(int nrc) {
+    return nrc == 0x11 || // serviceNotSupported
+        nrc == 0x12 || // subFunctionNotSupported
+        nrc == 0x13 || // incorrectMessageLengthOrInvalidFormat
+        nrc == 0x21 || // busyRepeatRequest
+        nrc == 0x22 || // conditionsNotCorrect
+        nrc == 0x31 || // requestOutOfRange
+        nrc == 0x33 || // securityAccessDenied
+        nrc == 0x78; // responsePending
+  }
+
   /// Constructs the non-actuating command string to query supported TIDs.
   ///
   /// Strictly requires [baseTid] to be in [validBaseTids].
@@ -209,7 +233,7 @@ final class Mode08DiscoveryCodec {
       final nrcHex = cleaned.substring(4, 6);
       final sid = int.tryParse(sidHex, radix: 16);
       final nrc = int.tryParse(nrcHex, radix: 16);
-      if (sid == null || sid != 0x08 || nrc == null || nrc == 0x00) {
+      if (sid == null || sid != 0x08 || nrc == null || !isRecognizedMode08Nrc(nrc)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: rawResponse,
@@ -337,7 +361,7 @@ final class Mode08DiscoveryCodec {
       final nrcHex = cleaned.substring(4, 6);
       final sid = int.tryParse(sidHex, radix: 16);
       final nrc = int.tryParse(nrcHex, radix: 16);
-      if (sid == null || sid != 0x08 || nrc == null || nrc == 0x00) {
+      if (sid == null || sid != 0x08 || nrc == null || !isRecognizedMode08Nrc(nrc)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: rawResponse,

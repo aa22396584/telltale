@@ -40,7 +40,13 @@ sealed class UdsIoControlParseResult {
 
 /// Positive response for UDS 0x2F (SID 0x6F).
 final class UdsIoControlSuccess extends UdsIoControlParseResult {
-  const UdsIoControlSuccess({
+  UdsIoControlSuccess({
+    required this.did,
+    required this.controlParameter,
+    required Iterable<int> controlStatusRecord,
+  }) : controlStatusRecord = List.unmodifiable(controlStatusRecord);
+
+  const UdsIoControlSuccess.constant({
     required this.did,
     required this.controlParameter,
     required this.controlStatusRecord,
@@ -82,7 +88,13 @@ sealed class UdsRoutineParseResult {
 
 /// Positive response for UDS 0x31 (SID 0x71).
 final class UdsRoutineSuccess extends UdsRoutineParseResult {
-  const UdsRoutineSuccess({
+  UdsRoutineSuccess({
+    required this.controlType,
+    required this.routineIdentifier,
+    required Iterable<int> routineStatusRecord,
+  }) : routineStatusRecord = List.unmodifiable(routineStatusRecord);
+
+  const UdsRoutineSuccess.constant({
     required this.controlType,
     required this.routineIdentifier,
     required this.routineStatusRecord,
@@ -127,6 +139,28 @@ final class UdsActiveCodec {
   static const int sidRoutineControlPositive = 0x71;
   static const int sidNegativeResponse = 0x7F;
   static const int nrcResponsePending = 0x78;
+
+  /// Validates whether an NRC is defined by ISO 14229-1:2013/2020 or OEM-specific range (0xF0..0xFE).
+  static bool isRecognizedUdsNrc(int nrc) {
+    if (nrc <= 0x00 || nrc > 0xFE) return false;
+    // Standard ISO 14229-1 NRCs:
+    // 0x10..0x14: generalReject, serviceNotSupported, subFunctionNotSupported, incorrectMessageLengthOrInvalidFormat, responseTooLong
+    if (nrc >= 0x10 && nrc <= 0x14) return true;
+    // 0x21..0x26 (0x23 reserved): busyRepeatRequest, conditionsNotCorrect, requestSequenceError, noResponseFromSubnetComponent, FailurePreventsExecutionOfRequestedAction
+    if (nrc >= 0x21 && nrc <= 0x26 && nrc != 0x23) return true;
+    // 0x31..0x37: requestOutOfRange, securityAccessDenied, invalidKey, exceedNumberOfAttempts, requiredTimeDelayNotExpired
+    if (nrc == 0x31 || nrc == 0x33 || nrc == 0x35 || nrc == 0x36 || nrc == 0x37) return true;
+    // 0x70..0x73: uploadDownloadNotAccepted, transferDataSuspended, generalProgrammingFailure, wrongBlockSequenceCounter
+    if (nrc >= 0x70 && nrc <= 0x73) return true;
+    // 0x78: responsePending
+    // 0x7E..0x7F: subFunctionNotSupportedInActiveSession, serviceNotSupportedInActiveSession
+    if (nrc == 0x78 || nrc == 0x7E || nrc == 0x7F) return true;
+    // 0x81..0x93 (0x8E reserved): conditions-not-correct specific codes
+    if (nrc >= 0x81 && nrc <= 0x93 && nrc != 0x8E) return true;
+    // 0xF0..0xFE: vehicleManufacturerSpecific
+    if (nrc >= 0xF0 && nrc <= 0xFE) return true;
+    return false;
+  }
 
   // ---------------------------------------------------------------------------
   // Service 0x2F: InputOutputControlByIdentifier
@@ -250,7 +284,7 @@ final class UdsActiveCodec {
         );
       }
       final nrc = bytes[2];
-      if (nrc == 0x00) {
+      if (!isRecognizedUdsNrc(nrc)) {
         return UdsIoControlMalformed(
           reason: UdsMalformedReason.invalidNrc,
           rawResponse: rawResponse,
@@ -406,7 +440,7 @@ final class UdsActiveCodec {
         );
       }
       final nrc = bytes[2];
-      if (nrc == 0x00) {
+      if (!isRecognizedUdsNrc(nrc)) {
         return UdsRoutineMalformed(
           reason: UdsMalformedReason.invalidNrc,
           rawResponse: rawResponse,

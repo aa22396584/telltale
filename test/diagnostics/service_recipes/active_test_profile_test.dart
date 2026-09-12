@@ -17,7 +17,7 @@ void main() {
         targetEcuHeader: '7E0',
         expectedResponseHeader: '7E8',
       ),
-      EcuApplicability applicability = const EcuApplicability(
+      EcuApplicability applicability = const EcuApplicability.constant(
         make: 'Synthetic',
         model: 'BenchSim',
         targetEcuName: 'ECM',
@@ -25,7 +25,7 @@ void main() {
       ),
       DiagnosticSessionType sessionType = DiagnosticSessionType.defaultSession,
       int? securityLevel,
-      ServiceDescriptor serviceDescriptor = const Mode08Descriptor(
+      ServiceDescriptor serviceDescriptor = const Mode08Descriptor.constant(
         testId: 0x01,
         expectedResponseBytes: 1,
       ),
@@ -130,7 +130,7 @@ void main() {
         addressing: profile.addressing,
         applicability: profile.applicability,
         sessionType: profile.sessionType,
-        serviceDescriptor: const Mode08Descriptor(testId: 0x02), // Tampered TID!
+        serviceDescriptor: Mode08Descriptor(testId: 0x02), // Tampered TID!
         preconditions: profile.preconditions,
         constraints: profile.constraints,
         recovery: profile.recovery,
@@ -164,55 +164,55 @@ void main() {
 
     test('rejects wildcard ECU applicability', () {
       final profileWildcardMake = createValidMode08Profile(
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: '*',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
       );
       expect(profileWildcardMake.validate(),
           contains(ProfileValidationReason.wildcardEcuMatch));
 
       final profileWildcardModel = createValidMode08Profile(
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'ALL',
           targetEcuName: 'ECM',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
       );
       expect(profileWildcardModel.validate(),
           contains(ProfileValidationReason.wildcardEcuMatch));
 
       final profileWildcardEcu = createValidMode08Profile(
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ANY',
-          softwareVersions: ['V1'],
+          softwareVersions: const ['V1'],
         ),
       );
       expect(profileWildcardEcu.validate(),
           contains(ProfileValidationReason.wildcardEcuMatch));
 
       final profileEmptySoftware = createValidMode08Profile(
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: [],
+          softwareVersions: const [],
         ),
       );
       expect(profileEmptySoftware.validate(),
           contains(ProfileValidationReason.wildcardEcuMatch));
 
       final profileEmptyVersionString = createValidMode08Profile(
-        applicability: const EcuApplicability(
+        applicability: EcuApplicability(
           make: 'Toyota',
           model: 'Prius',
           targetEcuName: 'ECM',
-          softwareVersions: [''],
+          softwareVersions: const [''],
         ),
       );
       expect(profileEmptyVersionString.validate(),
@@ -248,7 +248,7 @@ void main() {
         ),
       );
       expect(profileIdenticalHeaders.validate(),
-          contains(ProfileValidationReason.wildcardAddressing));
+          contains(ProfileValidationReason.identicalArbitrationIdConflict));
 
       final profileNonHexHeader = createValidMode08Profile(
         addressing: const TransportAddressing(
@@ -357,10 +357,10 @@ void main() {
 
     test('rejects UDS 0x2F shortTermAdjustment without controlStates defined', () {
       final profileNoStates = createValidMode08Profile(
-        serviceDescriptor: const UdsIoControlDescriptor(
+        serviceDescriptor: UdsIoControlDescriptor(
           dataIdentifier: 0x0112,
           controlParameter: UdsIoControlParameter.shortTermAdjustment,
-          controlStates: [],
+          controlStates: const [],
           returnControlParameter: UdsIoControlParameter.returnControlToECU,
         ),
       );
@@ -370,13 +370,13 @@ void main() {
 
     test('rejects out of range Mode 08 TID and invalid parameters', () {
       final profileZeroTid = createValidMode08Profile(
-        serviceDescriptor: const Mode08Descriptor(testId: 0x00),
+        serviceDescriptor: Mode08Descriptor(testId: 0x00),
       );
       expect(profileZeroTid.validate(),
           contains(ProfileValidationReason.outOfRangeParameter));
 
       final profileOversizeTid = createValidMode08Profile(
-        serviceDescriptor: const Mode08Descriptor(testId: 0xFF),
+        serviceDescriptor: Mode08Descriptor(testId: 0xFF),
       );
       expect(profileOversizeTid.validate(),
           contains(ProfileValidationReason.outOfRangeParameter));
@@ -384,7 +384,7 @@ void main() {
 
     test('valid UDS 0x2F IO control profile passes and validates return control',
         () {
-      const unhashed = ActiveTestProfile(
+      final unhashed = ActiveTestProfile(
         profileId: 'synthetic_uds_2f_fan_control',
         schemaVersion: 1,
         version: '1.0.0',
@@ -393,7 +393,7 @@ void main() {
         documentSection: 'Section 11.2 InputOutputControlByIdentifier',
         redistributionRights: RedistributionRights.syntheticFixtureOnly,
         provenanceKind: ProvenanceKind.syntheticFixture,
-        addressing: TransportAddressing(
+        addressing: const TransportAddressing(
           busType: BusAddressingType.can11Bit,
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
@@ -420,7 +420,7 @@ void main() {
           ],
           returnControlParameter: UdsIoControlParameter.returnControlToECU,
         ),
-        preconditions: [
+        preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
             minValue: 0,
@@ -432,13 +432,13 @@ void main() {
             maxValue: 0,
           ),
         ],
-        constraints: ExecutionConstraints(
+        constraints: const ExecutionConstraints(
           maxCommands: 3,
           minCommandIntervalMs: 100,
           stepTimeoutMs: 2000,
           overallTimeoutMs: 8000,
         ),
-        recovery: RecoverySpecification(
+        recovery: const RecoverySpecification(
           releaseCommandDescription: 'Send 2F 01 12 00 (returnControlToECU)',
           lossOfClientBehavior: 'ECU resets to automatic fan control after 2000ms',
           watchdogTimeoutMs: 2000,
@@ -474,7 +474,7 @@ void main() {
 
     test('valid UDS 0x31 routine descriptor passes and validates stop command',
         () {
-      const unhashed = ActiveTestProfile(
+      final unhashed = ActiveTestProfile(
         profileId: 'synthetic_uds_31_pump_routine',
         schemaVersion: 1,
         version: '1.0.0',
@@ -483,7 +483,7 @@ void main() {
         documentSection: 'Section 12.2 RoutineControl',
         redistributionRights: RedistributionRights.syntheticFixtureOnly,
         provenanceKind: ProvenanceKind.syntheticFixture,
-        addressing: TransportAddressing(
+        addressing: const TransportAddressing(
           busType: BusAddressingType.can11Bit,
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
@@ -504,20 +504,20 @@ void main() {
           ],
           hasDocumentedStop: true,
         ),
-        preconditions: [
+        preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
             minValue: 0,
             maxValue: 0,
           ),
         ],
-        constraints: ExecutionConstraints(
+        constraints: const ExecutionConstraints(
           maxCommands: 4,
           minCommandIntervalMs: 150,
           stepTimeoutMs: 3000,
           overallTimeoutMs: 10000,
         ),
-        recovery: RecoverySpecification(
+        recovery: const RecoverySpecification(
           releaseCommandDescription: 'Send 31 02 02 01 (stopRoutine)',
           lossOfClientBehavior: 'ECU stops pump after 1500ms watchdog expiry',
           watchdogTimeoutMs: 1500,
@@ -552,7 +552,7 @@ void main() {
     });
 
     test('rejects UDS routine without start subfunction or stop recovery', () {
-      const unhashedNoStart = ActiveTestProfile(
+      final unhashedNoStart = ActiveTestProfile(
         profileId: 'synthetic_uds_31_no_start',
         schemaVersion: 1,
         version: '1.0.0',
@@ -561,7 +561,7 @@ void main() {
         documentSection: 'Section 12.2',
         redistributionRights: RedistributionRights.syntheticFixtureOnly,
         provenanceKind: ProvenanceKind.syntheticFixture,
-        addressing: TransportAddressing(
+        addressing: const TransportAddressing(
           busType: BusAddressingType.can11Bit,
           targetEcuHeader: '7E0',
           expectedResponseHeader: '7E8',
@@ -580,15 +580,15 @@ void main() {
           ],
           hasDocumentedStop: true,
         ),
-        preconditions: [
+        preconditions: const [
           PreconditionRule(
             parameterName: 'vehicleSpeedKmh',
             minValue: 0,
             maxValue: 0,
           ),
         ],
-        constraints: ExecutionConstraints(),
-        recovery: RecoverySpecification(
+        constraints: const ExecutionConstraints(),
+        recovery: const RecoverySpecification(
           releaseCommandDescription: 'stop',
           lossOfClientBehavior: 'timeout',
           watchdogTimeoutMs: 1000,
@@ -664,7 +664,9 @@ void main() {
         ),
       );
       expect(addrSameId.validate(),
-          contains(ProfileValidationReason.wildcardAddressing));
+          contains(ProfileValidationReason.identicalArbitrationIdConflict));
+      expect(addrSameId.addressing.hasIdenticalArbitrationId, isTrue);
+      expect(addrSameId.addressing.isWildcard, isFalse);
 
       // Rejects broadcast header with leading zeros (07DF)
       final addrPaddedBroadcast = createValidMode08Profile(
@@ -676,6 +678,8 @@ void main() {
       );
       expect(addrPaddedBroadcast.validate(),
           contains(ProfileValidationReason.wildcardAddressing));
+      expect(addrPaddedBroadcast.addressing.hasIdenticalArbitrationId, isFalse);
+      expect(addrPaddedBroadcast.addressing.isWildcard, isTrue);
     });
 
     test('creates defensive immutable ServiceRecipeSnapshot immune to drift during execution', () {
@@ -707,6 +711,18 @@ void main() {
       // Modifying original external list after snapshot creation has ZERO effect
       mutableSwVersions.add('MALICIOUS_V2');
       expect(snapshot.profile.applicability.softwareVersions, ['SIM_V1']);
+      // Original profile was also defensively copied on creation
+      expect(profile.applicability.softwareVersions, ['SIM_V1']);
+
+      // Attempting indexed mutation throws UnsupportedError
+      expect(
+        () => (profile.applicability.softwareVersions as dynamic)[0] = 'MUTATED',
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (profile.preconditions as dynamic)[0] = const PreconditionRule(parameterName: 'mutated'),
+        throwsUnsupportedError,
+      );
 
       // Collections in snapshot are strictly unmodifiable and cannot drift during execution
       expect(

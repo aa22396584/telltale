@@ -258,12 +258,30 @@ void main() {
       expect(zeroNrc, isA<Mode08MalformedResponse>());
       expect((zeroNrc as Mode08MalformedResponse).reason,
           Mode08MalformedReason.invalidNegativeResponse);
+
+      // Negative response with reserved NRC 0x05
+      final nonStandardNrc = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 05',
+        expectedBaseTid: 0x00,
+      );
+      expect(nonStandardNrc, isA<Mode08MalformedResponse>());
+      expect((nonStandardNrc as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidNegativeResponse);
+
+      // Negative response with reserved NRC 0xFF
+      final ffNrc = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 FF',
+        expectedBaseTid: 0x00,
+      );
+      expect(ffNrc, isA<Mode08MalformedResponse>());
+      expect((ffNrc as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidNegativeResponse);
     });
   });
 
   group('Mode08 execution response parsing and contract validation', () {
     test('parses positive execution response matching test ID and length contract', () {
-      const desc = Mode08Descriptor(
+      final desc = Mode08Descriptor(
         testId: 0x01,
         expectedResponseBytes: 2,
       );
@@ -278,6 +296,7 @@ void main() {
       final success = res as Mode08ExecutionSuccess;
       expect(success.testId, 0x01);
       expect(success.dataBytes, [0xAA, 0xBB]);
+      expect(() => (success.dataBytes as dynamic).add(0x99), throwsUnsupportedError);
     });
 
     test('rejects wrong test ID echo fail-closed', () {
