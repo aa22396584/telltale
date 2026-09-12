@@ -1494,6 +1494,50 @@ class ResearchRuleTest(unittest.TestCase):
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than acme-roadster-1")
 
+    def test_research_row_cross_model_bmw_ix_source_for_ix3_fails(self) -> None:
+        """BMW iX3 referencing BMW iX source is rejected as cross-model."""
+        row = _valid_executable_row(id="bmw-ix3", aliases=["BMW iX3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/bmw/ix.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than bmw-ix3")
+
+    def test_research_row_cross_model_ford_mustang_source_for_mustang_mach_e_fails(self) -> None:
+        """Ford Mustang Mach-E referencing base Ford Mustang source is rejected as cross-model."""
+        row = _valid_executable_row(id="ford-mustang-mach-e", aliases=["Ford Mustang Mach-E"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/ford/mustang.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than ford-mustang-mach-e")
+
+    def test_research_row_cross_model_toyota_prius_c_source_for_prius_fails(self) -> None:
+        """Toyota Prius referencing Prius C source is rejected as cross-model."""
+        row = _valid_executable_row(id="toyota-prius", aliases=["Toyota Prius"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/toyota/prius_c.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than toyota-prius")
+
+    def test_research_row_cross_model_synthetic_same_brand_different_model_fails(self) -> None:
+        """Synthetic model referencing another model of same brand without binding is rejected."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/acme/roadster_2.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than acme-roadster-1")
+
+    def test_research_row_synthetic_unlisted_brand_passes_with_matching_model(self) -> None:
+        """Synthetic unlisted brand with exact matching model passes."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/acme/roadster1.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
     def test_research_row_same_model_source_passes(self) -> None:
         """Same model source within same make passes validation."""
         row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
@@ -2043,6 +2087,158 @@ class CatalogObjectRuleTest(unittest.TestCase):
         )
         _only(issues, "belongs to a different vehicle model than BYD Atto 3")
 
+    def test_community_catalog_profile_cross_model_tesla_model_y_for_model_3_fails(self) -> None:
+        """Catalog: Model 3 referencing Model Y source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model-3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_ioniq_6_for_ioniq_5_fails(self) -> None:
+        """Catalog: Ioniq 5 referencing Ioniq 6 source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="hyundai-ioniq-5-community",
+            make="Hyundai",
+            model="Ioniq 5",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Hyundai Ioniq 5")
+
+    def test_community_catalog_profile_cross_model_egmp_alias_does_not_override_foreign_source_fails(self) -> None:
+        """Catalog: E-GMP note cannot authorize Tesla source for Kia EV6."""
+        prof = _valid_community_catalog_profile(
+            id="kia-ev6-community",
+            make="Kia",
+            model="EV6",
+            variant="Kia EV6 E-GMP",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "E-GMP note"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Kia EV6")
+
+    def test_community_catalog_profile_cross_model_meb_alias_does_not_override_foreign_source_fails(self) -> None:
+        """Catalog: MEB note cannot authorize BYD source for VW ID.4."""
+        prof = _valid_community_catalog_profile(
+            id="volkswagen-id4-community",
+            make="Volkswagen",
+            model="ID.4",
+            variant="ID4 MEB",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/byd/atto3.json"
+        prof["source"]["locator"] = "MEB note"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Volkswagen ID.4")
+
+    def test_community_catalog_profile_cross_model_bmw_ix_for_ix3_fails(self) -> None:
+        """Catalog: BMW iX3 referencing BMW iX source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="bmw-ix3-community",
+            make="BMW",
+            model="iX3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/bmw/ix.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than BMW iX3")
+
+    def test_community_catalog_profile_cross_model_ford_mustang_for_mustang_mach_e_fails(self) -> None:
+        """Catalog: Ford Mustang Mach-E referencing Ford Mustang source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="ford-mustang-mach-e-community",
+            make="Ford",
+            model="Mustang Mach-E",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/ford/mustang.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Ford Mustang Mach-E")
+
 
 def _research_profile(**overrides: object) -> dict:
     profile = {
@@ -2364,6 +2560,39 @@ class MatrixDocumentTest(unittest.TestCase):
             _only(
                 issues,
                 "research row nissan-leaf-ze0: incorrect join with catalog profile nissan-leaf-ze1-2018-2026-community (year range 2010-2017 does not overlap with profile 2018-2026)",
+            )
+
+    def test_repo_validation_cross_model_catalog_source_fails(self) -> None:
+        """Full repo validation rejects cross-model profile source."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="tesla-model-3-community",
+                make="Tesla",
+                model="Model 3",
+            )
+            cat_profile["secondary_sources"] = [
+                {
+                    "artifact_sha256": SHA64_B,
+                    "license": "MIT",
+                    "locator": "signals",
+                    "name": "comm/sig",
+                    "path": "signalsets/v3/default.json",
+                    "revision": SHA40_B,
+                    "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+                }
+            ]
+            cat_profile["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+            cat_profile["source"]["locator"] = "record 1"
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "belongs to a different vehicle model than Tesla Model 3",
             )
 
 
