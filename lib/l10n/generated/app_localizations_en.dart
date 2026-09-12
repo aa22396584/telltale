@@ -3946,6 +3946,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'CAN receive filtering is not available on this ELM327 path.';
 
   @override
+  String get settingsManualCommandHeaderRestoreFailed =>
+      'The adapter refused to restore the header (ATSH), so polling is stopped until you reconnect.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Nothing was typed, so nothing was sent.';
 

@@ -184,6 +184,9 @@ class AdapterFaults {
     this.refuseCpRestore = false,
     this.refuseCra = false,
     this.refuseCraRestore = false,
+    this.refuseHeaderAfterCount,
+    this.delayHeaderRestore = false,
+    this.dropOnHeaderRestore = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -308,6 +311,15 @@ class AdapterFaults {
 
   /// Answers `?` to bare `ATCRA`.
   final bool refuseCraRestore;
+
+  /// Answers `?` to `ATSH` commands after the first N successful switches.
+  final int? refuseHeaderAfterCount;
+
+  /// Delays `ATSH` long enough to miss a short command timeout when count exceeds [refuseHeaderAfterCount].
+  final bool delayHeaderRestore;
+
+  /// Drops connection when count exceeds [refuseHeaderAfterCount].
+  final bool dropOnHeaderRestore;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -551,6 +563,7 @@ class FakeElm327 extends BaseObdTransport {
   bool _echo = true;
   bool _headersOn = false;
   int _caf = 1;
+  int _atshCount = 0;
   bool _searchPending = true;
   String? _header;
   String? _fcHeader;
@@ -678,6 +691,26 @@ class FakeElm327 extends BaseObdTransport {
       setConnected(false);
       return;
     }
+    if (faults.dropOnHeaderRestore &&
+        command.startsWith('ATSH') &&
+        faults.refuseHeaderAfterCount != null &&
+        _atshCount >= faults.refuseHeaderAfterCount!) {
+      setConnected(false);
+      return;
+    }
+
+    var latency = slowCommands[command] ?? responseLatency;
+    if (faults.delayFlowControlReply &&
+        command.startsWith('ATFC') &&
+        command != 'ATFCSM0') {
+      latency = const Duration(milliseconds: 800);
+    }
+    if (faults.delayHeaderRestore &&
+        command.startsWith('ATSH') &&
+        faults.refuseHeaderAfterCount != null &&
+        _atshCount >= faults.refuseHeaderAfterCount!) {
+      latency = const Duration(milliseconds: 800);
+    }
 
     final body = _respond(command);
 
@@ -703,13 +736,6 @@ class FakeElm327 extends BaseObdTransport {
       if (dropLinkAfterReplyingFor.contains(command)) {
         setConnected(false);
       }
-    }
-
-    var latency = slowCommands[command] ?? responseLatency;
-    if (faults.delayFlowControlReply &&
-        command.startsWith('ATFC') &&
-        command != 'ATFCSM0') {
-      latency = const Duration(milliseconds: 800);
     }
 
     // "Wait, I'm busy", sent while the controller is still working and
@@ -831,6 +857,7 @@ class FakeElm327 extends BaseObdTransport {
       _searchPending = requiresProtocolSearch;
       _headersOn = false;
       _header = null;
+      _atshCount = 0;
       _caf = 1;
       _cea = null;
       _cp = 0x18;
@@ -942,6 +969,10 @@ class FakeElm327 extends BaseObdTransport {
 
     if (command.startsWith('ATSH')) {
       if (faults.refuseHeaderSwitch) return '?\r>';
+      if (faults.refuseHeaderAfterCount != null &&
+          _atshCount >= faults.refuseHeaderAfterCount!) {
+        return '${faults.unknownAtReply}\r>';
+      }
       final value = command.substring(4);
       // A real adapter rejects a header whose width does not suit the bus. This
       // is what makes [C-01] visible: `ATSH 7E0` on ISO 9141 is not a valid
@@ -950,6 +981,7 @@ class FakeElm327 extends BaseObdTransport {
       if (value.length != protocol.headerDigits) return '?\r>';
       if (!RegExp(r'^[0-9A-F]+$').hasMatch(value)) return '?\r>';
       _header = value;
+      _atshCount++;
       return 'OK\r>';
     }
 

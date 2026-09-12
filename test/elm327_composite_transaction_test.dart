@@ -549,5 +549,339 @@ void main() {
 
       await client.disconnect();
     }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test(
+        'header restore refusal sets sticky failure, leaves header unknown, and refuses next send with zero writes',
+        () async {
+      final transport = _can11Transport(
+        faults: const AdapterFaults(refuseHeaderAfterCount: 2),
+      );
+      final client = await _connect(transport);
+
+      // Establish initial header A: 7E0 (1st ATSH)
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      final before = transport.commandLog.length;
+
+      // 2nd ATSH: 6F1 (succeeds)
+      // Query: 22DDBC (succeeds)
+      // 3rd ATSH: 7E0 restore (refused with '?')
+      await expectLater(
+        client.sendTransacted(
+          '22DDBC',
+          header: '6F1',
+          restoreHeader: true,
+        ),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+
+      final log = transport.commandLog.skip(before).toList();
+      expect(log, contains('ATSH6F1'));
+      expect(log, contains('22DDBC'));
+      expect(log, contains('ATSH7E0'));
+      expect(log.indexOf('ATSH7E0'), greaterThan(log.indexOf('22DDBC')));
+
+      // Status must be unknown (null) and restore-failed
+      expect(client.currentHeader, isNull);
+      expect(client.headerRestoreFailed, isTrue);
+
+      // Next normal send MUST fail closed with zero wire writes!
+      final logLengthBeforeSend = transport.commandLog.length;
+      await expectLater(
+        client.send('010C'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+      expect(transport.commandLog.length, logLengthBeforeSend,
+          reason: 'Next normal send must have zero writes on the wire');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test(
+        'header restore timeout sets sticky failure and leaves header unknown',
+        () async {
+      final transport = _can11Transport(
+        faults: const AdapterFaults(
+          refuseHeaderAfterCount: 2,
+          delayHeaderRestore: true,
+        ),
+      );
+      final client = await _connect(
+        transport,
+        commandTimeout: const Duration(milliseconds: 100),
+      );
+
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      await expectLater(
+        client.sendTransacted(
+          '22DDBC',
+          header: '6F1',
+          restoreHeader: true,
+        ),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+
+      expect(client.currentHeader, isNull);
+      expect(client.headerRestoreFailed, isTrue);
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('header restore disconnect leaves header unknown and refuses next send',
+        () async {
+      final transport = _can11Transport(
+        faults: const AdapterFaults(
+          refuseHeaderAfterCount: 2,
+          dropOnHeaderRestore: true,
+        ),
+      );
+      final client = await _connect(transport);
+
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      await expectLater(
+        client.sendTransacted(
+          '22DDBC',
+          header: '6F1',
+          restoreHeader: true,
+        ),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+
+      expect(client.currentHeader, isNull);
+      expect(client.headerRestoreFailed, isTrue);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+  });
+
+  group('F2: transaction sender lifecycle, serialization, and isolation', () {
+    test('leaked sender post-transaction throws operationRetired with zero writes',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      Future<ObdResponse> Function(String, {Duration? timeout})? leakedSender;
+
+      final res = await client.runTransacted((sender) async {
+        leakedSender = sender;
+        return await sender('010C');
+      }, header: '7E0');
+
+      expect(res.isSuccess, isTrue);
+      expect(leakedSender, isNotNull);
+
+      final logLengthBeforeLeakedSend = transport.commandLog.length;
+      await expectLater(
+        leakedSender!('010D'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.operationRetired,
+          ),
+        ),
+      );
+      expect(transport.commandLog.length, logLengthBeforeLeakedSend,
+          reason: 'Calling leaked sender must produce zero writes on wire');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('concurrent senders inside callback are serialized without interleaving',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      await client.runTransacted((sender) async {
+        final f1 = sender('0100');
+        final f2 = sender('010C');
+        final results = await Future.wait([f1, f2]);
+        expect(results[0].isSuccess, isTrue);
+        expect(results[1].isSuccess, isTrue);
+      }, header: '7E0');
+
+      final log = transport.commandLog;
+      final idx1 = log.indexOf('0100');
+      final idx2 = log.indexOf('010C');
+      expect(idx1, greaterThan(-1));
+      expect(idx2, greaterThan(idx1),
+          reason: '0100 and 010C must execute sequentially');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('un-awaited send completes before reverse restores execute on wire',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      await client.sendOnHeader('7E0', '010C');
+
+      await client.runTransacted((sender) async {
+        // Fire and do NOT await sender
+        unawaited(sender('221234'));
+        // Return immediately from action
+      }, header: '6F1', restoreHeader: true);
+
+      final log = transport.commandLog;
+      final queryIdx = log.indexOf('221234');
+      final restoreIdx = log.lastIndexOf('ATSH7E0');
+      expect(queryIdx, greaterThan(-1),
+          reason: 'Un-awaited send must be written to wire');
+      expect(restoreIdx, greaterThan(queryIdx),
+          reason: 'Reverse restore must happen AFTER un-awaited send completes');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('callback reentrancy: client.send or setter inside callback throws StateError',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      var sendThrewStateError = false;
+      var setterThrewStateError = false;
+
+      await client.runTransacted((sender) async {
+        try {
+          await client.send('010C');
+        } on StateError {
+          sendThrewStateError = true;
+        }
+
+        try {
+          await client.applyCanPriority(0x17);
+        } on StateError {
+          setterThrewStateError = true;
+        }
+
+        return await sender('010D');
+      }, header: '7E0');
+
+      expect(sendThrewStateError, isTrue,
+          reason: 'client.send inside runTransacted must throw StateError to prevent deadlock');
+      expect(setterThrewStateError, isTrue,
+          reason: 'client setter inside runTransacted must throw StateError to prevent deadlock');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('infinite action is bounded by budget and revokes sender', () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      Future<ObdResponse> Function(String, {Duration? timeout})? leakedSender;
+
+      await expectLater(
+        client.runTransacted(
+          (sender) async {
+            leakedSender = sender;
+            // Never completing future
+            await Completer<void>().future;
+          },
+          header: '7E0',
+          budget: const Duration(milliseconds: 100),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      expect(leakedSender, isNotNull);
+      final logLengthBeforeLeakedSend = transport.commandLog.length;
+      await expectLater(
+        leakedSender!('010C'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.operationRetired,
+          ),
+        ),
+      );
+      expect(transport.commandLog.length, logLengthBeforeLeakedSend,
+          reason: 'Sender revoked after timeout, must produce zero writes');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('connection generation isolation: sender from prior connection cannot write',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      Future<ObdResponse> Function(String, {Duration? timeout})? capturedSender;
+      final txStarted = Completer<void>();
+      final txContinue = Completer<void>();
+
+      final txFuture = client.runTransacted((sender) async {
+        capturedSender = sender;
+        txStarted.complete();
+        await txContinue.future;
+        return await sender('010C');
+      }, header: '7E0');
+
+      await txStarted.future;
+      expect(capturedSender, isNotNull);
+
+      // Simulate connection drop while transaction was open
+      final genBefore = client.connectionGeneration;
+      transport.setConnected(false);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(client.connectionGeneration, greaterThan(genBefore));
+
+      // Release txContinue and let the transaction fail/terminate
+      txContinue.complete();
+      try {
+        await txFuture;
+      } catch (_) {}
+
+      // Reconnect
+      transport.setConnected(true);
+
+      // Calling the captured sender from the prior generation must fail closed
+      final logLengthBeforeSend = transport.commandLog.length;
+      await expectLater(
+        capturedSender!('010C'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            anyOf(
+              TransportIssue.operationRetired,
+              TransportIssue.notConnected,
+            ),
+          ),
+        ),
+      );
+      expect(transport.commandLog.length, logLengthBeforeSend,
+          reason: 'Sender from prior generation must produce zero writes on wire');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
   });
 }

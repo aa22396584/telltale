@@ -6275,6 +6275,12 @@ abstract class AppLocalizations {
   /// **'CAN receive filtering is not available on this ELM327 path.'**
   String get settingsManualCommandCanReceiveFilterUnavailable;
 
+  /// TransportIssue.headerRestoreFailed. The adapter answered ATSH with '?' during header restoration. Commands are refused until reconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'The adapter refused to restore the header (ATSH), so polling is stopped until you reconnect.'**
+  String get settingsManualCommandHeaderRestoreFailed;
+
   /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
   ///
   /// In en, this message translates to:

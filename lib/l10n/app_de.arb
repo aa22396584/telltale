@@ -1026,6 +1026,7 @@
   "settingsManualCommandRawIsoTpModeUnavailable": "Host-sichtbare ISO-TP-Reassemblierung ist auf diesem ELM327-Pfad nicht verfügbar.",
   "settingsManualCommandCanPriorityUnavailable": "CAN-Prioritätsprogrammierung ist auf diesem ELM327-Pfad nicht verfügbar.",
   "settingsManualCommandCanReceiveFilterUnavailable": "CAN-Empfangsfilterung ist auf diesem ELM327-Pfad nicht verfügbar.",
+  "settingsManualCommandHeaderRestoreFailed": "Der Adapter weigerte sich, den Header (ATSH) wiederherzustellen. Das Polling wird bis zur erneuten Verbindung gestoppt.",
   "manualCommandRefusedEmpty": "Es wurde nichts eingegeben, daher wurde auch nichts gesendet.",
   "manualCommandRefusedMoreThanOneCommand": "Dieser Text enthält einen Zeilenumbruch oder ein anderes Steuerzeichen, wodurch mehrere Befehle gleichzeitig gesendet werden. Der Adapter trennt die Befehle anhand des Zeilenumbruchs, sodass der zweite Befehl alle hier durchgeführten Prüfungen überspringen würde – einschließlich derjenigen, die das Löschen von Fehlercodes verhindert. Senden Sie jeweils nur einen Befehl.",
   "manualCommandRefusedAdapterStateWouldChange": "In dieses Feld können Sie Fragen eingeben, jedoch keine Befehle, die die Eigenschaften des Adapters ändern. „{command}“ würde den Status des Adapters ändern, während das Modell des Adapters in der App unverändert bliebe – die darauf folgenden Messwerte könnten von einem anderen Controller stammen, ohne dass dies auf dem Bildschirm erkennbar wäre.\nMögliche Abfragen: {allowed}.",

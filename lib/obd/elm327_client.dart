@@ -610,6 +610,10 @@ class Elm327Client {
   /// outstanding. See the watchdog for why this is not `_pending`.
   DateTime? _lastCommandSentAt;
   Future<void> _commandChain = Future<void>.value();
+  int _connectionGeneration = 0;
+
+  /// Monotonically increasing connection generation counter.
+  int get connectionGeneration => _connectionGeneration;
 
   bool isInitialized = false;
   DateTime lastRxAt = DateTime.now();
@@ -766,6 +770,8 @@ class Elm327Client {
     _canPriorityState = const ElmCanPriorityDefault();
     _canReceiveFilterRestoreFailed = false;
     _canReceiveFilterState = const ElmCanReceiveFilterOff();
+    _headerRestoreFailed = false;
+    _connectionGeneration++;
     await transport.connect();
     transcript.recordNote(
       'Connection established: ${transport.displayName} (${transport.kind.label})',
@@ -778,6 +784,7 @@ class Elm327Client {
     // for links that go quiet without saying so.
     _connectionSub = transport.connectionChanges.listen((connected) {
       if (connected) return;
+      _connectionGeneration++;
       _transportLost = true;
       final wasInitialized = isInitialized;
       isInitialized = false;
@@ -902,6 +909,7 @@ class Elm327Client {
   }
 
   Future<void> disconnect() async {
+    _connectionGeneration++;
     _watchdog?.cancel();
     _watchdog = null;
     _pendingTimeout?.cancel();
@@ -1206,6 +1214,14 @@ class Elm327Client {
     pending.completeError(error);
   }
 
+  void _throwIfInsideTransaction() {
+    if (Zone.current[#_elmTransactionActive] == true) {
+      throw StateError(
+        'Reentrant call to Elm327Client command chain inside runTransacted would deadlock.',
+      );
+    }
+  }
+
   // ------------------------------------------------------------ commands ----
 
   /// Sends [command] and waits for its reply.
@@ -1214,6 +1230,7 @@ class Elm327Client {
   /// one reply slot, so a second send before the first `>` arrives would make
   /// the two replies indistinguishable.
   Future<ObdResponse> send(String command, {Duration? timeout}) {
+    _throwIfInsideTransaction();
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
@@ -1594,6 +1611,12 @@ class Elm327Client {
         issue: TransportIssue.canReceiveFilterUnavailable,
       );
     }
+    if (_headerRestoreFailed) {
+      throw const TransportException(
+        'The adapter refused to restore the header.',
+        issue: TransportIssue.headerRestoreFailed,
+      );
+    }
   }
 
   /// A timed-out command leaves the adapter still owing us a reply.
@@ -1739,6 +1762,7 @@ class Elm327Client {
     String command, {
     Duration? timeout,
   }) {
+    _throwIfInsideTransaction();
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       // Whether this slot moved the adapter's header. If it did, the query
@@ -1894,6 +1918,7 @@ class Elm327Client {
     DateTime? deadline,
     String? header,
   }) {
+    _throwIfInsideTransaction();
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
@@ -2155,6 +2180,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmFlowControlConfig.defaultBudget,
     );
@@ -2182,6 +2208,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmFlowControlConfig.defaultBudget,
     );
@@ -2210,6 +2237,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmHostIsoTpConfig.defaultBudget,
     );
@@ -2235,6 +2263,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmHostIsoTpConfig.defaultBudget,
     );
@@ -2262,6 +2291,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmExtendedAddressingConfig.defaultBudget,
     );
@@ -2287,6 +2317,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmExtendedAddressingConfig.defaultBudget,
     );
@@ -2313,6 +2344,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmCanPriorityConfig.defaultBudget,
     );
@@ -2338,6 +2370,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmCanPriorityConfig.defaultBudget,
     );
@@ -2367,6 +2400,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmCanReceiveFilterConfig.defaultBudget,
     );
@@ -2392,6 +2426,7 @@ class Elm327Client {
     Object? owner,
     Duration? budget,
   }) {
+    _throwIfInsideTransaction();
     final deadline = DateTime.now().add(
       budget ?? ElmCanReceiveFilterConfig.defaultBudget,
     );
@@ -2455,6 +2490,7 @@ class Elm327Client {
         configuration?.budget ?? budget ?? const Duration(seconds: 8);
     final effectiveDeadline = deadline ?? DateTime.now().add(effectiveBudget);
 
+    _throwIfInsideTransaction();
     final completer = Completer<T>();
     _commandChain = _commandChain.then((_) async {
       try {
@@ -2580,6 +2616,9 @@ class Elm327Client {
       await _resync(deadline: deadline);
     }
 
+    final txGeneration = _connectionGeneration;
+    var isTxActive = true;
+    var inFlight = Future<void>.value();
     final appliedRestores = <Future<void> Function()>[];
     final previousHeader = _currentHeader;
 
@@ -2742,17 +2781,25 @@ class Elm327Client {
             previousHeader != null &&
             previousHeader != header) {
           appliedRestores.add(() async {
-            if (transport.isConnected) {
-              try {
-                _currentHeader = null;
-                await _sendNow(
-                  'ATSH $previousHeader',
-                  commandTimeout,
-                  deadline: DateTime.now().add(const Duration(seconds: 2)),
-                  completesCommittedTransaction: true,
-                );
+            _currentHeader = null;
+            if (!transport.isConnected) {
+              _headerRestoreFailed = true;
+              return;
+            }
+            try {
+              final ack = await _sendNow(
+                'ATSH $previousHeader',
+                commandTimeout,
+                deadline: DateTime.now().add(const Duration(seconds: 2)),
+                completesCommittedTransaction: true,
+              );
+              if (_saidOk(ack)) {
                 _currentHeader = previousHeader;
-              } catch (_) {}
+              } else {
+                _headerRestoreFailed = true;
+              }
+            } catch (_) {
+              _headerRestoreFailed = true;
             }
           });
         }
@@ -2765,32 +2812,118 @@ class Elm327Client {
         );
       }
 
-      // Execute measurement action
-      result = await action(
-        (command, {timeout}) {
-          if (!(mayTransmit?.call(owner) ?? true)) {
-            throw const OperationRetiredException(
-              'This session has ended or gone to the background, so the command was not sent.',
-            );
-          }
-          return _sendNow(
-            command,
-            timeout ?? commandTimeout,
-            owner: owner,
-            deadline: deadline,
+      Object? txSenderError;
+      StackTrace? txSenderStackTrace;
+
+      Future<ObdResponse> transactionSender(
+        String command, {
+        Duration? timeout,
+      }) async {
+        if (!isTxActive) {
+          throw const TransportException(
+            'Transaction sender is no longer active or has completed.',
+            issue: TransportIssue.operationRetired,
           );
-        },
+        }
+        if (_connectionGeneration != txGeneration) {
+          throw const TransportException(
+            'Connection generation changed; sender belongs to a prior connection.',
+            issue: TransportIssue.notConnected,
+          );
+        }
+        if (!(mayTransmit?.call(owner) ?? true)) {
+          throw const OperationRetiredException(
+            'This session has ended or gone to the background, so the command was not sent.',
+          );
+        }
+        if (DateTime.now().isAfter(deadline)) {
+          throw TimeoutException('Transaction budget exceeded');
+        }
+
+        final completer = Completer<ObdResponse>();
+        final prev = inFlight;
+        inFlight = prev.then((_) async {
+          try {
+            if (!isTxActive) {
+              throw const TransportException(
+                'Transaction sender is no longer active or has completed.',
+                issue: TransportIssue.operationRetired,
+              );
+            }
+            if (_connectionGeneration != txGeneration) {
+              throw const TransportException(
+                'Connection generation changed; sender belongs to a prior connection.',
+                issue: TransportIssue.notConnected,
+              );
+            }
+            if (!(mayTransmit?.call(owner) ?? true)) {
+              throw const OperationRetiredException(
+                'This session has ended or gone to the background, so the command was not sent.',
+              );
+            }
+            if (DateTime.now().isAfter(deadline)) {
+              throw TimeoutException('Transaction budget exceeded');
+            }
+            final resp = await _sendNow(
+              command,
+              timeout ?? commandTimeout,
+              owner: owner,
+              deadline: deadline,
+            );
+            if (!completer.isCompleted) completer.complete(resp);
+          } catch (e, st) {
+            txSenderError ??= e;
+            txSenderStackTrace ??= st;
+            if (!completer.isCompleted) completer.completeError(e, st);
+          }
+        }, onError: (Object e, StackTrace st) {
+          txSenderError ??= e;
+          txSenderStackTrace ??= st;
+          if (!completer.isCompleted) completer.completeError(e, st);
+        });
+        return completer.future;
+      }
+
+      // Execute measurement action inside scoped zone with monotonic overall budget
+      final remainingBudget = deadline.difference(DateTime.now());
+      if (remainingBudget.isNegative) {
+        throw TimeoutException('Transaction budget exceeded before action execution');
+      }
+
+      result = await runZoned(
+        () => action(transactionSender).timeout(remainingBudget),
+        zoneValues: {#_elmTransactionActive: true},
       );
+
+      // Await in-flight command before proceeding to reverse restores
+      try {
+        await inFlight;
+      } catch (e, st) {
+        actionError ??= e;
+        actionStackTrace ??= st;
+      }
+      if (txSenderError != null) {
+        actionError ??= txSenderError;
+        actionStackTrace ??= txSenderStackTrace;
+      }
     } on Object catch (e, st) {
       actionError = e;
       actionStackTrace = st;
     } finally {
+      isTxActive = false; // Revoke sender immediately!
+      try {
+        await inFlight;
+      } catch (_) {}
+
       // Reverse-restore all applied mutations in LIFO order
-      for (final restore in appliedRestores.reversed) {
-        try {
-          await restore();
-        } catch (_) {
-          // Sticky flags are set inside each _restore*Now
+      // Only execute restores if we are still on the same connection generation!
+      if (_connectionGeneration == txGeneration) {
+        for (final restore in appliedRestores.reversed) {
+          try {
+            await restore();
+          } catch (_) {
+            // Sticky flags are set inside each _restore*Now
+          }
         }
       }
     }
@@ -4540,6 +4673,7 @@ class Elm327Client {
   ElmCanReceiveFilterState _canReceiveFilterState =
       const ElmCanReceiveFilterOff();
   bool _canReceiveFilterRestoreFailed = false;
+  bool _headerRestoreFailed = false;
 
   /// Byte length of the last prompt-delimited frame, before `_parse` drops
   /// NULs and command echoes.
@@ -4552,6 +4686,10 @@ class Elm327Client {
   ElmFlowControlState get flowControlState => _flowControlState;
 
   bool get flowControlRestoreFailed => _flowControlRestoreFailed;
+
+  bool get headerRestoreFailed => _headerRestoreFailed;
+
+  String? get currentHeader => _currentHeader;
 
   /// This path can apply typed `ATCEA` and clear it with bare `ATCEA`.
   ///

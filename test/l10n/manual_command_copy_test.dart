@@ -142,6 +142,10 @@ const _expected = <TransportIssue, (String, String)>{
     'CAN receive filtering is not available',
     '不提供 CAN 接收過濾',
   ),
+  TransportIssue.headerRestoreFailed: (
+    'refused to restore the header (ATSH)',
+    '拒絕還原標頭（ATSH）',
+  ),
 };
 
 void main() {

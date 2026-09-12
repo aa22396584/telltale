@@ -3491,6 +3491,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '此 ELM327 路徑不提供 CAN 接收過濾。';
 
   @override
+  String get settingsManualCommandHeaderRestoreFailed =>
+      '轉接器拒絕還原標頭（ATSH），無法歸屬回應，重連前拒絕後續指令。';
+
+  @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';
 
   @override
@@ -7543,6 +7547,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandCanReceiveFilterUnavailable =>
       '此 ELM327 路徑不提供 CAN 接收過濾。';
+
+  @override
+  String get settingsManualCommandHeaderRestoreFailed =>
+      '轉接器拒絕還原標頭（ATSH），無法歸屬回應，重連前拒絕後續指令。';
 
   @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';

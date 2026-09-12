@@ -4019,6 +4019,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'CAN-Empfangsfilterung ist auf diesem ELM327-Pfad nicht verfügbar.';
 
   @override
+  String get settingsManualCommandHeaderRestoreFailed =>
+      'Der Adapter weigerte sich, den Header (ATSH) wiederherzustellen. Das Polling wird bis zur erneuten Verbindung gestoppt.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Es wurde nichts eingegeben, daher wurde auch nichts gesendet.';
 
