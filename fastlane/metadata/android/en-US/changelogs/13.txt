@@ -1,0 +1,7 @@
+More of the app now speaks the language you chose.
+
+Fixed: when a command failed on the adapter, the manual command box in Settings printed the engine's Traditional Chinese whatever language you were in. So did the estimate details dialog, and a scan refused on an older bus.
+
+Fixed: refusing a permission could name the wrong one — Android said Bluetooth when the switch was Location.
+
+Still Chinese in an English build: the box's own refusals, when it declines to send a command at all.
