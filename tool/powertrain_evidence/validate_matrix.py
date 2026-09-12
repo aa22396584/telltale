@@ -72,22 +72,93 @@ GENERIC_BRAND_PLATFORM_ALIASES = frozenset(
         "e-platform",
     }
 )
-CROSS_MAKE_TARGETS: dict[str, tuple[str, ...]] = {
-    "byd": ("nissan/leaf", "tesla/", "vehicle_profiles/nissan", "vehicle_profiles/tesla"),
-    "tesla": ("byd/", "nissan/", "vehicle_profiles/byd", "vehicle_profiles/nissan"),
-    "nissan": ("byd/", "tesla/", "vehicle_profiles/byd", "vehicle_profiles/tesla"),
-    "hyundai": ("byd/", "tesla/", "nissan/"),
-    "volkswagen": ("byd/", "tesla/", "nissan/"),
+SHARED_PLATFORM_BRANDS: frozenset[frozenset[str]] = frozenset(
+    {
+        frozenset({"hyundai", "kia", "genesis"}),  # E-GMP, etc.
+        frozenset({"toyota", "subaru", "lexus"}),  # e-TNGA, ZN6/ZC6
+        frozenset({"volkswagen", "vw", "audi", "skoda", "seat", "cupra", "porsche"}),  # MEB, PPE, MQB
+        frozenset({"renault", "nissan", "mitsubishi"}),  # CMF-EV, AmpR
+        frozenset({"peugeot", "citroen", "opel", "vauxhall", "ds", "fiat", "jeep", "alfa_romeo", "chrysler", "dodge"}),  # Stellantis
+        frozenset({"bmw", "mini", "rolls_royce"}),  # FAAR, CLAR
+        frozenset({"ford", "lincoln"}),  # GE1
+        frozenset({"chevrolet", "chevy", "cadillac", "gmc", "buick", "holden"}),  # Ultium, BEV2
+        frozenset({"volvo", "polestar", "geely", "zeekr", "smart", "lotus"}),  # SEA, CMA
+        frozenset({"honda", "acura"}),
+    }
+)
+
+BRAND_ALIASES: dict[str, str] = {
+    "vw": "volkswagen",
+    "chevy": "chevrolet",
 }
 
+ALL_KNOWN_BRANDS: frozenset[str] = frozenset(
+    {b for group in SHARED_PLATFORM_BRANDS for b in group}
+    | {
+        "byd",
+        "tesla",
+        "xpeng",
+        "nio",
+        "mg",
+        "mazda",
+        "suzuki",
+        "rivian",
+        "lucid",
+        "jaguar",
+        "land_rover",
+    }
+)
 
-def _is_cross_model_source(make: str, path: str, url: str) -> bool:
-    make_key = make.lower().strip()
-    targets = CROSS_MAKE_TARGETS.get(make_key)
-    if targets:
-        target_str = f"{path} {url}".lower()
-        if any(target in target_str for target in targets):
+
+def normalize_brand(brand: str) -> str:
+    b = brand.lower().strip().replace("-", "_")
+    return BRAND_ALIASES.get(b, b)
+
+
+def _are_compatible_brands(brand_a: str, brand_b: str) -> bool:
+    a = normalize_brand(brand_a)
+    b = normalize_brand(brand_b)
+    if not a or not b:
+        return True
+    if a == b:
+        return True
+    for group in SHARED_PLATFORM_BRANDS:
+        if a in group and b in group:
             return True
+    return False
+
+
+def _is_cross_model_source(target_make: str, path: str, url: str) -> bool:
+    target_make = normalize_brand(target_make)
+    if not target_make:
+        return False
+
+    target_str = f"{path} {url}".lower()
+
+    # 1. JSON profile under a make directory: e.g. vehicle_profiles/nissan/leaf.json or volkswagen/MEB.json
+    json_match = re.search(r"(?:vehicle_profiles/|ev-obd-pids.*/|^)([a-z0-9_-]+)/[a-z0-9_.-]+\.json", target_str)
+    if json_match:
+        src_make = normalize_brand(json_match.group(1))
+        if src_make in ALL_KNOWN_BRANDS and not _are_compatible_brands(target_make, src_make):
+            return True
+
+    # 2. OBDb/<Make>-<Model>
+    obdb_match = re.search(r"obdb/([a-z0-9]+)[-_]", target_str)
+    if obdb_match:
+        src_make = normalize_brand(obdb_match.group(1))
+        if src_make in ALL_KNOWN_BRANDS and not _are_compatible_brands(target_make, src_make):
+            return True
+
+    # 3. OVMS vehicle_<make>
+    ovms_match = re.search(r"vehicle_([a-z0-9]+)", target_str)
+    if ovms_match:
+        src_token = ovms_match.group(1)
+        for brand in ALL_KNOWN_BRANDS:
+            if src_token.startswith(brand):
+                if not _are_compatible_brands(target_make, brand):
+                    return True
+                break
+
     return False
 SIGNEDNESS = frozenset({"unsigned", "signed"})
 HEX_SERVICE = re.compile(r"^[0-9A-Fa-f]{2}$")
@@ -1296,7 +1367,7 @@ def validate_research_row(
         src_path = _text(source.get("path")).lower()
         src_url = _text(source.get("url")).lower()
         row_make = row_id.split("-")[0]
-        if row_make in CROSS_MAKE_TARGETS and _is_cross_model_source(row_make, src_path, src_url):
+        if _is_cross_model_source(row_make, src_path, src_url):
             issues.append(
                 f"{prefix}: source {source_id} path {source.get('path')!r} belongs to a different vehicle model than {row_id}"
             )
@@ -1716,7 +1787,7 @@ def validate_matrix_document(
                         )
                     row_make = row_id.split("-")[0]
                     cat_make = pid.split("-")[0]
-                    if row_make in CROSS_MAKE_TARGETS and cat_make in CROSS_MAKE_TARGETS and row_make != cat_make:
+                    if not _are_compatible_brands(row_make, cat_make):
                         issues.append(
                             f"research row {row_id}: incorrect join with catalog profile {pid} (brand mismatch {row_make} != {cat_make})"
                         )

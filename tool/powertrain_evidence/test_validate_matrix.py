@@ -1433,6 +1433,38 @@ class ResearchRuleTest(unittest.TestCase):
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than byd-atto-3")
 
+    def test_research_row_cross_model_source_path_unlisted_brand_fails(self) -> None:
+        """Universal cross-model check: brands not in the old 5-brand list also fail."""
+        row = _valid_executable_row(id="bmw-i3")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model3.json"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than bmw-i3")
+
+    def test_research_row_shared_platform_source_path_subaru_toyota_passes(self) -> None:
+        """Legitimate shared source: Subaru Solterra using Toyota bZ4X (e-TNGA)."""
+        row = _valid_executable_row(id="subaru-solterra")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/toyota/bz4x.json"
+        issues = _issues_for(row)
+        self.assertEqual(issues, [])
+
+    def test_research_row_shared_platform_source_path_kia_hyundai_passes(self) -> None:
+        """Legitimate shared source: Kia EV6 using Hyundai Ioniq 5 (E-GMP)."""
+        row = _valid_executable_row(id="kia-ev6")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq5.json"
+        issues = _issues_for(row)
+        self.assertEqual(issues, [])
+
+    def test_research_row_shared_platform_source_path_skoda_volkswagen_passes(self) -> None:
+        """Legitimate shared source: Skoda Enyaq using VW MEB."""
+        row = _valid_executable_row(id="skoda-enyaq")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "volkswagen/MEB.json"
+        issues = _issues_for(row)
+        self.assertEqual(issues, [])
+
 
 def _valid_community_catalog_profile(**overrides: object) -> dict:
     profile = {
@@ -2076,6 +2108,150 @@ class MatrixDocumentTest(unittest.TestCase):
                 issues,
                 "research row tesla-model-3: incorrect join with catalog profile byd-atto3-2022-2024-community (brand mismatch tesla != byd)",
             )
+
+    def test_unlisted_brand_mismatch_join_fails(self) -> None:
+        """Brands not in any legacy list (e.g. BMW vs Tesla) still fail brand mismatch join."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="tesla-model3-2023-2026-community",
+                make="Tesla",
+                model="Model 3",
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "Model 3 polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_teslamodel3/src/vehicle_teslamodel3.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/tesla/model3.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="bmw-i3",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["tesla-model3-2023-2026-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row bmw-i3: incorrect join with catalog profile tesla-model3-2023-2026-community (brand mismatch bmw != tesla)",
+            )
+
+    def test_legitimate_shared_platform_join_passes(self) -> None:
+        """Legitimate shared platform brands (Subaru to Toyota on e-TNGA) pass join validation."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="toyota-bz4x-2022-2024-community",
+                make="Toyota",
+                model="bZ4X",
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "bZ4X polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_toyota_bz4x/src/vehicle_toyota_bz4x.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/toyota/bz4x.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="subaru-solterra",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["toyota-bz4x-2022-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            self.assertEqual(issues, [])
+
+    def test_legitimate_shared_platform_hyundai_kia_join_passes(self) -> None:
+        """Legitimate shared platform brands (Kia to Hyundai on E-GMP) pass join validation."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="hyundai-ioniq5-2021-2024-community",
+                make="Hyundai",
+                model="Ioniq 5",
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "Ioniq 5 polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_hyundai_ioniq5/src/vehicle_hyundai_ioniq5.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/hyundai/ioniq5.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="kia-ev6",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["hyundai-ioniq5-2021-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2021,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            self.assertEqual(issues, [])
 
 
 class GenerateMatrixTest(unittest.TestCase):
