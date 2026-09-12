@@ -3,7 +3,7 @@
 - **Parent**: #25
 - **Issue**: #131 ([ACTIVE-01])
 - **Namespace**: `lib/diagnostics/service_recipes/`, `assets/service_recipes/`, `test/diagnostics/service_recipes/`
-- **Date**: 2026-09-12
+- **Date**: 2026-09-12 (Updated 2026-09-13: Section citations, Claim-to-Source Ledger, and capability issuance boundary)
 - **Status**: Implemented / In Review (Software baseline: 0 live candidates qualified)
 
 ---
@@ -30,25 +30,25 @@ Community feedback requested active/bidirectional diagnostic capabilities (Mode 
    - *Negative Responses*: Format `7F 08 <NRC>`. NRC `0x11` (serviceNotSupported), `0x12` (subFunctionNotSupported), and `0x31` (requestOutOfRange) confirm unsupported status. NRC `0x22` (conditionsNotCorrect), `0x21` (busyRepeatRequest), `0x33` (securityAccessDenied), and `0x78` (responsePending) must fallback to `unknown` support because the function may exist on the ECU. Non-standard or reserved NRCs (e.g. `0x00`, `0x05`) fail closed as malformed.
 
 2. **ISO 14229-1:2013 / ISO 14229-1:2020 (UDS Service $2F - InputOutputControlByIdentifier)**:
-   - *Normative Clauses*: Section 12.2 (InputOutputControlByIdentifier service).
-   - *Request Message Flow*: Table 372 (Request `0x2F`, 2-byte DID, 1-byte InputOutputControlParameter, optional controlState, optional controlMask).
-   - *Parameter Definitions*: Table 373:
+   - *Normative Clauses*: Section 13.2 (InputOutputControlByIdentifier service). [Note: Verified via ISO 14229-1:2020 Table of Contents p. vi; 12.2 is ClearDiagnosticInformation (0x14)].
+   - *Request Message Flow*: Table 372 (`[Unverified Table Number]`: Full service tables on p. 297+ require authorized standard access not included in public TOC preview). Request `0x2F`, 2-byte DID, 1-byte InputOutputControlParameter, optional controlState, optional controlMask.
+   - *Parameter Definitions*: Table 373 (`[Unverified Table Number]`):
      - `0x00`: `returnControlToECU` (releases external override).
      - `0x01`: `resetToDefault` (resets system to default calibrate).
      - `0x02`: `freezeCurrentState` (freezes output at current value).
      - `0x03`: `shortTermAdjustment` (temporarily overrides output with requested parameter value).
-   - *Positive Response*: Table 374 (SID `0x6F`, echoed 16-bit DID, echoed 1-byte controlParameter, optional controlStatusRecord).
-   - *Negative Response*: Table 375 (`7F 2F <NRC>`). Valid UDS NRCs include `0x13`, `0x22`, `0x31`, `0x33`, `0x78`. Generic `SID + 0x40` rule is rejected; responses must strictly echo DID and control parameter.
+   - *Positive Response*: Table 374 (`[Unverified Table Number]`). SID `0x6F`, echoed 16-bit DID, echoed 1-byte controlParameter, optional controlStatusRecord.
+   - *Negative Response*: Table 375 (`[Unverified Table Number]`). Format `7F 2F <NRC>`. Valid UDS NRCs include `0x13`, `0x22`, `0x31`, `0x33`, `0x78`. Generic `SID + 0x40` rule is rejected; responses must strictly echo DID and control parameter.
 
 3. **ISO 14229-1:2013 / ISO 14229-1:2020 (UDS Service $31 - RoutineControl)**:
-   - *Normative Clauses*: Section 13.2 (RoutineControl service).
-   - *Request Message Flow*: Table 387 (Request `0x31`, 1-byte routineControlType, 2-byte routineIdentifier, optional routineControlOptionRecord).
-   - *Subfunction Definitions*: Table 388:
+   - *Normative Clauses*: Section 14.2 (RoutineControl service). [Note: Verified via ISO 14229-1:2020 Table of Contents p. vi; 13.2 is InputOutputControlByIdentifier (0x2F)].
+   - *Request Message Flow*: Table 387 (`[Unverified Table Number]`: Full service tables on p. 297+ require authorized standard access not included in public TOC preview). Request `0x31`, 1-byte routineControlType, 2-byte routineIdentifier, optional routineControlOptionRecord.
+   - *Subfunction Definitions*: Table 388 (`[Unverified Table Number]`):
      - `0x01`: `startRoutine`
      - `0x02`: `stopRoutine`
      - `0x03`: `requestRoutineResults`
-   - *Positive Response*: Table 389 (SID `0x71`, echoed 1-byte routineControlType, echoed 16-bit routineIdentifier, optional routineStatusRecord).
-   - *Negative Response*: Table 390 (`7F 31 <NRC>`). Valid UDS NRCs include `0x12`, `0x13`, `0x22`, `0x24`, `0x31`, `0x33`, `0x72`, `0x78`.
+   - *Positive Response*: Table 389 (`[Unverified Table Number]`). SID `0x71`, echoed 1-byte routineControlType, echoed 16-bit routineIdentifier, optional routineStatusRecord.
+   - *Negative Response*: Table 390 (`[Unverified Table Number]`). Format `7F 31 <NRC>`. Valid UDS NRCs include `0x12`, `0x13`, `0x22`, `0x24`, `0x31`, `0x33`, `0x72`, `0x78`.
 
 4. **ISO 14229-1:2013 / 2020 Annex A (Negative Response Codes)**:
    - *NRC 0x78 (requestCorrectlyReceived-ResponsePending)*: Signals request acceptance and active processing. The client MUST wait without retransmitting the trigger command within P2* timeout.
@@ -73,7 +73,7 @@ Community feedback requested active/bidirectional diagnostic capabilities (Mode 
   - Rejects undocumented recovery (missing release command or loss-of-client watchdog).
   - Rejects hash tampering.
 
-### B. Separation of Qualification Tiers and Execution Scopes
+### B. Separation of Qualification Tiers, Preview, and Execution Authorization
 The model strictly separates distinct qualification gates:
 1. `ecuReportsSupport`: `supported` | `unsupported` | `unknown` (silence/timeout/no-data is `unknown`, never `unsupported`).
 2. `definitionAvailable`: valid, reviewed, untampered profile loaded.
@@ -82,7 +82,17 @@ The model strictly separates distinct qualification gates:
 5. `targetScope`: `bench` vs `vehicle`.
    - Bench qualification NEVER grants permission to execute on a live production vehicle (`blockedNotVehicleQualified`).
    - Vehicle execution strictly demands affirmative vehicle qualification.
-6. `authorizationToken`: Opaque, cryptographically bound token verified for recipe hash, target CAN header, connection generation, and expiry before execution. Unverified strings alone are never trusted.
+6. `previewEligibility`: Informational, read-only eligibility check. Evaluates whether qualification and preconditions are met to request authorization. It NEVER produces or returns execution authority.
+7. `authorizationCapability`: Opaque, non-constructible capability (`ActiveTestExecutionCapability`) issued strictly by `ActiveTestAuthorizationIssuer` and consumed atomically at dispatch (`ActiveTestExecutionGate.verifyAndConsume`). Bound to:
+   - profile recipe canonical hash,
+   - selected parameters hash,
+   - exact operation (`ActiveTestOperation.start` vs `stop`),
+   - target ECU header and bus type,
+   - connection generation (mandatory, no guessing),
+   - lifecycle epoch,
+   - execution target scope (bench vs vehicle),
+   - strict monotonic expiry (`!now.isBefore(expiresAt)` rejects exact boundary equality).
+   Unissued, forged, expired, mismatched, or replayed capabilities are rejected fail-closed. Recovery capabilities are strictly restricted to `ActiveTestOperation.stop`.
 
 ### C. Synthetic Fixture Isolation
 - Synthetic fixtures (`assets/service_recipes/`) are strictly marked with `provenance_kind: syntheticFixture` and `evidence_tier: syntheticFixture`.
@@ -103,9 +113,9 @@ The model strictly separates distinct qualification gates:
 
 ---
 
-## 5. Normative Literal Test Vectors (7 Groups)
+## 5. Protocol Verification Vectors (7 Groups)
 
-The following literal vectors verify encoding, decoding, length contracts, and NRC classifications against the standards:
+The following literal vectors verify encoding, decoding, length contracts, and NRC classifications:
 
 ### Group 1: Mode 08 Supported TIDs Query & Bitmask Response (SAE J1979 Section 8.8 / Table 17)
 - **Request Command**: `08 00` (ASCII hex: `0800`). Non-actuating query for supported TIDs 0x01..0x20.
@@ -136,14 +146,16 @@ The following literal vectors verify encoding, decoding, length contracts, and N
   - *Result*: `Mode08MalformedResponse(reason: Mode08MalformedReason.invalidNegativeResponse)`.
   - *Safety Contract*: Non-standard negative responses fail closed as malformed; never treated as valid negative response.
 
-### Group 5: UDS Service 0x2F InputOutputControlByIdentifier (ISO 14229-1:2020 Section 12.2)
+### Group 5: UDS Service 0x2F InputOutputControlByIdentifier (ISO 14229-1:2020 Section 13.2) [Synthetic Project Vector]
+- **Vector Provenance**: `[Synthetic Project Vector]`. DID `0x0112` and control state `[0x64]` are project-authored codec verification fixtures; they do NOT represent OEM-verified parameters.
 - **Request Command**: `2F 01 12 03 64 FF` (6 bytes).
   - *Encoding*: SID `0x2F`, DID `0x0112`, controlParameter `0x03` (`shortTermAdjustment`), controlState `[0x64]` (100% duty cycle), controlMask `[0xFF]`.
 - **Positive Response**: `6F 01 12 03 64` (5 bytes).
   - *Decode*: SID `0x6F`, echoed DID `0x0112`, echoed controlParameter `0x03`, controlStatusRecord `[0x64]`.
   - *Safety Contract*: Response must strictly match expected DID and control parameter; wrong echo or wrong length fails closed as `UdsIoControlMalformed`.
 
-### Group 6: UDS Service 0x31 RoutineControl startRoutine (ISO 14229-1:2020 Section 13.2)
+### Group 6: UDS Service 0x31 RoutineControl startRoutine (ISO 14229-1:2020 Section 14.2) [Synthetic Project Vector]
+- **Vector Provenance**: `[Synthetic Project Vector]`. RID `0x0201` and option record `[0x10]` are project-authored codec verification fixtures; they do NOT represent OEM-verified parameters.
 - **Request Command**: `31 01 02 01 10` (5 bytes).
   - *Encoding*: SID `0x31`, routineControlType `0x01` (`startRoutine`), routineIdentifier `0x0201`, routineControlOptionRecord `[0x10]`.
 - **Positive Response**: `71 01 02 01 00` (5 bytes).
@@ -156,3 +168,17 @@ The following literal vectors verify encoding, decoding, length contracts, and N
   - *Result*: `UdsRoutineNegative(nrc: 0x78, isResponsePending: true)`.
   - *Safety Contract*: The client transitions to a waiting state within P2* timeout and does NOT abort, fail the test, or re-send the start actuation command.
 
+---
+
+## 6. Claim-to-Source Ledger
+
+| Claim / Item | Exact Standard Edition | Actually Inspected Section / Page | Source / Reference Identity | Status / Verification Scope |
+|---|---|---|---|---|
+| ClearDiagnosticInformation (0x14) | ISO 14229-1:2020 | Section 12.2, Table of Contents p. vi (PDF p. 5) | ISO Official Preview (cdn.standards.iteh.ai/samples/72439) | Verified clause title & section number from official ISO preview TOC |
+| InputOutputControlByIdentifier (0x2F) | ISO 14229-1:2020 | Section 13.2, Table of Contents p. vi (PDF p. 5) | ISO Official Preview (cdn.standards.iteh.ai/samples/72439) | Verified clause title & section number from official ISO preview TOC |
+| RoutineControl (0x31) | ISO 14229-1:2020 | Section 14.2, Table of Contents p. vi (PDF p. 5) | ISO Official Preview (cdn.standards.iteh.ai/samples/72439) | Verified clause title & section number from official ISO preview TOC |
+| Service Table Numbers (Tables 372–375, 387–390) | ISO 14229-1:2020 | Full tables p. 297+ | Unverified (not in preview TOC) | Retained as unverified literature references; not asserted as verified normative evidence |
+| Mode 08 base TID bitmasks | SAE J1979:2014-08 | Section 8.8, Table 16, Table 17 | SAE J1979:2014-08 Standard | Verified normative structure; runnable TID probing prohibited fail-closed |
+| UDS NRC 0x78 responsePending | ISO 14229-1:2020 | Annex A Table A.1 | ISO 14229-1:2020 / udsoncan open implementation | Verified standard negative response code semantics |
+| Synthetic DID 0x0112 / RID 0x0201 Vectors | Project-authored | N/A (Unit tests) | `[Synthetic Project Vector]` | Synthetic test vector only; does NOT represent OEM calibration or verified hardware recipe |
+| Mode 08 live discovery contract | N/A | N/A | Offline / Unknown | Prohibited live probe; capability discovery offline until verified per-vehicle profiles available |

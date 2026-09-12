@@ -1,6 +1,6 @@
 /// Qualification tiers and fail-closed eligibility gate for active tests.
 ///
-/// Ref: Issue #131 ([ACTIVE-01]), Parent: #25.
+/// Ref: Issue #131 ([ACTIVE-01]), Parent: #25, Follow-up: Issue #132.
 ///
 /// Strict rules enforced:
 /// 1. Separate:
@@ -8,12 +8,19 @@
 ///    - definition available (valid reviewed profile loaded)
 ///    - bench qualified (physical bench verification)
 ///    - vehicle qualified (physical vehicle verification)
-///    - eligible now (conjunction of all gates + live preconditions + explicit consent)
+///    - eligible preview (conjunction of all gates + live preconditions + explicit consent)
+///    - execution authorization (issued [ActiveTestExecutionCapability] consumed atomically)
 /// 2. Silence / NO DATA / Timeout is UNKNOWN, never unsupported.
 /// 3. A supported ID NEVER grants execute permission on its own.
 /// 4. Never infer active-test IDs from read PID definitions or model names.
-/// 5. Synthetic/demo/replay provenance is strictly rejected from production eligibility.
+/// 5. Synthetic/demo/replay provenance is strictly rejected from live production execution.
+/// 6. Eligibility preview NEVER produces or grants execution dispatch authority.
+/// 7. Execution boundary strictly requires an issued, unexpired, matching capability,
+///    atomically consumed at dispatch. Replay, unissued tokens, and context mismatches
+///    are rejected fail-closed.
 library;
+
+import 'package:flutter/foundation.dart';
 
 import 'active_test_profile.dart';
 
@@ -40,7 +47,7 @@ enum ExecutionTargetScope {
   vehicle,
 }
 
-/// Actionable verdict returned by the active-test eligibility gate.
+/// Actionable verdict returned by the active-test eligibility and execution gates.
 enum ActiveTestEligibilityVerdict {
   /// All qualification, safety, and consent gates passed; eligible for execution.
   eligible,
@@ -75,11 +82,332 @@ enum ActiveTestEligibilityVerdict {
   /// Blocked: Required operator one-time explicit consent is missing.
   blockedMissingConsent,
 
-  /// Blocked: Required opaque authorization token is missing or invalid.
+  /// Blocked: Required authorization capability/token is missing or null.
   blockedMissingAuthorizationToken,
+
+  /// Blocked: Capability is foreign, forged, unissued, or has been retired.
+  blockedInvalidCapability,
+
+  /// Blocked: Capability has expired (strictly rejects now >= expiresAt).
+  blockedExpiredCapability,
+
+  /// Blocked: Capability has already been consumed (replay / duplicate dispatch blocked).
+  blockedCapabilityAlreadyConsumed,
+
+  /// Blocked: Execution context mismatch (recipe, parameter hash, header, generation, epoch, or scope).
+  blockedContextMismatch,
+
+  /// Blocked: Recovery capability cannot be used for a start operation.
+  blockedRecoveryStartNotPermitted,
 }
 
-/// Opaque authorization token strictly bound to an execution context (Issue #132).
+/// Permitted active test operations.
+enum ActiveTestOperation {
+  /// Initiate active actuation or routine start.
+  start,
+
+  /// Cease active actuation, release control to ECU, or stop routine.
+  stop,
+}
+
+/// Opaque, non-constructible execution capability strictly bound to an execution context.
+///
+/// Ref: Issue #132.
+///
+/// Can ONLY be issued by [ActiveTestAuthorizationIssuer] after explicit operator consent
+/// and preconditions are satisfied. Callers cannot instantiate this class directly.
+final class ActiveTestExecutionCapability {
+  ActiveTestExecutionCapability._({
+    required this.capabilityId,
+    required this.recipeHash,
+    required this.selectedParametersHash,
+    required this.operation,
+    required this.targetEcuHeader,
+    required this.busType,
+    required this.connectionGeneration,
+    required this.lifecycleEpoch,
+    required this.targetScope,
+    required this.expiresAt,
+    this.isRecovery = false,
+  });
+
+  /// Factory strictly for testing unissued/forged capabilities against the issuer.
+  @visibleForTesting
+  factory ActiveTestExecutionCapability.forTesting({
+    required String capabilityId,
+    required String recipeHash,
+    required String selectedParametersHash,
+    required ActiveTestOperation operation,
+    required String targetEcuHeader,
+    required int connectionGeneration,
+    required int lifecycleEpoch,
+    required ExecutionTargetScope targetScope,
+    required DateTime expiresAt,
+    BusAddressingType busType = BusAddressingType.can11Bit,
+    bool isRecovery = false,
+  }) {
+    return ActiveTestExecutionCapability._(
+      capabilityId: capabilityId,
+      recipeHash: recipeHash,
+      selectedParametersHash: selectedParametersHash,
+      operation: operation,
+      targetEcuHeader: targetEcuHeader,
+      busType: busType,
+      connectionGeneration: connectionGeneration,
+      lifecycleEpoch: lifecycleEpoch,
+      targetScope: targetScope,
+      expiresAt: expiresAt,
+      isRecovery: isRecovery,
+    );
+  }
+
+  /// Unique identifier of this capability.
+  final String capabilityId;
+
+  /// Canonical SHA-256 hash of the active test profile recipe.
+  final String recipeHash;
+
+  /// Cryptographic hash of the operator-selected actuation parameters.
+  final String selectedParametersHash;
+
+  /// The exact authorized operation (start vs stop).
+  final ActiveTestOperation operation;
+
+  /// Expected CAN arbitration ID header of the target ECU.
+  final String targetEcuHeader;
+
+  /// Bus addressing format.
+  final BusAddressingType busType;
+
+  /// The specific connection generation for which this capability was issued.
+  final int connectionGeneration;
+
+  /// The specific lifecycle epoch for which this capability was issued.
+  final int lifecycleEpoch;
+
+  /// The target execution scope (bench vs vehicle).
+  final ExecutionTargetScope targetScope;
+
+  /// Monotonic expiration deadline. Equality (!now.isBefore(expiresAt)) is rejected.
+  final DateTime expiresAt;
+
+  /// Whether this is a recovery capability (strictly restricted to [ActiveTestOperation.stop]).
+  final bool isRecovery;
+}
+
+/// Internal tracking record for issued execution capabilities.
+final class _CapabilityRecord {
+  _CapabilityRecord({required this.capability});
+
+  final ActiveTestExecutionCapability capability;
+  bool isConsumed = false;
+  bool isRetired = false;
+  DateTime? consumedAt;
+}
+
+/// Trusted in-process issuer and single-use registry for active test execution capabilities.
+///
+/// Ref: Issue #132.
+///
+/// Owns the issuance, retirement, and atomic consumption of capabilities.
+/// Replay, unissued tokens, and context mismatches are rejected fail-closed.
+final class ActiveTestAuthorizationIssuer {
+  ActiveTestAuthorizationIssuer();
+
+  final Map<String, _CapabilityRecord> _registry = {};
+  int _counter = 0;
+
+  /// Issues a single-use execution capability for the given profile and context.
+  ///
+  /// Fails closed (returns null) if preview eligibility fails, or if context is invalid.
+  ActiveTestExecutionCapability? issueCapability({
+    required ActiveTestProfile profile,
+    required EcuSupportStatus ecuSupport,
+    required bool benchQualified,
+    required bool vehicleQualified,
+    required bool preconditionsSatisfied,
+    required bool operatorConsentGranted,
+    required String selectedParametersHash,
+    required ActiveTestOperation operation,
+    required int connectionGeneration,
+    required int lifecycleEpoch,
+    required ExecutionTargetScope targetScope,
+    required Duration validityDuration,
+    required DateTime now,
+    bool isRecovery = false,
+  }) {
+    if (selectedParametersHash.trim().isEmpty) return null;
+    if (connectionGeneration <= 0) return null;
+    if (lifecycleEpoch < 0) return null;
+    if (validityDuration <= Duration.zero) return null;
+
+    if (isRecovery && operation == ActiveTestOperation.start) {
+      throw ArgumentError('Recovery capability cannot grant start operation');
+    }
+
+    // Eligibility preview must affirmatively pass
+    final previewVerdict = ActiveTestEligibilityGate.previewEligibility(
+      profile: profile,
+      ecuSupport: ecuSupport,
+      benchQualified: benchQualified,
+      vehicleQualified: vehicleQualified,
+      preconditionsSatisfied: preconditionsSatisfied,
+      operatorConsentGranted: operatorConsentGranted,
+      targetScope: targetScope,
+    );
+
+    if (previewVerdict != ActiveTestEligibilityVerdict.eligible) {
+      return null;
+    }
+
+    _counter++;
+    final capabilityId = 'cap_${now.microsecondsSinceEpoch}_$_counter';
+    final expiresAt = now.add(validityDuration);
+
+    final capability = ActiveTestExecutionCapability._(
+      capabilityId: capabilityId,
+      recipeHash: profile.canonicalHash,
+      selectedParametersHash: selectedParametersHash.trim(),
+      operation: operation,
+      targetEcuHeader: profile.addressing.targetEcuHeader,
+      busType: profile.addressing.busType,
+      connectionGeneration: connectionGeneration,
+      lifecycleEpoch: lifecycleEpoch,
+      targetScope: targetScope,
+      expiresAt: expiresAt,
+      isRecovery: isRecovery,
+    );
+
+    _registry[capabilityId] = _CapabilityRecord(capability: capability);
+    return capability;
+  }
+
+  /// Issues a recovery capability restricted strictly to [ActiveTestOperation.stop].
+  ActiveTestExecutionCapability? issueRecoveryCapability({
+    required ActiveTestProfile profile,
+    required String selectedParametersHash,
+    required int connectionGeneration,
+    required int lifecycleEpoch,
+    required ExecutionTargetScope targetScope,
+    required Duration validityDuration,
+    required DateTime now,
+  }) {
+    if (selectedParametersHash.trim().isEmpty) return null;
+    if (connectionGeneration <= 0) return null;
+    if (lifecycleEpoch < 0) return null;
+    if (validityDuration <= Duration.zero) return null;
+
+    _counter++;
+    final capabilityId = 'rec_cap_${now.microsecondsSinceEpoch}_$_counter';
+    final expiresAt = now.add(validityDuration);
+
+    final capability = ActiveTestExecutionCapability._(
+      capabilityId: capabilityId,
+      recipeHash: profile.canonicalHash,
+      selectedParametersHash: selectedParametersHash.trim(),
+      operation: ActiveTestOperation.stop,
+      targetEcuHeader: profile.addressing.targetEcuHeader,
+      busType: profile.addressing.busType,
+      connectionGeneration: connectionGeneration,
+      lifecycleEpoch: lifecycleEpoch,
+      targetScope: targetScope,
+      expiresAt: expiresAt,
+      isRecovery: true,
+    );
+
+    _registry[capabilityId] = _CapabilityRecord(capability: capability);
+    return capability;
+  }
+
+  /// Retires all issued capabilities (e.g., on transport disconnection or session reset).
+  void retireAll() {
+    for (final record in _registry.values) {
+      record.isRetired = true;
+    }
+  }
+
+  /// Atomically verifies and consumes [capability] for dispatch.
+  ///
+  /// Can only be consumed once. A second call with the same capability fails closed
+  /// with [ActiveTestEligibilityVerdict.blockedCapabilityAlreadyConsumed].
+  ActiveTestEligibilityVerdict verifyAndConsume({
+    required ActiveTestExecutionCapability? capability,
+    required String expectedRecipeHash,
+    required String expectedSelectedParametersHash,
+    required ActiveTestOperation expectedOperation,
+    required String expectedTargetCanHeader,
+    required int currentConnectionGeneration,
+    required int currentLifecycleEpoch,
+    required ExecutionTargetScope currentTargetScope,
+    required DateTime now,
+    BusAddressingType busType = BusAddressingType.can11Bit,
+  }) {
+    if (capability == null) {
+      return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
+    }
+
+    final record = _registry[capability.capabilityId];
+    if (record == null) {
+      // Foreign, unissued, or forged capability
+      return ActiveTestEligibilityVerdict.blockedInvalidCapability;
+    }
+
+    if (record.isRetired) {
+      return ActiveTestEligibilityVerdict.blockedInvalidCapability;
+    }
+
+    if (record.isConsumed) {
+      // Replay or duplicate dispatch attempt
+      return ActiveTestEligibilityVerdict.blockedCapabilityAlreadyConsumed;
+    }
+
+    // Strict expiration check: reject equality (!now.isBefore(expiresAt))
+    if (!now.isBefore(capability.expiresAt)) {
+      return ActiveTestEligibilityVerdict.blockedExpiredCapability;
+    }
+
+    // Context bindings verification
+    if (capability.recipeHash.trim() != expectedRecipeHash.trim()) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (capability.selectedParametersHash.trim() !=
+        expectedSelectedParametersHash.trim()) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (capability.isRecovery &&
+        expectedOperation == ActiveTestOperation.start) {
+      return ActiveTestEligibilityVerdict.blockedRecoveryStartNotPermitted;
+    }
+    if (capability.operation != expectedOperation) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (!TransportAddressing.areHeadersEquivalent(
+        capability.targetEcuHeader, expectedTargetCanHeader, busType)) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (capability.connectionGeneration != currentConnectionGeneration) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (capability.lifecycleEpoch != currentLifecycleEpoch) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    if (capability.targetScope != currentTargetScope) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+
+    // Atomic single-use consumption transition!
+    record.isConsumed = true;
+    record.consumedAt = now;
+
+    return ActiveTestEligibilityVerdict.eligible;
+  }
+}
+
+/// Legacy authorization token (Issue #132).
+///
+/// Deprecated: Replaced by [ActiveTestExecutionCapability] issued by
+/// [ActiveTestAuthorizationIssuer] with atomic consumption.
+@Deprecated('Use ActiveTestExecutionCapability and ActiveTestAuthorizationIssuer')
 final class ActiveTestAuthorizationToken {
   const ActiveTestAuthorizationToken({
     required this.tokenId,
@@ -107,7 +435,8 @@ final class ActiveTestAuthorizationToken {
   }) {
     if (isUsed) return false;
     if (tokenId.trim().isEmpty) return false;
-    if (now.isAfter(expiresAt)) return false;
+    // Strict expiry check: exact equality is rejected!
+    if (!now.isBefore(expiresAt)) return false;
     if (recipeHash.trim() != expectedRecipeHash.trim()) return false;
     if (!TransportAddressing.areHeadersEquivalent(
         targetCanHeader, expectedTargetCanHeader, busType)) {
@@ -142,14 +471,18 @@ final class ActiveTestSupportSnapshot {
   bool get isHardwareQualified => benchQualified || vehicleQualified;
 }
 
-/// Fail-closed eligibility gate evaluator.
+/// Fail-closed eligibility gate evaluator for read-only preview.
 final class ActiveTestEligibilityGate {
   const ActiveTestEligibilityGate._();
 
-  /// Evaluates whether an active test profile is eligible to run right now.
+  /// Evaluates whether an active test profile satisfies qualification, support,
+  /// and precondition gates for an informational preview.
   ///
-  /// Evaluates in strict fail-closed order.
-  static ActiveTestEligibilityVerdict evaluate({
+  /// CRITICAL: This is an informational PREVIEW only and NEVER produces or grants
+  /// execution dispatch authority. To execute, an [ActiveTestExecutionCapability]
+  /// must be issued by [ActiveTestAuthorizationIssuer] and atomically verified and
+  /// consumed via [ActiveTestExecutionGate.verifyAndConsume].
+  static ActiveTestEligibilityVerdict previewEligibility({
     required ActiveTestProfile? profile,
     required EcuSupportStatus ecuSupport,
     required bool benchQualified,
@@ -157,13 +490,6 @@ final class ActiveTestEligibilityGate {
     required bool preconditionsSatisfied,
     required bool operatorConsentGranted,
     ExecutionTargetScope targetScope = ExecutionTargetScope.vehicle,
-    ActiveTestAuthorizationToken? authorizationToken,
-    bool requireAuthorizationToken = false,
-    int? currentConnectionGeneration,
-    DateTime? currentTime,
-    @Deprecated('Use authorizationToken instead')
-    String? opaqueAuthorizationToken,
-    bool requireOpaqueToken = false,
   }) {
     if (profile == null || !profile.isValid) {
       return ActiveTestEligibilityVerdict.blockedNoDefinition;
@@ -173,11 +499,13 @@ final class ActiveTestEligibilityGate {
       return ActiveTestEligibilityVerdict.blockedRevoked;
     }
 
-    // Synthetic fixtures are strictly prohibited in production/live execution,
+    // Synthetic fixtures are strictly prohibited from live vehicle execution,
     // even if an ECU reports support or an ID matches!
-    if (profile.provenanceKind == ProvenanceKind.syntheticFixture ||
-        profile.redistributionRights == RedistributionRights.syntheticFixtureOnly ||
-        profile.evidenceTier == EvidenceQualificationTier.syntheticFixture) {
+    if (targetScope == ExecutionTargetScope.vehicle &&
+        (profile.provenanceKind == ProvenanceKind.syntheticFixture ||
+            profile.redistributionRights ==
+                RedistributionRights.syntheticFixtureOnly ||
+            profile.evidenceTier == EvidenceQualificationTier.syntheticFixture)) {
       return ActiveTestEligibilityVerdict.blockedSyntheticFixture;
     }
 
@@ -217,27 +545,64 @@ final class ActiveTestEligibilityGate {
       return ActiveTestEligibilityVerdict.blockedMissingConsent;
     }
 
-    // Authorization token gate (F6 / #132):
-    // Token must be present, not used, not expired, and bound to recipe hash,
-    // CAN header, and connection generation.
-    final mustVerifyToken = requireAuthorizationToken || requireOpaqueToken;
-    if (mustVerifyToken) {
-      if (authorizationToken == null) {
-        return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
-      }
-      final now = currentTime ?? DateTime.now();
-      final connGen = currentConnectionGeneration ?? 1;
-      if (!authorizationToken.isValidFor(
-        expectedRecipeHash: profile.canonicalHash,
-        expectedTargetCanHeader: profile.addressing.targetEcuHeader,
-        currentConnectionGeneration: connGen,
-        now: now,
-        busType: profile.addressing.busType,
-      )) {
-        return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
-      }
-    }
-
     return ActiveTestEligibilityVerdict.eligible;
+  }
+
+  /// Deprecated alias to [previewEligibility].
+  @Deprecated('Use previewEligibility for read-only preview')
+  static ActiveTestEligibilityVerdict evaluate({
+    required ActiveTestProfile? profile,
+    required EcuSupportStatus ecuSupport,
+    required bool benchQualified,
+    required bool vehicleQualified,
+    required bool preconditionsSatisfied,
+    required bool operatorConsentGranted,
+    ExecutionTargetScope targetScope = ExecutionTargetScope.vehicle,
+  }) {
+    return previewEligibility(
+      profile: profile,
+      ecuSupport: ecuSupport,
+      benchQualified: benchQualified,
+      vehicleQualified: vehicleQualified,
+      preconditionsSatisfied: preconditionsSatisfied,
+      operatorConsentGranted: operatorConsentGranted,
+      targetScope: targetScope,
+    );
+  }
+}
+
+/// Fail-closed execution gate enforcing mandatory capability verification and atomic consumption.
+final class ActiveTestExecutionGate {
+  const ActiveTestExecutionGate._();
+
+  /// Enforces mandatory capability verification and atomic single-use consumption.
+  ///
+  /// Fails closed if capability is missing, unissued, expired, context-mismatched,
+  /// or already consumed.
+  static ActiveTestEligibilityVerdict verifyAndConsume({
+    required ActiveTestAuthorizationIssuer issuer,
+    required ActiveTestExecutionCapability? capability,
+    required String expectedRecipeHash,
+    required String expectedSelectedParametersHash,
+    required ActiveTestOperation expectedOperation,
+    required String expectedTargetCanHeader,
+    required int currentConnectionGeneration,
+    required int currentLifecycleEpoch,
+    required ExecutionTargetScope currentTargetScope,
+    required DateTime now,
+    BusAddressingType busType = BusAddressingType.can11Bit,
+  }) {
+    return issuer.verifyAndConsume(
+      capability: capability,
+      expectedRecipeHash: expectedRecipeHash,
+      expectedSelectedParametersHash: expectedSelectedParametersHash,
+      expectedOperation: expectedOperation,
+      expectedTargetCanHeader: expectedTargetCanHeader,
+      currentConnectionGeneration: currentConnectionGeneration,
+      currentLifecycleEpoch: currentLifecycleEpoch,
+      currentTargetScope: currentTargetScope,
+      now: now,
+      busType: busType,
+    );
   }
 }
