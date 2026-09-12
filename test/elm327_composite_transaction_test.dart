@@ -104,7 +104,7 @@ Future<Elm327Client> _connect(
 
 final class _TeardownHoldingTransport implements ObdTransport {
   _TeardownHoldingTransport(this.inner);
-  final FakeElm327 inner;
+  final ObdTransport inner;
 
   Completer<void>? disconnectCompleter;
   var disconnectCallCount = 0;
@@ -1514,6 +1514,49 @@ void main() {
       // Old teardown cannot close new connection; new connection works normally
       final res = await client.send('010C');
       expect(res.isSuccess, isTrue);
+
+      transport.disconnectCompleter = null;
+      await client.disconnect();
+    });
+
+    test(
+        'acceptance 4: multiple rapid reconnections during slow teardown serialize cleanly and increment sessions without gap',
+        () async {
+      final inner = _ReconnectingTransport();
+      final transport = _TeardownHoldingTransport(inner);
+      final client = await _connect(transport);
+      expect(client.connectionSession, 1);
+
+      // Hold disconnect 1
+      final disconnect1 = Completer<void>();
+      transport.disconnectCompleter = disconnect1;
+
+      // Start disconnect 1
+      unawaited(client.disconnect());
+      await Future<void>.delayed(Duration.zero);
+
+      // Connect 1 waits
+      final c1 = client.connect();
+
+      // Release disconnect 1
+      disconnect1.complete();
+      final ok1 = await c1;
+      expect(ok1, isTrue);
+      expect(client.connectionSession, 2);
+
+      // Start disconnect 2 with new completer
+      final disconnect2 = Completer<void>();
+      transport.disconnectCompleter = disconnect2;
+      unawaited(client.disconnect());
+      await Future<void>.delayed(Duration.zero);
+
+      // Connect 2 waits
+      final c2 = client.connect();
+
+      disconnect2.complete();
+      final ok2 = await c2;
+      expect(ok2, isTrue);
+      expect(client.connectionSession, 3);
 
       transport.disconnectCompleter = null;
       await client.disconnect();

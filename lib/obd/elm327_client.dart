@@ -771,8 +771,8 @@ class Elm327Client {
   /// Connects the transport and runs the handshake. Returns false if a step
   /// marked critical failed.
   Future<bool> connect() async {
-    final pendingTeardown = _activeTeardown;
-    if (pendingTeardown != null) {
+    while (_activeTeardown != null) {
+      final pendingTeardown = _activeTeardown!;
       try {
         await pendingTeardown;
       } catch (_) {
