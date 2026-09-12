@@ -33,6 +33,8 @@ Bluetooth Classic (RFCOMM/SPP), Bluetooth LE (GATT UART), Wi-Fi (TCP), and a bui
 
 The source is on GitHub under GPL-3.0, and you can build it yourself:
 https://github.com/ImL1s/telltale
+Community builds and a source mirror are also on Codeberg:
+https://codeberg.org/ImL1s/telltale
 
 The paid Play edition has exactly the same features — nothing is held back. It is for people who would rather not build it themselves, and for those willing to support continued development.
 

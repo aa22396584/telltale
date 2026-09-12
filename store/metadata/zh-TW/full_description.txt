@@ -33,6 +33,8 @@ Bluetooth Classic (RFCOMM/SPP)、Bluetooth LE (GATT UART)、Wi-Fi (TCP)，以及
 
 原始碼在 GitHub，GPL-3.0，你可以自己編譯自己用：
 https://github.com/ImL1s/telltale
+社群建置與原始碼鏡像也在 Codeberg：
+https://codeberg.org/ImL1s/telltale
 
 Play 上的付費版功能完全一樣，沒有閹割版 —— 是給不想自己編譯的人，以及願意支持繼續開發的人。
 
