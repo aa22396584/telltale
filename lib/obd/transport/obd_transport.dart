@@ -286,8 +286,9 @@ enum TransportIssue {
   /// claim it.
   extendedAddressingUnavailable,
 
-  /// Host-visible ISO-TP (`ATCAF0` and a host assembler) is not implemented
-  /// on this ELM327 path. Always unavailable in this slice.
+  /// Host-visible ISO-TP (`ATCAF0` and a host assembler) was refused, or
+  /// `ATCAF1` could not restore auto-format after it had been claimed.
+  /// No decoded value may be produced from that attempt.
   rawIsoTpModeUnavailable,
 }
 

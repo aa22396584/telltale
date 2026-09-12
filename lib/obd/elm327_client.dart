@@ -15,6 +15,8 @@ import 'dart:convert';
 import 'adapter_identity.dart';
 import 'addressing.dart';
 import 'elm_flow_control.dart';
+import 'elm_host_isotp.dart';
+import 'iso_tp_assembler.dart';
 import 'transport/obd_transport.dart';
 import 'programmable_parameters.dart';
 import 'transcript.dart';
@@ -752,6 +754,8 @@ class Elm327Client {
     _transportLost = false;
     _flowControlRestoreFailed = false;
     _flowControlState = const ElmFlowControlAutomatic();
+    _hostVisibleIsoTpRestoreFailed = false;
+    _hostVisibleIsoTp = false;
     await transport.connect();
     transcript.recordNote(
       'Connection established: ${transport.displayName} (${transport.kind.label})',
@@ -1203,12 +1207,7 @@ class Elm327Client {
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
-        if (_flowControlRestoreFailed) {
-          throw const TransportException(
-            ElmFlowControlMessages.restoreFailed,
-            issue: TransportIssue.flowControlRestoreFailed,
-          );
-        }
+        _throwIfStickyRestoreFailed();
         if (_outOfSync) await _resync();
         completer.complete(await _sendNow(command, timeout ?? commandTimeout));
       } on Object catch (e, st) {
@@ -1262,12 +1261,7 @@ class Elm327Client {
         issue: TransportIssue.notConnected,
       );
     }
-    if (_flowControlRestoreFailed) {
-      throw const TransportException(
-        ElmFlowControlMessages.restoreFailed,
-        issue: TransportIssue.flowControlRestoreFailed,
-      );
-    }
+    _throwIfStickyRestoreFailed();
     // Refused before a transaction starts, never in the middle of one.
     //
     // `sendOnHeader` is two writes: `ATSH`, then the query. Once the adapter
@@ -1310,6 +1304,21 @@ class Elm327Client {
       }
       if (left < timeout) timeout = left;
     }
+    var outgoing = command.trim();
+    if (_hostVisibleIsoTp) {
+      final logical = outgoing.toUpperCase().replaceAll(' ', '');
+      if (!logical.startsWith('AT')) {
+        final framed = IsoTpAssembler.frameObdRequest(outgoing);
+        if (framed == null) {
+          throw const TransportException(
+            ElmHostIsoTpMessages.unavailable,
+            issue: TransportIssue.rawIsoTpModeUnavailable,
+          );
+        }
+        outgoing = framed;
+      }
+    }
+
     _buffer.clear();
     _pendingWireBytes = 0;
     _lastReplyWireBytes = 0;
@@ -1321,7 +1330,7 @@ class Elm327Client {
 
     final pending = Completer<ObdResponse>();
     _pending = pending;
-    _pendingCommand = command.trim();
+    _pendingCommand = outgoing;
     // Outlives the completer on purpose: the watchdog needs to know that a
     // command went out after the adapter last spoke, which stays true after
     // `_onCommandTimeout` has cleared `_pending`.
@@ -1345,7 +1354,7 @@ class Elm327Client {
       //
       // Shorter than `commandTimeout`, because handing bytes to a healthy link
       // is not something that takes seconds.
-      final wire = ascii.encode('${command.trim()}\r');
+      final wire = ascii.encode('$outgoing\r');
       // Which command's bytes were last handed to the transport.
       //
       // The note below says the only provably-unsent writes are the ones
@@ -1463,6 +1472,8 @@ class Elm327Client {
       // Same defaulting as headers: AT Z / AT D restore FC to SM0. AT WS is
       // the same reset in the datasheet; treated as automatic when observed.
       _flowControlState = const ElmFlowControlAutomatic();
+      // AT Z / AT D / AT WS also restore CAN auto-format (`ATCAF1`).
+      _hostVisibleIsoTp = false;
       return;
     }
     if (!_saidOk(response)) return;
@@ -1474,13 +1485,39 @@ class Elm327Client {
       if (_flowControlState is ElmFlowControlCustom) {
         _flowControlRestoreFailed = true;
       }
+      if (_hostVisibleIsoTp) {
+        _hostVisibleIsoTpRestoreFailed = true;
+      }
       _flowControlState = const ElmFlowControlUnknown();
+      _hostVisibleIsoTp = false;
       return;
     }
     if (normalised == 'ATH1') {
       _headersOn = true;
     } else if (normalised == 'ATH0') {
       _headersOn = false;
+    } else if (normalised == ElmHostIsoTpConfig.applyCommand) {
+      _hostVisibleIsoTp = true;
+    } else if (normalised == ElmHostIsoTpConfig.restoreCommand) {
+      _hostVisibleIsoTp = false;
+    }
+  }
+
+  /// Sticky restore failures refuse every later write until this client is
+  /// replaced. Flow-control and host-visible ISO-TP each have their own flag
+  /// so one named issue cannot be reported as the other.
+  void _throwIfStickyRestoreFailed() {
+    if (_flowControlRestoreFailed) {
+      throw const TransportException(
+        ElmFlowControlMessages.restoreFailed,
+        issue: TransportIssue.flowControlRestoreFailed,
+      );
+    }
+    if (_hostVisibleIsoTpRestoreFailed) {
+      throw const TransportException(
+        ElmHostIsoTpMessages.restoreFailed,
+        issue: TransportIssue.rawIsoTpModeUnavailable,
+      );
     }
   }
 
@@ -2076,12 +2113,7 @@ class Elm327Client {
     final completer = Completer<ElmFlowControlOutcome>();
     _commandChain = _commandChain.then((_) async {
       try {
-        if (_flowControlRestoreFailed) {
-          throw const TransportException(
-            ElmFlowControlMessages.restoreFailed,
-            issue: TransportIssue.flowControlRestoreFailed,
-          );
-        }
+        _throwIfStickyRestoreFailed();
         completer.complete(
           await _restoreFlowControlNow(
             deadline: deadline,
@@ -2094,6 +2126,362 @@ class Elm327Client {
       }
     });
     return completer.future;
+  }
+
+  /// Sends `ATCAF0` so the host sees raw ISO-TP PCI. Confirmed only on a
+  /// literal `OK`. A `?`, timeout, disconnect or budget miss leaves
+  /// auto-format unclaimed and produces no measurement.
+  Future<ElmHostIsoTpOutcome> applyHostVisibleIsoTp({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmHostIsoTpConfig.defaultBudget,
+    );
+    final completer = Completer<ElmHostIsoTpOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _applyHostVisibleIsoTpNow(
+            owner: owner,
+            deadline: deadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends `ATCAF1` and requires a literal `OK` before ordinary polling may
+  /// continue after host-visible mode was claimed.
+  Future<ElmHostIsoTpOutcome> restoreHostVisibleIsoTp({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmHostIsoTpConfig.defaultBudget,
+    );
+    final completer = Completer<ElmHostIsoTpOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        _throwIfStickyRestoreFailed();
+        completer.complete(
+          await _restoreHostVisibleIsoTpNow(
+            deadline: deadline,
+            responseBytesUsed: 0,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  Future<ElmHostIsoTpOutcome> _applyHostVisibleIsoTpNow({
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    final alreadyVisible = _hostVisibleIsoTp;
+    _throwIfStickyRestoreFailed();
+    if (!addressing.isCan) {
+      return ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.rejectedUnknownCommand,
+        hostVisible: alreadyVisible,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      return ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.budgetExceeded,
+        hostVisible: _hostVisibleIsoTp,
+      );
+    }
+    var bytes = 0;
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on TimeoutException {
+        // No CAF command left this apply. The adapter is still in the
+        // confirmed mode; a budget miss here is not a failed restore.
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.budgetExceeded,
+          hostVisible: alreadyVisible,
+        );
+      }
+      bytes = _resyncDrainedWireBytes;
+    }
+    if (!deadline.isAfter(DateTime.now()) ||
+        bytes > ElmHostIsoTpConfig.maxResponseBytes) {
+      return ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.budgetExceeded,
+        hostVisible: _hostVisibleIsoTp,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    try {
+      final response = await _sendNow(
+        ElmHostIsoTpConfig.applyCommand,
+        commandTimeout,
+        owner: owner,
+        deadline: deadline,
+      );
+      bytes += _flowControlResponseBytes(response);
+      if (bytes > ElmHostIsoTpConfig.maxResponseBytes) {
+        return await _cleanupHostVisibleApply(
+          failure: ElmHostIsoTpResult.budgetExceeded,
+          deadline: deadline,
+          responseBytesUsed: bytes,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.applied,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      return ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.rejectedUnknownCommand,
+        hostVisible: _hostVisibleIsoTp,
+      );
+    } on TimeoutException catch (e) {
+      if (e.message?.contains('was not sent') ?? false) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.budgetExceeded,
+          hostVisible: alreadyVisible,
+        );
+      }
+      return await _cleanupHostVisibleApply(
+        failure: ElmHostIsoTpResult.timedOut,
+        deadline: deadline,
+        responseBytesUsed: bytes,
+      );
+    } on WriteRefusedException {
+      // Pre-wire: `_sendNow` never handed ATCAF0 over.
+      rethrow;
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _hostVisibleIsoTp = false;
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.disconnected,
+          hostVisible: false,
+        );
+      }
+      return await _cleanupHostVisibleApply(
+        failure: ElmHostIsoTpResult.unconfirmedWrite,
+        deadline: deadline,
+        responseBytesUsed: bytes + _lastReplyWireBytes,
+      );
+    }
+  }
+
+  /// Restore auto-format after an apply that left the adapter in doubt.
+  /// A successful cleanup must not report [ElmHostIsoTpResult.restored] —
+  /// the apply failed.
+  Future<ElmHostIsoTpOutcome> _cleanupHostVisibleApply({
+    required ElmHostIsoTpResult failure,
+    required DateTime deadline,
+    required int responseBytesUsed,
+  }) async {
+    final cleaned = await _restoreHostVisibleIsoTpNow(
+      deadline: deadline,
+      responseBytesUsed: responseBytesUsed,
+      afterUnconfirmedApply: true,
+    );
+    if (cleaned.result == ElmHostIsoTpResult.restoreFailed ||
+        cleaned.result == ElmHostIsoTpResult.disconnected) {
+      return cleaned;
+    }
+    return ElmHostIsoTpOutcome(
+      result: failure,
+      hostVisible: cleaned.hostVisible,
+    );
+  }
+
+  Future<ElmHostIsoTpOutcome> _restoreHostVisibleIsoTpNow({
+    required DateTime deadline,
+    required int responseBytesUsed,
+    bool afterUnconfirmedApply = false,
+  }) async {
+    if (!transport.isConnected) {
+      _hostVisibleIsoTp = false;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.disconnected,
+        hostVisible: false,
+      );
+    }
+    final mustRestore = _hostVisibleIsoTp || afterUnconfirmedApply;
+    if (DateTime.now().isAfter(deadline) ||
+        responseBytesUsed > ElmHostIsoTpConfig.maxResponseBytes) {
+      if (!mustRestore) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.budgetExceeded,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    }
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on Object {
+        if (!mustRestore) {
+          return ElmHostIsoTpOutcome(
+            result: ElmHostIsoTpResult.budgetExceeded,
+            hostVisible: _hostVisibleIsoTp,
+          );
+        }
+        _hostVisibleIsoTp = false;
+        _hostVisibleIsoTpRestoreFailed = true;
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restoreFailed,
+          hostVisible: false,
+        );
+      }
+      responseBytesUsed += _resyncDrainedWireBytes;
+      if (responseBytesUsed > ElmHostIsoTpConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmHostIsoTpOutcome(
+            result: ElmHostIsoTpResult.budgetExceeded,
+            hostVisible: _hostVisibleIsoTp,
+          );
+        }
+        _hostVisibleIsoTp = false;
+        _hostVisibleIsoTpRestoreFailed = true;
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restoreFailed,
+          hostVisible: false,
+        );
+      }
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      if (!mustRestore) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.budgetExceeded,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    }
+    try {
+      final response = await _sendNow(
+        ElmHostIsoTpConfig.restoreCommand,
+        commandTimeout,
+        deadline: deadline,
+        completesCommittedTransaction: true,
+      );
+      responseBytesUsed += _flowControlResponseBytes(response);
+      if (responseBytesUsed > ElmHostIsoTpConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmHostIsoTpOutcome(
+            result: ElmHostIsoTpResult.budgetExceeded,
+            hostVisible: _hostVisibleIsoTp,
+          );
+        }
+        _hostVisibleIsoTp = false;
+        _hostVisibleIsoTpRestoreFailed = true;
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restoreFailed,
+          hostVisible: false,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restored,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      if (!mustRestore && !_hostVisibleIsoTp) {
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restoreRejected,
+          hostVisible: false,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    } on TimeoutException catch (e) {
+      if (!mustRestore) {
+        return ElmHostIsoTpOutcome(
+          result: (e.message?.contains('was not sent') ?? false)
+              ? ElmHostIsoTpResult.budgetExceeded
+              : ElmHostIsoTpResult.timedOut,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    } on WriteRefusedException {
+      if (!mustRestore) {
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.restoreRejected,
+          hostVisible: false,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _hostVisibleIsoTp = false;
+        return const ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.disconnected,
+          hostVisible: false,
+        );
+      }
+      if (!mustRestore) {
+        return ElmHostIsoTpOutcome(
+          result: ElmHostIsoTpResult.unconfirmedWrite,
+          hostVisible: _hostVisibleIsoTp,
+        );
+      }
+      _hostVisibleIsoTp = false;
+      _hostVisibleIsoTpRestoreFailed = true;
+      return const ElmHostIsoTpOutcome(
+        result: ElmHostIsoTpResult.restoreFailed,
+        hostVisible: false,
+      );
+    }
   }
 
   /// An automatic apply that never wrote `ATFCSM0` while the adapter is
@@ -2121,12 +2509,7 @@ class Elm327Client {
     required DateTime deadline,
   }) async {
     final priorState = _flowControlState;
-    if (_flowControlRestoreFailed) {
-      throw const TransportException(
-        ElmFlowControlMessages.restoreFailed,
-        issue: TransportIssue.flowControlRestoreFailed,
-      );
-    }
+    _throwIfStickyRestoreFailed();
     if (!(mayTransmit?.call(owner) ?? true)) {
       final closed = _unstartedAutomaticApplyWhileCustom(config, priorState);
       if (closed != null) return closed;
@@ -2596,6 +2979,15 @@ class Elm327Client {
   /// refused until this client is replaced by a reconnect.
   bool _flowControlRestoreFailed = false;
 
+  /// Confirmed `ATCAF0`. A fresh client is auto-format (`ATCAF1`), which is
+  /// the adapter default after reset. A new [Elm327Client] is built per
+  /// connect, so this cannot leak into the next vehicle or generation.
+  bool _hostVisibleIsoTp = false;
+
+  /// Set when `ATCAF1` restore does not answer `OK` after host-visible mode
+  /// was claimed. Ordinary polling is refused until reconnect.
+  bool _hostVisibleIsoTpRestoreFailed = false;
+
   /// Byte length of the last prompt-delimited frame, before `_parse` drops
   /// NULs and command echoes.
   int _lastReplyWireBytes = 0;
@@ -2611,8 +3003,15 @@ class Elm327Client {
   /// `ATCEA` is not implemented in this slice.
   bool get supportsExtendedAddressing => false;
 
-  /// Host-visible ISO-TP (`ATCAF0`) is not implemented in this slice.
-  bool get supportsHostVisibleIsoTp => false;
+  /// This path can apply `ATCAF0` and reassemble host-visible PCI frames.
+  ///
+  /// The adapter may still refuse the command; that is
+  /// [TransportIssue.rawIsoTpModeUnavailable], not a capability claim.
+  bool get supportsHostVisibleIsoTp => true;
+
+  bool get hostVisibleIsoTp => _hostVisibleIsoTp;
+
+  bool get hostVisibleIsoTpRestoreFailed => _hostVisibleIsoTpRestoreFailed;
 
   /// Epoch of the most recent [beginWriteAudit] call.
   ///
@@ -3540,6 +3939,13 @@ class Elm327Client {
       if (headered.isSuccess || looksHeadered) return headered;
     }
 
+    // ATH0 + ATCAF0: raw PCI, no `N:` prefix and no total-length line.
+    // Concatenating those bytes as CAF1 payload would hand a decoder the
+    // PCI nibble as data.
+    if (_hostVisibleIsoTp && !awaitingAt) {
+      return _parseHostVisibleIsoTp(lines, volts);
+    }
+
     final isMultiFrame = lines.any((l) => _seqPrefix.hasMatch(l));
     if (isMultiFrame) return _parseMultiFrame(lines, volts);
 
@@ -3681,6 +4087,51 @@ class Elm327Client {
       hexPayload: hexPayload,
       bytes: payload,
       frames: [ObdFrame(payload, service: _serviceOfPayload(payload))],
+      batteryVoltage: volts,
+    );
+  }
+
+  /// Reassembles ATH0 + ATCAF0 PCI lines from one implicit source.
+  ///
+  /// Fail-closed: a damaged, incomplete, or Flow-Control-only reply is
+  /// [Elm327ErrorCode.dataError] with empty bytes — never a shortened PDU.
+  ObdResponse _parseHostVisibleIsoTp(List<String> lines, double? volts) {
+    ObdResponse reject() => ObdResponse(
+      rawLines: lines,
+      errorCode: Elm327ErrorCode.dataError,
+      batteryVoltage: volts,
+    );
+
+    final frames = <List<int>>[];
+    for (final line in lines) {
+      final stripped = line.trim();
+      if (stripped.isEmpty) continue;
+      if (!_hexLine.hasMatch(stripped)) {
+        if (_hexishLine.hasMatch(stripped)) return reject();
+        continue;
+      }
+      frames.add(_hexToBytes(stripped.replaceAll(' ', '')));
+    }
+    if (frames.isEmpty) return reject();
+    // Headers off: responders are indistinguishable. A First Frame plus
+    // another controller's matching Consecutive Frame would assemble as one
+    // PDU. Only a Single Frame is attributable to "whatever answered".
+    if (frames.length != 1 || (frames.first[0] >> 4) != 0x0) {
+      return reject();
+    }
+    final assembled = IsoTpAssembler.reassemble(
+      frames,
+      maxPduBytes: ElmHostIsoTpConfig.maxPduBytes,
+    );
+    if (assembled == null) return reject();
+    final hexPayload = assembled
+        .map((b) => b.toRadixString(16).toUpperCase().padLeft(2, '0'))
+        .join();
+    return ObdResponse(
+      rawLines: lines,
+      hexPayload: hexPayload,
+      bytes: assembled,
+      frames: [ObdFrame(assembled, service: _serviceOfPayload(assembled))],
       batteryVoltage: volts,
     );
   }
@@ -4305,55 +4756,11 @@ class Elm327Client {
   /// the low nibble, `1` First Frame whose low nibble plus the next byte give a
   /// 12-bit total, `2` Consecutive Frame whose low nibble is the sequence
   /// number.
-  static List<int>? _reassembleIsoTp(List<List<int>> raw) {
-    if (raw.isEmpty) return null;
-    final first = raw.first;
-    if (first.isEmpty) return null;
-
-    switch (first[0] >> 4) {
-      case 0x0:
-        final length = first[0] & 0x0F;
-        // python-OBD rejects both a zero length and one over seven; a single
-        // frame by definition is the whole message, so extra frames mean the
-        // stream is not what it claims.
-        if (length == 0 || length > 7) return null;
-        if (raw.length != 1) return null;
-        if (first.length < 1 + length) return null;
-        return first.sublist(1, 1 + length);
-
-      case 0x1:
-        if (first.length < 2) return null;
-        final total = ((first[0] & 0x0F) << 8) | first[1];
-        // A First Frame exists because the payload does not fit in a Single
-        // Frame. One declaring seven bytes or fewer is a contradiction, and it
-        // was being honoured: `7E8 10 02 43 00 …` returned `43 00`, which the
-        // fault-code decoder reads as a controller reporting zero stored
-        // codes. With two ordinary optional-category replies beside it the
-        // scan then rendered the whole vehicle clean — from a frame no ECU can
-        // legally send.
-        //
-        // Zero was already refused. Everything up to the Single Frame capacity
-        // has to go with it, for the same reason and with more consequence.
-        if (total <= 7) return null;
-        final out = <int>[...first.sublist(2)];
-        var expected = 1;
-        for (final frame in raw.skip(1)) {
-          if (frame.isEmpty) return null;
-          if ((frame[0] >> 4) != 0x2) return null;
-          // Sequence numbers wrap 0..F, so compare on the low nibble.
-          if ((frame[0] & 0x0F) != (expected & 0x0F)) return null;
-          expected++;
-          out.addAll(frame.sublist(1));
-        }
-        // Longer than declared is normal — the last frame is zero-padded to
-        // eight bytes. Shorter means frames went missing.
-        if (out.length < total) return null;
-        return out.sublist(0, total);
-
-      default:
-        return null;
-    }
-  }
+  static List<int>? _reassembleIsoTp(List<List<int>> raw) =>
+      IsoTpAssembler.reassemble(
+        raw,
+        maxPduBytes: ElmHostIsoTpConfig.maxPduBytes,
+      );
 
   /// Status and error strings the ELM327 can emit in place of data.
   ///

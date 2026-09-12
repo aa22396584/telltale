@@ -147,7 +147,7 @@ void main() {
     final client = Elm327Client(_can());
     expect(client.flowControlState, isA<ElmFlowControlAutomatic>());
     expect(client.supportsExtendedAddressing, isFalse);
-    expect(client.supportsHostVisibleIsoTp, isFalse);
+    expect(client.supportsHostVisibleIsoTp, isTrue);
   });
 
   test(

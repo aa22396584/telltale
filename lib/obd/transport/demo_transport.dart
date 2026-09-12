@@ -497,8 +497,10 @@ class DemoTransport extends BaseObdTransport {
       // it is not switched on above — but it is still a command this adapter
       // implements and must acknowledge.
       'ATE0', 'ATE1', 'ATL0', 'ATL1', 'ATM0', 'ATM1',
-      // Timing and framing.
-      'ATAT0', 'ATAT1', 'ATAT2', 'ATCAF0', 'ATCAF1',
+      // Timing. `ATCAF0`/`ATCAF1` are not modelled: acknowledging them
+      // would let `applyHostVisibleIsoTp` claim a mode this simulator
+      // cannot frame, then rewrite `010C` to `02010C` and break Demo polling.
+      'ATAT0', 'ATAT1', 'ATAT2',
       // Resets.
       'ATD', 'ATWS',
     };

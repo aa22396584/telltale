@@ -176,6 +176,8 @@ class AdapterFaults {
     this.refuseFlowControlRestore = false,
     this.dropAfterFlowControlHeader = false,
     this.delayFlowControlReply = false,
+    this.refuseCaf = false,
+    this.refuseCafRestore = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -273,6 +275,13 @@ class AdapterFaults {
   /// command timeout. `ATFCSM0` is not delayed, so a restore after timeout
   /// can still be observed.
   final bool delayFlowControlReply;
+
+  /// Answers `?` to `ATCAF0`. `ATCAF1` still restores unless
+  /// [refuseCafRestore] is also set.
+  final bool refuseCaf;
+
+  /// Answers `?` to `ATCAF1`.
+  final bool refuseCafRestore;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -515,6 +524,7 @@ class FakeElm327 extends BaseObdTransport {
 
   bool _echo = true;
   bool _headersOn = false;
+  int _caf = 1;
   bool _searchPending = true;
   String? _header;
   String? _fcHeader;
@@ -563,6 +573,9 @@ class FakeElm327 extends BaseObdTransport {
 
   /// Last `ATFCSM` mode the adapter accepted (`0`, `1`, or `2`).
   int get flowControlMode => _fcMode;
+
+  /// Last `ATCAF` mode the adapter accepted (`1` auto-format, `0` host PCI).
+  int get autoFormatMode => _caf;
 
   @override
   Future<void> write(List<int> data) async {
@@ -747,6 +760,14 @@ class FakeElm327 extends BaseObdTransport {
 
     if (goSilent) return '';
 
+    // `ATCAF0` is transmit and receive. A bare `010C` is not a CAN frame the
+    // ECU will answer; the host must have supplied the Single Frame PCI.
+    if (_caf == 0 && !command.startsWith('AT')) {
+      final unwrapped = _unwrapHostVisibleRequest(command);
+      if (unwrapped == null) return 'NO DATA\r>';
+      command = unwrapped;
+    }
+
     final sequence = _replySequences[command];
     if (sequence != null && sequence.isNotEmpty) {
       return '${sequence.removeAt(0)}\r>';
@@ -772,6 +793,7 @@ class FakeElm327 extends BaseObdTransport {
       _searchPending = requiresProtocolSearch;
       _headersOn = false;
       _header = null;
+      _caf = 1;
       _resetFlowControl();
       return '$identity\r\r>';
     }
@@ -823,8 +845,18 @@ class FakeElm327 extends BaseObdTransport {
     if (command.startsWith('ATAT') || command.startsWith('ATST')) {
       return 'OK\r>';
     }
-    if (command.startsWith('ATCAF') || command.startsWith('ATCFC')) {
+    if (command == 'ATCAF0' || command == 'ATCAF1') {
+      if (command == 'ATCAF0' && faults.refuseCaf) {
+        return '${faults.unknownAtReply}\r>';
+      }
+      if (command == 'ATCAF1' && faults.refuseCafRestore) {
+        return '${faults.unknownAtReply}\r>';
+      }
+      _caf = command == 'ATCAF0' ? 0 : 1;
       return 'OK\r>';
+    }
+    if (command.startsWith('ATCAF') || command.startsWith('ATCFC')) {
+      return command.startsWith('ATCAF') ? '?\r>' : 'OK\r>';
     }
     if (command == 'ATRV') return '${faults.voltageText ?? '13.9V'}\r>';
 
@@ -901,6 +933,23 @@ class FakeElm327 extends BaseObdTransport {
     _fcHeader = null;
     _fcData = null;
     _fcMode = 0;
+  }
+
+  /// Strips a Single Frame PCI the host sent under `ATCAF0`.
+  static String? _unwrapHostVisibleRequest(String command) {
+    if (command.length < 4 || command.length.isOdd) return null;
+    final bytes = <int>[];
+    for (var i = 0; i < command.length; i += 2) {
+      bytes.add(int.parse(command.substring(i, i + 2), radix: 16));
+    }
+    if (bytes.isEmpty || (bytes.first >> 4) != 0x0) return null;
+    final length = bytes.first & 0x0F;
+    if (length == 0 || length > 7) return null;
+    if (bytes.length < 1 + length) return null;
+    return bytes
+        .sublist(1, 1 + length)
+        .map((b) => b.toRadixString(16).toUpperCase().padLeft(2, '0'))
+        .join();
   }
 
   // -------------------------------------------------------------- OBD ----
@@ -994,9 +1043,9 @@ class FakeElm327 extends BaseObdTransport {
 
     // Single frame: up to seven data bytes.
     if (hex.length <= 7) {
-      if (!_headersOn) return [hex.join(' ')];
-      // With headers on the adapter prints the responding CAN ID, the ISO-TP
-      // PCI byte it strips when headers are off, and the frame's zero padding.
+      if (!_headersOn && _caf != 0) return [hex.join(' ')];
+      // With headers on — or with `ATCAF0` and headers off — the adapter
+      // prints the ISO-TP PCI byte it strips in the CAF1 / ATH0 default.
       // A Single Frame PCI is `0<len>`, so the length occupies the low nibble.
       //
       // The padding was missing here while `DemoTransport` had been taught to
@@ -1005,14 +1054,14 @@ class FakeElm327 extends BaseObdTransport {
       // own example is `7E8 06 41 00 BE 3F B8 13 00`: six bytes declared, six
       // delivered, one `00` filling the frame out to eight.
       final padded = [...hex, ...List.filled(7 - hex.length, '00')];
-      return [
-        '${ecu.responseId} ${_hex(payload.length & 0x0F)} ${padded.join(' ')}',
-      ];
+      final pci = _hex(payload.length & 0x0F);
+      if (!_headersOn) return ['$pci ${padded.join(' ')}'];
+      return ['${ecu.responseId} $pci ${padded.join(' ')}'];
     }
 
     final lines = <String>[];
-    if (!_headersOn) {
-      // Headers off: a bare total-length line, then `0:`-prefixed segments.
+    if (!_headersOn && _caf != 0) {
+      // Headers off + auto-format: a bare total-length line, then `0:` segments.
       lines.add(payload.length.toRadixString(16).toUpperCase().padLeft(3, '0'));
     }
 
@@ -1023,19 +1072,21 @@ class FakeElm327 extends BaseObdTransport {
       final segment = hex.sublist(index, math.min(index + take, hex.length));
       final padded = [...segment, ...List.filled(take - segment.length, '00')];
 
-      if (_headersOn) {
+      if (_headersOn || _caf == 0) {
         // Datasheet p.44: with headers on there is no separate length line and
-        // no `N:` prefix. The byte after the CAN ID is the PCI — high nibble
-        // `1` for a First Frame whose low nibble plus the *next byte* form the
-        // 12-bit total length, high nibble `2` for a Consecutive Frame whose
-        // low nibble is the sequence number.
+        // no `N:` prefix. The same PCI shape is what `ATCAF0` prints without
+        // a CAN ID. High nibble `1` for a First Frame whose low nibble plus
+        // the *next byte* form the 12-bit total length, high nibble `2` for a
+        // Consecutive Frame whose low nibble is the sequence number.
         final pci = seq == 0
             ? [
                 0x10 | ((payload.length >> 8) & 0x0F),
                 payload.length & 0xFF,
               ].map(_hex).join(' ')
             : _hex(0x20 | (seq & 0x0F));
-        lines.add('${ecu.responseId} $pci ${padded.join(' ')}');
+        lines.add(
+          _headersOn ? '${ecu.responseId} $pci ${padded.join(' ')}' : '$pci ${padded.join(' ')}',
+        );
       } else {
         lines.add(
           '${seq.toRadixString(16).toUpperCase()}: ${padded.join(' ')}',
@@ -1045,7 +1096,10 @@ class FakeElm327 extends BaseObdTransport {
       seq++;
     }
 
-    return _applySequenceFaults(lines, headerLines: _headersOn ? 0 : 1);
+    return _applySequenceFaults(
+      lines,
+      headerLines: (!_headersOn && _caf != 0) ? 1 : 0,
+    );
   }
 
   /// Legacy buses have no ISO-TP. Each message stands alone on its own line and

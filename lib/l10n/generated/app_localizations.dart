@@ -6257,7 +6257,7 @@ abstract class AppLocalizations {
   /// **'Extended addressing is not available on this ELM327 path.'**
   String get settingsManualCommandExtendedAddressingUnavailable;
 
-  /// TransportIssue.rawIsoTpModeUnavailable. Always-unavailable in the typed-FC slice; ATCAF0 host reassembly is deferred. Named so capability reporting cannot claim it. ISO-TP is a machine token.
+  /// TransportIssue.rawIsoTpModeUnavailable. ATCAF0 was refused or ATCAF1 could not restore auto-format. Zero decoded value. ISO-TP is a machine token.
   ///
   /// In en, this message translates to:
   /// **'Host-visible ISO-TP reassembly is not available on this ELM327 path.'**
