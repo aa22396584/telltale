@@ -582,6 +582,7 @@ class Elm327Client {
 
   Completer<ObdResponse>? _pending;
   Timer? _pendingTimeout;
+  Future<void>? _activeTeardown;
   bool _searchExtended = false;
 
   /// Set when a command times out, cleared once [_resync] has drained the
@@ -614,6 +615,11 @@ class Elm327Client {
 
   /// Monotonically increasing connection generation counter.
   int get connectionGeneration => _connectionGeneration;
+
+  int _connectionSession = 0;
+
+  /// Monotonically increasing connection session counter, incremented only on connect().
+  int get connectionSession => _connectionSession;
 
   bool _transactionQuarantined = false;
 
@@ -765,8 +771,21 @@ class Elm327Client {
   /// Connects the transport and runs the handshake. Returns false if a step
   /// marked critical failed.
   Future<bool> connect() async {
+    final pendingTeardown = _activeTeardown;
+    if (pendingTeardown != null) {
+      try {
+        await pendingTeardown;
+      } catch (_) {
+        // Suppress or capture teardown error so connect can proceed cleanly
+      } finally {
+        if (_activeTeardown == pendingTeardown) {
+          _activeTeardown = null;
+        }
+      }
+    }
     _transportLost = false;
     _transactionQuarantined = false;
+    _outOfSync = false;
     _flowControlRestoreFailed = false;
     _flowControlState = const ElmFlowControlAutomatic();
     _hostVisibleIsoTpRestoreFailed = false;
@@ -778,6 +797,7 @@ class Elm327Client {
     _canReceiveFilterRestoreFailed = false;
     _canReceiveFilterState = const ElmCanReceiveFilterOff();
     _headerRestoreFailed = false;
+    _connectionSession++;
     _connectionGeneration++;
     await transport.connect();
     transcript.recordNote(
@@ -933,9 +953,25 @@ class Elm327Client {
     _rxSub = null;
     await _connectionSub?.cancel();
     _connectionSub = null;
-    await transport.disconnect();
-    isInitialized = false;
-    _buffer.clear();
+    final teardown = _teardownTransport();
+    _activeTeardown = teardown;
+    try {
+      await teardown;
+    } finally {
+      if (_activeTeardown == teardown) {
+        _activeTeardown = null;
+      }
+      isInitialized = false;
+      _buffer.clear();
+    }
+  }
+
+  Future<void> _teardownTransport() async {
+    try {
+      await transport.disconnect();
+    } catch (_) {
+      // Capture failures from teardown rather than leaving an unobserved Future
+    }
   }
 
   Future<void> dispose() async {
@@ -1671,7 +1707,18 @@ class Elm327Client {
   /// Quarantines the connection when an in-flight wire operation fails to drain
   /// within its bounded drain budget. The pending request is failed, timeouts are
   /// cancelled, and the transport is disconnected.
-  void _quarantineConnection() {
+  ///
+  /// If [expectedSession] is provided and does not match [_connectionSession],
+  /// or [expectedGeneration] does not match [_connectionGeneration],
+  /// the quarantine is a no-op to prevent cross-generation poisoning.
+  void _quarantineConnection({int? expectedSession, int? expectedGeneration}) {
+    if (expectedSession != null && _connectionSession != expectedSession) {
+      return;
+    }
+    if (expectedGeneration != null &&
+        _connectionGeneration != expectedGeneration) {
+      return;
+    }
     _transactionQuarantined = true;
     _outOfSync = true;
     _pendingTimeout?.cancel();
@@ -1682,7 +1729,8 @@ class Elm327Client {
         issue: TransportIssue.adapterSilentOnResync,
       ),
     );
-    transport.disconnect();
+    final teardown = _teardownTransport();
+    _activeTeardown = teardown;
   }
 
   /// Waits out whatever the adapter still owes us, then clears the desync.
@@ -2720,6 +2768,7 @@ class Elm327Client {
       await _resync(deadline: stepDeadline());
     }
 
+    final txSession = _connectionSession;
     final txGeneration = _connectionGeneration;
     var isTxActive = true;
     var isAcceptingNewCommands = true;
@@ -2753,11 +2802,12 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
-          if (_connectionGeneration != txGeneration) return;
+          if (_connectionSession != txSession) return;
           final res = await _restoreExtendedAddressingNow(
             deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
+          if (_connectionSession != txSession) return;
           if (res.result == ElmExtendedAddressingResult.restoreFailed) {
             _extendedAddressingRestoreFailed = true;
           }
@@ -2784,11 +2834,12 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
-          if (_connectionGeneration != txGeneration) return;
+          if (_connectionSession != txSession) return;
           final res = await _restoreCanPriorityNow(
             deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
+          if (_connectionSession != txSession) return;
           if (res.result == ElmCanPriorityResult.restoreFailed) {
             _canPriorityRestoreFailed = true;
           }
@@ -2814,11 +2865,12 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
-          if (_connectionGeneration != txGeneration) return;
+          if (_connectionSession != txSession) return;
           final res = await _restoreCanReceiveFilterNow(
             deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
+          if (_connectionSession != txSession) return;
           if (res.result == ElmCanReceiveFilterResult.restoreFailed) {
             _canReceiveFilterRestoreFailed = true;
           }
@@ -2844,12 +2896,13 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
-          if (_connectionGeneration != txGeneration) return;
+          if (_connectionSession != txSession) return;
           final res = await _restoreFlowControlNow(
             deadline: DateTime.now().add(cleanupBudget),
             remainingWrites: ElmFlowControlConfig.maxRestoreCommands,
             responseBytesUsed: 0,
           );
+          if (_connectionSession != txSession) return;
           if (res.result == ElmFlowControlResult.restoreFailed) {
             _flowControlRestoreFailed = true;
           }
@@ -2874,11 +2927,12 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
-          if (_connectionGeneration != txGeneration) return;
+          if (_connectionSession != txSession) return;
           final res = await _restoreHostVisibleIsoTpNow(
             deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
+          if (_connectionSession != txSession) return;
           if (res.result == ElmHostIsoTpResult.restoreFailed) {
             _hostVisibleIsoTpRestoreFailed = true;
           }
@@ -2913,17 +2967,15 @@ class Elm327Client {
             previousHeader != null &&
             previousHeader != header) {
           appliedRestores.add(() async {
+            if (_connectionSession != txSession) {
+              return;
+            }
             _currentHeader = null;
-            if (!transport.isConnected ||
-                _connectionGeneration != txGeneration) {
+            if (!transport.isConnected) {
               _headerRestoreFailed = true;
               return;
             }
             try {
-              if (_connectionGeneration != txGeneration) {
-                _headerRestoreFailed = true;
-                return;
-              }
               final ack = await _sendNow(
                 'ATSH $previousHeader',
                 commandTimeout,
@@ -2931,8 +2983,7 @@ class Elm327Client {
                 completesCommittedTransaction: true,
                 expectedGeneration: txGeneration,
               );
-              if (_connectionGeneration != txGeneration) {
-                _headerRestoreFailed = true;
+              if (_connectionSession != txSession) {
                 return;
               }
               if (_saidOk(ack)) {
@@ -2941,7 +2992,9 @@ class Elm327Client {
                 _headerRestoreFailed = true;
               }
             } catch (_) {
-              _headerRestoreFailed = true;
+              if (_connectionSession == txSession) {
+                _headerRestoreFailed = true;
+              }
             }
           });
         }
@@ -3049,7 +3102,12 @@ class Elm327Client {
       try {
         await inFlight.timeout(drainBudget);
       } on TimeoutException catch (e, st) {
-        _quarantineConnection();
+        if (_connectionSession == txSession) {
+          _quarantineConnection(
+            expectedSession: txSession,
+            expectedGeneration: txGeneration,
+          );
+        }
         actionError ??= TimeoutException(
           'In-flight transaction command failed to drain within ${drainBudget.inMilliseconds}ms; connection quarantined.',
         );
@@ -3068,19 +3126,24 @@ class Elm327Client {
     } finally {
       isAcceptingNewCommands = false;
       isTxActive = false; // Revoke sender immediately!
-      if (!_transactionQuarantined) {
+      if (!_transactionQuarantined && _connectionSession == txSession) {
         try {
           await inFlight.timeout(drainBudget);
         } on TimeoutException {
-          _quarantineConnection();
+          if (_connectionSession == txSession) {
+            _quarantineConnection(
+              expectedSession: txSession,
+              expectedGeneration: txGeneration,
+            );
+          }
         } catch (_) {}
       }
 
       // Reverse-restore all applied mutations in LIFO order
-      // Only execute restores if we are still on the same connection generation and not quarantined!
-      if (!_transactionQuarantined && _connectionGeneration == txGeneration) {
+      // Only execute restores if we are still on the same connection session and not quarantined!
+      if (!_transactionQuarantined && _connectionSession == txSession) {
         for (final restore in appliedRestores.reversed) {
-          if (_connectionGeneration != txGeneration) {
+          if (_connectionSession != txSession) {
             // Reconnect occurred mid-restore! Stop immediately.
             break;
           }
@@ -3097,6 +3160,12 @@ class Elm327Client {
       Error.throwWithStackTrace(actionError, actionStackTrace!);
     }
     _throwIfStickyRestoreFailed();
+    if (_connectionSession != txSession) {
+      throw const TransportException(
+        'Connection generation changed during transaction.',
+        issue: TransportIssue.linkDroppedMidSession,
+      );
+    }
     return result as T;
   }
 

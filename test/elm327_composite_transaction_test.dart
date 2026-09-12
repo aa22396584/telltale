@@ -53,6 +53,13 @@ FakeElm327 _can11Transport({
           },
           literalResponses: literalReplies,
         ),
+        FakeEcu(
+          name: 'TCM',
+          requestId: '7E2',
+          responseId: '7EA',
+          responses: {..._physicsReplies(), ...didReplies},
+          literalResponses: literalReplies,
+        ),
       ],
     );
 
@@ -83,7 +90,7 @@ FakeElm327 _can29Transport({
     );
 
 Future<Elm327Client> _connect(
-  FakeElm327 transport, {
+  ObdTransport transport, {
   Duration commandTimeout = const Duration(milliseconds: 200),
 }) async {
   final client = Elm327Client(transport, commandTimeout: commandTimeout);
@@ -93,6 +100,92 @@ Future<Elm327Client> _connect(
     reason: 'handshake must succeed before the case under test',
   );
   return client;
+}
+
+final class _TeardownHoldingTransport implements ObdTransport {
+  _TeardownHoldingTransport(this.inner);
+  final FakeElm327 inner;
+
+  Completer<void>? disconnectCompleter;
+  var disconnectCallCount = 0;
+
+  @override
+  bool get isConnected => inner.isConnected;
+
+  @override
+  TransportKind get kind => inner.kind;
+
+  @override
+  String get displayName => inner.displayName;
+
+  @override
+  Stream<List<int>> get incoming => inner.incoming;
+
+  @override
+  Stream<bool> get connectionChanges => inner.connectionChanges;
+
+  @override
+  Map<String, Object> get diagnosticMetadata => inner.diagnosticMetadata;
+
+  @override
+  Future<void> connect() => inner.connect();
+
+  @override
+  Future<void> disconnect() {
+    disconnectCallCount++;
+    if (disconnectCompleter != null) {
+      return disconnectCompleter!.future.then((_) => inner.disconnect());
+    }
+    return inner.disconnect();
+  }
+
+  @override
+  Future<void> write(List<int> bytes) => inner.write(bytes);
+}
+
+final class _ReconnectingTransport implements ObdTransport {
+  _ReconnectingTransport() {
+    _active = _create();
+  }
+
+  late FakeElm327 _active;
+  FakeElm327 get active => _active;
+
+  Map<String, Duration> get slowCommands => _active.slowCommands;
+
+  FakeElm327 _create() => _can11Transport();
+
+  @override
+  bool get isConnected => _active.isConnected;
+
+  @override
+  TransportKind get kind => _active.kind;
+
+  @override
+  String get displayName => _active.displayName;
+
+  @override
+  Map<String, Object> get diagnosticMetadata => _active.diagnosticMetadata;
+
+  @override
+  Stream<List<int>> get incoming => _active.incoming;
+
+  @override
+  Stream<bool> get connectionChanges => _active.connectionChanges;
+
+  @override
+  Future<void> connect() {
+    if (!_active.isConnected) {
+      _active = _create();
+    }
+    return _active.connect();
+  }
+
+  @override
+  Future<void> disconnect() => _active.disconnect();
+
+  @override
+  Future<void> write(List<int> bytes) => _active.write(bytes);
 }
 
 void main() {
@@ -1255,6 +1348,174 @@ void main() {
         reason: 'Extended address restore must abort when generation changes and never touch new generation',
       );
 
+      await client.disconnect();
+    });
+
+    test(
+        'acceptance 1: old generation drain timeout after reconnect does not fail or quarantine new generation pending request',
+        () async {
+      final transport = _ReconnectingTransport();
+      final client = await _connect(transport,
+          commandTimeout: const Duration(seconds: 1));
+      expect(client.connectionSession, 1);
+
+      // Configure slow reply for in-flight command in generation 1
+      transport.slowCommands['22DDBC'] = const Duration(milliseconds: 500);
+
+      // Start transaction with 80ms drainBudget
+      final oldTxFuture = client.runTransacted(
+        (send) async {
+          unawaited(
+              send('22DDBC').catchError((_) => const ObdResponse()));
+          return 'action-done';
+        },
+        header: '6F1',
+        drainBudget: const Duration(milliseconds: 80),
+      );
+      oldTxFuture.ignore();
+
+      // Wait briefly so action callback returns and enters in-flight drain
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      // Reconnect to advance connection session to 2
+      await client.disconnect();
+      final reconnected = await client.connect();
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+
+      // In generation 2, queue a slow command that will remain pending during old drain timeout
+      transport.slowCommands['010C'] = const Duration(milliseconds: 200);
+      final gen2SendFuture = client.send('010C');
+
+      // Wait past the old generation's 80ms drain budget so old inFlight.timeout triggers
+      await Future.delayed(const Duration(milliseconds: 120));
+
+      // Old transaction completes with error
+      await expectLater(
+        oldTxFuture,
+        throwsA(isA<TransportException>()),
+      );
+
+      // Generation 2 must NOT be quarantined, desynced, or disconnected by old drain timeout
+      expect(client.isTransactionQuarantined, isFalse,
+          reason: 'Old drain timeout must not quarantine new generation');
+      expect(client.isOutOfSync, isFalse,
+          reason: 'Old drain timeout must not desync new generation');
+      expect(client.transport.isConnected, isTrue,
+          reason: 'Old drain timeout must not disconnect new generation');
+
+      // The generation 2 pending command must succeed when its response arrives
+      final gen2Reply = await gen2SendFuture;
+      expect(gen2Reply.isSuccess, isTrue);
+      expect(gen2Reply.rawLines, isNotEmpty);
+
+      await client.disconnect();
+    });
+
+    test(
+        'acceptance 2: delayed header restore does not overwrite cached header or set restoreFailed on new generation',
+        () async {
+      final transport = _ReconnectingTransport();
+      final client = await _connect(transport,
+          commandTimeout: const Duration(seconds: 1));
+      expect(client.connectionSession, 1);
+
+      // Establish initial header
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      // Delay ATSH 7E0 restore reply
+      transport.slowCommands['ATSH7E0'] = const Duration(milliseconds: 250);
+
+      final oldTxFuture = client.runTransacted(
+        (send) async => await send('010C'),
+        header: '6F1',
+        restoreHeader: true,
+      );
+      oldTxFuture.ignore();
+
+      // Wait briefly so action completes and finally starts ATSH 7E0 restore
+      await Future.delayed(const Duration(milliseconds: 40));
+
+      // Reconnect mid-restore to advance session to 2
+      await client.disconnect();
+      final reconnected = await client.connect();
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+
+      // In generation 2, establish a different header
+      await client.sendOnHeader('7E2', '010C');
+      expect(client.currentHeader, '7E2');
+      expect(client.headerRestoreFailed, isFalse);
+
+      // Wait past the 250ms delayed restore reply from generation 1
+      await Future.delayed(const Duration(milliseconds: 250));
+
+      // Old transaction throws because connection dropped mid-transaction
+      await expectLater(
+        oldTxFuture,
+        throwsA(isA<TransportException>()),
+      );
+
+      // Cached header on new generation must remain 7E2 and must not be overwritten by 7E0
+      expect(client.currentHeader, '7E2',
+          reason: 'Delayed old restore must not overwrite new generation currentHeader');
+      expect(client.headerRestoreFailed, isFalse,
+          reason: 'Delayed old restore must not poison new generation headerRestoreFailed');
+      expect(client.isTransactionQuarantined, isFalse);
+
+      // Normal send on new generation succeeds
+      final res = await client.send('010C');
+      expect(res.isSuccess, isTrue);
+
+      await client.disconnect();
+    });
+
+    test(
+        'acceptance 3: reconnect safely serializes until old asynchronous teardown finishes and captures teardown errors',
+        () async {
+      final inner = _can11Transport();
+      final transport = _TeardownHoldingTransport(inner);
+      final client = await _connect(transport);
+      expect(client.connectionSession, 1);
+
+      // Hold disconnect completion
+      final disconnectCompleter = Completer<void>();
+      transport.disconnectCompleter = disconnectCompleter;
+
+      // Initiate disconnect in background (unawaited)
+      unawaited(client.disconnect());
+
+      // Let microtasks run so disconnect calls transport.disconnect()
+      await Future<void>.delayed(Duration.zero);
+      expect(transport.disconnectCallCount, 1);
+
+      // Now call connect() while old teardown is held
+      var connectFinished = false;
+      final connectFuture = client.connect().then((val) {
+        connectFinished = true;
+        return val;
+      });
+
+      // Let event loop spin: connect() must NOT finish before teardown completes!
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(connectFinished, isFalse,
+          reason: 'connect() must serialize and wait for in-flight teardown to complete');
+
+      // Complete teardown with an error to verify error capture
+      disconnectCompleter.completeError(Exception('underlying socket reset on teardown'));
+
+      // Now connect() safely proceeds and completes without leaking unhandled future error
+      final reconnected = await connectFuture;
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+      expect(client.transport.isConnected, isTrue);
+
+      // Old teardown cannot close new connection; new connection works normally
+      final res = await client.send('010C');
+      expect(res.isSuccess, isTrue);
+
+      transport.disconnectCompleter = null;
       await client.disconnect();
     });
   });
