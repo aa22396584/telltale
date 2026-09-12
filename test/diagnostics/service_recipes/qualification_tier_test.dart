@@ -1200,6 +1200,48 @@ void main() {
           verdict, ActiveTestEligibilityVerdict.blockedExpiredCapability);
     });
 
+    test(
+        'unstarted custom Stopwatch is auto-started by issuer and correctly measures elapsed TTL',
+        () {
+      final unstartedStopwatch = Stopwatch();
+      expect(unstartedStopwatch.isRunning, isFalse);
+
+      final issuer =
+          ActiveTestAuthorizationIssuer(stopwatch: unstartedStopwatch);
+      expect(unstartedStopwatch.isRunning, isTrue);
+
+      final cap = issuer.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(cap, isNotNull);
+
+      final verdict = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: cap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: now,
+      );
+      expect(verdict, ActiveTestEligibilityVerdict.eligible);
+    });
+
     test('legacy ActiveTestAuthorizationToken strictly rejects exact expiry boundary',
         () {
       // Direct unit test of legacy token boundary check

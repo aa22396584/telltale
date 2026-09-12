@@ -239,7 +239,7 @@ final class ActiveTestAuthorizationIssuer {
   ActiveTestAuthorizationIssuer({
     Stopwatch? stopwatch,
     int Function()? elapsedMicrosecondsProvider,
-  })  : _stopwatch = stopwatch ?? (Stopwatch()..start()),
+  })  : _stopwatch = (stopwatch ?? Stopwatch())..start(),
         _elapsedProvider = elapsedMicrosecondsProvider;
 
   final Stopwatch _stopwatch;
