@@ -33,6 +33,10 @@ into confident-looking results.
 
 > **A plausible wrong number is worse than no number.**
 
+> **No car or adapter? Use Demo ECU.**
+>
+> On the connect screen open **Demo simulator** → **Start the simulator**. You get live dashboards, fault codes, and freeze frames with no hardware. Demo never touches Bluetooth, sockets, or a vehicle — it proves the app path, not that a real car will connect.
+
 ## Screenshots and vehicle demo
 
 <p align="center">
