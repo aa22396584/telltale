@@ -1599,6 +1599,14 @@ class ResearchRuleTest(unittest.TestCase):
         row["source_families"][0]["locator"] = "record 1"
         self.assertEqual(_issues_for(row), [])
 
+    def test_research_row_reviewed_shared_source_binding_with_relative_prefix_passes(self) -> None:
+        """VW ID.4 referencing shared MEB source with leading './' passes normalization."""
+        row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "./volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
     def test_research_row_unreviewed_target_on_shared_source_fails(self) -> None:
         """Tesla Model 3 referencing MEB shared source fails because it is not in the reviewed binding."""
         row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])

@@ -228,6 +228,8 @@ REVIEWED_SHARED_SOURCE_TARGET_BINDINGS: dict[str, set[str]] = {
 
 def _has_reviewed_shared_binding(target_id: str, path_clean: str) -> bool:
     norm_path = path_clean.replace("\\", "/").strip().lstrip("/")
+    while norm_path.startswith("./"):
+        norm_path = norm_path[2:].lstrip("/")
     target_clean = _norm_token(target_id)
     targets = REVIEWED_SHARED_SOURCE_TARGET_BINDINGS.get(norm_path)
     if targets is None:
