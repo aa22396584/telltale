@@ -1403,6 +1403,74 @@ class ResearchRuleTest(unittest.TestCase):
         )
         _only(issues, "missing market/year/firmware scope")
 
+    def test_research_row_generic_brand_alias_fails(self) -> None:
+        for brand in ["byd", "tesla", "toyota", "meb", "blade", "e-gmp"]:
+            row = _valid_executable_row(aliases=[f"fixture {brand}", brand])
+            issues = _issues_for(row)
+            _only(issues, "extrapolates entire brand/platform without model specificity")
+
+    def test_research_row_source_missing_locator_fails(self) -> None:
+        row = _valid_executable_row()
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["locator"] = ""
+        issues = _issues_for(row)
+        _only(issues, "missing row-specific evidence locator")
+
+    def test_research_row_source_prohibited_locator_fails(self) -> None:
+        row = _valid_executable_row()
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["locator"] = "row:other-row"
+        issues = _issues_for(row)
+        self.assertTrue(
+            any("locator uses prohibited inheritance reference" in i for i in issues),
+            issues,
+        )
+
+    def test_research_row_cross_model_source_path_fails(self) -> None:
+        row = _valid_executable_row(id="byd-atto-3")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/nissan/leaf.json"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than byd-atto-3")
+
+
+def _valid_community_catalog_profile(**overrides: object) -> dict:
+    profile = {
+        "commands": [_concrete_command()],
+        "evidence": "sourceBacked",
+        "id": "byd-atto3-2022-2024-community",
+        "make": "BYD",
+        "market": "Global",
+        "model": "Atto 3",
+        "powertrain": "BEV",
+        "secondary_sources": [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "GPL-3.0",
+                "locator": "ATSH7E7 220005",
+                "name": "meatpiHQ/wican-fw",
+                "path": "vehicle_profiles/byd/byd_202410_update.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+            }
+        ],
+        "source": {
+            "artifact_sha256": SHA64_A,
+            "license": "MIT",
+            "locator": "vehicle_atto3_polls[] ISOTP_STD",
+            "name": "openvehicles/Open-Vehicle-Monitoring-System-3",
+            "path": "vehicle/OVMS.V3/components/vehicle_byd_atto3/src/vehicle_byd_atto3.cpp",
+            "revision": SHA40_A,
+            "url": f"https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/tree/{SHA40_A}",
+        },
+        "status": "community",
+        "variant": "e-Platform 3.0 Blade",
+        "year_from": 2022,
+        "year_to": 2024,
+    }
+    profile.update(overrides)
+    return profile
+
 
 class CatalogObjectRuleTest(unittest.TestCase):
     def test_community_catalog_profile_with_zero_commands_fails(self) -> None:
@@ -1660,6 +1728,186 @@ class CatalogObjectRuleTest(unittest.TestCase):
         )
         self.assertEqual(issues, [])
 
+    def test_community_catalog_profile_evidence_valid_passes(self) -> None:
+        prof = _valid_community_catalog_profile()
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        self.assertEqual(issues, [])
+
+    def test_community_catalog_profile_missing_primary_source_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        del prof["source"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing primary source object")
+
+    def test_community_catalog_profile_primary_source_missing_license_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["license"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing licence")
+
+    def test_community_catalog_profile_primary_source_non_immutable_revision_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["revision"] = "main"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing immutable revision pin")
+
+    def test_community_catalog_profile_primary_source_invalid_artifact_sha_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["artifact_sha256"] = "badsha"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing valid artifact sha256")
+
+    def test_community_catalog_profile_primary_source_missing_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["locator"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing row-specific evidence locator")
+
+    def test_community_catalog_profile_primary_source_prohibited_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["locator"] = "row:byd-atto-3"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source locator uses prohibited inheritance reference")
+
+    def test_community_catalog_profile_primary_source_non_derivable_family_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["url"] = "not_a_url"
+        prof["source"]["name"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source has no derivable family identity")
+
+    def test_community_catalog_profile_missing_secondary_sources_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"] = []
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile requires at least one secondary source")
+
+    def test_community_catalog_profile_secondary_source_non_dict_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"] = ["invalid"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] must be an object")
+
+    def test_community_catalog_profile_secondary_source_missing_license_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["license"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing licence")
+
+    def test_community_catalog_profile_secondary_source_non_immutable_revision_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["revision"] = "dev"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing immutable revision pin")
+
+    def test_community_catalog_profile_secondary_source_invalid_artifact_sha_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["artifact_sha256"] = "12345"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing valid artifact sha256")
+
+    def test_community_catalog_profile_secondary_source_missing_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["locator"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing row-specific evidence locator")
+
+    def test_community_catalog_profile_secondary_source_prohibited_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["locator"] = "sibling:other-profile"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] locator uses prohibited inheritance reference")
+
+    def test_community_catalog_profile_secondary_source_same_family_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["url"] = prof["source"]["url"]
+        prof["secondary_sources"][0]["name"] = prof["source"]["name"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile requires independent corroborating source family")
+
+    def test_community_catalog_profile_blank_market_scope_fails(self) -> None:
+        for market in ["", "  ", "TBD", "UNKNOWN"]:
+            prof = _valid_community_catalog_profile(market=market)
+            issues = validate_matrix.validate_catalog_object(
+                {"profiles": [prof]}, validate_evidence=True
+            )
+            _only(issues, "community profile missing exact market scope")
+
+    def test_community_catalog_profile_missing_make_fails(self) -> None:
+        prof = _valid_community_catalog_profile(make="")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing make scope")
+
+    def test_community_catalog_profile_missing_model_fails(self) -> None:
+        prof = _valid_community_catalog_profile(model="")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing model scope")
+
+    def test_community_catalog_profile_non_integer_year_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from="2022")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile year_from and year_to must be integer years")
+
+    def test_community_catalog_profile_reversed_years_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from=2025, year_to=2022)
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile reversed year range: 2025 > 2022")
+
+    def test_community_catalog_profile_out_of_bounds_years_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from=1850)
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile year range 1850-2024 outside plausible bounds")
+
+    def test_community_catalog_profile_cross_model_source_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["path"] = "vehicle_profiles/nissan/leaf.json"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than BYD Atto 3")
+
 
 def _research_profile(**overrides: object) -> dict:
     profile = {
@@ -1777,6 +2025,56 @@ class MatrixDocumentTest(unittest.TestCase):
                 profiles[profile_id]["command_count"],
                 command_count,
                 profile_id,
+            )
+
+    def test_research_row_disposition_conflicts_with_catalog_status(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(id="byd-atto3-2022-2024-community")
+            row = _unknown_row(
+                id="byd-atto-3",
+                disposition="transport-blocked",
+                catalog_presence="present",
+                catalog_profile_ids=["byd-atto3-2022-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row byd-atto-3: disposition=transport-blocked conflicts with catalog profile byd-atto3-2022-2024-community status=community",
+            )
+
+    def test_research_row_brand_mismatch_join_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(id="byd-atto3-2022-2024-community")
+            row = _unknown_row(
+                id="tesla-model-3",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["byd-atto3-2022-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row tesla-model-3: incorrect join with catalog profile byd-atto3-2022-2024-community (brand mismatch tesla != byd)",
             )
 
 

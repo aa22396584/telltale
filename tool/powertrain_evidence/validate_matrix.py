@@ -51,7 +51,44 @@ DERIVED_FAMILY_KEYS = frozenset({"derived_from", "fork_of"})
 SOURCE_ROLES = frozenset({"primary", "corroborating", "secondary"})
 INHERIT_LOCATOR_PREFIXES = ("row:", "research:", "research_row:", "sibling:")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-BLANK_SCOPE = frozenset({"", "unknown", "unspecified", "n/a", "na"})
+BLANK_SCOPE = frozenset({"", "unknown", "unspecified", "n/a", "na", "tbd"})
+GENERIC_BRAND_PLATFORM_ALIASES = frozenset(
+    {
+        "byd",
+        "tesla",
+        "toyota",
+        "nissan",
+        "volkswagen",
+        "vw",
+        "hyundai",
+        "kia",
+        "renault",
+        "bmw",
+        "mg",
+        "meb",
+        "e-gmp",
+        "egmp",
+        "blade",
+        "e-platform",
+    }
+)
+CROSS_MAKE_TARGETS: dict[str, tuple[str, ...]] = {
+    "byd": ("nissan/leaf", "tesla/", "vehicle_profiles/nissan", "vehicle_profiles/tesla"),
+    "tesla": ("byd/", "nissan/", "vehicle_profiles/byd", "vehicle_profiles/nissan"),
+    "nissan": ("byd/", "tesla/", "vehicle_profiles/byd", "vehicle_profiles/tesla"),
+    "hyundai": ("byd/", "tesla/", "nissan/"),
+    "volkswagen": ("byd/", "tesla/", "nissan/"),
+}
+
+
+def _is_cross_model_source(make: str, path: str, url: str) -> bool:
+    make_key = make.lower().strip()
+    targets = CROSS_MAKE_TARGETS.get(make_key)
+    if targets:
+        target_str = f"{path} {url}".lower()
+        if any(target in target_str for target in targets):
+            return True
+    return False
 SIGNEDNESS = frozenset({"unsigned", "signed"})
 HEX_SERVICE = re.compile(r"^[0-9A-Fa-f]{2}$")
 HEX_DID = re.compile(r"^[0-9A-Fa-f]{2,4}$")
@@ -1111,6 +1148,12 @@ def validate_research_row(
         not isinstance(item, str) for item in aliases
     ):
         issues.append(f"{prefix}: aliases must be a list of strings")
+    else:
+        for alias in aliases:
+            if alias.strip().lower() in GENERIC_BRAND_PLATFORM_ALIASES:
+                issues.append(
+                    f"{prefix}: alias {alias!r} extrapolates entire brand/platform without model specificity"
+                )
 
     commands = row.get("commands")
     if commands is not None and not isinstance(commands, list):
@@ -1240,6 +1283,22 @@ def validate_research_row(
             issues.append(
                 f"{prefix}: source {source_id} declared family {declared_family!r} "
                 f"does not match derived family {derived_family!r}"
+            )
+        loc = _text(source.get("locator"))
+        if not loc:
+            issues.append(
+                f"{prefix}: source {source_id} missing row-specific evidence locator"
+            )
+        elif any(loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+            issues.append(
+                f"{prefix}: source {source_id} locator uses prohibited inheritance reference: {loc}"
+            )
+        src_path = _text(source.get("path")).lower()
+        src_url = _text(source.get("url")).lower()
+        row_make = row_id.split("-")[0]
+        if row_make in CROSS_MAKE_TARGETS and _is_cross_model_source(row_make, src_path, src_url):
+            issues.append(
+                f"{prefix}: source {source_id} path {source.get('path')!r} belongs to a different vehicle model than {row_id}"
             )
 
     primaries = [s for s in sources if _text(s.get("role")) == "primary"]
@@ -1435,12 +1494,108 @@ def validate_research_row(
     return issues
 
 
-def validate_catalog_object(catalog: dict[str, Any]) -> list[str]:
+def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    profile_id = _text(profile.get("id")) or "<missing-id>"
+    prefix = f"catalog profile {profile_id}"
+
+    source = profile.get("source")
+    primary_family = ""
+    if not isinstance(source, dict):
+        issues.append(f"{prefix}: community profile missing primary source object")
+    else:
+        primary_family = derive_source_family(source)
+        if not primary_family:
+            issues.append(f"{prefix}: primary source has no derivable family identity")
+        if not _text(source.get("license")):
+            issues.append(f"{prefix}: primary source missing licence")
+        if not is_immutable_revision(_text(source.get("revision"))):
+            issues.append(f"{prefix}: primary source missing immutable revision pin")
+        if not is_sha256_hex(_text(source.get("artifact_sha256"))):
+            issues.append(f"{prefix}: primary source missing valid artifact sha256")
+        loc = _text(source.get("locator"))
+        if not loc:
+            issues.append(f"{prefix}: primary source missing row-specific evidence locator")
+        elif any(loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+            issues.append(f"{prefix}: primary source locator uses prohibited inheritance reference: {loc}")
+
+    secondaries = profile.get("secondary_sources")
+    if not isinstance(secondaries, list) or not secondaries:
+        issues.append(f"{prefix}: community profile requires at least one secondary source")
+    else:
+        sec_families: list[str] = []
+        for idx, sec in enumerate(secondaries):
+            if not isinstance(sec, dict):
+                issues.append(f"{prefix}: secondary source [{idx}] must be an object")
+                continue
+            sec_fam = derive_source_family(sec)
+            if not sec_fam:
+                issues.append(f"{prefix}: secondary source [{idx}] has no derivable family identity")
+            else:
+                sec_families.append(sec_fam)
+            if not _text(sec.get("license")):
+                issues.append(f"{prefix}: secondary source [{idx}] missing licence")
+            if not is_immutable_revision(_text(sec.get("revision"))):
+                issues.append(f"{prefix}: secondary source [{idx}] missing immutable revision pin")
+            if not is_sha256_hex(_text(sec.get("artifact_sha256"))):
+                issues.append(f"{prefix}: secondary source [{idx}] missing valid artifact sha256")
+            sec_loc = _text(sec.get("locator"))
+            if not sec_loc:
+                issues.append(f"{prefix}: secondary source [{idx}] missing row-specific evidence locator")
+            elif any(sec_loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+                issues.append(f"{prefix}: secondary source [{idx}] locator uses prohibited inheritance reference: {sec_loc}")
+
+        if primary_family and sec_families:
+            independent = [f for f in sec_families if f != primary_family]
+            if not independent:
+                issues.append(
+                    f"{prefix}: community profile requires independent corroborating source family, "
+                    f"found only same family as primary: {primary_family}"
+                )
+
+    market = _text(profile.get("market"))
+    if not market or market.lower() in BLANK_SCOPE:
+        issues.append(f"{prefix}: community profile missing exact market scope")
+    make = _text(profile.get("make"))
+    if not make:
+        issues.append(f"{prefix}: community profile missing make scope")
+    model = _text(profile.get("model"))
+    if not model:
+        issues.append(f"{prefix}: community profile missing model scope")
+
+    year_from = profile.get("year_from")
+    year_to = profile.get("year_to")
+    if not isinstance(year_from, int) or not isinstance(year_to, int):
+        issues.append(f"{prefix}: community profile year_from and year_to must be integer years")
+    elif year_from > year_to:
+        issues.append(f"{prefix}: community profile reversed year range: {year_from} > {year_to}")
+    elif year_from < 1900 or year_to > 2100:
+        issues.append(f"{prefix}: community profile year range {year_from}-{year_to} outside plausible bounds")
+
+    all_sources = [source] if isinstance(source, dict) else []
+    if isinstance(secondaries, list):
+        all_sources.extend(s for s in secondaries if isinstance(s, dict))
+    for src_item in all_sources:
+        path = _text(src_item.get("path")).lower()
+        url = _text(src_item.get("url")).lower()
+        if make and _is_cross_model_source(make, path, url):
+            issues.append(
+                f"{prefix}: source path {src_item.get('path')!r} belongs to a different vehicle model than {make} {model}"
+            )
+    return issues
+
+
+def validate_catalog_object(
+    catalog: dict[str, Any],
+    *,
+    validate_evidence: bool = False,
+) -> list[str]:
     issues: list[str] = []
     for profile in _as_list(catalog.get("profiles")):
         if not isinstance(profile, dict):
             continue
         profile_id = _text(profile.get("id")) or "<missing-id>"
+        prefix = f"catalog profile {profile_id}"
         status = _text(profile.get("status"))
         raw_commands = profile.get("commands")
         command_items = raw_commands if isinstance(raw_commands, list) else []
@@ -1453,18 +1608,21 @@ def validate_catalog_object(catalog: dict[str, Any]) -> list[str]:
             )
         ):
             issues.append(
-                f"catalog profile {profile_id}: status={status} has 0 executable commands"
+                f"{prefix}: status={status} has 0 executable commands"
             )
         locator = extract_vehicle_evidence_locator(profile) or _physical_locator(profile)
         evidence = _text(profile.get("evidence"))
         if status == "ready" and (evidence != "physicalVehicle" or not locator):
             issues.append(
-                f"catalog profile {profile_id}: ready profile requires retained physical-vehicle evidence"
+                f"{prefix}: ready profile requires retained physical-vehicle evidence"
             )
         elif evidence == "physicalVehicle" and not locator:
             issues.append(
-                f"catalog profile {profile_id}: physicalVehicle evidence has no retained vehicle-evidence locator"
+                f"{prefix}: physicalVehicle evidence has no retained vehicle-evidence locator"
             )
+
+        if validate_evidence and status == "community":
+            issues.extend(validate_catalog_community_profile(profile))
     return issues
 
 
@@ -1499,7 +1657,7 @@ def validate_matrix_document(
     if not isinstance(catalog_obj, dict):
         issues.append("catalog JSON must be an object")
         return issues
-    issues.extend(validate_catalog_object(catalog_obj))
+    issues.extend(validate_catalog_object(catalog_obj, validate_evidence=True))
 
     expected_catalog = extract_catalog_section(catalog_bytes, manifest)
     actual_catalog = matrix.get("catalog")
@@ -1513,11 +1671,14 @@ def validate_matrix_document(
     if dump_canonical(actual_research) != dump_canonical(expected_research):
         issues.append("research section is stale versus research/rows.json")
 
-    catalog_ids = {
-        _text(profile.get("id"))
-        for profile in _as_list(catalog_obj.get("profiles"))
-        if isinstance(profile, dict) and _text(profile.get("id"))
+    catalog_profiles_list = _as_list(catalog_obj.get("profiles"))
+    catalog_profiles_by_id = {
+        _text(p.get("id")): p
+        for p in catalog_profiles_list
+        if isinstance(p, dict) and _text(p.get("id"))
     }
+
+    catalog_ids = set(catalog_profiles_by_id.keys())
     rows = _as_list(actual_research)
     research_ids = {
         _text(row.get("id"))
@@ -1541,6 +1702,24 @@ def validate_matrix_document(
                 row, catalog_ids=catalog_ids, research_ids=research_ids
             )
         )
+
+        cat_ids_for_row = row.get("catalog_profile_ids")
+        if isinstance(cat_ids_for_row, list):
+            disposition = _text(row.get("disposition"))
+            for pid in cat_ids_for_row:
+                if pid in catalog_profiles_by_id:
+                    cat_prof = catalog_profiles_by_id[pid]
+                    cat_status = _text(cat_prof.get("status"))
+                    if disposition in {"transport-blocked", "identity-only", "no-source"} and cat_status in {"community", "ready"}:
+                        issues.append(
+                            f"research row {row_id}: disposition={disposition} conflicts with catalog profile {pid} status={cat_status}"
+                        )
+                    row_make = row_id.split("-")[0]
+                    cat_make = pid.split("-")[0]
+                    if row_make in CROSS_MAKE_TARGETS and cat_make in CROSS_MAKE_TARGETS and row_make != cat_make:
+                        issues.append(
+                            f"research row {row_id}: incorrect join with catalog profile {pid} (brand mismatch {row_make} != {cat_make})"
+                        )
     return issues
 
 
