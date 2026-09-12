@@ -146,7 +146,9 @@ void main() {
   test('a fresh client starts automatic', () {
     final client = Elm327Client(_can());
     expect(client.flowControlState, isA<ElmFlowControlAutomatic>());
-    expect(client.supportsExtendedAddressing, isFalse);
+    expect(client.supportsExtendedAddressing, isTrue);
+    expect(client.supportsCanPriority, isTrue);
+    expect(client.supportsCanReceiveFilter, isTrue);
     expect(client.supportsHostVisibleIsoTp, isTrue);
   });
 

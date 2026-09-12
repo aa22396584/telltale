@@ -4011,6 +4011,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Host-sichtbare ISO-TP-Reassemblierung ist auf diesem ELM327-Pfad nicht verfügbar.';
 
   @override
+  String get settingsManualCommandCanPriorityUnavailable =>
+      'CAN-Prioritätsprogrammierung ist auf diesem ELM327-Pfad nicht verfügbar.';
+
+  @override
+  String get settingsManualCommandCanReceiveFilterUnavailable =>
+      'CAN-Empfangsfilterung ist auf diesem ELM327-Pfad nicht verfügbar.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Es wurde nichts eingegeben, daher wurde auch nichts gesendet.';
 

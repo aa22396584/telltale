@@ -6251,7 +6251,7 @@ abstract class AppLocalizations {
   /// **'The adapter refused to restore default flow control (ATFCSM0), so polling is stopped until you reconnect.'**
   String get settingsManualCommandFlowControlRestoreFailed;
 
-  /// TransportIssue.extendedAddressingUnavailable. Always-unavailable in the typed-FC slice; ATCEA is not implemented. Named so capability reporting cannot claim it.
+  /// TransportIssue.extendedAddressingUnavailable. ATCEA was refused or ATCEA clear could not restore defaults. Zero decoded value. ATCEA is a machine token.
   ///
   /// In en, this message translates to:
   /// **'Extended addressing is not available on this ELM327 path.'**
@@ -6262,6 +6262,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Host-visible ISO-TP reassembly is not available on this ELM327 path.'**
   String get settingsManualCommandRawIsoTpModeUnavailable;
+
+  /// TransportIssue.canPriorityUnavailable. ATCP was refused or ATCP18 could not restore the datasheet default. Zero decoded value. ATCP/ATCP18 are machine tokens.
+  ///
+  /// In en, this message translates to:
+  /// **'CAN priority programming is not available on this ELM327 path.'**
+  String get settingsManualCommandCanPriorityUnavailable;
+
+  /// TransportIssue.canReceiveFilterUnavailable. ATCRA with an address was refused or bare ATCRA could not clear the filter. Zero decoded value. ATCRA is a machine token.
+  ///
+  /// In en, this message translates to:
+  /// **'CAN receive filtering is not available on this ELM327 path.'**
+  String get settingsManualCommandCanReceiveFilterUnavailable;
 
   /// ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything.
   ///

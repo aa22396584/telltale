@@ -3938,6 +3938,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Host-visible ISO-TP reassembly is not available on this ELM327 path.';
 
   @override
+  String get settingsManualCommandCanPriorityUnavailable =>
+      'CAN priority programming is not available on this ELM327 path.';
+
+  @override
+  String get settingsManualCommandCanReceiveFilterUnavailable =>
+      'CAN receive filtering is not available on this ELM327 path.';
+
+  @override
   String get manualCommandRefusedEmpty =>
       'Nothing was typed, so nothing was sent.';
 

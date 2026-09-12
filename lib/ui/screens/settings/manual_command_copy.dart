@@ -140,6 +140,10 @@ String? commandIssueText(
       l10n.settingsManualCommandExtendedAddressingUnavailable,
     TransportIssue.rawIsoTpModeUnavailable =>
       l10n.settingsManualCommandRawIsoTpModeUnavailable,
+    TransportIssue.canPriorityUnavailable =>
+      l10n.settingsManualCommandCanPriorityUnavailable,
+    TransportIssue.canReceiveFilterUnavailable =>
+      l10n.settingsManualCommandCanReceiveFilterUnavailable,
 
     // The connect screen's half, delegated rather than duplicated.
     TransportIssue.cancelled ||

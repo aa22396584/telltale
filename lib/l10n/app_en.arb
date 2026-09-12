@@ -3216,11 +3216,19 @@
   },
   "settingsManualCommandExtendedAddressingUnavailable": "Extended addressing is not available on this ELM327 path.",
   "@settingsManualCommandExtendedAddressingUnavailable": {
-    "description": "TransportIssue.extendedAddressingUnavailable. Always-unavailable in the typed-FC slice; ATCEA is not implemented. Named so capability reporting cannot claim it."
+    "description": "TransportIssue.extendedAddressingUnavailable. ATCEA was refused or ATCEA clear could not restore defaults. Zero decoded value. ATCEA is a machine token."
   },
   "settingsManualCommandRawIsoTpModeUnavailable": "Host-visible ISO-TP reassembly is not available on this ELM327 path.",
   "@settingsManualCommandRawIsoTpModeUnavailable": {
     "description": "TransportIssue.rawIsoTpModeUnavailable. ATCAF0 was refused or ATCAF1 could not restore auto-format. Zero decoded value. ISO-TP is a machine token."
+  },
+  "settingsManualCommandCanPriorityUnavailable": "CAN priority programming is not available on this ELM327 path.",
+  "@settingsManualCommandCanPriorityUnavailable": {
+    "description": "TransportIssue.canPriorityUnavailable. ATCP was refused or ATCP18 could not restore the datasheet default. Zero decoded value. ATCP/ATCP18 are machine tokens."
+  },
+  "settingsManualCommandCanReceiveFilterUnavailable": "CAN receive filtering is not available on this ELM327 path.",
+  "@settingsManualCommandCanReceiveFilterUnavailable": {
+    "description": "TransportIssue.canReceiveFilterUnavailable. ATCRA with an address was refused or bare ATCRA could not clear the filter. Zero decoded value. ATCRA is a machine token."
   },
   "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
   "@manualCommandRefusedEmpty": {

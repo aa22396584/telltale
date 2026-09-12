@@ -14,6 +14,7 @@ import 'dart:convert';
 
 import 'adapter_identity.dart';
 import 'addressing.dart';
+import 'elm_can_addressing.dart';
 import 'elm_flow_control.dart';
 import 'elm_host_isotp.dart';
 import 'iso_tp_assembler.dart';
@@ -756,6 +757,12 @@ class Elm327Client {
     _flowControlState = const ElmFlowControlAutomatic();
     _hostVisibleIsoTpRestoreFailed = false;
     _hostVisibleIsoTp = false;
+    _extendedAddressingRestoreFailed = false;
+    _extendedAddressingState = const ElmExtendedAddressingOff();
+    _canPriorityRestoreFailed = false;
+    _canPriorityState = const ElmCanPriorityDefault();
+    _canReceiveFilterRestoreFailed = false;
+    _canReceiveFilterState = const ElmCanReceiveFilterOff();
     await transport.connect();
     transcript.recordNote(
       'Connection established: ${transport.displayName} (${transport.kind.label})',
@@ -1474,6 +1481,10 @@ class Elm327Client {
       _flowControlState = const ElmFlowControlAutomatic();
       // AT Z / AT D / AT WS also restore CAN auto-format (`ATCAF1`).
       _hostVisibleIsoTp = false;
+      // And the typed CAN addressing knobs: CEA off, CP default, CRA clear.
+      _extendedAddressingState = const ElmExtendedAddressingOff();
+      _canPriorityState = const ElmCanPriorityDefault();
+      _canReceiveFilterState = const ElmCanReceiveFilterOff();
       return;
     }
     if (!_saidOk(response)) return;
@@ -1488,8 +1499,20 @@ class Elm327Client {
       if (_hostVisibleIsoTp) {
         _hostVisibleIsoTpRestoreFailed = true;
       }
+      if (_extendedAddressingState is ElmExtendedAddressingOn) {
+        _extendedAddressingRestoreFailed = true;
+      }
+      if (_canPriorityState is ElmCanPriorityCustom) {
+        _canPriorityRestoreFailed = true;
+      }
+      if (_canReceiveFilterState is ElmCanReceiveFilterOn) {
+        _canReceiveFilterRestoreFailed = true;
+      }
       _flowControlState = const ElmFlowControlUnknown();
       _hostVisibleIsoTp = false;
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
       return;
     }
     if (normalised == 'ATH1') {
@@ -1500,12 +1523,43 @@ class Elm327Client {
       _hostVisibleIsoTp = true;
     } else if (normalised == ElmHostIsoTpConfig.restoreCommand) {
       _hostVisibleIsoTp = false;
+    } else if (normalised == ElmExtendedAddressingConfig.restoreCommand) {
+      _extendedAddressingState = const ElmExtendedAddressingOff();
+    } else if (normalised.startsWith('ATCEA') && normalised.length == 7) {
+      final hex = normalised.substring(5);
+      if (RegExp(r'^[0-9A-F]{2}$').hasMatch(hex)) {
+        _extendedAddressingState =
+            ElmExtendedAddressingOn(int.parse(hex, radix: 16));
+      }
+    } else if (normalised == ElmCanPriorityConfig.restoreCommand) {
+      _canPriorityState = const ElmCanPriorityDefault();
+      // ATCP changes the five MSBs of a 29-bit ID. A previously confirmed
+      // ATSH named the full identifier; keep it and the next addressed
+      // send would skip ATSH while the adapter now uses a different ID.
+      _currentHeader = null;
+    } else if (normalised.startsWith('ATCP') && normalised.length == 6) {
+      final hex = normalised.substring(4);
+      if (RegExp(r'^[0-9A-F]{2}$').hasMatch(hex)) {
+        final value = int.parse(hex, radix: 16);
+        _canPriorityState = value == ElmCanPriorityConfig.defaultPriorityByte
+            ? const ElmCanPriorityDefault()
+            : ElmCanPriorityCustom(value);
+        _currentHeader = null;
+      }
+    } else if (normalised == ElmCanReceiveFilterConfig.restoreCommand) {
+      _canReceiveFilterState = const ElmCanReceiveFilterOff();
+    } else if (normalised.startsWith('ATCRA') && normalised.length > 5) {
+      final address = normalised.substring(5);
+      if (RegExp(r'^[0-9A-F]+$').hasMatch(address) &&
+          (address.length == 3 || address.length == 8)) {
+        _canReceiveFilterState = ElmCanReceiveFilterOn(address);
+      }
     }
   }
 
   /// Sticky restore failures refuse every later write until this client is
-  /// replaced. Flow-control and host-visible ISO-TP each have their own flag
-  /// so one named issue cannot be reported as the other.
+  /// replaced. Each typed AT family has its own flag so one named issue
+  /// cannot be reported as another.
   void _throwIfStickyRestoreFailed() {
     if (_flowControlRestoreFailed) {
       throw const TransportException(
@@ -1517,6 +1571,24 @@ class Elm327Client {
       throw const TransportException(
         ElmHostIsoTpMessages.restoreFailed,
         issue: TransportIssue.rawIsoTpModeUnavailable,
+      );
+    }
+    if (_extendedAddressingRestoreFailed) {
+      throw const TransportException(
+        ElmExtendedAddressingMessages.restoreFailed,
+        issue: TransportIssue.extendedAddressingUnavailable,
+      );
+    }
+    if (_canPriorityRestoreFailed) {
+      throw const TransportException(
+        ElmCanPriorityMessages.restoreFailed,
+        issue: TransportIssue.canPriorityUnavailable,
+      );
+    }
+    if (_canReceiveFilterRestoreFailed) {
+      throw const TransportException(
+        ElmCanReceiveFilterMessages.restoreFailed,
+        issue: TransportIssue.canReceiveFilterUnavailable,
       );
     }
   }
@@ -2180,6 +2252,163 @@ class Elm327Client {
     return completer.future;
   }
 
+  /// Sends `ATCEAhh` so ISO 15765-2 extended addressing is active. Confirmed
+  /// only on a literal `OK`.
+  Future<ElmExtendedAddressingOutcome> applyExtendedAddressing(
+    int addressByte, {
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmExtendedAddressingConfig.defaultBudget,
+    );
+    final completer = Completer<ElmExtendedAddressingOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _applyExtendedAddressingNow(
+            addressByte,
+            owner: owner,
+            deadline: deadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends bare `ATCEA` to clear extended addressing.
+  Future<ElmExtendedAddressingOutcome> restoreExtendedAddressing({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmExtendedAddressingConfig.defaultBudget,
+    );
+    final completer = Completer<ElmExtendedAddressingOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        _throwIfStickyRestoreFailed();
+        completer.complete(
+          await _restoreExtendedAddressingNow(
+            deadline: deadline,
+            responseBytesUsed: 0,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends `ATCPhh` (29-bit CAN priority). Confirmed only on a literal `OK`.
+  Future<ElmCanPriorityOutcome> applyCanPriority(
+    int priorityByte, {
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmCanPriorityConfig.defaultBudget,
+    );
+    final completer = Completer<ElmCanPriorityOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _applyCanPriorityNow(
+            priorityByte,
+            owner: owner,
+            deadline: deadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends `ATCP18` to restore the datasheet default priority.
+  Future<ElmCanPriorityOutcome> restoreCanPriority({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmCanPriorityConfig.defaultBudget,
+    );
+    final completer = Completer<ElmCanPriorityOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        _throwIfStickyRestoreFailed();
+        completer.complete(
+          await _restoreCanPriorityNow(
+            deadline: deadline,
+            responseBytesUsed: 0,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends `ATCRAhhh…` receive filter. Confirmed only on a literal `OK`.
+  ///
+  /// Never part of the default init sequence — wrong CRA historically
+  /// silences ECU replies (see `docs/protocol-deviations.zh-TW.md`).
+  Future<ElmCanReceiveFilterOutcome> applyCanReceiveFilter(
+    ElmCanReceiveFilterConfig config, {
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmCanReceiveFilterConfig.defaultBudget,
+    );
+    final completer = Completer<ElmCanReceiveFilterOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _applyCanReceiveFilterNow(
+            config,
+            owner: owner,
+            deadline: deadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends bare `ATCRA` to clear the receive address filter.
+  Future<ElmCanReceiveFilterOutcome> restoreCanReceiveFilter({
+    Object? owner,
+    Duration? budget,
+  }) {
+    final deadline = DateTime.now().add(
+      budget ?? ElmCanReceiveFilterConfig.defaultBudget,
+    );
+    final completer = Completer<ElmCanReceiveFilterOutcome>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        _throwIfStickyRestoreFailed();
+        completer.complete(
+          await _restoreCanReceiveFilterNow(
+            deadline: deadline,
+            responseBytesUsed: 0,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
   Future<ElmHostIsoTpOutcome> _applyHostVisibleIsoTpNow({
     required Object? owner,
     required DateTime deadline,
@@ -2480,6 +2709,926 @@ class Elm327Client {
       return const ElmHostIsoTpOutcome(
         result: ElmHostIsoTpResult.restoreFailed,
         hostVisible: false,
+      );
+    }
+  }
+
+  Future<ElmExtendedAddressingOutcome> _applyExtendedAddressingNow(
+    int addressByte, {
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    final prior = _extendedAddressingState;
+    _throwIfStickyRestoreFailed();
+    if (!addressing.isCan) {
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.rejectedUnknownCommand,
+        state: prior,
+      );
+    }
+    final command = ElmExtendedAddressingConfig.applyCommand(addressByte);
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    var bytes = 0;
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on TimeoutException {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      bytes = _resyncDrainedWireBytes;
+    }
+    if (!deadline.isAfter(DateTime.now()) ||
+        bytes > ElmExtendedAddressingConfig.maxResponseBytes) {
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    try {
+      final response = await _sendNow(
+        command,
+        commandTimeout,
+        owner: owner,
+        deadline: deadline,
+      );
+      bytes += _flowControlResponseBytes(response);
+      if (bytes > ElmExtendedAddressingConfig.maxResponseBytes) {
+        return await _cleanupExtendedAddressingApply(
+          failure: ElmExtendedAddressingResult.budgetExceeded,
+          deadline: deadline,
+          responseBytesUsed: bytes,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.applied,
+          state: _extendedAddressingState,
+        );
+      }
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.rejectedUnknownCommand,
+        state: _extendedAddressingState,
+      );
+    } on TimeoutException catch (e) {
+      if (e.message?.contains('was not sent') ?? false) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      return await _cleanupExtendedAddressingApply(
+        failure: ElmExtendedAddressingResult.timedOut,
+        deadline: deadline,
+        responseBytesUsed: bytes,
+      );
+    } on WriteRefusedException {
+      rethrow;
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _extendedAddressingState = const ElmExtendedAddressingUnknown();
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.disconnected,
+          state: _extendedAddressingState,
+        );
+      }
+      return await _cleanupExtendedAddressingApply(
+        failure: ElmExtendedAddressingResult.unconfirmedWrite,
+        deadline: deadline,
+        responseBytesUsed: bytes + _lastReplyWireBytes,
+      );
+    }
+  }
+
+  Future<ElmExtendedAddressingOutcome> _cleanupExtendedAddressingApply({
+    required ElmExtendedAddressingResult failure,
+    required DateTime deadline,
+    required int responseBytesUsed,
+  }) async {
+    final cleaned = await _restoreExtendedAddressingNow(
+      deadline: deadline,
+      responseBytesUsed: responseBytesUsed,
+      afterUnconfirmedApply: true,
+    );
+    if (cleaned.result == ElmExtendedAddressingResult.restoreFailed ||
+        cleaned.result == ElmExtendedAddressingResult.disconnected) {
+      return cleaned;
+    }
+    return ElmExtendedAddressingOutcome(
+      result: failure,
+      state: cleaned.state,
+    );
+  }
+
+  Future<ElmExtendedAddressingOutcome> _restoreExtendedAddressingNow({
+    required DateTime deadline,
+    required int responseBytesUsed,
+    bool afterUnconfirmedApply = false,
+  }) async {
+    if (!transport.isConnected) {
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.disconnected,
+        state: _extendedAddressingState,
+      );
+    }
+    final mustRestore =
+        _extendedAddressingState is ElmExtendedAddressingOn ||
+            afterUnconfirmedApply;
+    if (DateTime.now().isAfter(deadline) ||
+        responseBytesUsed > ElmExtendedAddressingConfig.maxResponseBytes) {
+      if (!mustRestore) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.budgetExceeded,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    }
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on Object {
+        if (!mustRestore) {
+          return ElmExtendedAddressingOutcome(
+            result: ElmExtendedAddressingResult.budgetExceeded,
+            state: _extendedAddressingState,
+          );
+        }
+        _extendedAddressingState = const ElmExtendedAddressingUnknown();
+        _extendedAddressingRestoreFailed = true;
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restoreFailed,
+          state: _extendedAddressingState,
+        );
+      }
+      responseBytesUsed += _resyncDrainedWireBytes;
+      if (responseBytesUsed > ElmExtendedAddressingConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmExtendedAddressingOutcome(
+            result: ElmExtendedAddressingResult.budgetExceeded,
+            state: _extendedAddressingState,
+          );
+        }
+        _extendedAddressingState = const ElmExtendedAddressingUnknown();
+        _extendedAddressingRestoreFailed = true;
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restoreFailed,
+          state: _extendedAddressingState,
+        );
+      }
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      if (!mustRestore) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.budgetExceeded,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    }
+    try {
+      final response = await _sendNow(
+        ElmExtendedAddressingConfig.restoreCommand,
+        commandTimeout,
+        deadline: deadline,
+        completesCommittedTransaction: true,
+      );
+      responseBytesUsed += _flowControlResponseBytes(response);
+      if (responseBytesUsed > ElmExtendedAddressingConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmExtendedAddressingOutcome(
+            result: ElmExtendedAddressingResult.budgetExceeded,
+            state: _extendedAddressingState,
+          );
+        }
+        _extendedAddressingState = const ElmExtendedAddressingUnknown();
+        _extendedAddressingRestoreFailed = true;
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restoreFailed,
+          state: _extendedAddressingState,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restored,
+          state: _extendedAddressingState,
+        );
+      }
+      if (!mustRestore &&
+          _extendedAddressingState is ElmExtendedAddressingOff) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restoreRejected,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    } on TimeoutException catch (e) {
+      if (!mustRestore) {
+        return ElmExtendedAddressingOutcome(
+          result: (e.message?.contains('was not sent') ?? false)
+              ? ElmExtendedAddressingResult.budgetExceeded
+              : ElmExtendedAddressingResult.timedOut,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    } on WriteRefusedException {
+      if (!mustRestore) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.restoreRejected,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _extendedAddressingState = const ElmExtendedAddressingUnknown();
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.disconnected,
+          state: _extendedAddressingState,
+        );
+      }
+      if (!mustRestore) {
+        return ElmExtendedAddressingOutcome(
+          result: ElmExtendedAddressingResult.unconfirmedWrite,
+          state: _extendedAddressingState,
+        );
+      }
+      _extendedAddressingState = const ElmExtendedAddressingUnknown();
+      _extendedAddressingRestoreFailed = true;
+      return ElmExtendedAddressingOutcome(
+        result: ElmExtendedAddressingResult.restoreFailed,
+        state: _extendedAddressingState,
+      );
+    }
+  }
+
+  Future<ElmCanPriorityOutcome> _applyCanPriorityNow(
+    int priorityByte, {
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    final prior = _canPriorityState;
+    _throwIfStickyRestoreFailed();
+    if (addressing.family != ObdBusFamily.can29) {
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.rejectedUnknownCommand,
+        state: prior,
+      );
+    }
+    final command = ElmCanPriorityConfig.applyCommand(priorityByte);
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    var bytes = 0;
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on TimeoutException {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      bytes = _resyncDrainedWireBytes;
+    }
+    if (!deadline.isAfter(DateTime.now()) ||
+        bytes > ElmCanPriorityConfig.maxResponseBytes) {
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    try {
+      // Any ATCP write that may reach the adapter changes the five MSBs of a
+      // 29-bit ID. Invalidate before the write so a timeout / unconfirmed
+      // flush cannot leave sendOnHeader skipping ATSH under a stale cache.
+      _currentHeader = null;
+      final response = await _sendNow(
+        command,
+        commandTimeout,
+        owner: owner,
+        deadline: deadline,
+      );
+      bytes += _flowControlResponseBytes(response);
+      if (bytes > ElmCanPriorityConfig.maxResponseBytes) {
+        return await _cleanupCanPriorityApply(
+          failure: ElmCanPriorityResult.budgetExceeded,
+          deadline: deadline,
+          responseBytesUsed: bytes,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmCanPriorityOutcome(
+          result: priorityByte == ElmCanPriorityConfig.defaultPriorityByte
+              ? ElmCanPriorityResult.restored
+              : ElmCanPriorityResult.applied,
+          state: _canPriorityState,
+        );
+      }
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.rejectedUnknownCommand,
+        state: _canPriorityState,
+      );
+    } on TimeoutException catch (e) {
+      if (e.message?.contains('was not sent') ?? false) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      return await _cleanupCanPriorityApply(
+        failure: ElmCanPriorityResult.timedOut,
+        deadline: deadline,
+        responseBytesUsed: bytes,
+      );
+    } on WriteRefusedException {
+      rethrow;
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _canPriorityState = const ElmCanPriorityUnknown();
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.disconnected,
+          state: _canPriorityState,
+        );
+      }
+      return await _cleanupCanPriorityApply(
+        failure: ElmCanPriorityResult.unconfirmedWrite,
+        deadline: deadline,
+        responseBytesUsed: bytes + _lastReplyWireBytes,
+      );
+    }
+  }
+
+  Future<ElmCanPriorityOutcome> _cleanupCanPriorityApply({
+    required ElmCanPriorityResult failure,
+    required DateTime deadline,
+    required int responseBytesUsed,
+  }) async {
+    final cleaned = await _restoreCanPriorityNow(
+      deadline: deadline,
+      responseBytesUsed: responseBytesUsed,
+      afterUnconfirmedApply: true,
+    );
+    if (cleaned.result == ElmCanPriorityResult.restoreFailed ||
+        cleaned.result == ElmCanPriorityResult.disconnected) {
+      return cleaned;
+    }
+    return ElmCanPriorityOutcome(
+      result: failure,
+      state: cleaned.state,
+    );
+  }
+
+  Future<ElmCanPriorityOutcome> _restoreCanPriorityNow({
+    required DateTime deadline,
+    required int responseBytesUsed,
+    bool afterUnconfirmedApply = false,
+  }) async {
+    if (!transport.isConnected) {
+      _canPriorityState = const ElmCanPriorityUnknown();
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.disconnected,
+        state: _canPriorityState,
+      );
+    }
+    final mustRestore =
+        _canPriorityState is ElmCanPriorityCustom || afterUnconfirmedApply;
+    if (DateTime.now().isAfter(deadline) ||
+        responseBytesUsed > ElmCanPriorityConfig.maxResponseBytes) {
+      if (!mustRestore) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.budgetExceeded,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    }
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on Object {
+        if (!mustRestore) {
+          return ElmCanPriorityOutcome(
+            result: ElmCanPriorityResult.budgetExceeded,
+            state: _canPriorityState,
+          );
+        }
+        _canPriorityState = const ElmCanPriorityUnknown();
+        _canPriorityRestoreFailed = true;
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restoreFailed,
+          state: _canPriorityState,
+        );
+      }
+      responseBytesUsed += _resyncDrainedWireBytes;
+      if (responseBytesUsed > ElmCanPriorityConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmCanPriorityOutcome(
+            result: ElmCanPriorityResult.budgetExceeded,
+            state: _canPriorityState,
+          );
+        }
+        _canPriorityState = const ElmCanPriorityUnknown();
+        _canPriorityRestoreFailed = true;
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restoreFailed,
+          state: _canPriorityState,
+        );
+      }
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      if (!mustRestore) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.budgetExceeded,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    }
+    try {
+      // Same pre-write invalidation as apply: restore is also ATCP.
+      _currentHeader = null;
+      final response = await _sendNow(
+        ElmCanPriorityConfig.restoreCommand,
+        commandTimeout,
+        deadline: deadline,
+        completesCommittedTransaction: true,
+      );
+      responseBytesUsed += _flowControlResponseBytes(response);
+      if (responseBytesUsed > ElmCanPriorityConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmCanPriorityOutcome(
+            result: ElmCanPriorityResult.budgetExceeded,
+            state: _canPriorityState,
+          );
+        }
+        _canPriorityState = const ElmCanPriorityUnknown();
+        _canPriorityRestoreFailed = true;
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restoreFailed,
+          state: _canPriorityState,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restored,
+          state: _canPriorityState,
+        );
+      }
+      if (!mustRestore && _canPriorityState is ElmCanPriorityDefault) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restoreRejected,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    } on TimeoutException catch (e) {
+      if (!mustRestore) {
+        return ElmCanPriorityOutcome(
+          result: (e.message?.contains('was not sent') ?? false)
+              ? ElmCanPriorityResult.budgetExceeded
+              : ElmCanPriorityResult.timedOut,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    } on WriteRefusedException {
+      if (!mustRestore) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.restoreRejected,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _canPriorityState = const ElmCanPriorityUnknown();
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.disconnected,
+          state: _canPriorityState,
+        );
+      }
+      if (!mustRestore) {
+        return ElmCanPriorityOutcome(
+          result: ElmCanPriorityResult.unconfirmedWrite,
+          state: _canPriorityState,
+        );
+      }
+      _canPriorityState = const ElmCanPriorityUnknown();
+      _canPriorityRestoreFailed = true;
+      return ElmCanPriorityOutcome(
+        result: ElmCanPriorityResult.restoreFailed,
+        state: _canPriorityState,
+      );
+    }
+  }
+
+  Future<ElmCanReceiveFilterOutcome> _applyCanReceiveFilterNow(
+    ElmCanReceiveFilterConfig config, {
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    final prior = _canReceiveFilterState;
+    _throwIfStickyRestoreFailed();
+    if (!addressing.isCan) {
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.rejectedUnknownCommand,
+        state: prior,
+      );
+    }
+    if (!addressing.acceptedReceiveWidths.contains(config.address.length)) {
+      throw ArgumentError(
+        'receive-filter address does not match the detected CAN receive widths',
+      );
+    }
+    final command = config.toAtCommand();
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    var bytes = 0;
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on TimeoutException {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      bytes = _resyncDrainedWireBytes;
+    }
+    if (!deadline.isAfter(DateTime.now()) ||
+        bytes > ElmCanReceiveFilterConfig.maxResponseBytes) {
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.budgetExceeded,
+        state: prior,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    try {
+      final response = await _sendNow(
+        command,
+        commandTimeout,
+        owner: owner,
+        deadline: deadline,
+      );
+      bytes += _flowControlResponseBytes(response);
+      if (bytes > ElmCanReceiveFilterConfig.maxResponseBytes) {
+        return await _cleanupCanReceiveFilterApply(
+          failure: ElmCanReceiveFilterResult.budgetExceeded,
+          deadline: deadline,
+          responseBytesUsed: bytes,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.applied,
+          state: _canReceiveFilterState,
+        );
+      }
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.rejectedUnknownCommand,
+        state: _canReceiveFilterState,
+      );
+    } on TimeoutException catch (e) {
+      if (e.message?.contains('was not sent') ?? false) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.budgetExceeded,
+          state: prior,
+        );
+      }
+      return await _cleanupCanReceiveFilterApply(
+        failure: ElmCanReceiveFilterResult.timedOut,
+        deadline: deadline,
+        responseBytesUsed: bytes,
+      );
+    } on WriteRefusedException {
+      rethrow;
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.disconnected,
+          state: _canReceiveFilterState,
+        );
+      }
+      return await _cleanupCanReceiveFilterApply(
+        failure: ElmCanReceiveFilterResult.unconfirmedWrite,
+        deadline: deadline,
+        responseBytesUsed: bytes + _lastReplyWireBytes,
+      );
+    }
+  }
+
+  Future<ElmCanReceiveFilterOutcome> _cleanupCanReceiveFilterApply({
+    required ElmCanReceiveFilterResult failure,
+    required DateTime deadline,
+    required int responseBytesUsed,
+  }) async {
+    final cleaned = await _restoreCanReceiveFilterNow(
+      deadline: deadline,
+      responseBytesUsed: responseBytesUsed,
+      afterUnconfirmedApply: true,
+    );
+    if (cleaned.result == ElmCanReceiveFilterResult.restoreFailed ||
+        cleaned.result == ElmCanReceiveFilterResult.disconnected) {
+      return cleaned;
+    }
+    return ElmCanReceiveFilterOutcome(
+      result: failure,
+      state: cleaned.state,
+    );
+  }
+
+  Future<ElmCanReceiveFilterOutcome> _restoreCanReceiveFilterNow({
+    required DateTime deadline,
+    required int responseBytesUsed,
+    bool afterUnconfirmedApply = false,
+  }) async {
+    if (!transport.isConnected) {
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.disconnected,
+        state: _canReceiveFilterState,
+      );
+    }
+    final mustRestore =
+        _canReceiveFilterState is ElmCanReceiveFilterOn ||
+            afterUnconfirmedApply;
+    if (DateTime.now().isAfter(deadline) ||
+        responseBytesUsed > ElmCanReceiveFilterConfig.maxResponseBytes) {
+      if (!mustRestore) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.budgetExceeded,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
+      );
+    }
+    if (_outOfSync) {
+      try {
+        await _resync(deadline: deadline);
+      } on Object {
+        if (!mustRestore) {
+          return ElmCanReceiveFilterOutcome(
+            result: ElmCanReceiveFilterResult.budgetExceeded,
+            state: _canReceiveFilterState,
+          );
+        }
+        _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+        _canReceiveFilterRestoreFailed = true;
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restoreFailed,
+          state: _canReceiveFilterState,
+        );
+      }
+      responseBytesUsed += _resyncDrainedWireBytes;
+      if (responseBytesUsed > ElmCanReceiveFilterConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmCanReceiveFilterOutcome(
+            result: ElmCanReceiveFilterResult.budgetExceeded,
+            state: _canReceiveFilterState,
+          );
+        }
+        _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+        _canReceiveFilterRestoreFailed = true;
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restoreFailed,
+          state: _canReceiveFilterState,
+        );
+      }
+    }
+    if (!deadline.isAfter(DateTime.now())) {
+      if (!mustRestore) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.budgetExceeded,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
+      );
+    }
+    try {
+      final response = await _sendNow(
+        ElmCanReceiveFilterConfig.restoreCommand,
+        commandTimeout,
+        deadline: deadline,
+        completesCommittedTransaction: true,
+      );
+      responseBytesUsed += _flowControlResponseBytes(response);
+      if (responseBytesUsed > ElmCanReceiveFilterConfig.maxResponseBytes) {
+        if (!mustRestore) {
+          return ElmCanReceiveFilterOutcome(
+            result: ElmCanReceiveFilterResult.budgetExceeded,
+            state: _canReceiveFilterState,
+          );
+        }
+        _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+        _canReceiveFilterRestoreFailed = true;
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restoreFailed,
+          state: _canReceiveFilterState,
+        );
+      }
+      if (_saidOk(response)) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restored,
+          state: _canReceiveFilterState,
+        );
+      }
+      if (!mustRestore &&
+          _canReceiveFilterState is ElmCanReceiveFilterOff) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restoreRejected,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
+      );
+    } on TimeoutException catch (e) {
+      if (!mustRestore) {
+        return ElmCanReceiveFilterOutcome(
+          result: (e.message?.contains('was not sent') ?? false)
+              ? ElmCanReceiveFilterResult.budgetExceeded
+              : ElmCanReceiveFilterResult.timedOut,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
+      );
+    } on WriteRefusedException {
+      if (!mustRestore) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.restoreRejected,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
+      );
+    } on Object catch (e) {
+      if (!transport.isConnected ||
+          (e is TransportException &&
+              e.issue == TransportIssue.linkDroppedMidSession)) {
+        _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.disconnected,
+          state: _canReceiveFilterState,
+        );
+      }
+      if (!mustRestore) {
+        return ElmCanReceiveFilterOutcome(
+          result: ElmCanReceiveFilterResult.unconfirmedWrite,
+          state: _canReceiveFilterState,
+        );
+      }
+      _canReceiveFilterState = const ElmCanReceiveFilterUnknown();
+      _canReceiveFilterRestoreFailed = true;
+      return ElmCanReceiveFilterOutcome(
+        result: ElmCanReceiveFilterResult.restoreFailed,
+        state: _canReceiveFilterState,
       );
     }
   }
@@ -2988,6 +4137,17 @@ class Elm327Client {
   /// was claimed. Ordinary polling is refused until reconnect.
   bool _hostVisibleIsoTpRestoreFailed = false;
 
+  ElmExtendedAddressingState _extendedAddressingState =
+      const ElmExtendedAddressingOff();
+  bool _extendedAddressingRestoreFailed = false;
+
+  ElmCanPriorityState _canPriorityState = const ElmCanPriorityDefault();
+  bool _canPriorityRestoreFailed = false;
+
+  ElmCanReceiveFilterState _canReceiveFilterState =
+      const ElmCanReceiveFilterOff();
+  bool _canReceiveFilterRestoreFailed = false;
+
   /// Byte length of the last prompt-delimited frame, before `_parse` drops
   /// NULs and command echoes.
   int _lastReplyWireBytes = 0;
@@ -3000,8 +4160,18 @@ class Elm327Client {
 
   bool get flowControlRestoreFailed => _flowControlRestoreFailed;
 
-  /// `ATCEA` is not implemented in this slice.
-  bool get supportsExtendedAddressing => false;
+  /// This path can apply typed `ATCEA` and clear it with bare `ATCEA`.
+  ///
+  /// The adapter may still refuse; that is
+  /// [TransportIssue.extendedAddressingUnavailable], not a capability claim.
+  bool get supportsExtendedAddressing => true;
+
+  /// This path can apply typed `ATCP` on 29-bit CAN and restore `ATCP18`.
+  bool get supportsCanPriority => true;
+
+  /// This path can apply typed `ATCRA` filters and clear them with bare
+  /// `ATCRA`. Never part of default init.
+  bool get supportsCanReceiveFilter => true;
 
   /// This path can apply `ATCAF0` and reassemble host-visible PCI frames.
   ///
@@ -3012,6 +4182,21 @@ class Elm327Client {
   bool get hostVisibleIsoTp => _hostVisibleIsoTp;
 
   bool get hostVisibleIsoTpRestoreFailed => _hostVisibleIsoTpRestoreFailed;
+
+  ElmExtendedAddressingState get extendedAddressingState =>
+      _extendedAddressingState;
+
+  bool get extendedAddressingRestoreFailed =>
+      _extendedAddressingRestoreFailed;
+
+  ElmCanPriorityState get canPriorityState => _canPriorityState;
+
+  bool get canPriorityRestoreFailed => _canPriorityRestoreFailed;
+
+  ElmCanReceiveFilterState get canReceiveFilterState =>
+      _canReceiveFilterState;
+
+  bool get canReceiveFilterRestoreFailed => _canReceiveFilterRestoreFailed;
 
   /// Epoch of the most recent [beginWriteAudit] call.
   ///

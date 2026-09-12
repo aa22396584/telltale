@@ -500,6 +500,9 @@ class DemoTransport extends BaseObdTransport {
       // Timing. `ATCAF0`/`ATCAF1` are not modelled: acknowledging them
       // would let `applyHostVisibleIsoTp` claim a mode this simulator
       // cannot frame, then rewrite `010C` to `02010C` and break Demo polling.
+      // `ATCEA` / `ATCP` likewise: refuse so typed apply cannot claim a mode
+      // Demo does not frame. Historical `ATCRA` OK stays (filter is not
+      // modelled and does not rewrite Demo Mode 01 replies).
       'ATAT0', 'ATAT1', 'ATAT2',
       // Resets.
       'ATD', 'ATWS',

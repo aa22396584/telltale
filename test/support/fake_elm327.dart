@@ -178,6 +178,12 @@ class AdapterFaults {
     this.delayFlowControlReply = false,
     this.refuseCaf = false,
     this.refuseCafRestore = false,
+    this.refuseCea = false,
+    this.refuseCeaRestore = false,
+    this.refuseCp = false,
+    this.refuseCpRestore = false,
+    this.refuseCra = false,
+    this.refuseCraRestore = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -282,6 +288,26 @@ class AdapterFaults {
 
   /// Answers `?` to `ATCAF1`.
   final bool refuseCafRestore;
+
+  /// Answers `?` to `ATCEAhh` apply forms. Bare `ATCEA` still clears unless
+  /// [refuseCeaRestore] is also set.
+  final bool refuseCea;
+
+  /// Answers `?` to bare `ATCEA`.
+  final bool refuseCeaRestore;
+
+  /// Answers `?` to `ATCPhh` when the value is not the restore default.
+  final bool refuseCp;
+
+  /// Answers `?` to `ATCP18`.
+  final bool refuseCpRestore;
+
+  /// Answers `?` to `ATCRA` with an address. Bare `ATCRA` still clears unless
+  /// [refuseCraRestore] is also set.
+  final bool refuseCra;
+
+  /// Answers `?` to bare `ATCRA`.
+  final bool refuseCraRestore;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -530,6 +556,9 @@ class FakeElm327 extends BaseObdTransport {
   String? _fcHeader;
   List<int>? _fcData;
   int _fcMode = 0;
+  int? _cea;
+  int _cp = 0x18;
+  String? _cra;
   final List<Timer> _scheduled = [];
 
   @override
@@ -576,6 +605,15 @@ class FakeElm327 extends BaseObdTransport {
 
   /// Last `ATCAF` mode the adapter accepted (`1` auto-format, `0` host PCI).
   int get autoFormatMode => _caf;
+
+  /// Last extended-address byte from `ATCEA`, or null when cleared.
+  int? get extendedAddressByte => _cea;
+
+  /// Last `ATCP` priority byte (datasheet default `0x18`).
+  int get canPriorityByte => _cp;
+
+  /// Last `ATCRA` filter address, or null when cleared.
+  String? get canReceiveFilter => _cra;
 
   @override
   Future<void> write(List<int> data) async {
@@ -794,6 +832,9 @@ class FakeElm327 extends BaseObdTransport {
       _headersOn = false;
       _header = null;
       _caf = 1;
+      _cea = null;
+      _cp = 0x18;
+      _cra = null;
       _resetFlowControl();
       return '$identity\r\r>';
     }
@@ -858,6 +899,37 @@ class FakeElm327 extends BaseObdTransport {
     if (command.startsWith('ATCAF') || command.startsWith('ATCFC')) {
       return command.startsWith('ATCAF') ? '?\r>' : 'OK\r>';
     }
+    if (command == 'ATCEA') {
+      if (faults.refuseCeaRestore) return '${faults.unknownAtReply}\r>';
+      _cea = null;
+      return 'OK\r>';
+    }
+    if (command.startsWith('ATCEA')) {
+      if (faults.refuseCea) return '${faults.unknownAtReply}\r>';
+      final hex = command.substring(5);
+      if (hex.length != 2 || !RegExp(r'^[0-9A-F]{2}$').hasMatch(hex)) {
+        return '?\r>';
+      }
+      _cea = int.parse(hex, radix: 16);
+      return 'OK\r>';
+    }
+    if (command.startsWith('ATCP')) {
+      final hex = command.substring(4);
+      if (hex.length != 2 || !RegExp(r'^[0-9A-F]{2}$').hasMatch(hex)) {
+        return '?\r>';
+      }
+      final value = int.parse(hex, radix: 16);
+      if (value == 0x18) {
+        if (faults.refuseCpRestore) return '${faults.unknownAtReply}\r>';
+        _cp = 0x18;
+        return 'OK\r>';
+      }
+      if (faults.refuseCp) return '${faults.unknownAtReply}\r>';
+      // Priority bits only apply on 29-bit CAN.
+      if (protocol.headerDigits != 8) return '?\r>';
+      _cp = value;
+      return 'OK\r>';
+    }
     if (command == 'ATRV') return '${faults.voltageText ?? '13.9V'}\r>';
 
     if (command == 'ATDP') {
@@ -886,7 +958,19 @@ class FakeElm327 extends BaseObdTransport {
       return _ppSummary();
     }
 
-    if (command.startsWith('ATCRA')) return 'OK\r>';
+    if (command == 'ATCRA') {
+      if (faults.refuseCraRestore) return '${faults.unknownAtReply}\r>';
+      _cra = null;
+      return 'OK\r>';
+    }
+    if (command.startsWith('ATCRA')) {
+      if (faults.refuseCra) return '${faults.unknownAtReply}\r>';
+      final address = command.substring(5);
+      if (address.length != protocol.headerDigits) return '?\r>';
+      if (!RegExp(r'^[0-9A-F]+$').hasMatch(address)) return '?\r>';
+      _cra = address;
+      return 'OK\r>';
+    }
 
     if (command.startsWith('ATFCSH')) {
       if (faults.refuseFlowControl) return '?\r>';
@@ -963,9 +1047,16 @@ class FakeElm327 extends BaseObdTransport {
     bool reaches(FakeEcu ecu) => functional
         ? !ecu.missesFunctionalFor.contains(command.toUpperCase())
         : ecu.requestId == target;
+    // A typed ATCRA filter (when installed) drops responders whose response
+    // ID is not the filtered address — same as a real adapter would.
+    bool passesReceiveFilter(FakeEcu ecu) =>
+        _cra == null || ecu.responseId == _cra;
     final literal = _ecus
         .where(
-          (ecu) => reaches(ecu) && ecu.literalResponses.containsKey(command),
+          (ecu) =>
+              reaches(ecu) &&
+              passesReceiveFilter(ecu) &&
+              ecu.literalResponses.containsKey(command),
         )
         .expand((ecu) => ecu.literalResponses[command]!)
         .toList();
@@ -982,7 +1073,12 @@ class FakeElm327 extends BaseObdTransport {
     }
 
     final answering = _ecus
-        .where((ecu) => reaches(ecu) && ecu.responses.containsKey(command))
+        .where(
+          (ecu) =>
+              reaches(ecu) &&
+              passesReceiveFilter(ecu) &&
+              ecu.responses.containsKey(command),
+        )
         .toList();
 
     // No ECU at that address, or none implementing that request. A real bus
@@ -1007,7 +1103,9 @@ class FakeElm327 extends BaseObdTransport {
   /// is what has to cope with that.
   String? _assembleMode01Batch(String command, String target, bool functional) {
     final ecu = _ecus.firstWhere(
-      (e) => functional || e.requestId == target,
+      (e) =>
+          (functional || e.requestId == target) &&
+          (_cra == null || e.responseId == _cra),
       orElse: () => FakeEcu(name: '', requestId: '', responseId: ''),
     );
     if (ecu.name.isEmpty) return null;

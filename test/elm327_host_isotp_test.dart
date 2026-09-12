@@ -72,7 +72,9 @@ void main() {
     expect(client.supportsHostVisibleIsoTp, isTrue);
     expect(client.hostVisibleIsoTp, isFalse);
     expect(client.hostVisibleIsoTpRestoreFailed, isFalse);
-    expect(client.supportsExtendedAddressing, isFalse);
+    expect(client.supportsExtendedAddressing, isTrue);
+    expect(client.supportsCanPriority, isTrue);
+    expect(client.supportsCanReceiveFilter, isTrue);
   });
 
   test(

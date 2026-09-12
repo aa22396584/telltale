@@ -281,15 +281,23 @@ enum TransportIssue {
   /// not restored. Ordinary polling is refused until reconnect.
   flowControlRestoreFailed,
 
-  /// Extended addressing (`ATCEA`) is not implemented on this ELM327 path.
-  /// Always unavailable in this slice; named so capability reporting cannot
-  /// claim it.
+  /// Extended addressing (`ATCEA`) was refused, or `ATCEA` clear could not
+  /// restore defaults after it had been claimed. No decoded value may be
+  /// produced from that attempt.
   extendedAddressingUnavailable,
 
   /// Host-visible ISO-TP (`ATCAF0` and a host assembler) was refused, or
   /// `ATCAF1` could not restore auto-format after it had been claimed.
   /// No decoded value may be produced from that attempt.
   rawIsoTpModeUnavailable,
+
+  /// CAN priority (`ATCP`) was refused, or `ATCP18` could not restore the
+  /// datasheet default after a custom priority had been claimed.
+  canPriorityUnavailable,
+
+  /// CAN receive filter (`ATCRA` with an address) was refused, or bare
+  /// `ATCRA` could not clear the filter after it had been claimed.
+  canReceiveFilterUnavailable,
 }
 
 /// Raised for link-level failures.

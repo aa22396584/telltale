@@ -134,6 +134,14 @@ const _expected = <TransportIssue, (String, String)>{
     'Host-visible ISO-TP reassembly is not available',
     '不提供主機可見的 ISO-TP 重組',
   ),
+  TransportIssue.canPriorityUnavailable: (
+    'CAN priority programming is not available',
+    '不提供 CAN 優先權程式設計',
+  ),
+  TransportIssue.canReceiveFilterUnavailable: (
+    'CAN receive filtering is not available',
+    '不提供 CAN 接收過濾',
+  ),
 };
 
 void main() {

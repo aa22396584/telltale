@@ -3483,6 +3483,14 @@ class AppLocalizationsZh extends AppLocalizations {
       '此 ELM327 路徑不提供主機可見的 ISO-TP 重組。';
 
   @override
+  String get settingsManualCommandCanPriorityUnavailable =>
+      '此 ELM327 路徑不提供 CAN 優先權程式設計。';
+
+  @override
+  String get settingsManualCommandCanReceiveFilterUnavailable =>
+      '此 ELM327 路徑不提供 CAN 接收過濾。';
+
+  @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';
 
   @override
@@ -7527,6 +7535,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get settingsManualCommandRawIsoTpModeUnavailable =>
       '此 ELM327 路徑不提供主機可見的 ISO-TP 重組。';
+
+  @override
+  String get settingsManualCommandCanPriorityUnavailable =>
+      '此 ELM327 路徑不提供 CAN 優先權程式設計。';
+
+  @override
+  String get settingsManualCommandCanReceiveFilterUnavailable =>
+      '此 ELM327 路徑不提供 CAN 接收過濾。';
 
   @override
   String get manualCommandRefusedEmpty => '沒有輸入指令。';

@@ -273,7 +273,9 @@ String? transportIssueText(
   TransportIssue.customFlowControlRejected ||
   TransportIssue.flowControlRestoreFailed ||
   TransportIssue.extendedAddressingUnavailable ||
-  TransportIssue.rawIsoTpModeUnavailable => null,
+  TransportIssue.rawIsoTpModeUnavailable ||
+  TransportIssue.canPriorityUnavailable ||
+  TransportIssue.canReceiveFilterUnavailable => null,
 };
 
 /// The line under a busy spinner, or null when there is nothing to say.
