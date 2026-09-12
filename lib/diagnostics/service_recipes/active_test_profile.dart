@@ -156,33 +156,84 @@ final class TransportAddressing {
   final String targetEcuHeader;
   final String expectedResponseHeader;
 
+  /// Parses a hex header string into an integer CAN/bus ID.
+  static int? parseCanId(String header) {
+    final cleaned = header.trim();
+    if (cleaned.isEmpty) return null;
+    if (!RegExp(r'^[0-9A-Fa-f]+$').hasMatch(cleaned)) return null;
+    return int.tryParse(cleaned, radix: 16);
+  }
+
+  /// Normalizes a header to canonical uppercase hex format for its bus type.
+  static String normalizeHeader(String header, BusAddressingType busType) {
+    final id = parseCanId(header);
+    if (id == null) return header.trim().toUpperCase();
+    switch (busType) {
+      case BusAddressingType.can11Bit:
+        return id.toRadixString(16).padLeft(3, '0').toUpperCase();
+      case BusAddressingType.can29Bit:
+        return id.toRadixString(16).padLeft(8, '0').toUpperCase();
+      case BusAddressingType.iso9141Kwp:
+        return id.toRadixString(16).padLeft(2, '0').toUpperCase();
+    }
+  }
+
+  /// Tests whether two CAN headers represent the identical physical arbitration ID.
+  ///
+  /// For example, `7E0` and `07E0` are equivalent 11-bit CAN identifiers.
+  static bool areHeadersEquivalent(
+    String a,
+    String b, [
+    BusAddressingType? busType,
+  ]) {
+    final cleanA = a.trim();
+    final cleanB = b.trim();
+    if (cleanA.toUpperCase() == cleanB.toUpperCase()) return true;
+    final idA = parseCanId(cleanA);
+    final idB = parseCanId(cleanB);
+    if (idA != null && idB != null && idA == idB) return true;
+    return false;
+  }
+
+  int? get targetCanId => parseCanId(targetEcuHeader);
+  int? get expectedResponseCanId => parseCanId(expectedResponseHeader);
+
+  String get normalizedTargetEcuHeader =>
+      normalizeHeader(targetEcuHeader, busType);
+  String get normalizedExpectedResponseHeader =>
+      normalizeHeader(expectedResponseHeader, busType);
+
+  bool matchesTarget(String header) =>
+      areHeadersEquivalent(targetEcuHeader, header, busType);
+
+  bool matchesResponse(String header) =>
+      areHeadersEquivalent(expectedResponseHeader, header, busType);
+
   bool get isWildcard {
-    final t = targetEcuHeader.toUpperCase();
-    final r = expectedResponseHeader.toUpperCase();
+    final t = targetEcuHeader.trim().toUpperCase();
+    final r = expectedResponseHeader.trim().toUpperCase();
     if (t.isEmpty || r.isEmpty) return true;
     if (t == '*' || r == '*') return true;
     if (t == 'ALL' || r == 'ALL') return true;
     if (t == 'ANY' || r == 'ANY') return true;
     if (t == 'BROADCAST' || r == 'BROADCAST') return true;
-    if (t == '7DF') return true; // Standard OBD broadcast request header (11-bit)
-    if (t == '18DB33F1') return true; // Standard OBD functional broadcast request header (29-bit)
-    if (t == '18DAFFFF') return true; // Unspecified destination address (29-bit)
-    if (t == r) return true; // Request and response cannot have identical arbitration IDs
-    // Header must be valid hex and within bus address bounds
     if (!RegExp(r'^[0-9A-F]+$').hasMatch(t) ||
         !RegExp(r'^[0-9A-F]+$').hasMatch(r)) {
       return true;
     }
-    final targetId = int.tryParse(t, radix: 16);
-    final responseId = int.tryParse(r, radix: 16);
+    final targetId = parseCanId(t);
+    final responseId = parseCanId(r);
     if (targetId == null || responseId == null) return true;
+    // Request and response cannot have identical arbitration IDs (e.g. 7E0 vs 07E0)
+    if (targetId == responseId) return true;
     switch (busType) {
       case BusAddressingType.can11Bit:
         if (targetId > 0x7FF || responseId > 0x7FF) return true;
-        if (targetId == 0x7DF) return true;
+        if (targetId == 0x7DF) return true; // Matches '7DF', '07DF', etc.
       case BusAddressingType.can29Bit:
         if (targetId > 0x1FFFFFFF || responseId > 0x1FFFFFFF) return true;
         if (targetId == 0x18DB33F1) return true;
+        if (targetId == 0x18DAFFFF) return true;
       case BusAddressingType.iso9141Kwp:
         if (targetId > 0xFF || responseId > 0xFF) return true;
     }
@@ -194,6 +245,24 @@ final class TransportAddressing {
         'target_ecu_header': targetEcuHeader,
         'expected_response_header': expectedResponseHeader,
       };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TransportAddressing &&
+          runtimeType == other.runtimeType &&
+          busType == other.busType &&
+          areHeadersEquivalent(targetEcuHeader, other.targetEcuHeader, busType) &&
+          areHeadersEquivalent(
+              expectedResponseHeader, other.expectedResponseHeader, busType);
+
+  @override
+  int get hashCode => Object.hash(
+        busType,
+        parseCanId(targetEcuHeader) ?? targetEcuHeader.trim().toUpperCase(),
+        parseCanId(expectedResponseHeader) ??
+            expectedResponseHeader.trim().toUpperCase(),
+      );
 }
 
 /// Exact ECU and software applicability specification.
@@ -236,6 +305,13 @@ final class EcuApplicability {
     }
     return false;
   }
+
+  EcuApplicability deepCopy() => EcuApplicability(
+        make: make,
+        model: model,
+        targetEcuName: targetEcuName,
+        softwareVersions: List.unmodifiable(softwareVersions),
+      );
 
   Map<String, dynamic> toJson() => {
         'make': make,
@@ -280,6 +356,18 @@ final class ActiveTestParameterDefinition {
   final String? unit;
   final List<int>? allowedDiscreteValues;
 
+  ActiveTestParameterDefinition deepCopy() => ActiveTestParameterDefinition(
+        name: name,
+        byteOffset: byteOffset,
+        byteLength: byteLength,
+        minPhysicalValue: minPhysicalValue,
+        maxPhysicalValue: maxPhysicalValue,
+        unit: unit,
+        allowedDiscreteValues: allowedDiscreteValues == null
+            ? null
+            : List.unmodifiable(allowedDiscreteValues!),
+      );
+
   bool get isValid {
     if (name.trim().isEmpty) return false;
     if (byteOffset < 0 || byteLength <= 0 || byteLength > 8) return false;
@@ -323,6 +411,7 @@ sealed class ServiceDescriptor {
 
   Map<String, dynamic> toJson();
   List<ProfileValidationReason> validate();
+  ServiceDescriptor deepCopy();
 }
 
 /// Mode 08 descriptor for standardized OBD on-board system control.
@@ -348,6 +437,13 @@ final class Mode08Descriptor extends ServiceDescriptor {
   final int testId;
   final List<ActiveTestParameterDefinition> parameters;
   final int expectedResponseBytes;
+
+  @override
+  Mode08Descriptor deepCopy() => Mode08Descriptor(
+        testId: testId,
+        parameters: List.unmodifiable(parameters.map((p) => p.deepCopy())),
+        expectedResponseBytes: expectedResponseBytes,
+      );
 
   @override
   List<ProfileValidationReason> validate() {
@@ -382,6 +478,8 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
     required this.controlParameter,
     this.controlStates = const [],
     this.controlEnableMask,
+    this.controlMaskByteLength,
+    this.expectedResponseBytes,
     required this.returnControlParameter,
   });
 
@@ -396,6 +494,8 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
               .toList(growable: false) ??
           const [],
       controlEnableMask: json['control_enable_mask'] as int?,
+      controlMaskByteLength: json['control_mask_byte_length'] as int?,
+      expectedResponseBytes: json['expected_response_bytes'] as int?,
       returnControlParameter: UdsIoControlParameter.values
           .byName(json['return_control_parameter'] as String),
     );
@@ -405,7 +505,32 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
   final UdsIoControlParameter controlParameter;
   final List<ActiveTestParameterDefinition> controlStates;
   final int? controlEnableMask;
+  final int? controlMaskByteLength;
+  final int? expectedResponseBytes;
   final UdsIoControlParameter returnControlParameter;
+
+  /// Total control state byte length derived from parameter definitions (or 0).
+  int get totalControlStateBytes {
+    if (controlStates.isEmpty) return 0;
+    return controlStates.fold<int>(
+      0,
+      (max, p) => (p.byteOffset + p.byteLength) > max
+          ? p.byteOffset + p.byteLength
+          : max,
+    );
+  }
+
+  @override
+  UdsIoControlDescriptor deepCopy() => UdsIoControlDescriptor(
+        dataIdentifier: dataIdentifier,
+        controlParameter: controlParameter,
+        controlStates:
+            List.unmodifiable(controlStates.map((cs) => cs.deepCopy())),
+        controlEnableMask: controlEnableMask,
+        controlMaskByteLength: controlMaskByteLength,
+        expectedResponseBytes: expectedResponseBytes,
+        returnControlParameter: returnControlParameter,
+      );
 
   @override
   List<ProfileValidationReason> validate() {
@@ -437,6 +562,10 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
         'control_states': controlStates.map((cs) => cs.toJson()).toList(),
         if (controlEnableMask != null)
           'control_enable_mask': controlEnableMask,
+        if (controlMaskByteLength != null)
+          'control_mask_byte_length': controlMaskByteLength,
+        if (expectedResponseBytes != null)
+          'expected_response_bytes': expectedResponseBytes,
         'return_control_parameter': returnControlParameter.name,
       };
 }
@@ -447,6 +576,7 @@ final class UdsRoutineDescriptor extends ServiceDescriptor {
     required this.routineIdentifier,
     required this.supportedSubfunctions,
     this.startOptionParameters = const [],
+    this.expectedResponseBytes,
     required this.hasDocumentedStop,
   });
 
@@ -462,6 +592,7 @@ final class UdsRoutineDescriptor extends ServiceDescriptor {
                   e as Map<String, dynamic>))
               .toList(growable: false) ??
           const [],
+      expectedResponseBytes: json['expected_response_bytes'] as int?,
       hasDocumentedStop: json['has_documented_stop'] as bool,
     );
   }
@@ -469,7 +600,18 @@ final class UdsRoutineDescriptor extends ServiceDescriptor {
   final int routineIdentifier;
   final List<UdsRoutineControlType> supportedSubfunctions;
   final List<ActiveTestParameterDefinition> startOptionParameters;
+  final int? expectedResponseBytes;
   final bool hasDocumentedStop;
+
+  @override
+  UdsRoutineDescriptor deepCopy() => UdsRoutineDescriptor(
+        routineIdentifier: routineIdentifier,
+        supportedSubfunctions: List.unmodifiable(supportedSubfunctions),
+        startOptionParameters: List.unmodifiable(
+            startOptionParameters.map((p) => p.deepCopy())),
+        expectedResponseBytes: expectedResponseBytes,
+        hasDocumentedStop: hasDocumentedStop,
+      );
 
   @override
   List<ProfileValidationReason> validate() {
@@ -500,6 +642,8 @@ final class UdsRoutineDescriptor extends ServiceDescriptor {
             supportedSubfunctions.map((s) => s.name).toList(),
         'start_option_parameters':
             startOptionParameters.map((p) => p.toJson()).toList(),
+        if (expectedResponseBytes != null)
+          'expected_response_bytes': expectedResponseBytes,
         'has_documented_stop': hasDocumentedStop,
       };
 }
@@ -546,6 +690,15 @@ final class PreconditionRule {
     return true;
   }
 
+  PreconditionRule deepCopy() => PreconditionRule(
+        parameterName: parameterName,
+        minValue: minValue,
+        maxValue: maxValue,
+        expectedDiscreteValue: expectedDiscreteValue,
+        maxAgeMs: maxAgeMs,
+        sourceRule: sourceRule,
+      );
+
   Map<String, dynamic> toJson() => {
         'parameter_name': parameterName,
         if (minValue != null) 'min_value': minValue,
@@ -582,6 +735,14 @@ final class PostconditionRule {
   final num? expectedMaxValue;
   final dynamic expectedValue;
   final String verificationDescription;
+
+  PostconditionRule deepCopy() => PostconditionRule(
+        parameterName: parameterName,
+        expectedMinValue: expectedMinValue,
+        expectedMaxValue: expectedMaxValue,
+        expectedValue: expectedValue,
+        verificationDescription: verificationDescription,
+      );
 
   bool get isValid {
     if (parameterName.trim().isEmpty) return false;
@@ -631,6 +792,13 @@ final class ExecutionConstraints {
   final int stepTimeoutMs;
   final int overallTimeoutMs;
 
+  ExecutionConstraints deepCopy() => ExecutionConstraints(
+        maxCommands: maxCommands,
+        minCommandIntervalMs: minCommandIntervalMs,
+        stepTimeoutMs: stepTimeoutMs,
+        overallTimeoutMs: overallTimeoutMs,
+      );
+
   bool get isValid {
     if (maxCommands <= 0 || maxCommands > 20) return false;
     if (minCommandIntervalMs < 50) return false;
@@ -669,6 +837,12 @@ final class RecoverySpecification {
   final String releaseCommandDescription;
   final String lossOfClientBehavior;
   final int watchdogTimeoutMs;
+
+  RecoverySpecification deepCopy() => RecoverySpecification(
+        releaseCommandDescription: releaseCommandDescription,
+        lossOfClientBehavior: lossOfClientBehavior,
+        watchdogTimeoutMs: watchdogTimeoutMs,
+      );
 
   bool get isValid {
     if (releaseCommandDescription.isEmpty) return false;
@@ -869,4 +1043,87 @@ final class ActiveTestProfile {
         ...toCanonicalMap(),
         'canonical_hash': canonicalHash,
       };
+
+  /// Creates a deep, unmodifiable copy of this profile with all collections frozen.
+  ActiveTestProfile deepCopy() {
+    return ActiveTestProfile(
+      profileId: profileId,
+      schemaVersion: schemaVersion,
+      version: version,
+      standard: standard,
+      sourceUrl: sourceUrl,
+      documentSection: documentSection,
+      redistributionRights: redistributionRights,
+      provenanceKind: provenanceKind,
+      addressing: TransportAddressing(
+        busType: addressing.busType,
+        targetEcuHeader: addressing.targetEcuHeader,
+        expectedResponseHeader: addressing.expectedResponseHeader,
+      ),
+      applicability: applicability.deepCopy(),
+      sessionType: sessionType,
+      requiredSecurityLevel: requiredSecurityLevel,
+      serviceDescriptor: serviceDescriptor.deepCopy(),
+      preconditions:
+          List.unmodifiable(preconditions.map((p) => p.deepCopy())),
+      constraints: constraints.deepCopy(),
+      recovery: recovery.deepCopy(),
+      postconditions:
+          List.unmodifiable(postconditions.map((p) => p.deepCopy())),
+      evidenceTier: evidenceTier,
+      isRevoked: isRevoked,
+      revocationReason: revocationReason,
+      canonicalHash: canonicalHash,
+    );
+  }
+
+  /// Creates a defensive, immutable snapshot for safe active test execution.
+  ServiceRecipeSnapshot toSnapshot() => ServiceRecipeSnapshot.fromProfile(this);
+  ServiceRecipeSnapshot createSnapshot() =>
+      ServiceRecipeSnapshot.fromProfile(this);
 }
+
+/// Defensive, immutable snapshot of an active-test service recipe.
+///
+/// Guarantees that active-test execution is bound to an immutable specification
+/// that cannot be mutated or drift during test execution, even if external
+/// references or originating profile objects are modified.
+final class ServiceRecipeSnapshot {
+  ServiceRecipeSnapshot._({
+    required this.profile,
+    required this.capturedAt,
+    required this.canonicalHash,
+  });
+
+  factory ServiceRecipeSnapshot.fromProfile(ActiveTestProfile profile) {
+    if (!profile.isValid) {
+      throw StateError(
+        'Cannot snapshot invalid active-test profile: ${profile.profileId}',
+      );
+    }
+    final cloned = profile.deepCopy();
+    return ServiceRecipeSnapshot._(
+      profile: cloned,
+      capturedAt: DateTime.now().toUtc(),
+      canonicalHash: cloned.canonicalHash,
+    );
+  }
+
+  final ActiveTestProfile profile;
+  final DateTime capturedAt;
+  final String canonicalHash;
+
+  String get profileId => profile.profileId;
+  TransportAddressing get addressing => profile.addressing;
+  ServiceDescriptor get serviceDescriptor => profile.serviceDescriptor;
+  ExecutionConstraints get constraints => profile.constraints;
+  RecoverySpecification get recovery => profile.recovery;
+  List<PreconditionRule> get preconditions => profile.preconditions;
+  List<PostconditionRule> get postconditions => profile.postconditions;
+  DiagnosticSessionType get sessionType => profile.sessionType;
+  int? get requiredSecurityLevel => profile.requiredSecurityLevel;
+}
+
+/// Alias for [ServiceRecipeSnapshot].
+typedef ActiveTestProfileSnapshot = ServiceRecipeSnapshot;
+

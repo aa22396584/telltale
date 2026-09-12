@@ -620,5 +620,118 @@ void main() {
       expect(profile.validate(),
           contains(ProfileValidationReason.missingServiceDescriptor));
     });
+
+    test('normalizes CAN arbitration headers (7E0 vs 07E0) and evaluates equality', () {
+      expect(
+        TransportAddressing.areHeadersEquivalent(
+            '7E0', '07E0', BusAddressingType.can11Bit),
+        isTrue,
+      );
+      expect(
+        TransportAddressing.areHeadersEquivalent(
+            '07E0', '7E0', BusAddressingType.can11Bit),
+        isTrue,
+      );
+      expect(
+        TransportAddressing.areHeadersEquivalent(
+            '18DA10F1', '018DA10F1', BusAddressingType.can29Bit),
+        isTrue,
+      );
+
+      const addr1 = TransportAddressing(
+        busType: BusAddressingType.can11Bit,
+        targetEcuHeader: '7E0',
+        expectedResponseHeader: '7E8',
+      );
+      const addr2 = TransportAddressing(
+        busType: BusAddressingType.can11Bit,
+        targetEcuHeader: '07E0',
+        expectedResponseHeader: '07E8',
+      );
+
+      // Value equality holds across differently-padded representations
+      expect(addr1 == addr2, isTrue);
+      expect(addr1.hashCode, addr2.hashCode);
+      expect(addr1.matchesTarget('07E0'), isTrue);
+      expect(addr1.matchesResponse('07E8'), isTrue);
+
+      // Rejects identical CAN arbitration IDs even when padded differently
+      final addrSameId = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: '7E0',
+          expectedResponseHeader: '07E0', // Same physical ID!
+        ),
+      );
+      expect(addrSameId.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+
+      // Rejects broadcast header with leading zeros (07DF)
+      final addrPaddedBroadcast = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: '07DF',
+          expectedResponseHeader: '7E8',
+        ),
+      );
+      expect(addrPaddedBroadcast.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+    });
+
+    test('creates defensive immutable ServiceRecipeSnapshot immune to drift during execution', () {
+      final mutableSwVersions = ['SIM_V1'];
+      final mutablePreconditions = [
+        const PreconditionRule(
+          parameterName: 'vehicleSpeedKmh',
+          minValue: 0,
+          maxValue: 0,
+          maxAgeMs: 1000,
+        ),
+      ];
+
+      final profile = createValidMode08Profile(
+        applicability: EcuApplicability(
+          make: 'Synthetic',
+          model: 'BenchSim',
+          targetEcuName: 'ECM',
+          softwareVersions: mutableSwVersions,
+        ),
+        preconditions: mutablePreconditions,
+      );
+
+      // Take defensive snapshot before active test execution
+      final snapshot = profile.toSnapshot();
+      expect(snapshot.profileId, profile.profileId);
+      expect(snapshot.canonicalHash, profile.canonicalHash);
+
+      // Modifying original external list after snapshot creation has ZERO effect
+      mutableSwVersions.add('MALICIOUS_V2');
+      expect(snapshot.profile.applicability.softwareVersions, ['SIM_V1']);
+
+      // Collections in snapshot are strictly unmodifiable and cannot drift during execution
+      expect(
+        () => (snapshot.preconditions as dynamic).add(
+          const PreconditionRule(parameterName: 'hacked'),
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (snapshot.profile.applicability.softwareVersions as dynamic).add('drift'),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (snapshot.postconditions as dynamic).add(
+          const PostconditionRule(
+            parameterName: 'test',
+            verificationDescription: 'desc',
+          ),
+        ),
+        throwsUnsupportedError,
+      );
+
+      // Snapshot profile remains completely valid and untampered
+      expect(snapshot.profile.isValid, isTrue);
+      expect(snapshot.profile.verifyCanonicalHash(), isTrue);
+    });
   });
 }

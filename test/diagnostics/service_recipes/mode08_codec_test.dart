@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/diagnostics/service_recipes/active_test_profile.dart';
 import 'package:torque_obd/diagnostics/service_recipes/mode08_codec.dart';
 import 'package:torque_obd/diagnostics/service_recipes/qualification_tier.dart';
 
@@ -66,7 +67,8 @@ void main() {
       expect(success3.supportedTids, {0x21, 0x22});
     });
 
-    test('parses negative responses and maps to unsupported', () {
+    test('parses negative responses and classifies NRCs with sound fallback', () {
+      // 0x11 serviceNotSupported -> unsupported
       final res11 = Mode08DiscoveryCodec.parseResponse(
         '7F 08 11',
         expectedBaseTid: 0x00,
@@ -75,14 +77,72 @@ void main() {
       final neg11 = res11 as Mode08NegativeResponse;
       expect(neg11.originalSid, 0x08);
       expect(neg11.nrc, 0x11);
+      expect(neg11.isUnsupported, isTrue);
       expect(neg11.supportStatus, EcuSupportStatus.unsupported);
 
+      // 0x12 subFunctionNotSupported -> unsupported
       final res12 = Mode08DiscoveryCodec.parseResponse(
         '7F 08 12',
         expectedBaseTid: 0x00,
       );
       expect(res12, isA<Mode08NegativeResponse>());
-      expect((res12 as Mode08NegativeResponse).nrc, 0x12);
+      final neg12 = res12 as Mode08NegativeResponse;
+      expect(neg12.nrc, 0x12);
+      expect(neg12.isUnsupported, isTrue);
+      expect(neg12.supportStatus, EcuSupportStatus.unsupported);
+
+      // 0x31 requestOutOfRange -> unsupported
+      final res31 = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 31',
+        expectedBaseTid: 0x00,
+      );
+      expect(res31, isA<Mode08NegativeResponse>());
+      final neg31 = res31 as Mode08NegativeResponse;
+      expect(neg31.nrc, 0x31);
+      expect(neg31.isUnsupported, isTrue);
+      expect(neg31.supportStatus, EcuSupportStatus.unsupported);
+
+      // 0x22 conditionsNotCorrect -> fallback to unknown (service may exist!)
+      final res22 = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 22',
+        expectedBaseTid: 0x00,
+      );
+      expect(res22, isA<Mode08NegativeResponse>());
+      final neg22 = res22 as Mode08NegativeResponse;
+      expect(neg22.nrc, 0x22);
+      expect(neg22.isConditionsNotCorrect, isTrue);
+      expect(neg22.isUnsupported, isFalse);
+      expect(neg22.supportStatus, EcuSupportStatus.unknown);
+
+      // 0x21 busyRepeatRequest -> unknown
+      final res21 = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 21',
+        expectedBaseTid: 0x00,
+      );
+      expect(res21, isA<Mode08NegativeResponse>());
+      final neg21 = res21 as Mode08NegativeResponse;
+      expect(neg21.isBusy, isTrue);
+      expect(neg21.supportStatus, EcuSupportStatus.unknown);
+
+      // 0x33 securityAccessDenied -> unknown
+      final res33 = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 33',
+        expectedBaseTid: 0x00,
+      );
+      expect(res33, isA<Mode08NegativeResponse>());
+      final neg33 = res33 as Mode08NegativeResponse;
+      expect(neg33.isSecurityAccessDenied, isTrue);
+      expect(neg33.supportStatus, EcuSupportStatus.unknown);
+
+      // 0x78 responsePending -> unknown
+      final res78 = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 78',
+        expectedBaseTid: 0x00,
+      );
+      expect(res78, isA<Mode08NegativeResponse>());
+      final neg78 = res78 as Mode08NegativeResponse;
+      expect(neg78.isResponsePending, isTrue);
+      expect(neg78.supportStatus, EcuSupportStatus.unknown);
     });
 
     test('parses silence / NO DATA / timeout as unknown, never unsupported', () {
@@ -198,6 +258,80 @@ void main() {
       expect(zeroNrc, isA<Mode08MalformedResponse>());
       expect((zeroNrc as Mode08MalformedResponse).reason,
           Mode08MalformedReason.invalidNegativeResponse);
+    });
+  });
+
+  group('Mode08 execution response parsing and contract validation', () {
+    test('parses positive execution response matching test ID and length contract', () {
+      const desc = Mode08Descriptor(
+        testId: 0x01,
+        expectedResponseBytes: 2,
+      );
+
+      // Literal vector: matching 2 data bytes (48 01 AA BB)
+      final res = Mode08DiscoveryCodec.parseExecutionResponse(
+        '48 01 AA BB',
+        expectedTestId: 0x01,
+        descriptor: desc,
+      );
+      expect(res, isA<Mode08ExecutionSuccess>());
+      final success = res as Mode08ExecutionSuccess;
+      expect(success.testId, 0x01);
+      expect(success.dataBytes, [0xAA, 0xBB]);
+    });
+
+    test('rejects wrong test ID echo fail-closed', () {
+      final res = Mode08DiscoveryCodec.parseExecutionResponse(
+        '48 02 AA BB', // Echoed 0x02 instead of expected 0x01
+        expectedTestId: 0x01,
+        expectedResponseBytes: 2,
+      );
+      expect(res, isA<Mode08MalformedResponse>());
+      expect((res as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.wrongTestIdEcho);
+    });
+
+    test('enforces response length contract (rejects under and over length)', () {
+      // Expected 2 bytes, got 1 byte
+      final underRes = Mode08DiscoveryCodec.parseExecutionResponse(
+        '48 01 AA',
+        expectedTestId: 0x01,
+        expectedResponseBytes: 2,
+      );
+      expect(underRes, isA<Mode08MalformedResponse>());
+      expect((underRes as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.wrongResponseLength);
+
+      // Expected 2 bytes, got 3 bytes
+      final overRes = Mode08DiscoveryCodec.parseExecutionResponse(
+        '48 01 AA BB CC',
+        expectedTestId: 0x01,
+        expectedResponseBytes: 2,
+      );
+      expect(overRes, isA<Mode08MalformedResponse>());
+      expect((overRes as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.wrongResponseLength);
+    });
+
+    test('classifies NRCs during execution with sound fallback', () {
+      final res22 = Mode08DiscoveryCodec.parseExecutionResponse(
+        '7F 08 22',
+        expectedTestId: 0x01,
+        expectedResponseBytes: 1,
+      );
+      expect(res22, isA<Mode08NegativeResponse>());
+      final neg22 = res22 as Mode08NegativeResponse;
+      expect(neg22.isConditionsNotCorrect, isTrue);
+      expect(neg22.supportStatus, EcuSupportStatus.unknown);
+
+      final res11 = Mode08DiscoveryCodec.parseExecutionResponse(
+        '7F 08 11',
+        expectedTestId: 0x01,
+        expectedResponseBytes: 1,
+      );
+      expect(res11, isA<Mode08NegativeResponse>());
+      expect((res11 as Mode08NegativeResponse).supportStatus,
+          EcuSupportStatus.unsupported);
     });
   });
 }

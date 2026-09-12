@@ -29,6 +29,7 @@ enum UdsMalformedReason {
   wrongRidEcho,
   wrongControlParameterEcho,
   wrongRoutineTypeEcho,
+  wrongResponseLength,
   invalidNrc,
 }
 
@@ -132,11 +133,15 @@ final class UdsActiveCodec {
   // ---------------------------------------------------------------------------
 
   /// Encodes a UDS 0x2F request into bytes.
+  ///
+  /// Control state and control mask byte lengths are decoupled and governed
+  /// by [descriptor] if provided. They are not required to have identical lengths.
   static List<int> encodeIoControlRequest({
     required int did,
     required UdsIoControlParameter parameter,
     List<int> controlState = const [],
     List<int> controlMask = const [],
+    UdsIoControlDescriptor? descriptor,
   }) {
     if (did < 0x0000 || did > 0xFFFF) {
       throw ArgumentError.value(did, 'did', 'DID must be 16-bit unsigned (0x0000..0xFFFF)');
@@ -151,11 +156,24 @@ final class UdsActiveCodec {
         throw ArgumentError.value(b, 'controlMask', 'Control mask bytes must be 0x00..0xFF');
       }
     }
-    if (controlMask.isNotEmpty && controlMask.length != controlState.length) {
-      throw ArgumentError(
-        'Control mask length (${controlMask.length}) must match control state length (${controlState.length})',
-      );
+
+    if (descriptor != null) {
+      if (descriptor.totalControlStateBytes > 0 &&
+          controlState.isNotEmpty &&
+          controlState.length != descriptor.totalControlStateBytes) {
+        throw ArgumentError(
+          'Control state length (${controlState.length}) does not match descriptor expected length (${descriptor.totalControlStateBytes})',
+        );
+      }
+      if (descriptor.controlMaskByteLength != null &&
+          controlMask.isNotEmpty &&
+          controlMask.length != descriptor.controlMaskByteLength) {
+        throw ArgumentError(
+          'Control mask length (${controlMask.length}) does not match descriptor expected length (${descriptor.controlMaskByteLength})',
+        );
+      }
     }
+
     final bytes = <int>[
       sidIoControl,
       (did >> 8) & 0xFF,
@@ -173,12 +191,14 @@ final class UdsActiveCodec {
     required UdsIoControlParameter parameter,
     List<int> controlState = const [],
     List<int> controlMask = const [],
+    UdsIoControlDescriptor? descriptor,
   }) {
     final bytes = encodeIoControlRequest(
       did: did,
       parameter: parameter,
       controlState: controlState,
       controlMask: controlMask,
+      descriptor: descriptor,
     );
     return _toHex(bytes);
   }
@@ -191,6 +211,8 @@ final class UdsActiveCodec {
     String rawResponse, {
     required int expectedDid,
     required UdsIoControlParameter expectedParameter,
+    int? expectedResponseBytes,
+    UdsIoControlDescriptor? descriptor,
   }) {
     final bytes = _parseHex(rawResponse);
     if (bytes == null) {
@@ -274,6 +296,17 @@ final class UdsActiveCodec {
 
     final statusRecord = bytes.length > 4 ? bytes.sublist(4) : const <int>[];
 
+    // Enforce profile response length contract
+    final targetExpectedBytes =
+        expectedResponseBytes ?? descriptor?.expectedResponseBytes;
+    if (targetExpectedBytes != null &&
+        statusRecord.length != targetExpectedBytes) {
+      return UdsIoControlMalformed(
+        reason: UdsMalformedReason.wrongResponseLength,
+        rawResponse: rawResponse,
+      );
+    }
+
     return UdsIoControlSuccess(
       did: echoedDid,
       controlParameter: echoedParam,
@@ -334,6 +367,8 @@ final class UdsActiveCodec {
     String rawResponse, {
     required UdsRoutineControlType expectedType,
     required int expectedRoutineIdentifier,
+    int? expectedResponseBytes,
+    UdsRoutineDescriptor? descriptor,
   }) {
     final bytes = _parseHex(rawResponse);
     if (bytes == null) {
@@ -416,6 +451,17 @@ final class UdsActiveCodec {
     }
 
     final statusRecord = bytes.length > 4 ? bytes.sublist(4) : const <int>[];
+
+    // Enforce profile response length contract
+    final targetExpectedBytes =
+        expectedResponseBytes ?? descriptor?.expectedResponseBytes;
+    if (targetExpectedBytes != null &&
+        statusRecord.length != targetExpectedBytes) {
+      return UdsRoutineMalformed(
+        reason: UdsMalformedReason.wrongResponseLength,
+        rawResponse: rawResponse,
+      );
+    }
 
     return UdsRoutineSuccess(
       controlType: echoedType,

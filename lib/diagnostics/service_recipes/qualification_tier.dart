@@ -59,6 +59,9 @@ enum ActiveTestEligibilityVerdict {
 
   /// Blocked: Required operator one-time explicit consent is missing.
   blockedMissingConsent,
+
+  /// Blocked: Required opaque authorization token is missing or invalid.
+  blockedMissingAuthorizationToken,
 }
 
 /// Snapshot of the live qualification and support state for an active test.
@@ -99,6 +102,8 @@ final class ActiveTestEligibilityGate {
     required bool vehicleQualified,
     required bool preconditionsSatisfied,
     required bool operatorConsentGranted,
+    String? opaqueAuthorizationToken,
+    bool requireOpaqueToken = false,
   }) {
     if (profile == null || !profile.isValid) {
       return ActiveTestEligibilityVerdict.blockedNoDefinition;
@@ -139,6 +144,13 @@ final class ActiveTestEligibilityGate {
     // Consent gate: explicit operator consent must be given.
     if (!operatorConsentGranted) {
       return ActiveTestEligibilityVerdict.blockedMissingConsent;
+    }
+
+    // Authorization token gate (F6 / #132): opaque token must be verified before execution.
+    if (requireOpaqueToken &&
+        (opaqueAuthorizationToken == null ||
+            opaqueAuthorizationToken.trim().isEmpty)) {
+      return ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken;
     }
 
     return ActiveTestEligibilityVerdict.eligible;

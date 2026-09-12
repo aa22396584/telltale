@@ -237,5 +237,54 @@ void main() {
       expect(
           verdictNoConsent, ActiveTestEligibilityVerdict.blockedMissingConsent);
     });
+
+    test('opaque authorization token requirement blocks execution when token missing or empty', () {
+      final officialProfile = createProfile(
+        id: 'official_evap_07',
+        provenance: ProvenanceKind.officialStandard,
+        rights: RedistributionRights.openPublicStandard,
+        tier: EvidenceQualificationTier.vehicleQualified,
+      );
+
+      // Blocked when requireOpaqueToken: true and token is null
+      final verdictNullToken = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireOpaqueToken: true,
+      );
+      expect(verdictNullToken,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      // Blocked when requireOpaqueToken: true and token is whitespace
+      final verdictEmptyToken = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireOpaqueToken: true,
+        opaqueAuthorizationToken: '   ',
+      );
+      expect(verdictEmptyToken,
+          ActiveTestEligibilityVerdict.blockedMissingAuthorizationToken);
+
+      // Passes when valid opaque token provided
+      final verdictValidToken = ActiveTestEligibilityGate.evaluate(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        requireOpaqueToken: true,
+        opaqueAuthorizationToken: 'auth_tok_sec_132_live_xyz',
+      );
+      expect(verdictValidToken, ActiveTestEligibilityVerdict.eligible);
+    });
   });
 }

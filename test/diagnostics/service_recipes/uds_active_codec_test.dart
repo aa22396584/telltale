@@ -73,13 +73,49 @@ void main() {
         ),
         throwsArgumentError,
       );
-      // Mask length mismatch (mask length 2 vs state length 1)
+      // Decoupled state and mask: 1 byte state with 2 bytes mask is valid without conflicting descriptor
+      final reqDecoupled = UdsActiveCodec.encodeIoControlCommand(
+        did: 0x0112,
+        parameter: UdsIoControlParameter.shortTermAdjustment,
+        controlState: const [0x64],
+        controlMask: const [0xFF, 0xEE],
+      );
+      expect(reqDecoupled, '2F01120364FFEE');
+
+      // When descriptor defines mask length 1, passing 2 bytes throws ArgumentError
+      const descriptorWithMask1 = UdsIoControlDescriptor(
+        dataIdentifier: 0x0112,
+        controlParameter: UdsIoControlParameter.shortTermAdjustment,
+        controlStates: [
+          ActiveTestParameterDefinition(
+            name: 'fanDuty',
+            byteOffset: 0,
+            byteLength: 1,
+          ),
+        ],
+        controlMaskByteLength: 1,
+        returnControlParameter: UdsIoControlParameter.returnControlToECU,
+      );
+
       expect(
         () => UdsActiveCodec.encodeIoControlRequest(
           did: 0x0112,
           parameter: UdsIoControlParameter.shortTermAdjustment,
           controlState: const [0x64],
           controlMask: const [0xFF, 0xFF],
+          descriptor: descriptorWithMask1,
+        ),
+        throwsArgumentError,
+      );
+
+      // When descriptor defines state length 1, passing 2 state bytes throws ArgumentError
+      expect(
+        () => UdsActiveCodec.encodeIoControlRequest(
+          did: 0x0112,
+          parameter: UdsIoControlParameter.shortTermAdjustment,
+          controlState: const [0x64, 0x32],
+          controlMask: const [0xFF],
+          descriptor: descriptorWithMask1,
         ),
         throwsArgumentError,
       );
@@ -372,6 +408,128 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('UdsActiveCodec response length contracts and literal vectors', () {
+    test('enforces UDS 0x2F profile response length contract with literal vectors', () {
+      const descriptor = UdsIoControlDescriptor(
+        dataIdentifier: 0x0112,
+        controlParameter: UdsIoControlParameter.shortTermAdjustment,
+        controlStates: [
+          ActiveTestParameterDefinition(
+            name: 'duty1',
+            byteOffset: 0,
+            byteLength: 1,
+          ),
+          ActiveTestParameterDefinition(
+            name: 'duty2',
+            byteOffset: 1,
+            byteLength: 1,
+          ),
+        ],
+        controlMaskByteLength: 1,
+        expectedResponseBytes: 2,
+        returnControlParameter: UdsIoControlParameter.returnControlToECU,
+      );
+
+      // Literal vector: matching 2-byte response length
+      final successRes = UdsActiveCodec.parseIoControlResponse(
+        '6F 01 12 03 64 32',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+        descriptor: descriptor,
+      );
+      expect(successRes, isA<UdsIoControlSuccess>());
+      final success = successRes as UdsIoControlSuccess;
+      expect(success.controlStatusRecord, [0x64, 0x32]);
+
+      // Literal vector: truncated / under-length (1 byte instead of expected 2)
+      final underRes = UdsActiveCodec.parseIoControlResponse(
+        '6F 01 12 03 64',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+        descriptor: descriptor,
+      );
+      expect(underRes, isA<UdsIoControlMalformed>());
+      expect((underRes as UdsIoControlMalformed).reason,
+          UdsMalformedReason.wrongResponseLength);
+
+      // Literal vector: over-length (3 bytes instead of expected 2)
+      final overRes = UdsActiveCodec.parseIoControlResponse(
+        '6F 01 12 03 64 32 10',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+        expectedResponseBytes: 2,
+      );
+      expect(overRes, isA<UdsIoControlMalformed>());
+      expect((overRes as UdsIoControlMalformed).reason,
+          UdsMalformedReason.wrongResponseLength);
+    });
+
+    test('enforces UDS 0x31 routine response length contract with literal vectors', () {
+      const routineDesc = UdsRoutineDescriptor(
+        routineIdentifier: 0x0201,
+        supportedSubfunctions: [
+          UdsRoutineControlType.startRoutine,
+          UdsRoutineControlType.stopRoutine,
+        ],
+        expectedResponseBytes: 3,
+        hasDocumentedStop: true,
+      );
+
+      // Literal vector: matching 3-byte routine status record
+      final successRes = UdsActiveCodec.parseRoutineResponse(
+        '71 01 02 01 AA BB CC',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+        descriptor: routineDesc,
+      );
+      expect(successRes, isA<UdsRoutineSuccess>());
+      final success = successRes as UdsRoutineSuccess;
+      expect(success.routineStatusRecord, [0xAA, 0xBB, 0xCC]);
+
+      // Literal vector: under-length (2 bytes instead of 3)
+      final underRes = UdsActiveCodec.parseRoutineResponse(
+        '71 01 02 01 AA BB',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+        descriptor: routineDesc,
+      );
+      expect(underRes, isA<UdsRoutineMalformed>());
+      expect((underRes as UdsRoutineMalformed).reason,
+          UdsMalformedReason.wrongResponseLength);
+
+      // Literal vector: over-length (4 bytes instead of 3)
+      final overRes = UdsActiveCodec.parseRoutineResponse(
+        '71 01 02 01 AA BB CC DD',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+        expectedResponseBytes: 3,
+      );
+      expect(overRes, isA<UdsRoutineMalformed>());
+      expect((overRes as UdsRoutineMalformed).reason,
+          UdsMalformedReason.wrongResponseLength);
+    });
+
+    test('literal vector: decoupled 2-byte state and 1-byte mask roundtrip', () {
+      final cmd = UdsActiveCodec.encodeIoControlCommand(
+        did: 0x0112,
+        parameter: UdsIoControlParameter.shortTermAdjustment,
+        controlState: const [0x10, 0x20],
+        controlMask: const [0xFF],
+      );
+      expect(cmd, '2F0112031020FF');
+
+      final parseRes = UdsActiveCodec.parseIoControlResponse(
+        '6F 01 12 03 10 20',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+        expectedResponseBytes: 2,
+      );
+      expect(parseRes, isA<UdsIoControlSuccess>());
+      expect((parseRes as UdsIoControlSuccess).controlStatusRecord,
+          [0x10, 0x20]);
     });
   });
 }
