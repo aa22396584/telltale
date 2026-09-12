@@ -1221,6 +1221,57 @@ class ResearchRuleTest(unittest.TestCase):
             schema.source_url_key({"url": "https://example.net/%61"}),
         )
 
+    def test_percent_encoded_hostname_cannot_create_an_independent_family(self) -> None:
+        """URL consumers resolve ``%65xample.net`` as the same publisher."""
+        row = _valid_executable_row(disposition="community-qualified")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        primary, corroborating = row["source_families"]
+        primary.update(
+            {
+                "family": "example.net",
+                "name": "publisher export",
+                "path": "a",
+                "url": "https://example.net/a",
+            }
+        )
+        corroborating.update(
+            {
+                "family": "%65xample.net",
+                "name": "%65xample.net",
+                "path": "b",
+                "url": "https://%65xample.net/b",
+            }
+        )
+
+        issues = _issues_for(row)
+
+        self.assertEqual(schema.derive_source_family(corroborating), "")
+        self.assertEqual(schema.source_url_key(corroborating), "")
+        self.assertIn(
+            "research row fixture-valid-executable: source corroborating has no "
+            "derivable family identity",
+            issues,
+        )
+        self.assertIn(
+            "research row fixture-valid-executable: community-qualified requires "
+            "agreeing observations from at least two distinct source families "
+            "per shipped signal",
+            issues,
+        )
+
+    def test_percent_or_malformed_escape_in_any_hostname_fails_closed(self) -> None:
+        for url in (
+            "https://%65xample.net/a",
+            "https://exa%6dple.net/a",
+            "https://example%zz.net/a",
+            "https://%67ithub.com/org/repo",
+            "https://%67itlab.com/org/repo/-/blob/main/a",
+        ):
+            with self.subTest(url=url):
+                source = {"name": "fallback/name", "url": url}
+                self.assertEqual(schema.derive_source_family(source), "")
+                self.assertEqual(schema.source_url_key(source), "")
+
     def test_idna_hosts_are_one_family(self) -> None:
         """Unicode and punycode hosts are one family and one URL key."""
         unicode_url = "https://bücher.example/a"

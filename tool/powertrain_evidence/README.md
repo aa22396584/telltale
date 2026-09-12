@@ -66,6 +66,11 @@ and aliases or mirrors on different hostnames are not discovered automatically;
 research must still declare and justify those relationships instead of claiming
 the derivation resolves every possible publisher alias.
 
+Percent escapes are supported in URL paths, but a hostname containing any
+percent sign is rejected, including forge hostnames and both encoded and
+malformed escape spellings. The validator does not decode `%65xample.net` or
+allow `source.name` to replace that unsafe URL identity.
+
 ## Rules the validator fails closed on
 
 - `signals`, `commands`, nested `observations`, or `source_families` (when present) that is not a list — a dict/object is rejected rather than coerced to empty, so an `unknown` row cannot hide a wire contract or a source family
@@ -84,6 +89,7 @@ the derivation resolves every possible publisher alias.
 - `disposition: experimental-candidate` with zero executable claims (corroboration is not required; that is what keeps it distinct from `community-qualified`)
 - declared `family` that does not match the derived family
 - source whose `url`/`name` yield no derived family (declared `family` is not a fallback identity)
+- source URL whose hostname contains a percent sign, whether an encoded or malformed escape spelling (path percent-encoding remains supported)
 - two sources that share repo+path (any revision) or the same `artifact_sha256` but declare different families
 - `derived_from` / `fork_of` on a row or source
 - corroborating *derived* family equal to the primary family

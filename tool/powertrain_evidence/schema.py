@@ -26,7 +26,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import SplitResult, urlsplit
 
 SCHEMA_VERSION = 1
 KIND = "telltale.powertrain_evidence_matrix"
@@ -174,13 +174,28 @@ def _canonical_host(host: str) -> str:
     return host
 
 
-def normalize_source_url(url: str) -> str:
-    """Host + path identity, ignoring revision query, fragment, trailing slash, and default ports."""
+def _safe_source_url_parts(url: str) -> SplitResult | None:
+    """Parse a source URL, rejecting malformed ports and percent-bearing hosts."""
     try:
         parts = urlsplit(url.strip())
-        port = parts.port
+        # Access validates malformed and out-of-range ports.
+        parts.port
     except ValueError:
+        return None
+    # Percent escapes belong in paths, not publisher identity. Reject a host
+    # containing any percent sign instead of decoding the escape or allowing
+    # source.name to become a fallback family.
+    if "%" in (parts.hostname or ""):
+        return None
+    return parts
+
+
+def normalize_source_url(url: str) -> str:
+    """Host + path identity, ignoring revision query, fragment, trailing slash, and default ports."""
+    parts = _safe_source_url_parts(url)
+    if parts is None:
         return ""
+    port = parts.port
     host = _idna_host((parts.hostname or "").lower().rstrip("."))
     if not host:
         host = _idna_host((parts.netloc or "").lower().rstrip("."))
@@ -200,12 +215,8 @@ def normalize_source_url(url: str) -> str:
 
 def _canonical_publisher_host(url: str) -> str:
     """Canonical publisher hostname for a non-forge HTTP(S) source."""
-    try:
-        parts = urlsplit(url.strip())
-        # Access validates malformed and out-of-range ports even though a
-        # network service origin never creates a separate publisher family.
-        parts.port
-    except ValueError:
+    parts = _safe_source_url_parts(url)
+    if parts is None:
         return ""
     scheme = (parts.scheme or "").lower()
     if scheme not in {"http", "https"}:
@@ -293,12 +304,8 @@ def derive_source_family(source: dict[str, Any]) -> str:
     capture are one family when they share that identity.
     """
     url = str(source.get("url") or "").strip()
-    if url:
-        try:
-            parts = urlsplit(url)
-            parts.port
-        except ValueError:
-            return ""
+    if url and _safe_source_url_parts(url) is None:
+        return ""
     github = github_org_repo(url)
     if github:
         return github

@@ -122,7 +122,10 @@ non-forge publisher hostname as one source family; changing only the URL path
 or network service cannot satisfy corroboration. This is a conservative
 deterministic check, not a public-suffix or ownership lookup: different
 subdomains and cross-host aliases still require explicit research judgment and
-relationship documentation.
+relationship documentation. Percent escapes remain valid in resource paths,
+but a hostname containing any percent sign, whether an encoded or malformed
+escape spelling, is rejected rather than decoded or replaced by a source-name
+fallback.
 
 ## Installation and the per-connection gate
 
