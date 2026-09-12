@@ -297,6 +297,11 @@ class AuditedShaTest(unittest.TestCase):
     def test_non_git_directory_rejected_without_known_set(self) -> None:
         """G2 card item 4: plan in a non-git directory + git_shas=None → reject."""
         with tempfile.TemporaryDirectory() as tmp:
+            probe = subprocess.run(
+                ["git", "-C", tmp, "rev-parse", "--is-inside-work-tree"],
+                capture_output=True,
+            )
+            self.assertNotEqual(probe.returncode, 0, f"{tmp} unexpectedly inside a git repo")
             plan_dir = Path(tmp) / "tool" / "workshop"
             plan_dir.mkdir(parents=True)
             plan_path = plan_dir / "plan.json"
@@ -337,30 +342,159 @@ class AuditedShaTest(unittest.TestCase):
             audited_errors = [e for e in errors if "audited_sha" in e]
             self.assertEqual(audited_errors, [], msg=errors)
 
-    def test_cli_subprocess_validates_audited_sha_without_known_sha(self) -> None:
-        """G2 card item 8: full subprocess CLI test, no --known-sha, no mock."""
+    def _make_plan_with_evidence(
+        self, repo: Path, *, audited_sha: str, base_sha: str
+    ) -> Path:
+        evidence_file = repo / "docs" / "workshop" / "evidence.txt"
+        evidence_file.parent.mkdir(parents=True, exist_ok=True)
+        evidence_file.write_text("traceable evidence artifact\n", encoding="utf-8")
+        digest = hashlib.sha256(evidence_file.read_bytes()).hexdigest()
+        task = _minimal_task("WS-01", 9, sha=base_sha)
+        task["required_evidence"] = [
+            {
+                "path": "docs/workshop/evidence.txt",
+                "sha256": digest,
+                "required": True,
+            }
+        ]
+        data = _plan([task], audited_sha=audited_sha)
+        plan_path = repo / "tool" / "workshop" / "plan.json"
+        plan_path.write_text(json.dumps(data), encoding="utf-8")
+        return plan_path
+
+    def test_cli_subprocess_accepts_valid_commit_with_artifact_validation(self) -> None:
+        """A1: valid commit passes full CLI without --known-sha and without --no-artifacts."""
         with tempfile.TemporaryDirectory() as tmp:
             plan_path, sha = self._make_git_repo(tmp)
-            # Minimal valid plan with only audited_sha changed to a real commit.
-            data = _plan([_minimal_task("WS-01", 9, sha=sha)], audited_sha=sha)
-            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            repo = plan_path.parents[2]
+            self._make_plan_with_evidence(repo, audited_sha=sha, base_sha=sha)
             completed = subprocess.run(
-                [sys.executable, str(ROOT / "tool" / "workshop" / "validate_plan.py"),
-                 str(plan_path), "--no-artifacts"],
-                capture_output=True, text=True, check=False,
+                [
+                    sys.executable,
+                    str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                    str(plan_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
             )
-            self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+            self.assertEqual(completed.returncode, 0, msg=f"stdout={completed.stdout}\nstderr={completed.stderr}")
+            self.assertEqual(completed.stderr, "")
+            self.assertIn("OK", completed.stdout)
 
-            # Now change audited_sha to an invalid one → should fail.
-            data["audited_sha"] = "0" * 40
-            plan_path.write_text(json.dumps(data), encoding="utf-8")
+    def test_cli_subprocess_rejects_blob_sha(self) -> None:
+        """A1: existing blob SHA (not commit) rejected by full CLI without --known-sha."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, sha = self._make_git_repo(tmp)
+            repo = plan_path.parents[2]
+            blob_sha = subprocess.check_output(
+                ["git", "rev-parse", "HEAD:readme.txt"],
+                cwd=repo,
+                text=True,
+            ).strip()
+            self._make_plan_with_evidence(repo, audited_sha=blob_sha, base_sha=sha)
             completed = subprocess.run(
-                [sys.executable, str(ROOT / "tool" / "workshop" / "validate_plan.py"),
-                 str(plan_path), "--no-artifacts"],
-                capture_output=True, text=True, check=False,
+                [
+                    sys.executable,
+                    str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                    str(plan_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
             )
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("audited_sha", completed.stderr)
+            self.assertIn("stale SHA", completed.stderr)
+
+    def test_cli_subprocess_rejects_non_git_directory(self) -> None:
+        """A1: non-git directory rejected by full CLI without --known-sha."""
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = subprocess.run(
+                ["git", "-C", tmp, "rev-parse", "--is-inside-work-tree"],
+                capture_output=True,
+            )
+            self.assertNotEqual(probe.returncode, 0, f"{tmp} unexpectedly inside a git repo")
+            plan_dir = Path(tmp) / "tool" / "workshop"
+            plan_dir.mkdir(parents=True)
+            plan_path = plan_dir / "plan.json"
+            evidence_file = Path(tmp) / "docs" / "workshop" / "evidence.txt"
+            evidence_file.parent.mkdir(parents=True, exist_ok=True)
+            evidence_file.write_text("evidence\n", encoding="utf-8")
+            digest = hashlib.sha256(evidence_file.read_bytes()).hexdigest()
+            task = _minimal_task("WS-01", 9, sha=None)
+            task["required_evidence"] = [
+                {
+                    "path": "docs/workshop/evidence.txt",
+                    "sha256": digest,
+                    "required": True,
+                }
+            ]
+            data = _plan([task], audited_sha="0" * 40)
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                    str(plan_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("audited_sha", completed.stderr)
+            self.assertIn("stale SHA", completed.stderr)
+
+    def test_cli_subprocess_accepts_old_commit_not_head(self) -> None:
+        """A1: old commit (not HEAD) passes full CLI without --known-sha and without --no-artifacts."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, first_sha = self._make_git_repo(tmp)
+            repo = plan_path.parents[2]
+            (repo / "readme.txt").write_text("second\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "second"],
+                cwd=repo, capture_output=True, check=True,
+            )
+            second_sha = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=repo, text=True,
+            ).strip()
+            self.assertNotEqual(first_sha, second_sha)
+            self._make_plan_with_evidence(repo, audited_sha=first_sha, base_sha=second_sha)
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                    str(plan_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, msg=f"stdout={completed.stdout}\nstderr={completed.stderr}")
+            self.assertEqual(completed.stderr, "")
+            self.assertIn("OK", completed.stdout)
+
+    def test_cli_subprocess_rejects_nonexistent_sha(self) -> None:
+        """A1: nonexistent SHA rejected by full CLI without --known-sha."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, sha = self._make_git_repo(tmp)
+            repo = plan_path.parents[2]
+            self._make_plan_with_evidence(repo, audited_sha="0" * 40, base_sha=sha)
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                    str(plan_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("audited_sha", completed.stderr)
+            self.assertIn("stale SHA", completed.stderr)
 
 
 class GraphAndSchemaTest(unittest.TestCase):
