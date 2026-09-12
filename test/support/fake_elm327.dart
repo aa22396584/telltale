@@ -187,6 +187,7 @@ class AdapterFaults {
     this.refuseHeaderAfterCount,
     this.delayHeaderRestore = false,
     this.dropOnHeaderRestore = false,
+    this.throwOnHeaderRestore = false,
   });
 
   /// Split every emission into chunks of at most this many bytes, the way BLE
@@ -320,6 +321,9 @@ class AdapterFaults {
 
   /// Drops connection when count exceeds [refuseHeaderAfterCount].
   final bool dropOnHeaderRestore;
+
+  /// Throws exception on ATSH when count exceeds [refuseHeaderAfterCount].
+  final bool throwOnHeaderRestore;
 }
 
 /// An ELM327 that behaves like the datasheet rather than like the app's hopes.
@@ -697,6 +701,15 @@ class FakeElm327 extends BaseObdTransport {
         _atshCount >= faults.refuseHeaderAfterCount!) {
       setConnected(false);
       return;
+    }
+    if (faults.throwOnHeaderRestore &&
+        command.startsWith('ATSH') &&
+        faults.refuseHeaderAfterCount != null &&
+        _atshCount >= faults.refuseHeaderAfterCount!) {
+      throw const TransportException(
+        'Transport I/O failure during ATSH restore',
+        issue: TransportIssue.writeFailed,
+      );
     }
 
     var latency = slowCommands[command] ?? responseLatency;

@@ -678,6 +678,83 @@ void main() {
       expect(client.currentHeader, isNull);
       expect(client.headerRestoreFailed, isTrue);
     }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test(
+        'header restore throw sets sticky failure, leaves header unknown, and refuses next send with zero writes',
+        () async {
+      final transport = _can11Transport(
+        faults: const AdapterFaults(
+          refuseHeaderAfterCount: 2,
+          throwOnHeaderRestore: true,
+        ),
+      );
+      final client = await _connect(transport);
+
+      // Establish initial header A: 7E0 (1st ATSH)
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      // 2nd ATSH: 6F1 (succeeds)
+      // Query: 22DDBC (succeeds)
+      // 3rd ATSH: 7E0 restore (transport throws exception)
+      await expectLater(
+        client.sendTransacted(
+          '22DDBC',
+          header: '6F1',
+          restoreHeader: true,
+        ),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+
+      // Status must be unknown (null) and restore-failed
+      expect(client.currentHeader, isNull);
+      expect(client.headerRestoreFailed, isTrue);
+
+      // Next normal send MUST fail closed with zero wire writes!
+      final logLengthBeforeSend = transport.commandLog.length;
+      await expectLater(
+        client.send('010C'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.headerRestoreFailed,
+          ),
+        ),
+      );
+      expect(transport.commandLog.length, logLengthBeforeSend,
+          reason: 'Next normal send must have zero writes on the wire');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test(
+        'restoreHeader with previousHeader null leaves currentHeader on transaction header without restore',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      // No header established yet; currentHeader is null
+      expect(client.currentHeader, isNull);
+
+      final reply = await client.sendTransacted(
+        '22DDBC',
+        header: '6F1',
+        restoreHeader: true,
+      );
+      expect(reply.isSuccess, isTrue);
+
+      // Because previousHeader was null, no restore was possible; currentHeader remains '6F1'
+      expect(client.currentHeader, '6F1');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
   });
 
   group('F2: transaction sender lifecycle, serialization, and isolation', () {
@@ -880,6 +957,76 @@ void main() {
       );
       expect(transport.commandLog.length, logLengthBeforeSend,
           reason: 'Sender from prior generation must produce zero writes on wire');
+
+      await client.disconnect();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test(
+        'late continuation from timed out action cannot interleave with concurrent polling and is zero-write rejected',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      // Establish initial header 7E0 for ECM
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      Future<ObdResponse> Function(String, {Duration? timeout})? capturedSender;
+      final actionStarted = Completer<void>();
+      final allowLateContinuation = Completer<void>();
+
+      // Launch transaction that times out due to tiny budget
+      await expectLater(
+        client.runTransacted(
+          (sender) async {
+            capturedSender = sender;
+            actionStarted.complete();
+            await allowLateContinuation.future;
+            // Attempt to send after timeout occurred
+            return await sender('22DDBC');
+          },
+          header: '6F1',
+          restoreHeader: true,
+          budget: const Duration(milliseconds: 50),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      await actionStarted.future;
+      expect(capturedSender, isNotNull);
+
+      // Concurrent regular polling starts immediately after transaction timeout
+      final pollingFuture = client.send('010C');
+
+      // Now late continuation wakes up and attempts to send using revoked sender
+      final logBeforeLate = transport.commandLog.length;
+      final lateSendExpectation = expectLater(
+        capturedSender!('22DDBC'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.operationRetired,
+          ),
+        ),
+      );
+
+      allowLateContinuation.complete();
+
+      // Regular polling must succeed
+      final pollingReply = await pollingFuture;
+      expect(pollingReply.isSuccess, isTrue);
+
+      // Late continuation sender must be rejected with operationRetired
+      await lateSendExpectation;
+
+      // Verify that '22DDBC' was NEVER written to the wire by the late sender
+      final lateWrites = transport.commandLog
+          .skip(logBeforeLate)
+          .where((cmd) => cmd.contains('22DDBC'))
+          .toList();
+      expect(lateWrites, isEmpty,
+          reason: 'Late continuation must produce ZERO wire writes');
 
       await client.disconnect();
     }, timeout: const Timeout(Duration(seconds: 20)));
