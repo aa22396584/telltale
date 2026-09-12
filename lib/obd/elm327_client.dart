@@ -1737,8 +1737,18 @@ class Elm327Client {
         issue: TransportIssue.adapterSilentOnResync,
       ),
     );
-    final teardown = _teardownTransport();
-    _activeTeardown = teardown;
+    if (_activeTeardown == null) {
+      final completer = Completer<void>();
+      _activeTeardown = completer.future;
+      _teardownTransport().whenComplete(() {
+        if (_activeTeardown == completer.future) {
+          _activeTeardown = null;
+        }
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      });
+    }
   }
 
   /// Waits out whatever the adapter still owes us, then clears the desync.

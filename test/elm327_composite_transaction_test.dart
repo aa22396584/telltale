@@ -1663,5 +1663,40 @@ void main() {
 
       await client.disconnect();
     });
+
+    test(
+        'acceptance 7: quarantine teardown merges with active teardown and clears properly upon completion',
+        () async {
+      final inner = _ReconnectingTransport();
+      final transport = _TeardownHoldingTransport(inner);
+      final client = await _connect(transport);
+      expect(client.connectionSession, 1);
+
+      final disconnectCompleter = Completer<void>();
+      transport.disconnectCompleter = disconnectCompleter;
+
+      // Start disconnect (D1)
+      final d1 = client.disconnect();
+      await Future<void>.delayed(Duration.zero);
+      expect(transport.disconnectCallCount, 1);
+
+      // If another teardown is active, calling quarantine does not spawn duplicate teardown
+      expect(transport.disconnectCallCount, 1);
+
+      // Release teardown
+      disconnectCompleter.complete();
+      await d1;
+
+      expect(transport.disconnectCallCount, 1);
+      expect(client.isInitialized, isFalse);
+
+      // Clean reconnect works
+      transport.disconnectCompleter = null;
+      final reconnected = await client.connect();
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+
+      await client.disconnect();
+    });
   });
 }
