@@ -9,9 +9,9 @@ GitHub prerelease. Older builds may remain vulnerable and are not supported.
 
 Use the repository's **Security** tab to submit a private
 [GitHub Security Advisory](https://github.com/ImL1s/telltale/security/advisories/new)
-when that option is available. If it is unavailable, contact the maintainer
-privately through the [ImL1s GitHub profile](https://github.com/ImL1s) before
-publishing details.
+when that option is available. If it is unavailable, email the maintainer at
+**aa22306546@hotmail.com** (or via the
+[ImL1s GitHub profile](https://github.com/ImL1s)) before publishing details.
 
 Include the affected version or commit, platform, impact, reproduction steps,
 and the smallest redacted evidence needed to verify the issue. Allow reasonable
