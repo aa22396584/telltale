@@ -170,30 +170,76 @@ NON_MODEL_SUFFIXES = frozenset(
 )
 
 
-def _has_explicit_target_binding(
-    locator: str,
-    target_models: set[str],
-) -> bool:
-    if not locator or not target_models:
+REVIEWED_SHARED_SOURCE_TARGET_BINDINGS: dict[str, set[str]] = {
+    # Canonical source path -> set of target model prefixes with reviewed applicability
+    "vehicle_profiles/byd/byd_202410_update.json": {
+        "byd-atto3",
+        "byd-atto-3",
+    },
+    "volkswagen/meb.json": {
+        "volkswagen-id3",
+        "volkswagen-id4",
+        "volkswagen-id5",
+        "volkswagen-id-buzz",
+        "cupra-born",
+        "skoda-enyaq",
+    },
+    "vehicle_profiles/vw/ev_meb.json": {
+        "volkswagen-id3",
+        "volkswagen-id4",
+        "volkswagen-id5",
+        "volkswagen-id-buzz",
+        "cupra-born",
+        "skoda-enyaq",
+    },
+    "vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp": {
+        "hyundai-ioniq5",
+        "hyundai-ioniq6",
+        "kia-ev6",
+        "genesis-gv60",
+    },
+    "components/vehicle_hkmc/hif_can_poll.cpp": {
+        "hyundai-ioniq5",
+        "hyundai-ioniq6",
+        "kia-ev6",
+        "genesis-gv60",
+    },
+    "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp": {
+        "hyundai-kona",
+        "kia-niro",
+        "kia-soul",
+    },
+    "components/vehicle_hkmc/kn_can_poll.cpp": {
+        "hyundai-kona",
+        "kia-niro",
+        "kia-soul",
+    },
+    "vehicle_profiles/hyundai/ioniq5-6.json": {
+        "hyundai-ioniq5",
+        "hyundai-ioniq6",
+    },
+    "vehicle_profiles/kia/nirosoulkona-ev.json": {
+        "kia-niro",
+        "kia-soul",
+        "hyundai-kona",
+    },
+}
+
+
+def _has_reviewed_shared_binding(target_id: str, path_clean: str) -> bool:
+    norm_path = path_clean.replace("\\", "/").strip().lstrip("/")
+    target_clean = _norm_token(target_id)
+    targets = REVIEWED_SHARED_SOURCE_TARGET_BINDINGS.get(norm_path)
+    if targets is None:
         return False
-    loc_lower = locator.lower()
-    loc_clean = _norm_token(loc_lower)
-    for tm in target_models:
-        if not tm:
-            continue
-        if tm in loc_clean or tm in loc_lower:
+    for t in targets:
+        t_clean = _norm_token(t)
+        if (
+            target_clean.startswith(t_clean)
+            or target_id.lower().startswith(t.lower())
+            or t_clean.startswith(target_clean)
+        ):
             return True
-        if tm.startswith("id") and len(tm) > 2:
-            num = tm[2:]
-            if (
-                f"id.{num}" in loc_lower
-                or f"id {num}" in loc_lower
-                or f"id:{num}" in loc_lower
-                or f"id{num}" in loc_clean
-            ):
-                return True
-            if "id*" in loc_lower and "volkswagen" in loc_lower:
-                return True
     return False
 
 
@@ -214,7 +260,11 @@ def _resolve_target_models(
         if clean:
             models.add(clean)
 
-    if aliases:
+    # Aliases are search/display metadata and MUST NOT override or add conflicting models
+    # when the target_id already resolves a distinct model.
+    # Only if target_id has no model parts (e.g. generic nameplates like 'renault-current-ev'),
+    # aliases can provide the base model.
+    if not models and aliases:
         for alias in aliases:
             if not isinstance(alias, str):
                 continue
@@ -254,8 +304,7 @@ def _is_cross_model_source(
 
     target_make = normalize_brand(target_parts[0])
     target_models = _resolve_target_models(target_id, target_make, aliases)
-    path_clean = path.lower()
-    loc_clean = _norm_token(locator)
+    path_clean = path.lower().replace("\\", "/")
 
     # 1. Check foreign locator specification (e.g. '<Model> polls')
     m_poll = re.search(r"\b([a-z0-9_-]+(?:\s+[a-z0-9_-]+)?)\s+polls\b", locator.lower())
@@ -267,9 +316,11 @@ def _is_cross_model_source(
             ):
                 return True
 
-    has_binding = _has_explicit_target_binding(locator, target_models)
+    # 2. Check structured reviewed shared-source binding
+    if _has_reviewed_shared_binding(target_id, path_clean):
+        return False
 
-    # 2. OVMS component paths
+    # 3. OVMS component paths
     m_ovms = re.search(r"components/vehicle_([a-z0-9_]+)(?:/|$)", path_clean)
     if m_ovms:
         comp_raw = m_ovms.group(1)
@@ -291,7 +342,7 @@ def _is_cross_model_source(
                     )
                     or any(cpp_clean.startswith(m) for m in target_models)
                 )
-                if not matches_cpp and not has_binding:
+                if not matches_cpp:
                     return True
 
         # Check component brand / sharing
@@ -305,28 +356,10 @@ def _is_cross_model_source(
         else:
             comp_make = comp_raw
 
-        hkmc_makes = {"hyundai", "kia", "genesis"}
-        is_hkmc_sister = target_make in hkmc_makes and comp_make in hkmc_makes
-        is_hkmc_shared_file = is_hkmc_sister and any(
-            f in path_clean for f in ("hif_can_poll", "kn_can_poll")
-        )
-
         if comp_make != target_make:
-            if is_hkmc_shared_file:
-                # HKMC shared poll files require platform or model binding in locator
-                if not (
-                    has_binding
-                    or any(
-                        kw in loc_clean
-                        for kw in {"egmp", "hkmc", "kona", "niro", "soul"}
-                    )
-                ):
-                    return True
-            else:
-                if not has_binding:
-                    return True
+            return True
 
-    # 3. Dedicated vehicle JSON file path
+    # 4. Dedicated vehicle JSON file path
     m = re.search(
         r"(?:vehicle_profiles/|^)([a-z0-9_-]+)/([a-z0-9_.-]+)\.json$", path_clean
     )
@@ -345,28 +378,11 @@ def _is_cross_model_source(
             "fixtures",
             "builtin",
         }
-        if dir_name not in generic_dirs:
+        if dir_name not in generic_dirs and not any(g in path_clean for g in generic_dirs):
             src_make = normalize_brand(dir_name)
             src_file_raw = m.group(2)
             src_file_clean = _norm_token(src_file_raw)
 
-            if src_make == target_make and "update" in src_file_clean:
-                return False
-
-            is_platform_file = (
-                src_file_clean in {"meb", "evmeb", "egmp"} or src_make in {"hkmc"}
-            )
-            if is_platform_file:
-                vag_makes = {"volkswagen", "audi", "skoda", "seat", "cupra"}
-                if src_make == "volkswagen" and target_make not in vag_makes:
-                    return True
-                if src_make != "volkswagen" and src_make != target_make:
-                    return True
-                if not has_binding:
-                    return True
-                return False
-
-            # Dedicated single-model or multi-model vehicle file:
             # Rule A: Make must match
             if src_make != target_make:
                 return True
@@ -426,9 +442,6 @@ def _is_cross_model_source(
                         matched_gen = True
                         break
             if matched_gen:
-                return False
-
-            if has_binding:
                 return False
 
             return True
@@ -1933,7 +1946,7 @@ def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
             _text(profile.get("variant")),
             _text(profile.get("display_name")),
         ]
-        if make and _is_cross_model_source(
+        if make and model and _is_cross_model_source(
             target_id, loc, path, url, aliases=profile_aliases
         ):
             issues.append(

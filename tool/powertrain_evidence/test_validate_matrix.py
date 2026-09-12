@@ -1546,6 +1546,68 @@ class ResearchRuleTest(unittest.TestCase):
         row["source_families"][0]["locator"] = "record 1"
         self.assertEqual(_issues_for(row), [])
 
+    def test_research_row_cross_model_locator_text_cannot_authorize_foreign_model(self) -> None:
+        """Model 3 referencing Model Y with locator prose 'Model 3 applicability entry' fails."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "Model 3 applicability entry"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_negation_locator_fails(self) -> None:
+        """Ioniq 5 referencing Ioniq 6 with locator 'NOT APPLICABLE TO Ioniq 5' fails."""
+        row = _valid_executable_row(id="hyundai-ioniq-5", aliases=["Hyundai Ioniq 5"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        row["source_families"][0]["locator"] = "NOT APPLICABLE TO Ioniq 5"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than hyundai-ioniq-5")
+
+    def test_research_row_cross_model_update_filename_does_not_bypass_model_check(self) -> None:
+        """Model 3 referencing Model Y with 'update' in filename is rejected."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y_update.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_alias_cannot_authorize_foreign_model(self) -> None:
+        """Model 3 with alias 'Tesla Model Y' cannot reference Model Y profile."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model Y"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_wildcard_locator_cannot_authorize_unreviewed_source(self) -> None:
+        """VW ID.4 referencing unreviewed meb.json with wildcard 'Volkswagen ID* applicability' is rejected."""
+        row = _valid_executable_row(id="volkswagen-id4", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/volkswagen/meb.json"
+        row["source_families"][0]["locator"] = "Volkswagen ID* applicability"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than volkswagen-id4")
+
+    def test_research_row_reviewed_shared_source_binding_passes(self) -> None:
+        """VW ID.4 referencing explicitly reviewed shared MEB source passes validation."""
+        row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
+    def test_research_row_unreviewed_target_on_shared_source_fails(self) -> None:
+        """Tesla Model 3 referencing MEB shared source fails because it is not in the reviewed binding."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
     def test_shared_source_with_matching_locators_passes(self) -> None:
         """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
         leaf_row = _valid_executable_row(
@@ -2238,6 +2300,132 @@ class CatalogObjectRuleTest(unittest.TestCase):
             {"profiles": [prof]}, validate_evidence=True
         )
         _only(issues, "belongs to a different vehicle model than Ford Mustang Mach-E")
+
+    def test_community_catalog_profile_cross_model_locator_prose_cannot_authorize(self) -> None:
+        """Catalog: Model 3 referencing Model Y with locator 'Model 3 applicability entry' fails."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "Model 3 applicability entry"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_negation_locator_fails(self) -> None:
+        """Catalog: Ioniq 5 referencing Ioniq 6 with locator 'NOT APPLICABLE TO Ioniq 5' fails."""
+        prof = _valid_community_catalog_profile(
+            id="hyundai-ioniq-5-community",
+            make="Hyundai",
+            model="Ioniq 5",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        prof["source"]["locator"] = "NOT APPLICABLE TO Ioniq 5"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Hyundai Ioniq 5")
+
+    def test_community_catalog_profile_cross_model_update_filename_fails(self) -> None:
+        """Catalog: Model 3 referencing Model Y with 'update' in filename fails."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y_update.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_alias_fails(self) -> None:
+        """Catalog: Model 3 with variant 'Tesla Model Y' cannot reference Model Y profile."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+            variant="Tesla Model Y",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_wildcard_locator_fails(self) -> None:
+        """Catalog: VW ID.4 referencing unreviewed meb.json with 'Volkswagen ID* applicability' fails."""
+        prof = _valid_community_catalog_profile(
+            id="volkswagen-id4-community",
+            make="Volkswagen",
+            model="ID.4",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/volkswagen/meb.json"
+        prof["source"]["locator"] = "Volkswagen ID* applicability"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Volkswagen ID.4")
 
 
 def _research_profile(**overrides: object) -> dict:
