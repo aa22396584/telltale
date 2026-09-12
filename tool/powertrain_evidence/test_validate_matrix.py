@@ -1449,6 +1449,59 @@ class ResearchRuleTest(unittest.TestCase):
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than nissan-leaf")
 
+    def test_research_row_cross_model_tesla_model_y_source_for_model_3_fails(self) -> None:
+        """Model 3 referencing Model Y source is rejected as cross-model without reviewed binding."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_ioniq_6_source_for_ioniq_5_fails(self) -> None:
+        """Ioniq 5 referencing Ioniq 6 source is rejected as cross-model."""
+        row = _valid_executable_row(id="hyundai-ioniq-5", aliases=["Hyundai Ioniq 5"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than hyundai-ioniq-5")
+
+    def test_research_row_cross_model_egmp_alias_does_not_override_foreign_source_fails(self) -> None:
+        """E-GMP platform text in alias and locator cannot authorize a Tesla source for Kia EV6."""
+        row = _valid_executable_row(id="kia-ev6", aliases=["Kia EV6 E-GMP"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "E-GMP note"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than kia-ev6")
+
+    def test_research_row_cross_model_meb_alias_does_not_override_foreign_source_fails(self) -> None:
+        """MEB platform text in alias and locator cannot authorize a BYD source for VW ID.4."""
+        row = _valid_executable_row(id="volkswagen-id4", aliases=["ID4 MEB"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/byd/atto3.json"
+        row["source_families"][0]["locator"] = "MEB note"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than volkswagen-id4")
+
+    def test_research_row_cross_model_synthetic_unlisted_brand_fails(self) -> None:
+        """Synthetic unlisted brand and model are protected by universal cross-model rules."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/zenith/cruiser2.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than acme-roadster-1")
+
+    def test_research_row_same_model_source_passes(self) -> None:
+        """Same model source within same make passes validation."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model3.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
     def test_shared_source_with_matching_locators_passes(self) -> None:
         """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
         leaf_row = _valid_executable_row(

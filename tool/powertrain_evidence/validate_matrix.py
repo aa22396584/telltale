@@ -76,6 +76,27 @@ BRAND_ALIASES: dict[str, str] = {
     "vw": "volkswagen",
     "chevy": "chevrolet",
 }
+GENERIC_MODEL_PREFIXES = frozenset({"model", "ioniq", "id", "ev", "atto"})
+NON_MODEL_WORDS = frozenset(
+    {
+        "actively",
+        "default",
+        "periodic",
+        "cyclic",
+        "continuous",
+        "regular",
+        "standard",
+        "normal",
+        "fast",
+        "slow",
+        "can",
+        "bms",
+        "ecu",
+        "pid",
+        "pids",
+        "obd",
+    }
+)
 
 
 def normalize_brand(brand: str) -> str:
@@ -96,87 +117,187 @@ def _is_cross_model_source(
     aliases: list[str] | None = None,
 ) -> bool:
     target_clean = _norm_token(target_id)
-    target_tokens = set(re.split(r"[^a-z0-9]", target_id.lower()))
+    target_parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
+    if not target_parts:
+        return False
+
+    target_make = normalize_brand(target_parts[0])
+    target_model_tokens = target_parts[1:]
+    target_model_clean = _norm_token("".join(target_model_tokens))
+
     all_target_strings = [target_clean]
+    model_candidates = set()
+    if target_model_clean:
+        model_candidates.add(target_model_clean)
+    for tok in target_model_tokens:
+        tok_c = _norm_token(tok)
+        if len(tok_c) >= 2 and tok_c not in {"electrified", "current", "bev", "phev", "ev", "gen"} and tok_c not in GENERIC_MODEL_PREFIXES:
+            model_candidates.add(tok_c)
+
     if aliases:
         for a in aliases:
             if a:
-                target_tokens.update(re.split(r"[^a-z0-9]", str(a).lower()))
-                all_target_strings.append(_norm_token(str(a)))
-    target_tokens = {t for t in target_tokens if len(t) >= 2}
+                a_str = str(a).lower()
+                all_target_strings.append(_norm_token(a_str))
+                a_parts = [p for p in re.split(r"[^a-z0-9]+", a_str) if p]
+                if len(a_parts) >= 2 and normalize_brand(a_parts[0]) == target_make:
+                    m_cand = _norm_token("".join(a_parts[1:]))
+                    if m_cand:
+                        model_candidates.add(m_cand)
+                    for p in a_parts[1:]:
+                        p_c = _norm_token(p)
+                        if len(p_c) >= 2 and p_c not in {"electrified", "current", "bev", "phev", "ev", "gen"} and p_c not in GENERIC_MODEL_PREFIXES:
+                            model_candidates.add(p_c)
+                elif len(a_parts) == 1:
+                    p_c = _norm_token(a_parts[0])
+                    if p_c not in GENERIC_MODEL_PREFIXES:
+                        model_candidates.add(p_c)
 
     loc_clean = _norm_token(locator)
     path_clean = path.lower()
 
-    # Platform checks
-    is_target_egmp = "egmp" in target_clean or any("egmp" in s for s in all_target_strings)
-    is_target_meb = "meb" in target_clean or any("meb" in s for s in all_target_strings)
-
-    loc_has_egmp = "egmp" in loc_clean
-    loc_has_meb = "meb" in loc_clean
-
-    # If locator explicitly identifies legitimate shared platform scope
-    if is_target_egmp and loc_has_egmp:
-        return False
-    if is_target_meb and loc_has_meb:
-        return False
-
-    # 1. Dedicated vehicle JSON file path
-    m = re.search(r"(?:vehicle_profiles/|^)([a-z0-9_-]+)/([a-z0-9_.-]+)\.json", path_clean)
-    if m:
-        dir_name = m.group(1)
-        generic_dirs = {"shared", "common", "signalsets", "app", "components", "src", "docs", "tests", "data", "fixtures"}
-        if dir_name not in generic_dirs:
-            src_make = normalize_brand(dir_name)
-            src_model_raw = m.group(2).replace(".json", "")
-            src_model = _norm_token(src_model_raw)
-            target_make = normalize_brand(target_id.split("-")[0])
-
-            if src_model in {"meb", "egmp"} or src_model_raw.lower() in GENERIC_BRAND_PLATFORM_ALIASES:
-                if "meb" in src_model and is_target_meb:
-                    return False
-                if "egmp" in src_model and is_target_egmp:
-                    return False
-                return True
-
-            if src_make != target_make and not any(src_make in s for s in all_target_strings):
-                return True
-
-            raw_tokens = re.split(r"[^a-z0-9]+", src_model_raw.lower())
-            tokens = set()
-            for t in raw_tokens:
-                if t:
-                    tokens.add(t)
-                    sub = re.findall(r"[a-z]+|[0-9]+", t)
-                    tokens.update(s for s in sub if len(s) >= 2 and not s.isdigit())
-
-            if any(tok in s or s in tok for tok in tokens for s in all_target_strings):
-                pass
-            elif "ioniq" in target_clean and ("5" in target_clean or "6" in target_clean) and "ioniq" in src_model:
-                pass
-            else:
+    # 1. Check foreign locator (e.g. locator for '<Model> polls')
+    m_poll = re.search(r"\b([a-z0-9_-]+(?:\s+[a-z0-9_-]+)?)\s+polls\b", locator.lower())
+    if m_poll:
+        poll_veh = _norm_token(m_poll.group(1))
+        if poll_veh not in NON_MODEL_WORDS:
+            if not any(poll_veh in s or s in poll_veh for s in all_target_strings):
                 return True
 
     # 2. Dedicated vehicle directory in OVMS: components/vehicle_<make>_<model>
-    m2 = re.search(r"components/vehicle_([a-z0-9]+?)(?:_([a-z0-9]+))?(?:/|$)", path_clean)
-    if m2:
-        if is_target_egmp and loc_has_egmp:
-            return False
-        for foreign in ["teslamodel3", "hyundai_ioniq5", "nissanleaf", "toyota_bz4x", "renaultzoe", "vweup", "bmwi3"]:
-            if foreign in path_clean:
-                foreign_clean = _norm_token(foreign)
-                if not any(foreign_clean in s or s in foreign_clean for s in all_target_strings):
-                    foreign_make = "volkswagen" if foreign.startswith("vw") else (foreign.split("_")[0] if "_" in foreign else re.match(r"[a-z]+", foreign).group(0))
-                    foreign_make = normalize_brand(foreign_make)
-                    target_make = normalize_brand(target_id.split("-")[0])
-                    if foreign_make != target_make and not any(foreign_make in s for s in all_target_strings):
-                        return True
+    m_ovms = re.search(r"components/vehicle_([a-z0-9_]+)(?:/|$)", path_clean)
+    if m_ovms:
+        comp_raw = m_ovms.group(1)
+        comp_clean = _norm_token(comp_raw)
+        if comp_clean.startswith("vw"):
+            comp_norm = "volkswagen" + comp_clean[2:]
+        else:
+            comp_norm = comp_clean
 
-    # 3. Check foreign locator (e.g. locator for '<Model> polls')
-    m_poll = re.search(r"\b(leaf|model\s*3|ioniq\s*5|bz4x|enyaq|atto\s*3|ev6|ev9|ariya)\s+polls", locator.lower())
-    if m_poll:
-        poll_veh = _norm_token(m_poll.group(1))
-        if not any(poll_veh in s or s in poll_veh for s in all_target_strings):
+        matches_component = any(comp_norm in s or s in comp_norm for s in all_target_strings)
+        if not matches_component:
+            # Shared HKMC EV poll code between Hyundai & Kia
+            hkmc_makes = {"hyundai", "kia", "genesis"}
+            is_hkmc_shared = (
+                target_make in hkmc_makes
+                and any(m in comp_clean for m in hkmc_makes)
+                and any(kw in loc_clean for kw in {"egmp", "hkmc", "kona", "niro", "soul", "map", "poll", "can"})
+            )
+            is_mg_shared = (
+                target_make == "mg"
+                and comp_clean == "mgev"
+            )
+            if not (is_hkmc_shared or is_mg_shared):
+                return True
+
+        m_cpp = re.search(r"vehicle_([a-z0-9]+)\.cpp", path_clean)
+        if m_cpp:
+            cpp_model = _norm_token(m_cpp.group(1))
+            if cpp_model.startswith(target_make):
+                cpp_model_cmp = cpp_model[len(target_make):]
+            else:
+                cpp_model_cmp = cpp_model
+            if cpp_model_cmp and not any(cpp_model_cmp in s or s in cpp_model_cmp for s in model_candidates | {target_model_clean}):
+                if not any(cpp_model in s or s in cpp_model for s in all_target_strings):
+                    return True
+
+    # 3. Dedicated vehicle JSON file path
+    m = re.search(r"(?:vehicle_profiles/|^)([a-z0-9_-]+)/([a-z0-9_.-]+)\.json$", path_clean)
+    if m:
+        dir_name = m.group(1)
+        generic_dirs = {
+            "shared",
+            "common",
+            "signalsets",
+            "app",
+            "components",
+            "src",
+            "docs",
+            "tests",
+            "data",
+            "fixtures",
+        }
+        if dir_name not in generic_dirs:
+            src_make = normalize_brand(dir_name)
+            src_model_raw = m.group(2)
+            src_model_clean = _norm_token(src_model_raw)
+
+            # Brand-level update files (e.g. byd_202410_update.json)
+            if src_make == target_make and "update" in src_model_clean:
+                return False
+
+            # Check if this is a shared multi-vehicle / platform file
+            is_shared_platform_file = (
+                src_model_clean in {"meb", "evmeb", "egmp"}
+                or src_make in {"hkmc", "gmc"}
+                or (src_make == "volkswagen" and "meb" in src_model_clean)
+            )
+
+            if is_shared_platform_file:
+                # Shared platform files MUST have explicit per-target reviewed binding in locator
+                has_target_binding = False
+                for cand in model_candidates:
+                    if cand in {"meb", "egmp"}:
+                        continue
+                    if len(cand) >= 2 and (cand in loc_clean or cand in locator.lower()):
+                        has_target_binding = True
+                        break
+                if not has_target_binding and "id" in target_model_clean and ("id*" in locator.lower() or "id:" in locator.lower()):
+                    has_target_binding = True
+
+                if not has_target_binding:
+                    return True
+
+                vag_makes = {"volkswagen", "audi", "skoda", "seat", "cupra"}
+                gm_makes = {"chevrolet", "gmc", "cadillac", "buick", "opel"}
+                hkmc_makes = {"hyundai", "kia", "genesis"}
+                if src_make == "volkswagen" and target_make in vag_makes:
+                    return False
+                if src_make == "gmc" and target_make in gm_makes:
+                    return False
+                if src_make == "hkmc" and target_make in hkmc_makes:
+                    return False
+                if src_make == target_make:
+                    return False
+                return True
+
+            # Dedicated single-model vehicle file:
+            # Rule A: Make must match
+            if src_make != target_make:
+                return True
+
+            # Rule B: Model must match within the same make
+            src_model_cmp = src_model_clean
+            if src_model_cmp.startswith(src_make):
+                src_model_cmp = src_model_cmp[len(src_make):]
+
+            # Multi-model files like ioniq5-6, mg5-marvel-zs, nirosoulkona-ev
+            if "5-6" in src_model_raw or "5_6" in src_model_raw or "56" in src_model_clean:
+                if any(k in model_candidates for k in {"ioniq5", "ioniq6", "5", "6"}):
+                    return False
+
+            # Match model differentiator specifically
+            m_src_ser = re.match(r"^(model|ioniq|id|ev|atto)([0-9a-z]+)$", src_model_cmp)
+            if m_src_ser:
+                src_pfx, src_diff = m_src_ser.group(1), m_src_ser.group(2)
+                matched_series = False
+                for cand in model_candidates:
+                    m_ser = re.match(r"^(model|ioniq|id|ev|atto)([0-9a-z]+)$", cand)
+                    if m_ser:
+                        matched_series = True
+                        prefix, diff = m_ser.group(1), m_ser.group(2)
+                        if prefix == src_pfx and diff == src_diff:
+                            return False
+                if matched_series:
+                    return True
+
+            if any(cand in src_model_clean for cand in model_candidates if len(cand) >= 2 and cand not in GENERIC_MODEL_PREFIXES):
+                return False
+
+            for cand in model_candidates:
+                if src_model_cmp.startswith(cand) or cand.startswith(src_model_cmp):
+                    return False
+
             return True
 
     return False
