@@ -72,42 +72,10 @@ GENERIC_BRAND_PLATFORM_ALIASES = frozenset(
         "e-platform",
     }
 )
-SHARED_PLATFORM_BRANDS: frozenset[frozenset[str]] = frozenset(
-    {
-        frozenset({"hyundai", "kia", "genesis"}),  # E-GMP, etc.
-        frozenset({"toyota", "subaru", "lexus"}),  # e-TNGA, ZN6/ZC6
-        frozenset({"volkswagen", "vw", "audi", "skoda", "seat", "cupra", "porsche"}),  # MEB, PPE, MQB
-        frozenset({"renault", "nissan", "mitsubishi"}),  # CMF-EV, AmpR
-        frozenset({"peugeot", "citroen", "opel", "vauxhall", "ds", "fiat", "jeep", "alfa_romeo", "chrysler", "dodge"}),  # Stellantis
-        frozenset({"bmw", "mini", "rolls_royce"}),  # FAAR, CLAR
-        frozenset({"ford", "lincoln"}),  # GE1
-        frozenset({"chevrolet", "chevy", "cadillac", "gmc", "buick", "holden"}),  # Ultium, BEV2
-        frozenset({"volvo", "polestar", "geely", "zeekr", "smart", "lotus"}),  # SEA, CMA
-        frozenset({"honda", "acura"}),
-    }
-)
-
 BRAND_ALIASES: dict[str, str] = {
     "vw": "volkswagen",
     "chevy": "chevrolet",
 }
-
-ALL_KNOWN_BRANDS: frozenset[str] = frozenset(
-    {b for group in SHARED_PLATFORM_BRANDS for b in group}
-    | {
-        "byd",
-        "tesla",
-        "xpeng",
-        "nio",
-        "mg",
-        "mazda",
-        "suzuki",
-        "rivian",
-        "lucid",
-        "jaguar",
-        "land_rover",
-    }
-)
 
 
 def normalize_brand(brand: str) -> str:
@@ -115,49 +83,101 @@ def normalize_brand(brand: str) -> str:
     return BRAND_ALIASES.get(b, b)
 
 
-def _are_compatible_brands(brand_a: str, brand_b: str) -> bool:
-    a = normalize_brand(brand_a)
-    b = normalize_brand(brand_b)
-    if not a or not b:
-        return True
-    if a == b:
-        return True
-    for group in SHARED_PLATFORM_BRANDS:
-        if a in group and b in group:
-            return True
-    return False
+def _norm_token(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
-def _is_cross_model_source(target_make: str, path: str, url: str) -> bool:
-    target_make = normalize_brand(target_make)
-    if not target_make:
+def _is_cross_model_source(
+    target_id: str,
+    locator: str,
+    path: str,
+    url: str,
+    *,
+    aliases: list[str] | None = None,
+) -> bool:
+    target_clean = _norm_token(target_id)
+    target_tokens = set(re.split(r"[^a-z0-9]", target_id.lower()))
+    all_target_strings = [target_clean]
+    if aliases:
+        for a in aliases:
+            if a:
+                target_tokens.update(re.split(r"[^a-z0-9]", str(a).lower()))
+                all_target_strings.append(_norm_token(str(a)))
+    target_tokens = {t for t in target_tokens if len(t) >= 2}
+
+    loc_clean = _norm_token(locator)
+    path_clean = path.lower()
+
+    # Platform checks
+    is_target_egmp = "egmp" in target_clean or any("egmp" in s for s in all_target_strings)
+    is_target_meb = "meb" in target_clean or any("meb" in s for s in all_target_strings)
+
+    loc_has_egmp = "egmp" in loc_clean
+    loc_has_meb = "meb" in loc_clean
+
+    # If locator explicitly identifies legitimate shared platform scope
+    if is_target_egmp and loc_has_egmp:
+        return False
+    if is_target_meb and loc_has_meb:
         return False
 
-    target_str = f"{path} {url}".lower()
+    # 1. Dedicated vehicle JSON file path
+    m = re.search(r"(?:vehicle_profiles/|^)([a-z0-9_-]+)/([a-z0-9_.-]+)\.json", path_clean)
+    if m:
+        dir_name = m.group(1)
+        generic_dirs = {"shared", "common", "signalsets", "app", "components", "src", "docs", "tests", "data", "fixtures"}
+        if dir_name not in generic_dirs:
+            src_make = normalize_brand(dir_name)
+            src_model_raw = m.group(2).replace(".json", "")
+            src_model = _norm_token(src_model_raw)
+            target_make = normalize_brand(target_id.split("-")[0])
 
-    # 1. JSON profile under a make directory: e.g. vehicle_profiles/nissan/leaf.json or volkswagen/MEB.json
-    json_match = re.search(r"(?:vehicle_profiles/|ev-obd-pids.*/|^)([a-z0-9_-]+)/[a-z0-9_.-]+\.json", target_str)
-    if json_match:
-        src_make = normalize_brand(json_match.group(1))
-        if src_make in ALL_KNOWN_BRANDS and not _are_compatible_brands(target_make, src_make):
+            if src_model in {"meb", "egmp"} or src_model_raw.lower() in GENERIC_BRAND_PLATFORM_ALIASES:
+                if "meb" in src_model and is_target_meb:
+                    return False
+                if "egmp" in src_model and is_target_egmp:
+                    return False
+                return True
+
+            if src_make != target_make and not any(src_make in s for s in all_target_strings):
+                return True
+
+            raw_tokens = re.split(r"[^a-z0-9]+", src_model_raw.lower())
+            tokens = set()
+            for t in raw_tokens:
+                if t:
+                    tokens.add(t)
+                    sub = re.findall(r"[a-z]+|[0-9]+", t)
+                    tokens.update(s for s in sub if len(s) >= 2 and not s.isdigit())
+
+            if any(tok in s or s in tok for tok in tokens for s in all_target_strings):
+                pass
+            elif "ioniq" in target_clean and ("5" in target_clean or "6" in target_clean) and "ioniq" in src_model:
+                pass
+            else:
+                return True
+
+    # 2. Dedicated vehicle directory in OVMS: components/vehicle_<make>_<model>
+    m2 = re.search(r"components/vehicle_([a-z0-9]+?)(?:_([a-z0-9]+))?(?:/|$)", path_clean)
+    if m2:
+        if is_target_egmp and loc_has_egmp:
+            return False
+        for foreign in ["teslamodel3", "hyundai_ioniq5", "nissanleaf", "toyota_bz4x", "renaultzoe", "vweup", "bmwi3"]:
+            if foreign in path_clean:
+                foreign_clean = _norm_token(foreign)
+                if not any(foreign_clean in s or s in foreign_clean for s in all_target_strings):
+                    foreign_make = "volkswagen" if foreign.startswith("vw") else (foreign.split("_")[0] if "_" in foreign else re.match(r"[a-z]+", foreign).group(0))
+                    foreign_make = normalize_brand(foreign_make)
+                    target_make = normalize_brand(target_id.split("-")[0])
+                    if foreign_make != target_make and not any(foreign_make in s for s in all_target_strings):
+                        return True
+
+    # 3. Check foreign locator (e.g. locator for '<Model> polls')
+    m_poll = re.search(r"\b(leaf|model\s*3|ioniq\s*5|bz4x|enyaq|atto\s*3|ev6|ev9|ariya)\s+polls", locator.lower())
+    if m_poll:
+        poll_veh = _norm_token(m_poll.group(1))
+        if not any(poll_veh in s or s in poll_veh for s in all_target_strings):
             return True
-
-    # 2. OBDb/<Make>-<Model>
-    obdb_match = re.search(r"obdb/([a-z0-9]+)[-_]", target_str)
-    if obdb_match:
-        src_make = normalize_brand(obdb_match.group(1))
-        if src_make in ALL_KNOWN_BRANDS and not _are_compatible_brands(target_make, src_make):
-            return True
-
-    # 3. OVMS vehicle_<make>
-    ovms_match = re.search(r"vehicle_([a-z0-9]+)", target_str)
-    if ovms_match:
-        src_token = ovms_match.group(1)
-        for brand in ALL_KNOWN_BRANDS:
-            if src_token.startswith(brand):
-                if not _are_compatible_brands(target_make, brand):
-                    return True
-                break
 
     return False
 SIGNEDNESS = frozenset({"unsigned", "signed"})
@@ -1366,8 +1386,11 @@ def validate_research_row(
             )
         src_path = _text(source.get("path")).lower()
         src_url = _text(source.get("url")).lower()
-        row_make = row_id.split("-")[0]
-        if _is_cross_model_source(row_make, src_path, src_url):
+        row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
+        generation = _text(row.get("generation"))
+        if generation:
+            row_aliases.append(generation)
+        if _is_cross_model_source(row_id, loc, src_path, src_url, aliases=row_aliases):
             issues.append(
                 f"{prefix}: source {source_id} path {source.get('path')!r} belongs to a different vehicle model than {row_id}"
             )
@@ -1649,7 +1672,16 @@ def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
     for src_item in all_sources:
         path = _text(src_item.get("path")).lower()
         url = _text(src_item.get("url")).lower()
-        if make and _is_cross_model_source(make, path, url):
+        loc = _text(src_item.get("locator"))
+        target_id = f"{make}-{model}".lower()
+        profile_aliases = [
+            _text(profile.get("id")),
+            _text(profile.get("variant")),
+            _text(profile.get("display_name")),
+        ]
+        if make and _is_cross_model_source(
+            target_id, loc, path, url, aliases=profile_aliases
+        ):
             issues.append(
                 f"{prefix}: source path {src_item.get('path')!r} belongs to a different vehicle model than {make} {model}"
             )
@@ -1777,6 +1809,9 @@ def validate_matrix_document(
         cat_ids_for_row = row.get("catalog_profile_ids")
         if isinstance(cat_ids_for_row, list):
             disposition = _text(row.get("disposition"))
+            row_yf = row.get("year_from")
+            row_yt = row.get("year_to")
+            row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
             for pid in cat_ids_for_row:
                 if pid in catalog_profiles_by_id:
                     cat_prof = catalog_profiles_by_id[pid]
@@ -1786,11 +1821,49 @@ def validate_matrix_document(
                             f"research row {row_id}: disposition={disposition} conflicts with catalog profile {pid} status={cat_status}"
                         )
                     row_make = row_id.split("-")[0]
-                    cat_make = pid.split("-")[0]
-                    if not _are_compatible_brands(row_make, cat_make):
+                    cat_make = _text(cat_prof.get("make")) or pid.split("-")[0]
+                    norm_row_make = normalize_brand(row_make)
+                    norm_cat_make = normalize_brand(cat_make)
+                    row_makes = {norm_row_make}
+                    if "hyundai-kia" in row_id:
+                        row_makes.update({"hyundai", "kia"})
+                    if norm_cat_make not in row_makes:
                         issues.append(
-                            f"research row {row_id}: incorrect join with catalog profile {pid} (brand mismatch {row_make} != {cat_make})"
+                            f"research row {row_id}: incorrect join with catalog profile {pid} (brand mismatch {row_make} != {cat_make.lower()})"
                         )
+                        continue
+
+                    # Model check
+                    cat_model = _text(cat_prof.get("model")) or (pid.split("-")[1] if len(pid.split("-")) > 1 else "")
+                    clean_cat_model = _norm_token(cat_model)
+                    clean_row_id = _norm_token(row_id)
+                    clean_aliases = [_norm_token(a) for a in row_aliases]
+                    all_targets = [clean_row_id] + clean_aliases
+
+                    model_words = [
+                        w for w in re.split(r"[^a-z0-9]", cat_model.lower())
+                        if len(w) >= 2 and w not in {"fwd", "awd", "rwd", "bev", "phev", "ev", "gen1", "gen2", "long", "range", "us", "eu", "uk", "60", "63kwh", "kwh", "ah"}
+                    ]
+                    model_matches = any(clean_cat_model in tgt for tgt in all_targets) or \
+                                    any(w in tgt for w in model_words for tgt in all_targets)
+                    if not model_matches:
+                        issues.append(
+                            f"research row {row_id}: incorrect join with catalog profile {pid} (model mismatch {row_id} does not match model {cat_model})"
+                        )
+
+                    # Year range overlap check
+                    cat_yf = cat_prof.get("year_from")
+                    cat_yt = cat_prof.get("year_to")
+                    if (
+                        isinstance(row_yf, int)
+                        and isinstance(row_yt, int)
+                        and isinstance(cat_yf, int)
+                        and isinstance(cat_yt, int)
+                    ):
+                        if row_yf > cat_yt or cat_yf > row_yt:
+                            issues.append(
+                                f"research row {row_id}: incorrect join with catalog profile {pid} (year range {row_yf}-{row_yt} does not overlap with profile {cat_yf}-{cat_yt})"
+                            )
     return issues
 
 

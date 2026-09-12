@@ -1441,29 +1441,79 @@ class ResearchRuleTest(unittest.TestCase):
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than bmw-i3")
 
-    def test_research_row_shared_platform_source_path_subaru_toyota_passes(self) -> None:
-        """Legitimate shared source: Subaru Solterra using Toyota bZ4X (e-TNGA)."""
-        row = _valid_executable_row(id="subaru-solterra")
+    def test_research_row_cross_row_wrong_source_locator_fails(self) -> None:
+        """Source locator referencing a foreign vehicle model is rejected as cross-model wrong source."""
+        row = _valid_executable_row(id="nissan-leaf")
         row["source_families"] = copy.deepcopy(row["source_families"])
-        row["source_families"][0]["path"] = "vehicle_profiles/toyota/bz4x.json"
+        row["source_families"][0]["locator"] = "Ioniq 5 polls"
         issues = _issues_for(row)
-        self.assertEqual(issues, [])
+        _only(issues, "belongs to a different vehicle model than nissan-leaf")
 
-    def test_research_row_shared_platform_source_path_kia_hyundai_passes(self) -> None:
-        """Legitimate shared source: Kia EV6 using Hyundai Ioniq 5 (E-GMP)."""
-        row = _valid_executable_row(id="kia-ev6")
-        row["source_families"] = copy.deepcopy(row["source_families"])
-        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq5.json"
-        issues = _issues_for(row)
-        self.assertEqual(issues, [])
+    def test_shared_source_with_matching_locators_passes(self) -> None:
+        """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
+        leaf_row = _valid_executable_row(
+            id="nissan-leaf",
+            aliases=["Nissan Leaf"],
+        )
+        leaf_row["source_families"] = [
+            {
+                "artifact_sha256": SHA64_A,
+                "family": "shared/obd",
+                "id": "primary",
+                "license": "MIT",
+                "locator": "Leaf polls",
+                "name": "shared/obd",
+                "path": "shared/obd.json",
+                "revision": SHA40_A,
+                "role": "primary",
+                "url": "https://github.com/shared/obd",
+            },
+            {
+                "artifact_sha256": SHA64_B,
+                "family": "other/src",
+                "id": "corroborating",
+                "license": "MIT",
+                "locator": "Leaf polls",
+                "name": "other/src",
+                "path": "leaf.json",
+                "revision": SHA40_B,
+                "role": "corroborating",
+                "url": "https://github.com/other/src",
+            },
+        ]
+        self.assertEqual(_issues_for(leaf_row), [])
 
-    def test_research_row_shared_platform_source_path_skoda_volkswagen_passes(self) -> None:
-        """Legitimate shared source: Skoda Enyaq using VW MEB."""
-        row = _valid_executable_row(id="skoda-enyaq")
-        row["source_families"] = copy.deepcopy(row["source_families"])
-        row["source_families"][0]["path"] = "volkswagen/MEB.json"
-        issues = _issues_for(row)
-        self.assertEqual(issues, [])
+        ioniq_row = _valid_executable_row(
+            id="hyundai-ioniq5",
+            aliases=["Hyundai Ioniq 5"],
+        )
+        ioniq_row["source_families"] = [
+            {
+                "artifact_sha256": SHA64_A,
+                "family": "shared/obd",
+                "id": "primary",
+                "license": "MIT",
+                "locator": "Ioniq 5 polls",
+                "name": "shared/obd",
+                "path": "shared/obd.json",
+                "revision": SHA40_A,
+                "role": "primary",
+                "url": "https://github.com/shared/obd",
+            },
+            {
+                "artifact_sha256": SHA64_B,
+                "family": "other/src",
+                "id": "corroborating",
+                "license": "MIT",
+                "locator": "Ioniq 5 polls",
+                "name": "other/src",
+                "path": "ioniq5.json",
+                "revision": SHA40_B,
+                "role": "corroborating",
+                "url": "https://github.com/other/src",
+            },
+        ]
+        self.assertEqual(_issues_for(ioniq_row), [])
 
 
 def _valid_community_catalog_profile(**overrides: object) -> dict:
@@ -2159,20 +2209,20 @@ class MatrixDocumentTest(unittest.TestCase):
                 "research row bmw-i3: incorrect join with catalog profile tesla-model3-2023-2026-community (brand mismatch bmw != tesla)",
             )
 
-    def test_legitimate_shared_platform_join_passes(self) -> None:
-        """Legitimate shared platform brands (Subaru to Toyota on e-TNGA) pass join validation."""
+    def test_research_row_same_brand_different_model_join_fails(self) -> None:
+        """Same brand with different model (e.g. Nissan Leaf vs Nissan Ariya) fails model check."""
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
             cat_profile = _valid_community_catalog_profile(
-                id="toyota-bz4x-2022-2024-community",
-                make="Toyota",
-                model="bZ4X",
+                id="nissan-ariya-2025-2026-community",
+                make="Nissan",
+                model="Ariya",
                 source={
                     "artifact_sha256": SHA64_A,
                     "license": "MIT",
-                    "locator": "bZ4X polls",
+                    "locator": "Ariya polls",
                     "name": "openvehicles/OVMS",
-                    "path": "components/vehicle_toyota_bz4x/src/vehicle_toyota_bz4x.cpp",
+                    "path": "components/vehicle_nissan_ariya/src/vehicle_nissan_ariya.cpp",
                     "revision": SHA40_A,
                     "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
                 },
@@ -2182,17 +2232,18 @@ class MatrixDocumentTest(unittest.TestCase):
                         "license": "GPL-3.0",
                         "locator": "220005",
                         "name": "meatpiHQ/wican-fw",
-                        "path": "vehicle_profiles/toyota/bz4x.json",
+                        "path": "vehicle_profiles/nissan/ariya.json",
                         "revision": SHA40_B,
                         "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
                     }
                 ],
             )
             row = _unknown_row(
-                id="subaru-solterra",
+                id="nissan-leaf",
+                aliases=["Nissan Leaf"],
                 disposition="single-family",
                 catalog_presence="present",
-                catalog_profile_ids=["toyota-bz4x-2022-2024-community"],
+                catalog_profile_ids=["nissan-ariya-2025-2026-community"],
                 firmware_scope="firmware-1",
                 market="Global",
                 year_from=2022,
@@ -2204,22 +2255,27 @@ class MatrixDocumentTest(unittest.TestCase):
                 research_rows=[row],
             )
             issues = validate_matrix.validate_repo(tmp)
-            self.assertEqual(issues, [])
+            _only(
+                issues,
+                "research row nissan-leaf: incorrect join with catalog profile nissan-ariya-2025-2026-community (model mismatch nissan-leaf does not match model Ariya)",
+            )
 
-    def test_legitimate_shared_platform_hyundai_kia_join_passes(self) -> None:
-        """Legitimate shared platform brands (Kia to Hyundai on E-GMP) pass join validation."""
+    def test_research_row_non_overlapping_years_join_fails(self) -> None:
+        """Same model with non-overlapping year ranges fails year overlap check."""
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
             cat_profile = _valid_community_catalog_profile(
-                id="hyundai-ioniq5-2021-2024-community",
-                make="Hyundai",
-                model="Ioniq 5",
+                id="nissan-leaf-ze1-2018-2026-community",
+                make="Nissan",
+                model="Leaf",
+                year_from=2018,
+                year_to=2026,
                 source={
                     "artifact_sha256": SHA64_A,
                     "license": "MIT",
-                    "locator": "Ioniq 5 polls",
+                    "locator": "Leaf polls",
                     "name": "openvehicles/OVMS",
-                    "path": "components/vehicle_hyundai_ioniq5/src/vehicle_hyundai_ioniq5.cpp",
+                    "path": "components/vehicle_nissanleaf/src/vehicle_nissanleaf.cpp",
                     "revision": SHA40_A,
                     "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
                 },
@@ -2229,21 +2285,22 @@ class MatrixDocumentTest(unittest.TestCase):
                         "license": "GPL-3.0",
                         "locator": "220005",
                         "name": "meatpiHQ/wican-fw",
-                        "path": "vehicle_profiles/hyundai/ioniq5.json",
+                        "path": "vehicle_profiles/nissan/leaf.json",
                         "revision": SHA40_B,
                         "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
                     }
                 ],
             )
             row = _unknown_row(
-                id="kia-ev6",
+                id="nissan-leaf-ze0",
+                aliases=["Nissan Leaf First Generation"],
                 disposition="single-family",
                 catalog_presence="present",
-                catalog_profile_ids=["hyundai-ioniq5-2021-2024-community"],
+                catalog_profile_ids=["nissan-leaf-ze1-2018-2026-community"],
                 firmware_scope="firmware-1",
                 market="Global",
-                year_from=2021,
-                year_to=2024,
+                year_from=2010,
+                year_to=2017,
             )
             _write_mini_repo(
                 tmp,
@@ -2251,7 +2308,10 @@ class MatrixDocumentTest(unittest.TestCase):
                 research_rows=[row],
             )
             issues = validate_matrix.validate_repo(tmp)
-            self.assertEqual(issues, [])
+            _only(
+                issues,
+                "research row nissan-leaf-ze0: incorrect join with catalog profile nissan-leaf-ze1-2018-2026-community (year range 2010-2017 does not overlap with profile 2018-2026)",
+            )
 
 
 class GenerateMatrixTest(unittest.TestCase):
