@@ -15,12 +15,15 @@ import 'dart:convert';
 import 'adapter_identity.dart';
 import 'addressing.dart';
 import 'elm_can_addressing.dart';
+import 'elm_composite_transaction.dart';
 import 'elm_flow_control.dart';
 import 'elm_host_isotp.dart';
 import 'iso_tp_assembler.dart';
 import 'transport/obd_transport.dart';
 import 'programmable_parameters.dart';
 import 'transcript.dart';
+
+export 'elm_composite_transaction.dart';
 
 /// Status the adapter can report in place of data.
 ///
@@ -2407,6 +2410,396 @@ class Elm327Client {
       }
     });
     return completer.future;
+  }
+
+  /// Executes [action] inside a composite transaction on [_commandChain].
+  ///
+  /// Any requested mutations ([extendedAddressByte], [canPriorityByte],
+  /// [canReceiveFilter], [flowControl], [hostVisibleIsoTp], [header]) are
+  /// applied in sequence before [action] runs. Unrelated polling is strictly
+  /// excluded from interleaving while the adapter is in a mutated state.
+  ///
+  /// If the session is retired ([mayTransmit] is false), the measurement is
+  /// skipped without sending the query.
+  ///
+  /// In `finally`, all successfully applied mutations are reverse-restored in
+  /// reverse order of application. If any restore fails, the respective sticky
+  /// restore failure flag is set and subsequent commands fail closed.
+  Future<T> runTransacted<T>(
+    Future<T> Function(Future<ObdResponse> Function(String command, {Duration? timeout}) send) action, {
+    String? header,
+    bool restoreHeader = false,
+    int? extendedAddressByte,
+    int? canPriorityByte,
+    ElmCanReceiveFilterConfig? canReceiveFilter,
+    ElmFlowControlConfig? flowControl,
+    bool hostVisibleIsoTp = false,
+    ElmCompositeTransactionConfig? configuration,
+    Duration? budget,
+    Object? owner,
+    DateTime? deadline,
+  }) {
+    final effectiveHeader = configuration?.header ?? header;
+    final effectiveRestoreHeader =
+        configuration?.restoreHeader ?? restoreHeader;
+    final effectiveExtendedAddressByte =
+        configuration?.extendedAddressByte ?? extendedAddressByte;
+    final effectiveCanPriorityByte =
+        configuration?.canPriorityByte ?? canPriorityByte;
+    final effectiveCanReceiveFilter =
+        configuration?.canReceiveFilter ?? canReceiveFilter;
+    final effectiveFlowControl = configuration?.flowControl ?? flowControl;
+    final effectiveHostVisibleIsoTp =
+        configuration?.hostVisibleIsoTp ?? hostVisibleIsoTp;
+    final effectiveBudget =
+        configuration?.budget ?? budget ?? const Duration(seconds: 8);
+    final effectiveDeadline = deadline ?? DateTime.now().add(effectiveBudget);
+
+    final completer = Completer<T>();
+    _commandChain = _commandChain.then((_) async {
+      try {
+        completer.complete(
+          await _runTransactedNow(
+            action,
+            header: effectiveHeader,
+            restoreHeader: effectiveRestoreHeader,
+            extendedAddressByte: effectiveExtendedAddressByte,
+            canPriorityByte: effectiveCanPriorityByte,
+            canReceiveFilter: effectiveCanReceiveFilter,
+            flowControl: effectiveFlowControl,
+            hostVisibleIsoTp: effectiveHostVisibleIsoTp,
+            owner: owner,
+            deadline: effectiveDeadline,
+          ),
+        );
+      } on Object catch (e, st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
+  /// Sends [command] inside a composite transaction on [_commandChain].
+  ///
+  /// Applies requested adapter mutations, verifies the retirement gate, sends
+  /// [command], and reverse-restores all applied mutations in `finally`.
+  Future<ObdResponse> sendTransacted(
+    String command, {
+    String? header,
+    bool restoreHeader = false,
+    int? extendedAddressByte,
+    int? canPriorityByte,
+    ElmCanReceiveFilterConfig? canReceiveFilter,
+    ElmFlowControlConfig? flowControl,
+    bool hostVisibleIsoTp = false,
+    ElmCompositeTransactionConfig? configuration,
+    Duration? timeout,
+    Duration? budget,
+    Object? owner,
+    DateTime? deadline,
+  }) {
+    final effectiveTimeout = configuration?.timeout ?? timeout;
+    return runTransacted(
+      (send) => send(command, timeout: effectiveTimeout),
+      header: header,
+      restoreHeader: restoreHeader,
+      extendedAddressByte: extendedAddressByte,
+      canPriorityByte: canPriorityByte,
+      canReceiveFilter: canReceiveFilter,
+      flowControl: flowControl,
+      hostVisibleIsoTp: hostVisibleIsoTp,
+      configuration: configuration,
+      budget: budget,
+      owner: owner,
+      deadline: deadline,
+    );
+  }
+
+  /// Alias for [sendTransacted].
+  Future<ObdResponse> transact(
+    String command, {
+    String? header,
+    bool restoreHeader = false,
+    int? extendedAddressByte,
+    int? canPriorityByte,
+    ElmCanReceiveFilterConfig? canReceiveFilter,
+    ElmFlowControlConfig? flowControl,
+    bool hostVisibleIsoTp = false,
+    ElmCompositeTransactionConfig? configuration,
+    Duration? timeout,
+    Duration? budget,
+    Object? owner,
+    DateTime? deadline,
+  }) =>
+      sendTransacted(
+        command,
+        header: header,
+        restoreHeader: restoreHeader,
+        extendedAddressByte: extendedAddressByte,
+        canPriorityByte: canPriorityByte,
+        canReceiveFilter: canReceiveFilter,
+        flowControl: flowControl,
+        hostVisibleIsoTp: hostVisibleIsoTp,
+        configuration: configuration,
+        timeout: timeout,
+        budget: budget,
+        owner: owner,
+        deadline: deadline,
+      );
+
+  Future<T> _runTransactedNow<T>(
+    Future<T> Function(Future<ObdResponse> Function(String command, {Duration? timeout}) send) action, {
+    required String? header,
+    required bool restoreHeader,
+    required int? extendedAddressByte,
+    required int? canPriorityByte,
+    required ElmCanReceiveFilterConfig? canReceiveFilter,
+    required ElmFlowControlConfig? flowControl,
+    required bool hostVisibleIsoTp,
+    required Object? owner,
+    required DateTime deadline,
+  }) async {
+    _throwIfStickyRestoreFailed();
+    if (!transport.isConnected) {
+      throw const TransportException(
+        'The connection is not established.',
+        issue: TransportIssue.notConnected,
+      );
+    }
+    if (!(mayTransmit?.call(owner) ?? true)) {
+      throw const OperationRetiredException(
+        'This session has ended or gone to the background, so the command was not sent.',
+      );
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      throw TimeoutException(
+        'The time limit for this operation has passed before it could start.',
+      );
+    }
+    if (_outOfSync) {
+      await _resync(deadline: deadline);
+    }
+
+    final appliedRestores = <Future<void> Function()>[];
+    final previousHeader = _currentHeader;
+
+    T? result;
+    Object? actionError;
+    StackTrace? actionStackTrace;
+
+    try {
+      // 1. Apply Extended Addressing (ATCEA)
+      if (extendedAddressByte != null) {
+        final outcome = await _applyExtendedAddressingNow(
+          extendedAddressByte,
+          owner: owner,
+          deadline: deadline,
+        );
+        if (outcome.result != ElmExtendedAddressingResult.applied) {
+          throw TransportException(
+            ElmExtendedAddressingMessages.unavailable,
+            issue: outcome.refusalIssue ??
+                TransportIssue.extendedAddressingUnavailable,
+          );
+        }
+        appliedRestores.add(() async {
+          final res = await _restoreExtendedAddressingNow(
+            deadline:
+                DateTime.now().add(ElmExtendedAddressingConfig.defaultBudget),
+            responseBytesUsed: 0,
+          );
+          if (res.result == ElmExtendedAddressingResult.restoreFailed) {
+            _extendedAddressingRestoreFailed = true;
+          }
+        });
+      }
+
+      // 2. Apply CAN Priority (ATCP)
+      if (canPriorityByte != null) {
+        final outcome = await _applyCanPriorityNow(
+          canPriorityByte,
+          owner: owner,
+          deadline: deadline,
+        );
+        if (outcome.result != ElmCanPriorityResult.applied &&
+            outcome.result != ElmCanPriorityResult.restored) {
+          throw TransportException(
+            ElmCanPriorityMessages.unavailable,
+            issue: outcome.refusalIssue ??
+                TransportIssue.canPriorityUnavailable,
+          );
+        }
+        appliedRestores.add(() async {
+          final res = await _restoreCanPriorityNow(
+            deadline:
+                DateTime.now().add(ElmCanPriorityConfig.defaultBudget),
+            responseBytesUsed: 0,
+          );
+          if (res.result == ElmCanPriorityResult.restoreFailed) {
+            _canPriorityRestoreFailed = true;
+          }
+        });
+      }
+
+      // 3. Apply CAN Receive Filter (ATCRA)
+      if (canReceiveFilter != null) {
+        final outcome = await _applyCanReceiveFilterNow(
+          canReceiveFilter,
+          owner: owner,
+          deadline: deadline,
+        );
+        if (outcome.result != ElmCanReceiveFilterResult.applied) {
+          throw TransportException(
+            ElmCanReceiveFilterMessages.unavailable,
+            issue: outcome.refusalIssue ??
+                TransportIssue.canReceiveFilterUnavailable,
+          );
+        }
+        appliedRestores.add(() async {
+          final res = await _restoreCanReceiveFilterNow(
+            deadline:
+                DateTime.now().add(ElmCanReceiveFilterConfig.defaultBudget),
+            responseBytesUsed: 0,
+          );
+          if (res.result == ElmCanReceiveFilterResult.restoreFailed) {
+            _canReceiveFilterRestoreFailed = true;
+          }
+        });
+      }
+
+      // 4. Apply Custom Flow Control (ATFCS*)
+      if (flowControl != null) {
+        final outcome = await _applyFlowControlNow(
+          flowControl,
+          owner: owner,
+          deadline: deadline,
+        );
+        if (outcome.result != ElmFlowControlResult.applied) {
+          throw TransportException(
+            ElmFlowControlMessages.customRejected,
+            issue: outcome.refusalIssue ??
+                TransportIssue.customFlowControlRejected,
+          );
+        }
+        appliedRestores.add(() async {
+          final res = await _restoreFlowControlNow(
+            deadline:
+                DateTime.now().add(ElmFlowControlConfig.defaultBudget),
+            remainingWrites: ElmFlowControlConfig.maxRestoreCommands,
+            responseBytesUsed: 0,
+          );
+          if (res.result == ElmFlowControlResult.restoreFailed) {
+            _flowControlRestoreFailed = true;
+          }
+        });
+      }
+
+      // 5. Apply Host-Visible ISO-TP (ATCAF0)
+      if (hostVisibleIsoTp) {
+        final outcome = await _applyHostVisibleIsoTpNow(
+          owner: owner,
+          deadline: deadline,
+        );
+        if (outcome.result != ElmHostIsoTpResult.applied) {
+          throw TransportException(
+            ElmHostIsoTpMessages.unavailable,
+            issue: outcome.refusalIssue ??
+                TransportIssue.rawIsoTpModeUnavailable,
+          );
+        }
+        appliedRestores.add(() async {
+          final res = await _restoreHostVisibleIsoTpNow(
+            deadline:
+                DateTime.now().add(ElmHostIsoTpConfig.defaultBudget),
+            responseBytesUsed: 0,
+          );
+          if (res.result == ElmHostIsoTpResult.restoreFailed) {
+            _hostVisibleIsoTpRestoreFailed = true;
+          }
+        });
+      }
+
+      // 6. Header switch if specified
+      if (header != null && header != _currentHeader) {
+        _currentHeader = null;
+        final ack = await _sendNow(
+          'ATSH $header',
+          commandTimeout,
+          owner: owner,
+          deadline: deadline,
+        );
+        final acknowledged = ack.isSuccess &&
+            ack.rawLines.any((l) => l.trim().toUpperCase() == 'OK');
+        if (!acknowledged) {
+          throw TransportException(
+            'The adapter refused to switch header $header',
+            issue: TransportIssue.queryHeaderRefused,
+            issueDetail: header,
+          );
+        }
+        _currentHeader = header;
+        if (restoreHeader &&
+            previousHeader != null &&
+            previousHeader != header) {
+          appliedRestores.add(() async {
+            if (transport.isConnected) {
+              try {
+                _currentHeader = null;
+                await _sendNow(
+                  'ATSH $previousHeader',
+                  commandTimeout,
+                  deadline: DateTime.now().add(const Duration(seconds: 2)),
+                  completesCommittedTransaction: true,
+                );
+                _currentHeader = previousHeader;
+              } catch (_) {}
+            }
+          });
+        }
+      }
+
+      // Explicit ownership check before measurement: skip retired measurement!
+      if (!(mayTransmit?.call(owner) ?? true)) {
+        throw const OperationRetiredException(
+          'This session has ended or gone to the background, so the command was not sent.',
+        );
+      }
+
+      // Execute measurement action
+      result = await action(
+        (command, {timeout}) {
+          if (!(mayTransmit?.call(owner) ?? true)) {
+            throw const OperationRetiredException(
+              'This session has ended or gone to the background, so the command was not sent.',
+            );
+          }
+          return _sendNow(
+            command,
+            timeout ?? commandTimeout,
+            owner: owner,
+            deadline: deadline,
+          );
+        },
+      );
+    } on Object catch (e, st) {
+      actionError = e;
+      actionStackTrace = st;
+    } finally {
+      // Reverse-restore all applied mutations in LIFO order
+      for (final restore in appliedRestores.reversed) {
+        try {
+          await restore();
+        } catch (_) {
+          // Sticky flags are set inside each _restore*Now
+        }
+      }
+    }
+
+    if (actionError != null) {
+      Error.throwWithStackTrace(actionError, actionStackTrace!);
+    }
+    _throwIfStickyRestoreFailed();
+    return result as T;
   }
 
   Future<ElmHostIsoTpOutcome> _applyHostVisibleIsoTpNow({
