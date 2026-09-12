@@ -43,13 +43,16 @@ Play-managed installation and updates, and purchasing it supports ongoing
 development and maintenance. The community-signed APK below and builds from
 source remain free to use.
 
-**[Download the community-signed APK from GitHub Releases](https://github.com/ImL1s/telltale/releases).**
-Open the latest release and select its `.apk` asset. Release binaries are not
-stored in the source tree.
+**Community-signed APK** (same features as Play; not stored in the source tree):
 
-GitHub APKs use a community signing key. They cannot update, or be updated by,
-the Google Play build. Switching between them requires uninstalling Telltale;
-export anything you need first because uninstalling removes local app data.
+- [GitHub Releases](https://github.com/ImL1s/telltale/releases)
+- [Codeberg Releases](https://codeberg.org/ImL1s/telltale/releases)
+- [GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)
+
+Open the latest release and select its `.apk` asset. These community builds use
+a different signing key from Google Play. They cannot update, or be updated by,
+the Play build. Switching requires uninstalling Telltale; export anything you
+need first because uninstalling removes local app data.
 
 ## What it supports
 

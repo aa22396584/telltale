@@ -39,10 +39,14 @@ OBD2 故障診斷。它的設計原則是誠實呈現不確定性，不把格式
 它提供由 Google Play 直接安裝與更新的便利，購買也會支持持續開發與維護。
 下方的社群簽章 APK 與自行從原始碼建置仍可免費使用。
 
-**[前往 GitHub Releases 下載社群簽章 APK](https://github.com/ImL1s/telltale/releases)。**
-打開最新版本，選擇其中的 `.apk` 檔；原始碼目錄不會保存 release 產物。
+**社群簽章 APK**（功能與 Play 版相同；原始碼目錄不含 release 產物）：
 
-GitHub APK 使用社群簽章，無法更新 Google Play 版，也無法由 Play 版直接更新。
+- [GitHub Releases](https://github.com/ImL1s/telltale/releases)
+- [Codeberg Releases](https://codeberg.org/ImL1s/telltale/releases)
+- [GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)
+
+打開最新版本，選擇其中的 `.apk` 檔。這些社群建置使用與 Google Play
+**不同的簽章金鑰**，無法更新 Play 版，也無法由 Play 版直接更新。
 兩者互換時必須先解除安裝；解除安裝會刪除 App 本機資料，請先匯出需要保留的內容。
 
 ## 支援功能
