@@ -34,31 +34,42 @@ def jsonl(events: list[dict]) -> str:
     return "".join(json.dumps(event, separators=(",", ":")) + "\n" for event in events)
 
 
+def _test_start(tid: int, name: str | None = None) -> dict:
+    """Build a testStart event with proper structure."""
+    return {
+        "type": "testStart",
+        "test": {
+            "id": tid,
+            "name": name or f"oracle case {tid}",
+            "suiteID": 0,
+            "groupIDs": [],
+            "metadata": {"skip": False, "skipReason": None},
+        },
+    }
+
+
+def _test_done(
+    tid: int,
+    *,
+    result: str = "success",
+    hidden: bool = False,
+    skipped: bool = False,
+) -> dict:
+    return {
+        "type": "testDone",
+        "testID": tid,
+        "result": result,
+        "hidden": hidden,
+        "skipped": skipped,
+    }
+
+
 def visible_successes(count: int, *, start_id: int = 1) -> list[dict]:
     events: list[dict] = [{"type": "start", "protocolVersion": "0.1.1", "pid": 1}]
     for i in range(count):
         tid = start_id + i
-        events.append(
-            {
-                "type": "testStart",
-                "test": {
-                    "id": tid,
-                    "name": f"oracle case {tid}",
-                    "suiteID": 0,
-                    "groupIDs": [],
-                    "metadata": {"skip": False, "skipReason": None},
-                },
-            }
-        )
-        events.append(
-            {
-                "type": "testDone",
-                "testID": tid,
-                "result": "success",
-                "hidden": False,
-                "skipped": False,
-            }
-        )
+        events.append(_test_start(tid))
+        events.append(_test_done(tid))
     events.append({"type": "done", "success": True})
     return events
 
@@ -85,17 +96,14 @@ class OracleGuardTest(unittest.TestCase):
                 cmd.extend(extra)
             return subprocess.run(cmd, capture_output=True, text=True)
 
+    # ── Existing rejection tests (fixtures adjusted for testStart) ──
+
     def test_original_repro_done_success_false_is_nonzero(self) -> None:
-        events = [
-            {
-                "type": "testDone",
-                "testID": i,
-                "hidden": False,
-                "skipped": False,
-                "result": "success",
-            }
-            for i in range(6)
-        ]
+        """Old repro: 6 testDone + done.success=false must exit nonzero."""
+        events: list[dict] = []
+        for i in range(6):
+            events.append(_test_start(i))
+            events.append(_test_done(i))
         events.append({"type": "done", "success": False})
         result = self._run_cli(jsonl(events))
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -115,16 +123,9 @@ class OracleGuardTest(unittest.TestCase):
         self.assertIn("global error", str(raised.exception).lower())
 
     def test_duplicate_testdone_six_times_is_rejected(self) -> None:
-        events = [
-            {
-                "type": "testDone",
-                "testID": 1,
-                "hidden": False,
-                "skipped": False,
-                "result": "success",
-            }
-            for _ in range(6)
-        ]
+        """Six identical visible testDone for id=1 (with one testStart) → duplicate."""
+        events: list[dict] = [_test_start(1)]
+        events.extend([_test_done(1) for _ in range(6)])
         events.append({"type": "done", "success": True})
         with self.assertRaises(self.guard.GuardError) as raised:
             self._eval(jsonl(events))
@@ -151,31 +152,18 @@ class OracleGuardTest(unittest.TestCase):
 
     def test_visible_skip_is_rejected(self) -> None:
         events = visible_successes(5)
-        events.insert(
-            -1,
-            {
-                "type": "testDone",
-                "testID": 99,
-                "result": "success",
-                "hidden": False,
-                "skipped": True,
-            },
-        )
+        events.insert(-1, _test_start(99))
+        events.insert(-1, _test_done(99, skipped=True))
         with self.assertRaises(self.guard.GuardError) as raised:
             self._eval(jsonl(events))
         self.assertIn("skip", str(raised.exception).lower())
 
     def test_hidden_failure_is_rejected(self) -> None:
         events = visible_successes(6)
+        events.insert(-1, _test_start(50))
         events.insert(
             -1,
-            {
-                "type": "testDone",
-                "testID": 50,
-                "result": "error",
-                "hidden": True,
-                "skipped": False,
-            },
+            _test_done(50, result="error", hidden=True),
         )
         with self.assertRaises(self.guard.GuardError) as raised:
             self._eval(jsonl(events))
@@ -230,6 +218,7 @@ class OracleGuardTest(unittest.TestCase):
 
     def test_missing_result_field_is_rejected(self) -> None:
         events = visible_successes(5)
+        events.insert(-1, _test_start(9))
         events.insert(
             -1,
             {"type": "testDone", "testID": 9, "hidden": False, "skipped": False},
@@ -237,6 +226,200 @@ class OracleGuardTest(unittest.TestCase):
         with self.assertRaises(self.guard.GuardError) as raised:
             self._eval(jsonl(events))
         self.assertIn("result", str(raised.exception).lower())
+
+    # ── New negative test cases (G1 execution card §A items 1–8) ──
+
+    def test_terminal_without_teststart_is_rejected(self) -> None:
+        """Execution card item 1: testDone without any preceding testStart."""
+        events = [
+            _test_done(1),
+            {"type": "done", "success": True},
+        ]
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events), expected=1)
+        msg = str(raised.exception).lower()
+        self.assertIn("without teststart", msg)
+
+    def test_unfinished_teststart_at_done_is_rejected(self) -> None:
+        """Execution card item 2: testStart exists but no testDone, yet done.success=true."""
+        events = visible_successes(6)
+        # Insert an extra testStart with no matching testDone before done.
+        events.insert(-1, _test_start(100))
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("still running", msg)
+
+    def test_hidden_terminal_duplicate_is_rejected(self) -> None:
+        """Execution card item 3: two hidden testDone events with same ID."""
+        events = visible_successes(6)
+        events.insert(-1, _test_start(50))
+        events.insert(-1, _test_done(50, hidden=True))
+        # Duplicate hidden terminal for same ID:
+        events.insert(-1, _test_done(50, hidden=True))
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("duplicate", msg)
+        self.assertIn("hidden", msg)
+
+    def test_boolean_testid_disguised_as_integer_is_rejected(self) -> None:
+        """Execution card item 4: testID is boolean (true/false), not integer."""
+        # Use raw JSON string to produce {"testID": true}
+        events = visible_successes(5)
+        raw_line = '{"type":"testDone","testID":true,"result":"success","hidden":false,"skipped":false}'
+        text = jsonl(events[:-1]) + raw_line + "\n" + jsonl([events[-1]])
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("boolean", msg)
+
+    def test_hidden_missing_field_is_rejected(self) -> None:
+        """Execution card item 5a: testDone missing 'hidden' field."""
+        events = visible_successes(5)
+        events.insert(-1, _test_start(20))
+        events.insert(
+            -1,
+            {
+                "type": "testDone",
+                "testID": 20,
+                "result": "success",
+                # "hidden" deliberately omitted
+                "skipped": False,
+            },
+        )
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("hidden", msg)
+        self.assertIn("null", msg)
+
+    def test_skipped_missing_field_is_rejected(self) -> None:
+        """Execution card item 5b: testDone missing 'skipped' field."""
+        events = visible_successes(5)
+        events.insert(-1, _test_start(21))
+        events.insert(
+            -1,
+            {
+                "type": "testDone",
+                "testID": 21,
+                "result": "success",
+                "hidden": False,
+                # "skipped" deliberately omitted
+            },
+        )
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("skipped", msg)
+        self.assertIn("null", msg)
+
+    def test_hidden_skipped_masking_failure_is_rejected(self) -> None:
+        """Execution card item 6: hidden=true skipped=true but result=failure must still fail."""
+        events = visible_successes(6)
+        events.insert(-1, _test_start(77))
+        events.insert(
+            -1,
+            {
+                "type": "testDone",
+                "testID": 77,
+                "result": "failure",
+                "hidden": True,
+                "skipped": True,
+            },
+        )
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("hidden failure", msg)
+
+    def test_hidden_skipped_masking_error_result_is_rejected(self) -> None:
+        """Execution card item 6b: hidden=true skipped=true but result=error must still fail."""
+        events = visible_successes(6)
+        events.insert(-1, _test_start(78))
+        events.insert(
+            -1,
+            {
+                "type": "testDone",
+                "testID": 78,
+                "result": "error",
+                "hidden": True,
+                "skipped": True,
+            },
+        )
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(jsonl(events))
+        msg = str(raised.exception).lower()
+        self.assertIn("hidden failure", msg)
+
+    def test_json_duplicate_key_success_true_then_false_is_rejected(self) -> None:
+        """Execution card item 7a: duplicate 'success' key, true then false."""
+        events = visible_successes(6)
+        # Replace the last done event with raw JSON containing duplicate key.
+        text = jsonl(events[:-1]) + '{"type":"done","success":true,"success":false}\n'
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("duplicate json key", msg)
+
+    def test_json_duplicate_key_success_false_then_true_is_rejected(self) -> None:
+        """Execution card item 7b: duplicate 'success' key, false then true."""
+        events = visible_successes(6)
+        text = jsonl(events[:-1]) + '{"type":"done","success":false,"success":true}\n'
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("duplicate json key", msg)
+
+    def test_skipped_null_is_rejected(self) -> None:
+        """Execution card item 8a: skipped=null must be rejected, not treated as false."""
+        raw_line = '{"type":"testDone","testID":30,"result":"success","hidden":false,"skipped":null}'
+        events = visible_successes(5)
+        events.insert(-1, _test_start(30))
+        text = jsonl(events[:-1]) + raw_line + "\n" + jsonl([events[-1]])
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("skipped", msg)
+        self.assertIn("null", msg)
+
+    def test_hidden_null_is_rejected(self) -> None:
+        """Execution card item 8b: hidden=null must be rejected."""
+        raw_line = '{"type":"testDone","testID":31,"result":"success","hidden":null,"skipped":false}'
+        events = visible_successes(5)
+        events.insert(-1, _test_start(31))
+        text = jsonl(events[:-1]) + raw_line + "\n" + jsonl([events[-1]])
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("hidden", msg)
+        self.assertIn("null", msg)
+
+    def test_hidden_as_integer_is_rejected(self) -> None:
+        """Execution card item 8c: hidden=1 (integer) must be rejected."""
+        raw_line = '{"type":"testDone","testID":32,"result":"success","hidden":1,"skipped":false}'
+        events = visible_successes(5)
+        events.insert(-1, _test_start(32))
+        text = jsonl(events[:-1]) + raw_line + "\n" + jsonl([events[-1]])
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("hidden", msg)
+        self.assertIn("not boolean", msg)
+
+    def test_skipped_as_string_is_rejected(self) -> None:
+        """Execution card item 8d: skipped="true" (string) must be rejected."""
+        raw_line = '{"type":"testDone","testID":33,"result":"success","hidden":false,"skipped":"true"}'
+        events = visible_successes(5)
+        events.insert(-1, _test_start(33))
+        text = jsonl(events[:-1]) + raw_line + "\n" + jsonl([events[-1]])
+        with self.assertRaises(self.guard.GuardError) as raised:
+            self._eval(text)
+        msg = str(raised.exception).lower()
+        self.assertIn("skipped", msg)
+        self.assertIn("not boolean", msg)
+
+    # ── Positive tests (existing + new) ──
 
     def test_flutter_startup_noise_before_json_is_ignored(self) -> None:
         text = (
@@ -274,6 +457,68 @@ class OracleGuardTest(unittest.TestCase):
         passed, message = self._eval(jsonl(events))
         self.assertEqual(passed, 6)
         self.assertIn("OK", message)
+
+    def test_hidden_success_lifecycle_does_not_count_as_visible(self) -> None:
+        """A hidden test that succeeds should not increase the visible pass count."""
+        events = visible_successes(6)
+        events.insert(-1, _test_start(50))
+        events.insert(-1, _test_done(50, hidden=True))
+        passed, message = self._eval(jsonl(events))
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
+    def test_multiple_tests_interleaved_completion_passes(self) -> None:
+        """Tests can start interleaved and complete in any order."""
+        events = [
+            {"type": "start", "protocolVersion": "0.1.1", "pid": 1},
+            _test_start(1, "test A"),
+            _test_start(2, "test B"),
+            _test_start(3, "test C"),
+            _test_done(2),  # B finishes first
+            _test_start(4, "test D"),
+            _test_done(1),  # A finishes second
+            _test_done(3),
+            _test_start(5, "test E"),
+            _test_done(4),
+            _test_start(6, "test F"),
+            _test_done(5),
+            _test_done(6),
+            {"type": "done", "success": True},
+        ]
+        passed, message = self._eval(jsonl(events))
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
+    def test_extension_fields_on_events_are_allowed(self) -> None:
+        """Non-critical extension fields should not cause rejection."""
+        events = visible_successes(6)
+        # Add an extension field to a testDone event.
+        for ev in events:
+            if ev.get("type") == "testDone" and not ev.get("hidden"):
+                ev["time"] = 42
+                ev["_custom"] = "ok"
+                break
+        passed, message = self._eval(jsonl(events))
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
+    def test_crlf_line_endings_pass(self) -> None:
+        """CRLF line endings from Windows-style output should still pass."""
+        text = jsonl(visible_successes(6)).replace("\n", "\r\n")
+        passed, message = self._eval(text)
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
+    def test_hidden_skipped_success_continues_without_counting(self) -> None:
+        """Hidden+skipped with result=success is allowed and doesn't count visible."""
+        events = visible_successes(6)
+        events.insert(-1, _test_start(60))
+        events.insert(-1, _test_done(60, hidden=True, skipped=True))
+        passed, message = self._eval(jsonl(events))
+        self.assertEqual(passed, 6)
+        self.assertIn("OK", message)
+
+    # ── Existing positive tests (evidence, leak check, CI) ──
 
     def test_print_and_error_bodies_are_not_leaked(self) -> None:
         vin = "JTDBH38K000000001"

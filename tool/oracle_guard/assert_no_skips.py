@@ -24,6 +24,33 @@ class GuardError(Exception):
     """Oracle report is not an honest pass."""
 
 
+def _check_duplicate_keys(raw: str, line_no: int) -> None:
+    """Reject JSON objects that contain duplicate keys.
+
+    ``json.loads`` silently keeps the last value for duplicate keys, which
+    means a report with ``"success": false, "success": true`` on the same
+    object would appear valid. Detecting this requires a custom parser pass.
+    """
+    import io
+
+    class _DupKeyDecoder(json.JSONDecoder):
+        def __init__(self, **kwargs: object) -> None:
+            super().__init__(object_pairs_hook=self._pairs, **kwargs)
+
+        @staticmethod
+        def _pairs(pairs: list[tuple[str, object]]) -> dict:
+            seen: set[str] = set()
+            for key, _ in pairs:
+                if key in seen:
+                    raise GuardError(
+                        f"duplicate JSON key {key!r} at line {line_no}"
+                    )
+                seen.add(key)
+            return dict(pairs)
+
+    _DupKeyDecoder().decode(raw)
+
+
 def _parse_events(text: str) -> list[dict]:
     if not text.strip():
         raise GuardError("no tests: empty report")
@@ -46,16 +73,34 @@ def _parse_events(text: str) -> list[dict]:
             raise GuardError(f"malformed JSON at line {line_no}") from exc
         if not isinstance(event, dict):
             raise GuardError(f"non-object JSON at line {line_no}")
+        _check_duplicate_keys(raw, line_no)
         events.append(event)
     if not events:
         raise GuardError("no tests: no JSON events")
     return events
 
 
-def _require_testid(event: dict, kind: str) -> object:
-    if "testID" not in event or event.get("testID") is None:
+def _require_typed_testid(event: dict, kind: str) -> int:
+    """Return an integer test ID, rejecting None, bool, and other types."""
+    if "testID" not in event:
         raise GuardError(f"missing identity on {kind}")
-    return event["testID"]
+    raw = event["testID"]
+    if raw is None:
+        raise GuardError(f"missing identity on {kind}")
+    if isinstance(raw, bool):
+        raise GuardError(f"testID is boolean, not integer on {kind}")
+    if not isinstance(raw, int):
+        raise GuardError(f"testID is not an integer on {kind}")
+    return raw
+
+
+def _strict_bool(value: object, name: str, kind: str, test_id: object) -> bool:
+    """Require a strict JSON boolean for *hidden* and *skipped* fields."""
+    if value is None:
+        raise GuardError(f"{kind} testID={test_id} {name} is null")
+    if not isinstance(value, bool):
+        raise GuardError(f"{kind} testID={test_id} {name} is not boolean")
+    return value
 
 
 def assert_oracle_report(
@@ -100,7 +145,9 @@ def _evaluate(text: str, *, expected: int, runner_exit: int) -> tuple[int, str]:
         raise GuardError(f"runner exit {runner_exit} is not 0")
 
     events = _parse_events(text)
-    seen_ids: set[object] = set()
+    seen_ids: set[int] = set()
+    started_ids: set[int] = set()
+    terminal_ids: set[int] = set()
     passed = 0
     done_index: int | None = None
 
@@ -116,7 +163,22 @@ def _evaluate(text: str, *, expected: int, runner_exit: int) -> tuple[int, str]:
                 raise GuardError("terminal done missing success")
             if event.get("success") is not True:
                 raise GuardError("done.success is not true")
+            # Check for unfinished tests before accepting done.
+            unfinished = started_ids - terminal_ids
+            if unfinished:
+                raise GuardError(
+                    f"done.success=true but tests still running: "
+                    f"{sorted(unfinished)}"
+                )
             done_index = index
+            continue
+
+        if etype == "testStart":
+            test_info = event.get("test")
+            if isinstance(test_info, dict):
+                raw_id = test_info.get("id")
+                if raw_id is not None and isinstance(raw_id, int) and not isinstance(raw_id, bool):
+                    started_ids.add(raw_id)
             continue
 
         if etype == "error":
@@ -127,14 +189,30 @@ def _evaluate(text: str, *, expected: int, runner_exit: int) -> tuple[int, str]:
         if etype != "testDone":
             continue
 
-        test_id = _require_testid(event, "testDone")
+        test_id = _require_typed_testid(event, "testDone")
         if "result" not in event:
             raise GuardError(f"testDone testID={test_id} missing result")
-        hidden = bool(event.get("hidden"))
-        skipped = bool(event.get("skipped"))
+
+        hidden = _strict_bool(event.get("hidden"), "hidden", "testDone", test_id)
+        skipped = _strict_bool(event.get("skipped"), "skipped", "testDone", test_id)
         result = event.get("result")
 
+        # Check for failure/error *before* any hidden/skipped early return.
+        if result in ("failure", "error"):
+            if hidden:
+                raise GuardError(f"hidden failure testID={test_id}")
+            raise GuardError(f"failed testID={test_id} result={result}")
+
+        # Check terminal must have a matching testStart.
+        if test_id not in started_ids:
+            raise GuardError(f"testDone testID={test_id} without testStart")
+        terminal_ids.add(test_id)
+
         if hidden:
+            # Hidden terminals must also be unique.
+            if test_id in seen_ids:
+                raise GuardError(f"duplicate hidden testID {test_id}")
+            seen_ids.add(test_id)
             if skipped:
                 continue
             if result != "success":
