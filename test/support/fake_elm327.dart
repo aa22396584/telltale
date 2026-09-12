@@ -533,7 +533,7 @@ class FakeElm327 extends BaseObdTransport {
   /// [failWriteAfterAcceptingFor] because the two are indistinguishable by
   /// exception *type*, which is exactly what the write audit exists to stop
   /// anyone relying on.
-  Set<String> refuseWriteBeforeAcceptingFor = const {};
+  Set<String> refuseWriteBeforeAcceptingFor = <String>{};
 
   /// The link dies after these commands are accepted and before any reply.
   ///
@@ -583,6 +583,9 @@ class FakeElm327 extends BaseObdTransport {
 
   @override
   String get displayName => 'Fake ELM327 (${protocol.description})';
+
+  /// Optional callback invoked whenever a command is received and logged.
+  void Function(String command)? onCommandWritten;
 
   @override
   Future<void> connect() async {
@@ -691,6 +694,7 @@ class FakeElm327 extends BaseObdTransport {
   void _acceptAndAnswer(String raw) {
     final command = raw.toUpperCase().replaceAll(' ', '');
     commandLog.add(command);
+    onCommandWritten?.call(command);
     if (faults.dropAfterFlowControlHeader && command.startsWith('ATFCSH')) {
       setConnected(false);
       return;

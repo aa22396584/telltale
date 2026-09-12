@@ -21,6 +21,10 @@ final class ElmCompositeTransactionConfig {
     this.hostVisibleIsoTp = false,
     this.timeout,
     this.budget,
+    this.drainBudget,
+    this.cleanupBudget,
+    this.stopwatchProvider,
+    this.elapsedProvider,
   });
 
   /// Target ECU header (e.g. `6F1`, `18DADBF1`).
@@ -47,8 +51,20 @@ final class ElmCompositeTransactionConfig {
   /// Timeout for each query command in the transaction.
   final Duration? timeout;
 
-  /// Overall budget for the transaction apply phase.
+  /// Overall budget for the transaction apply and query phase.
   final Duration? budget;
+
+  /// Maximum budget for draining in-flight commands upon action return or timeout.
+  final Duration? drainBudget;
+
+  /// Separate bounded budget for cleanup/restoration operations in finally.
+  final Duration? cleanupBudget;
+
+  /// Optional factory for creating monotonic stopwatches (used for deterministic testing).
+  final Stopwatch Function()? stopwatchProvider;
+
+  /// Optional provider for elapsed monotonic duration (used for deterministic testing).
+  final Duration Function()? elapsedProvider;
 
   /// Whether any adapter mutation is requested by this configuration.
   bool get hasMutations =>

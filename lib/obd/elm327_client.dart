@@ -615,6 +615,12 @@ class Elm327Client {
   /// Monotonically increasing connection generation counter.
   int get connectionGeneration => _connectionGeneration;
 
+  bool _transactionQuarantined = false;
+
+  /// Whether the connection has been quarantined due to an undrained
+  /// in-flight wire operation from a composite transaction.
+  bool get isTransactionQuarantined => _transactionQuarantined;
+
   bool isInitialized = false;
   DateTime lastRxAt = DateTime.now();
 
@@ -760,6 +766,7 @@ class Elm327Client {
   /// marked critical failed.
   Future<bool> connect() async {
     _transportLost = false;
+    _transactionQuarantined = false;
     _flowControlRestoreFailed = false;
     _flowControlState = const ElmFlowControlAutomatic();
     _hostVisibleIsoTpRestoreFailed = false;
@@ -1276,7 +1283,15 @@ class Elm327Client {
     Object? owner,
     DateTime? deadline,
     bool completesCommittedTransaction = false,
+    int? expectedGeneration,
   }) async {
+    if (expectedGeneration != null &&
+        _connectionGeneration != expectedGeneration) {
+      throw const TransportException(
+        'Connection generation changed; command belongs to a prior connection.',
+        issue: TransportIssue.notConnected,
+      );
+    }
     // The two refusals that are *provably* before the wire. Nothing has been
     // handed to the transport at this point, so the adapter owes nothing and
     // the send timestamp must not move — leaving one behind would have the
@@ -1289,6 +1304,13 @@ class Elm327Client {
       );
     }
     _throwIfStickyRestoreFailed();
+    if (expectedGeneration != null &&
+        _connectionGeneration != expectedGeneration) {
+      throw const TransportException(
+        'Connection generation changed; command belongs to a prior connection.',
+        issue: TransportIssue.notConnected,
+      );
+    }
     // Refused before a transaction starts, never in the middle of one.
     //
     // `sendOnHeader` is two writes: `ATSH`, then the query. Once the adapter
@@ -1395,6 +1417,13 @@ class Elm327Client {
       // Recorded before the write, not after it. A write that never returns is
       // the case worth having on record, and recording on success would be the
       // one time the transcript stays silent.
+      if (expectedGeneration != null &&
+          _connectionGeneration != expectedGeneration) {
+        throw const TransportException(
+          'Connection generation changed; command belongs to a prior connection.',
+          issue: TransportIssue.notConnected,
+        );
+      }
       transcript.recordWrite(wire);
       // ATSP is a request the moment the bytes are handed over. `socket.add`
       // can deliver them before `flush` throws or times out; waiting for the
@@ -1581,6 +1610,12 @@ class Elm327Client {
   /// replaced. Each typed AT family has its own flag so one named issue
   /// cannot be reported as another.
   void _throwIfStickyRestoreFailed() {
+    if (_transactionQuarantined) {
+      throw const TransportException(
+        'Transaction connection quarantined due to undrained in-flight wire operation.',
+        issue: TransportIssue.adapterSilentOnResync,
+      );
+    }
     if (_flowControlRestoreFailed) {
       throw const TransportException(
         ElmFlowControlMessages.restoreFailed,
@@ -1631,6 +1666,23 @@ class Elm327Client {
     _failPending(
       TimeoutException('Timed out waiting for a reply', commandTimeout),
     );
+  }
+
+  /// Quarantines the connection when an in-flight wire operation fails to drain
+  /// within its bounded drain budget. The pending request is failed, timeouts are
+  /// cancelled, and the transport is disconnected.
+  void _quarantineConnection() {
+    _transactionQuarantined = true;
+    _outOfSync = true;
+    _pendingTimeout?.cancel();
+    _pendingTimeout = null;
+    _failPending(
+      const TransportException(
+        'Transaction connection quarantined due to undrained in-flight wire operation.',
+        issue: TransportIssue.adapterSilentOnResync,
+      ),
+    );
+    transport.disconnect();
   }
 
   /// Waits out whatever the adapter still owes us, then clears the desync.
@@ -2471,8 +2523,12 @@ class Elm327Client {
     bool hostVisibleIsoTp = false,
     ElmCompositeTransactionConfig? configuration,
     Duration? budget,
+    Duration? drainBudget,
+    Duration? cleanupBudget,
     Object? owner,
     DateTime? deadline,
+    Stopwatch Function()? stopwatchProvider,
+    Duration Function()? elapsedProvider,
   }) {
     final effectiveHeader = configuration?.header ?? header;
     final effectiveRestoreHeader =
@@ -2488,7 +2544,25 @@ class Elm327Client {
         configuration?.hostVisibleIsoTp ?? hostVisibleIsoTp;
     final effectiveBudget =
         configuration?.budget ?? budget ?? const Duration(seconds: 8);
-    final effectiveDeadline = deadline ?? DateTime.now().add(effectiveBudget);
+    final initialBudget = deadline != null
+        ? deadline.difference(DateTime.now())
+        : effectiveBudget;
+    final totalBudget =
+        initialBudget.isNegative ? Duration.zero : initialBudget;
+    final effectiveDrainBudget = configuration?.drainBudget ??
+        drainBudget ??
+        const Duration(milliseconds: 500);
+    final effectiveCleanupBudget = configuration?.cleanupBudget ??
+        cleanupBudget ??
+        const Duration(seconds: 2);
+    final effectiveElapsedProvider =
+        configuration?.elapsedProvider ?? elapsedProvider;
+    final effectiveStopwatch =
+        (configuration?.stopwatchProvider ?? stopwatchProvider)?.call() ??
+            Stopwatch()..start();
+
+    Duration getElapsed() =>
+        effectiveElapsedProvider?.call() ?? effectiveStopwatch.elapsed;
 
     _throwIfInsideTransaction();
     final completer = Completer<T>();
@@ -2505,7 +2579,10 @@ class Elm327Client {
             flowControl: effectiveFlowControl,
             hostVisibleIsoTp: effectiveHostVisibleIsoTp,
             owner: owner,
-            deadline: effectiveDeadline,
+            totalBudget: totalBudget,
+            getElapsed: getElapsed,
+            drainBudget: effectiveDrainBudget,
+            cleanupBudget: effectiveCleanupBudget,
           ),
         );
       } on Object catch (e, st) {
@@ -2531,8 +2608,12 @@ class Elm327Client {
     ElmCompositeTransactionConfig? configuration,
     Duration? timeout,
     Duration? budget,
+    Duration? drainBudget,
+    Duration? cleanupBudget,
     Object? owner,
     DateTime? deadline,
+    Stopwatch Function()? stopwatchProvider,
+    Duration Function()? elapsedProvider,
   }) {
     final effectiveTimeout = configuration?.timeout ?? timeout;
     return runTransacted(
@@ -2546,8 +2627,12 @@ class Elm327Client {
       hostVisibleIsoTp: hostVisibleIsoTp,
       configuration: configuration,
       budget: budget,
+      drainBudget: drainBudget,
+      cleanupBudget: cleanupBudget,
       owner: owner,
       deadline: deadline,
+      stopwatchProvider: stopwatchProvider,
+      elapsedProvider: elapsedProvider,
     );
   }
 
@@ -2564,8 +2649,12 @@ class Elm327Client {
     ElmCompositeTransactionConfig? configuration,
     Duration? timeout,
     Duration? budget,
+    Duration? drainBudget,
+    Duration? cleanupBudget,
     Object? owner,
     DateTime? deadline,
+    Stopwatch Function()? stopwatchProvider,
+    Duration Function()? elapsedProvider,
   }) =>
       sendTransacted(
         command,
@@ -2579,8 +2668,12 @@ class Elm327Client {
         configuration: configuration,
         timeout: timeout,
         budget: budget,
+        drainBudget: drainBudget,
+        cleanupBudget: cleanupBudget,
         owner: owner,
         deadline: deadline,
+        stopwatchProvider: stopwatchProvider,
+        elapsedProvider: elapsedProvider,
       );
 
   Future<T> _runTransactedNow<T>(
@@ -2593,7 +2686,10 @@ class Elm327Client {
     required ElmFlowControlConfig? flowControl,
     required bool hostVisibleIsoTp,
     required Object? owner,
-    required DateTime deadline,
+    required Duration totalBudget,
+    required Duration Function() getElapsed,
+    required Duration drainBudget,
+    required Duration cleanupBudget,
   }) async {
     _throwIfStickyRestoreFailed();
     if (!transport.isConnected) {
@@ -2607,17 +2703,26 @@ class Elm327Client {
         'This session has ended or gone to the background, so the command was not sent.',
       );
     }
-    if (DateTime.now().isAfter(deadline)) {
+    if (getElapsed() >= totalBudget) {
       throw TimeoutException(
         'The time limit for this operation has passed before it could start.',
       );
     }
+
+    Duration remainingMonotonic() {
+      final rem = totalBudget - getElapsed();
+      return rem.isNegative ? Duration.zero : rem;
+    }
+
+    DateTime stepDeadline() => DateTime.now().add(remainingMonotonic());
+
     if (_outOfSync) {
-      await _resync(deadline: deadline);
+      await _resync(deadline: stepDeadline());
     }
 
     final txGeneration = _connectionGeneration;
     var isTxActive = true;
+    var isAcceptingNewCommands = true;
     var inFlight = Future<void>.value();
     final appliedRestores = <Future<void> Function()>[];
     final previousHeader = _currentHeader;
@@ -2625,14 +2730,20 @@ class Elm327Client {
     T? result;
     Object? actionError;
     StackTrace? actionStackTrace;
+    Object? txSenderError;
+    StackTrace? txSenderStackTrace;
 
     try {
       // 1. Apply Extended Addressing (ATCEA)
       if (extendedAddressByte != null) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATCEA');
+        }
         final outcome = await _applyExtendedAddressingNow(
           extendedAddressByte,
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
         );
         if (outcome.result != ElmExtendedAddressingResult.applied) {
           throw TransportException(
@@ -2642,9 +2753,9 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
+          if (_connectionGeneration != txGeneration) return;
           final res = await _restoreExtendedAddressingNow(
-            deadline:
-                DateTime.now().add(ElmExtendedAddressingConfig.defaultBudget),
+            deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
           if (res.result == ElmExtendedAddressingResult.restoreFailed) {
@@ -2655,10 +2766,14 @@ class Elm327Client {
 
       // 2. Apply CAN Priority (ATCP)
       if (canPriorityByte != null) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATCP');
+        }
         final outcome = await _applyCanPriorityNow(
           canPriorityByte,
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
         );
         if (outcome.result != ElmCanPriorityResult.applied &&
             outcome.result != ElmCanPriorityResult.restored) {
@@ -2669,9 +2784,9 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
+          if (_connectionGeneration != txGeneration) return;
           final res = await _restoreCanPriorityNow(
-            deadline:
-                DateTime.now().add(ElmCanPriorityConfig.defaultBudget),
+            deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
           if (res.result == ElmCanPriorityResult.restoreFailed) {
@@ -2682,10 +2797,14 @@ class Elm327Client {
 
       // 3. Apply CAN Receive Filter (ATCRA)
       if (canReceiveFilter != null) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATCRA');
+        }
         final outcome = await _applyCanReceiveFilterNow(
           canReceiveFilter,
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
         );
         if (outcome.result != ElmCanReceiveFilterResult.applied) {
           throw TransportException(
@@ -2695,9 +2814,9 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
+          if (_connectionGeneration != txGeneration) return;
           final res = await _restoreCanReceiveFilterNow(
-            deadline:
-                DateTime.now().add(ElmCanReceiveFilterConfig.defaultBudget),
+            deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
           if (res.result == ElmCanReceiveFilterResult.restoreFailed) {
@@ -2708,10 +2827,14 @@ class Elm327Client {
 
       // 4. Apply Custom Flow Control (ATFCS*)
       if (flowControl != null) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATFCS');
+        }
         final outcome = await _applyFlowControlNow(
           flowControl,
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
         );
         if (outcome.result != ElmFlowControlResult.applied) {
           throw TransportException(
@@ -2721,9 +2844,9 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
+          if (_connectionGeneration != txGeneration) return;
           final res = await _restoreFlowControlNow(
-            deadline:
-                DateTime.now().add(ElmFlowControlConfig.defaultBudget),
+            deadline: DateTime.now().add(cleanupBudget),
             remainingWrites: ElmFlowControlConfig.maxRestoreCommands,
             responseBytesUsed: 0,
           );
@@ -2735,9 +2858,13 @@ class Elm327Client {
 
       // 5. Apply Host-Visible ISO-TP (ATCAF0)
       if (hostVisibleIsoTp) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATCAF0');
+        }
         final outcome = await _applyHostVisibleIsoTpNow(
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
         );
         if (outcome.result != ElmHostIsoTpResult.applied) {
           throw TransportException(
@@ -2747,9 +2874,9 @@ class Elm327Client {
           );
         }
         appliedRestores.add(() async {
+          if (_connectionGeneration != txGeneration) return;
           final res = await _restoreHostVisibleIsoTpNow(
-            deadline:
-                DateTime.now().add(ElmHostIsoTpConfig.defaultBudget),
+            deadline: DateTime.now().add(cleanupBudget),
             responseBytesUsed: 0,
           );
           if (res.result == ElmHostIsoTpResult.restoreFailed) {
@@ -2760,12 +2887,17 @@ class Elm327Client {
 
       // 6. Header switch if specified
       if (header != null && header != _currentHeader) {
+        if (getElapsed() >= totalBudget) {
+          throw TimeoutException(
+              'Transaction monotonic budget exceeded before ATSH');
+        }
         _currentHeader = null;
         final ack = await _sendNow(
           'ATSH $header',
           commandTimeout,
           owner: owner,
-          deadline: deadline,
+          deadline: stepDeadline(),
+          expectedGeneration: txGeneration,
         );
         final acknowledged = ack.isSuccess &&
             ack.rawLines.any((l) => l.trim().toUpperCase() == 'OK');
@@ -2782,17 +2914,27 @@ class Elm327Client {
             previousHeader != header) {
           appliedRestores.add(() async {
             _currentHeader = null;
-            if (!transport.isConnected) {
+            if (!transport.isConnected ||
+                _connectionGeneration != txGeneration) {
               _headerRestoreFailed = true;
               return;
             }
             try {
+              if (_connectionGeneration != txGeneration) {
+                _headerRestoreFailed = true;
+                return;
+              }
               final ack = await _sendNow(
                 'ATSH $previousHeader',
                 commandTimeout,
-                deadline: DateTime.now().add(const Duration(seconds: 2)),
+                deadline: DateTime.now().add(cleanupBudget),
                 completesCommittedTransaction: true,
+                expectedGeneration: txGeneration,
               );
+              if (_connectionGeneration != txGeneration) {
+                _headerRestoreFailed = true;
+                return;
+              }
               if (_saidOk(ack)) {
                 _currentHeader = previousHeader;
               } else {
@@ -2812,13 +2954,16 @@ class Elm327Client {
         );
       }
 
-      Object? txSenderError;
-      StackTrace? txSenderStackTrace;
-
       Future<ObdResponse> transactionSender(
         String command, {
         Duration? timeout,
       }) async {
+        if (!isAcceptingNewCommands) {
+          throw const TransportException(
+            'Transaction action callback has already returned; new commands are closed.',
+            issue: TransportIssue.operationRetired,
+          );
+        }
         if (!isTxActive) {
           throw const TransportException(
             'Transaction sender is no longer active or has completed.',
@@ -2836,11 +2981,12 @@ class Elm327Client {
             'This session has ended or gone to the background, so the command was not sent.',
           );
         }
-        if (DateTime.now().isAfter(deadline)) {
+        if (getElapsed() >= totalBudget) {
           throw TimeoutException('Transaction budget exceeded');
         }
 
         final completer = Completer<ObdResponse>();
+        completer.future.ignore();
         final prev = inFlight;
         inFlight = prev.then((_) async {
           try {
@@ -2861,14 +3007,14 @@ class Elm327Client {
                 'This session has ended or gone to the background, so the command was not sent.',
               );
             }
-            if (DateTime.now().isAfter(deadline)) {
+            if (getElapsed() >= totalBudget) {
               throw TimeoutException('Transaction budget exceeded');
             }
             final resp = await _sendNow(
               command,
               timeout ?? commandTimeout,
               owner: owner,
-              deadline: deadline,
+              expectedGeneration: txGeneration,
             );
             if (!completer.isCompleted) completer.complete(resp);
           } catch (e, st) {
@@ -2885,9 +3031,10 @@ class Elm327Client {
       }
 
       // Execute measurement action inside scoped zone with monotonic overall budget
-      final remainingBudget = deadline.difference(DateTime.now());
-      if (remainingBudget.isNegative) {
-        throw TimeoutException('Transaction budget exceeded before action execution');
+      final remainingBudget = remainingMonotonic();
+      if (remainingBudget <= Duration.zero) {
+        throw TimeoutException(
+            'Transaction budget exceeded before action execution');
       }
 
       result = await runZoned(
@@ -2895,9 +3042,18 @@ class Elm327Client {
         zoneValues: {#_elmTransactionActive: true},
       );
 
-      // Await in-flight command before proceeding to reverse restores
+      // Close acceptance of NEW commands immediately when action returns!
+      isAcceptingNewCommands = false;
+
+      // Drain already accepted in-flight command with bounded drain budget
       try {
-        await inFlight;
+        await inFlight.timeout(drainBudget);
+      } on TimeoutException catch (e, st) {
+        _quarantineConnection();
+        actionError ??= TimeoutException(
+          'In-flight transaction command failed to drain within ${drainBudget.inMilliseconds}ms; connection quarantined.',
+        );
+        actionStackTrace ??= st;
       } catch (e, st) {
         actionError ??= e;
         actionStackTrace ??= st;
@@ -2910,15 +3066,24 @@ class Elm327Client {
       actionError = e;
       actionStackTrace = st;
     } finally {
+      isAcceptingNewCommands = false;
       isTxActive = false; // Revoke sender immediately!
-      try {
-        await inFlight;
-      } catch (_) {}
+      if (!_transactionQuarantined) {
+        try {
+          await inFlight.timeout(drainBudget);
+        } on TimeoutException {
+          _quarantineConnection();
+        } catch (_) {}
+      }
 
       // Reverse-restore all applied mutations in LIFO order
-      // Only execute restores if we are still on the same connection generation!
-      if (_connectionGeneration == txGeneration) {
+      // Only execute restores if we are still on the same connection generation and not quarantined!
+      if (!_transactionQuarantined && _connectionGeneration == txGeneration) {
         for (final restore in appliedRestores.reversed) {
+          if (_connectionGeneration != txGeneration) {
+            // Reconnect occurred mid-restore! Stop immediately.
+            break;
+          }
           try {
             await restore();
           } catch (_) {

@@ -1030,5 +1030,232 @@ void main() {
 
       await client.disconnect();
     }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('monotonic budget ignores backward wall-clock shifts and times out strictly on monotonic elapsed time',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      var elapsedMs = 0;
+      final config = ElmCompositeTransactionConfig(
+        budget: const Duration(milliseconds: 100),
+        elapsedProvider: () => Duration(milliseconds: elapsedMs),
+      );
+
+      // Wall deadline set far into the future (10 minutes)
+      final wallDeadline = DateTime.now().add(const Duration(minutes: 10));
+
+      final transactionFuture = client.runTransacted(
+        (send) async {
+          // Advance monotonic time past the 100ms budget
+          elapsedMs = 150;
+          return await send('010C');
+        },
+        configuration: config,
+        deadline: wallDeadline,
+      );
+
+      // Even though wall-clock deadline has 10 minutes left, monotonic elapsed time (150ms) exceeded budget (100ms)
+      expect(
+        transactionFuture,
+        throwsA(isA<TimeoutException>()),
+        reason: 'Monotonic budget must enforce timeout independent of wall-clock deadline',
+      );
+
+      await client.disconnect();
+    });
+
+    test('monotonic budget permits execution when monotonic elapsed time is within budget',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      var elapsedMs = 10;
+      final config = ElmCompositeTransactionConfig(
+        budget: const Duration(milliseconds: 200),
+        elapsedProvider: () => Duration(milliseconds: elapsedMs),
+      );
+
+      final resp = await client.runTransacted(
+        (send) async {
+          elapsedMs = 50; // Within 200ms
+          return await send('010C');
+        },
+        configuration: config,
+      );
+
+      expect(resp.isSuccess, isTrue);
+      await client.disconnect();
+    });
+
+    test('undrained in-flight command on timeout bounds drain, quarantines connection, and disables polling',
+        () async {
+      final transport = _can11Transport();
+      // Configure transport so '22_HANG' will take 1 hour to answer
+      transport.slowCommands['22_HANG'] = const Duration(hours: 1);
+      final client = await _connect(transport);
+
+      const config = ElmCompositeTransactionConfig(
+        budget: Duration(milliseconds: 40),
+        drainBudget: Duration(milliseconds: 40),
+      );
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          // Send hanging query
+          final _ = send('22_HANG');
+          // Wait for budget to expire
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+          return 'finished';
+        },
+        configuration: config,
+      );
+
+      await expectLater(txFuture, throwsA(isA<TimeoutException>()));
+
+      // Connection MUST be marked quarantined!
+      expect(client.isTransactionQuarantined, isTrue);
+
+      // Attempting to poll with client.send MUST fail closed immediately
+      expect(
+        () => client.send('010C'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            anyOf(
+              TransportIssue.adapterSilentOnResync,
+              TransportIssue.notConnected,
+            ),
+          ),
+        ),
+        reason: 'Quarantined connection must fail closed and refuse polling',
+      );
+
+      await client.disconnect();
+    });
+
+    test('callback return closes acceptance of new commands while allowing prior in-flight commands to drain',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      Future<ObdResponse> Function(String, {Duration? timeout})? escapedSender;
+
+      final result = await client.runTransacted(
+        (send) async {
+          escapedSender = send;
+          // Launch valid command without awaiting it
+          final _ = send('010C');
+          // Callback returns immediately with a placeholder string
+          return 'callback_done';
+        },
+        header: '7E0',
+      );
+
+      expect(result, 'callback_done');
+      expect(escapedSender, isNotNull);
+
+      // Now that action callback has returned, calling escaped sender MUST be rejected
+      final logBeforeEscaped = transport.commandLog.length;
+      expect(
+        () => escapedSender!('010D'),
+        throwsA(
+          isA<TransportException>().having(
+            (e) => e.issue,
+            'issue',
+            TransportIssue.operationRetired,
+          ),
+        ),
+        reason: 'Escaped sender called after action return must be refused new commands',
+      );
+
+      // Ensure 010D was never written to wire
+      final escapedWrites = transport.commandLog
+          .skip(logBeforeEscaped)
+          .where((cmd) => cmd.contains('010D'))
+          .toList();
+      expect(escapedWrites, isEmpty);
+
+      await client.disconnect();
+    });
+
+    test('un-awaited in-flight command failure is not swallowed and rethrows on transaction completion',
+        () async {
+      final transport = _can11Transport();
+      // Configure 'UNKNOWN_ERR_CMD' to be refused by adapter
+      transport.refuseWriteBeforeAcceptingFor = {'UNKNOWN_ERR_CMD'};
+      final client = await _connect(transport);
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          // Launch failing command without awaiting it
+          final _ = send('UNKNOWN_ERR_CMD');
+          // Callback returns 'full_success'
+          return 'full_success';
+        },
+        header: '7E0',
+      );
+
+      // Transaction must NOT report 'full_success', it must rethrow the in-flight failure!
+      await expectLater(
+        txFuture,
+        throwsA(isA<WriteRefusedException>()),
+        reason: 'Un-awaited in-flight failure must rethrow and never report full success',
+      );
+
+      await client.disconnect();
+    });
+
+    test('reconnect during restore loop aborts remaining restores before touching new generation',
+        () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      // Establish initial header
+      await client.sendOnHeader('7E0', '010C');
+      expect(client.currentHeader, '7E0');
+
+      var didReconnect = false;
+      transport.onCommandWritten = (cmd) {
+        // When ATSH 7E0 restore is written during finally, trigger reconnect!
+        if (cmd == 'ATSH7E0' && !didReconnect) {
+          didReconnect = true;
+          // Trigger reconnect to bump generation
+          unawaited(client.connect());
+        }
+      };
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          return await send('010C');
+        },
+        header: '6F1',
+        restoreHeader: true,
+        extendedAddressByte: 0x07,
+      );
+
+      await expectLater(
+        txFuture,
+        throwsA(isA<TransportException>()),
+        reason: 'Mid-restore reconnect leaves transaction completed with error',
+      );
+
+      expect(didReconnect, isTrue);
+
+      // The restore sequence in reverse was:
+      // 1. ATSH 7E0 (written, triggering reconnect)
+      // 2. ATCEA (must NOT be written because connection generation changed!)
+      final atceaRestores = transport.commandLog
+          .where((cmd) => cmd == 'ATCEA')
+          .toList();
+      expect(
+        atceaRestores,
+        isEmpty,
+        reason: 'Extended address restore must abort when generation changes and never touch new generation',
+      );
+
+      await client.disconnect();
+    });
   });
 }
