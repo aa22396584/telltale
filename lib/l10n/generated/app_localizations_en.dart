@@ -1146,7 +1146,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get performanceStateAborted =>
-      'The speed signal stopped — this run was not completed; below is what was recorded before it went';
+      'This run was not completed; below is what was recorded before it stopped';
 
   @override
   String get performanceStateAwaitingSpeedSignal =>

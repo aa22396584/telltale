@@ -1157,7 +1157,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get performanceStateAborted =>
-      'Das Geschwindigkeitssignal wurde unterbrochen – dieser Lauf wurde nicht abgeschlossen; nachstehend finden Sie die Aufzeichnung, die vor dem Abbruch erfasst wurde';
+      'Dieser Lauf wurde nicht abgeschlossen; nachstehend finden Sie die Aufzeichnung bis zum Abbruch';
 
   @override
   String get performanceStateAwaitingSpeedSignal =>

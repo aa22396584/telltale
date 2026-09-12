@@ -1024,7 +1024,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get performanceSplitsHeading => '分段成績';
 
   @override
-  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+  String get performanceStateAborted => '這次計時未完成，以下為中止前的紀錄';
 
   @override
   String get performanceStateAwaitingSpeedSignal => '等待車速訊號';
@@ -5078,7 +5078,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get performanceSplitsHeading => '分段成績';
 
   @override
-  String get performanceStateAborted => '車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄';
+  String get performanceStateAborted => '這次計時未完成，以下為中止前的紀錄';
 
   @override
   String get performanceStateAwaitingSpeedSignal => '等待車速訊號';

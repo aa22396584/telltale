@@ -304,7 +304,7 @@
   "performanceSpeedGaugeLabel": "Geschwindigkeit",
   "performanceSpeedTraceHeading": "Geschwindigkeitsverlauf",
   "performanceSplitsHeading": "Splits",
-  "performanceStateAborted": "Das Geschwindigkeitssignal wurde unterbrochen – dieser Lauf wurde nicht abgeschlossen; nachstehend finden Sie die Aufzeichnung, die vor dem Abbruch erfasst wurde",
+  "performanceStateAborted": "Dieser Lauf wurde nicht abgeschlossen; nachstehend finden Sie die Aufzeichnung bis zum Abbruch",
   "performanceStateAwaitingSpeedSignal": "Warten auf ein Geschwindigkeitssignal",
   "performanceStateAwaitingStandstill": "Halten Sie zunächst vollständig an – jetzt {speed} km/h",
   "performanceStateFinished": "Fertig 0 → {target} km/h",
