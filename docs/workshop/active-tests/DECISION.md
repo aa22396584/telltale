@@ -84,15 +84,16 @@ The model strictly separates distinct qualification gates:
    - Vehicle execution strictly demands affirmative vehicle qualification.
 6. `previewEligibility`: Informational, read-only eligibility check. Evaluates whether qualification and preconditions are met to request authorization. It NEVER produces or returns execution authority.
 7. `authorizationCapability`: Opaque, non-constructible capability (`ActiveTestExecutionCapability`) issued strictly by `ActiveTestAuthorizationIssuer` and consumed atomically at dispatch (`ActiveTestExecutionGate.verifyAndConsume`). Bound to:
+   - exact issued-object identity verification (`identical(record.capability, capability)`): counterfeit/forged objects with identical IDs are rejected fail-closed without consuming genuine tokens,
    - profile recipe canonical hash,
    - selected parameters hash,
    - exact operation (`ActiveTestOperation.start` vs `stop`),
-   - target ECU header and bus type,
+   - target ECU header and strict bus type match (`busType`),
    - connection generation (mandatory, no guessing),
    - lifecycle epoch,
    - execution target scope (bench vs vehicle),
-   - strict monotonic expiry (`!now.isBefore(expiresAt)` rejects exact boundary equality).
-   Unissued, forged, expired, mismatched, or replayed capabilities are rejected fail-closed. Recovery capabilities are strictly restricted to `ActiveTestOperation.stop`.
+   - dual expiry enforcement: monotonic elapsed TTL owned by issuer Stopwatch and wall-clock audit deadline (`!now.isBefore(expiresAt)` rejects exact boundary equality).
+   Unissued, forged, expired, mismatched, or replayed capabilities are rejected fail-closed. Recovery capabilities are strictly restricted to `ActiveTestOperation.stop` and immutably bound to a previously authorized start capability (`parentCapabilityId`) and documented recovery descriptor without re-evaluating initiation prerequisites.
 
 ### C. Synthetic Fixture Isolation
 - Synthetic fixtures (`assets/service_recipes/`) are strictly marked with `provenance_kind: syntheticFixture` and `evidence_tier: syntheticFixture`.

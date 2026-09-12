@@ -128,6 +128,10 @@ final class ActiveTestExecutionCapability {
     required this.lifecycleEpoch,
     required this.targetScope,
     required this.expiresAt,
+    required this.validityDuration,
+    required this.issuedElapsedMicros,
+    this.parentCapabilityId,
+    this.recoveryDescriptorHash,
     this.isRecovery = false,
   });
 
@@ -143,6 +147,10 @@ final class ActiveTestExecutionCapability {
     required int lifecycleEpoch,
     required ExecutionTargetScope targetScope,
     required DateTime expiresAt,
+    Duration validityDuration = const Duration(minutes: 5),
+    int issuedElapsedMicros = 0,
+    String? parentCapabilityId,
+    String? recoveryDescriptorHash,
     BusAddressingType busType = BusAddressingType.can11Bit,
     bool isRecovery = false,
   }) {
@@ -157,6 +165,10 @@ final class ActiveTestExecutionCapability {
       lifecycleEpoch: lifecycleEpoch,
       targetScope: targetScope,
       expiresAt: expiresAt,
+      validityDuration: validityDuration,
+      issuedElapsedMicros: issuedElapsedMicros,
+      parentCapabilityId: parentCapabilityId,
+      recoveryDescriptorHash: recoveryDescriptorHash,
       isRecovery: isRecovery,
     );
   }
@@ -191,6 +203,18 @@ final class ActiveTestExecutionCapability {
   /// Monotonic expiration deadline. Equality (!now.isBefore(expiresAt)) is rejected.
   final DateTime expiresAt;
 
+  /// Authorized elapsed validity duration (TTL).
+  final Duration validityDuration;
+
+  /// Monotonic elapsed microseconds at the time of issuance.
+  final int issuedElapsedMicros;
+
+  /// The identifier of the parent start capability for recovery operations.
+  final String? parentCapabilityId;
+
+  /// Hash of the documented recovery descriptor.
+  final String? recoveryDescriptorHash;
+
   /// Whether this is a recovery capability (strictly restricted to [ActiveTestOperation.stop]).
   final bool isRecovery;
 }
@@ -210,12 +234,21 @@ final class _CapabilityRecord {
 /// Ref: Issue #132.
 ///
 /// Owns the issuance, retirement, and atomic consumption of capabilities.
-/// Replay, unissued tokens, and context mismatches are rejected fail-closed.
+/// Replay, unissued tokens, cross-issuer forgery, and context mismatches are rejected fail-closed.
 final class ActiveTestAuthorizationIssuer {
-  ActiveTestAuthorizationIssuer();
+  ActiveTestAuthorizationIssuer({
+    Stopwatch? stopwatch,
+    int Function()? elapsedMicrosecondsProvider,
+  })  : _stopwatch = stopwatch ?? (Stopwatch()..start()),
+        _elapsedProvider = elapsedMicrosecondsProvider;
 
+  final Stopwatch _stopwatch;
+  final int Function()? _elapsedProvider;
   final Map<String, _CapabilityRecord> _registry = {};
   int _counter = 0;
+
+  int get _currentElapsedMicros =>
+      _elapsedProvider != null ? _elapsedProvider() : _stopwatch.elapsedMicroseconds;
 
   /// Issues a single-use execution capability for the given profile and context.
   ///
@@ -263,6 +296,7 @@ final class ActiveTestAuthorizationIssuer {
     _counter++;
     final capabilityId = 'cap_${now.microsecondsSinceEpoch}_$_counter';
     final expiresAt = now.add(validityDuration);
+    final issuedElapsedMicros = _currentElapsedMicros;
 
     final capability = ActiveTestExecutionCapability._(
       capabilityId: capabilityId,
@@ -275,6 +309,8 @@ final class ActiveTestAuthorizationIssuer {
       lifecycleEpoch: lifecycleEpoch,
       targetScope: targetScope,
       expiresAt: expiresAt,
+      validityDuration: validityDuration,
+      issuedElapsedMicros: issuedElapsedMicros,
       isRecovery: isRecovery,
     );
 
@@ -282,36 +318,60 @@ final class ActiveTestAuthorizationIssuer {
     return capability;
   }
 
-  /// Issues a recovery capability restricted strictly to [ActiveTestOperation.stop].
+  /// Issues a recovery capability restricted strictly to [ActiveTestOperation.stop]
+  /// and immutably bound to a previously authorized [authorizedStartCapability].
   ActiveTestExecutionCapability? issueRecoveryCapability({
     required ActiveTestProfile profile,
-    required String selectedParametersHash,
-    required int connectionGeneration,
-    required int lifecycleEpoch,
-    required ExecutionTargetScope targetScope,
+    required ActiveTestExecutionCapability authorizedStartCapability,
     required Duration validityDuration,
     required DateTime now,
   }) {
-    if (selectedParametersHash.trim().isEmpty) return null;
-    if (connectionGeneration <= 0) return null;
-    if (lifecycleEpoch < 0) return null;
     if (validityDuration <= Duration.zero) return null;
+
+    // Must bind to an existing, non-retired, start capability issued by this issuer
+    final startRecord = _registry[authorizedStartCapability.capabilityId];
+    if (startRecord == null ||
+        !identical(startRecord.capability, authorizedStartCapability)) {
+      return null;
+    }
+    if (startRecord.isRetired) return null;
+    if (authorizedStartCapability.operation != ActiveTestOperation.start) {
+      return null;
+    }
+    if (authorizedStartCapability.isRecovery) {
+      return null;
+    }
+
+    // Must match the profile recipe and have a valid documented recovery descriptor
+    if (profile.canonicalHash.trim() !=
+        authorizedStartCapability.recipeHash.trim()) {
+      return null;
+    }
+    if (!profile.recovery.isValid) {
+      return null;
+    }
 
     _counter++;
     final capabilityId = 'rec_cap_${now.microsecondsSinceEpoch}_$_counter';
     final expiresAt = now.add(validityDuration);
+    final issuedElapsedMicros = _currentElapsedMicros;
 
     final capability = ActiveTestExecutionCapability._(
       capabilityId: capabilityId,
-      recipeHash: profile.canonicalHash,
-      selectedParametersHash: selectedParametersHash.trim(),
+      recipeHash: authorizedStartCapability.recipeHash,
+      selectedParametersHash: authorizedStartCapability.selectedParametersHash,
       operation: ActiveTestOperation.stop,
-      targetEcuHeader: profile.addressing.targetEcuHeader,
-      busType: profile.addressing.busType,
-      connectionGeneration: connectionGeneration,
-      lifecycleEpoch: lifecycleEpoch,
-      targetScope: targetScope,
+      targetEcuHeader: authorizedStartCapability.targetEcuHeader,
+      busType: authorizedStartCapability.busType,
+      connectionGeneration: authorizedStartCapability.connectionGeneration,
+      lifecycleEpoch: authorizedStartCapability.lifecycleEpoch,
+      targetScope: authorizedStartCapability.targetScope,
       expiresAt: expiresAt,
+      validityDuration: validityDuration,
+      issuedElapsedMicros: issuedElapsedMicros,
+      parentCapabilityId: authorizedStartCapability.capabilityId,
+      recoveryDescriptorHash:
+          profile.recovery.releaseCommandDescription.hashCode.toRadixString(16),
       isRecovery: true,
     );
 
@@ -352,6 +412,14 @@ final class ActiveTestAuthorizationIssuer {
       return ActiveTestEligibilityVerdict.blockedInvalidCapability;
     }
 
+    // Exact issued object identity verification:
+    // Must be identical to the exact instance issued by this issuer.
+    // Replaced/counterfeit objects with identical ID are rejected fail-closed
+    // without consuming the genuine token!
+    if (!identical(record.capability, capability)) {
+      return ActiveTestEligibilityVerdict.blockedInvalidCapability;
+    }
+
     if (record.isRetired) {
       return ActiveTestEligibilityVerdict.blockedInvalidCapability;
     }
@@ -361,37 +429,52 @@ final class ActiveTestAuthorizationIssuer {
       return ActiveTestEligibilityVerdict.blockedCapabilityAlreadyConsumed;
     }
 
-    // Strict expiration check: reject equality (!now.isBefore(expiresAt))
-    if (!now.isBefore(capability.expiresAt)) {
+    // Authoritative registered capability payload
+    final authoritative = record.capability;
+
+    // Strict expiration check on wall-clock audit time: reject equality (!now.isBefore(expiresAt))
+    if (!now.isBefore(authoritative.expiresAt)) {
       return ActiveTestEligibilityVerdict.blockedExpiredCapability;
     }
 
-    // Context bindings verification
-    if (capability.recipeHash.trim() != expectedRecipeHash.trim()) {
+    // Monotonic elapsed-time TTL check: owned by trusted issuer's monotonic timer
+    final elapsedMicros =
+        _currentElapsedMicros - authoritative.issuedElapsedMicros;
+    if (elapsedMicros < 0 ||
+        elapsedMicros >= authoritative.validityDuration.inMicroseconds) {
+      return ActiveTestEligibilityVerdict.blockedExpiredCapability;
+    }
+
+    // Context bindings verification against authoritative registered object
+    if (authoritative.recipeHash.trim() != expectedRecipeHash.trim()) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
-    if (capability.selectedParametersHash.trim() !=
+    if (authoritative.selectedParametersHash.trim() !=
         expectedSelectedParametersHash.trim()) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
-    if (capability.isRecovery &&
+    if (authoritative.isRecovery &&
         expectedOperation == ActiveTestOperation.start) {
       return ActiveTestEligibilityVerdict.blockedRecoveryStartNotPermitted;
     }
-    if (capability.operation != expectedOperation) {
+    if (authoritative.operation != expectedOperation) {
+      return ActiveTestEligibilityVerdict.blockedContextMismatch;
+    }
+    // Strict bus type match
+    if (authoritative.busType != busType) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
     if (!TransportAddressing.areHeadersEquivalent(
-        capability.targetEcuHeader, expectedTargetCanHeader, busType)) {
+        authoritative.targetEcuHeader, expectedTargetCanHeader, busType)) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
-    if (capability.connectionGeneration != currentConnectionGeneration) {
+    if (authoritative.connectionGeneration != currentConnectionGeneration) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
-    if (capability.lifecycleEpoch != currentLifecycleEpoch) {
+    if (authoritative.lifecycleEpoch != currentLifecycleEpoch) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
-    if (capability.targetScope != currentTargetScope) {
+    if (authoritative.targetScope != currentTargetScope) {
       return ActiveTestEligibilityVerdict.blockedContextMismatch;
     }
 

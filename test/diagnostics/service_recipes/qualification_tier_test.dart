@@ -730,19 +730,35 @@ void main() {
         throwsArgumentError,
       );
 
-      // Issuing recovery capability via dedicated method enforces stop operation
-      final recoveryCap = issuer.issueRecoveryCapability(
+      // Issue genuine start capability first
+      final startCap = issuer.issueCapability(
         profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
         selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
         connectionGeneration: 1,
         lifecycleEpoch: 0,
         targetScope: ExecutionTargetScope.vehicle,
         validityDuration: const Duration(minutes: 5),
         now: now,
       );
+      expect(startCap, isNotNull);
+
+      // Issuing recovery capability via dedicated method enforces stop operation bound to parent
+      final recoveryCap = issuer.issueRecoveryCapability(
+        profile: officialProfile,
+        authorizedStartCapability: startCap!,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
       expect(recoveryCap, isNotNull);
       expect(recoveryCap!.operation, ActiveTestOperation.stop);
       expect(recoveryCap.isRecovery, isTrue);
+      expect(recoveryCap.parentCapabilityId, startCap.capabilityId);
 
       // Attempting to consume recovery capability for start operation is blocked
       final verdictStart = ActiveTestExecutionGate.verifyAndConsume(
@@ -774,6 +790,414 @@ void main() {
         now: now,
       );
       expect(verdictStop, ActiveTestEligibilityVerdict.eligible);
+    });
+
+    test(
+        'two issuers minting at same timestamp: same-ID foreign capability is rejected and genuine capability is not consumed',
+        () {
+      final issuerA = ActiveTestAuthorizationIssuer();
+      final issuerB = ActiveTestAuthorizationIssuer();
+
+      final fixedTimestamp = DateTime(2026, 9, 13, 10, 0, 0);
+
+      final capA = issuerA.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: fixedTimestamp,
+      );
+
+      final capB = issuerB.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: fixedTimestamp,
+      );
+
+      expect(capA, isNotNull);
+      expect(capB, isNotNull);
+      // Both issuers produced the exact same ID!
+      expect(capA!.capabilityId, capB!.capabilityId);
+      expect(identical(capA, capB), isFalse);
+
+      // Present foreign capB to issuerA: MUST BE REJECTED fail-closed
+      final verdictForeign = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuerA,
+        capability: capB,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: fixedTimestamp,
+      );
+      expect(verdictForeign,
+          ActiveTestEligibilityVerdict.blockedInvalidCapability);
+
+      // Crucial: Rejecting foreign capB MUST NOT consume genuine capA!
+      final verdictGenuine = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuerA,
+        capability: capA,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: fixedTimestamp,
+      );
+      expect(verdictGenuine, ActiveTestEligibilityVerdict.eligible);
+
+      // Second consumption of genuine capA fails as already consumed
+      final verdictReplay = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuerA,
+        capability: capA,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: fixedTimestamp.add(const Duration(seconds: 1)),
+      );
+      expect(verdictReplay,
+          ActiveTestEligibilityVerdict.blockedCapabilityAlreadyConsumed);
+    });
+
+    test(
+        'same-ID altered object cannot consume genuine token or extend expired token',
+        () {
+      final issuer = ActiveTestAuthorizationIssuer();
+      final fixedTimestamp = DateTime(2026, 9, 13, 10, 0, 0);
+
+      final genuineCap = issuer.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(seconds: 30),
+        now: fixedTimestamp,
+      );
+      expect(genuineCap, isNotNull);
+
+      // 1. Same-ID forged object with altered parameters
+      final alteredParamsCap = ActiveTestExecutionCapability.forTesting(
+        capabilityId: genuineCap!.capabilityId,
+        recipeHash: genuineCap.recipeHash,
+        selectedParametersHash: 'malicious_tampered_parameters',
+        operation: ActiveTestOperation.start,
+        targetEcuHeader: genuineCap.targetEcuHeader,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        expiresAt: fixedTimestamp.add(const Duration(seconds: 30)),
+      );
+
+      final verdictAltered = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: alteredParamsCap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: 'malicious_tampered_parameters',
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: fixedTimestamp,
+      );
+      // Must reject the non-identical object
+      expect(verdictAltered,
+          ActiveTestEligibilityVerdict.blockedInvalidCapability);
+
+      // Genuine token was NOT consumed
+      final afterAlteredTime = fixedTimestamp.add(const Duration(seconds: 5));
+      final verdictGenuine = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: genuineCap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: afterAlteredTime,
+      );
+      expect(verdictGenuine, ActiveTestEligibilityVerdict.eligible);
+
+      // 2. Expired genuine capability cannot be replaced with a forged object having extended expiry
+      final issuer2 = ActiveTestAuthorizationIssuer();
+      final shortLivedCap = issuer2.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(seconds: 10),
+        now: fixedTimestamp,
+      );
+      expect(shortLivedCap, isNotNull);
+
+      // After 15 seconds, genuineCap is expired
+      final expiredNow = fixedTimestamp.add(const Duration(seconds: 15));
+
+      // Forged object with same ID but with a 2-hour extended expiry
+      final extendedExpiryCap = ActiveTestExecutionCapability.forTesting(
+        capabilityId: shortLivedCap!.capabilityId,
+        recipeHash: shortLivedCap.recipeHash,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        targetEcuHeader: shortLivedCap.targetEcuHeader,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        expiresAt: fixedTimestamp.add(const Duration(hours: 2)),
+      );
+
+      final verdictExtended = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer2,
+        capability: extendedExpiryCap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: expiredNow,
+      );
+      // Forged replacement is rejected fail-closed
+      expect(verdictExtended,
+          ActiveTestEligibilityVerdict.blockedInvalidCapability);
+
+      // And genuine object check at expiredNow returns blockedExpiredCapability
+      final verdictExpired = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer2,
+        capability: shortLivedCap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: expiredNow,
+      );
+      expect(verdictExpired,
+          ActiveTestEligibilityVerdict.blockedExpiredCapability);
+    });
+
+    test('bus type mismatch fails context check and does not consume capability',
+        () {
+      final issuer = ActiveTestAuthorizationIssuer();
+      final capability = issuer.issueCapability(
+        profile: officialProfile, // busType is can11Bit
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(capability, isNotNull);
+      expect(capability!.busType, BusAddressingType.can11Bit);
+
+      // Caller expects can29Bit bus type: MUST fail context mismatch
+      final verdictBusMismatch = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: capability,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: now,
+        busType: BusAddressingType.can29Bit, // Mismatch!
+      );
+      expect(verdictBusMismatch,
+          ActiveTestEligibilityVerdict.blockedContextMismatch);
+
+      // Capability was NOT consumed by the failed check
+      final verdictCorrectBus = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: capability,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: now,
+        busType: BusAddressingType.can11Bit,
+      );
+      expect(verdictCorrectBus, ActiveTestEligibilityVerdict.eligible);
+    });
+
+    test(
+        'recovery capability binds to parent start operation and cannot be minted for unissued or foreign operation',
+        () {
+      final issuerA = ActiveTestAuthorizationIssuer();
+      final issuerB = ActiveTestAuthorizationIssuer();
+
+      final startCapA = issuerA.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(startCapA, isNotNull);
+
+      // 1. Foreign start capability cannot mint recovery on issuerB
+      final foreignRecovery = issuerB.issueRecoveryCapability(
+        profile: officialProfile,
+        authorizedStartCapability: startCapA!,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(foreignRecovery, isNull);
+
+      // 2. Different profile recipe cannot mint recovery
+      final otherProfile = createProfile(
+        id: 'other_routine_01',
+        provenance: ProvenanceKind.officialStandard,
+        rights: RedistributionRights.openPublicStandard,
+        tier: EvidenceQualificationTier.vehicleQualified,
+      );
+      final mismatchedProfileRecovery = issuerA.issueRecoveryCapability(
+        profile: otherProfile,
+        authorizedStartCapability: startCapA,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(mismatchedProfileRecovery, isNull);
+
+      // 3. Genuine start capability mints valid recovery capability bound to parent
+      final recoveryCap = issuerA.issueRecoveryCapability(
+        profile: officialProfile,
+        authorizedStartCapability: startCapA,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(recoveryCap, isNotNull);
+      expect(recoveryCap!.operation, ActiveTestOperation.stop);
+      expect(recoveryCap.isRecovery, isTrue);
+      expect(recoveryCap.parentCapabilityId, startCapA.capabilityId);
+      expect(recoveryCap.connectionGeneration, startCapA.connectionGeneration);
+      expect(recoveryCap.lifecycleEpoch, startCapA.lifecycleEpoch);
+      expect(recoveryCap.targetScope, startCapA.targetScope);
+      expect(recoveryCap.targetEcuHeader, startCapA.targetEcuHeader);
+
+      // Cannot chain recovery on a recovery capability
+      final chainRecovery = issuerA.issueRecoveryCapability(
+        profile: officialProfile,
+        authorizedStartCapability: recoveryCap,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(chainRecovery, isNull);
+    });
+
+    test(
+        'monotonic elapsed TTL rejects execution even if caller-provided wall-clock time is rewound',
+        () {
+      int mockElapsedMicros = 1000000; // 1s
+      final issuer = ActiveTestAuthorizationIssuer(
+        elapsedMicrosecondsProvider: () => mockElapsedMicros,
+      );
+
+      final fixedTimestamp = DateTime(2026, 9, 13, 10, 0, 0);
+
+      final cap = issuer.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(seconds: 10), // 10s TTL
+        now: fixedTimestamp,
+      );
+      expect(cap, isNotNull);
+
+      // Advance monotonic elapsed time by 11 seconds (TTL exceeded)
+      mockElapsedMicros += 11 * 1000000;
+
+      // Even if caller fraudulently supplies a wall-clock time in the past (e.g. 1 second after issue):
+      final rewoundNow = fixedTimestamp.add(const Duration(seconds: 1));
+      final verdict = ActiveTestExecutionGate.verifyAndConsume(
+        issuer: issuer,
+        capability: cap,
+        expectedRecipeHash: officialProfile.canonicalHash,
+        expectedSelectedParametersHash: validParamsHash,
+        expectedOperation: ActiveTestOperation.start,
+        expectedTargetCanHeader: officialProfile.addressing.targetEcuHeader,
+        currentConnectionGeneration: 1,
+        currentLifecycleEpoch: 0,
+        currentTargetScope: ExecutionTargetScope.vehicle,
+        now: rewoundNow,
+      );
+
+      // Monotonic timer owned by issuer fails closed!
+      expect(
+          verdict, ActiveTestEligibilityVerdict.blockedExpiredCapability);
     });
 
     test('legacy ActiveTestAuthorizationToken strictly rejects exact expiry boundary',
