@@ -17,6 +17,9 @@ flutter build apk --release --flavor field -PallowUnsignedRelease=true
   `android/app/build.gradle.kts`.
 - **Expected fat APK:** `build/app/outputs/flutter-apk/app-field-release.apk`
 - **Flutter pin:** `3.47.0` (CI `FLUTTER_VERSION` / `.fvmrc`)
+- **Git dependency:** `flutter_classic_bluetooth` must resolve from
+  Codeberg (`https://codeberg.org/ImL1s/flutter_classic_bluetooth.git`),
+  not GitHub — F-Droid builders cannot clone the GitHub fork URL.
 
 ## Signing lineages (three keys)
 
