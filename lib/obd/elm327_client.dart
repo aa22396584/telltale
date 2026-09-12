@@ -937,32 +937,40 @@ class Elm327Client {
 
   Future<void> disconnect() async {
     _connectionGeneration++;
-    _watchdog?.cancel();
-    _watchdog = null;
-    _pendingTimeout?.cancel();
-    // The same sentence as the drop above, and a different identifier on
-    // purpose: this link was closed because the app asked, not because
-    // anything went wrong with it.
-    _failPending(
-      const TransportException(
-        'The connection was dropped.',
-        issue: TransportIssue.disconnectedByApp,
-      ),
-    );
-    await _rxSub?.cancel();
-    _rxSub = null;
-    await _connectionSub?.cancel();
-    _connectionSub = null;
-    final teardown = _teardownTransport();
-    _activeTeardown = teardown;
+    final existingTeardown = _activeTeardown;
+    if (existingTeardown != null) {
+      await existingTeardown;
+      return;
+    }
+    final completer = Completer<void>();
+    _activeTeardown = completer.future;
     try {
-      await teardown;
+      _watchdog?.cancel();
+      _watchdog = null;
+      _pendingTimeout?.cancel();
+      // The same sentence as the drop above, and a different identifier on
+      // purpose: this link was closed because the app asked, not because
+      // anything went wrong with it.
+      _failPending(
+        const TransportException(
+          'The connection was dropped.',
+          issue: TransportIssue.disconnectedByApp,
+        ),
+      );
+      await _rxSub?.cancel();
+      _rxSub = null;
+      await _connectionSub?.cancel();
+      _connectionSub = null;
+      await _teardownTransport();
     } finally {
-      if (_activeTeardown == teardown) {
-        _activeTeardown = null;
-      }
       isInitialized = false;
       _buffer.clear();
+      if (_activeTeardown == completer.future) {
+        _activeTeardown = null;
+      }
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
     }
   }
 

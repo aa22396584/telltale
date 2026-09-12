@@ -1561,5 +1561,107 @@ void main() {
       transport.disconnectCompleter = null;
       await client.disconnect();
     });
+
+    test(
+        'acceptance 5: concurrent teardowns D1 and D2 merge into single in-flight teardown and handle out-of-order await completion safely',
+        () async {
+      final inner = _ReconnectingTransport();
+      final transport = _TeardownHoldingTransport(inner);
+      final client = await _connect(transport);
+      expect(client.connectionSession, 1);
+
+      // Hold disconnect completion
+      final disconnectCompleter = Completer<void>();
+      transport.disconnectCompleter = disconnectCompleter;
+
+      // Start D1 (unawaited)
+      var d1Done = false;
+      final d1 = client.disconnect().then((_) {
+        d1Done = true;
+      });
+
+      // Let microtasks run so D1 enters _teardownTransport() and awaits disconnectCompleter
+      await Future<void>.delayed(Duration.zero);
+      expect(transport.disconnectCallCount, 1);
+
+      // Start D2 while D1 is still pending (unawaited)
+      var d2Done = false;
+      final d2 = client.disconnect().then((_) {
+        d2Done = true;
+      });
+
+      // Let microtasks run: D2 must observe existing _activeTeardown and merge, not calling transport.disconnect() again
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(transport.disconnectCallCount, 1,
+          reason: 'D2 must merge into existing in-flight teardown rather than issuing duplicate transport teardown');
+      expect(d1Done, isFalse);
+      expect(d2Done, isFalse);
+
+      // Complete underlying transport teardown
+      disconnectCompleter.complete();
+
+      // Verify out-of-order completion handling: caller awaits D2 first, then D1
+      await d2;
+      expect(d2Done, isTrue);
+      await d1;
+      expect(d1Done, isTrue);
+
+      expect(transport.disconnectCallCount, 1);
+      expect(client.isInitialized, isFalse);
+
+      // Verify that after merged teardown finishes, reconnect succeeds cleanly
+      transport.disconnectCompleter = null;
+      final reconnected = await client.connect();
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+      expect(client.transport.isConnected, isTrue);
+
+      final res = await client.send('010C');
+      expect(res.isSuccess, isTrue);
+
+      await client.disconnect();
+    });
+
+    test(
+        'acceptance 6: reconnect immediately after D2 completion when D1 and D2 were concurrent does not race or corrupt new session',
+        () async {
+      final inner = _ReconnectingTransport();
+      final transport = _TeardownHoldingTransport(inner);
+      final client = await _connect(transport);
+      expect(client.connectionSession, 1);
+
+      final disconnectCompleter = Completer<void>();
+      transport.disconnectCompleter = disconnectCompleter;
+
+      final d1 = client.disconnect();
+      await Future<void>.delayed(Duration.zero);
+
+      final d2 = client.disconnect();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(transport.disconnectCallCount, 1);
+
+      // Release teardown
+      disconnectCompleter.complete();
+
+      // Out-of-order: await D2 first
+      await d2;
+
+      // Immediately connect before awaiting D1
+      transport.disconnectCompleter = null;
+      final reconnected = await client.connect();
+      expect(reconnected, isTrue);
+      expect(client.connectionSession, 2);
+
+      // Now await D1
+      await d1;
+
+      // Session remains on 2 and healthy
+      expect(client.connectionSession, 2);
+      final res = await client.send('010C');
+      expect(res.isSuccess, isTrue);
+
+      await client.disconnect();
+    });
   });
 }
