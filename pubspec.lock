@@ -284,7 +284,7 @@ packages:
       path: "."
       ref: "0703821"
       resolved-ref: "070382169b5508ea37266df583535d10cdf5d319"
-      url: "https://github.com/ImL1s/flutter_classic_bluetooth.git"
+      url: "https://codeberg.org/ImL1s/flutter_classic_bluetooth.git"
     source: git
     version: "0.1.9"
   flutter_driver:
