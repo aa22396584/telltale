@@ -153,6 +153,51 @@ void main() {
       expect(wrongOrigSid, isA<Mode08MalformedResponse>());
       expect((wrongOrigSid as Mode08MalformedResponse).reason,
           Mode08MalformedReason.invalidNegativeResponse);
+
+      // Positive response with extra trailing bytes (> 6 bytes)
+      final extraBytes = Mode08DiscoveryCodec.parseResponse(
+        '48 00 80 00 00 00 FF FF',
+        expectedBaseTid: 0x00,
+      );
+      expect(extraBytes, isA<Mode08MalformedResponse>());
+      expect((extraBytes as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidBitmaskLength);
+
+      // Positive response with non-hex characters
+      final nonHex = Mode08DiscoveryCodec.parseResponse(
+        '4800800000ZZ',
+        expectedBaseTid: 0x00,
+      );
+      expect(nonHex, isA<Mode08MalformedResponse>());
+      expect((nonHex as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidHex);
+
+      // Positive response with odd-length characters
+      final oddLength = Mode08DiscoveryCodec.parseResponse(
+        '480080000000A',
+        expectedBaseTid: 0x00,
+      );
+      expect(oddLength, isA<Mode08MalformedResponse>());
+      expect((oddLength as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidBitmaskLength);
+
+      // Negative response with extra trailing bytes (> 3 bytes)
+      final extraNeg = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 11 99',
+        expectedBaseTid: 0x00,
+      );
+      expect(extraNeg, isA<Mode08MalformedResponse>());
+      expect((extraNeg as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidNegativeResponse);
+
+      // Negative response with reserved NRC 0x00
+      final zeroNrc = Mode08DiscoveryCodec.parseResponse(
+        '7F 08 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(zeroNrc, isA<Mode08MalformedResponse>());
+      expect((zeroNrc as Mode08MalformedResponse).reason,
+          Mode08MalformedReason.invalidNegativeResponse);
     });
   });
 }

@@ -161,9 +161,31 @@ final class TransportAddressing {
     final r = expectedResponseHeader.toUpperCase();
     if (t.isEmpty || r.isEmpty) return true;
     if (t == '*' || r == '*') return true;
+    if (t == 'ALL' || r == 'ALL') return true;
     if (t == 'ANY' || r == 'ANY') return true;
     if (t == 'BROADCAST' || r == 'BROADCAST') return true;
-    if (t == '7DF') return true; // Standard OBD broadcast request header
+    if (t == '7DF') return true; // Standard OBD broadcast request header (11-bit)
+    if (t == '18DB33F1') return true; // Standard OBD functional broadcast request header (29-bit)
+    if (t == '18DAFFFF') return true; // Unspecified destination address (29-bit)
+    if (t == r) return true; // Request and response cannot have identical arbitration IDs
+    // Header must be valid hex and within bus address bounds
+    if (!RegExp(r'^[0-9A-F]+$').hasMatch(t) ||
+        !RegExp(r'^[0-9A-F]+$').hasMatch(r)) {
+      return true;
+    }
+    final targetId = int.tryParse(t, radix: 16);
+    final responseId = int.tryParse(r, radix: 16);
+    if (targetId == null || responseId == null) return true;
+    switch (busType) {
+      case BusAddressingType.can11Bit:
+        if (targetId > 0x7FF || responseId > 0x7FF) return true;
+        if (targetId == 0x7DF) return true;
+      case BusAddressingType.can29Bit:
+        if (targetId > 0x1FFFFFFF || responseId > 0x1FFFFFFF) return true;
+        if (targetId == 0x18DB33F1) return true;
+      case BusAddressingType.iso9141Kwp:
+        if (targetId > 0xFF || responseId > 0xFF) return true;
+    }
     return false;
   }
 
@@ -201,6 +223,7 @@ final class EcuApplicability {
 
   bool get hasWildcard {
     if (make.isEmpty || model.isEmpty || targetEcuName.isEmpty) return true;
+    if (softwareVersions.isEmpty) return true;
     final m = make.toUpperCase();
     final mod = model.toUpperCase();
     final ecu = targetEcuName.toUpperCase();
@@ -209,7 +232,7 @@ final class EcuApplicability {
     if (ecu == '*' || ecu == 'ALL' || ecu == 'ANY') return true;
     for (final sw in softwareVersions) {
       final s = sw.toUpperCase();
-      if (s == '*' || s == 'ALL' || s == 'ANY') return true;
+      if (s.isEmpty || s == '*' || s == 'ALL' || s == 'ANY') return true;
     }
     return false;
   }
@@ -394,6 +417,10 @@ final class UdsIoControlDescriptor extends ServiceDescriptor {
         returnControlParameter != UdsIoControlParameter.resetToDefault) {
       errors.add(ProfileValidationReason.undocumentedRecovery);
     }
+    if (controlParameter == UdsIoControlParameter.shortTermAdjustment &&
+        controlStates.isEmpty) {
+      errors.add(ProfileValidationReason.invalidParameterDefinition);
+    }
     for (final cs in controlStates) {
       if (!cs.isValid) {
         errors.add(ProfileValidationReason.invalidParameterDefinition);
@@ -510,6 +537,9 @@ final class PreconditionRule {
   bool get isValid {
     if (parameterName.trim().isEmpty) return false;
     if (maxAgeMs <= 0 || maxAgeMs > 10000) return false;
+    if (minValue == null && maxValue == null && expectedDiscreteValue == null) {
+      return false;
+    }
     if (minValue != null && maxValue != null && minValue! > maxValue!) {
       return false;
     }
@@ -556,6 +586,16 @@ final class PostconditionRule {
   bool get isValid {
     if (parameterName.trim().isEmpty) return false;
     if (verificationDescription.trim().isEmpty) return false;
+    if (expectedMinValue == null &&
+        expectedMaxValue == null &&
+        expectedValue == null) {
+      return false;
+    }
+    if (expectedMinValue != null &&
+        expectedMaxValue != null &&
+        expectedMinValue! > expectedMaxValue!) {
+      return false;
+    }
     return true;
   }
 
@@ -737,16 +777,16 @@ final class ActiveTestProfile {
   List<ProfileValidationReason> validate() {
     final errors = <ProfileValidationReason>[];
 
-    if (profileId.isEmpty) {
+    if (profileId.trim().isEmpty) {
       errors.add(ProfileValidationReason.missingProfileId);
     }
     if (schemaVersion != 1) {
       errors.add(ProfileValidationReason.unknownSchemaVersion);
     }
-    if (standard.isEmpty) {
+    if (standard.trim().isEmpty) {
       errors.add(ProfileValidationReason.missingStandard);
     }
-    if (sourceUrl.isEmpty) {
+    if (sourceUrl.trim().isEmpty || documentSection.trim().isEmpty) {
       errors.add(ProfileValidationReason.missingSourceUrl);
     }
     if (redistributionRights == RedistributionRights.unreviewed) {

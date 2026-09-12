@@ -156,11 +156,18 @@ final class Mode08DiscoveryCodec {
           rawResponse: rawResponse,
         );
       }
+      if (cleaned.length != 6 ||
+          !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidNegativeResponse,
+          rawResponse: rawResponse,
+        );
+      }
       final sidHex = cleaned.substring(2, 4);
       final nrcHex = cleaned.substring(4, 6);
       final sid = int.tryParse(sidHex, radix: 16);
       final nrc = int.tryParse(nrcHex, radix: 16);
-      if (sid == null || sid != 0x08 || nrc == null) {
+      if (sid == null || sid != 0x08 || nrc == null || nrc == 0x00) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: rawResponse,
@@ -171,57 +178,72 @@ final class Mode08DiscoveryCodec {
 
     // Positive response: 48 <baseTid> <4 bytes bitmask>
     // Total hex chars: 2 (SID) + 2 (TID) + 8 (bitmask) = 12 hex chars (6 bytes).
-    if (cleaned.length < 12) {
+    if (cleaned.startsWith('48')) {
+      if (cleaned.length < 12) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.truncated,
+          rawResponse: rawResponse,
+        );
+      }
+      if (cleaned.length != 12) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidBitmaskLength,
+          rawResponse: rawResponse,
+        );
+      }
+      if (!RegExp(r'^[0-9A-F]{12}$').hasMatch(cleaned)) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidHex,
+          rawResponse: rawResponse,
+        );
+      }
+
+      final echoedTid = int.tryParse(cleaned.substring(2, 4), radix: 16);
+      if (echoedTid != expectedBaseTid) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.wrongBaseTidEcho,
+          rawResponse: rawResponse,
+        );
+      }
+
+      final bitmask = int.tryParse(cleaned.substring(4, 12), radix: 16);
+      if (bitmask == null) {
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidHex,
+          rawResponse: rawResponse,
+        );
+      }
+
+      final supportedTids = <int>{};
+      for (var i = 0; i < 32; i++) {
+        // Bit 31 is (expectedBaseTid + 1), Bit 0 is (expectedBaseTid + 32)
+        final shift = 31 - i;
+        if ((bitmask & (1 << shift)) != 0) {
+          supportedTids.add(expectedBaseTid + 1 + i);
+        }
+      }
+
+      // Bit 0 indicates whether the subsequent block of 32 TIDs is supported
+      final hasNextBlock = (bitmask & 0x01) != 0;
+
+      return Mode08SupportSuccess(
+        baseTid: expectedBaseTid,
+        bitmask: bitmask,
+        supportedTids: supportedTids,
+        hasNextBlock: hasNextBlock,
+      );
+    }
+
+    // Response has invalid or unhandled SID
+    if (cleaned.length < 2) {
       return Mode08MalformedResponse(
         reason: Mode08MalformedReason.truncated,
         rawResponse: rawResponse,
       );
     }
-
-    final sidHex = cleaned.substring(0, 2);
-    final sid = int.tryParse(sidHex, radix: 16);
-    if (sid != 0x48) {
-      return Mode08MalformedResponse(
-        reason: Mode08MalformedReason.invalidSid,
-        rawResponse: rawResponse,
-      );
-    }
-
-    final tidHex = cleaned.substring(2, 4);
-    final echoedTid = int.tryParse(tidHex, radix: 16);
-    if (echoedTid != expectedBaseTid) {
-      return Mode08MalformedResponse(
-        reason: Mode08MalformedReason.wrongBaseTidEcho,
-        rawResponse: rawResponse,
-      );
-    }
-
-    final maskHex = cleaned.substring(4, 12);
-    final bitmask = int.tryParse(maskHex, radix: 16);
-    if (bitmask == null) {
-      return Mode08MalformedResponse(
-        reason: Mode08MalformedReason.invalidHex,
-        rawResponse: rawResponse,
-      );
-    }
-
-    final supportedTids = <int>{};
-    for (var i = 0; i < 32; i++) {
-      // Bit 31 is (expectedBaseTid + 1), Bit 0 is (expectedBaseTid + 32)
-      final shift = 31 - i;
-      if ((bitmask & (1 << shift)) != 0) {
-        supportedTids.add(expectedBaseTid + 1 + i);
-      }
-    }
-
-    // Bit 0 indicates whether the subsequent block of 32 TIDs is supported
-    final hasNextBlock = (bitmask & 0x01) != 0;
-
-    return Mode08SupportSuccess(
-      baseTid: expectedBaseTid,
-      bitmask: bitmask,
-      supportedTids: supportedTids,
-      hasNextBlock: hasNextBlock,
+    return Mode08MalformedResponse(
+      reason: Mode08MalformedReason.invalidSid,
+      rawResponse: rawResponse,
     );
   }
 }

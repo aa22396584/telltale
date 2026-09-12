@@ -141,6 +141,21 @@ final class UdsActiveCodec {
     if (did < 0x0000 || did > 0xFFFF) {
       throw ArgumentError.value(did, 'did', 'DID must be 16-bit unsigned (0x0000..0xFFFF)');
     }
+    for (final b in controlState) {
+      if (b < 0 || b > 0xFF) {
+        throw ArgumentError.value(b, 'controlState', 'Control state bytes must be 0x00..0xFF');
+      }
+    }
+    for (final b in controlMask) {
+      if (b < 0 || b > 0xFF) {
+        throw ArgumentError.value(b, 'controlMask', 'Control mask bytes must be 0x00..0xFF');
+      }
+    }
+    if (controlMask.isNotEmpty && controlMask.length != controlState.length) {
+      throw ArgumentError(
+        'Control mask length (${controlMask.length}) must match control state length (${controlState.length})',
+      );
+    }
     final bytes = <int>[
       sidIoControl,
       (did >> 8) & 0xFF,
@@ -200,6 +215,12 @@ final class UdsActiveCodec {
           rawResponse: rawResponse,
         );
       }
+      if (bytes.length != 3) {
+        return UdsIoControlMalformed(
+          reason: UdsMalformedReason.invalidNrc,
+          rawResponse: rawResponse,
+        );
+      }
       if (bytes[1] != sidIoControl) {
         return UdsIoControlMalformed(
           reason: UdsMalformedReason.wrongOriginalSid,
@@ -207,6 +228,12 @@ final class UdsActiveCodec {
         );
       }
       final nrc = bytes[2];
+      if (nrc == 0x00) {
+        return UdsIoControlMalformed(
+          reason: UdsMalformedReason.invalidNrc,
+          rawResponse: rawResponse,
+        );
+      }
       return UdsIoControlNegative(
         nrc: nrc,
         isResponsePending: nrc == nrcResponsePending,
@@ -271,6 +298,11 @@ final class UdsActiveCodec {
         'Routine ID must be 16-bit unsigned (0x0000..0xFFFF)',
       );
     }
+    for (final b in optionRecord) {
+      if (b < 0 || b > 0xFF) {
+        throw ArgumentError.value(b, 'optionRecord', 'Option record bytes must be 0x00..0xFF');
+      }
+    }
     return <int>[
       sidRoutineControl,
       controlType.subfunctionByte,
@@ -326,6 +358,12 @@ final class UdsActiveCodec {
           rawResponse: rawResponse,
         );
       }
+      if (bytes.length != 3) {
+        return UdsRoutineMalformed(
+          reason: UdsMalformedReason.invalidNrc,
+          rawResponse: rawResponse,
+        );
+      }
       if (bytes[1] != sidRoutineControl) {
         return UdsRoutineMalformed(
           reason: UdsMalformedReason.wrongOriginalSid,
@@ -333,6 +371,12 @@ final class UdsActiveCodec {
         );
       }
       final nrc = bytes[2];
+      if (nrc == 0x00) {
+        return UdsRoutineMalformed(
+          reason: UdsMalformedReason.invalidNrc,
+          rawResponse: rawResponse,
+        );
+      }
       return UdsRoutineNegative(
         nrc: nrc,
         isResponsePending: nrc == nrcResponsePending,

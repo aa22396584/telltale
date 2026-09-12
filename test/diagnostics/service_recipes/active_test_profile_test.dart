@@ -195,17 +195,79 @@ void main() {
       );
       expect(profileWildcardEcu.validate(),
           contains(ProfileValidationReason.wildcardEcuMatch));
+
+      final profileEmptySoftware = createValidMode08Profile(
+        applicability: const EcuApplicability(
+          make: 'Toyota',
+          model: 'Prius',
+          targetEcuName: 'ECM',
+          softwareVersions: [],
+        ),
+      );
+      expect(profileEmptySoftware.validate(),
+          contains(ProfileValidationReason.wildcardEcuMatch));
+
+      final profileEmptyVersionString = createValidMode08Profile(
+        applicability: const EcuApplicability(
+          make: 'Toyota',
+          model: 'Prius',
+          targetEcuName: 'ECM',
+          softwareVersions: [''],
+        ),
+      );
+      expect(profileEmptyVersionString.validate(),
+          contains(ProfileValidationReason.wildcardEcuMatch));
     });
 
     test('rejects wildcard or broadcast addressing', () {
       final profileBroadcastHeader = createValidMode08Profile(
         addressing: const TransportAddressing(
           busType: BusAddressingType.can11Bit,
-          targetEcuHeader: '7DF', // Broadcast request header!
+          targetEcuHeader: '7DF', // Broadcast request header (11-bit)!
           expectedResponseHeader: '7E8',
         ),
       );
       expect(profileBroadcastHeader.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+
+      final profileBroadcast29Bit = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can29Bit,
+          targetEcuHeader: '18DB33F1', // Standard 29-bit functional broadcast request header!
+          expectedResponseHeader: '18DAF110',
+        ),
+      );
+      expect(profileBroadcast29Bit.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+
+      final profileIdenticalHeaders = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: '7E0',
+          expectedResponseHeader: '7E0', // Same arbitration ID!
+        ),
+      );
+      expect(profileIdenticalHeaders.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+
+      final profileNonHexHeader = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: 'XYZ',
+          expectedResponseHeader: '7E8',
+        ),
+      );
+      expect(profileNonHexHeader.validate(),
+          contains(ProfileValidationReason.wildcardAddressing));
+
+      final profileOutOfRange11Bit = createValidMode08Profile(
+        addressing: const TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: '800', // > 0x7FF
+          expectedResponseHeader: '7E8',
+        ),
+      );
+      expect(profileOutOfRange11Bit.validate(),
           contains(ProfileValidationReason.wildcardAddressing));
 
       final profileWildcardHeader = createValidMode08Profile(
@@ -219,12 +281,91 @@ void main() {
           contains(ProfileValidationReason.wildcardAddressing));
     });
 
-    test('rejects missing preconditions', () {
+    test('rejects missing or invalid preconditions and postconditions', () {
       final profileNoPreconditions = createValidMode08Profile(
         preconditions: const [],
       );
       expect(profileNoPreconditions.validate(),
           contains(ProfileValidationReason.missingPreconditions));
+
+      // Precondition with no condition values
+      final profileEmptyPreconditionRule = createValidMode08Profile(
+        preconditions: const [
+          PreconditionRule(parameterName: 'vehicleSpeedKmh'),
+        ],
+      );
+      expect(profileEmptyPreconditionRule.validate(),
+          contains(ProfileValidationReason.invalidParameterDefinition));
+
+      // Precondition with inverted min > max
+      final profileInvertedPreconditionRule = createValidMode08Profile(
+        preconditions: const [
+          PreconditionRule(
+            parameterName: 'vehicleSpeedKmh',
+            minValue: 100,
+            maxValue: 10,
+          ),
+        ],
+      );
+      expect(profileInvertedPreconditionRule.validate(),
+          contains(ProfileValidationReason.invalidParameterDefinition));
+
+      // Postcondition with no expected values
+      final profileEmptyPostconditionRule = createValidMode08Profile(
+        postconditions: const [
+          PostconditionRule(
+            parameterName: 'fanSpeedRpm',
+            verificationDescription: 'Fan must spin',
+          ),
+        ],
+      );
+      expect(profileEmptyPostconditionRule.validate(),
+          contains(ProfileValidationReason.invalidParameterDefinition));
+
+      // Postcondition with inverted min > max
+      final profileInvertedPostconditionRule = createValidMode08Profile(
+        postconditions: const [
+          PostconditionRule(
+            parameterName: 'fanSpeedRpm',
+            expectedMinValue: 2000,
+            expectedMaxValue: 1000,
+            verificationDescription: 'Fan must spin in range',
+          ),
+        ],
+      );
+      expect(profileInvertedPostconditionRule.validate(),
+          contains(ProfileValidationReason.invalidParameterDefinition));
+    });
+
+    test('rejects whitespace-only profile metadata fields', () {
+      final profileWhitespaceId = createValidMode08Profile(profileId: '   ');
+      expect(profileWhitespaceId.validate(),
+          contains(ProfileValidationReason.missingProfileId));
+
+      final profileWhitespaceStandard = createValidMode08Profile(standard: '   ');
+      expect(profileWhitespaceStandard.validate(),
+          contains(ProfileValidationReason.missingStandard));
+
+      final profileWhitespaceSource = createValidMode08Profile(sourceUrl: '   ');
+      expect(profileWhitespaceSource.validate(),
+          contains(ProfileValidationReason.missingSourceUrl));
+
+      final profileWhitespaceSection = createValidMode08Profile(documentSection: '   ');
+      expect(profileWhitespaceSection.validate(),
+          contains(ProfileValidationReason.missingSourceUrl));
+    });
+
+    test('rejects UDS 0x2F shortTermAdjustment without controlStates defined', () {
+      final profileNoStates = createValidMode08Profile(
+        serviceDescriptor: const UdsIoControlDescriptor(
+          dataIdentifier: 0x0112,
+          controlParameter: UdsIoControlParameter.shortTermAdjustment,
+          controlStates: [],
+          returnControlParameter: UdsIoControlParameter.returnControlToECU,
+        ),
+      );
+      expect(profileNoStates.validate(),
+          contains(ProfileValidationReason.invalidParameterDefinition));
     });
 
     test('rejects out of range Mode 08 TID and invalid parameters', () {

@@ -158,5 +158,76 @@ void main() {
       expect(matrix.qualifiedEntries.length, 1);
       expect(matrix.qualifiedEntries.first.isLiveCandidate, isTrue);
     });
+
+    test('revoked profile is never counted as a live candidate even if qualified', () {
+      const unhashedRevoked = ActiveTestProfile(
+        profileId: 'revoked_pilot_01',
+        schemaVersion: 1,
+        version: '1.0.0',
+        standard: 'SAE J1979:2014',
+        sourceUrl: 'https://standards.sae.org/',
+        documentSection: 'Section 8',
+        redistributionRights: RedistributionRights.openPublicStandard,
+        provenanceKind: ProvenanceKind.officialStandard,
+        addressing: TransportAddressing(
+          busType: BusAddressingType.can11Bit,
+          targetEcuHeader: '7E0',
+          expectedResponseHeader: '7E8',
+        ),
+        applicability: EcuApplicability(
+          make: 'Toyota',
+          model: 'Prius',
+          targetEcuName: 'ECM',
+          softwareVersions: ['V1'],
+        ),
+        sessionType: DiagnosticSessionType.defaultSession,
+        serviceDescriptor: Mode08Descriptor(testId: 0x01),
+        preconditions: [
+          PreconditionRule(
+            parameterName: 'vehicleSpeedKmh',
+            minValue: 0,
+            maxValue: 0,
+          ),
+        ],
+        constraints: ExecutionConstraints(),
+        recovery: RecoverySpecification(
+          releaseCommandDescription: 'stop',
+          lossOfClientBehavior: 'timeout',
+          watchdogTimeoutMs: 1000,
+        ),
+        evidenceTier: EvidenceQualificationTier.vehicleQualified,
+        isRevoked: true,
+        revocationReason: 'Safety bulletin issued',
+        canonicalHash: '',
+      );
+      final hash = unhashedRevoked.computeCanonicalHash();
+      final revoked = ActiveTestProfile(
+        profileId: unhashedRevoked.profileId,
+        schemaVersion: unhashedRevoked.schemaVersion,
+        version: unhashedRevoked.version,
+        standard: unhashedRevoked.standard,
+        sourceUrl: unhashedRevoked.sourceUrl,
+        documentSection: unhashedRevoked.documentSection,
+        redistributionRights: unhashedRevoked.redistributionRights,
+        provenanceKind: unhashedRevoked.provenanceKind,
+        addressing: unhashedRevoked.addressing,
+        applicability: unhashedRevoked.applicability,
+        sessionType: unhashedRevoked.sessionType,
+        serviceDescriptor: unhashedRevoked.serviceDescriptor,
+        preconditions: unhashedRevoked.preconditions,
+        constraints: unhashedRevoked.constraints,
+        recovery: unhashedRevoked.recovery,
+        evidenceTier: unhashedRevoked.evidenceTier,
+        isRevoked: true,
+        revocationReason: unhashedRevoked.revocationReason,
+        canonicalHash: hash,
+      );
+
+      final matrix = CandidateMatrix.fromProfiles([revoked]);
+      expect(matrix.liveCandidateCount, 0);
+      expect(matrix.hasLiveCandidates, isFalse);
+      expect(matrix.qualifiedEntries.length, 1);
+      expect(matrix.qualifiedEntries.first.isLiveCandidate, isFalse);
+    });
   });
 }

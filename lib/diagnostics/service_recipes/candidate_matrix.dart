@@ -46,7 +46,12 @@ final class CandidateMatrixEntry {
   /// Whether this profile is a live production candidate.
   bool get isLiveCandidate =>
       category == CandidateCategory.qualified &&
-      profile.provenanceKind != ProvenanceKind.syntheticFixture;
+      !profile.isRevoked &&
+      profile.isValid &&
+      profile.provenanceKind != ProvenanceKind.syntheticFixture &&
+      profile.evidenceTier != EvidenceQualificationTier.syntheticFixture &&
+      profile.redistributionRights !=
+          RedistributionRights.syntheticFixtureOnly;
 }
 
 /// The active-test candidate matrix report.

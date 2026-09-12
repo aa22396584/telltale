@@ -30,7 +30,7 @@ void main() {
       expect(reqWithMask, '2F01120364FF');
     });
 
-    test('rejects out of range DID when encoding', () {
+    test('rejects out of range DID, byte values, or mismatched mask when encoding', () {
       expect(
         () => UdsActiveCodec.encodeIoControlRequest(
           did: 0x10000,
@@ -42,6 +42,44 @@ void main() {
         () => UdsActiveCodec.encodeIoControlRequest(
           did: -1,
           parameter: UdsIoControlParameter.returnControlToECU,
+        ),
+        throwsArgumentError,
+      );
+      // Byte > 255 in controlState
+      expect(
+        () => UdsActiveCodec.encodeIoControlRequest(
+          did: 0x0112,
+          parameter: UdsIoControlParameter.shortTermAdjustment,
+          controlState: const [256],
+        ),
+        throwsArgumentError,
+      );
+      // Byte < 0 in controlState
+      expect(
+        () => UdsActiveCodec.encodeIoControlRequest(
+          did: 0x0112,
+          parameter: UdsIoControlParameter.shortTermAdjustment,
+          controlState: const [-1],
+        ),
+        throwsArgumentError,
+      );
+      // Byte > 255 in controlMask
+      expect(
+        () => UdsActiveCodec.encodeIoControlRequest(
+          did: 0x0112,
+          parameter: UdsIoControlParameter.shortTermAdjustment,
+          controlState: const [0x64],
+          controlMask: const [256],
+        ),
+        throwsArgumentError,
+      );
+      // Mask length mismatch (mask length 2 vs state length 1)
+      expect(
+        () => UdsActiveCodec.encodeIoControlRequest(
+          did: 0x0112,
+          parameter: UdsIoControlParameter.shortTermAdjustment,
+          controlState: const [0x64],
+          controlMask: const [0xFF, 0xFF],
         ),
         throwsArgumentError,
       );
@@ -146,6 +184,26 @@ void main() {
       expect(wrongOrig, isA<UdsIoControlMalformed>());
       expect((wrongOrig as UdsIoControlMalformed).reason,
           UdsMalformedReason.wrongOriginalSid);
+
+      // Negative response with extra trailing bytes (> 3 bytes)
+      final extraNeg = UdsActiveCodec.parseIoControlResponse(
+        '7F 2F 11 22',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+      );
+      expect(extraNeg, isA<UdsIoControlMalformed>());
+      expect((extraNeg as UdsIoControlMalformed).reason,
+          UdsMalformedReason.invalidNrc);
+
+      // Negative response with reserved NRC 0x00
+      final zeroNrc = UdsActiveCodec.parseIoControlResponse(
+        '7F 2F 00',
+        expectedDid: 0x0112,
+        expectedParameter: UdsIoControlParameter.shortTermAdjustment,
+      );
+      expect(zeroNrc, isA<UdsIoControlMalformed>());
+      expect((zeroNrc as UdsIoControlMalformed).reason,
+          UdsMalformedReason.invalidNrc);
     });
   });
 
@@ -275,6 +333,45 @@ void main() {
       expect(wrongOrig, isA<UdsRoutineMalformed>());
       expect((wrongOrig as UdsRoutineMalformed).reason,
           UdsMalformedReason.wrongOriginalSid);
+
+      // Negative response with extra trailing bytes (> 3 bytes)
+      final extraNeg = UdsActiveCodec.parseRoutineResponse(
+        '7F 31 12 22',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+      );
+      expect(extraNeg, isA<UdsRoutineMalformed>());
+      expect((extraNeg as UdsRoutineMalformed).reason,
+          UdsMalformedReason.invalidNrc);
+
+      // Negative response with reserved NRC 0x00
+      final zeroNrc = UdsActiveCodec.parseRoutineResponse(
+        '7F 31 00',
+        expectedType: UdsRoutineControlType.startRoutine,
+        expectedRoutineIdentifier: 0x0201,
+      );
+      expect(zeroNrc, isA<UdsRoutineMalformed>());
+      expect((zeroNrc as UdsRoutineMalformed).reason,
+          UdsMalformedReason.invalidNrc);
+    });
+
+    test('rejects out of range optionRecord bytes when encoding', () {
+      expect(
+        () => UdsActiveCodec.encodeRoutineRequest(
+          controlType: UdsRoutineControlType.startRoutine,
+          routineIdentifier: 0x0201,
+          optionRecord: const [256],
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => UdsActiveCodec.encodeRoutineRequest(
+          controlType: UdsRoutineControlType.startRoutine,
+          routineIdentifier: 0x0201,
+          optionRecord: const [-1],
+        ),
+        throwsArgumentError,
+      );
     });
   });
 }

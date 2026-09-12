@@ -37,5 +37,42 @@ void main() {
       expect(matrix.simulationReadyEntries.length, 3);
       expect(matrix.qualifiedEntries, isEmpty);
     });
+
+    test('tampering with any bundled asset JSON fails closed with FormatException', () {
+      for (final path in BundledServiceRecipes.bundledAssetPaths) {
+        final originalJson = File(path).readAsStringSync();
+
+        // Attack 1: Modify a single bit in the version string
+        final tamperedVersion = originalJson.replaceAll('"version": "1.0.0"', '"version": "1.0.1"');
+        expect(
+          () => BundledServiceRecipes.parseProfileJson(tamperedVersion),
+          throwsFormatException,
+          reason: 'Tampered version in $path must fail hash verification',
+        );
+
+        // Attack 2: Modify canonical hash
+        final tamperedHash = originalJson.replaceAllMapped(
+          RegExp(r'"canonical_hash":\s*"([^"]+)"'),
+          (match) {
+            final old = match.group(1)!;
+            final modified = old.endsWith('a') ? '${old.substring(0, old.length - 1)}b' : '${old.substring(0, old.length - 1)}a';
+            return '"canonical_hash": "$modified"';
+          },
+        );
+        expect(
+          () => BundledServiceRecipes.parseProfileJson(tamperedHash),
+          throwsFormatException,
+          reason: 'Tampered hash in $path must fail hash verification',
+        );
+
+        // Attack 3: Replace target ECU header with broadcast header 7DF
+        final tamperedBroadcast = originalJson.replaceAll('"target_ecu_header": "7E0"', '"target_ecu_header": "7DF"');
+        expect(
+          () => BundledServiceRecipes.parseProfileJson(tamperedBroadcast),
+          throwsFormatException,
+          reason: 'Broadcast addressing in $path must be rejected',
+        );
+      }
+    });
   });
 }
