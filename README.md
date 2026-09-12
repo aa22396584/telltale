@@ -2,27 +2,22 @@
 
 # Telltale
 
-> **Development home:** https://github.com/ImL1s/telltale  
+> **GitHub home:** https://github.com/aa22396584/telltale  
 > Please open issues and pull requests there.  
-> **Mirrors:** [Codeberg](https://codeberg.org/ImL1s/telltale) · [GitLab](https://gitlab.com/aa22396584/telltale)
+> **Also on:** [Codeberg](https://codeberg.org/ImL1s/telltale) · [GitLab](https://gitlab.com/aa22396584/telltale)  
+> Former GitHub account `ImL1s` is restricted; use `aa22396584` for browsing and contributions.
 
-> **While GitHub is temporarily restricted** (releases, CI badges, and raw assets
-> may fail for anonymous visitors): use
-> **[Google Play](https://play.google.com/store/apps/details?id=com.cbstudio.telltale)**
-> for the preferred install;
-> **[Codeberg](https://codeberg.org/ImL1s/telltale)** to browse source (primary during
-> the outage) plus the **[GitLab mirror](https://gitlab.com/aa22396584/telltale)**;
-> community APK **[v1.0.14 on Codeberg](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
-> or **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
-> (GitHub Releases may be unreachable);
+> **Install / downtime notes:** prefer
+> **[Google Play](https://play.google.com/store/apps/details?id=com.cbstudio.telltale)**;
+> community APK **[v1.0.14 on Codeberg](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**,
+> **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**, or
+> **[GitHub Releases (aa22396584)](https://github.com/aa22396584/telltale/releases)**;
 > [Obtainium](https://github.com/ImranR98/Obtainium) →
-> `https://codeberg.org/ImL1s/telltale/releases`.
-> Prefer opening issues on **GitHub** when you can; if GitHub is unreachable,
-> open them temporarily on **[GitLab](https://gitlab.com/aa22396584/telltale/-/issues)**.
-> This is downtime guidance only — GitHub remains the long-term development home.
+> `https://codeberg.org/ImL1s/telltale/releases` or
+> `https://github.com/aa22396584/telltale/releases`.
 
-[![CI](https://github.com/ImL1s/telltale/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ImL1s/telltale/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/ImL1s/telltale?include_prereleases&sort=semver&label=latest%20release)](https://github.com/ImL1s/telltale/releases)
+[![CI](https://github.com/aa22396584/telltale/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aa22396584/telltale/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/aa22396584/telltale?include_prereleases&sort=semver&label=latest%20release)](https://github.com/aa22396584/telltale/releases)
 [![Google Play](https://img.shields.io/badge/Google_Play-View_listing-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.cbstudio.telltale)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
@@ -63,16 +58,15 @@ development and maintenance. The community-signed APK below and builds from
 source remain free to use.
 
 **Community-signed APK** (same features as Play; release binaries are not stored
-in the source tree). While GitHub is restricted, use these mirrors first:
+in the source tree):
 
-1. **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
-   (primary during the outage) · [all Codeberg releases](https://codeberg.org/ImL1s/telltale/releases)
-2. **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
-3. [GitHub Releases](https://github.com/ImL1s/telltale/releases) (may be
-   unreachable for anonymous visitors right now)
+1. **[GitHub aa22396584 v1.0.14](https://github.com/aa22396584/telltale/releases/tag/v1.0.14)**
+2. **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
+3. **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
 
 Open the release and select its `.apk` asset. [Obtainium](https://github.com/ImranR98/Obtainium)
-can track updates from `https://codeberg.org/ImL1s/telltale/releases`.
+can track updates from `https://github.com/aa22396584/telltale/releases` or
+`https://codeberg.org/ImL1s/telltale/releases`.
 
 Community APKs use a **different signing key** from Google Play. They cannot
 update, or be updated by, the Play build. Switching between them requires
