@@ -17,12 +17,12 @@ into confident-looking results.
 ## Screenshots and vehicle demo
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ImL1s/telltale/main/store/en-US/01-connect.png" width="30%" alt="Telltale connection screen">
-  <img src="https://raw.githubusercontent.com/ImL1s/telltale/main/store/en-US/02-dashboard.png" width="30%" alt="Telltale live telemetry dashboard">
-  <img src="https://raw.githubusercontent.com/ImL1s/telltale/main/store/en-US/03-dtc-freeze.png" width="30%" alt="Telltale Demo ECU fault-code and freeze-frame screen">
+  <img src="store/en-US/01-connect.png" width="30%" alt="Telltale connection screen">
+  <img src="store/en-US/02-dashboard.png" width="30%" alt="Telltale live telemetry dashboard">
+  <img src="store/en-US/03-dtc-freeze.png" width="30%" alt="Telltale Demo ECU fault-code and freeze-frame screen">
 </p>
 
-[![Watch the privacy-safe Toyota GT86 and BLE ELM327 demo](https://raw.githubusercontent.com/ImL1s/telltale/main/store/en-US/feature-1024x500.png)](https://youtu.be/Ugyg4RXhjVQ)
+[![Watch the privacy-safe Toyota GT86 and BLE ELM327 demo](store/en-US/feature-1024x500.png)](https://youtu.be/Ugyg4RXhjVQ)
 
 **[Watch the Toyota GT86 and BLE ELM327 demo on YouTube](https://youtu.be/Ugyg4RXhjVQ).**
 It shows one real Samsung, adapter, and vehicle combination. The vehicle VIN is
