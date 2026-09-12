@@ -17,6 +17,10 @@ sys.path.insert(0, str(ROOT / "tool" / "workshop"))
 
 import validate_plan  # noqa: E402
 
+# Default fake SHA used by _plan(); tests that bypass git verification
+# inject this into git_shas to avoid false failures on audited_sha.
+_FAKE_AUDITED = "a" * 40
+
 
 def _minimal_task(
     ident: str,
@@ -59,12 +63,12 @@ def _minimal_task(
     return task
 
 
-def _plan(tasks: list[dict]) -> dict:
+def _plan(tasks: list[dict], *, audited_sha: str = "a" * 40) -> dict:
     return {
         "schemaVersion": 1,
         "policy": "USABILITY-R2",
         "repository": "ImL1s/telltale",
-        "audited_sha": "a" * 40,
+        "audited_sha": audited_sha,
         "tasks": tasks,
     }
 
@@ -210,19 +214,174 @@ class AuditedShaTest(unittest.TestCase):
         data = json.loads(path.read_text(encoding="utf-8"))
         self.assertRegex(data["audited_sha"], r"^[0-9a-f]{40}$")
 
+    # ── G2: git commit verification fallback (git_shas=None) ──
+
+    def _make_git_repo(self, tmp: str) -> tuple[Path, str]:
+        """Create a temp git repo and return (plan_path, commit_sha)."""
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init"], cwd=repo, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=repo, capture_output=True, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=repo, capture_output=True, check=True,
+        )
+        (repo / "readme.txt").write_text("initial\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"],
+            cwd=repo, capture_output=True, check=True,
+        )
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo, text=True,
+        ).strip()
+        plan_dir = repo / "tool" / "workshop"
+        plan_dir.mkdir(parents=True)
+        plan_path = plan_dir / "plan.json"
+        return plan_path, sha
+
+    def test_existing_commit_accepted_without_known_set(self) -> None:
+        """G2 card item 1: real commit + git_shas=None → accept."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, sha = self._make_git_repo(tmp)
+            data = _plan([_minimal_task("WS-01", 9)], audited_sha=sha)
+            data["tasks"][0]["base_sha"] = sha
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False,
+            )
+            audited_errors = [e for e in errors if "audited_sha" in e]
+            self.assertEqual(audited_errors, [], msg=errors)
+
+    def test_nonexistent_sha_rejected_without_known_set(self) -> None:
+        """G2 card item 2: format-correct but nonexistent SHA + git_shas=None → reject."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, real_sha = self._make_git_repo(tmp)
+            fake_sha = "0" * 40
+            data = _plan([_minimal_task("WS-01", 9, sha=real_sha)], audited_sha=fake_sha)
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False,
+            )
+            self.assertTrue(
+                any("audited_sha" in e and "stale SHA" in e for e in errors),
+                msg=errors,
+            )
+
+    def test_blob_sha_rejected_without_known_set(self) -> None:
+        """G2 card item 3: existing blob SHA (not commit) + git_shas=None → reject."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, real_sha = self._make_git_repo(tmp)
+            repo = plan_path.parents[2]
+            # Get the blob SHA of readme.txt (a blob, not a commit).
+            blob_sha = subprocess.check_output(
+                ["git", "rev-parse", "HEAD:readme.txt"],
+                cwd=repo, text=True,
+            ).strip()
+            data = _plan(
+                [_minimal_task("WS-01", 9, sha=real_sha)],
+                audited_sha=blob_sha,
+            )
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False,
+            )
+            self.assertTrue(
+                any("audited_sha" in e and "stale SHA" in e for e in errors),
+                msg=errors,
+            )
+
+    def test_non_git_directory_rejected_without_known_set(self) -> None:
+        """G2 card item 4: plan in a non-git directory + git_shas=None → reject."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_dir = Path(tmp) / "tool" / "workshop"
+            plan_dir.mkdir(parents=True)
+            plan_path = plan_dir / "plan.json"
+            data = _plan([_minimal_task("WS-01", 9)], audited_sha="0" * 40)
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False,
+            )
+            self.assertTrue(
+                any("audited_sha" in e and "stale SHA" in e for e in errors),
+                msg=errors,
+            )
+
+    def test_old_commit_accepted_without_known_set(self) -> None:
+        """G2 card item 5: old commit (not HEAD) → still accept."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, first_sha = self._make_git_repo(tmp)
+            repo = plan_path.parents[2]
+            # Make a second commit so first_sha is no longer HEAD.
+            (repo / "readme.txt").write_text("second\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "second"],
+                cwd=repo, capture_output=True, check=True,
+            )
+            head = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=repo, text=True,
+            ).strip()
+            self.assertNotEqual(first_sha, head)
+            data = _plan(
+                [_minimal_task("WS-01", 9, sha=head)],
+                audited_sha=first_sha,
+            )
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            errors, _ = validate_plan.validate_plan(
+                data, plan_path=plan_path, check_artifacts=False,
+            )
+            audited_errors = [e for e in errors if "audited_sha" in e]
+            self.assertEqual(audited_errors, [], msg=errors)
+
+    def test_cli_subprocess_validates_audited_sha_without_known_sha(self) -> None:
+        """G2 card item 8: full subprocess CLI test, no --known-sha, no mock."""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path, sha = self._make_git_repo(tmp)
+            # Minimal valid plan with only audited_sha changed to a real commit.
+            data = _plan([_minimal_task("WS-01", 9, sha=sha)], audited_sha=sha)
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                 str(plan_path), "--no-artifacts"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+
+            # Now change audited_sha to an invalid one → should fail.
+            data["audited_sha"] = "0" * 40
+            plan_path.write_text(json.dumps(data), encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, str(ROOT / "tool" / "workshop" / "validate_plan.py"),
+                 str(plan_path), "--no-artifacts"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("audited_sha", completed.stderr)
+
 
 class GraphAndSchemaTest(unittest.TestCase):
+    _FAKE_AUDITED = "a" * 40
+
     def _errors(self, tasks, **kwargs) -> list[str]:
         with tempfile.TemporaryDirectory() as tmp:
             plan_path = Path(tmp) / "tool" / "workshop" / "plan.json"
             plan_path.parent.mkdir(parents=True)
             data = _plan(tasks)
             plan_path.write_text(json.dumps(data), encoding="utf-8")
+            # Default to injecting the fake audited_sha so these schema tests
+            # are not broken by the new git commit verification.
+            git_shas = kwargs.get("git_shas")
+            if git_shas is None:
+                git_shas = {self._FAKE_AUDITED}
             errors, _ = validate_plan.validate_plan(
                 data,
                 plan_path=plan_path,
                 check_artifacts=kwargs.get("check_artifacts", False),
-                git_shas=kwargs.get("git_shas"),
+                git_shas=git_shas,
             )
             return errors
 
@@ -428,7 +587,8 @@ class ArtifactAndHandoffTest(unittest.TestCase):
             data = _plan([task])
             plan_path.write_text(json.dumps(data), encoding="utf-8")
             errors, _ = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=True
+                data, plan_path=plan_path, check_artifacts=True,
+                git_shas={data["audited_sha"]},
             )
             self.assertTrue(any("missing artifact" in error for error in errors))
 
@@ -454,7 +614,8 @@ class ArtifactAndHandoffTest(unittest.TestCase):
             data = _plan([task])
             plan_path.write_text(json.dumps(data), encoding="utf-8")
             errors, _ = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=True
+                data, plan_path=plan_path, check_artifacts=True,
+                git_shas={data["audited_sha"]},
             )
             self.assertTrue(any("hash mismatch" in error for error in errors))
 
@@ -1318,7 +1479,8 @@ class FlutterAllowlistTest(unittest.TestCase):
             )
             plan_path.write_text(json.dumps(data), encoding="utf-8")
             errors, _ = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             return errors
 
@@ -1399,7 +1561,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-01", "WS-02"])
@@ -1415,7 +1578,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-01"])
@@ -1431,7 +1595,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-02"])
@@ -1452,7 +1617,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-02"])
@@ -1475,7 +1641,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, [])
@@ -1493,7 +1660,8 @@ class ReadyAndLeaseTest(unittest.TestCase):
                 ]
             )
             errors, ready = validate_plan.validate_plan(
-                data, plan_path=plan_path, check_artifacts=False
+                data, plan_path=plan_path, check_artifacts=False,
+                git_shas={data["audited_sha"]},
             )
             self.assertEqual(errors, [])
             self.assertEqual(ready, ["WS-01"])
@@ -1513,7 +1681,7 @@ class ReadyAndLeaseTest(unittest.TestCase):
             text=True,
         ).strip()
         errors, ready = validate_plan.validate_plan(
-            _plan([_minimal_task("WS-01", 9, sha=sha)]),
+            _plan([_minimal_task("WS-01", 9, sha=sha)], audited_sha=sha),
             plan_path=ROOT / "tool" / "workshop" / "plan.json",
             check_artifacts=False,
         )
@@ -1587,6 +1755,7 @@ class CampaignQueueTest(unittest.TestCase):
             plan_path=ROOT / "tool" / "workshop" / "plan.json",
             check_artifacts=False,
             campaign=True,
+            git_shas={_FAKE_AUDITED},
         )
         self.assertEqual(errors, [], msg=errors)
         self.assertEqual(
@@ -1633,6 +1802,7 @@ class CampaignQueueTest(unittest.TestCase):
             plan_path=ROOT / "tool" / "workshop" / "plan.json",
             check_artifacts=False,
             campaign=True,
+            git_shas={_FAKE_AUDITED},
         )
         self.assertEqual(errors, [], msg=errors)
         self.assertEqual(ready, ["WS-01"])
@@ -1687,6 +1857,7 @@ class CampaignQueueTest(unittest.TestCase):
             plan_path=ROOT / "tool" / "workshop" / "plan.json",
             check_artifacts=False,
             campaign=True,
+            git_shas={_FAKE_AUDITED},
         )
         self.assertEqual(errors, [], msg=errors)
         self.assertEqual(ready, ["WS-01"])

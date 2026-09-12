@@ -312,7 +312,10 @@ def validate_plan(
         sha = data.get("audited_sha")
         if not isinstance(sha, str) or not SHA_RE.fullmatch(sha):
             raise PlanError("audited_sha must be 40 lowercase hex")
-        if git_shas is not None and sha not in git_shas:
+        if git_shas is not None:
+            if sha not in git_shas:
+                raise PlanError(f"audited_sha: stale SHA {sha}")
+        elif not _commit_exists(plan_path, sha):
             raise PlanError(f"audited_sha: stale SHA {sha}")
 
     catch(_audited_sha)

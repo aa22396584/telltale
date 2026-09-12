@@ -66,17 +66,24 @@ def _plan(
     ]
     if extra:
         tasks.extend(extra)
+    # Ensure git repo exists before building the plan, so we can use the
+    # real commit SHA for audited_sha (required by the git fallback path).
+    if not (tmp / ".git").exists():
+        commit_sha = _init_git(tmp)
+    else:
+        commit_sha = subprocess.check_output(
+            ["git", "-C", str(tmp), "rev-parse", "HEAD"],
+            text=True,
+        ).strip()
     payload = {
         "schemaVersion": 1,
         "policy": "USABILITY-R2",
         "repository": "ImL1s/telltale",
-        "audited_sha": "a" * 40,
+        "audited_sha": commit_sha,
         "tasks": tasks,
     }
     path = workshop / "plan.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
-    if not (tmp / ".git").exists():
-        _init_git(tmp)
     return path
 
 
