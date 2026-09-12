@@ -1,0 +1,71 @@
+{
+  "profile_id": "synthetic_uds_2f_fan_control_01",
+  "schema_version": 1,
+  "version": "1.0.0",
+  "standard": "ISO 14229-1:2013",
+  "source_url": "https://iso.org/standard/55283.html",
+  "document_section": "Section 11.2 InputOutputControlByIdentifier",
+  "redistribution_rights": "syntheticFixtureOnly",
+  "provenance_kind": "syntheticFixture",
+  "addressing": {
+    "bus_type": "can11Bit",
+    "target_ecu_header": "7E0",
+    "expected_response_header": "7E8"
+  },
+  "applicability": {
+    "make": "Synthetic",
+    "model": "BenchSim",
+    "target_ecu_name": "ECM",
+    "software_versions": [
+      "SIM_ECM_V1"
+    ]
+  },
+  "session_type": "extendedDiagnosticSession",
+  "service_descriptor": {
+    "descriptor_type": "uds_io_control",
+    "data_identifier": 274,
+    "control_parameter": "shortTermAdjustment",
+    "control_states": [
+      {
+        "name": "fanSpeedDutyCycle",
+        "byte_offset": 0,
+        "byte_length": 1,
+        "min_physical_value": 0,
+        "max_physical_value": 100,
+        "unit": "%"
+      }
+    ],
+    "return_control_parameter": "returnControlToECU"
+  },
+  "preconditions": [
+    {
+      "parameter_name": "vehicleSpeedKmh",
+      "min_value": 0,
+      "max_value": 0,
+      "max_age_ms": 1000,
+      "source_rule": "liveEcuOnly"
+    },
+    {
+      "parameter_name": "engineRpm",
+      "min_value": 0,
+      "max_value": 0,
+      "max_age_ms": 1000,
+      "source_rule": "liveEcuOnly"
+    }
+  ],
+  "constraints": {
+    "max_commands": 3,
+    "min_command_interval_ms": 100,
+    "step_timeout_ms": 2000,
+    "overall_timeout_ms": 8000
+  },
+  "recovery": {
+    "release_command_description": "Send 2F 01 12 00 (returnControlToECU)",
+    "loss_of_client_behavior": "ECU returns to automatic fan control after 2000ms",
+    "watchdog_timeout_ms": 2000
+  },
+  "postconditions": [],
+  "evidence_tier": "syntheticFixture",
+  "is_revoked": false,
+  "canonical_hash": "a8fd31e41c828b3feaf1e621ae1f203cf94bc29e3953933406bc1a8724e2b087"
+}

@@ -1,0 +1,59 @@
+{
+  "profile_id": "synthetic_uds_31_pump_routine_01",
+  "schema_version": 1,
+  "version": "1.0.0",
+  "standard": "ISO 14229-1:2013",
+  "source_url": "https://iso.org/standard/55283.html",
+  "document_section": "Section 12.2 RoutineControl",
+  "redistribution_rights": "syntheticFixtureOnly",
+  "provenance_kind": "syntheticFixture",
+  "addressing": {
+    "bus_type": "can11Bit",
+    "target_ecu_header": "7E0",
+    "expected_response_header": "7E8"
+  },
+  "applicability": {
+    "make": "Synthetic",
+    "model": "BenchSim",
+    "target_ecu_name": "ECM",
+    "software_versions": [
+      "SIM_ECM_V1"
+    ]
+  },
+  "session_type": "extendedDiagnosticSession",
+  "service_descriptor": {
+    "descriptor_type": "uds_routine",
+    "routine_identifier": 513,
+    "supported_subfunctions": [
+      "startRoutine",
+      "stopRoutine",
+      "requestRoutineResults"
+    ],
+    "start_option_parameters": [],
+    "has_documented_stop": true
+  },
+  "preconditions": [
+    {
+      "parameter_name": "vehicleSpeedKmh",
+      "min_value": 0,
+      "max_value": 0,
+      "max_age_ms": 1000,
+      "source_rule": "liveEcuOnly"
+    }
+  ],
+  "constraints": {
+    "max_commands": 4,
+    "min_command_interval_ms": 150,
+    "step_timeout_ms": 3000,
+    "overall_timeout_ms": 10000
+  },
+  "recovery": {
+    "release_command_description": "Send 31 02 02 01 (stopRoutine)",
+    "loss_of_client_behavior": "ECU stops pump after 1500ms watchdog expiry",
+    "watchdog_timeout_ms": 1500
+  },
+  "postconditions": [],
+  "evidence_tier": "syntheticFixture",
+  "is_revoked": false,
+  "canonical_hash": "89516ef1ffe0932ac898cfbfee65c8e3a1176c8c46e073d9e4da779dccd0b306"
+}
