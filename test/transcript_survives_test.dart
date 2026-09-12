@@ -77,7 +77,9 @@ void main() {
     final text = session.exportableTranscript!.render(
       header: session.exportableTranscriptHeader,
     );
-    expect(text, contains('# Telltale 實車證據 v1'));
+    expect(text, contains('# Telltale OBD 工作階段紀錄 v1'));
+    expect(text, contains('# 實體證據狀態：未驗證'));
+    expect(text, isNot(contains('# Telltale 實車證據')));
     expect(text, contains('# 隱私提醒：'));
     expect(text, contains('# 工作階段：'));
     expect(text, contains('# App：'));

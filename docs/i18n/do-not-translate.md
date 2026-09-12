@@ -238,7 +238,7 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `繁體中文 (picker self-name — never render as Traditional Chinese)`
 - `Language / 語言 (bilingual section title, byte-identical in both ARBs)`
 - `System default / 跟隨系統 (bilingual picker option)`
-- `# Telltale 實車證據 v1`
+- `# Telltale OBD 工作階段紀錄 v1`
 - `# Telltale 無車測試馬具證據 v1`
 - `https://play.google.com/store/apps/details?id=com.cbstudio.telltale`
 - `https://github.com/ImL1s/telltale`
