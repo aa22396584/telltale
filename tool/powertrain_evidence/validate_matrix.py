@@ -16,6 +16,7 @@ import math
 import re
 import struct
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -170,79 +171,174 @@ NON_MODEL_SUFFIXES = frozenset(
 )
 
 
-REVIEWED_SHARED_SOURCE_TARGET_BINDINGS: dict[str, set[str]] = {
-    # Canonical source path -> set of target model prefixes with reviewed applicability
-    "vehicle_profiles/byd/byd_202410_update.json": {
-        "byd-atto3",
-        "byd-atto-3",
-    },
-    "volkswagen/meb.json": {
-        "volkswagen-id3",
-        "volkswagen-id4",
-        "volkswagen-id5",
-        "volkswagen-id-buzz",
-        "cupra-born",
-        "skoda-enyaq",
-    },
-    "vehicle_profiles/vw/ev_meb.json": {
-        "volkswagen-id3",
-        "volkswagen-id4",
-        "volkswagen-id5",
-        "volkswagen-id-buzz",
-        "cupra-born",
-        "skoda-enyaq",
-    },
-    "vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp": {
-        "hyundai-ioniq5",
-        "hyundai-ioniq6",
-        "kia-ev6",
-        "genesis-gv60",
-    },
-    "components/vehicle_hkmc/hif_can_poll.cpp": {
-        "hyundai-ioniq5",
-        "hyundai-ioniq6",
-        "kia-ev6",
-        "genesis-gv60",
-    },
-    "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp": {
-        "hyundai-kona",
-        "kia-niro",
-        "kia-soul",
-    },
-    "components/vehicle_hkmc/kn_can_poll.cpp": {
-        "hyundai-kona",
-        "kia-niro",
-        "kia-soul",
-    },
-    "vehicle_profiles/hyundai/ioniq5-6.json": {
-        "hyundai-ioniq5",
-        "hyundai-ioniq6",
-    },
-    "vehicle_profiles/kia/nirosoulkona-ev.json": {
-        "kia-niro",
-        "kia-soul",
-        "hyundai-kona",
-    },
-}
+@dataclass(frozen=True)
+class ReviewedEvidenceBinding:
+    """Explicit, per-target reviewed evidence record.
+
+    Target scope, signal, source repository, revision, hash, path, and locator
+    must belong to the exact same reviewed record. Cross-model applicability
+    cannot be inferred from brand whitelists, shared platforms, substring prefix
+    tables, or negation locators.
+    """
+
+    target_scope: str
+    path: str
+    signal: str = "*"
+    source_repository: str = "*"
+    revision: str = "*"
+    source_hash: str = "*"
+    locator: str = "*"
 
 
-def _has_reviewed_shared_binding(target_id: str, path_clean: str) -> bool:
-    norm_path = path_clean.replace("\\", "/").strip().lstrip("/")
-    while norm_path.startswith("./"):
-        norm_path = norm_path[2:].lstrip("/")
-    target_clean = _norm_token(target_id)
-    targets = REVIEWED_SHARED_SOURCE_TARGET_BINDINGS.get(norm_path)
-    if targets is None:
-        return False
-    for t in targets:
-        t_clean = _norm_token(t)
-        if (
-            target_clean.startswith(t_clean)
-            or target_id.lower().startswith(t.lower())
-            or t_clean.startswith(target_clean)
-        ):
-            return True
+REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
+    # BYD Atto 3
+    ReviewedEvidenceBinding(
+        target_scope="byd-atto3",
+        path="vehicle_profiles/byd/byd_202410_update.json",
+    ),
+    ReviewedEvidenceBinding(
+        target_scope="byd-atto-3",
+        path="vehicle_profiles/byd/byd_202410_update.json",
+    ),
+    # MEB architecture profiles
+    *(
+        ReviewedEvidenceBinding(target_scope=target, path=path)
+        for path in ("volkswagen/meb.json", "vehicle_profiles/vw/ev_meb.json")
+        for target in (
+            "volkswagen-id3",
+            "volkswagen-id4",
+            "volkswagen-id5",
+            "volkswagen-id-buzz",
+            "cupra-born",
+            "skoda-enyaq",
+        )
+    ),
+    # E-GMP platform OVMS polling source
+    *(
+        ReviewedEvidenceBinding(target_scope=target, path=path)
+        for path in (
+            "vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp",
+            "components/vehicle_hkmc/hif_can_poll.cpp",
+        )
+        for target in (
+            "hyundai-ioniq5",
+            "hyundai-ioniq6",
+            "kia-ev6",
+            "genesis-gv60",
+        )
+    ),
+    # HKMC Niro/Soul/Kona platform OVMS polling source
+    *(
+        ReviewedEvidenceBinding(target_scope=target, path=path)
+        for path in (
+            "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
+            "components/vehicle_hkmc/kn_can_poll.cpp",
+        )
+        for target in (
+            "hyundai-kona",
+            "kia-niro",
+            "kia-soul",
+        )
+    ),
+    # Multi-model profiles
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/hyundai/ioniq5-6.json",
+        )
+        for target in ("hyundai-ioniq5", "hyundai-ioniq6")
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/kia/nirosoulkona-ev.json",
+        )
+        for target in ("kia-niro", "kia-soul", "hyundai-kona")
+    ),
+]
+
+
+def _normalize_binding_path(path: str) -> str:
+    norm = path.replace("\\", "/").strip().lstrip("/")
+    while norm.startswith("./"):
+        norm = norm[2:].lstrip("/")
+    return norm.lower()
+
+
+def _target_scope_matches(target_id: str, binding_scope: str) -> bool:
+    clean_target = _norm_token(target_id)
+    clean_scope = _norm_token(binding_scope)
+    if clean_target == clean_scope:
+        return True
+    parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
+    model_parts = [
+        p
+        for p in parts
+        if p not in NON_MODEL_SUFFIXES and not (p.isdigit() and len(p) == 4)
+    ]
+    if _norm_token("".join(model_parts)) == clean_scope:
+        return True
     return False
+
+
+def _find_reviewed_evidence_binding(
+    target_id: str,
+    path: str,
+    *,
+    locator: str = "*",
+    signal: str = "*",
+    repository: str = "*",
+    revision: str = "*",
+    source_hash: str = "*",
+) -> ReviewedEvidenceBinding | None:
+    norm_path = _normalize_binding_path(path)
+    for binding in REVIEWED_EVIDENCE_BINDINGS:
+        if _normalize_binding_path(binding.path) != norm_path:
+            continue
+        if not _target_scope_matches(target_id, binding.target_scope):
+            continue
+        if binding.signal != "*" and signal != "*" and binding.signal != signal:
+            continue
+        if binding.source_repository != "*" and repository != "*":
+            if binding.source_repository.lower() not in repository.lower():
+                continue
+        if binding.revision != "*" and revision != "*" and binding.revision != revision:
+            continue
+        if (
+            binding.source_hash != "*"
+            and source_hash != "*"
+            and binding.source_hash != source_hash
+        ):
+            continue
+        if binding.locator != "*" and locator != "*":
+            if binding.locator.lower() not in locator.lower():
+                continue
+        return binding
+    return None
+
+
+def _has_reviewed_shared_binding(
+    target_id: str,
+    path_clean: str,
+    *,
+    locator: str = "*",
+    signal: str = "*",
+    repository: str = "*",
+    revision: str = "*",
+    source_hash: str = "*",
+) -> bool:
+    return (
+        _find_reviewed_evidence_binding(
+            target_id=target_id,
+            path=path_clean,
+            locator=locator,
+            signal=signal,
+            repository=repository,
+            revision=revision,
+            source_hash=source_hash,
+        )
+        is not None
+    )
 
 
 def _resolve_target_models(
@@ -299,6 +395,10 @@ def _is_cross_model_source(
     url: str,
     *,
     aliases: list[str] | None = None,
+    signal: str = "*",
+    repository: str = "*",
+    revision: str = "*",
+    source_hash: str = "*",
 ) -> bool:
     target_parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
     if not target_parts:
@@ -319,7 +419,15 @@ def _is_cross_model_source(
                 return True
 
     # 2. Check structured reviewed shared-source binding
-    if _has_reviewed_shared_binding(target_id, path_clean):
+    if _has_reviewed_shared_binding(
+        target_id,
+        path_clean,
+        locator=locator,
+        signal=signal,
+        repository=repository,
+        revision=revision,
+        source_hash=source_hash,
+    ):
         return False
 
     # 3. OVMS component paths
@@ -1655,11 +1763,24 @@ def validate_research_row(
             )
         src_path = _text(source.get("path")).lower()
         src_url = _text(source.get("url")).lower()
+        src_repo = _text(source.get("family") or source.get("name") or source.get("repository") or "*")
+        src_rev = _text(source.get("revision") or "*")
+        src_hash = _text(source.get("artifact_sha256") or source.get("hash") or "*")
         row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
         generation = _text(row.get("generation"))
         if generation:
             row_aliases.append(generation)
-        if _is_cross_model_source(row_id, loc, src_path, src_url, aliases=row_aliases):
+        if _is_cross_model_source(
+            row_id,
+            loc,
+            src_path,
+            src_url,
+            aliases=row_aliases,
+            signal=_text(row.get("signal") or "*"),
+            repository=src_repo,
+            revision=src_rev,
+            source_hash=src_hash,
+        ):
             issues.append(
                 f"{prefix}: source {source_id} path {source.get('path')!r} belongs to a different vehicle model than {row_id}"
             )
@@ -1942,6 +2063,9 @@ def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
         path = _text(src_item.get("path")).lower()
         url = _text(src_item.get("url")).lower()
         loc = _text(src_item.get("locator"))
+        src_repo = _text(src_item.get("name") or src_item.get("repository") or src_item.get("family") or "*")
+        src_rev = _text(src_item.get("revision") or "*")
+        src_hash = _text(src_item.get("artifact_sha256") or src_item.get("hash") or src_item.get("sha256") or "*")
         target_id = f"{make}-{model}".lower()
         profile_aliases = [
             _text(profile.get("id")),
@@ -1949,7 +2073,15 @@ def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
             _text(profile.get("display_name")),
         ]
         if make and model and _is_cross_model_source(
-            target_id, loc, path, url, aliases=profile_aliases
+            target_id,
+            loc,
+            path,
+            url,
+            aliases=profile_aliases,
+            signal="*",
+            repository=src_repo,
+            revision=src_rev,
+            source_hash=src_hash,
         ):
             issues.append(
                 f"{prefix}: source path {src_item.get('path')!r} belongs to a different vehicle model than {make} {model}"

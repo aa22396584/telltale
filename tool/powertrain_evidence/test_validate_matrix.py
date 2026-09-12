@@ -1616,6 +1616,64 @@ class ResearchRuleTest(unittest.TestCase):
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than tesla-model-3")
 
+    def test_research_row_reviewed_shared_source_binding_exact_scope_required(self) -> None:
+        """Explicit ReviewedEvidenceBinding enforces unified scope, locator, revision, and artifact hash."""
+        from validate_matrix import REVIEWED_EVIDENCE_BINDINGS, ReviewedEvidenceBinding
+
+        test_binding = ReviewedEvidenceBinding(
+            target_scope="synthetic-model-a",
+            path="vehicle_profiles/synthetic/multi.json",
+            locator="Model A exact locator",
+            revision=SHA40_A,
+            source_hash=SHA64_A,
+        )
+        REVIEWED_EVIDENCE_BINDINGS.append(test_binding)
+        try:
+            # 1. Matching exact scope, locator, revision, and hash passes
+            row_ok = _valid_executable_row(
+                id="synthetic-model-a",
+                aliases=["Synthetic Model A"],
+            )
+            row_ok["source_families"] = copy.deepcopy(row_ok["source_families"])
+            row_ok["source_families"][0]["path"] = "vehicle_profiles/synthetic/multi.json"
+            row_ok["source_families"][0]["locator"] = "Model A exact locator"
+            row_ok["source_families"][0]["revision"] = SHA40_A
+            row_ok["source_families"][0]["artifact_sha256"] = SHA64_A
+            self.assertEqual(_issues_for(row_ok), [])
+
+            # 2. Scope prefix substring leakage fails (synthetic-model-b is not authorized by prefix matching)
+            row_mismatch_model = _valid_executable_row(
+                id="synthetic-model-b",
+                aliases=["Synthetic Model B"],
+            )
+            row_mismatch_model["source_families"] = copy.deepcopy(row_mismatch_model["source_families"])
+            row_mismatch_model["source_families"][0]["path"] = "vehicle_profiles/synthetic/multi.json"
+            row_mismatch_model["source_families"][0]["locator"] = "Model A exact locator"
+            row_mismatch_model["source_families"][0]["revision"] = SHA40_A
+            row_mismatch_model["source_families"][0]["artifact_sha256"] = SHA64_A
+            issues = _issues_for(row_mismatch_model)
+            _only(issues, "belongs to a different vehicle model than synthetic-model-b")
+
+            # 3. Locator mismatch fails
+            row_bad_locator = copy.deepcopy(row_ok)
+            row_bad_locator["source_families"][0]["locator"] = "Model B different locator"
+            issues_loc = _issues_for(row_bad_locator)
+            _only(issues_loc, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 4. Revision mismatch fails
+            row_bad_rev = copy.deepcopy(row_ok)
+            row_bad_rev["source_families"][0]["revision"] = SHA40_B
+            issues_rev = _issues_for(row_bad_rev)
+            _only(issues_rev, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 5. Artifact hash mismatch fails
+            row_bad_hash = copy.deepcopy(row_ok)
+            row_bad_hash["source_families"][0]["artifact_sha256"] = "c" * 64
+            issues_hash = _issues_for(row_bad_hash)
+            _only(issues_hash, "belongs to a different vehicle model than synthetic-model-a")
+        finally:
+            REVIEWED_EVIDENCE_BINDINGS.remove(test_binding)
+
     def test_shared_source_with_matching_locators_passes(self) -> None:
         """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
         leaf_row = _valid_executable_row(
