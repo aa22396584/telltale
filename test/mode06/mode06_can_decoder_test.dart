@@ -9,6 +9,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/obd/mode06/mode06_can_decoder.dart';
 
 void main() {
+  test('constructor inputs cannot mutate retained Mode 06 evidence', () {
+    final rawValueBytes = <int>[0x00, 0x64];
+    final rawMinBytes = <int>[0x00, 0x00];
+    final rawMaxBytes = <int>[0x00, 0xC8];
+    final testResult = Mode06TestResult(
+      responder: '7E8',
+      mid: 0x01,
+      tid: 0x80,
+      uasId: 0x0A,
+      rawValueBytes: rawValueBytes,
+      rawMinBytes: rawMinBytes,
+      rawMaxBytes: rawMaxBytes,
+      value: 12.2,
+      min: 0,
+      max: 24.4,
+      unitId: 'millivolt',
+      completion: Mode06Completion.passed,
+    );
+    final tests = <Mode06TestResult>[testResult];
+    final supportedMids = <int>{0x01};
+    final response = Mode06CanResponse(
+      responder: '7E8',
+      tests: tests,
+      supportedMids: supportedMids,
+    );
+
+    rawValueBytes[1] = 0x65;
+    rawMinBytes[1] = 0x01;
+    rawMaxBytes[1] = 0xC7;
+    tests.clear();
+    supportedMids.add(0x02);
+
+    expect(testResult.rawValueBytes, [0x00, 0x64]);
+    expect(testResult.rawMinBytes, [0x00, 0x00]);
+    expect(testResult.rawMaxBytes, [0x00, 0xC8]);
+    expect(response.tests, [testResult]);
+    expect(response.supportedMids, {0x01});
+  });
+
+  test('Mode 06 collection getters reject mutation', () {
+    final decodedTests = Mode06CanDecoder.decode(
+      payload: const [
+        0x46, 0x01, 0x80, 0x0A, 0x00, 0x64, 0x00, 0x00, 0x00, 0xC8,
+      ],
+      responder: '7E8',
+    );
+    final decodedSupport = Mode06CanDecoder.decode(
+      payload: const [0x46, 0x00, 0x80, 0x00, 0x00, 0x00],
+      responder: '7E8',
+    );
+    final testResult = decodedTests.tests.single;
+
+    expect(() => testResult.rawValueBytes[1] = 0x65, throwsUnsupportedError);
+    expect(() => testResult.rawMinBytes[1] = 0x01, throwsUnsupportedError);
+    expect(() => testResult.rawMaxBytes[1] = 0xC7, throwsUnsupportedError);
+    expect(() => decodedTests.tests.clear(), throwsUnsupportedError);
+    expect(() => decodedSupport.supportedMids.add(0x02), throwsUnsupportedError);
+  });
+
   test('a millivolt monitor test decodes value and limits', () {
     // 46 01 80 0A 00 64 00 00 00 C8
     const payload = <int>[

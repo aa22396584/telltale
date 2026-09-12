@@ -18,20 +18,22 @@ final class Mode06DecodeException implements Exception {
 }
 
 final class Mode06TestResult {
-  const Mode06TestResult({
+  Mode06TestResult({
     required this.responder,
     required this.mid,
     required this.tid,
     required this.uasId,
-    required this.rawValueBytes,
-    required this.rawMinBytes,
-    required this.rawMaxBytes,
+    required List<int> rawValueBytes,
+    required List<int> rawMinBytes,
+    required List<int> rawMaxBytes,
     required this.value,
     required this.min,
     required this.max,
     required this.unitId,
     required this.completion,
-  });
+  }) : rawValueBytes = List.unmodifiable(rawValueBytes),
+       rawMinBytes = List.unmodifiable(rawMinBytes),
+       rawMaxBytes = List.unmodifiable(rawMaxBytes);
 
   final String responder;
   final int mid;
@@ -48,11 +50,12 @@ final class Mode06TestResult {
 }
 
 final class Mode06CanResponse {
-  const Mode06CanResponse({
+  Mode06CanResponse({
     required this.responder,
-    required this.tests,
-    required this.supportedMids,
-  });
+    required List<Mode06TestResult> tests,
+    required Set<int> supportedMids,
+  }) : tests = List.unmodifiable(tests),
+       supportedMids = Set.unmodifiable(supportedMids);
 
   final String responder;
   final List<Mode06TestResult> tests;
