@@ -11,7 +11,9 @@ import '../l10n/app_locales_sync.dart';
 import '../l10n/locale_resolution.dart';
 
 typedef AppLocalesGetter = Future<AppLocalesSnapshot> Function();
-typedef AppLocalesSetter = Future<AppLocalesSnapshot?> Function(List<String> tags);
+typedef AppLocalesSetter = Future<AppLocalesSnapshot?> Function(
+  List<String> tags,
+);
 
 final class AppLocalesSynchronizer {
   AppLocalesSynchronizer({
@@ -42,16 +44,25 @@ final class AppLocalesSynchronizer {
       storedWriteCount += 1;
       await prefs.setString(kLocalePreferenceKey, plan.storedIdToKeep);
     }
-    if (plan.markMigrated) {
-      await prefs.setBool(kLocaleOsMigratedKey, true);
-    }
     if (plan.writeOs) {
       final setter = setOs;
       if (setter == null) {
         return plan;
       }
       osWriteCount += 1;
-      await setter(plan.osTagsToWrite);
+      final written = await setter(plan.osTagsToWrite);
+      // A timeout, refusal, or unchanged OS snapshot is not a handoff. Keep
+      // the stored preference retryable instead of letting the next resume
+      // replace it with the OS's still-empty (follow-system) override.
+      if (written == null ||
+          !written.apiSupported ||
+          written.followsSystem ||
+          storedIdFromOsTags(written.overrideTags) != plan.storedIdToKeep) {
+        return plan;
+      }
+    }
+    if (plan.markMigrated) {
+      await prefs.setBool(kLocaleOsMigratedKey, true);
     }
     return plan;
   }
