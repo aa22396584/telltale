@@ -52,13 +52,19 @@ contracts into `commands` or `signals`. Promotion remains a later PR.
 
 - GitHub `github.com`, `raw.githubusercontent.com`, and `api.github.com/repos` URL → lowercase `org/repo` (blob/tree/raw path, revision, `www.`, default ports, and a trailing DNS dot ignored; hostnames IDNA-canonicalized so Unicode and punycode forms match; percent-encoded unreserved path characters decoded so `github.com/%6frg/repo` is `org/repo`; two files or revisions in one repo are one family)
 - common forges (`gitlab.com`, `bitbucket.org`, `codeberg.org`, `gitea.com`, `git.sr.ht`) → lowercase `host/org/repo` (GitLab keeps the full group/project path up to `/-/` so nested `org/subgroup/repo-a` and `org/subgroup/repo-b` are distinct; blob/tree/src path and revision ignored)
-- other http(s) URL → lowercase `host` plus path (query/fragment ignored; host IDNA-canonicalized; percent-encoded unreserved characters decoded; `.` / `..` path segments collapsed so `example.net/a` and `example.net/x/../a` are one family); renaming the source does not create a second family
+- other http(s) URL → canonical publisher hostname only: lowercase IDNA host, with `www.` and a trailing DNS dot ignored and every port excluded; the resource path and port stay in the URL/path identity but do not create another family, so `example.net/a`, `example.net:8443/b`, and `example.net:9443/c` cannot corroborate each other; renaming the source does not create a second family
 - otherwise lowercase `name` (`org/repo` when `name` contains a slash)
 
 One family means one capture lineage. A fork, copy, wrapper, derived CSV, or
-the same capture (same `org/repo` plus path, or the same artifact hash) is the
+the same capture (same repo plus path, publisher host, or artifact hash) is the
 same family even when the row writes a different `family` string. Declared
 `derived_from` / `fork_of` is rejected rather than treated as independence.
+
+This deterministic rule is deliberately conservative, not a public-suffix or
+publisher-ownership oracle. Different subdomains remain different families,
+and aliases or mirrors on different hostnames are not discovered automatically;
+research must still declare and justify those relationships instead of claiming
+the derivation resolves every possible publisher alias.
 
 ## Rules the validator fails closed on
 

@@ -15,7 +15,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Acura; model=MDX Hybrid AWD; epa_id=38567,39870,40623,41665",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -65,7 +65,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Alfa Romeo; model=Tonale eAWD; epa_id=47274,48652",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -90,7 +90,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Audi; model=A3 e-tron; epa_id=37129,38228,39589",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -115,7 +115,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Audi; model=Q5 TFSI e quattro; epa_id=44159,47213",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -265,7 +265,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=BMW; model=i8; epa_id=35599,36031,37223,38230",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -290,7 +290,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=BMW; model=X5 xDrive40e; epa_id=37068,38169,39526",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -315,7 +315,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=BMW; model=X5 xDrive45e; epa_id=42807,45119,46248",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -340,7 +340,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=BMW; model=X5 xDrive50e; epa_id=49009,49760",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -417,7 +417,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Cadillac; model=ELR; epa_id=34770,35317,36862",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -517,7 +517,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Chevrolet; model=Volt; epa_id=30980,31618,32655,33900,35246,36863,37309,39190,40924",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -667,7 +667,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2021; make=BMW; model=X3 xDrive30e; alternative_vehicle_type=Plug-in Hybrid; epa_id=43740",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -692,7 +692,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2022; make=Audi; model=A7 TFSI e quattro; alternative_vehicle_type=Plug-in Hybrid; epa_id=44158",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -717,7 +717,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2023; make=Audi; model=Q4 e-tron Sportback; alternative_vehicle_type=EV; epa_id=45989",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -742,7 +742,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2023; make=Honda; model=CR-V Hybrid AWD; alternative_vehicle_type=Hybrid; epa_id=46071",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -767,7 +767,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2023; make=Bentley; model=Bentayga Hybrid; alternative_vehicle_type=Plug-in Hybrid; epa_id=47214",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -792,7 +792,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2023; make=Subaru; model=Crosstrek Hybrid AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=47227",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -817,7 +817,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2024; make=BMW; model=330e Sedan; alternative_vehicle_type=Plug-in Hybrid; epa_id=47490",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -842,7 +842,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2021; make=Honda; model=Clarity FCV; alternative_vehicle_type=FCV; epa_id=47539",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -867,7 +867,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Audi; model=Q5 Plug-In Hybrid quattro; alternative_vehicle_type=Plug-in Hybrid; epa_id=48653",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -892,7 +892,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Dodge; model=Hornet PHEV AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=48657",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -917,7 +917,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Land Rover; model=Range Rover P550 PHEV; alternative_vehicle_type=Plug-in Hybrid; epa_id=48668",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -942,7 +942,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Land Rover; model=Range Rover Sport P460 PHEV; alternative_vehicle_type=Plug-in Hybrid; epa_id=48669",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -967,7 +967,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Lexus; model=NX 450h Plus AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=48670",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -992,7 +992,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Mazda; model=CX-90 4WD PHEV; alternative_vehicle_type=Plug-in Hybrid; epa_id=48673",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1017,7 +1017,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Mercedes-Benz; model=GLC350e 4matic with EQ Hybrid Tech; alternative_vehicle_type=Plug-in Hybrid; epa_id=48674",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1042,7 +1042,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Mercedes-Benz; model=GLE450e 4matic; alternative_vehicle_type=Plug-in Hybrid; epa_id=48675",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1067,7 +1067,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Volvo; model=S60 T8 AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=48677",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1092,7 +1092,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Volvo; model=V60 T8 AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=48678",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1117,7 +1117,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Audi; model=Q6 e-tron ultra; alternative_vehicle_type=EV; epa_id=48685",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1142,7 +1142,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Lexus; model=TX 550h Plus AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=49013",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1167,7 +1167,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Mercedes-Benz; model=S580e 4matic; alternative_vehicle_type=Plug-in Hybrid; epa_id=49021",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1192,7 +1192,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Porsche; model=Cayenne S E-Hybrid Coupe; alternative_vehicle_type=Plug-in Hybrid; epa_id=49026",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1217,7 +1217,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Vinfast; model=VF 8 Plus; alternative_vehicle_type=EV; epa_id=49087",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1242,7 +1242,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Mercedes-Benz; model=EQB 350 4matic; alternative_vehicle_type=EV; epa_id=49118",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1267,7 +1267,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Lexus; model=RX 450h Plus AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=49159",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1292,7 +1292,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Porsche; model=Panamera 4 e-Hybrid; alternative_vehicle_type=Plug-in Hybrid; epa_id=49163",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1317,7 +1317,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Honda; model=Civic 5Dr; alternative_vehicle_type=Hybrid; epa_id=49316",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1342,7 +1342,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Kia; model=Carnival Hybrid; alternative_vehicle_type=Hybrid; epa_id=49438",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1367,7 +1367,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Honda; model=CR-V AWD TrailSport; alternative_vehicle_type=Hybrid; epa_id=49489",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1392,7 +1392,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Hyundai; model=Tucson Hybrid; alternative_vehicle_type=Hybrid; epa_id=49498",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1417,7 +1417,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Kia; model=Sorento Hybrid AWD; alternative_vehicle_type=Hybrid; epa_id=49507",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1442,7 +1442,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Subaru; model=Crosstrek Hybrid AWD; alternative_vehicle_type=Hybrid; epa_id=49538",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1467,7 +1467,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=BMW; model=iX M70 (23 inch Wheels); alternative_vehicle_type=EV; epa_id=49629",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1492,7 +1492,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Chevrolet; model=Silverado EV Std Range (11kW Charger); alternative_vehicle_type=EV; epa_id=49643",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1517,7 +1517,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Genesis; model=Electrified GV70 AWD (20 inch Wheels); alternative_vehicle_type=EV; epa_id=49657",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1542,7 +1542,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Hyundai; model=Ioniq 9 AWD Performance; alternative_vehicle_type=EV; epa_id=49663",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1567,7 +1567,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Mercedes-Benz; model=AMG EQE 4matic Plus (SUV); alternative_vehicle_type=EV; epa_id=49686",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1592,7 +1592,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Mercedes-Benz; model=EQS 680 4matic Maybach (SUV); alternative_vehicle_type=EV; epa_id=49690",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1617,7 +1617,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=BMW; model=750e xDrive Sedan; alternative_vehicle_type=Plug-in Hybrid; epa_id=49759",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1642,7 +1642,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Hyundai; model=Tucson Plug-in Hybrid; alternative_vehicle_type=Plug-in Hybrid; epa_id=49764",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1667,7 +1667,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Kia; model=Sportage Plug-in Hybrid; alternative_vehicle_type=Plug-in Hybrid; epa_id=49767",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1692,7 +1692,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Lincoln; model=Corsair AWD PHEV; alternative_vehicle_type=Plug-in Hybrid; epa_id=49768",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1717,7 +1717,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Volvo; model=XC60 T8 AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=49771",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1742,7 +1742,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Volvo; model=XC90 T8 AWD; alternative_vehicle_type=Plug-in Hybrid; epa_id=49772",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1767,7 +1767,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Lexus; model=RX 350h AWD; alternative_vehicle_type=Hybrid; epa_id=49857",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1792,7 +1792,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Lexus; model=TX 500h AWD; alternative_vehicle_type=Hybrid; epa_id=49923",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1817,7 +1817,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Toyota; model=Grand Highlander Hybrid AWD; alternative_vehicle_type=Hybrid; epa_id=49935",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1842,7 +1842,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Cadillac; model=LYRIQ AWD; alternative_vehicle_type=EV; epa_id=49948",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1867,7 +1867,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Chevrolet; model=Equinox EV AWD (19 kW Charger); alternative_vehicle_type=EV; epa_id=49956",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1892,7 +1892,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Subaru; model=Solterra AWD; alternative_vehicle_type=EV; epa_id=49982",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1917,7 +1917,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Volvo; model=EX30 Twin Performance; alternative_vehicle_type=EV; epa_id=49992",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1942,7 +1942,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Mazda; model=CX-50 4WD; alternative_vehicle_type=Hybrid; epa_id=50010",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1967,7 +1967,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Acura; model=ZDX AWD; alternative_vehicle_type=EV; epa_id=50024",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -1992,7 +1992,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Acura; model=ZDX AWD Type S; alternative_vehicle_type=EV; epa_id=50025",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2017,7 +2017,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Cadillac; model=OPTIQ AWD V SERIES 19 kW charger; alternative_vehicle_type=EV; epa_id=50027",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2042,7 +2042,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Polestar; model=4 Long Range Dual Motor Performance; alternative_vehicle_type=EV; epa_id=50035",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2067,7 +2067,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Lexus; model=UX 300h AWD; alternative_vehicle_type=Hybrid; epa_id=50053",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2092,7 +2092,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Toyota; model=Crown Signia AWD; alternative_vehicle_type=Hybrid; epa_id=50076",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2117,7 +2117,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Subaru; model=Forester Hybrid AWD; alternative_vehicle_type=Hybrid; epa_id=50131",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2142,7 +2142,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=BMW; model=i4 xDrive40 Gran Coupe (19 inch Wheels); alternative_vehicle_type=EV; epa_id=50193",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2167,7 +2167,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=BMW; model=i5 M60 xDrive Sedan (21 inch Wheels); alternative_vehicle_type=EV; epa_id=50196",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2192,7 +2192,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Honda; model=Prologue FWD; alternative_vehicle_type=EV; epa_id=50208",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2217,7 +2217,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Polestar; model=3 Long Range Single Motor (21 Inch Wheels); alternative_vehicle_type=EV; epa_id=50233",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2242,7 +2242,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Volvo; model=EX90 Twin Motor Performance (21 Inch Wheels); alternative_vehicle_type=EV; epa_id=50259",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2267,7 +2267,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Mazda; model=CX-70 SC 4WD; alternative_vehicle_type=Plug-in Hybrid; epa_id=50266",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2292,7 +2292,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Mazda; model=CX-90 4WD; alternative_vehicle_type=Plug-in Hybrid; epa_id=50267",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2317,7 +2317,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2025; make=Honda; model=CR-V e-FCEV; alternative_vehicle_type=eFCV; epa_id=50270",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2342,7 +2342,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Toyota; model=bZ Woodland AWD 235/65R18; alternative_vehicle_type=EV; epa_id=50306",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2367,7 +2367,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Honda; model=CR-V e-FCEV; alternative_vehicle_type=eFCV; epa_id=50392",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2392,7 +2392,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=Hyundai; model=Palisade Hybrid FWD; alternative_vehicle_type=Hybrid; epa_id=50418",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2417,7 +2417,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=Kia; model=Telluride Hybrid FWD; alternative_vehicle_type=Hybrid; epa_id=50422",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2442,7 +2442,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2026; make=Ford; model=F150 Pickup 2WD HEV; alternative_vehicle_type=Hybrid; epa_id=50447",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2467,7 +2467,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=Land Rover; model=Range Rover SV MHEV; alternative_vehicle_type=Hybrid; epa_id=50595",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2492,7 +2492,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=Cadillac; model=LYRIQ AWD V SERIES 19kW Charger; alternative_vehicle_type=EV; epa_id=50617",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2517,7 +2517,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=Chevrolet; model=Equinox EV AWD; alternative_vehicle_type=EV; epa_id=50630",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2542,7 +2542,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=BMW; model=550e xDrive Sedan; alternative_vehicle_type=Plug-in Hybrid; epa_id=50703",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2567,7 +2567,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact year=2027; make=BMW; model=M5 Sedan; alternative_vehicle_type=Plug-in Hybrid; epa_id=50704",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2767,7 +2767,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Ford; model=Explorer HEV AWD; epa_id=41939,43291,44824,46419",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2792,7 +2792,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Ford; model=F-150 Lightning 4WD; epa_id=45318,46329,47821",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2842,7 +2842,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Ford; model=Maverick HEV FWD; epa_id=45110,46366,47364,48869,50078",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2922,7 +2922,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Genesis; model=G90 MHEV; epa_id=45283,46674,48041,49828",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -2977,7 +2977,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Genesis; model=GV80 MHEV; epa_id=48121,49579,50432",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3002,7 +3002,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Honda; model=Accord Hybrid; epa_id=39918,40943,42135,43364,44568,46364,47104,48505,50071",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3027,7 +3027,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Honda; model=Clarity Plug-in Hybrid; epa_id=39782,41183,42480,42983",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3077,7 +3077,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Hyundai; model=Elantra Hybrid; epa_id=43612,44057,45297,47349,48022,49816",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3356,7 +3356,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Hyundai; model=Ioniq 6 Long range RWD (18 inch Wheels); epa_id=46622,46957",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3458,7 +3458,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "epa_id 47532..50269; Hydrogen rows",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3583,7 +3583,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Jaguar; model=E-Pace MHEV; epa_id=43744,44261",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3683,7 +3683,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Jeep; model=Wrangler 4dr 4xe; epa_id=43801,44932,46252,47278,48664,50264",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3815,7 +3815,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Kia; model=EV9 Long Range AWD; epa_id=47452,48368,49667",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -3992,7 +3992,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Kia; model=Sorento Plug-in Hybrid; epa_id=44361,47222,47496,49012,49766",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4069,7 +4069,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Kia; model=Sportage Hybrid AWD; epa_id=45207,47380,48097,49504,50347",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4094,7 +4094,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Land Rover; model=Defender 110 MHEV; epa_id=42653,43138,43907,45106,47199,48643,48961,49591,50016",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4119,7 +4119,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Land Rover; model=Discovery MHEV; epa_id=43694,43951,45104,47265,48292,50013",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4144,7 +4144,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Lexus; model=ES 300h; epa_id=32711,34481,35716,36749,38111,39539,40713,41913,43078,44457,45862,46795,48184",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4169,7 +4169,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Lexus; model=NX 350h AWD; epa_id=44654,46149,46537,47795,49511",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4274,7 +4274,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Lucid; model=Air Pure RWD with 19 inch wheels; epa_id=47454,48374,49969",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4533,7 +4533,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Nissan; model=ARIYA FWD 63kWh; epa_id=48721,50226",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4683,7 +4683,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Polestar; model=2 Single Motor; epa_id=44928,45755",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4708,7 +4708,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Porsche; model=Cayenne e-Hybrid; epa_id=41901,42580,43775",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4918,7 +4918,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Rivian; model=R1T All-Terrain Dual Large (20in); epa_id=47861,48752,49709",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -4968,7 +4968,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Tesla; model=Model Y Long Range AWD; epa_id=42916,43406,45018,46212,47913,48770,49744",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5043,7 +5043,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Toyota; model=bZ4X; epa_id=45756,47918,49126",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5093,7 +5093,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Toyota; model=Corolla Cross Hybrid AWD; epa_id=47519,47668,48939,49870",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5198,7 +5198,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Toyota; model=Highlander Hybrid AWD; epa_id=34723,35525,37127,38425,39878,40766,42478,43141,44685,46158,47691,48981,50181",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5223,7 +5223,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "epa_id 47525..50311; Hydrogen rows",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5852,7 +5852,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Volvo; model=XC40 Recharge twin; epa_id=44450,45761,46983",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5877,7 +5877,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Volvo; model=XC60 AWD PHEV; epa_id=39382,40406,41947,43145",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",
@@ -5902,7 +5902,7 @@
         "source_families": [
           {
             "artifact_sha256": "",
-            "family": "www.fueleconomy.gov/feg/download.shtml",
+            "family": "fueleconomy.gov",
             "license": "U.S.-Government-Public-Domain",
             "locator": "exact make=Volvo; model=XC90 AWD PHEV; epa_id=37224,37703,39383,40407,41948,42804",
             "name": "U.S. EPA FuelEconomy.gov vehicle snapshot",

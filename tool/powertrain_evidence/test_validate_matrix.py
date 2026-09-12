@@ -1173,6 +1173,10 @@ class ResearchRuleTest(unittest.TestCase):
             schema.source_url_key({"url": "https://example.net/pack.csv"}),
             schema.source_url_key({"url": "https://example.net./pack.csv"}),
         )
+        self.assertEqual(
+            schema.derive_source_family({"url": "https://www.example.net./a"}),
+            schema.derive_source_family({"url": "https://example.net/b"}),
+        )
 
     def test_github_percent_encoded_org_is_one_family(self) -> None:
         """Unreserved escapes in GitHub/forge path segments are decoded.
@@ -1234,12 +1238,10 @@ class ResearchRuleTest(unittest.TestCase):
             schema.derive_source_family({"url": "https://books.example/a"}),
         )
 
-    def test_dot_segment_urls_are_one_family(self) -> None:
-        """``/x/../a`` and ``/a`` are the same non-GitHub family and URL key.
+    def test_non_forge_paths_share_publisher_family_but_keep_url_identity(self) -> None:
+        """Non-forge resources share a publisher family, not a URL key.
 
-        RFC 3986 remove_dot_segments runs before ``derive_source_family`` and
-        ``source_url_key``, so two revision pins of the same resource cannot
-        corroborate as independent families.
+        RFC 3986 remove_dot_segments still canonicalizes the separate URL key.
         """
         self.assertEqual(
             schema.derive_source_family({"url": "https://example.net/a"}),
@@ -1247,15 +1249,19 @@ class ResearchRuleTest(unittest.TestCase):
         )
         self.assertEqual(
             schema.derive_source_family({"url": "https://example.net/./a"}),
-            "example.net/a",
+            "example.net",
         )
         self.assertEqual(
             schema.source_url_key({"url": "https://example.net/a"}),
             schema.source_url_key({"url": "https://example.net/x/../a"}),
         )
-        self.assertNotEqual(
+        self.assertEqual(
             schema.derive_source_family({"url": "https://example.net/a"}),
             schema.derive_source_family({"url": "https://example.net/b"}),
+        )
+        self.assertNotEqual(
+            schema.source_url_key({"url": "https://example.net/a"}),
+            schema.source_url_key({"url": "https://example.net/b"}),
         )
         row = _valid_executable_row()
         row["source_families"] = copy.deepcopy(row["source_families"])
@@ -1265,13 +1271,89 @@ class ResearchRuleTest(unittest.TestCase):
         ):
             source["url"] = url
             source["name"] = "example.net/a"
-            source["family"] = "example.net/a"
+            source["family"] = "example.net"
             source["path"] = "a"
         issues = _issues_for(row)
         _only(
             issues,
-            "corroborating source family example.net/a equals primary family",
+            "corroborating source family example.net equals primary family",
         )
+
+    def test_non_forge_paths_do_not_corroborate_as_independent_publishers(self) -> None:
+        """Two resources on one publisher cannot qualify a community row."""
+        row = _valid_executable_row(disposition="community-qualified")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        for source, name, url, path in zip(
+            row["source_families"],
+            ("publisher export", "publisher appendix"),
+            ("https://example.net/a", "https://example.net/b"),
+            ("a", "b"),
+            strict=True,
+        ):
+            source["url"] = url
+            source["name"] = name
+            source["family"] = "example.net"
+            source["path"] = path
+
+        issues = _issues_for(row)
+
+        self.assertIn(
+            "research row fixture-valid-executable: corroborating source family "
+            "example.net equals primary family",
+            issues,
+        )
+        self.assertIn(
+            "research row fixture-valid-executable: community-qualified requires "
+            "agreeing observations from at least two distinct source families "
+            "per shipped signal",
+            issues,
+        )
+
+    def test_non_forge_ports_do_not_corroborate_as_independent_publishers(self) -> None:
+        """Different services on one hostname are still one publisher family."""
+        row = _valid_executable_row(disposition="community-qualified")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        for source, url, path in zip(
+            row["source_families"],
+            ("https://example.net:8443/a", "https://example.net:9443/b"),
+            ("a", "b"),
+            strict=True,
+        ):
+            source["url"] = url
+            source["name"] = f"publisher service {path}"
+            source["family"] = "example.net"
+            source["path"] = path
+
+        self.assertEqual(
+            schema.derive_source_family(row["source_families"][0]),
+            schema.derive_source_family(row["source_families"][1]),
+        )
+        self.assertNotEqual(
+            schema.source_url_key(row["source_families"][0]),
+            schema.source_url_key(row["source_families"][1]),
+        )
+        issues = _issues_for(row)
+        self.assertIn(
+            "research row fixture-valid-executable: corroborating source family "
+            "example.net equals primary family",
+            issues,
+        )
+        self.assertIn(
+            "research row fixture-valid-executable: community-qualified requires "
+            "agreeing observations from at least two distinct source families "
+            "per shipped signal",
+            issues,
+        )
+
+    def test_malformed_source_url_port_fails_closed(self) -> None:
+        row = _single_family_executable_row(disposition="experimental-candidate")
+        source = row["source_families"][0]
+        source["url"] = "https://example.net:not-a-port/a"
+        source["family"] = "example/src"
+
+        issues = _issues_for(row)
+
+        _only(issues, "source primary has no derivable family identity")
 
     def test_default_https_port_is_same_non_github_family(self) -> None:
         self.assertEqual(
@@ -1281,6 +1363,18 @@ class ResearchRuleTest(unittest.TestCase):
         self.assertEqual(
             schema.source_url_key({"url": "https://example.net/pack.csv"}),
             schema.source_url_key({"url": "https://example.net:443/pack.csv"}),
+        )
+        self.assertEqual(
+            schema.derive_source_family({"url": "http://example.net:80/a"}),
+            schema.derive_source_family({"url": "http://example.net/b"}),
+        )
+        self.assertEqual(
+            schema.derive_source_family({"url": "https://example.net:8443/a"}),
+            schema.derive_source_family({"url": "https://example.net/b"}),
+        )
+        self.assertNotEqual(
+            schema.source_url_key({"url": "https://example.net:8443/a"}),
+            schema.source_url_key({"url": "https://example.net/b"}),
         )
         row = _valid_executable_row()
         row["source_families"] = copy.deepcopy(row["source_families"])
@@ -1295,12 +1389,12 @@ class ResearchRuleTest(unittest.TestCase):
         ):
             source["url"] = url
             source["name"] = name
-            source["family"] = "example.net/pack.csv"
+            source["family"] = "example.net"
             source["path"] = f"{name}.csv"
         issues = _issues_for(row)
         _only(
             issues,
-            "corroborating source family example.net/pack.csv equals primary family",
+            "corroborating source family example.net equals primary family",
         )
 
     def test_same_non_github_url_is_one_family(self) -> None:
@@ -1309,10 +1403,10 @@ class ResearchRuleTest(unittest.TestCase):
         for source, name in zip(row["source_families"], ("alpha", "beta"), strict=True):
             source["url"] = "https://example.net/pack.csv"
             source["name"] = name
-            source["family"] = "example.net/pack.csv"
+            source["family"] = "example.net"
             source["path"] = f"{name}.csv"
         issues = _issues_for(row)
-        _only(issues, "corroborating source family example.net/pack.csv equals primary family")
+        _only(issues, "corroborating source family example.net equals primary family")
 
     def test_source_missing_valid_role_fails(self) -> None:
         row = _valid_executable_row()
@@ -1833,7 +1927,7 @@ class GenerateMatrixTest(unittest.TestCase):
                     "url": "https://Example.NET/pack.csv?rev=1#section",
                 }
             ),
-            "example.net/pack.csv",
+            "example.net",
         )
 
     def test_github_raw_blob_api_collapse_to_repo_family(self) -> None:

@@ -176,14 +176,17 @@ def _canonical_host(host: str) -> str:
 
 def normalize_source_url(url: str) -> str:
     """Host + path identity, ignoring revision query, fragment, trailing slash, and default ports."""
-    parts = urlsplit(url.strip())
+    try:
+        parts = urlsplit(url.strip())
+        port = parts.port
+    except ValueError:
+        return ""
     host = _idna_host((parts.hostname or "").lower().rstrip("."))
     if not host:
         host = _idna_host((parts.netloc or "").lower().rstrip("."))
         if not host:
             return ""
     else:
-        port = parts.port
         scheme = (parts.scheme or "").lower()
         if port is not None and not (
             (scheme == "https" and port == 443) or (scheme == "http" and port == 80)
@@ -193,6 +196,24 @@ def normalize_source_url(url: str) -> str:
         _decode_unreserved_path((parts.path or "").lower())
     ).rstrip("/")
     return f"{host}{path}"
+
+
+def _canonical_publisher_host(url: str) -> str:
+    """Canonical publisher hostname for a non-forge HTTP(S) source."""
+    try:
+        parts = urlsplit(url.strip())
+        # Access validates malformed and out-of-range ports even though a
+        # network service origin never creates a separate publisher family.
+        parts.port
+    except ValueError:
+        return ""
+    scheme = (parts.scheme or "").lower()
+    if scheme not in {"http", "https"}:
+        return ""
+    host = _canonical_host(parts.hostname or "")
+    if not host:
+        return ""
+    return host
 
 
 def github_org_repo(url: str) -> str | None:
@@ -264,21 +285,29 @@ def derive_source_family(source: dict[str, Any]) -> str:
     GitHub ``github.com``, ``raw.githubusercontent.com``, and
     ``api.github.com/repos`` URLs become lowercase ``org/repo`` (path and
     revision ignored). Common forges become lowercase ``host/org/repo``.
-    Other http(s) URLs become lowercase ``host`` plus path
-    (query/fragment/default port ignored). Otherwise ``name`` is used
-    (``org/repo`` if it contains a slash). Forks, copies, wrappers, derived
-    CSVs, and the same capture are one family when they share that identity.
+    Other http(s) URLs become their canonical publisher hostname (``www.`` and
+    a trailing DNS dot ignored; ports excluded); their resource path and port
+    remain available through the source URL/path keys but do not create an
+    independent family. Otherwise ``name`` is used (``org/repo`` if it
+    contains a slash). Forks, copies, wrappers, derived CSVs, and the same
+    capture are one family when they share that identity.
     """
     url = str(source.get("url") or "").strip()
+    if url:
+        try:
+            parts = urlsplit(url)
+            parts.port
+        except ValueError:
+            return ""
     github = github_org_repo(url)
     if github:
         return github
     forge = forge_org_repo(url)
     if forge:
         return forge
-    normalized = normalize_source_url(url)
-    if normalized:
-        return normalized
+    publisher = _canonical_publisher_host(url)
+    if publisher:
+        return publisher
     name = str(source.get("name") or "").strip()
     if "/" in name:
         org, repo = name.split("/", 1)
