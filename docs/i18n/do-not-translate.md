@@ -246,9 +246,9 @@ not. The line is whether the token is *addressed to a machine or a search*, or t
 - `# Telltale OBD 工作階段紀錄 v1`
 - `# Telltale 無車測試馬具證據 v1`
 - `https://play.google.com/store/apps/details?id=com.cbstudio.telltale`
-- `https://github.com/ImL1s/telltale`
-- `https://github.com/ImL1s/telltale/releases`
-- `https://iml1s.github.io/telltale/privacy.html`
+- `https://github.com/aa22396584/telltale`
+- `https://github.com/aa22396584/telltale/releases`
+- `https://aa22396584.github.io/telltale/privacy.html`
 - `https://youtu.be/Ugyg4RXhjVQ`
 - `https://s.shopee.tw/3LQPiOY7uv`
 - `https://pub.dev/packages/universal_ble`

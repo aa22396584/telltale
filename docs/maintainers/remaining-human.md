@@ -39,8 +39,10 @@ Preflight that does **not** need a Console click (current `origin/master`):
 - `applicationId` = `com.cbstudio.telltale`
 - BLE dependency is `universal_ble`; `flutter_blue_plus` is comment-only
 - Privacy policy URL in `docs/maintainers/release.md` is
-  `https://iml1s.github.io/telltale/privacy.html` and that page loads
-  (last updated 2026-09-06; in-app Shopee affiliate is tap-to-open only)
+  `https://aa22396584.github.io/telltale/privacy.html` (Codeberg Pages
+  fallback `https://iml1s.codeberg.page/telltale/privacy.html`) and that
+  page loads. Former `iml1s.github.io` is a 404 while GitHub `ImL1s` is
+  restricted. (last updated 2026-09-13; in-app Shopee affiliate is tap-to-open only)
 
 Phone Play **1.0.9 is done** (production completed / published, versionCode 10). Remaining:
 

@@ -701,7 +701,7 @@ jobs:
           python3 - <<'PY'
           import re, sys, pathlib
 
-          PREFIX = 'https://raw.githubusercontent.com/ImL1s/telltale/main/'
+          PREFIX = 'https://raw.githubusercontent.com/aa22396584/telltale/main/'
           # Which README is allowed to show which locale's assets. Assets with
           # no text in them (the icon, the video) are shared and listed as None.
           expected = {'README.md': 'en-US', 'README.zh-TW.md': 'zh-TW'}

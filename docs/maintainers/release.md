@@ -14,7 +14,7 @@
 
 ## 0. GitHub community APK 與 Google Play 是兩條發布線
 
-公開 [`ImL1s/telltale`](https://github.com/ImL1s/telltale) 的 tag 會觸發
+公開 [`aa22396584/telltale`](https://github.com/aa22396584/telltale) 的 tag 會觸發
 `.github/workflows/release.yml`，由 GitHub Actions 內的 **community key** 產生
 universal `field` APK。這把金鑰不是 Play upload key；兩邊的 APK 不能
 相互覆蓋安裝，這是故意的安全邊界。
@@ -256,7 +256,7 @@ release 打包任務丟 `GradleException` 而不是靜靜退回 debug 金鑰。�
 | | |
 |---|---|
 | applicationId | `com.cbstudio.telltale` |
-| 隱私權政策 | `https://iml1s.github.io/telltale/privacy.html` |
+| 隱私權政策 | `https://aa22396584.github.io/telltale/privacy.html`（備援：`https://iml1s.codeberg.page/telltale/privacy.html`） |
 
 隱私權政策那個網址是 **GitHub Pages**，不是 repo 裡的 `PRIVACY.md`。
 **不要改成 `github.com/.../blob/...` 形式的網址** —— Play 的抓取端讀不到 GitHub

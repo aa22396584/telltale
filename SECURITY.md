@@ -8,10 +8,10 @@ GitHub prerelease. Older builds may remain vulnerable and are not supported.
 ## Report a vulnerability privately
 
 Use the repository's **Security** tab to submit a private
-[GitHub Security Advisory](https://github.com/ImL1s/telltale/security/advisories/new)
+[GitHub Security Advisory](https://github.com/aa22396584/telltale/security/advisories/new)
 when that option is available. If it is unavailable, email the maintainer at
 **aa22306546@hotmail.com** (or via the
-[ImL1s GitHub profile](https://github.com/ImL1s)) before publishing details.
+[aa22396584 GitHub profile](https://github.com/aa22396584)) before publishing details.
 
 Include the affected version or commit, platform, impact, reproduction steps,
 and the smallest redacted evidence needed to verify the issue. Allow reasonable

@@ -145,7 +145,7 @@ Telltale 復原工作階段紀錄。
 使用固定的 Flutter 3.47.0 工具鏈：
 
 ```bash
-git clone https://github.com/ImL1s/telltale.git
+git clone https://github.com/aa22396584/telltale.git
 cd telltale
 FLUTTER="$HOME/fvm/versions/3.47.0/bin/flutter"
 "$FLUTTER" pub get
@@ -202,7 +202,7 @@ Samsung 實體手機到 Mac 的 BLE GATT 無線路徑，已搭配模擬 ELM327 p
 Telltale 不會主動上傳資料。本機診斷匯出可能含 VIN、裝置、轉接器與故障識別資訊；
 匯出與分享由你主動控制，作業系統備份也可能依裝置設定複製 App 私有資料。請閱讀
 [專案內政策](PRIVACY.md)或
-[已發布的隱私權政策](https://iml1s.github.io/telltale/privacy.html#zh)。
+[已發布的隱私權政策](https://aa22396584.github.io/telltale/privacy.html#zh)。
 
 請只在停妥時操作，或交由乘客操作。清除 DTC 前先保存診斷證據，也不要以本 App
 取代專業檢查。安全漏洞請依 [SECURITY.md](SECURITY.md) 私下回報；社群互動規範見

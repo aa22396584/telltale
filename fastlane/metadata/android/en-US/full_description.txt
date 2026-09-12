@@ -35,7 +35,7 @@ The source is on Codeberg under GPL-3.0, and you can build it yourself:
 https://codeberg.org/ImL1s/telltale
 Mirrors are also on GitLab and GitHub:
 https://gitlab.com/aa22396584/telltale
-https://github.com/ImL1s/telltale
+https://github.com/aa22396584/telltale
 
 The paid Play edition has exactly the same features — nothing is held back. It is for people who would rather not build it themselves, and for those willing to support continued development.
 

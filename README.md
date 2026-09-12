@@ -161,7 +161,7 @@ boundary.
 Use the pinned Flutter 3.47.0 toolchain:
 
 ```bash
-git clone https://github.com/ImL1s/telltale.git
+git clone https://github.com/aa22396584/telltale.git
 cd telltale
 FLUTTER="$HOME/fvm/versions/3.47.0/bin/flutter"
 "$FLUTTER" pub get
@@ -223,7 +223,7 @@ Telltale proactively uploads nothing. Local diagnostic exports can contain VIN,
 device, adapter, and fault identifiers. You control explicit export and sharing;
 operating-system backup may also copy private app data according to device
 settings. Read [the repository policy](PRIVACY.md) or the
-[published privacy policy](https://iml1s.github.io/telltale/privacy.html#en).
+[published privacy policy](https://aa22396584.github.io/telltale/privacy.html#en).
 
 Use the app only while parked or as a passenger. Save diagnostic evidence before
 clearing DTCs, and do not treat this app as a substitute for professional

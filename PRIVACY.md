@@ -67,7 +67,7 @@ Android 的資訊清單以聯集合併：只要任何一個相依套件宣告了
 ## 第三方服務
 
 **沒有。** App 沒有整合任何分析、廣告、當機回報或行銷 SDK。你可以在
-[原始碼](https://github.com/ImL1s/telltale) 的 `pubspec.yaml` 裡自行確認相依套件清單。
+[原始碼](https://github.com/aa22396584/telltale) 的 `pubspec.yaml` 裡自行確認相依套件清單。
 
 ## 兒童
 
@@ -81,7 +81,7 @@ Google Play 處理所有付款。我們看不到你的付款資訊。退款依 G
 ## 開放原始碼
 
 Telltale 以 GPL-3.0 授權開放原始碼。本政策所述的每一項，你都可以在
-[原始碼](https://github.com/ImL1s/telltale) 中自行驗證 —— 這比任何一份隱私權
+[原始碼](https://github.com/aa22396584/telltale) 中自行驗證 —— 這比任何一份隱私權
 政策的文字都更值得相信。
 
 ## 變更
@@ -90,7 +90,7 @@ Telltale 以 GPL-3.0 授權開放原始碼。本政策所述的每一項，你�
 
 ## 聯絡
 
-有疑問請開 issue：https://github.com/ImL1s/telltale/issues
+有疑問請開 issue：https://github.com/aa22396584/telltale/issues
 
 ---
 
@@ -166,7 +166,7 @@ it, so this is insurance rather than a correction.)
 ## Third-party services
 
 None. No analytics, advertising, crash reporting or marketing SDKs. You can
-verify this yourself in `pubspec.yaml` in the [source](https://github.com/ImL1s/telltale).
+verify this yourself in `pubspec.yaml` in the [source](https://github.com/aa22396584/telltale).
 
 ## Children
 
@@ -190,4 +190,4 @@ stays in the GitHub history.
 
 ## Contact
 
-https://github.com/ImL1s/telltale/issues
+https://github.com/aa22396584/telltale/issues
