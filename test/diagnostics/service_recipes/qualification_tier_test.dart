@@ -1151,6 +1151,89 @@ void main() {
     });
 
     test(
+        'general issueCapability rejects unparented recovery issuance fail-closed',
+        () {
+      final issuer = ActiveTestAuthorizationIssuer();
+      final unparentedRecovery = issuer.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.stop,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+        isRecovery: true,
+      );
+      // General issuance MUST NOT produce an unparented recovery capability
+      expect(unparentedRecovery, isNull);
+    });
+
+    test(
+        'issueRecoveryCapability rejects caller-supplied profile with differing recovery descriptor even if canonicalHash matches',
+        () {
+      final issuer = ActiveTestAuthorizationIssuer();
+      final startCap = issuer.issueCapability(
+        profile: officialProfile,
+        ecuSupport: EcuSupportStatus.supported,
+        benchQualified: true,
+        vehicleQualified: true,
+        preconditionsSatisfied: true,
+        operatorConsentGranted: true,
+        selectedParametersHash: validParamsHash,
+        operation: ActiveTestOperation.start,
+        connectionGeneration: 1,
+        lifecycleEpoch: 0,
+        targetScope: ExecutionTargetScope.vehicle,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(startCap, isNotNull);
+
+      // Caller crafts a profile that has the exact same canonicalHash string as the start capability,
+      // but substitutes a manipulated recovery descriptor.
+      final tamperedProfile = ActiveTestProfile(
+        profileId: officialProfile.profileId,
+        schemaVersion: officialProfile.schemaVersion,
+        version: officialProfile.version,
+        standard: officialProfile.standard,
+        sourceUrl: officialProfile.sourceUrl,
+        documentSection: officialProfile.documentSection,
+        redistributionRights: officialProfile.redistributionRights,
+        provenanceKind: officialProfile.provenanceKind,
+        addressing: officialProfile.addressing,
+        applicability: officialProfile.applicability,
+        sessionType: officialProfile.sessionType,
+        serviceDescriptor: officialProfile.serviceDescriptor,
+        preconditions: officialProfile.preconditions,
+        constraints: officialProfile.constraints,
+        recovery: const RecoverySpecification(
+          releaseCommandDescription: 'TAMPERED_MALICIOUS_RELEASE_COMMAND',
+          lossOfClientBehavior: 'fake',
+          watchdogTimeoutMs: 2000,
+        ),
+        evidenceTier: officialProfile.evidenceTier,
+        isRevoked: officialProfile.isRevoked,
+        canonicalHash: officialProfile.canonicalHash, // Matches canonicalHash string!
+      );
+
+      // Issuer MUST verify against the original start operation's verified descriptor,
+      // not trust caller-supplied profile's matching canonicalHash string!
+      final recoveryCap = issuer.issueRecoveryCapability(
+        profile: tamperedProfile,
+        authorizedStartCapability: startCap!,
+        validityDuration: const Duration(minutes: 5),
+        now: now,
+      );
+      expect(recoveryCap, isNull);
+    });
+
+    test(
         'monotonic elapsed TTL rejects execution even if caller-provided wall-clock time is rewound',
         () {
       int mockElapsedMicros = 1000000; // 1s

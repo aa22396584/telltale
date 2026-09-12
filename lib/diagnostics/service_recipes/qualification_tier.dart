@@ -221,9 +221,13 @@ final class ActiveTestExecutionCapability {
 
 /// Internal tracking record for issued execution capabilities.
 final class _CapabilityRecord {
-  _CapabilityRecord({required this.capability});
+  _CapabilityRecord({
+    required this.capability,
+    required this.verifiedProfile,
+  });
 
   final ActiveTestExecutionCapability capability;
+  final ActiveTestProfile verifiedProfile;
   bool isConsumed = false;
   bool isRetired = false;
   DateTime? consumedAt;
@@ -278,6 +282,12 @@ final class ActiveTestAuthorizationIssuer {
       throw ArgumentError('Recovery capability cannot grant start operation');
     }
 
+    // General issuance MUST NOT produce an unparented recovery capability!
+    // Recovery capabilities must be issued via [issueRecoveryCapability] bound to a parent.
+    if (isRecovery) {
+      return null;
+    }
+
     // Eligibility preview must affirmatively pass
     final previewVerdict = ActiveTestEligibilityGate.previewEligibility(
       profile: profile,
@@ -311,15 +321,21 @@ final class ActiveTestAuthorizationIssuer {
       expiresAt: expiresAt,
       validityDuration: validityDuration,
       issuedElapsedMicros: issuedElapsedMicros,
-      isRecovery: isRecovery,
+      isRecovery: false,
     );
 
-    _registry[capabilityId] = _CapabilityRecord(capability: capability);
+    _registry[capabilityId] = _CapabilityRecord(
+      capability: capability,
+      verifiedProfile: profile,
+    );
     return capability;
   }
 
   /// Issues a recovery capability restricted strictly to [ActiveTestOperation.stop]
   /// and immutably bound to a previously authorized [authorizedStartCapability].
+  ///
+  /// CRITICAL: Uses the verified descriptor from the original operation, and
+  /// does not trust caller-supplied profile descriptors or arbitrary canonicalHash strings.
   ActiveTestExecutionCapability? issueRecoveryCapability({
     required ActiveTestProfile profile,
     required ActiveTestExecutionCapability authorizedStartCapability,
@@ -342,12 +358,27 @@ final class ActiveTestAuthorizationIssuer {
       return null;
     }
 
-    // Must match the profile recipe and have a valid documented recovery descriptor
-    if (profile.canonicalHash.trim() !=
-        authorizedStartCapability.recipeHash.trim()) {
+    // Must use verified profile from the original start operation!
+    final verifiedStartProfile = startRecord.verifiedProfile;
+    if (!verifiedStartProfile.recovery.isValid) {
       return null;
     }
-    if (!profile.recovery.isValid) {
+
+    // Caller-supplied profile must match verified start profile's canonicalHash, AND
+    // its recovery descriptor must match the verified start operation's recovery descriptor!
+    // Cannot just trust caller-supplied canonicalHash string!
+    if (profile.canonicalHash.trim() !=
+            authorizedStartCapability.recipeHash.trim() ||
+        profile.canonicalHash.trim() !=
+            verifiedStartProfile.canonicalHash.trim()) {
+      return null;
+    }
+    if (profile.recovery.releaseCommandDescription.trim() !=
+            verifiedStartProfile.recovery.releaseCommandDescription.trim() ||
+        profile.recovery.watchdogTimeoutMs !=
+            verifiedStartProfile.recovery.watchdogTimeoutMs ||
+        profile.recovery.lossOfClientBehavior !=
+            verifiedStartProfile.recovery.lossOfClientBehavior) {
       return null;
     }
 
@@ -370,12 +401,16 @@ final class ActiveTestAuthorizationIssuer {
       validityDuration: validityDuration,
       issuedElapsedMicros: issuedElapsedMicros,
       parentCapabilityId: authorizedStartCapability.capabilityId,
-      recoveryDescriptorHash:
-          profile.recovery.releaseCommandDescription.hashCode.toRadixString(16),
+      recoveryDescriptorHash: verifiedStartProfile
+          .recovery.releaseCommandDescription.hashCode
+          .toRadixString(16),
       isRecovery: true,
     );
 
-    _registry[capabilityId] = _CapabilityRecord(capability: capability);
+    _registry[capabilityId] = _CapabilityRecord(
+      capability: capability,
+      verifiedProfile: verifiedStartProfile,
+    );
     return capability;
   }
 
