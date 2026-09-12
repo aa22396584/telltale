@@ -1011,7 +1011,7 @@
   "performanceSpeedGaugeLabel": "Speed",
   "performanceSpeedTraceHeading": "Speed trace",
   "performanceSplitsHeading": "Splits",
-  "performanceStateAborted": "The speed signal stopped — this run was not completed; below is what was recorded before it went",
+  "performanceStateAborted": "This run was not completed; below is what was recorded before it stopped",
   "@performanceStateAborted": {
     "description": "An incomplete run whose partial evidence is kept. Must never read as a finished time."
   },
