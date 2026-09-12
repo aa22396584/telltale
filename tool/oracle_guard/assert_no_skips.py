@@ -31,8 +31,6 @@ def _check_duplicate_keys(raw: str, line_no: int) -> None:
     means a report with ``"success": false, "success": true`` on the same
     object would appear valid. Detecting this requires a custom parser pass.
     """
-    import io
-
     class _DupKeyDecoder(json.JSONDecoder):
         def __init__(self, **kwargs: object) -> None:
             super().__init__(object_pairs_hook=self._pairs, **kwargs)
