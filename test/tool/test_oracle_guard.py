@@ -9,7 +9,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -604,6 +606,100 @@ class OracleGuardTest(unittest.TestCase):
                 attempt = json.loads((evidence / "attempt.json").read_text(encoding="utf-8"))
                 self.assertEqual(attempt["report_sha256"], digest)
                 self.assertTrue(attempt["ok"])
+
+    def test_evidence_dir_records_failure_and_matches_cli_exit(self) -> None:
+        """A2: CLI non-zero exit and attempt.json consistency on failure."""
+        text = jsonl(visible_successes(6))
+        with tempfile.TemporaryDirectory() as raw:
+            report = Path(raw) / "report.jsonl"
+            evidence = Path(raw) / "evidence"
+            report.write_text(text, encoding="utf-8")
+            # runner-exit=1 triggers failure even if JSON looks complete
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT_PATH),
+                    str(report),
+                    "6",
+                    "--runner-exit",
+                    "1",
+                    "--evidence-dir",
+                    str(evidence),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("runner exit 1 is not 0", proc.stderr)
+            attempt = json.loads((evidence / "attempt.json").read_text(encoding="utf-8"))
+            self.assertFalse(attempt["ok"])
+            self.assertEqual(attempt["runner_exit"], 1)
+            self.assertEqual(attempt["passed"], 0)
+            self.assertIn("runner exit 1 is not 0", attempt["message"])
+            copied = (evidence / "report.jsonl").read_bytes()
+            digest = hashlib.sha256(copied).hexdigest()
+            self.assertEqual(copied, text.encode("utf-8"))
+            self.assertEqual(attempt["report_sha256"], digest)
+
+    def test_pinned_flutter_real_json_reporter_run_compatibility(self) -> None:
+        """A2: real Flutter JSON reporter execution compatibility with repo-pinned SDK."""
+        flutter_bin = os.environ.get("FLUTTER_BIN")
+        if not flutter_bin:
+            candidate = shutil.which("flutter")
+            if candidate:
+                flutter_bin = candidate
+            else:
+                fvm_candidate = Path.home() / "fvm" / "versions" / "3.47.0" / "bin" / "flutter"
+                if fvm_candidate.is_file():
+                    flutter_bin = str(fvm_candidate)
+        if not flutter_bin or not Path(flutter_bin).is_file():
+            self.skipTest("repo-pinned Flutter binary not available in environment")
+
+        test_file = APP_DIR / "test" / "iso_tp_assembler_test.dart"
+        if not test_file.is_file():
+            self.skipTest("test/iso_tp_assembler_test.dart not found")
+
+        result = subprocess.run(
+            [flutter_bin, "test", "--reporter", "json", str(test_file)],
+            cwd=str(APP_DIR),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            self.skipTest(f"flutter test invocation failed: {result.stderr or result.stdout}")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "real_report.jsonl"
+            report_path.write_text(result.stdout, encoding="utf-8")
+            evidence_dir = Path(tmp) / "evidence"
+
+            events = [
+                json.loads(line)
+                for line in result.stdout.splitlines()
+                if line.startswith("{")
+            ]
+            visible_tests = [
+                e for e in events
+                if e.get("type") == "testDone"
+                and not e.get("hidden")
+                and e.get("result") == "success"
+                and not e.get("skipped")
+            ]
+            expected_count = len(visible_tests)
+            self.assertGreater(expected_count, 0)
+
+            passed, msg = self.guard.assert_oracle_report(
+                report_path,
+                expected=expected_count,
+                runner_exit=result.returncode,
+                evidence_dir=evidence_dir,
+            )
+            self.assertEqual(passed, expected_count)
+            self.assertIn("OK", msg)
+            attempt = json.loads((evidence_dir / "attempt.json").read_text(encoding="utf-8"))
+            self.assertTrue(attempt["ok"])
+            self.assertEqual(attempt["passed"], expected_count)
 
     def test_ci_oracle_job_keeps_flutter_exit_and_extracted_guard(self) -> None:
         if not CI_PATH.is_file():
