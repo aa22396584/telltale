@@ -2500,7 +2500,11 @@ class PollingEngine {
     final ObdResponse response;
     final clearAudit = client.beginWriteAudit();
     try {
-      response = await client.sendGlobal('04', owner: owner);
+      response = await client.sendGlobal(
+        '04',
+        owner: owner,
+        writeAudit: clearAudit,
+      );
     } on OperationRetiredException {
       // Refused before any write — the proof is where the refusal is, and the
       // caller has a type that says so.
@@ -4151,10 +4155,11 @@ class PollingEngine {
       // against a header that was selected for this batch.
       final expectedResponseId = batch.first.pid.expectedResponseId;
       response = expectedResponseId == null
-          ? await client.sendAddressed(header, command)
+          ? await client.sendAddressed(header, command, writeAudit: pollAudit)
           : await client.sendGlobal(
               command,
               header: header,
+              writeAudit: pollAudit,
               timeout: client.commandTimeout,
             );
       _noteMode01Packed(command);

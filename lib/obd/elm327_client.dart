@@ -453,6 +453,19 @@ class InitProgress {
            (note != null ? initNoteText(note) : errorCode?.description);
 }
 
+/// Write evidence for exactly one explicitly associated queued operation.
+///
+/// Tokens belong to their creating client and are single-use. The receipt is
+/// retained by its caller, not a global command history that another operation
+/// can overwrite. Transport refusal means no write; other failures stay unknown.
+final class ElmWriteAudit {
+  ElmWriteAudit._(this._client);
+
+  final Elm327Client _client;
+  final _commands = <String>{};
+  bool _claimed = false;
+}
+
 class Elm327Client {
   Elm327Client(
     this.transport, {
@@ -1210,13 +1223,24 @@ class Elm327Client {
   /// Calls are chained rather than run concurrently: the adapter has exactly
   /// one reply slot, so a second send before the first `>` arrives would make
   /// the two replies indistinguishable.
-  Future<ObdResponse> send(String command, {Duration? timeout}) {
+  Future<ObdResponse> send(
+    String command, {
+    Duration? timeout,
+    ElmWriteAudit? writeAudit,
+  }) {
+    _claimWriteAudit(writeAudit);
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
         _throwIfStickyRestoreFailed();
         if (_outOfSync) await _resync();
-        completer.complete(await _sendNow(command, timeout ?? commandTimeout));
+        completer.complete(
+          await _sendNow(
+            command,
+            timeout ?? commandTimeout,
+            writeAudit: writeAudit,
+          ),
+        );
       } on Object catch (e, st) {
         if (!completer.isCompleted) completer.completeError(e, st);
       }
@@ -1254,6 +1278,7 @@ class Elm327Client {
     String command,
     Duration timeout, {
     Object? owner,
+    ElmWriteAudit? writeAudit,
     DateTime? deadline,
     bool completesCommittedTransaction = false,
   }) async {
@@ -1347,7 +1372,8 @@ class Elm327Client {
     // Kept for the watchdog, which must not give up before the command does.
     _pendingDeadline = timeout;
     _pendingTimeout = Timer(timeout, _onCommandTimeout);
-    final previousEpoch = _writeEpochByCommand[normalised];
+    final previouslyWritten =
+        writeAudit?._commands.contains(normalised) ?? false;
     final previousRequested = requestedProtocol;
 
     try {
@@ -1371,7 +1397,7 @@ class Elm327Client {
       // 04 that may have reached the adapter must not be offered as a free
       // retry, and one that provably did not must not be locked away — so the
       // fact is recorded where it is known instead of guessed where it is not.
-      _writeEpochByCommand[normalised] = _writeAuditEpoch;
+      writeAudit?._commands.add(normalised);
       // Recorded before the write, not after it. A write that never returns is
       // the case worth having on record, and recording on success would be the
       // one time the transcript stays silent.
@@ -1396,11 +1422,7 @@ class Elm327Client {
       // the clear locked its button over a Mode 04 that provably never
       // happened and asked for a rescan that could settle nothing.
       if (e is WriteRefusedException) {
-        if (previousEpoch == null) {
-          _writeEpochByCommand.remove(normalised);
-        } else {
-          _writeEpochByCommand[normalised] = previousEpoch;
-        }
+        if (!previouslyWritten) writeAudit?._commands.remove(normalised);
         requestedProtocol = previousRequested;
       }
       final replyAlreadyArrived =
@@ -1735,7 +1757,9 @@ class Elm327Client {
     String header,
     String command, {
     Duration? timeout,
+    ElmWriteAudit? writeAudit,
   }) {
+    _claimWriteAudit(writeAudit);
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       // Whether this slot moved the adapter's header. If it did, the query
@@ -1757,7 +1781,11 @@ class Elm327Client {
           // transmission answering an engine query decodes into a plausible
           // gauge reading with nothing to indicate it.
           _currentHeader = null;
-          final ack = await _sendNow('ATSH $header', commandTimeout);
+          final ack = await _sendNow(
+            'ATSH $header',
+            commandTimeout,
+            writeAudit: writeAudit,
+          );
           // `?` is how an ELM327 refuses a header the current bus cannot take.
           // Proceeding past that sends the query on whatever header the adapter
           // really holds, and the answer comes back from the wrong ECU looking
@@ -1780,6 +1808,7 @@ class Elm327Client {
             command,
             timeout ?? commandTimeout,
             completesCommittedTransaction: committed,
+            writeAudit: writeAudit,
           ),
         );
       } on Object catch (e, st) {
@@ -1803,9 +1832,15 @@ class Elm327Client {
     String header,
     String command, {
     Duration? timeout,
+    ElmWriteAudit? writeAudit,
   }) {
     if (addressing.shouldTransmit(header)) {
-      return sendOnHeader(header, command, timeout: timeout);
+      return sendOnHeader(
+        header,
+        command,
+        timeout: timeout,
+        writeAudit: writeAudit,
+      );
     }
 
     // "Do not transmit the stored default" only means "address the engine"
@@ -1838,9 +1873,14 @@ class Elm327Client {
       // and their replies are separated by frame instead.
       final engine = addressing.engineHeader;
       if (engine != null && addressing.functionalHeader != null) {
-        return sendOnHeader(engine, command, timeout: timeout);
+        return sendOnHeader(
+          engine,
+          command,
+          timeout: timeout,
+          writeAudit: writeAudit,
+        );
       }
-      return send(command, timeout: timeout);
+      return send(command, timeout: timeout, writeAudit: writeAudit);
     }
 
     final restore = addressing.restoreHeader;
@@ -1851,6 +1891,7 @@ class Elm327Client {
       // to whichever controller the custom PID selected — a plausible number
       // on the wrong gauge is the failure this app exists to avoid, and unlike
       // a refusal it says nothing about itself.
+      _claimWriteAudit(writeAudit);
       throw UnaddressableRequestException(
         'This vehicle uses a legacy bus with no standard controller address, '
         'and the adapter is currently set to $_currentHeader. It is not known '
@@ -1859,9 +1900,14 @@ class Elm327Client {
       );
     }
     if (_currentHeader != restore.toUpperCase()) {
-      return sendOnHeader(restore, command, timeout: timeout);
+      return sendOnHeader(
+        restore,
+        command,
+        timeout: timeout,
+        writeAudit: writeAudit,
+      );
     }
-    return send(command, timeout: timeout);
+    return send(command, timeout: timeout, writeAudit: writeAudit);
   }
 
   /// Sends a request that is about the *vehicle* rather than one controller.
@@ -1887,10 +1933,12 @@ class Elm327Client {
   Future<ObdResponse> sendGlobal(
     String command, {
     Duration? timeout,
+    ElmWriteAudit? writeAudit,
     Object? owner,
     DateTime? deadline,
     String? header,
   }) {
+    _claimWriteAudit(writeAudit);
     final completer = Completer<ObdResponse>();
     _commandChain = _commandChain.then((_) async {
       try {
@@ -1958,6 +2006,7 @@ class Elm327Client {
               commandTimeout,
               owner: owner,
               deadline: deadline,
+              writeAudit: writeAudit,
             ),
           );
           try {
@@ -1967,6 +2016,7 @@ class Elm327Client {
                 timeout ?? globalTimeout,
                 owner: owner,
                 deadline: deadline,
+                writeAudit: writeAudit,
               )).withHeadersEnabled(legacyHeadersOn || legacyHeadersWereOn),
             );
           } finally {
@@ -2009,6 +2059,7 @@ class Elm327Client {
                   'ATH0',
                   commandTimeout,
                   completesCommittedTransaction: true,
+                  writeAudit: writeAudit,
                 );
               }
             }
@@ -2036,6 +2087,7 @@ class Elm327Client {
                 commandTimeout,
                 owner: owner,
                 deadline: deadline,
+                writeAudit: writeAudit,
               ),
             ) ||
             headersWereOn;
@@ -2051,6 +2103,7 @@ class Elm327Client {
             commandTimeout,
             owner: owner,
             deadline: deadline,
+            writeAudit: writeAudit,
           );
           if (!_saidOk(ack)) {
             throw TransportException(
@@ -2067,6 +2120,7 @@ class Elm327Client {
               timeout ?? globalTimeout,
               owner: owner,
               deadline: deadline,
+              writeAudit: writeAudit,
             )).withHeadersEnabled(headersOn),
           );
         } finally {
@@ -2128,6 +2182,7 @@ class Elm327Client {
                 'ATH0',
                 commandTimeout,
                 completesCommittedTransaction: true,
+                writeAudit: writeAudit,
               );
             }
           }
@@ -4198,41 +4253,29 @@ class Elm327Client {
 
   bool get canReceiveFilterRestoreFailed => _canReceiveFilterRestoreFailed;
 
-  /// Epoch of the most recent [beginWriteAudit] call.
+  /// Creates a receipt to pass explicitly to one queued send's `writeAudit`.
   ///
-  /// Each operation gets its own token. Dashboard polling and Mode 04 both
-  /// ask "did these bytes leave?", and clearing one shared set from each poll
-  /// batch would hide a Mode 04 that had already reached the adapter.
-  int _writeAuditEpoch = 0;
+  /// Merely opening a receipt does not observe other operations. A later poll
+  /// cannot hide a prior clear's receipt or borrow its still-queued command.
+  ElmWriteAudit beginWriteAudit() => ElmWriteAudit._(this);
 
-  /// Last audit epoch at which each command's bytes were handed to [transport].
-  ///
-  /// See the note in `_sendNow`: a failure *after* a write leaves the outcome
-  /// unknown, and a failure before it is proof the command never went out.
-  /// That distinction is the only honest basis for deciding whether a
-  /// state-changing request may be repeated, and until now no caller could
-  /// reach it.
-  ///
-  /// A window rather than a "last write", because the answer must survive
-  /// whatever the exchange does next: a global send is `ATH1`, `ATSH`, the
-  /// service and `ATH0`, and the header restore runs even when the service
-  /// write failed — so the last thing written is never the thing being asked
-  /// about.
-  final Map<String, int> _writeEpochByCommand = {};
+  void _claimWriteAudit(ElmWriteAudit? audit) {
+    if (audit == null) return;
+    if (!identical(audit._client, this) || audit._claimed) {
+      throw ArgumentError('A write audit belongs to one send on its client.');
+    }
+    audit._claimed = true;
+  }
 
-  /// Starts a new window for [wroteSinceAudit] and returns its token.
-  ///
-  /// A command written at epoch E is visible to every window whose token is
-  /// `<= E`. A later poll batch may open its own window without hiding a
-  /// Mode 04 that already left. A second clear still cannot inherit the first
-  /// attempt's `04`.
-  int beginWriteAudit() => ++_writeAuditEpoch;
-
-  /// Whether [command]'s bytes reached the transport in [audit]'s window.
-  bool wroteSinceAudit(int audit, String command) {
+  /// Whether [command]'s bytes reached the transport for this receipt's send.
+  /// Inspect after the associated send settles: a queued send has no evidence
+  /// yet, so `false` while it is pending is not proof it will never be written.
+  bool wroteSinceAudit(ElmWriteAudit audit, String command) {
+    if (!identical(audit._client, this)) {
+      throw ArgumentError('The write audit belongs to another client.');
+    }
     final key = command.trim().toUpperCase().replaceAll(' ', '');
-    final at = _writeEpochByCommand[key];
-    return at != null && at >= audit;
+    return audit._commands.contains(key);
   }
 
   /// The adapter's persistent configuration, read once per connection.

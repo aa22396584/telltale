@@ -416,6 +416,7 @@ final class _UnexpectedWireFailureClient extends Elm327Client {
   Future<ObdResponse> sendGlobal(
     String command, {
     Duration? timeout,
+    ElmWriteAudit? writeAudit,
     Object? owner,
     DateTime? deadline,
     String? header,
@@ -439,6 +440,7 @@ final class _KnownTransportFailureClient extends Elm327Client {
   Future<ObdResponse> sendGlobal(
     String command, {
     Duration? timeout,
+    ElmWriteAudit? writeAudit,
     Object? owner,
     DateTime? deadline,
     String? header,
