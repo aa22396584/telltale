@@ -1,3 +1,5 @@
+> **This repository has moved.** Development continues at https://github.com/aa22396584/telltale (mirrors: GitLab · Codeberg).
+
 **English** | [繁體中文](README.zh-TW.md)
 
 # Telltale
