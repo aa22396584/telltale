@@ -2,27 +2,21 @@
 
 # Telltale
 
-> **開發主頁：** https://github.com/ImL1s/telltale  
-> Issues / PR 請開在 GitHub。  
-> **鏡像備份：** [Codeberg](https://codeberg.org/ImL1s/telltale) · [GitLab](https://gitlab.com/aa22396584/telltale)
+> **開發、Issues 與 PR：** https://github.com/aa22396584/telltale  
+> **鏡像：** [GitLab](https://gitlab.com/aa22396584/telltale) · [Codeberg](https://codeberg.org/ImL1s/telltale)  
+> 舊帳號 `ImL1s` 目前受限，請改用 `aa22396584` 瀏覽與貢獻。
 
-> **GitHub 暫時異常期間**（匿名訪客可能打不開 releases、CI 徽章、raw 資源）：
-> 建議安裝請用
+> **安裝／停機指引：** 建議優先
 > **[Google Play](https://play.google.com/store/apps/details?id=com.cbstudio.telltale)**；
-> 瀏覽原始碼請以 **[Codeberg](https://codeberg.org/ImL1s/telltale)** 為主，
-> 另有 **[GitLab 鏡像](https://gitlab.com/aa22396584/telltale)**；
-> 社群 APK 請下載
-> **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
-> 或 **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
-> （GitHub Releases 可能暫時無法使用）；
+> 社群 APK **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**、
+> **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**，或
+> **[GitHub Releases（aa22396584）](https://github.com/aa22396584/telltale/releases)**；
 > [Obtainium](https://github.com/ImranR98/Obtainium) 請指向
-> `https://codeberg.org/ImL1s/telltale/releases`。
-> Issues 仍請優先開在 **GitHub**；若 GitHub 打不開，可暫時改開
-> **[GitLab Issues](https://gitlab.com/aa22396584/telltale/-/issues)**。
-> 這只是暫時停機指引，長期開發主頁仍是 GitHub。
+> `https://codeberg.org/ImL1s/telltale/releases` 或
+> `https://github.com/aa22396584/telltale/releases`。
 
-[![CI](https://github.com/ImL1s/telltale/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ImL1s/telltale/actions/workflows/ci.yml)
-[![最新版本](https://img.shields.io/github/v/release/ImL1s/telltale?include_prereleases&sort=semver&label=latest%20release)](https://github.com/ImL1s/telltale/releases)
+[![CI](https://github.com/aa22396584/telltale/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aa22396584/telltale/actions/workflows/ci.yml)
+[![最新版本](https://img.shields.io/github/v/release/aa22396584/telltale?include_prereleases&sort=semver&label=latest%20release)](https://github.com/aa22396584/telltale/releases)
 [![Google Play](https://img.shields.io/badge/Google_Play-View_listing-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.cbstudio.telltale)
 [![授權：GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
@@ -58,16 +52,15 @@ OBD2 故障診斷。它的設計原則是誠實呈現不確定性，不把格式
 它提供由 Google Play 直接安裝與更新的便利，購買也會支持持續開發與維護。
 下方的社群簽章 APK 與自行從原始碼建置仍可免費使用。
 
-**社群簽章 APK**（功能與 Play 版相同；原始碼目錄不含 release 產物）。
-GitHub 暫時異常期間，請優先使用以下鏡像：
+**社群簽章 APK**（功能與 Play 版相同；原始碼目錄不含 release 產物）：
 
-1. **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
-   （異常期間首選）· [Codeberg 全部 releases](https://codeberg.org/ImL1s/telltale/releases)
-2. **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
-3. [GitHub Releases](https://github.com/ImL1s/telltale/releases)（匿名訪客目前可能打不開）
+1. **[GitHub aa22396584 v1.0.14](https://github.com/aa22396584/telltale/releases/tag/v1.0.14)**
+2. **[Codeberg v1.0.14](https://codeberg.org/ImL1s/telltale/releases/tag/v1.0.14)**
+3. **[GitLab Releases](https://gitlab.com/aa22396584/telltale/-/releases)**
 
 打開該版本，選擇其中的 `.apk` 檔。[Obtainium](https://github.com/ImranR98/Obtainium)
-可從 `https://codeberg.org/ImL1s/telltale/releases` 追蹤更新。
+可從 `https://github.com/aa22396584/telltale/releases` 或
+`https://codeberg.org/ImL1s/telltale/releases` 追蹤更新。
 
 社群建置使用與 Google Play **不同的簽章金鑰**，無法更新 Play 版，也無法由
 Play 版直接更新。兩者互換時必須先解除安裝；解除安裝會刪除 App 本機資料，

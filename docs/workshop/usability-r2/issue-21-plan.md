@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #21
+# Implementation plan — aa22396584/telltale #21
 
-**Issue:** [#21 [WS-13][P1][USABILITY-R2] OEM 只讀 profile：自動精確匹配＋手動候選／自訂，未驗證也可用](https://github.com/ImL1s/telltale/issues/21)
+**Issue:** [#21 [WS-13][P1][USABILITY-R2] OEM 只讀 profile：自動精確匹配＋手動候選／自訂，未驗證也可用](https://github.com/aa22396584/telltale/issues/21)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-profiles` (stacked)
 **Depends on:** #9, #14. **Does not wait for** #17 UDS or all transports.
 **Files:** `app/lib/obd/pid/pid_csv.dart`, `app/lib/obd/pid/pid.dart` (provenance), connect/session generic-OBD path, `app/test/diagnostics/unverified_profile_test.dart`, `app/test/pid_csv_test.dart`, `app/test/vehicle_identity_session_test.dart`.

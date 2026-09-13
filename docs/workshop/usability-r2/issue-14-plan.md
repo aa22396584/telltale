@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #14
+# Implementation plan — aa22396584/telltale #14
 
-**Issue:** [#14 [WS-06][P0][USABILITY-R2] 風險分級操作政策：一般讀取盡量可用，寫入／致動保留安全閘](https://github.com/ImL1s/telltale/issues/14)
+**Issue:** [#14 [WS-06][P0][USABILITY-R2] 風險分級操作政策：一般讀取盡量可用，寫入／致動保留安全閘](https://github.com/aa22396584/telltale/issues/14)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-risk` (stacked on `feat/usability-r2-policy`)
 **Depends on:** #9 (model). **Does not wait for** DiagnosticLink #13 — generic ELM bounded-read + existing Mode 04 latch is the in-scope floor.
 **Files:** `app/lib/diagnostics/operation_risk.dart` (or the risk section of `availability.dart`), `app/test/diagnostics/operation_risk_test.dart`, existing `PollableServices` / `clearDtcs` / experimental probe consents.
