@@ -297,24 +297,57 @@ final class Mode08DiscoveryCodec {
       for (final obs in response.observedFrames) {
         final obsSource = obs.sourceId;
         final isTrusted = obsSource != null && BusAddressing.isLegalCanId(obsSource);
-        if (isTrusted && !perEcu.containsKey(obsSource)) {
+        if (isTrusted) {
+          if (!perEcu.containsKey(obsSource)) {
+            if (obs.payload != null) {
+              final hexBody = obs.payload!
+                  .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+                  .join('');
+              perEcu[obsSource] = _parseSinglePayload(
+                hexBody,
+                expectedBaseTid: expectedBaseTid,
+                originalRaw: hexBody,
+                sourceId: obsSource,
+              );
+            } else {
+              perEcu[obsSource] = Mode08MalformedResponse(
+                reason: Mode08MalformedReason.truncated,
+                rawResponse: obs.bytes
+                    .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+                    .join(' '),
+              );
+            }
+          }
+        } else {
+          // Untrusted / unheadered observed frame not in reassembled frames
           if (obs.payload != null) {
             final hexBody = obs.payload!
                 .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
                 .join('');
-            perEcu[obsSource] = _parseSinglePayload(
+            final parsed = _parseSinglePayload(
               hexBody,
               expectedBaseTid: expectedBaseTid,
               originalRaw: hexBody,
-              sourceId: obsSource,
+              sourceId: null,
             );
+            final alreadyAdded = anonymousResults.any((r) =>
+                r.runtimeType == parsed.runtimeType);
+            if (!alreadyAdded) {
+              anonymousResults.add(parsed);
+            }
           } else {
-            perEcu[obsSource] = Mode08MalformedResponse(
+            final malformed = Mode08MalformedResponse(
               reason: Mode08MalformedReason.truncated,
               rawResponse: obs.bytes
                   .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
                   .join(' '),
             );
+            final alreadyAdded = anonymousResults.any((r) =>
+                r is Mode08MalformedResponse &&
+                r.rawResponse == malformed.rawResponse);
+            if (!alreadyAdded) {
+              anonymousResults.add(malformed);
+            }
           }
         }
       }
@@ -336,6 +369,7 @@ final class Mode08DiscoveryCodec {
         response,
         perEcu,
         expectedBaseTid: expectedBaseTid,
+        anonymousResults: anonymousResults,
       );
 
       return _aggregateEcuResults(
@@ -400,6 +434,7 @@ final class Mode08DiscoveryCodec {
         response,
         perEcu,
         expectedBaseTid: expectedBaseTid,
+        anonymousResults: anonymousResults,
       );
 
       return _aggregateEcuResults(
@@ -410,7 +445,29 @@ final class Mode08DiscoveryCodec {
       );
     }
 
-    // 3. Adapter-level error code classifications
+    // 3. Check if rawLines has candidate response lines that should be parsed
+    final hasCandidateLines = response.rawLines.any((l) {
+      final u = l.trim().toUpperCase();
+      return u.isNotEmpty &&
+          u != 'NO DATA' &&
+          u != 'NODATA' &&
+          u != '?' &&
+          u != 'SEARCHING' &&
+          u != 'SEARCHING...' &&
+          u != 'OK' &&
+          u != 'STOPPED' &&
+          !u.startsWith('AT') &&
+          !u.startsWith('BUS INIT') &&
+          !u.startsWith('ELM327');
+    });
+    if (hasCandidateLines) {
+      return parseResponse(
+        response.rawLines.join('\n'),
+        expectedBaseTid: expectedBaseTid,
+      );
+    }
+
+    // 4. Adapter-level error code classifications
     final perEcuFromAttributed = <String, Mode08ParseResult>{};
     switch (response.errorCode) {
       case Elm327ErrorCode.noData:
@@ -489,22 +546,27 @@ final class Mode08DiscoveryCodec {
     ObdResponse response,
     Map<String, Mode08ParseResult> perEcu, {
     required int expectedBaseTid,
+    List<Mode08ParseResult>? anonymousResults,
   }) {
     // 1. Transaction-level adapter error codes
     if (response.errorCode == Elm327ErrorCode.dataError) {
       if (!perEcu.containsKey('unattributed')) {
-        perEcu['unattributed'] = Mode08MalformedResponse(
+        final malformed = Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
           rawResponse: response.rawLines.join('\n'),
         );
+        perEcu['unattributed'] = malformed;
+        anonymousResults?.add(malformed);
       }
     } else if (response.errorCode != Elm327ErrorCode.none) {
       if (!perEcu.containsKey('unattributed')) {
-        perEcu['unattributed'] = Mode08NoResponse(
+        final noResp = Mode08NoResponse(
           reason: response.errorCode == Elm327ErrorCode.noData
               ? 'NO DATA'
               : response.errorCode.name.toUpperCase(),
         );
+        perEcu['unattributed'] = noResp;
+        anonymousResults?.add(noResp);
       }
     }
 
@@ -532,12 +594,16 @@ final class Mode08DiscoveryCodec {
         final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
         final src = isTrusted ? rawSource : 'unattributed';
         if (!perEcu.containsKey(src) || perEcu[src] is! Mode08MalformedResponse) {
-          perEcu[src] = Mode08MalformedResponse(
+          final malformed = Mode08MalformedResponse(
             reason: extracted.payload == 'INVALID_HEX'
                 ? Mode08MalformedReason.invalidHex
                 : Mode08MalformedReason.truncated,
             rawResponse: trimmed,
           );
+          perEcu[src] = malformed;
+          if (!isTrusted) {
+            anonymousResults?.add(malformed);
+          }
         }
       } else {
         final rawSource = extracted.sourceId;
@@ -553,13 +619,53 @@ final class Mode08DiscoveryCodec {
           if (!perEcu.containsKey(src) || perEcu[src] is! Mode08SupportSuccess) {
             perEcu[src] = parsed;
           }
+          if (!isTrusted) {
+            final alreadyAdded = anonymousResults != null &&
+                anonymousResults.any((r) =>
+                    r is Mode08MalformedResponse &&
+                    r.rawResponse == trimmed);
+            if (!alreadyAdded) {
+              anonymousResults?.add(parsed);
+            }
+          }
         } else if (parsed is Mode08NoResponse) {
           final src = isTrusted ? rawSource : 'unattributed';
           if (!perEcu.containsKey(src)) {
             perEcu[src] = parsed;
           }
-        } else if (isTrusted && !perEcu.containsKey(rawSource)) {
-          perEcu[rawSource] = parsed;
+          if (!isTrusted) {
+            final alreadyAdded = anonymousResults != null &&
+                anonymousResults.any((r) =>
+                    r is Mode08NoResponse && r.reason == parsed.reason);
+            if (!alreadyAdded) {
+              anonymousResults?.add(parsed);
+            }
+          }
+        } else if (parsed is Mode08NegativeResponse) {
+          if (isTrusted) {
+            if (!perEcu.containsKey(rawSource)) {
+              perEcu[rawSource] = parsed;
+            }
+          } else {
+            final alreadyAdded = anonymousResults != null &&
+                anonymousResults.any((r) =>
+                    r is Mode08NegativeResponse && r.nrc == parsed.nrc);
+            if (!alreadyAdded) {
+              anonymousResults?.add(parsed);
+            }
+          }
+        } else if (isTrusted) {
+          if (!perEcu.containsKey(rawSource)) {
+            perEcu[rawSource] = parsed;
+          }
+        } else if (parsed is Mode08SupportSuccess) {
+          final alreadyAdded = anonymousResults != null &&
+              anonymousResults.any((r) =>
+                  r is Mode08SupportSuccess &&
+                  r.bitmask == parsed.bitmask);
+          if (!alreadyAdded) {
+            anonymousResults?.add(parsed);
+          }
         }
       }
     }

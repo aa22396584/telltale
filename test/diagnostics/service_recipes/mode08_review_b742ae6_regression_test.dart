@@ -13,6 +13,8 @@
 /// - End-to-end integration: Fake transport -> codec -> service -> UI partial warning displayed.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,6 +86,45 @@ class _FixedDiscoveryNotifier extends Mode08DiscoveryNotifier {
 
   @override
   Mode08DiscoveryState build() => Mode08DiscoveryState.completed(result: _result);
+}
+
+class _GateableTransport implements ObdTransport {
+  _GateableTransport(this._inner);
+  final ObdTransport _inner;
+  Completer<void>? gate;
+
+  @override
+  TransportKind get kind => _inner.kind;
+
+  @override
+  String get displayName => _inner.displayName;
+
+  @override
+  Map<String, Object> get diagnosticMetadata => _inner.diagnosticMetadata;
+
+  @override
+  bool get isConnected => _inner.isConnected;
+
+  @override
+  Stream<List<int>> get incoming => _inner.incoming;
+
+  @override
+  Stream<bool> get connectionChanges => _inner.connectionChanges;
+
+  @override
+  Future<void> connect() => _inner.connect();
+
+  @override
+  Future<void> disconnect() => _inner.disconnect();
+
+  @override
+  Future<void> write(List<int> data) async {
+    final str = String.fromCharCodes(data);
+    if (str.contains('0800') && gate != null && !gate!.isCompleted) {
+      await gate!.future;
+    }
+    await _inner.write(data);
+  }
 }
 
 void main() {
@@ -557,6 +598,123 @@ void main() {
       expect(res.ecuResults['unattributed'], isA<Mode08NoResponse>());
     });
 
+    test('Probe 8c (P1-A affirmative): affirmative frame with errorCode noData and rawLine NO DATA retains TIDs but marks isComplete: false', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.noData,
+          rawLines: ['7E8 06 48 00 80 00 00 00', 'NO DATA'],
+          frames: [
+            ObdFrame(
+              [0x06, 0x48, 0x00, 0x80, 0x00, 0x00, 0x00],
+              sourceId: '7E8',
+              payload: [0x48, 0x00, 0x80, 0x00, 0x00, 0x00],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      expect(res.supportStatus, equals(EcuSupportStatus.supported));
+      expect(res, isA<Mode08SupportSuccess>());
+      final succ = res as Mode08SupportSuccess;
+      expect(succ.supportedTids, contains(0x01));
+      expect(succ.ecuResults['7E8'], isA<Mode08SupportSuccess>());
+      expect(succ.ecuResults.containsKey('unattributed'), isTrue);
+      expect(succ.ecuResults['unattributed'], isA<Mode08NoResponse>());
+      expect(succ.anonymousResponses, isNotEmpty);
+      expect(succ.anonymousResponses.first, isA<Mode08NoResponse>());
+    });
+
+    test('Probe 8d (P1-A service): affirmative discovery with anonymous NO DATA preserves TIDs with partial warning', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': [
+                '7E8 06 48 00 80 00 00 00',
+                'NO DATA',
+              ],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportedTids, contains(0x01));
+      expect(result.isComplete, isFalse);
+      expect(result.unqueriedBlocks, contains(0x00));
+      expect(result.failureReason, contains('NO DATA'));
+      expect(result.perEcuBlockResults.containsKey('7E8'), isTrue);
+      expect(result.perEcuBlockResults.containsKey('unattributed'), isFalse);
+    });
+
+    test('Probe 8e (P1-A): negative frame with unsupported NRC 0x11 and rawLine anonymous NRC 0x22 remains unknown', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.none,
+          rawLines: ['7E8 03 7F 08 11', '7F 08 22'],
+          frames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      // Must NOT be declared unsupported when peer ECU returned conditionsNotCorrect!
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res, isA<Mode08NegativeResponse>());
+      expect((res as Mode08NegativeResponse).nrc, equals(0x22));
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
+      expect(res.anonymousResponses, isNotEmpty);
+      expect(res.anonymousResponses.first, isA<Mode08NegativeResponse>());
+      expect((res.anonymousResponses.first as Mode08NegativeResponse).nrc, equals(0x22));
+    });
+
+    test('Probe 8f (P1-A): affirmative frame with anonymous NRC 0x22 preserves TIDs with partial warning', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': [
+                '7E8 06 48 00 80 00 00 00',
+                '7F 08 22',
+              ],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportedTids, contains(0x01));
+      expect(result.isComplete, isFalse);
+      expect(result.unqueriedBlocks, contains(0x00));
+      expect(result.perEcuBlockResults.containsKey('7E8'), isTrue);
+      expect(result.perEcuBlockResults.containsKey('unattributed'), isFalse);
+    });
+
     test('Probe 9 (P1-B absence): anonymous responder in 0800 declaring 0x20 that disappears in 0820 marks isComplete: false', () async {
       final fake = FakeElm327(
         protocol: BusProtocol.can11,
@@ -587,6 +745,7 @@ void main() {
       // Missing responder in 0820 MUST mark isComplete: false!
       expect(result.isComplete, isFalse, reason: 'ECU A missing in block 0x20 must prevent isComplete');
       expect(result.unqueriedBlocks, contains(0x20));
+      expect(result.failureReason, contains('來源歸因'));
       // Must NOT fabricate ecu_0 or ecu_1 in perEcuBlockResults!
       expect(result.perEcuBlockResults.containsKey('ecu_0'), isFalse);
       expect(result.perEcuBlockResults.containsKey('ecu_1'), isFalse);
@@ -622,6 +781,8 @@ void main() {
       expect(result.supportedTids, containsAll([0x01, 0x02, 0x21, 0x22]));
       // Multi-node anonymous responses cannot confirm cross-block coverage without headers:
       expect(result.isComplete, isFalse);
+      expect(result.unqueriedBlocks, contains(0x20));
+      expect(result.failureReason, contains('來源歸因'));
       expect(result.perEcuBlockResults.containsKey('ecu_0'), isFalse);
       expect(result.perEcuBlockResults.containsKey('ecu_1'), isFalse);
     });
@@ -660,7 +821,9 @@ void main() {
         ],
       );
 
-      final client = await _connect(fake);
+      final gate = Completer<void>();
+      final transport = _GateableTransport(fake)..gate = gate;
+      final client = await _connect(transport);
 
       final sessionController = _TestConnectedCanSession(client);
 
@@ -687,11 +850,17 @@ void main() {
       final discoverButton = find.byKey(const Key('mode08_discovery_button'));
       expect(discoverButton, findsOneWidget);
 
-      // Tap the discover button and wait for completion
+      // Tap the discover button
       await tester.tap(discoverButton);
       await tester.pump();
+
+      final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
+      expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Release gate and wait for discovery execution to complete
+      gate.complete();
       await tester.runAsync(() async {
-        final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
         while (!container.read(mode08DiscoveryStateProvider).isCompleted &&
                !container.read(mode08DiscoveryStateProvider).isFailed &&
                !container.read(mode08DiscoveryStateProvider).isRefused) {
@@ -742,7 +911,9 @@ void main() {
         ],
       );
 
-      final client = await _connect(fake);
+      final gate = Completer<void>();
+      final transport = _GateableTransport(fake)..gate = gate;
+      final client = await _connect(transport);
 
       final sessionController = _TestConnectedCanSession(client);
 
@@ -769,8 +940,14 @@ void main() {
 
       await tester.tap(discoverButton);
       await tester.pump();
+
+      // Verify "discovering" (探索中) state immediately after tap
+      final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
+      expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      gate.complete();
       await tester.runAsync(() async {
-        final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
         while (!container.read(mode08DiscoveryStateProvider).isFailed &&
                !container.read(mode08DiscoveryStateProvider).isCompleted &&
                !container.read(mode08DiscoveryStateProvider).isRefused) {

@@ -132,7 +132,6 @@ abstract final class Mode08DiscoveryService {
     bool isComplete = true;
     String? overallFailureReason;
     int currentBaseTid = 0x00;
-    int? previousBlockAnonymousCount;
     bool hadMultipleAnonymousResponses = false;
 
     final stopwatch = Stopwatch()..start();
@@ -294,19 +293,10 @@ abstract final class Mode08DiscoveryService {
         }
       }
 
-      // Check anonymous responses tracking
+      // Check anonymous responses tracking: anonymous responses cannot establish cross-block identity
       if (blockAnonymous.length > 1) {
         hadMultipleAnonymousResponses = true;
       }
-      if (previousBlockAnonymousCount != null && previousBlockAnonymousCount > 0) {
-        if (blockAnonymous.length < previousBlockAnonymousCount) {
-          isComplete = false;
-          uncompletedBlocks.add(currentBaseTid);
-          overallFailureReason ??=
-              'Anonymous response missing on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} (expected $previousBlockAnonymousCount, received ${blockAnonymous.length})';
-        }
-      }
-      previousBlockAnonymousCount = blockAnonymous.length;
 
       // Check if any responding node in this block had an unknown/damaged/unattributed outcome
       for (final entry in blockEcuResults.entries) {
@@ -383,6 +373,7 @@ abstract final class Mode08DiscoveryService {
             }
             if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
               isComplete = false;
+              uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
               overallFailureReason ??=
                   '來源歸因與覆蓋完整度未確認（無標頭回應無法建立跨區塊 ECU 身分）';
             }
@@ -404,6 +395,9 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
+            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+              uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
+            }
             overallFailureReason ??=
                 'Negative response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} (NRC 0x${negative.nrc.toRadixString(16).padLeft(2, '0').toUpperCase()})';
             return Mode08DiscoveryResult(
@@ -435,6 +429,9 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
+            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+              uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
+            }
             overallFailureReason ??=
                 'No response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${noResponse.reason}';
             return Mode08DiscoveryResult(
@@ -464,6 +461,9 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
+            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+              uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
+            }
             overallFailureReason ??=
                 'Malformed response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${malformed.reason}';
             return Mode08DiscoveryResult(
@@ -511,6 +511,7 @@ abstract final class Mode08DiscoveryService {
 
     if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
       isComplete = false;
+      uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
       overallFailureReason ??=
           '來源歸因與覆蓋完整度未確認（無標頭回應無法建立跨區塊 ECU 身分）';
     }
