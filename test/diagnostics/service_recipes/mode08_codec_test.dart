@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:torque_obd/diagnostics/service_recipes/active_test_profile.dart';
 import 'package:torque_obd/diagnostics/service_recipes/mode08_codec.dart';
 import 'package:torque_obd/diagnostics/service_recipes/qualification_tier.dart';
+import 'package:torque_obd/obd/elm327_client.dart';
 
 void main() {
   group('Mode08DiscoveryCodec non-actuating capability discovery', () {
@@ -456,6 +457,99 @@ void main() {
       expect(res1.runtimeType, equals(res2.runtimeType));
       expect(res1, isA<Mode08MalformedResponse>());
       expect(res2, isA<Mode08MalformedResponse>());
+    });
+
+    test('rejects spaced CAN frame declaring ISO-TP Single Frame length 0 as invalid framing', () {
+      final res = Mode08DiscoveryCodec.parseResponse(
+        '7E8 00 48 00 80 00 00 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(res, isA<Mode08MalformedResponse>());
+      expect((res as Mode08MalformedResponse).reason,
+          equals(Mode08MalformedReason.truncated));
+    });
+
+    test('multi-ECU response aggregation is order-invariant (11 vs silence/NO DATA) and stays unknown', () {
+      // 7E8 is unsupported (0x11), but 7E9 was silent (NO DATA).
+      // Since 7E9 status is unknown, vehicle support CANNOT be declared unsupported!
+      final res1 = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          rawLines: ['7E8 03 7F 08 11'],
+          frames: [
+            ObdFrame([0x7F, 0x08, 0x11], sourceId: '7E8'),
+          ],
+          attributedSources: {'7E8', '7E9'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+      expect(res1.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res1.ecuResults.containsKey('7E8'), isTrue);
+      expect(res1.ecuResults.containsKey('7E9'), isTrue);
+    });
+
+    test('parseObdResponse populates ecuResults from observedFrames and attributedSources on dataError', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.dataError,
+          rawLines: [
+            '7E8 06 48 00 80 00 00 00',
+            '7E9 damaged...',
+          ],
+          observedFrames: [
+            ObdFrame(
+              [0x06, 0x48, 0x00, 0x80, 0x00, 0x00, 0x00],
+              sourceId: '7E8',
+              payload: [0x48, 0x00, 0x80, 0x00, 0x00, 0x00],
+            ),
+            ObdFrame(
+              [0xAA, 0xBB],
+              sourceId: '7E9',
+              payload: null,
+            ),
+          ],
+          attributedSources: {'7E8', '7E9'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      expect(res, isA<Mode08SupportSuccess>());
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08SupportSuccess>());
+      expect(res.ecuResults.containsKey('7E9'), isTrue);
+      expect(res.ecuResults['7E9'], isA<Mode08MalformedResponse>());
+    });
+
+    test('parseObdResponse returns malformed when 7E8 is unsupported and 7E9 is damaged on dataError', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.dataError,
+          rawLines: [
+            '7E8 03 7F 08 11',
+            '7E9 damaged...',
+          ],
+          observedFrames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+            ObdFrame(
+              [0xAA, 0xBB],
+              sourceId: '7E9',
+              payload: null,
+            ),
+          ],
+          attributedSources: {'7E8', '7E9'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      expect(res, isA<Mode08MalformedResponse>());
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
+      expect(res.ecuResults.containsKey('7E9'), isTrue);
+      expect(res.ecuResults['7E9'], isA<Mode08MalformedResponse>());
     });
   });
 }

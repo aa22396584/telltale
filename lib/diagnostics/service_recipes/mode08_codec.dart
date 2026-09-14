@@ -49,6 +49,9 @@ sealed class Mode08ParseResult {
 
   /// Per-ECU parsed outcomes (keyed by ECU identifier such as '7E8', '7E9').
   Map<String, Mode08ParseResult> get ecuResults => const {};
+
+  /// Capability support status represented by this parsed response.
+  EcuSupportStatus get supportStatus;
 }
 
 /// Successfully decoded supported TID bitmask.
@@ -79,6 +82,9 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
   @override
   final Map<String, Mode08ParseResult> ecuResults;
 
+  @override
+  EcuSupportStatus get supportStatus => EcuSupportStatus.supported;
+
   bool isTidSupported(int tid) => supportedTids.contains(tid);
 }
 
@@ -101,6 +107,9 @@ final class Mode08ExecutionSuccess extends Mode08ParseResult {
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
 }
 
 /// Negative response returned by ECU (e.g. 7F 08 11, 7F 08 12, 7F 08 22, 7F 08 31).
@@ -144,6 +153,7 @@ final class Mode08NegativeResponse extends Mode08ParseResult {
   /// 0x22 (conditionsNotCorrect), 0x21 (busy), 0x33 (security), 0x78 (pending),
   /// and other unexpected NRCs fallback to [EcuSupportStatus.unknown]
   /// because the service itself may exist on the ECU.
+  @override
   EcuSupportStatus get supportStatus =>
       isUnsupported ? EcuSupportStatus.unsupported : EcuSupportStatus.unknown;
 }
@@ -161,6 +171,7 @@ final class Mode08NoResponse extends Mode08ParseResult {
   final Map<String, Mode08ParseResult> ecuResults;
 
   /// CRITICAL: Silence or NO DATA is unknown, NOT unsupported.
+  @override
   EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
 }
 
@@ -177,6 +188,9 @@ final class Mode08MalformedResponse extends Mode08ParseResult {
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
 }
 
 /// Non-actuating Mode 08 discovery codec.
@@ -229,28 +243,7 @@ final class Mode08DiscoveryCodec {
       throw ProhibitedActiveProbeException(expectedBaseTid);
     }
 
-    // 1. Adapter-level error code classifications from Elm327 parser
-    switch (response.errorCode) {
-      case Elm327ErrorCode.noData:
-        return const Mode08NoResponse(reason: 'NO DATA');
-      case Elm327ErrorCode.canError:
-      case Elm327ErrorCode.busError:
-      case Elm327ErrorCode.busBusy:
-      case Elm327ErrorCode.busInitError:
-      case Elm327ErrorCode.unableToConnect:
-      case Elm327ErrorCode.stopped:
-        return Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
-      case Elm327ErrorCode.dataError:
-        return Mode08MalformedResponse(
-          reason: Mode08MalformedReason.invalidHex,
-          rawResponse: response.rawLines.join('\n'),
-        );
-      case Elm327ErrorCode.none:
-      default:
-        break;
-    }
-
-    // 2. Parse from structured frames if available
+    // 1. Structured reassembled frames if available
     if (response.frames.isNotEmpty) {
       final perEcu = <String, Mode08ParseResult>{};
       for (var i = 0; i < response.frames.length; i++) {
@@ -268,6 +261,39 @@ final class Mode08DiscoveryCodec {
         );
         perEcu[sourceId] = parsed;
       }
+
+      // Check observed frames for peer damage or unreassembled responses
+      for (final obs in response.observedFrames) {
+        final obsSource = obs.sourceId;
+        if (obsSource != null && !perEcu.containsKey(obsSource)) {
+          if (obs.payload != null) {
+            final hexBody = obs.payload!
+                .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+                .join('');
+            perEcu[obsSource] = _parseSinglePayload(
+              hexBody,
+              expectedBaseTid: expectedBaseTid,
+              originalRaw: hexBody,
+              sourceId: obsSource,
+            );
+          } else {
+            perEcu[obsSource] = Mode08MalformedResponse(
+              reason: Mode08MalformedReason.truncated,
+              rawResponse: obs.bytes
+                  .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+                  .join(' '),
+            );
+          }
+        }
+      }
+
+      // Include attributed sources that did not yield a valid frame
+      for (final src in response.attributedSources) {
+        if (!perEcu.containsKey(src)) {
+          perEcu[src] = Mode08NoResponse(reason: 'NO DATA from $src');
+        }
+      }
+
       return _aggregateEcuResults(
         perEcu,
         expectedBaseTid: expectedBaseTid,
@@ -275,7 +301,109 @@ final class Mode08DiscoveryCodec {
       );
     }
 
-    // 3. Fall back to raw response lines
+    // 2. Observed frames if reassembled frames are empty (e.g. dataError or partial damage)
+    if (response.observedFrames.isNotEmpty) {
+      final perEcu = <String, Mode08ParseResult>{};
+      for (var i = 0; i < response.observedFrames.length; i++) {
+        final obs = response.observedFrames[i];
+        final sourceId = obs.sourceId ?? 'ecu_$i';
+        if (obs.payload != null) {
+          final hexBody = obs.payload!
+              .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+              .join('');
+          perEcu[sourceId] = _parseSinglePayload(
+            hexBody,
+            expectedBaseTid: expectedBaseTid,
+            originalRaw: hexBody,
+            sourceId: sourceId,
+          );
+        } else {
+          perEcu[sourceId] = Mode08MalformedResponse(
+            reason: Mode08MalformedReason.truncated,
+            rawResponse: obs.bytes
+                .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+                .join(' '),
+          );
+        }
+      }
+
+      for (final src in response.attributedSources) {
+        if (!perEcu.containsKey(src)) {
+          perEcu[src] = (response.errorCode == Elm327ErrorCode.dataError)
+              ? const Mode08MalformedResponse(
+                  reason: Mode08MalformedReason.invalidHex,
+                  rawResponse: '',
+                )
+              : Mode08NoResponse(reason: 'NO DATA from $src');
+        }
+      }
+
+      return _aggregateEcuResults(
+        perEcu,
+        expectedBaseTid: expectedBaseTid,
+        defaultNoResponseReason: 'NO DATA across all nodes',
+      );
+    }
+
+    // 3. Adapter-level error code classifications
+    final perEcuFromAttributed = <String, Mode08ParseResult>{};
+    switch (response.errorCode) {
+      case Elm327ErrorCode.noData:
+        for (final src in response.attributedSources) {
+          perEcuFromAttributed[src] = const Mode08NoResponse(reason: 'NO DATA');
+        }
+        return Mode08NoResponse(
+          reason: 'NO DATA',
+          ecuResults: perEcuFromAttributed.isNotEmpty
+              ? Map.unmodifiable(perEcuFromAttributed)
+              : const {},
+        );
+      case Elm327ErrorCode.canError:
+      case Elm327ErrorCode.busError:
+      case Elm327ErrorCode.busBusy:
+      case Elm327ErrorCode.busInitError:
+      case Elm327ErrorCode.unableToConnect:
+      case Elm327ErrorCode.stopped:
+        for (final src in response.attributedSources) {
+          perEcuFromAttributed[src] =
+              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
+        }
+        return Mode08NoResponse(
+          reason: response.errorCode.name.toUpperCase(),
+          ecuResults: perEcuFromAttributed.isNotEmpty
+              ? Map.unmodifiable(perEcuFromAttributed)
+              : const {},
+        );
+      case Elm327ErrorCode.dataError:
+        for (final src in response.attributedSources) {
+          perEcuFromAttributed[src] = Mode08MalformedResponse(
+            reason: Mode08MalformedReason.invalidHex,
+            rawResponse: response.rawLines.join('\n'),
+          );
+        }
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidHex,
+          rawResponse: response.rawLines.join('\n'),
+          ecuResults: perEcuFromAttributed.isNotEmpty
+              ? Map.unmodifiable(perEcuFromAttributed)
+              : const {},
+        );
+      case Elm327ErrorCode.none:
+        break;
+      default:
+        for (final src in response.attributedSources) {
+          perEcuFromAttributed[src] =
+              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
+        }
+        return Mode08NoResponse(
+          reason: response.errorCode.name.toUpperCase(),
+          ecuResults: perEcuFromAttributed.isNotEmpty
+              ? Map.unmodifiable(perEcuFromAttributed)
+              : const {},
+        );
+    }
+
+    // 4. Fall back to raw response lines
     return parseResponse(
       response.rawLines.join('\n'),
       expectedBaseTid: expectedBaseTid,
@@ -392,24 +520,28 @@ final class Mode08DiscoveryCodec {
               tokens[2].length == 2 &&
               tokens[2].startsWith('0')) {
             final declaredLen = int.tryParse(tokens[2].substring(1, 2), radix: 16) ?? 0;
-            final payloadTokens = tokens.sublist(3);
-            if (payloadTokens.length >= declaredLen) {
-              return (
-                sourceId: sourceId,
-                payload: payloadTokens.take(declaredLen).join(''),
-              );
+            if (declaredLen > 0) {
+              final payloadTokens = tokens.sublist(3);
+              if (payloadTokens.length >= declaredLen) {
+                return (
+                  sourceId: sourceId,
+                  payload: payloadTokens.take(declaredLen).join(''),
+                );
+              }
             }
           }
 
           // Single Frame ISO-TP PCI byte at tokens[1] (e.g. 06 or 03)
           if (tokens[1].length == 2 && tokens[1].startsWith('0')) {
             final declaredLen = int.tryParse(tokens[1].substring(1, 2), radix: 16) ?? 0;
-            final payloadTokens = tokens.sublist(2);
-            if (payloadTokens.length >= declaredLen) {
-              return (
-                sourceId: sourceId,
-                payload: payloadTokens.take(declaredLen).join(''),
-              );
+            if (declaredLen > 0) {
+              final payloadTokens = tokens.sublist(2);
+              if (payloadTokens.length >= declaredLen) {
+                return (
+                  sourceId: sourceId,
+                  payload: payloadTokens.take(declaredLen).join(''),
+                );
+              }
             }
           }
 
@@ -743,6 +875,17 @@ final class Mode08DiscoveryCodec {
         );
       }
 
+      // If any ECU had no response (silence, timeout, NO DATA), that node's capability is unknown.
+      // A vehicle where one node says unsupported but another node was silent CANNOT be declared unsupported!
+      if (noResponses.isNotEmpty) {
+        final sortedKeys = noResponses.keys.toList()..sort();
+        final chosen = noResponses[sortedKeys.first]!;
+        return Mode08NoResponse(
+          reason: chosen.reason,
+          ecuResults: Map.unmodifiable(perEcu),
+        );
+      }
+
       // All responding ECUs returned affirmative unsupported NRCs (0x11, 0x12, 0x31)
       final unsupportedNegatives = negatives.values.toList()
         ..sort((a, b) => a.nrc.compareTo(b.nrc));
@@ -750,6 +893,15 @@ final class Mode08DiscoveryCodec {
       return Mode08NegativeResponse(
         originalSid: chosen.originalSid,
         nrc: chosen.nrc,
+        ecuResults: Map.unmodifiable(perEcu),
+      );
+    }
+
+    if (noResponses.isNotEmpty) {
+      final sortedKeys = noResponses.keys.toList()..sort();
+      final chosen = noResponses[sortedKeys.first]!;
+      return Mode08NoResponse(
+        reason: chosen.reason,
         ecuResults: Map.unmodifiable(perEcu),
       );
     }
