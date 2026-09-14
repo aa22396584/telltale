@@ -2610,11 +2610,20 @@ class Elm327Client {
         configuration?.hostVisibleIsoTp ?? hostVisibleIsoTp;
     final effectiveBudget =
         configuration?.budget ?? budget ?? const Duration(seconds: 8);
-    final initialBudget = deadline != null
-        ? deadline.difference(DateTime.now())
-        : effectiveBudget;
-    final totalBudget =
-        initialBudget.isNegative ? Duration.zero : initialBudget;
+    final Duration totalBudget;
+    if (deadline != null) {
+      final deadlineRemaining = deadline.difference(DateTime.now());
+      if (deadlineRemaining.isNegative || effectiveBudget.isNegative) {
+        totalBudget = Duration.zero;
+      } else if (deadlineRemaining < effectiveBudget) {
+        totalBudget = deadlineRemaining;
+      } else {
+        totalBudget = effectiveBudget;
+      }
+    } else {
+      totalBudget =
+          effectiveBudget.isNegative ? Duration.zero : effectiveBudget;
+    }
     final effectiveDrainBudget = configuration?.drainBudget ??
         drainBudget ??
         const Duration(milliseconds: 500);

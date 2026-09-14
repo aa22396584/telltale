@@ -1149,11 +1149,123 @@ void main() {
       );
 
       // Even though wall-clock deadline has 10 minutes left, monotonic elapsed time (150ms) exceeded budget (100ms)
-      expect(
+      await expectLater(
         transactionFuture,
         throwsA(isA<TimeoutException>()),
         reason: 'Monotonic budget must enforce timeout independent of wall-clock deadline',
       );
+
+      await client.disconnect();
+    });
+
+    test('short budget with far deadline bounds total budget by budget rather than deadline', () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      var elapsedMs = 0;
+      final config = ElmCompositeTransactionConfig(
+        budget: const Duration(milliseconds: 100),
+        elapsedProvider: () => Duration(milliseconds: elapsedMs),
+      );
+      final farDeadline = DateTime.now().add(const Duration(minutes: 10));
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          // Advance monotonic time past the 100ms budget, well within the 10-minute deadline
+          elapsedMs = 150;
+          return await send('010C');
+        },
+        configuration: config,
+        deadline: farDeadline,
+      );
+
+      await expectLater(
+        txFuture,
+        throwsA(isA<TimeoutException>()),
+        reason: 'Short budget must enforce timeout even when deadline is far in the future',
+      );
+
+      await client.disconnect();
+    });
+
+    test('long budget with near deadline bounds total budget by deadline rather than budget', () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      var elapsedMs = 0;
+      final config = ElmCompositeTransactionConfig(
+        budget: const Duration(minutes: 10),
+        elapsedProvider: () => Duration(milliseconds: elapsedMs),
+      );
+      final nearDeadline = DateTime.now().add(const Duration(milliseconds: 100));
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          // Advance monotonic time past the ~100ms deadline, well within the 10-minute budget
+          elapsedMs = 150;
+          return await send('010C');
+        },
+        configuration: config,
+        deadline: nearDeadline,
+      );
+
+      await expectLater(
+        txFuture,
+        throwsA(isA<TimeoutException>()),
+        reason: 'Near deadline must enforce timeout even when budget is 10 minutes',
+      );
+
+      await client.disconnect();
+    });
+
+    test('zero budget with future deadline times out immediately before action runs', () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      final farDeadline = DateTime.now().add(const Duration(minutes: 10));
+      var actionRan = false;
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          actionRan = true;
+          return await send('010C');
+        },
+        budget: Duration.zero,
+        deadline: farDeadline,
+      );
+
+      await expectLater(
+        txFuture,
+        throwsA(isA<TimeoutException>()),
+        reason: 'Zero budget must time out immediately despite future deadline',
+      );
+      expect(actionRan, isFalse, reason: 'Action must not run when budget is zero');
+
+      await client.disconnect();
+    });
+
+    test('expired deadline with positive budget times out immediately before action runs', () async {
+      final transport = _can11Transport();
+      final client = await _connect(transport);
+
+      final pastDeadline = DateTime.now().subtract(const Duration(seconds: 1));
+      var actionRan = false;
+
+      final txFuture = client.runTransacted(
+        (send) async {
+          actionRan = true;
+          return await send('010C');
+        },
+        budget: const Duration(seconds: 10),
+        deadline: pastDeadline,
+      );
+
+      await expectLater(
+        txFuture,
+        throwsA(isA<TimeoutException>()),
+        reason: 'Expired deadline must time out immediately despite positive budget',
+      );
+      expect(actionRan, isFalse, reason: 'Action must not run when deadline is expired');
 
       await client.disconnect();
     });
