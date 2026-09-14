@@ -275,7 +275,8 @@ String? transportIssueText(
   TransportIssue.extendedAddressingUnavailable ||
   TransportIssue.rawIsoTpModeUnavailable ||
   TransportIssue.canPriorityUnavailable ||
-  TransportIssue.canReceiveFilterUnavailable => null,
+  TransportIssue.canReceiveFilterUnavailable ||
+  TransportIssue.headerRestoreFailed => null,
 };
 
 /// The line under a busy spinner, or null when there is nothing to say.

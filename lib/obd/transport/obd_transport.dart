@@ -298,6 +298,10 @@ enum TransportIssue {
   /// CAN receive filter (`ATCRA` with an address) was refused, or bare
   /// `ATCRA` could not clear the filter after it had been claimed.
   canReceiveFilterUnavailable,
+
+  /// The adapter refused or failed `ATSH` to restore the previous header
+  /// after a transaction. Ordinary polling is refused until reconnect.
+  headerRestoreFailed,
 }
 
 /// Raised for link-level failures.

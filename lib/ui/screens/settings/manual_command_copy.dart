@@ -144,6 +144,8 @@ String? commandIssueText(
       l10n.settingsManualCommandCanPriorityUnavailable,
     TransportIssue.canReceiveFilterUnavailable =>
       l10n.settingsManualCommandCanReceiveFilterUnavailable,
+    TransportIssue.headerRestoreFailed =>
+      l10n.settingsManualCommandHeaderRestoreFailed,
 
     // The connect screen's half, delegated rather than duplicated.
     TransportIssue.cancelled ||
