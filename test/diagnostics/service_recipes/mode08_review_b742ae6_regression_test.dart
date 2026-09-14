@@ -54,6 +54,30 @@ class _ConnectedCanSession extends ObdSession {
       );
 }
 
+class _TestConnectedCanSession extends ObdSession {
+  _TestConnectedCanSession(this._testClient);
+  final Elm327Client _testClient;
+
+  @override
+  Elm327Client? get client => _testClient;
+
+  @override
+  int get generation => 1;
+
+  @override
+  ObdConnectionState build() => const ObdConnectionState(
+        phase: ConnectionPhase.connected,
+        protocol: 'ISO 15765-4 (CAN 11/500)',
+      );
+
+  void triggerDisconnect() {
+    state = const ObdConnectionState(
+      phase: ConnectionPhase.disconnected,
+      protocol: '',
+    );
+  }
+}
+
 class _FixedDiscoveryNotifier extends Mode08DiscoveryNotifier {
   _FixedDiscoveryNotifier(this._result);
   final Mode08DiscoveryResult _result;
@@ -473,6 +497,294 @@ void main() {
 
       expect(find.byKey(const Key('mode08_discovery_partial_warning')), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    });
+
+    // -------------------------------------------------------------------------
+    // Additional P1 Probes: Anonymous NO DATA (P1-A) and Anonymous Source (P1-B)
+    // -------------------------------------------------------------------------
+
+    test('Probe 8 (P1-A): negative frame with errorCode noData and rawLine NO DATA remains unknown', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.noData,
+          rawLines: ['7E8 03 7F 08 11', 'NO DATA'],
+          frames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      // Must NOT be upgraded to unsupported!
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res, isA<Mode08NoResponse>());
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
+      expect((res.ecuResults['7E8'] as Mode08NegativeResponse).nrc, equals(0x11));
+      expect(res.ecuResults.containsKey('unattributed'), isTrue);
+      expect(res.ecuResults['unattributed'], isA<Mode08NoResponse>());
+    });
+
+    test('Probe 8b (P1-A): negative frame with errorCode none but rawLine NO DATA remains unknown', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.none,
+          rawLines: ['7E8 03 7F 08 11', 'NO DATA'],
+          frames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res, isA<Mode08NoResponse>());
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
+      expect(res.ecuResults.containsKey('unattributed'), isTrue);
+      expect(res.ecuResults['unattributed'], isA<Mode08NoResponse>());
+    });
+
+    test('Probe 9 (P1-B absence): anonymous responder in 0800 declaring 0x20 that disappears in 0820 marks isComplete: false', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': [
+                '48 00 80 00 00 01',
+                '48 00 40 00 00 00',
+              ],
+              '0820': [
+                '48 20 00 00 00 00',
+              ],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportedTids, contains(0x01));
+      expect(result.supportedTids, contains(0x02));
+      // Missing responder in 0820 MUST mark isComplete: false!
+      expect(result.isComplete, isFalse, reason: 'ECU A missing in block 0x20 must prevent isComplete');
+      expect(result.unqueriedBlocks, contains(0x20));
+      // Must NOT fabricate ecu_0 or ecu_1 in perEcuBlockResults!
+      expect(result.perEcuBlockResults.containsKey('ecu_0'), isFalse);
+      expect(result.perEcuBlockResults.containsKey('ecu_1'), isFalse);
+    });
+
+    test('Probe 10 (P1-B order swap): anonymous responses swapping order across blocks does not cross-merge and marks isComplete: false', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': [
+                '48 00 80 00 00 01',
+                '48 00 40 00 00 01',
+              ],
+              '0820': [
+                '48 20 80 00 00 00',
+                '48 20 40 00 00 00',
+              ],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      // Union of TIDs from both blocks and both nodes:
+      expect(result.supportedTids, containsAll([0x01, 0x02, 0x21, 0x22]));
+      // Multi-node anonymous responses cannot confirm cross-block coverage without headers:
+      expect(result.isComplete, isFalse);
+      expect(result.perEcuBlockResults.containsKey('ecu_0'), isFalse);
+      expect(result.perEcuBlockResults.containsKey('ecu_1'), isFalse);
+    });
+
+    // -------------------------------------------------------------------------
+    // True Interactive Flow: Real Mode08DiscoveryNotifier (Section 3)
+    // -------------------------------------------------------------------------
+
+    testWidgets('Interactive E2E 1: real Mode08DiscoveryNotifier tap discover -> discovering -> partial warning & TID -> disconnect resets UI', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 00'], // Supports TID 01
+            },
+          ),
+          FakeEcu(
+            name: 'TCM',
+            requestId: '7E1',
+            responseId: '7E9',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['7F 08 22'], // NRC 0x22 (conditionsNotCorrect -> unknown)
+            },
+          ),
+        ],
+      );
+
+      final client = await _connect(fake);
+
+      final sessionController = _TestConnectedCanSession(client);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            obdSessionProvider.overrideWith(() => sessionController),
+            serviceRecipesMatrixProvider.overrideWith(
+              (ref) async => CandidateMatrix(entries: const []),
+            ),
+            // Use real Mode08DiscoveryNotifier!
+            mode08DiscoveryStateProvider.overrideWith(Mode08DiscoveryNotifier.new),
+          ],
+          child: localizedMaterialApp(
+            home: const Scaffold(body: ServiceRecipesScreen()),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify button exists and is clickable
+      final discoverButton = find.byKey(const Key('mode08_discovery_button'));
+      expect(discoverButton, findsOneWidget);
+
+      // Tap the discover button and wait for completion
+      await tester.tap(discoverButton);
+      await tester.pump();
+      await tester.runAsync(() async {
+        final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
+        while (!container.read(mode08DiscoveryStateProvider).isCompleted &&
+               !container.read(mode08DiscoveryStateProvider).isFailed &&
+               !container.read(mode08DiscoveryStateProvider).isRefused) {
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+      });
+      await tester.pumpAndSettle();
+
+      // Verify partial warning is displayed
+      expect(find.byKey(const Key('mode08_discovery_partial_warning')), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+
+      // Verify discovered TID 01 is displayed
+      expect(find.byKey(const Key('mode08_discovery_success_container')), findsOneWidget);
+      expect(find.textContaining(r'$01'), findsWidgets);
+
+      // Now disconnect the session and verify state is cleared
+      sessionController.triggerDisconnect();
+      await tester.pumpAndSettle();
+
+      // Verify partial warning and result container are removed
+      expect(find.byKey(const Key('mode08_discovery_partial_warning')), findsNothing);
+      expect(find.byKey(const Key('mode08_discovery_success_container')), findsNothing);
+
+      await tester.runAsync(() async {
+        await client.disconnect();
+      });
+    });
+
+    testWidgets('Interactive E2E 2: real Mode08DiscoveryNotifier handles transport failure during discovery gracefully', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['BUS ERROR'],
+            },
+          ),
+        ],
+      );
+
+      final client = await _connect(fake);
+
+      final sessionController = _TestConnectedCanSession(client);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            obdSessionProvider.overrideWith(() => sessionController),
+            serviceRecipesMatrixProvider.overrideWith(
+              (ref) async => CandidateMatrix(entries: const []),
+            ),
+            mode08DiscoveryStateProvider.overrideWith(Mode08DiscoveryNotifier.new),
+          ],
+          child: localizedMaterialApp(
+            home: const Scaffold(body: ServiceRecipesScreen()),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final discoverButton = find.byKey(const Key('mode08_discovery_button'));
+      expect(discoverButton, findsOneWidget);
+
+      await tester.tap(discoverButton);
+      await tester.pump();
+      await tester.runAsync(() async {
+        final container = ProviderScope.containerOf(tester.element(find.byType(ServiceRecipesScreen)));
+        while (!container.read(mode08DiscoveryStateProvider).isFailed &&
+               !container.read(mode08DiscoveryStateProvider).isCompleted &&
+               !container.read(mode08DiscoveryStateProvider).isRefused) {
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+      });
+      await tester.pumpAndSettle();
+
+      // Should transition to failed, rendering failure container with error icon
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+      await tester.runAsync(() async {
+        await client.disconnect();
+      });
     });
   });
 }

@@ -50,6 +50,9 @@ sealed class Mode08ParseResult {
   /// Per-ECU parsed outcomes (keyed by ECU identifier such as '7E8', '7E9').
   Map<String, Mode08ParseResult> get ecuResults => const {};
 
+  /// Anonymous parsed outcomes that lacked a trusted CAN source identifier.
+  List<Mode08ParseResult> get anonymousResponses => const [];
+
   /// Capability support status represented by this parsed response.
   EcuSupportStatus get supportStatus;
 }
@@ -62,6 +65,7 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
     required Iterable<int> supportedTids,
     required this.hasNextBlock,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   }) : supportedTids = Set.unmodifiable(supportedTids);
 
   const Mode08SupportSuccess.constant({
@@ -70,6 +74,7 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
     required this.supportedTids,
     required this.hasNextBlock,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   });
 
   final int baseTid;
@@ -83,6 +88,9 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
   final Map<String, Mode08ParseResult> ecuResults;
 
   @override
+  final List<Mode08ParseResult> anonymousResponses;
+
+  @override
   EcuSupportStatus get supportStatus => EcuSupportStatus.supported;
 
   bool isTidSupported(int tid) => supportedTids.contains(tid);
@@ -94,12 +102,14 @@ final class Mode08ExecutionSuccess extends Mode08ParseResult {
     required this.testId,
     required Iterable<int> dataBytes,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   }) : dataBytes = List.unmodifiable(dataBytes);
 
   const Mode08ExecutionSuccess.constant({
     required this.testId,
     required this.dataBytes,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   });
 
   final int testId;
@@ -107,6 +117,9 @@ final class Mode08ExecutionSuccess extends Mode08ParseResult {
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  final List<Mode08ParseResult> anonymousResponses;
 
   @override
   EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
@@ -118,6 +131,7 @@ final class Mode08NegativeResponse extends Mode08ParseResult {
     required this.originalSid,
     required this.nrc,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   });
 
   final int originalSid;
@@ -125,6 +139,9 @@ final class Mode08NegativeResponse extends Mode08ParseResult {
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  final List<Mode08ParseResult> anonymousResponses;
 
   /// Whether the NRC affirmatively indicates that the service, subfunction, or TID is unsupported.
   ///
@@ -163,12 +180,16 @@ final class Mode08NoResponse extends Mode08ParseResult {
   const Mode08NoResponse({
     required this.reason,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   });
 
   final String reason;
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  final List<Mode08ParseResult> anonymousResponses;
 
   /// CRITICAL: Silence or NO DATA is unknown, NOT unsupported.
   @override
@@ -181,6 +202,7 @@ final class Mode08MalformedResponse extends Mode08ParseResult {
     required this.reason,
     required this.rawResponse,
     this.ecuResults = const {},
+    this.anonymousResponses = const [],
   });
 
   final Mode08MalformedReason reason;
@@ -188,6 +210,9 @@ final class Mode08MalformedResponse extends Mode08ParseResult {
 
   @override
   final Map<String, Mode08ParseResult> ecuResults;
+
+  @override
+  final List<Mode08ParseResult> anonymousResponses;
 
   @override
   EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
@@ -246,9 +271,11 @@ final class Mode08DiscoveryCodec {
     // 1. Structured reassembled frames if available
     if (response.frames.isNotEmpty) {
       final perEcu = <String, Mode08ParseResult>{};
+      final anonymousResults = <Mode08ParseResult>[];
       for (var i = 0; i < response.frames.length; i++) {
         final frame = response.frames[i];
-        final sourceId = frame.sourceId ?? 'ecu_$i';
+        final rawSource = frame.sourceId;
+        final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
         final body = frame.payload ?? frame.bytes;
         final hexBody = body
             .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
@@ -257,15 +284,20 @@ final class Mode08DiscoveryCodec {
           hexBody,
           expectedBaseTid: expectedBaseTid,
           originalRaw: hexBody,
-          sourceId: sourceId,
+          sourceId: isTrusted ? rawSource : null,
         );
-        perEcu[sourceId] = parsed;
+        if (isTrusted) {
+          perEcu[rawSource] = parsed;
+        } else {
+          anonymousResults.add(parsed);
+        }
       }
 
       // Check observed frames for peer damage or unreassembled responses
       for (final obs in response.observedFrames) {
         final obsSource = obs.sourceId;
-        if (obsSource != null && !perEcu.containsKey(obsSource)) {
+        final isTrusted = obsSource != null && BusAddressing.isLegalCanId(obsSource);
+        if (isTrusted && !perEcu.containsKey(obsSource)) {
           if (obs.payload != null) {
             final hexBody = obs.payload!
                 .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
@@ -308,6 +340,7 @@ final class Mode08DiscoveryCodec {
 
       return _aggregateEcuResults(
         perEcu,
+        anonymousResponses: anonymousResults,
         expectedBaseTid: expectedBaseTid,
         defaultNoResponseReason: 'NO DATA across all nodes',
       );
@@ -316,26 +349,38 @@ final class Mode08DiscoveryCodec {
     // 2. Observed frames if reassembled frames are empty (e.g. dataError or partial damage)
     if (response.observedFrames.isNotEmpty) {
       final perEcu = <String, Mode08ParseResult>{};
+      final anonymousResults = <Mode08ParseResult>[];
       for (var i = 0; i < response.observedFrames.length; i++) {
         final obs = response.observedFrames[i];
-        final sourceId = obs.sourceId ?? 'ecu_$i';
+        final rawSource = obs.sourceId;
+        final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
         if (obs.payload != null) {
           final hexBody = obs.payload!
               .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
               .join('');
-          perEcu[sourceId] = _parseSinglePayload(
+          final parsed = _parseSinglePayload(
             hexBody,
             expectedBaseTid: expectedBaseTid,
             originalRaw: hexBody,
-            sourceId: sourceId,
+            sourceId: isTrusted ? rawSource : null,
           );
+          if (isTrusted) {
+            perEcu[rawSource] = parsed;
+          } else {
+            anonymousResults.add(parsed);
+          }
         } else {
-          perEcu[sourceId] = Mode08MalformedResponse(
+          final malformed = Mode08MalformedResponse(
             reason: Mode08MalformedReason.truncated,
             rawResponse: obs.bytes
                 .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
                 .join(' '),
           );
+          if (isTrusted) {
+            perEcu[rawSource] = malformed;
+          } else {
+            anonymousResults.add(malformed);
+          }
         }
       }
 
@@ -359,6 +404,7 @@ final class Mode08DiscoveryCodec {
 
       return _aggregateEcuResults(
         perEcu,
+        anonymousResponses: anonymousResults,
         expectedBaseTid: expectedBaseTid,
         defaultNoResponseReason: 'NO DATA across all nodes',
       );
@@ -452,11 +498,12 @@ final class Mode08DiscoveryCodec {
           rawResponse: response.rawLines.join('\n'),
         );
       }
-    } else if (response.errorCode != Elm327ErrorCode.none &&
-        response.errorCode != Elm327ErrorCode.noData) {
+    } else if (response.errorCode != Elm327ErrorCode.none) {
       if (!perEcu.containsKey('unattributed')) {
         perEcu['unattributed'] = Mode08NoResponse(
-          reason: response.errorCode.name.toUpperCase(),
+          reason: response.errorCode == Elm327ErrorCode.noData
+              ? 'NO DATA'
+              : response.errorCode.name.toUpperCase(),
         );
       }
     }
@@ -481,7 +528,9 @@ final class Mode08DiscoveryCodec {
       final extracted = _extractPayloadAndSource(trimmed);
       if (extracted.payload == 'INVALID_HEX' ||
           extracted.payload == 'INVALID_FRAMING') {
-        final src = extracted.sourceId ?? 'unattributed';
+        final rawSource = extracted.sourceId;
+        final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
+        final src = isTrusted ? rawSource : 'unattributed';
         if (!perEcu.containsKey(src) || perEcu[src] is! Mode08MalformedResponse) {
           perEcu[src] = Mode08MalformedResponse(
             reason: extracted.payload == 'INVALID_HEX'
@@ -491,19 +540,26 @@ final class Mode08DiscoveryCodec {
           );
         }
       } else {
+        final rawSource = extracted.sourceId;
+        final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
         final parsed = _parseSinglePayload(
           extracted.payload,
           expectedBaseTid: expectedBaseTid,
           originalRaw: trimmed,
-          sourceId: extracted.sourceId,
+          sourceId: isTrusted ? rawSource : null,
         );
         if (parsed is Mode08MalformedResponse) {
-          final src = extracted.sourceId ?? 'unattributed';
+          final src = isTrusted ? rawSource : 'unattributed';
           if (!perEcu.containsKey(src) || perEcu[src] is! Mode08SupportSuccess) {
             perEcu[src] = parsed;
           }
-        } else if (extracted.sourceId != null && !perEcu.containsKey(extracted.sourceId)) {
-          perEcu[extracted.sourceId!] = parsed;
+        } else if (parsed is Mode08NoResponse) {
+          final src = isTrusted ? rawSource : 'unattributed';
+          if (!perEcu.containsKey(src)) {
+            perEcu[src] = parsed;
+          }
+        } else if (isTrusted && !perEcu.containsKey(rawSource)) {
+          perEcu[rawSource] = parsed;
         }
       }
     }
@@ -539,20 +595,27 @@ final class Mode08DiscoveryCodec {
 
     if (lines.length > 1) {
       final perEcu = <String, Mode08ParseResult>{};
+      final anonymousResults = <Mode08ParseResult>[];
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         final extracted = _extractPayloadAndSource(line);
-        final sourceId = extracted.sourceId ?? 'ecu_$i';
+        final rawSource = extracted.sourceId;
+        final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
         final parsed = _parseSinglePayload(
           extracted.payload,
           expectedBaseTid: expectedBaseTid,
           originalRaw: line,
-          sourceId: sourceId,
+          sourceId: isTrusted ? rawSource : null,
         );
-        perEcu[sourceId] = parsed;
+        if (isTrusted) {
+          perEcu[rawSource] = parsed;
+        } else {
+          anonymousResults.add(parsed);
+        }
       }
       return _aggregateEcuResults(
         perEcu,
+        anonymousResponses: anonymousResults,
         expectedBaseTid: expectedBaseTid,
         defaultNoResponseReason: 'NO DATA across all nodes',
       );
@@ -560,11 +623,22 @@ final class Mode08DiscoveryCodec {
 
     final singleLine = lines.first;
     final extracted = _extractPayloadAndSource(singleLine);
-    return _parseSinglePayload(
+    final rawSource = extracted.sourceId;
+    final isTrusted = rawSource != null && BusAddressing.isLegalCanId(rawSource);
+    final parsed = _parseSinglePayload(
       extracted.payload,
       expectedBaseTid: expectedBaseTid,
       originalRaw: singleLine,
-      sourceId: extracted.sourceId,
+      sourceId: isTrusted ? rawSource : null,
+    );
+    if (isTrusted) {
+      return parsed;
+    }
+    return _aggregateEcuResults(
+      const {},
+      anonymousResponses: [parsed],
+      expectedBaseTid: expectedBaseTid,
+      defaultNoResponseReason: 'NO DATA across all nodes',
     );
   }
 
@@ -901,10 +975,11 @@ final class Mode08DiscoveryCodec {
   ///    d. Deterministic tie-breaking is enforced by sorting so arrival order never affects the verdict.
   static Mode08ParseResult _aggregateEcuResults(
     Map<String, Mode08ParseResult> perEcu, {
+    List<Mode08ParseResult> anonymousResponses = const [],
     required int expectedBaseTid,
     required String defaultNoResponseReason,
   }) {
-    if (perEcu.isEmpty) {
+    if (perEcu.isEmpty && anonymousResponses.isEmpty) {
       return const Mode08NoResponse(reason: 'EMPTY');
     }
 
@@ -928,11 +1003,35 @@ final class Mode08DiscoveryCodec {
       }
     }
 
-    // 1. Affirmative support across any ECU takes precedence
-    if (successes.isNotEmpty) {
+    final anonymousSuccesses = <Mode08SupportSuccess>[];
+    final anonymousNegatives = <Mode08NegativeResponse>[];
+    final anonymousMalformed = <Mode08MalformedResponse>[];
+    final anonymousNoResponses = <Mode08NoResponse>[];
+
+    for (final anon in anonymousResponses) {
+      switch (anon) {
+        case Mode08SupportSuccess s:
+          anonymousSuccesses.add(s);
+        case Mode08NegativeResponse n:
+          anonymousNegatives.add(n);
+        case Mode08MalformedResponse m:
+          anonymousMalformed.add(m);
+        case Mode08NoResponse nr:
+          anonymousNoResponses.add(nr);
+        case Mode08ExecutionSuccess _:
+          break;
+      }
+    }
+
+    // 1. Affirmative support across any ECU or anonymous response takes precedence
+    if (successes.isNotEmpty || anonymousSuccesses.isNotEmpty) {
       final allTids = <int>{};
       bool hasNextBlock = false;
       for (final s in successes.values) {
+        allTids.addAll(s.supportedTids);
+        if (s.hasNextBlock) hasNextBlock = true;
+      }
+      for (final s in anonymousSuccesses) {
         allTids.addAll(s.supportedTids);
         if (s.hasNextBlock) hasNextBlock = true;
       }
@@ -951,24 +1050,37 @@ final class Mode08DiscoveryCodec {
         supportedTids: allTids,
         hasNextBlock: hasNextBlock,
         ecuResults: Map.unmodifiable(perEcu),
+        anonymousResponses: List.unmodifiable(anonymousResponses),
       );
     }
 
     // 2. Corrupted data prevents determining unsupported status
-    if (malformed.isNotEmpty) {
-      final sortedKeys = malformed.keys.toList()..sort();
-      final chosen = malformed[sortedKeys.first]!;
-      return Mode08MalformedResponse(
-        reason: chosen.reason,
-        rawResponse: chosen.rawResponse,
-        ecuResults: Map.unmodifiable(perEcu),
-      );
+    if (malformed.isNotEmpty || anonymousMalformed.isNotEmpty) {
+      if (malformed.isNotEmpty) {
+        final sortedKeys = malformed.keys.toList()..sort();
+        final chosen = malformed[sortedKeys.first]!;
+        return Mode08MalformedResponse(
+          reason: chosen.reason,
+          rawResponse: chosen.rawResponse,
+          ecuResults: Map.unmodifiable(perEcu),
+          anonymousResponses: List.unmodifiable(anonymousResponses),
+        );
+      } else {
+        final chosen = anonymousMalformed.first;
+        return Mode08MalformedResponse(
+          reason: chosen.reason,
+          rawResponse: chosen.rawResponse,
+          ecuResults: Map.unmodifiable(perEcu),
+          anonymousResponses: List.unmodifiable(anonymousResponses),
+        );
+      }
     }
 
     // 3. Negative responses: conditionsNotCorrect/busy/unknown take precedence over unsupported
-    if (negatives.isNotEmpty) {
+    if (negatives.isNotEmpty || anonymousNegatives.isNotEmpty) {
+      final allNegatives = [...negatives.values, ...anonymousNegatives];
       final unknownNegatives =
-          negatives.values.where((n) => !n.isUnsupported).toList();
+          allNegatives.where((n) => !n.isUnsupported).toList();
       if (unknownNegatives.isNotEmpty) {
         unknownNegatives.sort((a, b) => a.nrc.compareTo(b.nrc));
         final chosen = unknownNegatives.first;
@@ -976,43 +1088,65 @@ final class Mode08DiscoveryCodec {
           originalSid: chosen.originalSid,
           nrc: chosen.nrc,
           ecuResults: Map.unmodifiable(perEcu),
+          anonymousResponses: List.unmodifiable(anonymousResponses),
         );
       }
 
-      // If any ECU had no response (silence, timeout, NO DATA), that node's capability is unknown.
+      // If any ECU or anonymous response had no response (silence, timeout, NO DATA), that node's capability is unknown.
       // A vehicle where one node says unsupported but another node was silent CANNOT be declared unsupported!
+      if (noResponses.isNotEmpty || anonymousNoResponses.isNotEmpty) {
+        if (noResponses.isNotEmpty) {
+          final sortedKeys = noResponses.keys.toList()..sort();
+          final chosen = noResponses[sortedKeys.first]!;
+          return Mode08NoResponse(
+            reason: chosen.reason,
+            ecuResults: Map.unmodifiable(perEcu),
+            anonymousResponses: List.unmodifiable(anonymousResponses),
+          );
+        } else {
+          final chosen = anonymousNoResponses.first;
+          return Mode08NoResponse(
+            reason: chosen.reason,
+            ecuResults: Map.unmodifiable(perEcu),
+            anonymousResponses: List.unmodifiable(anonymousResponses),
+          );
+        }
+      }
+
+      // All responding ECUs returned affirmative unsupported NRCs (0x11, 0x12, 0x31)
+      allNegatives.sort((a, b) => a.nrc.compareTo(b.nrc));
+      final chosen = allNegatives.first;
+      return Mode08NegativeResponse(
+        originalSid: chosen.originalSid,
+        nrc: chosen.nrc,
+        ecuResults: Map.unmodifiable(perEcu),
+        anonymousResponses: List.unmodifiable(anonymousResponses),
+      );
+    }
+
+    if (noResponses.isNotEmpty || anonymousNoResponses.isNotEmpty) {
       if (noResponses.isNotEmpty) {
         final sortedKeys = noResponses.keys.toList()..sort();
         final chosen = noResponses[sortedKeys.first]!;
         return Mode08NoResponse(
           reason: chosen.reason,
           ecuResults: Map.unmodifiable(perEcu),
+          anonymousResponses: List.unmodifiable(anonymousResponses),
+        );
+      } else {
+        final chosen = anonymousNoResponses.first;
+        return Mode08NoResponse(
+          reason: chosen.reason,
+          ecuResults: Map.unmodifiable(perEcu),
+          anonymousResponses: List.unmodifiable(anonymousResponses),
         );
       }
-
-      // All responding ECUs returned affirmative unsupported NRCs (0x11, 0x12, 0x31)
-      final unsupportedNegatives = negatives.values.toList()
-        ..sort((a, b) => a.nrc.compareTo(b.nrc));
-      final chosen = unsupportedNegatives.first;
-      return Mode08NegativeResponse(
-        originalSid: chosen.originalSid,
-        nrc: chosen.nrc,
-        ecuResults: Map.unmodifiable(perEcu),
-      );
-    }
-
-    if (noResponses.isNotEmpty) {
-      final sortedKeys = noResponses.keys.toList()..sort();
-      final chosen = noResponses[sortedKeys.first]!;
-      return Mode08NoResponse(
-        reason: chosen.reason,
-        ecuResults: Map.unmodifiable(perEcu),
-      );
     }
 
     return Mode08NoResponse(
       reason: defaultNoResponseReason,
       ecuResults: Map.unmodifiable(perEcu),
+      anonymousResponses: List.unmodifiable(anonymousResponses),
     );
   }
 

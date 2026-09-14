@@ -132,6 +132,8 @@ abstract final class Mode08DiscoveryService {
     bool isComplete = true;
     String? overallFailureReason;
     int currentBaseTid = 0x00;
+    int? previousBlockAnonymousCount;
+    bool hadMultipleAnonymousResponses = false;
 
     final stopwatch = Stopwatch()..start();
 
@@ -268,8 +270,12 @@ abstract final class Mode08DiscoveryService {
       );
 
       final blockEcuResults = parseResult.ecuResults;
+      final blockAnonymous = parseResult.anonymousResponses;
+
       for (final entry in blockEcuResults.entries) {
-        perEcuBlockResults.putIfAbsent(entry.key, () => {})[currentBaseTid] = entry.value;
+        if (entry.key != 'unattributed') {
+          perEcuBlockResults.putIfAbsent(entry.key, () => {})[currentBaseTid] = entry.value;
+        }
       }
 
       // Check if any ECU that was expected to respond in this block is missing
@@ -287,6 +293,20 @@ abstract final class Mode08DiscoveryService {
           }
         }
       }
+
+      // Check anonymous responses tracking
+      if (blockAnonymous.length > 1) {
+        hadMultipleAnonymousResponses = true;
+      }
+      if (previousBlockAnonymousCount != null && previousBlockAnonymousCount > 0) {
+        if (blockAnonymous.length < previousBlockAnonymousCount) {
+          isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
+          overallFailureReason ??=
+              'Anonymous response missing on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} (expected $previousBlockAnonymousCount, received ${blockAnonymous.length})';
+        }
+      }
+      previousBlockAnonymousCount = blockAnonymous.length;
 
       // Check if any responding node in this block had an unknown/damaged/unattributed outcome
       for (final entry in blockEcuResults.entries) {
@@ -316,10 +336,31 @@ abstract final class Mode08DiscoveryService {
         }
       }
 
+      for (final anon in blockAnonymous) {
+        if (anon is Mode08MalformedResponse) {
+          isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
+          overallFailureReason ??=
+              'Malformed anonymous response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${anon.reason}';
+        } else if (anon is Mode08NoResponse) {
+          isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
+          overallFailureReason ??=
+              'No response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${anon.reason}';
+        } else if (anon is Mode08NegativeResponse) {
+          if (!anon.isUnsupported) {
+            isComplete = false;
+            uncompletedBlocks.add(currentBaseTid);
+            overallFailureReason ??=
+                'Negative response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} (NRC 0x${anon.nrc.toRadixString(16).padLeft(2, '0').toUpperCase()})';
+          }
+        }
+      }
+
       // Update ECU pending next blocks: clear current block expectations, then record any new declarations
       ecuExpectedNextBlocks.removeWhere((_, expectedTid) => expectedTid == currentBaseTid);
       for (final entry in blockEcuResults.entries) {
-        if (entry.value is Mode08SupportSuccess) {
+        if (entry.key != 'unattributed' && entry.value is Mode08SupportSuccess) {
           final succ = entry.value as Mode08SupportSuccess;
           if (succ.hasNextBlock && currentBaseTid < 0xE0) {
             ecuExpectedNextBlocks[entry.key] = currentBaseTid + 0x20;
@@ -339,6 +380,11 @@ abstract final class Mode08DiscoveryService {
               uncompletedBlocks.addAll(ecuExpectedNextBlocks.values);
               overallFailureReason ??=
                   'Unqueried blocks announced by ECUs: ${ecuExpectedNextBlocks.values.map((b) => '0x${b.toRadixString(16).padLeft(2, '0').toUpperCase()}').join(', ')}';
+            }
+            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+              isComplete = false;
+              overallFailureReason ??=
+                  '來源歸因與覆蓋完整度未確認（無標頭回應無法建立跨區塊 ECU 身分）';
             }
             return Mode08DiscoveryResult(
               isSupported: true,
@@ -461,6 +507,12 @@ abstract final class Mode08DiscoveryService {
       uncompletedBlocks.addAll(ecuExpectedNextBlocks.values);
       overallFailureReason ??=
           'Unqueried blocks announced by ECUs: ${ecuExpectedNextBlocks.values.map((b) => '0x${b.toRadixString(16).padLeft(2, '0').toUpperCase()}').join(', ')}';
+    }
+
+    if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+      isComplete = false;
+      overallFailureReason ??=
+          '來源歸因與覆蓋完整度未確認（無標頭回應無法建立跨區塊 ECU 身分）';
     }
 
     return Mode08DiscoveryResult(
