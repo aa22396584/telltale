@@ -290,9 +290,21 @@ final class Mode08DiscoveryCodec {
       // Include attributed sources that did not yield a valid frame
       for (final src in response.attributedSources) {
         if (!perEcu.containsKey(src)) {
-          perEcu[src] = Mode08NoResponse(reason: 'NO DATA from $src');
+          perEcu[src] = (response.errorCode == Elm327ErrorCode.dataError)
+              ? const Mode08MalformedResponse(
+                  reason: Mode08MalformedReason.invalidHex,
+                  rawResponse: '',
+                )
+              : Mode08NoResponse(reason: 'NO DATA from $src');
         }
       }
+
+      // Preserve unattributed damage and transaction-level error codes
+      _captureUnattributedDamageAndErrors(
+        response,
+        perEcu,
+        expectedBaseTid: expectedBaseTid,
+      );
 
       return _aggregateEcuResults(
         perEcu,
@@ -338,6 +350,13 @@ final class Mode08DiscoveryCodec {
         }
       }
 
+      // Preserve unattributed damage and transaction-level error codes
+      _captureUnattributedDamageAndErrors(
+        response,
+        perEcu,
+        expectedBaseTid: expectedBaseTid,
+      );
+
       return _aggregateEcuResults(
         perEcu,
         expectedBaseTid: expectedBaseTid,
@@ -381,6 +400,12 @@ final class Mode08DiscoveryCodec {
             rawResponse: response.rawLines.join('\n'),
           );
         }
+        if (perEcuFromAttributed.isEmpty) {
+          perEcuFromAttributed['unattributed'] = Mode08MalformedResponse(
+            reason: Mode08MalformedReason.invalidHex,
+            rawResponse: response.rawLines.join('\n'),
+          );
+        }
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
           rawResponse: response.rawLines.join('\n'),
@@ -393,6 +418,10 @@ final class Mode08DiscoveryCodec {
       default:
         for (final src in response.attributedSources) {
           perEcuFromAttributed[src] =
+              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
+        }
+        if (perEcuFromAttributed.isEmpty) {
+          perEcuFromAttributed['unattributed'] =
               Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
         }
         return Mode08NoResponse(
@@ -408,6 +437,61 @@ final class Mode08DiscoveryCodec {
       response.rawLines.join('\n'),
       expectedBaseTid: expectedBaseTid,
     );
+  }
+
+  static void _captureUnattributedDamageAndErrors(
+    ObdResponse response,
+    Map<String, Mode08ParseResult> perEcu, {
+    required int expectedBaseTid,
+  }) {
+    // 1. Transaction-level adapter error codes
+    if (response.errorCode == Elm327ErrorCode.dataError) {
+      if (!perEcu.containsKey('unattributed')) {
+        perEcu['unattributed'] = Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidHex,
+          rawResponse: response.rawLines.join('\n'),
+        );
+      }
+    } else if (response.errorCode != Elm327ErrorCode.none &&
+        response.errorCode != Elm327ErrorCode.noData) {
+      if (!perEcu.containsKey('unattributed')) {
+        perEcu['unattributed'] = Mode08NoResponse(
+          reason: response.errorCode.name.toUpperCase(),
+        );
+      }
+    }
+
+    // 2. Scan raw lines for unattributed damaged / malformed content (ignoring adapter echoes / prompts)
+    final commandEcho = '08${expectedBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+    for (final line in response.rawLines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      final upper = trimmed.toUpperCase();
+      if (upper == commandEcho ||
+          upper == '>' ||
+          upper == 'OK' ||
+          upper == 'SEARCHING' ||
+          upper == 'SEARCHING...' ||
+          upper == 'STOPPED' ||
+          upper.startsWith('AT') ||
+          upper.startsWith('BUS INIT') ||
+          upper.startsWith('ELM327')) {
+        continue;
+      }
+      final extracted = _extractPayloadAndSource(trimmed);
+      if (extracted.payload == 'INVALID_HEX' ||
+          extracted.payload == 'INVALID_FRAMING') {
+        final src = extracted.sourceId ?? 'unattributed';
+        if (!perEcu.containsKey(src) || perEcu[src] is! Mode08MalformedResponse) {
+          perEcu[src] = Mode08MalformedResponse(
+            reason: extracted.payload == 'INVALID_HEX'
+                ? Mode08MalformedReason.invalidHex
+                : Mode08MalformedReason.truncated,
+            rawResponse: trimmed,
+          );
+        }
+      }
+    }
   }
 
   /// Parses raw ECU response string for a supported TID query.
@@ -519,22 +603,27 @@ final class Mode08DiscoveryCodec {
               tokens.length >= 4 &&
               tokens[2].length == 2 &&
               tokens[2].startsWith('0')) {
+            final dlc = int.tryParse(tokens[1], radix: 16);
             final declaredLen = int.tryParse(tokens[2].substring(1, 2), radix: 16) ?? 0;
-            if (declaredLen > 0) {
+            if (dlc != null &&
+                dlc <= 8 &&
+                declaredLen > 0 &&
+                declaredLen <= 7 &&
+                dlc >= 1 + declaredLen &&
+                tokens.length - 2 <= dlc &&
+                tokens.length - 2 >= 1 + declaredLen) {
               final payloadTokens = tokens.sublist(3);
-              if (payloadTokens.length >= declaredLen) {
-                return (
-                  sourceId: sourceId,
-                  payload: payloadTokens.take(declaredLen).join(''),
-                );
-              }
+              return (
+                sourceId: sourceId,
+                payload: payloadTokens.take(declaredLen).join(''),
+              );
             }
           }
 
           // Single Frame ISO-TP PCI byte at tokens[1] (e.g. 06 or 03)
           if (tokens[1].length == 2 && tokens[1].startsWith('0')) {
             final declaredLen = int.tryParse(tokens[1].substring(1, 2), radix: 16) ?? 0;
-            if (declaredLen > 0) {
+            if (declaredLen > 0 && declaredLen <= 7) {
               final payloadTokens = tokens.sublist(2);
               if (payloadTokens.length >= declaredLen) {
                 return (
@@ -577,7 +666,7 @@ final class Mode08DiscoveryCodec {
       final id = upper.substring(0, 3);
       final pciHigh = upper.substring(3, 4);
       final declaredLen = int.tryParse(upper.substring(4, 5), radix: 16) ?? 0;
-      if (pciHigh == '0' && declaredLen > 0) {
+      if (pciHigh == '0' && declaredLen > 0 && declaredLen <= 7) {
         final expectedTotal = 3 + 2 + declaredLen * 2;
         if (upper.length >= expectedTotal) {
           return (sourceId: id, payload: upper.substring(5, expectedTotal));
@@ -590,7 +679,7 @@ final class Mode08DiscoveryCodec {
       final id = upper.substring(0, 8);
       final pciHigh = upper.substring(8, 9);
       final declaredLen = int.tryParse(upper.substring(9, 10), radix: 16) ?? 0;
-      if (pciHigh == '0' && declaredLen > 0) {
+      if (pciHigh == '0' && declaredLen > 0 && declaredLen <= 7) {
         final expectedTotal = 8 + 2 + declaredLen * 2;
         if (upper.length >= expectedTotal) {
           return (sourceId: id, payload: upper.substring(10, expectedTotal));
