@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #35
+# Implementation plan — aa22396584/telltale #35
 
-**Issue:** [#35 [WS-27][P1][USABILITY-R2] UI/UX：先能用、逐數值揭露狀態、局部降級與完整車行流程](https://github.com/ImL1s/telltale/issues/35)
+**Issue:** [#35 [WS-27][P1][USABILITY-R2] UI/UX：先能用、逐數值揭露狀態、局部降級與完整車行流程](https://github.com/aa22396584/telltale/issues/35)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-ui` (stacked)
 **Depends on:** #9. **Does not wait for** shop #30–#33.
 **Files:** `app/lib/ui/widgets/status/datum_status_badge.dart`, `app/lib/ui/screens/dashboard/dashboard_screen.dart` (`_DerivedStrip`, `_GaugeTile`), settings copy, `app/test/workshop/ui/datum_status_badge_test.dart`, `app/test/derived_strip_test.dart`.

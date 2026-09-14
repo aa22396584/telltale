@@ -312,7 +312,7 @@ behaviour. Moving to an abandoned one is worse.
 
 `flutter_classic_bluetooth` is the right base — most maintained, broadest
 platform coverage — and the missing piece is roughly forty lines. So:
-https://github.com/ImL1s/flutter_classic_bluetooth adds `connect(channel:)`,
+https://github.com/aa22396584/flutter_classic_bluetooth adds `connect(channel:)`,
 which opens the socket through Android's hidden `createRfcommSocket(int)` and
 skips service discovery entirely. `uuid` is ignored on that path, out-of-range
 channels are refused before any I/O, and a build that does not expose the

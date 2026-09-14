@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #9
+# Implementation plan — aa22396584/telltale #9
 
-**Issue:** [#9 [WS-01][P0][USABILITY-R2] 最大化可用性：資料狀態、功能可用性、操作風險分離與能力矩陣](https://github.com/ImL1s/telltale/issues/9)
+**Issue:** [#9 [WS-01][P0][USABILITY-R2] 最大化可用性：資料狀態、功能可用性、操作風險分離與能力矩陣](https://github.com/aa22396584/telltale/issues/9)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-policy`
 **Depends on:** none
 **Files:** `app/lib/diagnostics/availability.dart`, `app/docs/workshop/capabilities.json`, `app/docs/workshop/capabilities.schema.json`, `app/tool/workshop/validate_capabilities.py`, `app/test/diagnostics/availability_policy_test.dart`, `app/test/tool/test_workshop_capabilities.py`

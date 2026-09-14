@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Telltale — 開源 OBD2 車輛遙測與診斷</title>
 <meta name="description" content="Telltale 是開源 Flutter App，透過 Bluetooth Classic、BLE、Wi-Fi 或內建 Demo ECU 讀取 OBD2 車輛遙測與故障資訊。">
-<link rel="alternate" hreflang="zh-Hant" href="https://iml1s.github.io/telltale/index.html">
-<link rel="alternate" hreflang="en" href="https://iml1s.github.io/telltale/index.en.html">
-<link rel="alternate" hreflang="x-default" href="https://iml1s.github.io/telltale/index.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://aa22396584.github.io/telltale/index.html">
+<link rel="alternate" hreflang="en" href="https://aa22396584.github.io/telltale/index.en.html">
+<link rel="alternate" hreflang="x-default" href="https://aa22396584.github.io/telltale/index.html">
 <style>
   :root {
     color-scheme: light dark;
@@ -123,9 +123,9 @@
   <p>Android 是目前主要完成實體裝置、UI 與 BLE 測試馬具驗證的平台；iOS 與 macOS 只有編譯閘門，不能視為已完成實機或實車驗證。</p>
 
   <div class="actions" aria-label="下載與專案連結">
-    <a class="button primary" href="https://github.com/ImL1s/telltale/releases">從 GitHub Releases 下載 APK</a>
+    <a class="button primary" href="https://github.com/aa22396584/telltale/releases">從 GitHub Releases 下載 APK</a>
     <a class="button" href="https://play.google.com/store/apps/details?id=com.cbstudio.telltale">從 Google Play 安裝</a>
-    <a class="button" href="https://github.com/ImL1s/telltale">查看原始碼</a>
+    <a class="button" href="https://github.com/aa22396584/telltale">查看原始碼</a>
   </div>
 
   <p>Google Play 版為付費下載，但同版本的功能與原始碼、社群 APK 相同，沒有付費解鎖項目。購買相當於支持持續維護，也省去自行建置、安裝與管理更新；願意自行 build 的使用者仍可免費使用原始碼或 GitHub APK。</p>
@@ -133,7 +133,7 @@
   <p class="notice"><strong>安裝前注意：</strong>GitHub APK 使用社群簽章，無法更新 Google Play 版，Play 版也無法直接更新它。兩者互換必須先解除安裝，會刪除 App 本機資料；請先匯出需要保留的診斷紀錄並記下設定。</p>
 
   <h3>實驗性動力電池資料實驗室</h3>
-  <p>資料目錄包含 221 個有來源依據的 PHEV、HEV、BEV、MHEV、REEV 與 FCEV profile：205 個僅供研究；12 個是可安裝的跨來源社群 profile（MG ZS EV Mk1、MG4 Electric、MG5 EV、BYD Atto 3、Hyundai Ioniq 5 與 Ioniq 6、Kia EV6、Hyundai Kona Electric、Kia Niro EV、Kia Soul EV、Renault Zoe Ph1、VW e-up! gen2——每條公式都經至少兩個獨立實作逐 byte 比對，安裝時需確認車輛身分，且每次連線都要重新確認才會開始唯讀輪詢）；4 個是只能走預設關閉之實驗室的實驗 profile（含 Kia EV9 與 Toyota bZ4X／Subaru Solterra e-TNGA）。實驗室的每次連線與嘗試都需要短效、一次性的明確同意，只送出一個固定的唯讀指令；不掃描識別碼、不批次送出、不自動重試。任何結構不符的回應都會顯示為故障而不是數字。詳見 <a href="https://github.com/ImL1s/telltale/blob/main/docs/powertrain-battery-profiles.md">動力電池 profile、證據與安全邊界</a>。</p>
+  <p>資料目錄包含 221 個有來源依據的 PHEV、HEV、BEV、MHEV、REEV 與 FCEV profile：205 個僅供研究；12 個是可安裝的跨來源社群 profile（MG ZS EV Mk1、MG4 Electric、MG5 EV、BYD Atto 3、Hyundai Ioniq 5 與 Ioniq 6、Kia EV6、Hyundai Kona Electric、Kia Niro EV、Kia Soul EV、Renault Zoe Ph1、VW e-up! gen2——每條公式都經至少兩個獨立實作逐 byte 比對，安裝時需確認車輛身分，且每次連線都要重新確認才會開始唯讀輪詢）；4 個是只能走預設關閉之實驗室的實驗 profile（含 Kia EV9 與 Toyota bZ4X／Subaru Solterra e-TNGA）。實驗室的每次連線與嘗試都需要短效、一次性的明確同意，只送出一個固定的唯讀指令；不掃描識別碼、不批次送出、不自動重試。任何結構不符的回應都會顯示為故障而不是數字。詳見 <a href="https://github.com/aa22396584/telltale/blob/main/docs/powertrain-battery-profiles.md">動力電池 profile、證據與安全邊界</a>。</p>
 
   <h3>目前的驗證邊界</h3>
   <div class="evidence">
@@ -146,10 +146,10 @@
 
 <footer>
   <nav aria-label="專案連結">
-    <a href="https://github.com/ImL1s/telltale/releases">下載</a>
-    <a href="https://github.com/ImL1s/telltale">GitHub</a>
+    <a href="https://github.com/aa22396584/telltale/releases">下載</a>
+    <a href="https://github.com/aa22396584/telltale">GitHub</a>
     <a href="privacy.html#zh">隱私權政策</a>
-    <a href="https://github.com/ImL1s/telltale/issues">問題回報</a>
+    <a href="https://github.com/aa22396584/telltale/issues">問題回報</a>
     <a href="index.en.html">English</a>
   </nav>
   <p>GPL-3.0 · Telltale</p>

@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #16
+# Implementation plan — aa22396584/telltale #16
 
-**Issue:** [#16 [WS-08][P1][USABILITY-R2] 修前／修後報告：部分結果照用，逐項保留未驗證／估算／異常狀態](https://github.com/ImL1s/telltale/issues/16)
+**Issue:** [#16 [WS-08][P1][USABILITY-R2] 修前／修後報告：部分結果照用，逐項保留未驗證／估算／異常狀態](https://github.com/aa22396584/telltale/issues/16)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-export` (stacked)
 **Depends on:** #9. **Does not wait for** #12/#13/#15 as blockers for generic-OBD software export.
 **Files:** `app/lib/telemetry/session/telemetry_export_codec.dart`, `app/lib/obd/session_evidence.dart`, `app/lib/obd/polling_engine.dart` (keep finite outliers), `app/lib/obd/telemetry.dart` (`Reading.quality`), `app/test/diagnostics/status_export_test.dart`, `app/test/telemetry_export_test.dart`.

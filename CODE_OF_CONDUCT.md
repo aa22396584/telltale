@@ -22,7 +22,7 @@ participation when needed to protect contributors and keep work productive.
 ## Reporting
 
 Report conduct concerns privately through the
-[maintainer's GitHub profile](https://github.com/ImL1s). Do not open a public
+[maintainer's GitHub profile](https://github.com/aa22396584). Do not open a public
 issue that identifies the people involved or reproduces private material.
 
 Reports will be reviewed as privately and promptly as practical. Maintainers

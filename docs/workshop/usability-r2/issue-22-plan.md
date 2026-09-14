@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #22
+# Implementation plan — aa22396584/telltale #22
 
-**Issue:** [#22 [WS-14][P1][USABILITY-R2] EV／油電 BMS：社群與實驗讀取可用，狀態標籤與估算透明](https://github.com/ImL1s/telltale/issues/22)
+**Issue:** [#22 [WS-14][P1][USABILITY-R2] EV／油電 BMS：社群與實驗讀取可用，狀態標籤與估算透明](https://github.com/aa22396584/telltale/issues/22)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-battery` (stacked)
 **Depends on:** #9, #14. Integrates with #21 for user-supplied PIDs.
 **Files:** `app/lib/obd/powertrain_battery/profile_catalog_validator.dart` (`canInstall`), installer, catalog UI, `app/test/powertrain_battery_catalog_test.dart`, `app/test/diagnostics/battery_workshop_test.dart`, experimental access tests (update product-policy cases only).

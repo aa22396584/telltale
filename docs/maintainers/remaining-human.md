@@ -6,7 +6,7 @@ pre-release is **`v1.0.9-beta.1` / `1.0.9+10`** (separate signing lineage).
 year (Personal Team `ABHJVZBWQN`; paid team `ZAZT4JZ625` Distribution cert
 REVOKED; ASC API 401).
 
-Public CI oracle remains `ImL1s/telltale`. Next Play Android `+N` must be **> 10**.
+Public CI oracle remains `aa22396584/telltale`. Next Play Android `+N` must be **> 10**.
 Do not treat the GitHub community APK as a Play upload.
 
 Attached hardware at check time:
@@ -39,8 +39,10 @@ Preflight that does **not** need a Console click (current `origin/master`):
 - `applicationId` = `com.cbstudio.telltale`
 - BLE dependency is `universal_ble`; `flutter_blue_plus` is comment-only
 - Privacy policy URL in `docs/maintainers/release.md` is
-  `https://iml1s.github.io/telltale/privacy.html` and that page loads
-  (last updated 2026-09-06; in-app Shopee affiliate is tap-to-open only)
+  `https://aa22396584.github.io/telltale/privacy.html` (Codeberg Pages
+  fallback `https://iml1s.codeberg.page/telltale/privacy.html`) and that
+  page loads. Former `iml1s.github.io` is a 404 while GitHub `ImL1s` is
+  restricted. (last updated 2026-09-13; in-app Shopee affiliate is tap-to-open only)
 
 Phone Play **1.0.9 is done** (production completed / published, versionCode 10). Remaining:
 
@@ -65,7 +67,7 @@ That is not a Flutter failure. Local evidence on `974a0ce`:
 `flutter analyze` clean, `flutter test` `+1523 ~15`.
 
 Public `telltale` CI on the same app tree (`b323dbe`, run
-https://github.com/ImL1s/telltale/actions/runs/33508166605 )
+https://github.com/aa22396584/telltale/actions/runs/33508166605 )
 was **8/8 green**, including Windows and Linux debug builds plus
 Demo functional smoke. torque PR #3 and telltale PR #2 were merged
 on that proxy. Restore Actions billing / spending limit on the

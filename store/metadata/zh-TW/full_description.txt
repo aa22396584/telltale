@@ -35,7 +35,7 @@ Bluetooth Classic (RFCOMM/SPP)、Bluetooth LE (GATT UART)、Wi-Fi (TCP)，以及
 https://codeberg.org/ImL1s/telltale
 鏡像也在 GitLab 與 GitHub：
 https://gitlab.com/aa22396584/telltale
-https://github.com/ImL1s/telltale
+https://github.com/aa22396584/telltale
 
 Play 上的付費版功能完全一樣，沒有閹割版 —— 是給不想自己編譯的人，以及願意支持繼續開發的人。
 

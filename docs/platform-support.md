@@ -6,7 +6,7 @@ identity users see is **Telltale** / `com.cbstudio.telltale`.
 ## Verification backbone
 
 Private `ImL1s/torque` Actions may be unavailable (billing). **Public
-`ImL1s/telltale` CI is the authoritative remote matrix** for multiplatform
+`aa22396584/telltale` CI is the authoritative remote matrix** for multiplatform
 enablement. Compile gates are necessary but **not sufficient**: functional
 smoke (Demo journey, Wi‑Fi TCP unit path, export, host gates) must also pass
 on free runners. Product code still originates in private `app/` and is

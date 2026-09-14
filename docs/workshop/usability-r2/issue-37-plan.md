@@ -1,6 +1,6 @@
-# Implementation plan — ImL1s/telltale #37
+# Implementation plan — aa22396584/telltale #37
 
-**Issue:** [#37 [WS-29][P1][USABILITY-R2] 可用性發版與實測標章分離：未驗證只讀可發布，風險操作另驗收](https://github.com/ImL1s/telltale/issues/37)
+**Issue:** [#37 [WS-29][P1][USABILITY-R2] 可用性發版與實測標章分離：未驗證只讀可發布，風險操作另驗收](https://github.com/aa22396584/telltale/issues/37)
 **Intended PR:** `ImL1s/torque` `feat/usability-r2-release` (stacked)
 **Depends on:** #9. Software gate does **not** wait for #11/#12 field oracles.
 **Files:** `app/tool/workshop/release_profiles.json`, `app/tool/workshop/run_release_gate.py`, `app/docs/verification/workshop-pilot.md`, `app/test/tool/test_workshop_release.py`.
