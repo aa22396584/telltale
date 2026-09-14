@@ -1403,6 +1403,782 @@ class ResearchRuleTest(unittest.TestCase):
         )
         _only(issues, "missing market/year/firmware scope")
 
+    def test_research_row_generic_brand_alias_fails(self) -> None:
+        for brand in ["byd", "tesla", "toyota", "meb", "blade", "e-gmp"]:
+            row = _valid_executable_row(aliases=[f"fixture {brand}", brand])
+            issues = _issues_for(row)
+            _only(issues, "extrapolates entire brand/platform without model specificity")
+
+    def test_research_row_source_missing_locator_fails(self) -> None:
+        row = _valid_executable_row()
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["locator"] = ""
+        issues = _issues_for(row)
+        _only(issues, "missing row-specific evidence locator")
+
+    def test_research_row_source_prohibited_locator_fails(self) -> None:
+        row = _valid_executable_row()
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["locator"] = "row:other-row"
+        issues = _issues_for(row)
+        self.assertTrue(
+            any("locator uses prohibited inheritance reference" in i for i in issues),
+            issues,
+        )
+
+    def test_research_row_cross_model_source_path_fails(self) -> None:
+        row = _valid_executable_row(id="byd-atto-3")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/nissan/leaf.json"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than byd-atto-3")
+
+    def test_research_row_cross_model_source_path_unlisted_brand_fails(self) -> None:
+        """Universal cross-model check: brands not in the old 5-brand list also fail."""
+        row = _valid_executable_row(id="bmw-i3")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model3.json"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than bmw-i3")
+
+    def test_research_row_cross_row_wrong_source_locator_fails(self) -> None:
+        """Source locator referencing a foreign vehicle model is rejected as cross-model wrong source."""
+        row = _valid_executable_row(id="nissan-leaf")
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["locator"] = "Ioniq 5 polls"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than nissan-leaf")
+
+    def test_research_row_cross_model_tesla_model_y_source_for_model_3_fails(self) -> None:
+        """Model 3 referencing Model Y source is rejected as cross-model without reviewed binding."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_ioniq_6_source_for_ioniq_5_fails(self) -> None:
+        """Ioniq 5 referencing Ioniq 6 source is rejected as cross-model."""
+        row = _valid_executable_row(id="hyundai-ioniq-5", aliases=["Hyundai Ioniq 5"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than hyundai-ioniq-5")
+
+    def test_research_row_cross_model_egmp_alias_does_not_override_foreign_source_fails(self) -> None:
+        """E-GMP platform text in alias and locator cannot authorize a Tesla source for Kia EV6."""
+        row = _valid_executable_row(id="kia-ev6", aliases=["Kia EV6 E-GMP"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "E-GMP note"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than kia-ev6")
+
+    def test_research_row_cross_model_meb_alias_does_not_override_foreign_source_fails(self) -> None:
+        """MEB platform text in alias and locator cannot authorize a BYD source for VW ID.4."""
+        row = _valid_executable_row(id="volkswagen-id4", aliases=["ID4 MEB"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/byd/atto3.json"
+        row["source_families"][0]["locator"] = "MEB note"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than volkswagen-id4")
+
+    def test_research_row_cross_model_synthetic_unlisted_brand_fails(self) -> None:
+        """Synthetic unlisted brand and model are protected by universal cross-model rules."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/zenith/cruiser2.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than acme-roadster-1")
+
+    def test_research_row_cross_model_bmw_ix_source_for_ix3_fails(self) -> None:
+        """BMW iX3 referencing BMW iX source is rejected as cross-model."""
+        row = _valid_executable_row(id="bmw-ix3", aliases=["BMW iX3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/bmw/ix.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than bmw-ix3")
+
+    def test_research_row_cross_model_ford_mustang_source_for_mustang_mach_e_fails(self) -> None:
+        """Ford Mustang Mach-E referencing base Ford Mustang source is rejected as cross-model."""
+        row = _valid_executable_row(id="ford-mustang-mach-e", aliases=["Ford Mustang Mach-E"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/ford/mustang.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than ford-mustang-mach-e")
+
+    def test_research_row_cross_model_toyota_prius_c_source_for_prius_fails(self) -> None:
+        """Toyota Prius referencing Prius C source is rejected as cross-model."""
+        row = _valid_executable_row(id="toyota-prius", aliases=["Toyota Prius"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/toyota/prius_c.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than toyota-prius")
+
+    def test_research_row_cross_model_synthetic_same_brand_different_model_fails(self) -> None:
+        """Synthetic model referencing another model of same brand without binding is rejected."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/acme/roadster_2.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than acme-roadster-1")
+
+    def test_research_row_synthetic_unlisted_brand_passes_with_matching_model(self) -> None:
+        """Synthetic unlisted brand with exact matching model passes."""
+        row = _valid_executable_row(id="acme-roadster-1", aliases=["ACME Roadster 1"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/acme/roadster1.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
+    def test_research_row_same_model_source_passes(self) -> None:
+        """Same model source within same make passes validation."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model3.json"
+        row["source_families"][0]["locator"] = "record 1"
+        self.assertEqual(_issues_for(row), [])
+
+    def test_research_row_cross_model_locator_text_cannot_authorize_foreign_model(self) -> None:
+        """Model 3 referencing Model Y with locator prose 'Model 3 applicability entry' fails."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "Model 3 applicability entry"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_negation_locator_fails(self) -> None:
+        """Ioniq 5 referencing Ioniq 6 with locator 'NOT APPLICABLE TO Ioniq 5' fails."""
+        row = _valid_executable_row(id="hyundai-ioniq-5", aliases=["Hyundai Ioniq 5"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        row["source_families"][0]["locator"] = "NOT APPLICABLE TO Ioniq 5"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than hyundai-ioniq-5")
+
+    def test_research_row_cross_model_update_filename_does_not_bypass_model_check(self) -> None:
+        """Model 3 referencing Model Y with 'update' in filename is rejected."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y_update.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_alias_cannot_authorize_foreign_model(self) -> None:
+        """Model 3 with alias 'Tesla Model Y' cannot reference Model Y profile."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model Y"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/tesla/model_y.json"
+        row["source_families"][0]["locator"] = "record 1"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_cross_model_wildcard_locator_cannot_authorize_unreviewed_source(self) -> None:
+        """VW ID.4 referencing unreviewed meb.json with wildcard 'Volkswagen ID* applicability' is rejected."""
+        row = _valid_executable_row(id="volkswagen-id4", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "vehicle_profiles/volkswagen/meb.json"
+        row["source_families"][0]["locator"] = "Volkswagen ID* applicability"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than volkswagen-id4")
+
+    def test_research_row_reviewed_shared_source_binding_passes(self) -> None:
+        """VW ID.4 referencing explicitly reviewed shared MEB source passes validation."""
+        row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
+        self.assertEqual(_issues_for(row), [])
+
+    def test_research_row_reviewed_shared_source_binding_with_relative_prefix_passes(self) -> None:
+        """VW ID.4 referencing shared MEB source with leading './' passes normalization."""
+        row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "./volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
+        self.assertEqual(_issues_for(row), [])
+
+    def test_research_row_unreviewed_target_on_shared_source_fails(self) -> None:
+        """Tesla Model 3 referencing MEB shared source fails because it is not in the reviewed binding."""
+        row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
+        row["source_families"] = copy.deepcopy(row["source_families"])
+        row["source_families"][0]["path"] = "volkswagen/MEB.json"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
+        issues = _issues_for(row)
+        _only(issues, "belongs to a different vehicle model than tesla-model-3")
+
+    def test_research_row_reviewed_shared_source_binding_exact_scope_required(self) -> None:
+        """Explicit ReviewedEvidenceBinding enforces exact equality across all fields and rejects caller wildcards."""
+        from validate_matrix import (
+            REVIEWED_EVIDENCE_BINDINGS,
+            ReviewedEvidenceBinding,
+            _find_reviewed_evidence_binding,
+        )
+
+        test_binding = ReviewedEvidenceBinding(
+            target_scope="synthetic-model-a",
+            path="vehicle_profiles/synthetic/multi.json",
+            signal="battery_profile",
+            source_repository="synthetic/repo",
+            revision=SHA40_A,
+            source_hash=SHA64_A,
+            locator="Model A exact locator",
+        )
+        REVIEWED_EVIDENCE_BINDINGS.append(test_binding)
+        try:
+            # 1. Matching exact scope, locator, repo, revision, hash, and signal passes
+            row_ok = _valid_executable_row(
+                id="synthetic-model-a",
+                aliases=["Synthetic Model A"],
+            )
+            row_ok["source_families"] = copy.deepcopy(row_ok["source_families"])
+            row_ok["source_families"][0]["path"] = "vehicle_profiles/synthetic/multi.json"
+            row_ok["source_families"][0]["locator"] = "Model A exact locator"
+            row_ok["source_families"][0]["family"] = "synthetic/repo"
+            row_ok["source_families"][0]["name"] = "synthetic/repo"
+            row_ok["source_families"][0]["url"] = "https://github.com/synthetic/repo"
+            row_ok["source_families"][0]["revision"] = SHA40_A
+            row_ok["source_families"][0]["artifact_sha256"] = SHA64_A
+            row_ok["independence_rationale"] = "primary synthetic/repo and corroborating other/src are different GitHub orgs"
+            row_ok["signals"] = copy.deepcopy(row_ok["signals"])
+            row_ok["signals"][0]["id"] = "battery_profile"
+            self.assertEqual(_issues_for(row_ok), [])
+
+            # 2. Scope mismatch fails (synthetic-model-b is not authorized)
+            row_mismatch_model = copy.deepcopy(row_ok)
+            row_mismatch_model["id"] = "synthetic-model-b"
+            row_mismatch_model["aliases"] = ["Synthetic Model B"]
+            issues_scope = _issues_for(row_mismatch_model)
+            _only(issues_scope, "belongs to a different vehicle model than synthetic-model-b")
+
+            # 3. Signal mismatch fails
+            row_bad_signal = copy.deepcopy(row_ok)
+            row_bad_signal["signals"] = copy.deepcopy(row_ok["signals"])
+            row_bad_signal["signals"][0]["id"] = "soh"
+            issues_sig = _issues_for(row_bad_signal)
+            _only(issues_sig, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 4a. Repository mismatch fails (different repository)
+            row_bad_repo = copy.deepcopy(row_ok)
+            row_bad_repo["source_families"][0]["family"] = "other/repo"
+            row_bad_repo["source_families"][0]["name"] = "other/repo"
+            row_bad_repo["source_families"][0]["url"] = "https://github.com/other/repo"
+            row_bad_repo["independence_rationale"] = "primary other/repo and corroborating other/src are different GitHub orgs"
+            issues_repo = _issues_for(row_bad_repo)
+            _only(issues_repo, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 4b. Repository substring mismatch fails (substring of repository must NOT match)
+            row_sub_repo = copy.deepcopy(row_ok)
+            row_sub_repo["source_families"][0]["family"] = "synthetic/rep"
+            row_sub_repo["source_families"][0]["name"] = "synthetic/rep"
+            row_sub_repo["source_families"][0]["url"] = "https://github.com/synthetic/rep"
+            row_sub_repo["independence_rationale"] = "primary synthetic/rep and corroborating other/src are different GitHub orgs"
+            issues_sub_repo = _issues_for(row_sub_repo)
+            _only(issues_sub_repo, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 5. Revision mismatch fails
+            row_bad_rev = copy.deepcopy(row_ok)
+            row_bad_rev["source_families"][0]["revision"] = SHA40_B
+            issues_rev = _issues_for(row_bad_rev)
+            _only(issues_rev, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 6. Artifact hash mismatch fails
+            row_bad_hash = copy.deepcopy(row_ok)
+            row_bad_hash["source_families"][0]["artifact_sha256"] = "c" * 64
+            issues_hash = _issues_for(row_bad_hash)
+            _only(issues_hash, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 7a. Locator mismatch fails (different locator)
+            row_bad_locator = copy.deepcopy(row_ok)
+            row_bad_locator["source_families"][0]["locator"] = "Model B different locator"
+            issues_loc = _issues_for(row_bad_locator)
+            _only(issues_loc, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 7b. Locator substring mismatch fails (substring of locator must NOT match)
+            row_sub_loc = copy.deepcopy(row_ok)
+            row_sub_loc["source_families"][0]["locator"] = "Model A exact"
+            issues_sub_loc = _issues_for(row_sub_loc)
+            _only(issues_sub_loc, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 8. Negative target variations: unreviewed market, year, or combinations return None and fail row validation
+            for unreviewed_target in (
+                "synthetic-model-a-us",
+                "synthetic-model-a-2030",
+                "synthetic-model-a-us-2026-community",
+                "synthetic-model-a-eu-2030-community",
+            ):
+                row_unreviewed = copy.deepcopy(row_ok)
+                row_unreviewed["id"] = unreviewed_target
+                row_unreviewed["aliases"] = [unreviewed_target.replace("-", " ").title()]
+                issues_unreviewed = _issues_for(row_unreviewed)
+                _only(
+                    issues_unreviewed,
+                    f"belongs to a different vehicle model than {unreviewed_target}",
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id=unreviewed_target,
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    ),
+                    f"Target {unreviewed_target!r} must not match binding for 'synthetic-model-a'",
+                )
+
+            # 9. Direct matcher call rejects caller wildcards '*' and '?'
+            for wildcard in ("*", "?"):
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal=wildcard,
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository=wildcard,
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=wildcard,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=wildcard,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator=wildcard,
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id=wildcard,
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path=wildcard,
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+        finally:
+            REVIEWED_EVIDENCE_BINDINGS.remove(test_binding)
+
+    def test_reviewed_evidence_binding_exact_target_scope_negative_probe(self) -> None:
+        """Fixing all source fields and changing only target_id: unreviewed years/markets return None."""
+        from validate_matrix import (
+            REVIEWED_EVIDENCE_BINDINGS,
+            _find_reviewed_evidence_binding,
+            _target_scope_matches,
+        )
+
+        # 0. Direct token matching edge cases: empty/punctuation must never match
+        self.assertFalse(_target_scope_matches("---", "___"))
+        self.assertFalse(_target_scope_matches("", ""))
+        self.assertFalse(_target_scope_matches("   ", "   "))
+        self.assertTrue(_target_scope_matches("byd-atto3", "byd-atto3"))
+        self.assertTrue(_target_scope_matches("byd-atto-3", "byd-atto3"))
+        self.assertFalse(_target_scope_matches("byd-atto3-us", "byd-atto3"))
+        self.assertFalse(_target_scope_matches("byd-atto3-2030", "byd-atto3"))
+
+        byd_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "byd-atto3"
+                and "byd_202410_update.json" in item.path
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(byd_record)
+        assert byd_record is not None
+
+        byd_source_args = {
+            "path": byd_record.path,
+            "locator": byd_record.locator,
+            "signal": byd_record.signal,
+            "repository": byd_record.source_repository,
+            "revision": byd_record.revision,
+            "source_hash": byd_record.source_hash,
+        }
+
+        # 1. Registered exact target and approved aliases match
+        for authorized in ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community"):
+            matched = _find_reviewed_evidence_binding(
+                target_id=authorized, **byd_source_args
+            )
+            self.assertIsNotNone(matched, f"Expected {authorized!r} to match")
+            assert matched is not None
+            self.assertIn(matched.target_scope, ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community"))
+
+        # 2. Unreviewed target variations (market, year, combo) must return None
+        unreviewed_byd_targets = (
+            "byd-atto3-us",
+            "byd-atto3-eu",
+            "byd-atto3-au",
+            "byd-atto3-cn",
+            "byd-atto3-2030",
+            "byd-atto3-2025",
+            "byd-atto3-2024",
+            "byd-atto3-us-2026-community",
+            "byd-atto3-eu-2030-community",
+            "byd-atto3?",
+            "---",
+            "",
+        )
+        for unreviewed in unreviewed_byd_targets:
+            matched = _find_reviewed_evidence_binding(
+                target_id=unreviewed, **byd_source_args
+            )
+            self.assertIsNone(
+                matched,
+                f"Unreviewed target {unreviewed!r} must return None instead of inheriting reviewed status",
+            )
+
+        # 3. Kona binding checks
+        kona_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "hyundai-kona"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(kona_record)
+        assert kona_record is not None
+        kona_source_args = {
+            "path": kona_record.path,
+            "locator": kona_record.locator,
+            "signal": kona_record.signal,
+            "repository": kona_record.source_repository,
+            "revision": kona_record.revision,
+            "source_hash": kona_record.source_hash,
+        }
+        for authorized in ("hyundai-kona", "hyundai-kona-electric", "hyundai-kona-electric-os-2019-2023-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **kona_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("hyundai-kona-us", "hyundai-kona-2030", "hyundai-kona-us-2025-community", "hyundai-kona?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **kona_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
+
+        # 4. Kia Soul binding checks
+        soul_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "kia-soul"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(soul_record)
+        assert soul_record is not None
+        soul_source_args = {
+            "path": soul_record.path,
+            "locator": soul_record.locator,
+            "signal": soul_record.signal,
+            "repository": soul_record.source_repository,
+            "revision": soul_record.revision,
+            "source_hash": soul_record.source_hash,
+        }
+        for authorized in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **soul_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("kia-soul-us", "kia-soul-2030", "kia-soul-us-2025-community", "kia-soul?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **soul_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
+
+        # 5. Hyundai Ioniq 6 binding checks
+        ioniq6_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "hyundai-ioniq6"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(ioniq6_record)
+        assert ioniq6_record is not None
+        ioniq6_source_args = {
+            "path": ioniq6_record.path,
+            "locator": ioniq6_record.locator,
+            "signal": ioniq6_record.signal,
+            "repository": ioniq6_record.source_repository,
+            "revision": ioniq6_record.revision,
+            "source_hash": ioniq6_record.source_hash,
+        }
+        for authorized in ("hyundai-ioniq6", "hyundai-ioniq-6", "hyundai-ioniq6-egmp-2022-2024-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **ioniq6_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("hyundai-ioniq6-us", "hyundai-ioniq6-2030", "hyundai-ioniq6-us-2025-community", "hyundai-ioniq6?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **ioniq6_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
+
+    def test_reviewed_evidence_binding_construction_validation(self) -> None:
+        """ReviewedEvidenceBinding.__post_init__ rejects empty strings, whitespace, and wildcards."""
+        from validate_matrix import ReviewedEvidenceBinding
+
+        valid_kwargs = {
+            "target_scope": "test-scope",
+            "path": "test/path.json",
+            "signal": "battery_profile",
+            "source_repository": "test/repo",
+            "revision": SHA40_A,
+            "source_hash": SHA64_A,
+            "locator": "test locator",
+        }
+
+        # Valid binding instantiates cleanly
+        b = ReviewedEvidenceBinding(**valid_kwargs)
+        self.assertEqual(b.target_scope, "test-scope")
+
+        # Each field rejects empty string and whitespace
+        for field in valid_kwargs:
+            for bad_val in ("", "   "):
+                kw = dict(valid_kwargs, **{field: bad_val})
+                with self.assertRaises(ValueError, msg=f"{field}={bad_val!r}"):
+                    ReviewedEvidenceBinding(**kw)
+
+        # Each field rejects wildcard '*' and '?'
+        for field in valid_kwargs:
+            for wildcard in ("*", "?"):
+                kw = dict(valid_kwargs, **{field: wildcard})
+                with self.assertRaises(ValueError, msg=f"{field}={wildcard!r}"):
+                    ReviewedEvidenceBinding(**kw)
+
+        # Non-locator fields reject wildcards in string
+        for field in ("target_scope", "path", "signal", "source_repository", "revision", "source_hash"):
+            for bad_str in ("foo*bar", "foo?bar"):
+                kw = dict(valid_kwargs, **{field: bad_str})
+                with self.assertRaises(ValueError, msg=f"{field}={bad_str!r}"):
+                    ReviewedEvidenceBinding(**kw)
+
+    def test_reviewed_evidence_identity_normalization(self) -> None:
+        """_normalize_repo_identity and _normalize_locator_identity normalize formats cleanly."""
+        from validate_matrix import _normalize_repo_identity, _normalize_locator_identity
+
+        # Repository URL normalization
+        expected_repo = "meatpihq/wican-fw"
+        for candidate in (
+            "meatpihq/wican-fw",
+            "meatpiHQ/wican-fw",
+            "meatpiHQ/wican-fw/",
+            "meatpiHQ/wican-fw.git",
+            "meatpiHQ/wican-fw.git/",
+            "https://github.com/meatpiHQ/wican-fw",
+            "https://github.com/meatpiHQ/wican-fw/",
+            "https://github.com/meatpiHQ/wican-fw.git",
+            "https://github.com/meatpiHQ/wican-fw.git/",
+            "http://github.com/meatpiHQ/wican-fw.git",
+            "git@github.com:meatpiHQ/wican-fw.git",
+            "ssh://git@github.com/meatpiHQ/wican-fw.git",
+            "ssh://git@github.com/meatpiHQ/wican-fw.git/",
+            "github.com/meatpiHQ/wican-fw.git",
+        ):
+            self.assertEqual(
+                _normalize_repo_identity(candidate),
+                expected_repo,
+                msg=f"Failed to normalize repo: {candidate}",
+            )
+
+        # Locator whitespace and case normalization
+        self.assertEqual(
+            _normalize_locator_identity("  ATSH7E7;   220005  SOC_D=B4  \n\t "),
+            "atsh7e7; 220005 soc_d=b4",
+        )
+
+    def test_shared_source_with_matching_locators_passes(self) -> None:
+        """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
+        leaf_row = _valid_executable_row(
+            id="nissan-leaf",
+            aliases=["Nissan Leaf"],
+        )
+        leaf_row["source_families"] = [
+            {
+                "artifact_sha256": SHA64_A,
+                "family": "shared/obd",
+                "id": "primary",
+                "license": "MIT",
+                "locator": "Leaf polls",
+                "name": "shared/obd",
+                "path": "shared/obd.json",
+                "revision": SHA40_A,
+                "role": "primary",
+                "url": "https://github.com/shared/obd",
+            },
+            {
+                "artifact_sha256": SHA64_B,
+                "family": "other/src",
+                "id": "corroborating",
+                "license": "MIT",
+                "locator": "Leaf polls",
+                "name": "other/src",
+                "path": "leaf.json",
+                "revision": SHA40_B,
+                "role": "corroborating",
+                "url": "https://github.com/other/src",
+            },
+        ]
+        self.assertEqual(_issues_for(leaf_row), [])
+
+        ioniq_row = _valid_executable_row(
+            id="hyundai-ioniq5",
+            aliases=["Hyundai Ioniq 5"],
+        )
+        ioniq_row["source_families"] = [
+            {
+                "artifact_sha256": SHA64_A,
+                "family": "shared/obd",
+                "id": "primary",
+                "license": "MIT",
+                "locator": "Ioniq 5 polls",
+                "name": "shared/obd",
+                "path": "shared/obd.json",
+                "revision": SHA40_A,
+                "role": "primary",
+                "url": "https://github.com/shared/obd",
+            },
+            {
+                "artifact_sha256": SHA64_B,
+                "family": "other/src",
+                "id": "corroborating",
+                "license": "MIT",
+                "locator": "Ioniq 5 polls",
+                "name": "other/src",
+                "path": "ioniq5.json",
+                "revision": SHA40_B,
+                "role": "corroborating",
+                "url": "https://github.com/other/src",
+            },
+        ]
+        self.assertEqual(_issues_for(ioniq_row), [])
+
+
+def _valid_community_catalog_profile(**overrides: object) -> dict:
+    profile = {
+        "commands": [_concrete_command()],
+        "evidence": "sourceBacked",
+        "id": "byd-atto3-2022-2024-community",
+        "make": "BYD",
+        "market": "Global",
+        "model": "Atto 3",
+        "powertrain": "BEV",
+        "secondary_sources": [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "GPL-3.0",
+                "locator": "ATSH7E7 220005",
+                "name": "meatpiHQ/wican-fw",
+                "path": "vehicle_profiles/byd/atto3.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+            }
+        ],
+        "source": {
+            "artifact_sha256": SHA64_A,
+            "license": "MIT",
+            "locator": "vehicle_atto3_polls[] ISOTP_STD",
+            "name": "openvehicles/Open-Vehicle-Monitoring-System-3",
+            "path": "vehicle/OVMS.V3/components/vehicle_byd_atto3/src/vehicle_byd_atto3.cpp",
+            "revision": SHA40_A,
+            "url": f"https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/tree/{SHA40_A}",
+        },
+        "status": "community",
+        "variant": "e-Platform 3.0 Blade",
+        "year_from": 2022,
+        "year_to": 2024,
+    }
+    profile.update(overrides)
+    return profile
+
 
 class CatalogObjectRuleTest(unittest.TestCase):
     def test_community_catalog_profile_with_zero_commands_fails(self) -> None:
@@ -1660,6 +2436,464 @@ class CatalogObjectRuleTest(unittest.TestCase):
         )
         self.assertEqual(issues, [])
 
+    def test_community_catalog_profile_evidence_valid_passes(self) -> None:
+        prof = _valid_community_catalog_profile()
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        self.assertEqual(issues, [])
+
+    def test_community_catalog_profile_missing_primary_source_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        del prof["source"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing primary source object")
+
+    def test_community_catalog_profile_primary_source_missing_license_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["license"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing licence")
+
+    def test_community_catalog_profile_primary_source_non_immutable_revision_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["revision"] = "main"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing immutable revision pin")
+
+    def test_community_catalog_profile_primary_source_invalid_artifact_sha_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["artifact_sha256"] = "badsha"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing valid artifact sha256")
+
+    def test_community_catalog_profile_primary_source_missing_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["locator"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source missing row-specific evidence locator")
+
+    def test_community_catalog_profile_primary_source_prohibited_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["locator"] = "row:byd-atto-3"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source locator uses prohibited inheritance reference")
+
+    def test_community_catalog_profile_primary_source_non_derivable_family_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["url"] = "not_a_url"
+        prof["source"]["name"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "primary source has no derivable family identity")
+
+    def test_community_catalog_profile_missing_secondary_sources_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"] = []
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile requires at least one secondary source")
+
+    def test_community_catalog_profile_secondary_source_non_dict_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"] = ["invalid"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] must be an object")
+
+    def test_community_catalog_profile_secondary_source_missing_license_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["license"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing licence")
+
+    def test_community_catalog_profile_secondary_source_non_immutable_revision_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["revision"] = "dev"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing immutable revision pin")
+
+    def test_community_catalog_profile_secondary_source_invalid_artifact_sha_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["artifact_sha256"] = "12345"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing valid artifact sha256")
+
+    def test_community_catalog_profile_secondary_source_missing_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["locator"] = ""
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] missing row-specific evidence locator")
+
+    def test_community_catalog_profile_secondary_source_prohibited_locator_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["locator"] = "sibling:other-profile"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "secondary source [0] locator uses prohibited inheritance reference")
+
+    def test_community_catalog_profile_secondary_source_same_family_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["secondary_sources"][0]["url"] = prof["source"]["url"]
+        prof["secondary_sources"][0]["name"] = prof["source"]["name"]
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile requires independent corroborating source family")
+
+    def test_community_catalog_profile_blank_market_scope_fails(self) -> None:
+        for market in ["", "  ", "TBD", "UNKNOWN"]:
+            prof = _valid_community_catalog_profile(market=market)
+            issues = validate_matrix.validate_catalog_object(
+                {"profiles": [prof]}, validate_evidence=True
+            )
+            _only(issues, "community profile missing exact market scope")
+
+    def test_community_catalog_profile_missing_make_fails(self) -> None:
+        prof = _valid_community_catalog_profile(make="")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing make scope")
+
+    def test_community_catalog_profile_missing_model_fails(self) -> None:
+        prof = _valid_community_catalog_profile(model="")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile missing model scope")
+
+    def test_community_catalog_profile_non_integer_year_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from="2022")
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile year_from and year_to must be integer years")
+
+    def test_community_catalog_profile_reversed_years_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from=2025, year_to=2022)
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile reversed year range: 2025 > 2022")
+
+    def test_community_catalog_profile_out_of_bounds_years_fails(self) -> None:
+        prof = _valid_community_catalog_profile(year_from=1850)
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "community profile year range 1850-2024 outside plausible bounds")
+
+    def test_community_catalog_profile_cross_model_source_fails(self) -> None:
+        prof = _valid_community_catalog_profile()
+        prof["source"]["path"] = "vehicle_profiles/nissan/leaf.json"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than BYD Atto 3")
+
+    def test_community_catalog_profile_cross_model_tesla_model_y_for_model_3_fails(self) -> None:
+        """Catalog: Model 3 referencing Model Y source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model-3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_ioniq_6_for_ioniq_5_fails(self) -> None:
+        """Catalog: Ioniq 5 referencing Ioniq 6 source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="hyundai-ioniq-5-community",
+            make="Hyundai",
+            model="Ioniq 5",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Hyundai Ioniq 5")
+
+    def test_community_catalog_profile_cross_model_egmp_alias_does_not_override_foreign_source_fails(self) -> None:
+        """Catalog: E-GMP note cannot authorize Tesla source for Kia EV6."""
+        prof = _valid_community_catalog_profile(
+            id="kia-ev6-community",
+            make="Kia",
+            model="EV6",
+            variant="Kia EV6 E-GMP",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "E-GMP note"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Kia EV6")
+
+    def test_community_catalog_profile_cross_model_meb_alias_does_not_override_foreign_source_fails(self) -> None:
+        """Catalog: MEB note cannot authorize BYD source for VW ID.4."""
+        prof = _valid_community_catalog_profile(
+            id="volkswagen-id4-community",
+            make="Volkswagen",
+            model="ID.4",
+            variant="ID4 MEB",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/byd/atto3.json"
+        prof["source"]["locator"] = "MEB note"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Volkswagen ID.4")
+
+    def test_community_catalog_profile_cross_model_bmw_ix_for_ix3_fails(self) -> None:
+        """Catalog: BMW iX3 referencing BMW iX source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="bmw-ix3-community",
+            make="BMW",
+            model="iX3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/bmw/ix.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than BMW iX3")
+
+    def test_community_catalog_profile_cross_model_ford_mustang_for_mustang_mach_e_fails(self) -> None:
+        """Catalog: Ford Mustang Mach-E referencing Ford Mustang source is rejected as cross-model."""
+        prof = _valid_community_catalog_profile(
+            id="ford-mustang-mach-e-community",
+            make="Ford",
+            model="Mustang Mach-E",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/ford/mustang.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Ford Mustang Mach-E")
+
+    def test_community_catalog_profile_cross_model_locator_prose_cannot_authorize(self) -> None:
+        """Catalog: Model 3 referencing Model Y with locator 'Model 3 applicability entry' fails."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "Model 3 applicability entry"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_negation_locator_fails(self) -> None:
+        """Catalog: Ioniq 5 referencing Ioniq 6 with locator 'NOT APPLICABLE TO Ioniq 5' fails."""
+        prof = _valid_community_catalog_profile(
+            id="hyundai-ioniq-5-community",
+            make="Hyundai",
+            model="Ioniq 5",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/hyundai/ioniq6.json"
+        prof["source"]["locator"] = "NOT APPLICABLE TO Ioniq 5"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Hyundai Ioniq 5")
+
+    def test_community_catalog_profile_cross_model_update_filename_fails(self) -> None:
+        """Catalog: Model 3 referencing Model Y with 'update' in filename fails."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y_update.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_alias_fails(self) -> None:
+        """Catalog: Model 3 with variant 'Tesla Model Y' cannot reference Model Y profile."""
+        prof = _valid_community_catalog_profile(
+            id="tesla-model3-community",
+            make="Tesla",
+            model="Model 3",
+            variant="Tesla Model Y",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+        prof["source"]["locator"] = "record 1"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Tesla Model 3")
+
+    def test_community_catalog_profile_cross_model_wildcard_locator_fails(self) -> None:
+        """Catalog: VW ID.4 referencing unreviewed meb.json with 'Volkswagen ID* applicability' fails."""
+        prof = _valid_community_catalog_profile(
+            id="volkswagen-id4-community",
+            make="Volkswagen",
+            model="ID.4",
+        )
+        prof["secondary_sources"] = [
+            {
+                "artifact_sha256": SHA64_B,
+                "license": "MIT",
+                "locator": "signals",
+                "name": "comm/sig",
+                "path": "signalsets/v3/default.json",
+                "revision": SHA40_B,
+                "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+            }
+        ]
+        prof["source"]["path"] = "vehicle_profiles/volkswagen/meb.json"
+        prof["source"]["locator"] = "Volkswagen ID* applicability"
+        issues = validate_matrix.validate_catalog_object(
+            {"profiles": [prof]}, validate_evidence=True
+        )
+        _only(issues, "belongs to a different vehicle model than Volkswagen ID.4")
+
 
 def _research_profile(**overrides: object) -> dict:
     profile = {
@@ -1777,6 +3011,243 @@ class MatrixDocumentTest(unittest.TestCase):
                 profiles[profile_id]["command_count"],
                 command_count,
                 profile_id,
+            )
+
+    def test_research_row_disposition_conflicts_with_catalog_status(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(id="byd-atto3-2022-2024-community")
+            row = _unknown_row(
+                id="byd-atto-3",
+                disposition="transport-blocked",
+                catalog_presence="present",
+                catalog_profile_ids=["byd-atto3-2022-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row byd-atto-3: disposition=transport-blocked conflicts with catalog profile byd-atto3-2022-2024-community status=community",
+            )
+
+    def test_research_row_brand_mismatch_join_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(id="byd-atto3-2022-2024-community")
+            row = _unknown_row(
+                id="tesla-model-3",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["byd-atto3-2022-2024-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row tesla-model-3: incorrect join with catalog profile byd-atto3-2022-2024-community (brand mismatch tesla != byd)",
+            )
+
+    def test_unlisted_brand_mismatch_join_fails(self) -> None:
+        """Brands not in any legacy list (e.g. BMW vs Tesla) still fail brand mismatch join."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="tesla-model3-2023-2026-community",
+                make="Tesla",
+                model="Model 3",
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "Model 3 polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_teslamodel3/src/vehicle_teslamodel3.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/tesla/model3.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="bmw-i3",
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["tesla-model3-2023-2026-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row bmw-i3: incorrect join with catalog profile tesla-model3-2023-2026-community (brand mismatch bmw != tesla)",
+            )
+
+    def test_research_row_same_brand_different_model_join_fails(self) -> None:
+        """Same brand with different model (e.g. Nissan Leaf vs Nissan Ariya) fails model check."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="nissan-ariya-2025-2026-community",
+                make="Nissan",
+                model="Ariya",
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "Ariya polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_nissan_ariya/src/vehicle_nissan_ariya.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/nissan/ariya.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="nissan-leaf",
+                aliases=["Nissan Leaf"],
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["nissan-ariya-2025-2026-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2022,
+                year_to=2024,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row nissan-leaf: incorrect join with catalog profile nissan-ariya-2025-2026-community (model mismatch nissan-leaf does not match model Ariya)",
+            )
+
+    def test_research_row_non_overlapping_years_join_fails(self) -> None:
+        """Same model with non-overlapping year ranges fails year overlap check."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="nissan-leaf-ze1-2018-2026-community",
+                make="Nissan",
+                model="Leaf",
+                year_from=2018,
+                year_to=2026,
+                source={
+                    "artifact_sha256": SHA64_A,
+                    "license": "MIT",
+                    "locator": "Leaf polls",
+                    "name": "openvehicles/OVMS",
+                    "path": "components/vehicle_nissanleaf/src/vehicle_nissanleaf.cpp",
+                    "revision": SHA40_A,
+                    "url": f"https://github.com/openvehicles/OVMS/tree/{SHA40_A}",
+                },
+                secondary_sources=[
+                    {
+                        "artifact_sha256": SHA64_B,
+                        "license": "GPL-3.0",
+                        "locator": "220005",
+                        "name": "meatpiHQ/wican-fw",
+                        "path": "vehicle_profiles/nissan/leaf.json",
+                        "revision": SHA40_B,
+                        "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
+                    }
+                ],
+            )
+            row = _unknown_row(
+                id="nissan-leaf-ze0",
+                aliases=["Nissan Leaf First Generation"],
+                disposition="single-family",
+                catalog_presence="present",
+                catalog_profile_ids=["nissan-leaf-ze1-2018-2026-community"],
+                firmware_scope="firmware-1",
+                market="Global",
+                year_from=2010,
+                year_to=2017,
+            )
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[row],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "research row nissan-leaf-ze0: incorrect join with catalog profile nissan-leaf-ze1-2018-2026-community (year range 2010-2017 does not overlap with profile 2018-2026)",
+            )
+
+    def test_repo_validation_cross_model_catalog_source_fails(self) -> None:
+        """Full repo validation rejects cross-model profile source."""
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            cat_profile = _valid_community_catalog_profile(
+                id="tesla-model-3-community",
+                make="Tesla",
+                model="Model 3",
+            )
+            cat_profile["secondary_sources"] = [
+                {
+                    "artifact_sha256": SHA64_B,
+                    "license": "MIT",
+                    "locator": "signals",
+                    "name": "comm/sig",
+                    "path": "signalsets/v3/default.json",
+                    "revision": SHA40_B,
+                    "url": f"https://github.com/comm/sig/tree/{SHA40_B}",
+                }
+            ]
+            cat_profile["source"]["path"] = "vehicle_profiles/tesla/model_y.json"
+            cat_profile["source"]["locator"] = "record 1"
+            _write_mini_repo(
+                tmp,
+                catalog={"profiles": [cat_profile], "schema_version": 3},
+                research_rows=[],
+            )
+            issues = validate_matrix.validate_repo(tmp)
+            _only(
+                issues,
+                "belongs to a different vehicle model than Tesla Model 3",
             )
 
 
