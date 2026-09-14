@@ -1185,6 +1185,54 @@
     "placeholders": {
       "fields": { "type": "String" }
     }
-  }
-
+  },
+  "serviceRecipesTitle": "診斷配方與主動測試",
+  "serviceRecipesSubtitle": "標準規範服務配方與非致動能力探索",
+  "serviceRecipesSafetyBannerTitle": "零實車候選（Zero Live Candidates）",
+  "serviceRecipesSafetyBannerBody": "嚴禁實車雙向致動執行（合格實車數：0）。現有配方僅限模擬與基準測試。",
+  "serviceRecipesDiscoverySection": "Mode 08 非致動能力探索",
+  "serviceRecipesDiscoveryDescription": "僅透過 CAN 查詢標準基準 TID（$00、$20…），絕不發送致動指令探測。",
+  "serviceRecipesDiscoveryButton": "探索 Mode 08 支援項目",
+  "serviceRecipesDiscovering": "正在查詢支援項目…",
+  "serviceRecipesDiscoverySuccess": "ECU 支援 Mode 08。支援 TID：{tids}",
+  "@serviceRecipesDiscoverySuccess": {
+    "placeholders": {
+      "tids": { "type": "String" }
+    }
+  },
+  "serviceRecipesDiscoveryUnsupported": "此 ECU 不支援 Mode 08",
+  "serviceRecipesDiscoveryUnknown": "Mode 08 支援狀態未知：{reason}",
+  "@serviceRecipesDiscoveryUnknown": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "serviceRecipesCatalogSection": "可用服務配方清單",
+  "serviceRecipesSimulationBadge": "模擬可用",
+  "serviceRecipesLiveBlockedBadge": "禁止實車（0 實車候選）",
+  "serviceRecipesStandard": "標準規範：{standard}",
+  "@serviceRecipesStandard": {
+    "placeholders": {
+      "standard": { "type": "String" }
+    }
+  },
+  "serviceRecipesEcuHeader": "目標 ECU 標頭：{header}",
+  "@serviceRecipesEcuHeader": {
+    "placeholders": {
+      "header": { "type": "String" }
+    }
+  },
+  "serviceRecipesHash": "標準 SHA-256：{hash}",
+  "@serviceRecipesHash": {
+    "placeholders": {
+      "hash": { "type": "String" }
+    }
+  },
+  "serviceRecipesDetailTitle": "服務配方詳細資訊",
+  "serviceRecipesPreconditions": "安全前置條件",
+  "serviceRecipesRecovery": "控制權釋放／恢復指令",
+  "serviceRecipesClose": "關閉",
+  "settingsServiceRecipesEntry": "車行診斷配方與主動測試",
+  "settingsServiceRecipesDesc": "檢視工作站服務配方並安全探索 Mode 08 支援項目"
 }
+

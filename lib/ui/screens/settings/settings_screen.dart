@@ -40,6 +40,7 @@ import 'gauge_skin_copy.dart';
 import 'vehicle_profile_copy.dart';
 import 'adapter_concern_copy.dart';
 import 'manual_command_copy.dart';
+import '../workshop/service_recipes_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.onOpenRecommendedPurchase, super.key});
@@ -814,6 +815,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ],
                 ],
+              ),
+            ),
+            const SizedBox(height: Spacing.md),
+            Panel(
+              child: ListTile(
+                key: const Key('settings_service_recipes_tile'),
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.precision_manufacturing_outlined,
+                  color: palette.accent,
+                ),
+                title: Text(
+                  l10n.settingsServiceRecipesEntry,
+                  style: context.texts.titleSmall,
+                ),
+                subtitle: Text(
+                  l10n.settingsServiceRecipesDesc,
+                  style: context.texts.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(ServiceRecipesScreen.path),
               ),
             ),
 

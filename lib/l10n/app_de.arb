@@ -1182,6 +1182,53 @@
     "placeholders": {
       "fields": { "type": "String" }
     }
-  }
-
+  },
+  "serviceRecipesTitle": "Service-Rezepte & Aktive Diagnose",
+  "serviceRecipesSubtitle": "Normbasierte Service-Rezepte und nicht-aktuatorische Funktionserkennung",
+  "serviceRecipesSafetyBannerTitle": "Null Live-Kandidaten (Zero Live Candidates)",
+  "serviceRecipesSafetyBannerBody": "Physische Fahrzeugbetätigung ist streng untersagt (0 qualifizierte Fahrzeuge). Verfügbare Rezepte sind nur Simulations-Fixtures.",
+  "serviceRecipesDiscoverySection": "Mode 08 Nicht-aktuatorische Erkennung",
+  "serviceRecipesDiscoveryDescription": "Fragt Standard-Basis-Test-IDs ($00, $20, ...) über CAN ab, ohne Komponenten zu betätigen.",
+  "serviceRecipesDiscoveryButton": "Unterstützte Mode 08 TIDs erkennen",
+  "serviceRecipesDiscovering": "Unterstützte TIDs werden abgefragt...",
+  "serviceRecipesDiscoverySuccess": "Mode 08 wird vom Steuergerät unterstützt. Unterstützte TIDs: {tids}",
+  "@serviceRecipesDiscoverySuccess": {
+    "placeholders": {
+      "tids": { "type": "String" }
+    }
+  },
+  "serviceRecipesDiscoveryUnsupported": "Mode 08 wird von diesem Steuergerät nicht unterstützt",
+  "serviceRecipesDiscoveryUnknown": "Mode 08-Status unbekannt: {reason}",
+  "@serviceRecipesDiscoveryUnknown": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "serviceRecipesCatalogSection": "Verfügbare Service-Rezepte",
+  "serviceRecipesSimulationBadge": "Simulationsbereit",
+  "serviceRecipesLiveBlockedBadge": "Live gesperrt (0 Live-Kandidaten)",
+  "serviceRecipesStandard": "Standard: {standard}",
+  "@serviceRecipesStandard": {
+    "placeholders": {
+      "standard": { "type": "String" }
+    }
+  },
+  "serviceRecipesEcuHeader": "Steuergeräte-Header: {header}",
+  "@serviceRecipesEcuHeader": {
+    "placeholders": {
+      "header": { "type": "String" }
+    }
+  },
+  "serviceRecipesHash": "Kanonischer Hash: {hash}",
+  "@serviceRecipesHash": {
+    "placeholders": {
+      "hash": { "type": "String" }
+    }
+  },
+  "serviceRecipesDetailTitle": "Service-Rezept-Details",
+  "serviceRecipesPreconditions": "Sicherheits-Vorbedingungen",
+  "serviceRecipesRecovery": "Wiederherstellungsbefehl",
+  "serviceRecipesClose": "Schließen",
+  "settingsServiceRecipesEntry": "Service-Rezepte & Aktive Tests",
+  "settingsServiceRecipesDesc": "Werkstatt-Service-Rezepte prüfen und unterstützte Mode 08 Tests sicher erkennen"
 }

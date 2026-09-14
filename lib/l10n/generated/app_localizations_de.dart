@@ -4637,4 +4637,93 @@ class AppLocalizationsDe extends AppLocalizations {
   String settingsCaWillApplyOnly(String fields) {
     return 'Nur $fields werden übernommen. Motor-kW, Verbrauch, Reichweite, CO2, VE, Cd, Stirnfläche, Crr und Getriebewirkungsgrad bleiben unbestimmt.';
   }
+
+  @override
+  String get serviceRecipesTitle => 'Service-Rezepte & Aktive Diagnose';
+
+  @override
+  String get serviceRecipesSubtitle =>
+      'Normbasierte Service-Rezepte und nicht-aktuatorische Funktionserkennung';
+
+  @override
+  String get serviceRecipesSafetyBannerTitle =>
+      'Null Live-Kandidaten (Zero Live Candidates)';
+
+  @override
+  String get serviceRecipesSafetyBannerBody =>
+      'Physische Fahrzeugbetätigung ist streng untersagt (0 qualifizierte Fahrzeuge). Verfügbare Rezepte sind nur Simulations-Fixtures.';
+
+  @override
+  String get serviceRecipesDiscoverySection =>
+      'Mode 08 Nicht-aktuatorische Erkennung';
+
+  @override
+  String get serviceRecipesDiscoveryDescription =>
+      'Fragt Standard-Basis-Test-IDs (\$00, \$20, ...) über CAN ab, ohne Komponenten zu betätigen.';
+
+  @override
+  String get serviceRecipesDiscoveryButton =>
+      'Unterstützte Mode 08 TIDs erkennen';
+
+  @override
+  String get serviceRecipesDiscovering =>
+      'Unterstützte TIDs werden abgefragt...';
+
+  @override
+  String serviceRecipesDiscoverySuccess(String tids) {
+    return 'Mode 08 wird vom Steuergerät unterstützt. Unterstützte TIDs: $tids';
+  }
+
+  @override
+  String get serviceRecipesDiscoveryUnsupported =>
+      'Mode 08 wird von diesem Steuergerät nicht unterstützt';
+
+  @override
+  String serviceRecipesDiscoveryUnknown(String reason) {
+    return 'Mode 08-Status unbekannt: $reason';
+  }
+
+  @override
+  String get serviceRecipesCatalogSection => 'Verfügbare Service-Rezepte';
+
+  @override
+  String get serviceRecipesSimulationBadge => 'Simulationsbereit';
+
+  @override
+  String get serviceRecipesLiveBlockedBadge =>
+      'Live gesperrt (0 Live-Kandidaten)';
+
+  @override
+  String serviceRecipesStandard(String standard) {
+    return 'Standard: $standard';
+  }
+
+  @override
+  String serviceRecipesEcuHeader(String header) {
+    return 'Steuergeräte-Header: $header';
+  }
+
+  @override
+  String serviceRecipesHash(String hash) {
+    return 'Kanonischer Hash: $hash';
+  }
+
+  @override
+  String get serviceRecipesDetailTitle => 'Service-Rezept-Details';
+
+  @override
+  String get serviceRecipesPreconditions => 'Sicherheits-Vorbedingungen';
+
+  @override
+  String get serviceRecipesRecovery => 'Wiederherstellungsbefehl';
+
+  @override
+  String get serviceRecipesClose => 'Schließen';
+
+  @override
+  String get settingsServiceRecipesEntry => 'Service-Rezepte & Aktive Tests';
+
+  @override
+  String get settingsServiceRecipesDesc =>
+      'Werkstatt-Service-Rezepte prüfen und unterstützte Mode 08 Tests sicher erkennen';
 }

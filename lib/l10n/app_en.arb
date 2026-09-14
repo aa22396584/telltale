@@ -3941,6 +3941,54 @@
     "placeholders": {
       "fields": { "type": "String" }
     }
-  }
-
+  },
+  "serviceRecipesTitle": "Service Recipes & Active Diagnostics",
+  "serviceRecipesSubtitle": "Standard-referenced service recipes and non-actuating capability discovery",
+  "serviceRecipesSafetyBannerTitle": "Zero Live Candidates",
+  "serviceRecipesSafetyBannerBody": "Live physical vehicle actuation is strictly prohibited (0 qualified vehicles). Available recipes are simulation fixtures only.",
+  "serviceRecipesDiscoverySection": "Mode 08 Non-Actuating Discovery",
+  "serviceRecipesDiscoveryDescription": "Queries standard base Test IDs ($00, $20, ...) over CAN without actuating any component.",
+  "serviceRecipesDiscoveryButton": "Discover Mode 08 Supported TIDs",
+  "serviceRecipesDiscovering": "Querying supported TIDs...",
+  "serviceRecipesDiscoverySuccess": "Mode 08 is supported by ECU. Supported TIDs: {tids}",
+  "@serviceRecipesDiscoverySuccess": {
+    "placeholders": {
+      "tids": { "type": "String" }
+    }
+  },
+  "serviceRecipesDiscoveryUnsupported": "Mode 08 is not supported by this ECU",
+  "serviceRecipesDiscoveryUnknown": "Mode 08 support is unknown: {reason}",
+  "@serviceRecipesDiscoveryUnknown": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "serviceRecipesCatalogSection": "Available Service Recipes",
+  "serviceRecipesSimulationBadge": "Simulation Ready",
+  "serviceRecipesLiveBlockedBadge": "Live Blocked (0 Live Candidates)",
+  "serviceRecipesStandard": "Standard: {standard}",
+  "@serviceRecipesStandard": {
+    "placeholders": {
+      "standard": { "type": "String" }
+    }
+  },
+  "serviceRecipesEcuHeader": "ECU Header: {header}",
+  "@serviceRecipesEcuHeader": {
+    "placeholders": {
+      "header": { "type": "String" }
+    }
+  },
+  "serviceRecipesHash": "Canonical Hash: {hash}",
+  "@serviceRecipesHash": {
+    "placeholders": {
+      "hash": { "type": "String" }
+    }
+  },
+  "serviceRecipesDetailTitle": "Service Recipe Details",
+  "serviceRecipesPreconditions": "Safety Preconditions",
+  "serviceRecipesRecovery": "Recovery Command",
+  "serviceRecipesClose": "Close",
+  "settingsServiceRecipesEntry": "Service Recipes & Active Tests",
+  "settingsServiceRecipesDesc": "Inspect workshop service recipes and discover supported Mode 08 tests"
 }
+

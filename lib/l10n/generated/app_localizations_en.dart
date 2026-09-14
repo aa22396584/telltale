@@ -4555,4 +4555,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsCaWillApplyOnly(String fields) {
     return 'Only $fields will be applied. Motor kW, fuel consumption, range, CO2, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.';
   }
+
+  @override
+  String get serviceRecipesTitle => 'Service Recipes & Active Diagnostics';
+
+  @override
+  String get serviceRecipesSubtitle =>
+      'Standard-referenced service recipes and non-actuating capability discovery';
+
+  @override
+  String get serviceRecipesSafetyBannerTitle => 'Zero Live Candidates';
+
+  @override
+  String get serviceRecipesSafetyBannerBody =>
+      'Live physical vehicle actuation is strictly prohibited (0 qualified vehicles). Available recipes are simulation fixtures only.';
+
+  @override
+  String get serviceRecipesDiscoverySection =>
+      'Mode 08 Non-Actuating Discovery';
+
+  @override
+  String get serviceRecipesDiscoveryDescription =>
+      'Queries standard base Test IDs (\$00, \$20, ...) over CAN without actuating any component.';
+
+  @override
+  String get serviceRecipesDiscoveryButton => 'Discover Mode 08 Supported TIDs';
+
+  @override
+  String get serviceRecipesDiscovering => 'Querying supported TIDs...';
+
+  @override
+  String serviceRecipesDiscoverySuccess(String tids) {
+    return 'Mode 08 is supported by ECU. Supported TIDs: $tids';
+  }
+
+  @override
+  String get serviceRecipesDiscoveryUnsupported =>
+      'Mode 08 is not supported by this ECU';
+
+  @override
+  String serviceRecipesDiscoveryUnknown(String reason) {
+    return 'Mode 08 support is unknown: $reason';
+  }
+
+  @override
+  String get serviceRecipesCatalogSection => 'Available Service Recipes';
+
+  @override
+  String get serviceRecipesSimulationBadge => 'Simulation Ready';
+
+  @override
+  String get serviceRecipesLiveBlockedBadge =>
+      'Live Blocked (0 Live Candidates)';
+
+  @override
+  String serviceRecipesStandard(String standard) {
+    return 'Standard: $standard';
+  }
+
+  @override
+  String serviceRecipesEcuHeader(String header) {
+    return 'ECU Header: $header';
+  }
+
+  @override
+  String serviceRecipesHash(String hash) {
+    return 'Canonical Hash: $hash';
+  }
+
+  @override
+  String get serviceRecipesDetailTitle => 'Service Recipe Details';
+
+  @override
+  String get serviceRecipesPreconditions => 'Safety Preconditions';
+
+  @override
+  String get serviceRecipesRecovery => 'Recovery Command';
+
+  @override
+  String get serviceRecipesClose => 'Close';
+
+  @override
+  String get settingsServiceRecipesEntry => 'Service Recipes & Active Tests';
+
+  @override
+  String get settingsServiceRecipesDesc =>
+      'Inspect workshop service recipes and discover supported Mode 08 tests';
 }

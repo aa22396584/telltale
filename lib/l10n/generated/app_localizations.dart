@@ -7151,6 +7151,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only {fields} will be applied. Motor kW, fuel consumption, range, CO2, VE, Cd, frontal area, Crr and transmission efficiency stay unresolved.'**
   String settingsCaWillApplyOnly(String fields);
+
+  /// No description provided for @serviceRecipesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Recipes & Active Diagnostics'**
+  String get serviceRecipesTitle;
+
+  /// No description provided for @serviceRecipesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard-referenced service recipes and non-actuating capability discovery'**
+  String get serviceRecipesSubtitle;
+
+  /// No description provided for @serviceRecipesSafetyBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero Live Candidates'**
+  String get serviceRecipesSafetyBannerTitle;
+
+  /// No description provided for @serviceRecipesSafetyBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Live physical vehicle actuation is strictly prohibited (0 qualified vehicles). Available recipes are simulation fixtures only.'**
+  String get serviceRecipesSafetyBannerBody;
+
+  /// No description provided for @serviceRecipesDiscoverySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode 08 Non-Actuating Discovery'**
+  String get serviceRecipesDiscoverySection;
+
+  /// No description provided for @serviceRecipesDiscoveryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Queries standard base Test IDs (\$00, \$20, ...) over CAN without actuating any component.'**
+  String get serviceRecipesDiscoveryDescription;
+
+  /// No description provided for @serviceRecipesDiscoveryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Mode 08 Supported TIDs'**
+  String get serviceRecipesDiscoveryButton;
+
+  /// No description provided for @serviceRecipesDiscovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Querying supported TIDs...'**
+  String get serviceRecipesDiscovering;
+
+  /// No description provided for @serviceRecipesDiscoverySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode 08 is supported by ECU. Supported TIDs: {tids}'**
+  String serviceRecipesDiscoverySuccess(String tids);
+
+  /// No description provided for @serviceRecipesDiscoveryUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode 08 is not supported by this ECU'**
+  String get serviceRecipesDiscoveryUnsupported;
+
+  /// No description provided for @serviceRecipesDiscoveryUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode 08 support is unknown: {reason}'**
+  String serviceRecipesDiscoveryUnknown(String reason);
+
+  /// No description provided for @serviceRecipesCatalogSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Service Recipes'**
+  String get serviceRecipesCatalogSection;
+
+  /// No description provided for @serviceRecipesSimulationBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulation Ready'**
+  String get serviceRecipesSimulationBadge;
+
+  /// No description provided for @serviceRecipesLiveBlockedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Blocked (0 Live Candidates)'**
+  String get serviceRecipesLiveBlockedBadge;
+
+  /// No description provided for @serviceRecipesStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard: {standard}'**
+  String serviceRecipesStandard(String standard);
+
+  /// No description provided for @serviceRecipesEcuHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'ECU Header: {header}'**
+  String serviceRecipesEcuHeader(String header);
+
+  /// No description provided for @serviceRecipesHash.
+  ///
+  /// In en, this message translates to:
+  /// **'Canonical Hash: {hash}'**
+  String serviceRecipesHash(String hash);
+
+  /// No description provided for @serviceRecipesDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Recipe Details'**
+  String get serviceRecipesDetailTitle;
+
+  /// No description provided for @serviceRecipesPreconditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Preconditions'**
+  String get serviceRecipesPreconditions;
+
+  /// No description provided for @serviceRecipesRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery Command'**
+  String get serviceRecipesRecovery;
+
+  /// No description provided for @serviceRecipesClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get serviceRecipesClose;
+
+  /// No description provided for @settingsServiceRecipesEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Recipes & Active Tests'**
+  String get settingsServiceRecipesEntry;
+
+  /// No description provided for @settingsServiceRecipesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect workshop service recipes and discover supported Mode 08 tests'**
+  String get settingsServiceRecipesDesc;
 }
 
 class _AppLocalizationsDelegate

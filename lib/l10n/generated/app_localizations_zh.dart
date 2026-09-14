@@ -4061,6 +4061,87 @@ class AppLocalizationsZh extends AppLocalizations {
   String settingsCaWillApplyOnly(String fields) {
     return '只會套用 $fields。電機 kW、油耗、續航、CO2、VE、Cd、迎風面積、Crr 與傳動效率維持未解。';
   }
+
+  @override
+  String get serviceRecipesTitle => '診斷配方與主動測試';
+
+  @override
+  String get serviceRecipesSubtitle => '標準規範服務配方與非致動能力探索';
+
+  @override
+  String get serviceRecipesSafetyBannerTitle => '零實車候選（Zero Live Candidates）';
+
+  @override
+  String get serviceRecipesSafetyBannerBody =>
+      '嚴禁實車雙向致動執行（合格實車數：0）。現有配方僅限模擬與基準測試。';
+
+  @override
+  String get serviceRecipesDiscoverySection => 'Mode 08 非致動能力探索';
+
+  @override
+  String get serviceRecipesDiscoveryDescription =>
+      '僅透過 CAN 查詢標準基準 TID（\$00、\$20…），絕不發送致動指令探測。';
+
+  @override
+  String get serviceRecipesDiscoveryButton => '探索 Mode 08 支援項目';
+
+  @override
+  String get serviceRecipesDiscovering => '正在查詢支援項目…';
+
+  @override
+  String serviceRecipesDiscoverySuccess(String tids) {
+    return 'ECU 支援 Mode 08。支援 TID：$tids';
+  }
+
+  @override
+  String get serviceRecipesDiscoveryUnsupported => '此 ECU 不支援 Mode 08';
+
+  @override
+  String serviceRecipesDiscoveryUnknown(String reason) {
+    return 'Mode 08 支援狀態未知：$reason';
+  }
+
+  @override
+  String get serviceRecipesCatalogSection => '可用服務配方清單';
+
+  @override
+  String get serviceRecipesSimulationBadge => '模擬可用';
+
+  @override
+  String get serviceRecipesLiveBlockedBadge => '禁止實車（0 實車候選）';
+
+  @override
+  String serviceRecipesStandard(String standard) {
+    return '標準規範：$standard';
+  }
+
+  @override
+  String serviceRecipesEcuHeader(String header) {
+    return '目標 ECU 標頭：$header';
+  }
+
+  @override
+  String serviceRecipesHash(String hash) {
+    return '標準 SHA-256：$hash';
+  }
+
+  @override
+  String get serviceRecipesDetailTitle => '服務配方詳細資訊';
+
+  @override
+  String get serviceRecipesPreconditions => '安全前置條件';
+
+  @override
+  String get serviceRecipesRecovery => '控制權釋放／恢復指令';
+
+  @override
+  String get serviceRecipesClose => '關閉';
+
+  @override
+  String get settingsServiceRecipesEntry => '車行診斷配方與主動測試';
+
+  @override
+  String get settingsServiceRecipesDesc => '檢視工作站服務配方並安全探索 Mode 08 支援項目';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -8119,4 +8200,85 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String settingsCaWillApplyOnly(String fields) {
     return '只會套用 $fields。電機 kW、油耗、續航、CO2、VE、Cd、迎風面積、Crr 與傳動效率維持未解。';
   }
+
+  @override
+  String get serviceRecipesTitle => '診斷配方與主動測試';
+
+  @override
+  String get serviceRecipesSubtitle => '標準規範服務配方與非致動能力探索';
+
+  @override
+  String get serviceRecipesSafetyBannerTitle => '零實車候選（Zero Live Candidates）';
+
+  @override
+  String get serviceRecipesSafetyBannerBody =>
+      '嚴禁實車雙向致動執行（合格實車數：0）。現有配方僅限模擬與基準測試。';
+
+  @override
+  String get serviceRecipesDiscoverySection => 'Mode 08 非致動能力探索';
+
+  @override
+  String get serviceRecipesDiscoveryDescription =>
+      '僅透過 CAN 查詢標準基準 TID（\$00、\$20…），絕不發送致動指令探測。';
+
+  @override
+  String get serviceRecipesDiscoveryButton => '探索 Mode 08 支援項目';
+
+  @override
+  String get serviceRecipesDiscovering => '正在查詢支援項目…';
+
+  @override
+  String serviceRecipesDiscoverySuccess(String tids) {
+    return 'ECU 支援 Mode 08。支援 TID：$tids';
+  }
+
+  @override
+  String get serviceRecipesDiscoveryUnsupported => '此 ECU 不支援 Mode 08';
+
+  @override
+  String serviceRecipesDiscoveryUnknown(String reason) {
+    return 'Mode 08 支援狀態未知：$reason';
+  }
+
+  @override
+  String get serviceRecipesCatalogSection => '可用服務配方清單';
+
+  @override
+  String get serviceRecipesSimulationBadge => '模擬可用';
+
+  @override
+  String get serviceRecipesLiveBlockedBadge => '禁止實車（0 實車候選）';
+
+  @override
+  String serviceRecipesStandard(String standard) {
+    return '標準規範：$standard';
+  }
+
+  @override
+  String serviceRecipesEcuHeader(String header) {
+    return '目標 ECU 標頭：$header';
+  }
+
+  @override
+  String serviceRecipesHash(String hash) {
+    return '標準 SHA-256：$hash';
+  }
+
+  @override
+  String get serviceRecipesDetailTitle => '服務配方詳細資訊';
+
+  @override
+  String get serviceRecipesPreconditions => '安全前置條件';
+
+  @override
+  String get serviceRecipesRecovery => '控制權釋放／恢復指令';
+
+  @override
+  String get serviceRecipesClose => '關閉';
+
+  @override
+  String get settingsServiceRecipesEntry => '車行診斷配方與主動測試';
+
+  @override
+  String get settingsServiceRecipesDesc => '檢視工作站服務配方並安全探索 Mode 08 支援項目';
 }

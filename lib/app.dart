@@ -31,6 +31,7 @@ import 'ui/screens/pids/pid_manager_screen.dart';
 import 'ui/screens/settings/settings_screen.dart';
 import 'ui/screens/telemetry/telemetry_session_detail_screen.dart';
 import 'ui/screens/telemetry/telemetry_sessions_screen.dart';
+import 'ui/screens/workshop/service_recipes_screen.dart';
 import 'ui/shell.dart';
 import 'ui/widgets/telemetry/telemetry_artifact_restart_notice.dart';
 
@@ -375,6 +376,11 @@ final _router = GoRouter(
       path: PowertrainBatteryCatalogScreen.path,
       parentNavigatorKey: _rootKey,
       builder: (context, state) => const PowertrainBatteryCatalogScreen(),
+    ),
+    GoRoute(
+      path: ServiceRecipesScreen.path,
+      parentNavigatorKey: _rootKey,
+      builder: (context, state) => const ServiceRecipesScreen(),
     ),
     GoRoute(
       path: TelemetrySessionsScreen.path,
