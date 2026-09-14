@@ -158,6 +158,57 @@ void main() {
       expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
     });
 
+    test('Probe 1b: transaction with negative frame but damaged rawLine from another ECU is NOT upgraded to unsupported', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.none,
+          rawLines: ['7E8 03 7F 08 11', '7E9 01 48'],
+          frames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      // Must NOT be Mode08NegativeResponse with unsupported!
+      expect(res.supportStatus, isNot(equals(EcuSupportStatus.unsupported)));
+      expect(res, isA<Mode08MalformedResponse>());
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults['7E8'], isA<Mode08NegativeResponse>());
+      expect(res.ecuResults.containsKey('7E9'), isTrue);
+      expect(res.ecuResults['7E9'], isA<Mode08MalformedResponse>());
+    });
+
+    test('Probe 1c: transaction with negative frame but DATA ERROR string in rawLines is NOT upgraded to unsupported', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.none,
+          rawLines: ['7E8 03 7F 08 11', 'DATA ERROR'],
+          frames: [
+            ObdFrame(
+              [0x03, 0x7F, 0x08, 0x11],
+              sourceId: '7E8',
+              payload: [0x7F, 0x08, 0x11],
+            ),
+          ],
+          observedFrames: [],
+          attributedSources: {'7E8'},
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      expect(res.supportStatus, isNot(equals(EcuSupportStatus.unsupported)));
+      expect(res, isA<Mode08MalformedResponse>());
+      expect(res.ecuResults.containsKey('7E8'), isTrue);
+      expect(res.ecuResults.containsKey('unattributed'), isTrue);
+    });
+
     test('Probe 2: successful ECU does not mask unknown/damaged ECU in same block (isComplete must be false)', () async {
       final fake = FakeElm327(
         protocol: BusProtocol.can11,
@@ -190,6 +241,7 @@ void main() {
       // Crucial check: 7E9 was unknown, so discovery is NOT complete!
       expect(result.isComplete, isFalse);
       expect(result.failureReason, isNotNull);
+      expect(result.unqueriedBlocks, equals([0x00]));
     });
 
     test('Probe 3: ECU declaring next block in 0800 that disappears in 0820 marks isComplete: false', () async {
@@ -267,6 +319,91 @@ void main() {
       expect(res, isNot(isA<Mode08SupportSuccess>()));
       expect(res, isA<Mode08MalformedResponse>());
       expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+    });
+
+    test('Probe 6: 3-block discovery with intermittent ECU (declared in 0x00, absent in 0x20, reappears in 0x40)', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['7E8 06 48 00 80 00 00 01'], // Declares next
+              // 0820: 7E8 is silent / absent
+              '0840': ['7E8 06 48 40 20 00 00 00'], // Reappears and finishes
+            },
+          ),
+          FakeEcu(
+            name: 'TCM',
+            requestId: '7E1',
+            responseId: '7E9',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['7E9 06 48 00 40 00 00 01'], // Declares next
+              '0820': ['7E9 06 48 20 80 00 00 01'], // Declares next
+              '0840': ['7E9 06 48 40 10 00 00 00'], // Finishes
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      expect((await client.send('ATH1')).isSuccess, isTrue);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      expect(result.isComplete, isFalse, reason: '7E8 missed block 0x20');
+      expect(result.unqueriedBlocks, contains(0x20));
+      expect(result.queriedBlocks, equals([0x00, 0x20, 0x40]));
+
+      // TIDs from both ECUs across all successful blocks are preserved in union
+      expect(result.supportedTids, contains(0x01));
+      expect(result.supportedTids, contains(0x02));
+      expect(result.supportedTids, contains(0x21));
+      expect(result.supportedTids, contains(0x43));
+      expect(result.supportedTids, contains(0x44));
+
+      // perEcuBlockResults preserves all 3 blocks for 7E8 (including the missing outcome on 0x20)
+      final ecmBlocks = result.perEcuBlockResults['7E8'];
+      expect(ecmBlocks, isNotNull);
+      expect(ecmBlocks!.keys, containsAll([0x00, 0x20, 0x40]));
+      expect(ecmBlocks[0x00], isA<Mode08SupportSuccess>());
+      expect(ecmBlocks[0x20], isA<Mode08NoResponse>());
+      expect(ecmBlocks[0x40], isA<Mode08SupportSuccess>());
+
+      // aggregated ecuResults for 7E8 preserves TIDs from 0x00 and 0x40
+      final ecmAggregated = result.ecuResults['7E8'] as Mode08SupportSuccess;
+      expect(ecmAggregated.supportedTids, containsAll([0x01, 0x43]));
+    });
+
+    test('Probe 7: 29-bit CAN and mixed 11/29-bit CAN framing with DLC validation', () {
+      // 1. Valid 29-bit CAN frame with DLC
+      final res29 = Mode08DiscoveryCodec.parseResponse(
+        '18DAF110 8 06 48 00 80 00 00 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(res29, isA<Mode08SupportSuccess>());
+      expect((res29 as Mode08SupportSuccess).supportedTids, contains(0x01));
+      expect(res29.ecuResults.containsKey('18DAF110'), isTrue);
+
+      // 2. Contradictory DLC on 29-bit CAN frame
+      final res29Bad = Mode08DiscoveryCodec.parseResponse(
+        '18DAF110 1 06 48 00 80 00 00 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(res29Bad, isA<Mode08MalformedResponse>());
+
+      // 3. Mixed 11-bit and 29-bit CAN responses in one exchange
+      final resMixed = Mode08DiscoveryCodec.parseResponse(
+        '7E8 8 06 48 00 80 00 00 00\n18DAF110 8 06 48 00 40 00 00 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(resMixed, isA<Mode08SupportSuccess>());
+      final mixedSuccess = resMixed as Mode08SupportSuccess;
+      expect(mixedSuccess.supportedTids, containsAll([0x01, 0x02]));
+      expect(mixedSuccess.ecuResults.keys, containsAll(['7E8', '18DAF110']));
     });
 
     // -------------------------------------------------------------------------

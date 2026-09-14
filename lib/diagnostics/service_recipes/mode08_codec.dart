@@ -490,6 +490,21 @@ final class Mode08DiscoveryCodec {
             rawResponse: trimmed,
           );
         }
+      } else {
+        final parsed = _parseSinglePayload(
+          extracted.payload,
+          expectedBaseTid: expectedBaseTid,
+          originalRaw: trimmed,
+          sourceId: extracted.sourceId,
+        );
+        if (parsed is Mode08MalformedResponse) {
+          final src = extracted.sourceId ?? 'unattributed';
+          if (!perEcu.containsKey(src) || perEcu[src] is! Mode08SupportSuccess) {
+            perEcu[src] = parsed;
+          }
+        } else if (extracted.sourceId != null && !perEcu.containsKey(extracted.sourceId)) {
+          perEcu[extracted.sourceId!] = parsed;
+        }
       }
     }
   }

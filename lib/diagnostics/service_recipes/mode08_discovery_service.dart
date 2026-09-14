@@ -293,19 +293,23 @@ abstract final class Mode08DiscoveryService {
         final ecuRes = entry.value;
         if (entry.key == 'unattributed') {
           isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
           overallFailureReason ??=
               'Unattributed response or transaction damage on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}';
         } else if (ecuRes is Mode08MalformedResponse) {
           isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
           overallFailureReason ??=
               'Malformed response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} from ${entry.key}: ${ecuRes.reason}';
         } else if (ecuRes is Mode08NoResponse) {
           isComplete = false;
+          uncompletedBlocks.add(currentBaseTid);
           overallFailureReason ??=
               'No response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} from ${entry.key}: ${ecuRes.reason}';
         } else if (ecuRes is Mode08NegativeResponse) {
           if (!ecuRes.isUnsupported) {
             isComplete = false;
+            uncompletedBlocks.add(currentBaseTid);
             overallFailureReason ??=
                 'Negative response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} from ${entry.key} (NRC 0x${ecuRes.nrc.toRadixString(16).padLeft(2, '0').toUpperCase()})';
           }
