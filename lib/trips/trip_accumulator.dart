@@ -244,7 +244,7 @@ final class TripAccumulator {
     return TripSample(
       id: sampleId,
       elapsed: sample.elapsed,
-      sourceId: sample.sourceId,
+      sourceId: sample.sourceId.trim(),
       speedKmh: speed,
       fuelRateLPerHour: fuel,
       fuelSource: fuel == null ? TripFuelSource.unavailable : sample.fuelSource,

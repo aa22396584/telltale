@@ -522,4 +522,47 @@ void main() {
     expect(trip.totals.fuelL, closeTo(0.05, 1e-9));
     expect(trip.totals.litersPer100Km, closeTo(10.0, 1e-9));
   });
+
+  test('sourceId with surrounding whitespace is normalized and continues the same stream', () {
+    final trip = TripAccumulator(maxSeenSampleIds: 1000);
+    trip.add(
+      _sample(
+        id: 'a',
+        seconds: 0,
+        speedKmh: 60,
+        sourceId: 'ecu-a/gen-1',
+      ),
+    );
+    trip.add(
+      _sample(
+        id: 'b',
+        seconds: 1,
+        speedKmh: 60,
+        sourceId: '  ecu-a/gen-1  ',
+      ),
+    );
+    expect(trip.totals.distanceKm, closeTo(60 / 3600, 1e-9));
+  });
+
+  test('sub-millisecond intervals do not falsely trigger zero-delta rejection', () {
+    final trip = TripAccumulator(maxSeenSampleIds: 1000);
+    trip.add(
+      const TripSample(
+        id: 't0',
+        elapsed: Duration.zero,
+        sourceId: 'ecu-a',
+        speedKmh: 60,
+      ),
+    );
+    trip.add(
+      const TripSample(
+        id: 't1',
+        elapsed: Duration(microseconds: 500),
+        sourceId: 'ecu-a',
+        speedKmh: 60,
+      ),
+    );
+    expect(trip.ignoredSampleCount, 0);
+    expect(trip.totals.distanceKm, closeTo(60 * (500 / 3600000000), 1e-12));
+  });
 }

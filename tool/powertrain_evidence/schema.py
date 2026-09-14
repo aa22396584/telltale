@@ -214,18 +214,6 @@ def normalize_source_url(url: str) -> str:
     return f"{host}{path}"
 
 
-def _canonical_publisher_host(url: str) -> str:
-    """Canonical publisher hostname for a non-forge HTTP(S) source."""
-    parts = _safe_source_url_parts(url)
-    if parts is None:
-        return ""
-    scheme = (parts.scheme or "").lower()
-    if scheme not in {"http", "https"}:
-        return ""
-    host = _canonical_host(parts.hostname or "")
-    if not host:
-        return ""
-    return host
 def github_org_repo(url: str) -> str | None:
     """Collapse github.com / raw / blob / tree / api URLs to ``org/repo``.
 
