@@ -171,89 +171,327 @@ NON_MODEL_SUFFIXES = frozenset(
 )
 
 
+def _normalize_repo_identity(repo: str) -> str:
+    norm = repo.strip().lower()
+    for prefix in (
+        "https://github.com/",
+        "http://github.com/",
+        "ssh://git@github.com/",
+        "git@github.com:",
+        "github.com/",
+    ):
+        if norm.startswith(prefix):
+            norm = norm[len(prefix):]
+    norm = norm.rstrip("/")
+    if norm.endswith(".git"):
+        norm = norm[:-4]
+    norm = norm.rstrip("/")
+    return norm
+
+
+def _normalize_locator_identity(locator: str) -> str:
+    return " ".join(locator.strip().lower().split())
+
+
 @dataclass(frozen=True)
 class ReviewedEvidenceBinding:
     """Explicit, per-target reviewed evidence record.
 
     Target scope, signal, source repository, revision, hash, path, and locator
-    must belong to the exact same reviewed record. Cross-model applicability
-    cannot be inferred from brand whitelists, shared platforms, substring prefix
-    tables, or negation locators.
+    must belong to the exact same reviewed record. Formal records that elevate
+    evidence qualification must not use wildcards; missing or wildcard fields
+    are rejected immediately.
     """
 
     target_scope: str
     path: str
-    signal: str = "*"
-    source_repository: str = "*"
-    revision: str = "*"
-    source_hash: str = "*"
-    locator: str = "*"
+    signal: str
+    source_repository: str
+    revision: str
+    source_hash: str
+    locator: str
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "target_scope",
+            "path",
+            "signal",
+            "source_repository",
+            "revision",
+            "source_hash",
+            "locator",
+        ):
+            val = getattr(self, field_name, None)
+            if not isinstance(val, str) or not val.strip():
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must be a non-empty string; got {val!r}"
+                )
+            if val.strip() == "*":
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must not be wildcard '*'; got {val!r}"
+                )
+            if field_name != "locator" and "*" in val:
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must not contain wildcards; got {val!r}"
+                )
 
 
 REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
     # BYD Atto 3
-    ReviewedEvidenceBinding(
-        target_scope="byd-atto3",
-        path="vehicle_profiles/byd/byd_202410_update.json",
-    ),
-    ReviewedEvidenceBinding(
-        target_scope="byd-atto-3",
-        path="vehicle_profiles/byd/byd_202410_update.json",
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/byd/byd_202410_update.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="884a967ddcde195b953fe9070119561c6defde0f22866834260b3a65746c1116",
+            locator="EU version, only before 2024.10 update; ATSH7E7; 220005 SOC_D=B4; 220008 HV_V=((B5*256)+B4); 220009 HV_A=(raw-5000)/10",
+        )
+        for target in ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community")
+        for signal in ("battery_profile", "soc", "pack_voltage", "pack_current", "pack_temp")
     ),
     # MEB architecture profiles
     *(
-        ReviewedEvidenceBinding(target_scope=target, path=path)
-        for path in ("volkswagen/meb.json", "vehicle_profiles/vw/ev_meb.json")
-        for target in (
-            "volkswagen-id3",
-            "volkswagen-id4",
-            "volkswagen-id5",
-            "volkswagen-id-buzz",
-            "cupra-born",
-            "skoda-enyaq",
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="volkswagen/meb.json",
+            signal=signal,
+            source_repository="iternio/ev-obd-pids",
+            revision="c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+            source_hash="434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+            locator=loc,
+        )
+        for target, loc in (
+            ("cupra-born", "catalog locator cupra:born* alias"),
+            ("cupra-born-meb", "catalog locator cupra:born* alias"),
+            ("skoda-enyaq", "catalog locator skoda:enyaq* alias"),
+            ("skoda-enyaq-meb", "catalog locator skoda:enyaq* alias"),
+            ("volkswagen-id-buzz", "catalog locator volkswagen:id* alias for ID. Buzz"),
+            ("volkswagen-id-buzz-meb", "catalog locator volkswagen:id* alias for ID. Buzz"),
+            ("volkswagen-id3", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id3-meb", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id4", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id4-meb", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id5", "catalog locator volkswagen:id* alias for ID.5"),
+            ("volkswagen-id5-meb", "catalog locator volkswagen:id* alias for ID.5"),
+        )
+        for signal in ("battery_profile", "soc")
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/vw/ev_meb.json",
+            signal="battery_profile",
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="7355c159c20afca957ee486dc7585e7323a57f98124bcecf5a5bc45379985108",
+            locator=loc,
+        )
+        for target, loc in (
+            ("volkswagen-id3", "car_model lists ID.3 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id3-meb", "car_model lists ID.3 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id4", "car_model lists ID.4 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id4-meb", "car_model lists ID.4 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
         )
     ),
-    # E-GMP platform OVMS polling source
+    # E-GMP platform OVMS polling source (Kia EV6)
     *(
-        ReviewedEvidenceBinding(target_scope=target, path=path)
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path=path,
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="e5ffbdadd1725cbc672249fd6c2ca4d475e8d68661abdcb0a4551d95289d89b2",
+            locator="E-GMP BMS poll table and decode for 220101/220105 on 7E4/7EC",
+        )
+        for target in ("kia-ev6", "kia-ev6-egmp-2022-2024-community", "genesis-gv60")
         for path in (
             "vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp",
             "components/vehicle_hkmc/hif_can_poll.cpp",
         )
-        for target in (
-            "hyundai-ioniq5",
-            "hyundai-ioniq6",
-            "kia-ev6",
-            "genesis-gv60",
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
         )
     ),
-    # HKMC Niro/Soul/Kona platform OVMS polling source
+    # HKMC Niro/Soul/Kona platform OVMS polling source (Hyundai Kona)
     *(
-        ReviewedEvidenceBinding(target_scope=target, path=path)
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path=path,
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
+            locator="Kona/e-Niro BMS poll table and decode for 220101/220105 on 7E4/7EC",
+        )
+        for target in ("hyundai-kona", "hyundai-kona-electric-os-2019-2023-community")
         for path in (
             "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
             "components/vehicle_hkmc/kn_can_poll.cpp",
         )
-        for target in (
-            "hyundai-kona",
-            "kia-niro",
-            "kia-soul",
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "battery_inlet_temp",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
         )
     ),
-    # Multi-model profiles
+    # Multi-model profiles (Hyundai Ioniq 6)
     *(
         ReviewedEvidenceBinding(
             target_scope=target,
             path="vehicle_profiles/hyundai/ioniq5-6.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="7ca3dadb99590a9377c688d73b6291440d1eea942b18b3dcc3a9ab538775c507",
+            locator="car_model 'Hyundai: Ioniq5/Ioniq6 (2021-2024)'; 220101/220105 windows and scales incl. signed current S17",
         )
-        for target in ("hyundai-ioniq5", "hyundai-ioniq6")
+        for target in ("hyundai-ioniq6", "hyundai-ioniq6-egmp-2022-2024-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+        )
     ),
     *(
         ReviewedEvidenceBinding(
             target_scope=target,
-            path="vehicle_profiles/kia/nirosoulkona-ev.json",
+            path="vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp",
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="e5ffbdadd1725cbc672249fd6c2ca4d475e8d68661abdcb0a4551d95289d89b2",
+            locator="E-GMP BMS poll table and decode for 220101/220105 on 7E4/7EC (map corroboration; component lists Ioniq 5/EV6, not Ioniq 6)",
         )
-        for target in ("kia-niro", "kia-soul", "hyundai-kona")
+        for target in ("hyundai-ioniq6", "hyundai-ioniq6-egmp-2022-2024-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+        )
+    ),
+    # Multi-model profiles (Kia Soul EV)
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/kia/nirosoulkona-ev.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="fcb59badaf765eb1eb1522c356bc31b378510d1797c3ff23c62e5b1570ea4f9e",
+            locator="car_model 'Kia: Niro/Soul'; 2201019/2201057 (9/7-frame) windows and scales",
+        )
+        for target in ("kia-soul", "kia-soul-ev-sk3-2020-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
+        )
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
+            locator="byte-identical Kona/e-Niro OS map corroboration (component docs list e-Niro/Kona/Ioniq FL, not e-Soul; map-level evidence only)",
+        )
+        for target in ("kia-soul", "kia-soul-ev-sk3-2020-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
+        )
     ),
 ]
 
@@ -285,34 +523,59 @@ def _find_reviewed_evidence_binding(
     target_id: str,
     path: str,
     *,
-    locator: str = "*",
-    signal: str = "*",
-    repository: str = "*",
-    revision: str = "*",
-    source_hash: str = "*",
+    locator: str,
+    signal: str,
+    repository: str,
+    revision: str,
+    source_hash: str,
 ) -> ReviewedEvidenceBinding | None:
+    if (
+        not target_id
+        or not target_id.strip()
+        or "*" in target_id
+        or not path
+        or not path.strip()
+        or "*" in path
+        or not signal
+        or not signal.strip()
+        or "*" in signal
+        or not repository
+        or not repository.strip()
+        or "*" in repository
+        or not revision
+        or not revision.strip()
+        or "*" in revision
+        or not source_hash
+        or not source_hash.strip()
+        or "*" in source_hash
+        or not locator
+        or not locator.strip()
+        or locator.strip() == "*"
+    ):
+        return None
+
     norm_path = _normalize_binding_path(path)
+    norm_repo = _normalize_repo_identity(repository)
+    norm_loc = _normalize_locator_identity(locator)
+    clean_signal = signal.strip().lower()
+    clean_rev = revision.strip().lower()
+    clean_hash = source_hash.strip().lower()
+
     for binding in REVIEWED_EVIDENCE_BINDINGS:
         if _normalize_binding_path(binding.path) != norm_path:
             continue
         if not _target_scope_matches(target_id, binding.target_scope):
             continue
-        if binding.signal != "*" and signal != "*" and binding.signal != signal:
+        if binding.signal.strip().lower() != clean_signal:
             continue
-        if binding.source_repository != "*" and repository != "*":
-            if binding.source_repository.lower() not in repository.lower():
-                continue
-        if binding.revision != "*" and revision != "*" and binding.revision != revision:
+        if _normalize_repo_identity(binding.source_repository) != norm_repo:
             continue
-        if (
-            binding.source_hash != "*"
-            and source_hash != "*"
-            and binding.source_hash != source_hash
-        ):
+        if binding.revision.strip().lower() != clean_rev:
             continue
-        if binding.locator != "*" and locator != "*":
-            if binding.locator.lower() not in locator.lower():
-                continue
+        if binding.source_hash.strip().lower() != clean_hash:
+            continue
+        if _normalize_locator_identity(binding.locator) != norm_loc:
+            continue
         return binding
     return None
 
@@ -321,11 +584,11 @@ def _has_reviewed_shared_binding(
     target_id: str,
     path_clean: str,
     *,
-    locator: str = "*",
-    signal: str = "*",
-    repository: str = "*",
-    revision: str = "*",
-    source_hash: str = "*",
+    locator: str,
+    signal: str,
+    repository: str,
+    revision: str,
+    source_hash: str,
 ) -> bool:
     return (
         _find_reviewed_evidence_binding(
@@ -395,10 +658,11 @@ def _is_cross_model_source(
     url: str,
     *,
     aliases: list[str] | None = None,
-    signal: str = "*",
-    repository: str = "*",
-    revision: str = "*",
-    source_hash: str = "*",
+    signal: str = "",
+    signals: Sequence[str] | None = None,
+    repository: str = "",
+    revision: str = "",
+    source_hash: str = "",
 ) -> bool:
     target_parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
     if not target_parts:
@@ -419,16 +683,25 @@ def _is_cross_model_source(
                 return True
 
     # 2. Check structured reviewed shared-source binding
-    if _has_reviewed_shared_binding(
-        target_id,
-        path_clean,
-        locator=locator,
-        signal=signal,
-        repository=repository,
-        revision=revision,
-        source_hash=source_hash,
-    ):
-        return False
+    candidate_signals: list[str] = []
+    if signals:
+        candidate_signals.extend(s for s in signals if isinstance(s, str) and s.strip())
+    if signal and signal.strip() and signal not in candidate_signals:
+        candidate_signals.append(signal.strip())
+    if not candidate_signals:
+        candidate_signals.append("battery_profile")
+
+    for sig in candidate_signals:
+        if _has_reviewed_shared_binding(
+            target_id,
+            path_clean,
+            locator=locator,
+            signal=sig,
+            repository=repository,
+            revision=revision,
+            source_hash=source_hash,
+        ):
+            return False
 
     # 3. OVMS component paths
     m_ovms = re.search(r"components/vehicle_([a-z0-9_]+)(?:/|$)", path_clean)
@@ -1763,20 +2036,30 @@ def validate_research_row(
             )
         src_path = _text(source.get("path")).lower()
         src_url = _text(source.get("url")).lower()
-        src_repo = _text(source.get("family") or source.get("name") or source.get("repository") or "*")
-        src_rev = _text(source.get("revision") or "*")
-        src_hash = _text(source.get("artifact_sha256") or source.get("hash") or "*")
+        src_repo = _text(source.get("family") or source.get("name") or source.get("repository"))
+        src_rev = _text(source.get("revision"))
+        src_hash = _text(source.get("artifact_sha256") or source.get("hash"))
         row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
         generation = _text(row.get("generation"))
         if generation:
             row_aliases.append(generation)
+        row_signals: list[str] = []
+        for s in _as_list(row.get("signals")):
+            if isinstance(s, str) and s.strip():
+                row_signals.append(s.strip())
+            elif isinstance(s, dict) and _text(s.get("id")):
+                row_signals.append(_text(s.get("id")))
+        if _text(row.get("signal")):
+            row_signals.append(_text(row.get("signal")))
+        if not row_signals:
+            row_signals = ["battery_profile"]
         if _is_cross_model_source(
             row_id,
             loc,
             src_path,
             src_url,
             aliases=row_aliases,
-            signal=_text(row.get("signal") or "*"),
+            signals=row_signals,
             repository=src_repo,
             revision=src_rev,
             source_hash=src_hash,
@@ -2060,25 +2343,31 @@ def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
     if isinstance(secondaries, list):
         all_sources.extend(s for s in secondaries if isinstance(s, dict))
     for src_item in all_sources:
-        path = _text(src_item.get("path")).lower()
-        url = _text(src_item.get("url")).lower()
-        loc = _text(src_item.get("locator"))
-        src_repo = _text(src_item.get("name") or src_item.get("repository") or src_item.get("family") or "*")
-        src_rev = _text(src_item.get("revision") or "*")
-        src_hash = _text(src_item.get("artifact_sha256") or src_item.get("hash") or src_item.get("sha256") or "*")
+        src_path = _text(src_item.get("path")).lower()
+        src_url = _text(src_item.get("url")).lower()
+        src_loc = _text(src_item.get("locator"))
+        src_repo = _text(src_item.get("name") or src_item.get("repository") or src_item.get("family"))
+        src_rev = _text(src_item.get("revision"))
+        src_hash = _text(src_item.get("artifact_sha256") or src_item.get("hash") or src_item.get("sha256"))
         target_id = f"{make}-{model}".lower()
         profile_aliases = [
             _text(profile.get("id")),
             _text(profile.get("variant")),
             _text(profile.get("display_name")),
         ]
+        profile_signals = ["battery_profile"]
+        for cmd in _as_list(profile.get("commands")):
+            if isinstance(cmd, dict):
+                for sig in _as_list(cmd.get("signals")):
+                    if isinstance(sig, dict) and _text(sig.get("id")):
+                        profile_signals.append(_text(sig.get("id")))
         if make and model and _is_cross_model_source(
             target_id,
-            loc,
-            path,
-            url,
+            src_loc,
+            src_path,
+            src_url,
             aliases=profile_aliases,
-            signal="*",
+            signals=profile_signals,
             repository=src_repo,
             revision=src_rev,
             source_hash=src_hash,

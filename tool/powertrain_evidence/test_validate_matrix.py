@@ -1596,7 +1596,13 @@ class ResearchRuleTest(unittest.TestCase):
         row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
         row["source_families"] = copy.deepcopy(row["source_families"])
         row["source_families"][0]["path"] = "volkswagen/MEB.json"
-        row["source_families"][0]["locator"] = "record 1"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
         self.assertEqual(_issues_for(row), [])
 
     def test_research_row_reviewed_shared_source_binding_with_relative_prefix_passes(self) -> None:
@@ -1604,7 +1610,13 @@ class ResearchRuleTest(unittest.TestCase):
         row = _valid_executable_row(id="volkswagen-id4-meb", aliases=["Volkswagen ID.4"])
         row["source_families"] = copy.deepcopy(row["source_families"])
         row["source_families"][0]["path"] = "./volkswagen/MEB.json"
-        row["source_families"][0]["locator"] = "record 1"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
         self.assertEqual(_issues_for(row), [])
 
     def test_research_row_unreviewed_target_on_shared_source_fails(self) -> None:
@@ -1612,24 +1624,36 @@ class ResearchRuleTest(unittest.TestCase):
         row = _valid_executable_row(id="tesla-model-3", aliases=["Tesla Model 3"])
         row["source_families"] = copy.deepcopy(row["source_families"])
         row["source_families"][0]["path"] = "volkswagen/MEB.json"
-        row["source_families"][0]["locator"] = "record 1"
+        row["source_families"][0]["locator"] = "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"
+        row["source_families"][0]["family"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["name"] = "iternio/ev-obd-pids"
+        row["source_families"][0]["url"] = "https://github.com/iternio/ev-obd-pids"
+        row["source_families"][0]["revision"] = "c45a018b60b3341d2d8bfb22cf0491c4e878165a"
+        row["source_families"][0]["artifact_sha256"] = "434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d"
+        row["independence_rationale"] = "primary iternio/ev-obd-pids and corroborating other/src are different GitHub orgs"
         issues = _issues_for(row)
         _only(issues, "belongs to a different vehicle model than tesla-model-3")
 
     def test_research_row_reviewed_shared_source_binding_exact_scope_required(self) -> None:
-        """Explicit ReviewedEvidenceBinding enforces unified scope, locator, revision, and artifact hash."""
-        from validate_matrix import REVIEWED_EVIDENCE_BINDINGS, ReviewedEvidenceBinding
+        """Explicit ReviewedEvidenceBinding enforces exact equality across all fields and rejects caller wildcards."""
+        from validate_matrix import (
+            REVIEWED_EVIDENCE_BINDINGS,
+            ReviewedEvidenceBinding,
+            _find_reviewed_evidence_binding,
+        )
 
         test_binding = ReviewedEvidenceBinding(
             target_scope="synthetic-model-a",
             path="vehicle_profiles/synthetic/multi.json",
-            locator="Model A exact locator",
+            signal="battery_profile",
+            source_repository="synthetic/repo",
             revision=SHA40_A,
             source_hash=SHA64_A,
+            locator="Model A exact locator",
         )
         REVIEWED_EVIDENCE_BINDINGS.append(test_binding)
         try:
-            # 1. Matching exact scope, locator, revision, and hash passes
+            # 1. Matching exact scope, locator, repo, revision, hash, and signal passes
             row_ok = _valid_executable_row(
                 id="synthetic-model-a",
                 aliases=["Synthetic Model A"],
@@ -1637,42 +1661,223 @@ class ResearchRuleTest(unittest.TestCase):
             row_ok["source_families"] = copy.deepcopy(row_ok["source_families"])
             row_ok["source_families"][0]["path"] = "vehicle_profiles/synthetic/multi.json"
             row_ok["source_families"][0]["locator"] = "Model A exact locator"
+            row_ok["source_families"][0]["family"] = "synthetic/repo"
+            row_ok["source_families"][0]["name"] = "synthetic/repo"
+            row_ok["source_families"][0]["url"] = "https://github.com/synthetic/repo"
             row_ok["source_families"][0]["revision"] = SHA40_A
             row_ok["source_families"][0]["artifact_sha256"] = SHA64_A
+            row_ok["independence_rationale"] = "primary synthetic/repo and corroborating other/src are different GitHub orgs"
+            row_ok["signals"] = copy.deepcopy(row_ok["signals"])
+            row_ok["signals"][0]["id"] = "battery_profile"
             self.assertEqual(_issues_for(row_ok), [])
 
-            # 2. Scope prefix substring leakage fails (synthetic-model-b is not authorized by prefix matching)
-            row_mismatch_model = _valid_executable_row(
-                id="synthetic-model-b",
-                aliases=["Synthetic Model B"],
-            )
-            row_mismatch_model["source_families"] = copy.deepcopy(row_mismatch_model["source_families"])
-            row_mismatch_model["source_families"][0]["path"] = "vehicle_profiles/synthetic/multi.json"
-            row_mismatch_model["source_families"][0]["locator"] = "Model A exact locator"
-            row_mismatch_model["source_families"][0]["revision"] = SHA40_A
-            row_mismatch_model["source_families"][0]["artifact_sha256"] = SHA64_A
-            issues = _issues_for(row_mismatch_model)
-            _only(issues, "belongs to a different vehicle model than synthetic-model-b")
+            # 2. Scope mismatch fails (synthetic-model-b is not authorized)
+            row_mismatch_model = copy.deepcopy(row_ok)
+            row_mismatch_model["id"] = "synthetic-model-b"
+            row_mismatch_model["aliases"] = ["Synthetic Model B"]
+            issues_scope = _issues_for(row_mismatch_model)
+            _only(issues_scope, "belongs to a different vehicle model than synthetic-model-b")
 
-            # 3. Locator mismatch fails
-            row_bad_locator = copy.deepcopy(row_ok)
-            row_bad_locator["source_families"][0]["locator"] = "Model B different locator"
-            issues_loc = _issues_for(row_bad_locator)
-            _only(issues_loc, "belongs to a different vehicle model than synthetic-model-a")
+            # 3. Signal mismatch fails
+            row_bad_signal = copy.deepcopy(row_ok)
+            row_bad_signal["signals"] = copy.deepcopy(row_ok["signals"])
+            row_bad_signal["signals"][0]["id"] = "soh"
+            issues_sig = _issues_for(row_bad_signal)
+            _only(issues_sig, "belongs to a different vehicle model than synthetic-model-a")
 
-            # 4. Revision mismatch fails
+            # 4a. Repository mismatch fails (different repository)
+            row_bad_repo = copy.deepcopy(row_ok)
+            row_bad_repo["source_families"][0]["family"] = "other/repo"
+            row_bad_repo["source_families"][0]["name"] = "other/repo"
+            row_bad_repo["source_families"][0]["url"] = "https://github.com/other/repo"
+            row_bad_repo["independence_rationale"] = "primary other/repo and corroborating other/src are different GitHub orgs"
+            issues_repo = _issues_for(row_bad_repo)
+            _only(issues_repo, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 4b. Repository substring mismatch fails (substring of repository must NOT match)
+            row_sub_repo = copy.deepcopy(row_ok)
+            row_sub_repo["source_families"][0]["family"] = "synthetic/rep"
+            row_sub_repo["source_families"][0]["name"] = "synthetic/rep"
+            row_sub_repo["source_families"][0]["url"] = "https://github.com/synthetic/rep"
+            row_sub_repo["independence_rationale"] = "primary synthetic/rep and corroborating other/src are different GitHub orgs"
+            issues_sub_repo = _issues_for(row_sub_repo)
+            _only(issues_sub_repo, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 5. Revision mismatch fails
             row_bad_rev = copy.deepcopy(row_ok)
             row_bad_rev["source_families"][0]["revision"] = SHA40_B
             issues_rev = _issues_for(row_bad_rev)
             _only(issues_rev, "belongs to a different vehicle model than synthetic-model-a")
 
-            # 5. Artifact hash mismatch fails
+            # 6. Artifact hash mismatch fails
             row_bad_hash = copy.deepcopy(row_ok)
             row_bad_hash["source_families"][0]["artifact_sha256"] = "c" * 64
             issues_hash = _issues_for(row_bad_hash)
             _only(issues_hash, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 7a. Locator mismatch fails (different locator)
+            row_bad_locator = copy.deepcopy(row_ok)
+            row_bad_locator["source_families"][0]["locator"] = "Model B different locator"
+            issues_loc = _issues_for(row_bad_locator)
+            _only(issues_loc, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 7b. Locator substring mismatch fails (substring of locator must NOT match)
+            row_sub_loc = copy.deepcopy(row_ok)
+            row_sub_loc["source_families"][0]["locator"] = "Model A exact"
+            issues_sub_loc = _issues_for(row_sub_loc)
+            _only(issues_sub_loc, "belongs to a different vehicle model than synthetic-model-a")
+
+            # 8. Direct matcher call rejects caller wildcards '*'
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="*",
+                    repository="synthetic/repo",
+                    revision=SHA40_A,
+                    source_hash=SHA64_A,
+                    locator="Model A exact locator",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="battery_profile",
+                    repository="*",
+                    revision=SHA40_A,
+                    source_hash=SHA64_A,
+                    locator="Model A exact locator",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="battery_profile",
+                    repository="synthetic/repo",
+                    revision="*",
+                    source_hash=SHA64_A,
+                    locator="Model A exact locator",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="battery_profile",
+                    repository="synthetic/repo",
+                    revision=SHA40_A,
+                    source_hash="*",
+                    locator="Model A exact locator",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="battery_profile",
+                    repository="synthetic/repo",
+                    revision=SHA40_A,
+                    source_hash=SHA64_A,
+                    locator="*",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="*",
+                    path="vehicle_profiles/synthetic/multi.json",
+                    signal="battery_profile",
+                    repository="synthetic/repo",
+                    revision=SHA40_A,
+                    source_hash=SHA64_A,
+                    locator="Model A exact locator",
+                )
+            )
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(
+                    target_id="synthetic-model-a",
+                    path="*",
+                    signal="battery_profile",
+                    repository="synthetic/repo",
+                    revision=SHA40_A,
+                    source_hash=SHA64_A,
+                    locator="Model A exact locator",
+                )
+            )
         finally:
             REVIEWED_EVIDENCE_BINDINGS.remove(test_binding)
+
+    def test_reviewed_evidence_binding_construction_validation(self) -> None:
+        """ReviewedEvidenceBinding.__post_init__ rejects empty strings, whitespace, and wildcards."""
+        from validate_matrix import ReviewedEvidenceBinding
+
+        valid_kwargs = {
+            "target_scope": "test-scope",
+            "path": "test/path.json",
+            "signal": "battery_profile",
+            "source_repository": "test/repo",
+            "revision": SHA40_A,
+            "source_hash": SHA64_A,
+            "locator": "test locator",
+        }
+
+        # Valid binding instantiates cleanly
+        b = ReviewedEvidenceBinding(**valid_kwargs)
+        self.assertEqual(b.target_scope, "test-scope")
+
+        # Each field rejects empty string and whitespace
+        for field in valid_kwargs:
+            for bad_val in ("", "   "):
+                kw = dict(valid_kwargs, **{field: bad_val})
+                with self.assertRaises(ValueError, msg=f"{field}={bad_val!r}"):
+                    ReviewedEvidenceBinding(**kw)
+
+        # Each field rejects wildcard '*'
+        for field in valid_kwargs:
+            kw = dict(valid_kwargs, **{field: "*"})
+            with self.assertRaises(ValueError, msg=f"{field}='*'"):
+                ReviewedEvidenceBinding(**kw)
+
+        # Non-locator fields reject wildcards in string
+        for field in ("target_scope", "path", "signal", "source_repository", "revision", "source_hash"):
+            kw = dict(valid_kwargs, **{field: "foo*bar"})
+            with self.assertRaises(ValueError, msg=f"{field}='foo*bar'"):
+                ReviewedEvidenceBinding(**kw)
+
+    def test_reviewed_evidence_identity_normalization(self) -> None:
+        """_normalize_repo_identity and _normalize_locator_identity normalize formats cleanly."""
+        from validate_matrix import _normalize_repo_identity, _normalize_locator_identity
+
+        # Repository URL normalization
+        expected_repo = "meatpihq/wican-fw"
+        for candidate in (
+            "meatpihq/wican-fw",
+            "meatpiHQ/wican-fw",
+            "meatpiHQ/wican-fw/",
+            "meatpiHQ/wican-fw.git",
+            "meatpiHQ/wican-fw.git/",
+            "https://github.com/meatpiHQ/wican-fw",
+            "https://github.com/meatpiHQ/wican-fw/",
+            "https://github.com/meatpiHQ/wican-fw.git",
+            "https://github.com/meatpiHQ/wican-fw.git/",
+            "http://github.com/meatpiHQ/wican-fw.git",
+            "git@github.com:meatpiHQ/wican-fw.git",
+            "ssh://git@github.com/meatpiHQ/wican-fw.git",
+            "ssh://git@github.com/meatpiHQ/wican-fw.git/",
+            "github.com/meatpiHQ/wican-fw.git",
+        ):
+            self.assertEqual(
+                _normalize_repo_identity(candidate),
+                expected_repo,
+                msg=f"Failed to normalize repo: {candidate}",
+            )
+
+        # Locator whitespace and case normalization
+        self.assertEqual(
+            _normalize_locator_identity("  ATSH7E7;   220005  SOC_D=B4  \n\t "),
+            "atsh7e7; 220005 soc_d=b4",
+        )
 
     def test_shared_source_with_matching_locators_passes(self) -> None:
         """Multiple vehicles sharing a multi-model repository pass when their locators match their own scope."""
@@ -1756,7 +1961,7 @@ def _valid_community_catalog_profile(**overrides: object) -> dict:
                 "license": "GPL-3.0",
                 "locator": "ATSH7E7 220005",
                 "name": "meatpiHQ/wican-fw",
-                "path": "vehicle_profiles/byd/byd_202410_update.json",
+                "path": "vehicle_profiles/byd/atto3.json",
                 "revision": SHA40_B,
                 "url": f"https://github.com/meatpiHQ/wican-fw/tree/{SHA40_B}",
             }
