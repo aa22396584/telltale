@@ -61,6 +61,55 @@ void main() {
     expect(run.splits.containsKey(80), isFalse);
   });
 
+  test('a confirmed stop aborts before a second launch and keeps partial evidence', () {
+    final run = AccelerationRunController();
+    run.arm();
+    run.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
+    run.ingestSpeed(kmh: 3, receivedElapsed: const Duration(seconds: 1));
+    run.ingestSpeed(kmh: 55, receivedElapsed: const Duration(seconds: 2));
+    run.ingestSpeed(kmh: 0, receivedElapsed: const Duration(seconds: 3));
+    run.ingestSpeed(
+      kmh: 1,
+      receivedElapsed: const Duration(milliseconds: 3200),
+    );
+
+    expect(run.state, AccelerationRunState.aborted);
+    expect(run.abortReason, AccelerationAbortReason.returnedToStandstill);
+    expect(run.elapsed, const Duration(milliseconds: 2200));
+    expect(run.peakSpeed, 55);
+    expect(run.splits[50], const Duration(seconds: 1));
+    expect(run.trace.map((point) => point.y), [3, 55, 0, 1]);
+
+    run.ingestSpeed(kmh: 100, receivedElapsed: const Duration(seconds: 10));
+    expect(run.state, AccelerationRunState.aborted);
+    expect(run.splits.containsKey(100), isFalse);
+    expect(run.trace.map((point) => point.y), [3, 55, 0, 1]);
+
+    run.arm();
+    expect(run.state, AccelerationRunState.awaitingStandstill);
+    expect(run.abortReason, isNull);
+    expect(run.trace, isEmpty);
+  });
+
+  test('one near-zero quantization sample does not false-abort a run', () {
+    final run = AccelerationRunController();
+    run.arm();
+    run.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
+    run.ingestSpeed(kmh: 3, receivedElapsed: const Duration(seconds: 1));
+    run.ingestSpeed(kmh: 30, receivedElapsed: const Duration(seconds: 2));
+    run.ingestSpeed(kmh: 1, receivedElapsed: const Duration(seconds: 3));
+    run.ingestSpeed(
+      kmh: 31,
+      receivedElapsed: const Duration(milliseconds: 3200),
+    );
+    run.ingestSpeed(kmh: 100, receivedElapsed: const Duration(seconds: 9));
+
+    expect(run.state, AccelerationRunState.finished);
+    expect(run.abortReason, isNull);
+    expect(run.elapsed, const Duration(seconds: 8));
+    expect(run.trace.map((point) => point.y), [3, 30, 1, 31, 100]);
+  });
+
   test('absence past the grace aborts a running run and keeps splits', () {
     final run = AccelerationRunController();
     run.arm();
@@ -74,6 +123,7 @@ void main() {
 
     run.ingestAbsence(nowElapsed: const Duration(seconds: 6));
     expect(run.state, AccelerationRunState.aborted);
+    expect(run.abortReason, AccelerationAbortReason.speedSignalLost);
     expect(run.splits[50], isNotNull);
     expect(run.elapsed, isNotNull);
   });
@@ -88,6 +138,7 @@ void main() {
 
     run.ingestAbsence();
     expect(run.state, AccelerationRunState.aborted);
+    expect(run.abortReason, AccelerationAbortReason.speedSignalLost);
     expect(run.splits[50], isNotNull);
 
     final reset = AccelerationRunController();
@@ -97,6 +148,7 @@ void main() {
     reset.ingestSpeed(kmh: 55, receivedElapsed: const Duration(seconds: 4));
     reset.ingestAbsence(nowElapsed: Duration.zero);
     expect(reset.state, AccelerationRunState.aborted);
+    expect(reset.abortReason, AccelerationAbortReason.speedSignalLost);
 
     final newConnection = AccelerationRunController();
     newConnection.arm();
@@ -110,6 +162,10 @@ void main() {
     );
     newConnection.ingestSpeed(kmh: 40, receivedElapsed: Duration.zero);
     expect(newConnection.state, AccelerationRunState.aborted);
+    expect(
+      newConnection.abortReason,
+      AccelerationAbortReason.outOfOrderObservation,
+    );
   });
 
   test('a stale sample aborts immediately', () {
@@ -118,6 +174,26 @@ void main() {
     run.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
     run.ingestStale();
     expect(run.state, AccelerationRunState.aborted);
+    expect(run.abortReason, AccelerationAbortReason.staleSpeed);
+  });
+
+  test('an out-of-order observation still aborts without rewriting evidence', () {
+    final run = AccelerationRunController();
+    run.arm();
+    run.ingestSpeed(kmh: 0, receivedElapsed: Duration.zero);
+    run.ingestSpeed(kmh: 3, receivedElapsed: const Duration(seconds: 1));
+    run.ingestSpeed(kmh: 55, receivedElapsed: const Duration(seconds: 2));
+
+    run.ingestSpeed(
+      kmh: 80,
+      receivedElapsed: const Duration(milliseconds: 1500),
+    );
+
+    expect(run.state, AccelerationRunState.aborted);
+    expect(run.abortReason, AccelerationAbortReason.outOfOrderObservation);
+    expect(run.elapsed, const Duration(seconds: 1));
+    expect(run.splits.keys, [50]);
+    expect(run.trace.map((point) => point.y), [3, 55]);
   });
 
   test('arming while moving waits for standstill', () {

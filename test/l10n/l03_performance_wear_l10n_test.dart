@@ -607,7 +607,7 @@ void main() {
       _expectNoChinese(tester, 'the finished acceleration run');
     });
 
-    testWidgets('a run whose speed signal goes stale says so, and keeps what it had', (
+    testWidgets('a run whose speed signal goes stale stays incomplete and keeps what it had', (
       tester,
     ) async {
       final telemetry = await _pumpPerformance(tester, connected: true);

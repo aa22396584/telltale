@@ -19,6 +19,20 @@ enum AccelerationRunState {
   aborted,
 }
 
+enum AccelerationAbortReason {
+  /// The heartbeat lost usable speed or its monotonic connection clock.
+  speedSignalLost,
+
+  /// The most recent speed reading exceeded its freshness contract.
+  staleSpeed,
+
+  /// A reading belonged before the last distinct observation tick.
+  outOfOrderObservation,
+
+  /// Two consecutive samples returned to the existing standstill band.
+  returnedToStandstill,
+}
+
 /// Closed observation window for one event, in seconds on the run clock.
 ///
 /// The run clock is zero at the last standstill sample. This is an
@@ -38,6 +52,9 @@ final class AccelerationRunController {
   /// OBD road speed is a whole number; under 2 km/h is standstill.
   static const double standstillKmh = 1;
   static const double launchKmh = 2;
+
+  /// Debounces one quantized near-zero sample without inventing a time window.
+  static const int standstillConfirmationSamples = 2;
   static const Duration speedAbsenceGrace = Duration(milliseconds: 1500);
   static const int maxTracePoints = 1200;
 
@@ -49,6 +66,8 @@ final class AccelerationRunController {
   Duration? _targetElapsed;
   Duration? _lastConsumedElapsed;
   Duration? _elapsed;
+  AccelerationAbortReason? _abortReason;
+  int _consecutiveStandstillSamples = 0;
   double _peakSpeed = 0;
   final Map<int, Duration> _splits = {};
   final List<FlSpot> _trace = [];
@@ -56,6 +75,7 @@ final class AccelerationRunController {
   AccelerationRunState get state => _state;
   int get targetKmh => _target;
   Duration? get elapsed => _elapsed;
+  AccelerationAbortReason? get abortReason => _abortReason;
   double get peakSpeed => _peakSpeed;
   Map<int, Duration> get splits => Map.unmodifiable(_splits);
   List<FlSpot> get trace => List.unmodifiable(_trace);
@@ -112,6 +132,8 @@ final class AccelerationRunController {
     _targetElapsed = null;
     _lastConsumedElapsed = null;
     _elapsed = null;
+    _abortReason = null;
+    _consecutiveStandstillSamples = 0;
     _peakSpeed = 0;
     _splits.clear();
     _trace.clear();
@@ -132,14 +154,14 @@ final class AccelerationRunController {
         last == null ||
         nowElapsed < last ||
         nowElapsed - last > speedAbsenceGrace) {
-      _abort();
+      _abort(AccelerationAbortReason.speedSignalLost);
     }
   }
 
   void ingestStale() {
     if (_state == AccelerationRunState.running ||
         _state == AccelerationRunState.staged) {
-      _abort();
+      _abort(AccelerationAbortReason.staleSpeed);
     }
   }
 
@@ -158,8 +180,9 @@ final class AccelerationRunController {
         break;
     }
     if (_lastConsumedElapsed == receivedElapsed) return;
-    if (_lastConsumedElapsed != null && receivedElapsed < _lastConsumedElapsed!) {
-      _abort();
+    if (_lastConsumedElapsed != null &&
+        receivedElapsed < _lastConsumedElapsed!) {
+      _abort(AccelerationAbortReason.outOfOrderObservation);
       return;
     }
     _lastConsumedElapsed = receivedElapsed;
@@ -209,13 +232,29 @@ final class AccelerationRunController {
       }
     }
 
+    // A single whole-number 0/1 km/h sample can be quantisation wobble. Two
+    // consecutive, distinct observations confirm only that the sampled run
+    // returned to the controller's existing standstill band; they do not
+    // claim a physical stop duration. Record both before aborting so the
+    // partial trace and splits remain useful evidence.
+    if (kmh <= standstillKmh) {
+      _consecutiveStandstillSamples++;
+      if (_consecutiveStandstillSamples >= standstillConfirmationSamples) {
+        _abort(AccelerationAbortReason.returnedToStandstill);
+        return;
+      }
+    } else {
+      _consecutiveStandstillSamples = 0;
+    }
+
     if (kmh >= _target) {
       _targetElapsed ??= receivedElapsed;
       _state = AccelerationRunState.finished;
     }
   }
 
-  void _abort() {
+  void _abort(AccelerationAbortReason reason) {
+    _abortReason ??= reason;
     _state = AccelerationRunState.aborted;
   }
 }

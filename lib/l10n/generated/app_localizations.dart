@@ -1928,7 +1928,7 @@ abstract class AppLocalizations {
   /// An incomplete run whose partial evidence is kept. Must never read as a finished time.
   ///
   /// In en, this message translates to:
-  /// **'The speed signal stopped — this run was not completed; below is what was recorded before it went'**
+  /// **'This run was not completed; below is what was recorded before it stopped'**
   String get performanceStateAborted;
 
   /// No speed reading at all. Distinct from a reading that says the car is moving — the app cannot tell yet.

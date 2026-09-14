@@ -14,6 +14,9 @@ enum TripFuelSource {
   unavailable,
 }
 
+/// Engine observation attached to a trip sample.
+enum TripEngineState { running, notRunning, unknown }
+
 final class TripSample {
   const TripSample({
     required this.id,
@@ -22,6 +25,7 @@ final class TripSample {
     this.speedKmh,
     this.fuelRateLPerHour,
     this.fuelSource = TripFuelSource.unavailable,
+    this.engineState = TripEngineState.unknown,
   });
 
   final String id;
@@ -30,6 +34,7 @@ final class TripSample {
   final double? speedKmh;
   final double? fuelRateLPerHour;
   final TripFuelSource fuelSource;
+  final TripEngineState engineState;
 }
 
 final class TripTotals {
@@ -40,6 +45,8 @@ final class TripTotals {
     this.jointFuelL = 0,
     this.moving = Duration.zero,
     this.idle = Duration.zero,
+    this.stoppedNotRunning = Duration.zero,
+    this.stoppedUnknown = Duration.zero,
     this.unknownMotion = Duration.zero,
     this.gap = Duration.zero,
   });
@@ -50,6 +57,8 @@ final class TripTotals {
   final double jointFuelL;
   final Duration moving;
   final Duration idle;
+  final Duration stoppedNotRunning;
+  final Duration stoppedUnknown;
   final Duration unknownMotion;
   final Duration gap;
 
@@ -65,6 +74,29 @@ final class TripAccumulator {
   /// must not integrate as if the last sample were still true.
   static const Duration maxGap = Duration(seconds: 10);
 
+  /// Number of most-recent ignored IDs retained for diagnostics.
+  static const int ignoredSampleIdCapacity = 32;
+
+  /// Creates one in-memory logical trip with an exact ID budget.
+  ///
+  /// Once [maxSeenSampleIds] distinct structurally valid IDs are claimed, the
+  /// accumulator latches [identityCapacityExceeded] and rejects every new ID
+  /// without evicting old identities or changing trip totals. Construct a new
+  /// accumulator only for a new logical trip. Identity state is not persisted
+  /// and therefore is not restart-durable.
+  TripAccumulator({required int maxSeenSampleIds})
+    : _maxSeenSampleIds = maxSeenSampleIds {
+    if (maxSeenSampleIds <= 0) {
+      throw ArgumentError.value(
+        maxSeenSampleIds,
+        'maxSeenSampleIds',
+        'must be greater than zero',
+      );
+    }
+  }
+
+  final int _maxSeenSampleIds;
+  final _seenSampleIds = <String>{};
   TripSample? _last;
   var _distanceKm = 0.0;
   var _fuelL = 0.0;
@@ -72,11 +104,22 @@ final class TripAccumulator {
   var _jointFuelL = 0.0;
   var _moving = Duration.zero;
   var _idle = Duration.zero;
+  var _stoppedNotRunning = Duration.zero;
+  var _stoppedUnknown = Duration.zero;
   var _unknownMotion = Duration.zero;
   var _gap = Duration.zero;
   final _ignored = <String>[];
+  var _ignoredSampleCount = 0;
+  var _identityCapacityExceeded = false;
 
+  /// The newest [ignoredSampleIdCapacity] normalized ignored IDs.
   List<String> get ignoredSampleIds => List.unmodifiable(_ignored);
+
+  /// Total ignored observations, including IDs no longer in the bounded list.
+  int get ignoredSampleCount => _ignoredSampleCount;
+
+  /// Whether the distinct-ID budget was exceeded for this logical trip.
+  bool get identityCapacityExceeded => _identityCapacityExceeded;
 
   TripTotals get totals => TripTotals(
     distanceKm: _distanceKm,
@@ -85,16 +128,37 @@ final class TripAccumulator {
     jointFuelL: _jointFuelL,
     moving: _moving,
     idle: _idle,
+    stoppedNotRunning: _stoppedNotRunning,
+    stoppedUnknown: _stoppedUnknown,
     unknownMotion: _unknownMotion,
     gap: _gap,
   );
 
+  /// Adds a sample once per trimmed, case-sensitive ID in this accumulator.
+  ///
+  /// Identity is global to the logical trip, not scoped by [TripSample.sourceId].
+  /// Structurally valid IDs are claimed before relative timestamp and source
+  /// transition handling, so an out-of-order ID cannot later be amended and
+  /// replayed.
   void add(TripSample sample) {
-    if (!_usable(sample)) {
-      _ignored.add(sample.id);
+    final sampleId = sample.id.trim();
+    if (!_structurallyUsable(sample, sampleId)) {
+      _ignore(sampleId);
       return;
     }
-    sample = _sanitize(sample);
+    if (_seenSampleIds.contains(sampleId)) {
+      _ignore(sampleId);
+      return;
+    }
+    if (_identityCapacityExceeded ||
+        _seenSampleIds.length >= _maxSeenSampleIds) {
+      _identityCapacityExceeded = true;
+      _ignore(sampleId);
+      return;
+    }
+    _seenSampleIds.add(sampleId);
+
+    sample = _sanitize(sample, sampleId);
     final previous = _last;
     if (previous == null) {
       _last = sample;
@@ -106,11 +170,11 @@ final class TripAccumulator {
     }
     final dt = sample.elapsed - previous.elapsed;
     if (dt == Duration.zero) {
-      _ignored.add(sample.id);
+      _ignore(sampleId);
       return;
     }
     if (dt.isNegative) {
-      _ignored.add(sample.id);
+      _ignore(sampleId);
       return;
     }
     if (dt > maxGap) {
@@ -130,8 +194,14 @@ final class TripAccumulator {
       _distanceKm += average * hours;
       if (average >= PhysicsEngine.minSpeedForConsumption) {
         _moving += dt;
-      } else {
+      } else if (previous.engineState == TripEngineState.running &&
+          sample.engineState == TripEngineState.running) {
         _idle += dt;
+      } else if (previous.engineState == TripEngineState.notRunning &&
+          sample.engineState == TripEngineState.notRunning) {
+        _stoppedNotRunning += dt;
+      } else {
+        _stoppedUnknown += dt;
       }
     } else {
       _unknownMotion += dt;
@@ -158,27 +228,34 @@ final class TripAccumulator {
     _last = sample;
   }
 
-  static TripSample _sanitize(TripSample sample) {
+  void _ignore(String sampleId) {
+    _ignoredSampleCount++;
+    if (_ignored.length == ignoredSampleIdCapacity) {
+      _ignored.removeAt(0);
+    }
+    _ignored.add(sampleId);
+  }
+
+  static TripSample _sanitize(TripSample sample, String sampleId) {
     final speed = _fieldUsable(sample.speedKmh) ? sample.speedKmh : null;
     final fuel = _fieldUsable(sample.fuelRateLPerHour)
         ? sample.fuelRateLPerHour
         : null;
     return TripSample(
-      id: sample.id,
+      id: sampleId,
       elapsed: sample.elapsed,
       sourceId: sample.sourceId,
       speedKmh: speed,
       fuelRateLPerHour: fuel,
       fuelSource: fuel == null ? TripFuelSource.unavailable : sample.fuelSource,
+      engineState: sample.engineState,
     );
   }
 
-  static bool _usable(TripSample sample) {
-    if (sample.id.trim().isEmpty || sample.sourceId.trim().isEmpty) {
-      return false;
-    }
-    return !sample.elapsed.isNegative;
-  }
+  static bool _structurallyUsable(TripSample sample, String sampleId) =>
+      sampleId.isNotEmpty &&
+      sample.sourceId.trim().isNotEmpty &&
+      !sample.elapsed.isNegative;
 
   static bool _fieldUsable(double? value) {
     if (value == null) return true;

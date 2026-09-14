@@ -278,7 +278,7 @@
   "performanceSpeedGaugeLabel": "車速",
   "performanceSpeedTraceHeading": "速度軌跡",
   "performanceSplitsHeading": "分段成績",
-  "performanceStateAborted": "車速訊號中斷 — 這次計時未完成，以下為中斷前的紀錄",
+  "performanceStateAborted": "這次計時未完成，以下為中止前的紀錄",
   "performanceStateAwaitingSpeedSignal": "等待車速訊號",
   "performanceStateAwaitingStandstill": "請先完全停車 — 目前 {speed} km/h",
   "performanceStateFinished": "完成 0 → {target} km/h",
