@@ -1727,86 +1727,280 @@ class ResearchRuleTest(unittest.TestCase):
             issues_sub_loc = _issues_for(row_sub_loc)
             _only(issues_sub_loc, "belongs to a different vehicle model than synthetic-model-a")
 
-            # 8. Direct matcher call rejects caller wildcards '*'
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="*",
-                    repository="synthetic/repo",
-                    revision=SHA40_A,
-                    source_hash=SHA64_A,
-                    locator="Model A exact locator",
+            # 8. Negative target variations: unreviewed market, year, or combinations return None and fail row validation
+            for unreviewed_target in (
+                "synthetic-model-a-us",
+                "synthetic-model-a-2030",
+                "synthetic-model-a-us-2026-community",
+                "synthetic-model-a-eu-2030-community",
+            ):
+                row_unreviewed = copy.deepcopy(row_ok)
+                row_unreviewed["id"] = unreviewed_target
+                row_unreviewed["aliases"] = [unreviewed_target.replace("-", " ").title()]
+                issues_unreviewed = _issues_for(row_unreviewed)
+                _only(
+                    issues_unreviewed,
+                    f"belongs to a different vehicle model than {unreviewed_target}",
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="battery_profile",
-                    repository="*",
-                    revision=SHA40_A,
-                    source_hash=SHA64_A,
-                    locator="Model A exact locator",
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id=unreviewed_target,
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    ),
+                    f"Target {unreviewed_target!r} must not match binding for 'synthetic-model-a'",
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="battery_profile",
-                    repository="synthetic/repo",
-                    revision="*",
-                    source_hash=SHA64_A,
-                    locator="Model A exact locator",
+
+            # 9. Direct matcher call rejects caller wildcards '*' and '?'
+            for wildcard in ("*", "?"):
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal=wildcard,
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="battery_profile",
-                    repository="synthetic/repo",
-                    revision=SHA40_A,
-                    source_hash="*",
-                    locator="Model A exact locator",
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository=wildcard,
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="battery_profile",
-                    repository="synthetic/repo",
-                    revision=SHA40_A,
-                    source_hash=SHA64_A,
-                    locator="*",
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=wildcard,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="*",
-                    path="vehicle_profiles/synthetic/multi.json",
-                    signal="battery_profile",
-                    repository="synthetic/repo",
-                    revision=SHA40_A,
-                    source_hash=SHA64_A,
-                    locator="Model A exact locator",
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=wildcard,
+                        locator="Model A exact locator",
+                    )
                 )
-            )
-            self.assertIsNone(
-                _find_reviewed_evidence_binding(
-                    target_id="synthetic-model-a",
-                    path="*",
-                    signal="battery_profile",
-                    repository="synthetic/repo",
-                    revision=SHA40_A,
-                    source_hash=SHA64_A,
-                    locator="Model A exact locator",
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator=wildcard,
+                    )
                 )
-            )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id=wildcard,
+                        path="vehicle_profiles/synthetic/multi.json",
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
+                self.assertIsNone(
+                    _find_reviewed_evidence_binding(
+                        target_id="synthetic-model-a",
+                        path=wildcard,
+                        signal="battery_profile",
+                        repository="synthetic/repo",
+                        revision=SHA40_A,
+                        source_hash=SHA64_A,
+                        locator="Model A exact locator",
+                    )
+                )
         finally:
             REVIEWED_EVIDENCE_BINDINGS.remove(test_binding)
+
+    def test_reviewed_evidence_binding_exact_target_scope_negative_probe(self) -> None:
+        """Fixing all source fields and changing only target_id: unreviewed years/markets return None."""
+        from validate_matrix import (
+            REVIEWED_EVIDENCE_BINDINGS,
+            _find_reviewed_evidence_binding,
+            _target_scope_matches,
+        )
+
+        # 0. Direct token matching edge cases: empty/punctuation must never match
+        self.assertFalse(_target_scope_matches("---", "___"))
+        self.assertFalse(_target_scope_matches("", ""))
+        self.assertFalse(_target_scope_matches("   ", "   "))
+        self.assertTrue(_target_scope_matches("byd-atto3", "byd-atto3"))
+        self.assertTrue(_target_scope_matches("byd-atto-3", "byd-atto3"))
+        self.assertFalse(_target_scope_matches("byd-atto3-us", "byd-atto3"))
+        self.assertFalse(_target_scope_matches("byd-atto3-2030", "byd-atto3"))
+
+        byd_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "byd-atto3"
+                and "byd_202410_update.json" in item.path
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(byd_record)
+        assert byd_record is not None
+
+        byd_source_args = {
+            "path": byd_record.path,
+            "locator": byd_record.locator,
+            "signal": byd_record.signal,
+            "repository": byd_record.source_repository,
+            "revision": byd_record.revision,
+            "source_hash": byd_record.source_hash,
+        }
+
+        # 1. Registered exact target and approved aliases match
+        for authorized in ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community"):
+            matched = _find_reviewed_evidence_binding(
+                target_id=authorized, **byd_source_args
+            )
+            self.assertIsNotNone(matched, f"Expected {authorized!r} to match")
+            assert matched is not None
+            self.assertIn(matched.target_scope, ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community"))
+
+        # 2. Unreviewed target variations (market, year, combo) must return None
+        unreviewed_byd_targets = (
+            "byd-atto3-us",
+            "byd-atto3-eu",
+            "byd-atto3-au",
+            "byd-atto3-cn",
+            "byd-atto3-2030",
+            "byd-atto3-2025",
+            "byd-atto3-2024",
+            "byd-atto3-us-2026-community",
+            "byd-atto3-eu-2030-community",
+            "byd-atto3?",
+            "---",
+            "",
+        )
+        for unreviewed in unreviewed_byd_targets:
+            matched = _find_reviewed_evidence_binding(
+                target_id=unreviewed, **byd_source_args
+            )
+            self.assertIsNone(
+                matched,
+                f"Unreviewed target {unreviewed!r} must return None instead of inheriting reviewed status",
+            )
+
+        # 3. Kona binding checks
+        kona_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "hyundai-kona"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(kona_record)
+        assert kona_record is not None
+        kona_source_args = {
+            "path": kona_record.path,
+            "locator": kona_record.locator,
+            "signal": kona_record.signal,
+            "repository": kona_record.source_repository,
+            "revision": kona_record.revision,
+            "source_hash": kona_record.source_hash,
+        }
+        for authorized in ("hyundai-kona", "hyundai-kona-electric", "hyundai-kona-electric-os-2019-2023-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **kona_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("hyundai-kona-us", "hyundai-kona-2030", "hyundai-kona-us-2025-community", "hyundai-kona?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **kona_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
+
+        # 4. Kia Soul binding checks
+        soul_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "kia-soul"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(soul_record)
+        assert soul_record is not None
+        soul_source_args = {
+            "path": soul_record.path,
+            "locator": soul_record.locator,
+            "signal": soul_record.signal,
+            "repository": soul_record.source_repository,
+            "revision": soul_record.revision,
+            "source_hash": soul_record.source_hash,
+        }
+        for authorized in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **soul_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("kia-soul-us", "kia-soul-2030", "kia-soul-us-2025-community", "kia-soul?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **soul_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
+
+        # 5. Hyundai Ioniq 6 binding checks
+        ioniq6_record = next(
+            (
+                item
+                for item in REVIEWED_EVIDENCE_BINDINGS
+                if item.target_scope == "hyundai-ioniq6"
+                and item.signal == "battery_profile"
+            ),
+            None,
+        )
+        self.assertIsNotNone(ioniq6_record)
+        assert ioniq6_record is not None
+        ioniq6_source_args = {
+            "path": ioniq6_record.path,
+            "locator": ioniq6_record.locator,
+            "signal": ioniq6_record.signal,
+            "repository": ioniq6_record.source_repository,
+            "revision": ioniq6_record.revision,
+            "source_hash": ioniq6_record.source_hash,
+        }
+        for authorized in ("hyundai-ioniq6", "hyundai-ioniq-6", "hyundai-ioniq6-egmp-2022-2024-community"):
+            self.assertIsNotNone(
+                _find_reviewed_evidence_binding(target_id=authorized, **ioniq6_source_args),
+                f"Expected {authorized!r} to match",
+            )
+        for unreviewed in ("hyundai-ioniq6-us", "hyundai-ioniq6-2030", "hyundai-ioniq6-us-2025-community", "hyundai-ioniq6?"):
+            self.assertIsNone(
+                _find_reviewed_evidence_binding(target_id=unreviewed, **ioniq6_source_args),
+                f"Unreviewed target {unreviewed!r} must return None",
+            )
 
     def test_reviewed_evidence_binding_construction_validation(self) -> None:
         """ReviewedEvidenceBinding.__post_init__ rejects empty strings, whitespace, and wildcards."""
@@ -1833,17 +2027,19 @@ class ResearchRuleTest(unittest.TestCase):
                 with self.assertRaises(ValueError, msg=f"{field}={bad_val!r}"):
                     ReviewedEvidenceBinding(**kw)
 
-        # Each field rejects wildcard '*'
+        # Each field rejects wildcard '*' and '?'
         for field in valid_kwargs:
-            kw = dict(valid_kwargs, **{field: "*"})
-            with self.assertRaises(ValueError, msg=f"{field}='*'"):
-                ReviewedEvidenceBinding(**kw)
+            for wildcard in ("*", "?"):
+                kw = dict(valid_kwargs, **{field: wildcard})
+                with self.assertRaises(ValueError, msg=f"{field}={wildcard!r}"):
+                    ReviewedEvidenceBinding(**kw)
 
         # Non-locator fields reject wildcards in string
         for field in ("target_scope", "path", "signal", "source_repository", "revision", "source_hash"):
-            kw = dict(valid_kwargs, **{field: "foo*bar"})
-            with self.assertRaises(ValueError, msg=f"{field}='foo*bar'"):
-                ReviewedEvidenceBinding(**kw)
+            for bad_str in ("foo*bar", "foo?bar"):
+                kw = dict(valid_kwargs, **{field: bad_str})
+                with self.assertRaises(ValueError, msg=f"{field}={bad_str!r}"):
+                    ReviewedEvidenceBinding(**kw)
 
     def test_reviewed_evidence_identity_normalization(self) -> None:
         """_normalize_repo_identity and _normalize_locator_identity normalize formats cleanly."""

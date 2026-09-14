@@ -226,11 +226,11 @@ class ReviewedEvidenceBinding:
                 raise ValueError(
                     f"ReviewedEvidenceBinding {field_name} must be a non-empty string; got {val!r}"
                 )
-            if val.strip() == "*":
+            if val.strip() in ("*", "?"):
                 raise ValueError(
-                    f"ReviewedEvidenceBinding {field_name} must not be wildcard '*'; got {val!r}"
+                    f"ReviewedEvidenceBinding {field_name} must not be wildcard; got {val!r}"
                 )
-            if field_name != "locator" and "*" in val:
+            if field_name != "locator" and any(c in val for c in ("*", "?")):
                 raise ValueError(
                     f"ReviewedEvidenceBinding {field_name} must not contain wildcards; got {val!r}"
                 )
@@ -342,7 +342,11 @@ REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
             source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
             locator="Kona/e-Niro BMS poll table and decode for 220101/220105 on 7E4/7EC",
         )
-        for target in ("hyundai-kona", "hyundai-kona-electric-os-2019-2023-community")
+        for target in (
+            "hyundai-kona",
+            "hyundai-kona-electric",
+            "hyundai-kona-electric-os-2019-2023-community",
+        )
         for path in (
             "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
             "components/vehicle_hkmc/kn_can_poll.cpp",
@@ -380,7 +384,11 @@ REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
             source_hash="7ca3dadb99590a9377c688d73b6291440d1eea942b18b3dcc3a9ab538775c507",
             locator="car_model 'Hyundai: Ioniq5/Ioniq6 (2021-2024)'; 220101/220105 windows and scales incl. signed current S17",
         )
-        for target in ("hyundai-ioniq6", "hyundai-ioniq6-egmp-2022-2024-community")
+        for target in (
+            "hyundai-ioniq6",
+            "hyundai-ioniq-6",
+            "hyundai-ioniq6-egmp-2022-2024-community",
+        )
         for signal in (
             "battery_profile",
             "soc_bms",
@@ -411,7 +419,11 @@ REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
             source_hash="e5ffbdadd1725cbc672249fd6c2ca4d475e8d68661abdcb0a4551d95289d89b2",
             locator="E-GMP BMS poll table and decode for 220101/220105 on 7E4/7EC (map corroboration; component lists Ioniq 5/EV6, not Ioniq 6)",
         )
-        for target in ("hyundai-ioniq6", "hyundai-ioniq6-egmp-2022-2024-community")
+        for target in (
+            "hyundai-ioniq6",
+            "hyundai-ioniq-6",
+            "hyundai-ioniq6-egmp-2022-2024-community",
+        )
         for signal in (
             "battery_profile",
             "soc_bms",
@@ -443,7 +455,7 @@ REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
             source_hash="fcb59badaf765eb1eb1522c356bc31b378510d1797c3ff23c62e5b1570ea4f9e",
             locator="car_model 'Kia: Niro/Soul'; 2201019/2201057 (9/7-frame) windows and scales",
         )
-        for target in ("kia-soul", "kia-soul-ev-sk3-2020-community")
+        for target in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community")
         for signal in (
             "battery_profile",
             "soc_bms",
@@ -473,7 +485,7 @@ REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
             source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
             locator="byte-identical Kona/e-Niro OS map corroboration (component docs list e-Niro/Kona/Ioniq FL, not e-Soul; map-level evidence only)",
         )
-        for target in ("kia-soul", "kia-soul-ev-sk3-2020-community")
+        for target in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community")
         for signal in (
             "battery_profile",
             "soc_bms",
@@ -504,19 +516,16 @@ def _normalize_binding_path(path: str) -> str:
 
 
 def _target_scope_matches(target_id: str, binding_scope: str) -> bool:
+    """Exact token-normalized match between target_id and binding target_scope.
+
+    Formal evidence bindings require exact target matching. Approved aliases must
+    be explicitly registered rather than stripping market, year, or platform tokens.
+    """
     clean_target = _norm_token(target_id)
     clean_scope = _norm_token(binding_scope)
-    if clean_target == clean_scope:
-        return True
-    parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
-    model_parts = [
-        p
-        for p in parts
-        if p not in NON_MODEL_SUFFIXES and not (p.isdigit() and len(p) == 4)
-    ]
-    if _norm_token("".join(model_parts)) == clean_scope:
-        return True
-    return False
+    if not clean_target or not clean_scope:
+        return False
+    return clean_target == clean_scope
 
 
 def _find_reviewed_evidence_binding(
@@ -533,24 +542,30 @@ def _find_reviewed_evidence_binding(
         not target_id
         or not target_id.strip()
         or "*" in target_id
+        or "?" in target_id
         or not path
         or not path.strip()
         or "*" in path
+        or "?" in path
         or not signal
         or not signal.strip()
         or "*" in signal
+        or "?" in signal
         or not repository
         or not repository.strip()
         or "*" in repository
+        or "?" in repository
         or not revision
         or not revision.strip()
         or "*" in revision
+        or "?" in revision
         or not source_hash
         or not source_hash.strip()
         or "*" in source_hash
+        or "?" in source_hash
         or not locator
         or not locator.strip()
-        or locator.strip() == "*"
+        or locator.strip() in ("*", "?")
     ):
         return None
 
