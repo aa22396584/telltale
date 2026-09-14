@@ -352,5 +352,53 @@ void main() {
       expect((res11 as Mode08NegativeResponse).supportStatus,
           EcuSupportStatus.unsupported);
     });
+
+    test('strips CAN headers and parses execution response with header', () {
+      final resHeader = Mode08DiscoveryCodec.parseExecutionResponse(
+        '7E8 03 48 01 AA',
+        expectedTestId: 0x01,
+        expectedResponseBytes: 1,
+      );
+      expect(resHeader, isA<Mode08ExecutionSuccess>());
+      final exec = resHeader as Mode08ExecutionSuccess;
+      expect(exec.testId, equals(0x01));
+      expect(exec.dataBytes, equals([0xAA]));
+    });
+
+    test('parses multiline responses with CAN headers and unions multi-ECU TIDs', () {
+      // ECU 1 (7E8) supports TID 0x01; ECU 2 (7E9) supports TID 0x20 with hasNextBlock
+      const multiline = '7E8 06 48 00 80 00 00 00\n7E9 06 48 00 00 00 00 01';
+      final result = Mode08DiscoveryCodec.parseResponse(
+        multiline,
+        expectedBaseTid: 0x00,
+      );
+      expect(result, isA<Mode08SupportSuccess>());
+      final success = result as Mode08SupportSuccess;
+      expect(success.supportedTids, equals({0x01, 0x20}));
+      expect(success.hasNextBlock, isTrue);
+    });
+
+    test('accepts affirmative support when one ECU answers 48 and another answers 7F', () {
+      // Broadcast query: ECM (7E8) supports Mode 08, TCM (7E9) returns NRC 0x12
+      const multiline = '7E8 06 48 00 80 00 00 00\n7E9 03 7F 08 12';
+      final result = Mode08DiscoveryCodec.parseResponse(
+        multiline,
+        expectedBaseTid: 0x00,
+      );
+      expect(result, isA<Mode08SupportSuccess>());
+      final success = result as Mode08SupportSuccess;
+      expect(success.supportedTids, equals({0x01}));
+    });
+
+    test('ignores SEARCHING... adapter noise preceding positive response', () {
+      const multiline = 'SEARCHING...\n48 00 80 00 00 00';
+      final result = Mode08DiscoveryCodec.parseResponse(
+        multiline,
+        expectedBaseTid: 0x00,
+      );
+      expect(result, isA<Mode08SupportSuccess>());
+      final success = result as Mode08SupportSuccess;
+      expect(success.supportedTids, equals({0x01}));
+    });
   });
 }

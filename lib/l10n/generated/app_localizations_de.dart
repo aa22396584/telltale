@@ -4695,7 +4695,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String serviceRecipesStandard(String standard) {
-    return 'Standard: $standard';
+    return 'Norm: $standard';
   }
 
   @override
@@ -4719,6 +4719,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get serviceRecipesClose => 'Schließen';
+
+  @override
+  String get serviceRecipesDiscoveryRequiresCan =>
+      'Erfordert eine aktive OBD-II CAN-Bus-Verbindung.';
+
+  @override
+  String serviceRecipesLoadError(String error) {
+    return 'Fehler beim Laden der Service-Rezepte: $error';
+  }
+
+  @override
+  String get serviceRecipesNoPreconditions => 'Keine';
 
   @override
   String get settingsServiceRecipesEntry => 'Service-Rezepte & Aktive Tests';

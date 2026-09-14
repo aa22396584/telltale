@@ -104,7 +104,7 @@ class ServiceRecipeDetailSheet extends StatelessWidget {
             SectionHeading(l10n.serviceRecipesPreconditions),
             Panel(
               child: profile.preconditions.isEmpty
-                  ? Text('None', style: context.texts.bodySmall)
+                  ? Text(l10n.serviceRecipesNoPreconditions, style: context.texts.bodySmall)
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

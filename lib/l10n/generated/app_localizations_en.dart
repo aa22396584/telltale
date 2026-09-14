@@ -4636,6 +4636,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceRecipesClose => 'Close';
 
   @override
+  String get serviceRecipesDiscoveryRequiresCan =>
+      'Requires an active OBD-II CAN bus connection.';
+
+  @override
+  String serviceRecipesLoadError(String error) {
+    return 'Error loading service recipes: $error';
+  }
+
+  @override
+  String get serviceRecipesNoPreconditions => 'None';
+
+  @override
   String get settingsServiceRecipesEntry => 'Service Recipes & Active Tests';
 
   @override

@@ -1232,6 +1232,14 @@
   "serviceRecipesPreconditions": "安全前置條件",
   "serviceRecipesRecovery": "控制權釋放／恢復指令",
   "serviceRecipesClose": "關閉",
+  "serviceRecipesDiscoveryRequiresCan": "需要作用中的 OBD-II CAN 匯流排連線。",
+  "serviceRecipesLoadError": "載入服務配方時發生錯誤：{error}",
+  "@serviceRecipesLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "serviceRecipesNoPreconditions": "無",
   "settingsServiceRecipesEntry": "車行診斷配方與主動測試",
   "settingsServiceRecipesDesc": "檢視工作站服務配方並安全探索 Mode 08 支援項目"
 }

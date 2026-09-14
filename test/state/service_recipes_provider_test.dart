@@ -142,6 +142,74 @@ void main() {
       // 3. State should reset to idle (not retain stale vehicle results)
       expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
     });
+
+    test('does not leak completed state if session disconnects in-flight', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 00'],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+
+      final sessionNotifier = _ConnectedMockSessionNotifier(client);
+      final container = ProviderContainer(
+        overrides: [
+          obdSessionProvider.overrideWith(() => sessionNotifier),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Start discovery future
+      final future = container.read(mode08DiscoveryStateProvider.notifier).runDiscovery();
+      // Immediately disconnect before discovery completes
+      sessionNotifier.simulateDisconnect();
+      await future;
+
+      // State must remain idle, not overwrite with completed
+      expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
+    });
+
+    test('ignores concurrent runDiscovery calls while already discovering', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 00'],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+
+      final sessionNotifier = _ConnectedMockSessionNotifier(client);
+      final container = ProviderContainer(
+        overrides: [
+          obdSessionProvider.overrideWith(() => sessionNotifier),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(mode08DiscoveryStateProvider.notifier);
+      final f1 = notifier.runDiscovery();
+      final f2 = notifier.runDiscovery();
+      await Future.wait([f1, f2]);
+
+      expect(container.read(mode08DiscoveryStateProvider).isCompleted, isTrue);
+    });
   });
 }
 

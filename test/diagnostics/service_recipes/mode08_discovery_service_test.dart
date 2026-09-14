@@ -215,5 +215,77 @@ void main() {
         throwsA(isA<ProhibitedActiveProbeException>()),
       );
     });
+
+    test('aggregates supported TIDs across multiple responding ECUs on CAN broadcast', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 00'], // Supports TID 0x01
+            },
+          ),
+          FakeEcu(
+            name: 'TCM',
+            requestId: '7E1',
+            responseId: '7E9',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 40 00 00 00'], // Supports TID 0x02
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+
+      final result = await Mode08DiscoveryService.discoverSupportedTids(
+        client: client,
+      );
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportStatus, equals(EcuSupportStatus.supported));
+      expect(result.supportedTids, equals({0x01, 0x02}));
+      expect(result.containsTid(0x01), isTrue);
+      expect(result.containsTid(0x02), isTrue);
+    });
+
+    test('accepts Mode 08 capability when primary ECU answers 48 and secondary ECU answers 7F 08 12', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 00'], // ECM supports EVAP TID 0x01
+            },
+          ),
+          FakeEcu(
+            name: 'TCM',
+            requestId: '7E1',
+            responseId: '7E9',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['7F 08 12'], // TCM does not support Mode 08
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+
+      final result = await Mode08DiscoveryService.discoverSupportedTids(
+        client: client,
+      );
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportStatus, equals(EcuSupportStatus.supported));
+      expect(result.supportedTids, equals({0x01}));
+    });
   });
 }

@@ -7278,6 +7278,24 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get serviceRecipesClose;
 
+  /// No description provided for @serviceRecipesDiscoveryRequiresCan.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires an active OBD-II CAN bus connection.'**
+  String get serviceRecipesDiscoveryRequiresCan;
+
+  /// No description provided for @serviceRecipesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading service recipes: {error}'**
+  String serviceRecipesLoadError(String error);
+
+  /// No description provided for @serviceRecipesNoPreconditions.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get serviceRecipesNoPreconditions;
+
   /// No description provided for @settingsServiceRecipesEntry.
   ///
   /// In en, this message translates to:

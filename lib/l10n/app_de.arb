@@ -1207,7 +1207,7 @@
   "serviceRecipesCatalogSection": "Verfügbare Service-Rezepte",
   "serviceRecipesSimulationBadge": "Simulationsbereit",
   "serviceRecipesLiveBlockedBadge": "Live gesperrt (0 Live-Kandidaten)",
-  "serviceRecipesStandard": "Standard: {standard}",
+  "serviceRecipesStandard": "Norm: {standard}",
   "@serviceRecipesStandard": {
     "placeholders": {
       "standard": { "type": "String" }
@@ -1229,6 +1229,14 @@
   "serviceRecipesPreconditions": "Sicherheits-Vorbedingungen",
   "serviceRecipesRecovery": "Wiederherstellungsbefehl",
   "serviceRecipesClose": "Schließen",
+  "serviceRecipesDiscoveryRequiresCan": "Erfordert eine aktive OBD-II CAN-Bus-Verbindung.",
+  "serviceRecipesLoadError": "Fehler beim Laden der Service-Rezepte: {error}",
+  "@serviceRecipesLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "serviceRecipesNoPreconditions": "Keine",
   "settingsServiceRecipesEntry": "Service-Rezepte & Aktive Tests",
   "settingsServiceRecipesDesc": "Werkstatt-Service-Rezepte prüfen und unterstützte Mode 08 Tests sicher erkennen"
 }

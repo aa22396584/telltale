@@ -106,7 +106,8 @@ abstract final class Mode08DiscoveryService {
     final stopwatch = Stopwatch()..start();
 
     while (currentBaseTid <= 0xE0) {
-      if (stopwatch.elapsed >= budget) {
+      final remainingBudget = budget - stopwatch.elapsed;
+      if (remainingBudget <= Duration.zero) {
         if (allSupportedTids.isNotEmpty) {
           // Budget expired between blocks but earlier blocks succeeded
           return Mode08DiscoveryResult(
@@ -133,7 +134,7 @@ abstract final class Mode08DiscoveryService {
           header: header,
           restoreHeader: true,
           timeout: timeout,
-          budget: budget - stopwatch.elapsed,
+          budget: remainingBudget,
           deadline: deadline,
           owner: owner,
         );

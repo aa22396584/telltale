@@ -198,8 +198,152 @@ final class Mode08DiscoveryCodec {
       throw ProhibitedActiveProbeException(expectedBaseTid);
     }
 
-    final rawUpper = rawResponse.trim().toUpperCase();
-    final cleaned = rawResponse.replaceAll(' ', '').trim().toUpperCase();
+    final lines = rawResponse
+        .split(RegExp(r'\r?\n'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    if (lines.length > 1) {
+      return _parseMultiLineResponse(
+        lines,
+        expectedBaseTid: expectedBaseTid,
+        originalRaw: rawResponse,
+      );
+    }
+
+    return _parseSingleLineResponse(
+      lines.isEmpty ? '' : lines.first,
+      expectedBaseTid: expectedBaseTid,
+      originalRaw: rawResponse,
+    );
+  }
+
+  static Mode08ParseResult _parseMultiLineResponse(
+    List<String> lines, {
+    required int expectedBaseTid,
+    required String originalRaw,
+  }) {
+    final successTids = <int>{};
+    bool hasNextBlock = false;
+    bool hasSuccess = false;
+    Mode08NegativeResponse? firstNegative;
+    Mode08MalformedResponse? firstMalformed;
+    int noResponseCount = 0;
+
+    for (final line in lines) {
+      final upper = line.trim().toUpperCase();
+      if (upper == 'SEARCHING...' ||
+          upper == 'SEARCHING' ||
+          upper.startsWith('BUS INIT') ||
+          upper == 'OK' ||
+          upper == 'STOPPED' ||
+          upper.startsWith('ELM327')) {
+        continue;
+      }
+
+      final parsed = _parseSingleLineResponse(
+        line,
+        expectedBaseTid: expectedBaseTid,
+        originalRaw: line,
+      );
+
+      switch (parsed) {
+        case Mode08SupportSuccess success:
+          hasSuccess = true;
+          successTids.addAll(success.supportedTids);
+          if (success.hasNextBlock) {
+            hasNextBlock = true;
+          }
+        case Mode08NegativeResponse negative:
+          firstNegative ??= negative;
+        case Mode08NoResponse _:
+          noResponseCount++;
+        case Mode08MalformedResponse malformed:
+          firstMalformed ??= malformed;
+        case Mode08ExecutionSuccess _:
+          break;
+      }
+    }
+
+    if (hasSuccess) {
+      var aggregateBitmask = 0;
+      for (final tid in successTids) {
+        final offset = tid - expectedBaseTid - 1;
+        if (offset >= 0 && offset < 32) {
+          aggregateBitmask |= (1 << (31 - offset));
+        }
+      }
+      if (hasNextBlock) {
+        aggregateBitmask |= 1;
+      }
+
+      return Mode08SupportSuccess(
+        baseTid: expectedBaseTid,
+        bitmask: aggregateBitmask,
+        supportedTids: successTids,
+        hasNextBlock: hasNextBlock,
+      );
+    }
+
+    if (firstNegative != null) {
+      return firstNegative;
+    }
+
+    if (firstMalformed != null) {
+      return firstMalformed;
+    }
+
+    return Mode08NoResponse(
+      reason: noResponseCount > 0 ? 'NO DATA across all nodes' : 'EMPTY',
+    );
+  }
+
+  static String _stripCanHeader(String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    if (trimmed.contains(' ')) {
+      final tokens = trimmed.split(RegExp(r'\s+'));
+      if (tokens.length >= 4) {
+        final is11Bit = RegExp(r'^[0-9A-Fa-f]{3}$').hasMatch(tokens[0]);
+        final is29Bit = RegExp(r'^[0-9A-Fa-f]{8}$').hasMatch(tokens[0]);
+        if (is11Bit || is29Bit) {
+          if (tokens.length >= 3 &&
+              tokens[1].length == 2 &&
+              (tokens[2].toUpperCase() == '48' || tokens[2].toUpperCase() == '7F')) {
+            return tokens.sublist(2).join(' ');
+          }
+          if (tokens[1].toUpperCase() == '48' || tokens[1].toUpperCase() == '7F') {
+            return tokens.sublist(1).join(' ');
+          }
+        }
+      }
+      return trimmed;
+    }
+
+    final upper = trimmed.toUpperCase();
+    final match11 = RegExp(r'^[0-9A-F]{3}([0-9A-F]{2})?(48[0-9A-F]*|7F08[0-9A-F]*)$').firstMatch(upper);
+    if (match11 != null && match11.group(2) != null) {
+      return match11.group(2)!;
+    }
+
+    final match29 = RegExp(r'^[0-9A-F]{8}([0-9A-F]{2})?(48[0-9A-F]*|7F08[0-9A-F]*)$').firstMatch(upper);
+    if (match29 != null && match29.group(2) != null) {
+      return match29.group(2)!;
+    }
+
+    return trimmed;
+  }
+
+  static Mode08ParseResult _parseSingleLineResponse(
+    String line, {
+    required int expectedBaseTid,
+    required String originalRaw,
+  }) {
+    final stripped = _stripCanHeader(line);
+    final rawUpper = stripped.trim().toUpperCase();
+    final cleaned = stripped.replaceAll(' ', '').trim().toUpperCase();
 
     // Check for silence / no response / bus errors
     if (cleaned.isEmpty ||
@@ -219,14 +363,14 @@ final class Mode08DiscoveryCodec {
       if (cleaned.length < 6) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
       if (cleaned.length != 6 ||
           !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
       final sidHex = cleaned.substring(2, 4);
@@ -236,7 +380,7 @@ final class Mode08DiscoveryCodec {
       if (sid == null || sid != 0x08 || nrc == null || !isRecognizedMode08Nrc(nrc)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
       return Mode08NegativeResponse(originalSid: sid, nrc: nrc);
@@ -248,19 +392,19 @@ final class Mode08DiscoveryCodec {
       if (cleaned.length < 12) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
       if (cleaned.length != 12) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidBitmaskLength,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
       if (!RegExp(r'^[0-9A-F]{12}$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
 
@@ -268,7 +412,7 @@ final class Mode08DiscoveryCodec {
       if (echoedTid != expectedBaseTid) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.wrongBaseTidEcho,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
 
@@ -276,20 +420,18 @@ final class Mode08DiscoveryCodec {
       if (bitmask == null) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
-          rawResponse: rawResponse,
+          rawResponse: originalRaw,
         );
       }
 
       final supportedTids = <int>{};
       for (var i = 0; i < 32; i++) {
-        // Bit 31 is (expectedBaseTid + 1), Bit 0 is (expectedBaseTid + 32)
         final shift = 31 - i;
         if ((bitmask & (1 << shift)) != 0) {
           supportedTids.add(expectedBaseTid + 1 + i);
         }
       }
 
-      // Bit 0 indicates whether the subsequent block of 32 TIDs is supported
       final hasNextBlock = (bitmask & 0x01) != 0;
 
       return Mode08SupportSuccess(
@@ -304,12 +446,12 @@ final class Mode08DiscoveryCodec {
     if (cleaned.length < 2) {
       return Mode08MalformedResponse(
         reason: Mode08MalformedReason.truncated,
-        rawResponse: rawResponse,
+        rawResponse: originalRaw,
       );
     }
     return Mode08MalformedResponse(
       reason: Mode08MalformedReason.invalidSid,
-      rawResponse: rawResponse,
+      rawResponse: originalRaw,
     );
   }
 
@@ -326,8 +468,9 @@ final class Mode08DiscoveryCodec {
     int? expectedResponseBytes,
     Mode08Descriptor? descriptor,
   }) {
-    final rawUpper = rawResponse.trim().toUpperCase();
-    final cleaned = rawResponse.replaceAll(' ', '').trim().toUpperCase();
+    final stripped = _stripCanHeader(rawResponse);
+    final rawUpper = stripped.trim().toUpperCase();
+    final cleaned = stripped.replaceAll(' ', '').trim().toUpperCase();
 
     // Check for silence / no response / bus errors
     if (cleaned.isEmpty ||

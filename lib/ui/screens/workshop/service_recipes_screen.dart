@@ -83,7 +83,7 @@ class ServiceRecipesScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.xl),
                   child: Text(
-                    'Error loading service recipes: $err',
+                    l10n.serviceRecipesLoadError(err.toString()),
                     style: context.texts.bodySmall?.copyWith(
                       color: palette.danger,
                     ),
@@ -212,7 +212,7 @@ class _Mode08DiscoveryPanel extends StatelessWidget {
           if (!connected) ...[
             const SizedBox(height: Spacing.xs),
             Text(
-              'Requires an active OBD-II CAN bus connection.',
+              l10n.serviceRecipesDiscoveryRequiresCan,
               style: context.texts.bodySmall?.copyWith(
                 color: palette.textTertiary,
                 fontStyle: FontStyle.italic,

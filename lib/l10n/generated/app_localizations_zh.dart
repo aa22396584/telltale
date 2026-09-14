@@ -4138,6 +4138,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceRecipesClose => '關閉';
 
   @override
+  String get serviceRecipesDiscoveryRequiresCan => '需要作用中的 OBD-II CAN 匯流排連線。';
+
+  @override
+  String serviceRecipesLoadError(String error) {
+    return '載入服務配方時發生錯誤：$error';
+  }
+
+  @override
+  String get serviceRecipesNoPreconditions => '無';
+
+  @override
   String get settingsServiceRecipesEntry => '車行診斷配方與主動測試';
 
   @override
@@ -8275,6 +8286,17 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get serviceRecipesClose => '關閉';
+
+  @override
+  String get serviceRecipesDiscoveryRequiresCan => '需要作用中的 OBD-II CAN 匯流排連線。';
+
+  @override
+  String serviceRecipesLoadError(String error) {
+    return '載入服務配方時發生錯誤：$error';
+  }
+
+  @override
+  String get serviceRecipesNoPreconditions => '無';
 
   @override
   String get settingsServiceRecipesEntry => '車行診斷配方與主動測試';

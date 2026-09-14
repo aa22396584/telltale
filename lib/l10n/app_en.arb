@@ -3988,6 +3988,14 @@
   "serviceRecipesPreconditions": "Safety Preconditions",
   "serviceRecipesRecovery": "Recovery Command",
   "serviceRecipesClose": "Close",
+  "serviceRecipesDiscoveryRequiresCan": "Requires an active OBD-II CAN bus connection.",
+  "serviceRecipesLoadError": "Error loading service recipes: {error}",
+  "@serviceRecipesLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "serviceRecipesNoPreconditions": "None",
   "settingsServiceRecipesEntry": "Service Recipes & Active Tests",
   "settingsServiceRecipesDesc": "Inspect workshop service recipes and discover supported Mode 08 tests"
 }

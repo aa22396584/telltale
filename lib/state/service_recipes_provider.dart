@@ -122,6 +122,10 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
     Duration budget = Mode08DiscoveryService.defaultTotalBudget,
     DateTime? deadline,
   }) async {
+    if (state.isDiscovering) {
+      return;
+    }
+
     final connection = ref.read(obdSessionProvider);
     if (!connection.isConnected) {
       state = const Mode08DiscoveryState.refused(
@@ -155,6 +159,12 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
         deadline: deadline,
       );
 
+      // Verify connection did not drop while discovery was running
+      if (!ref.read(obdSessionProvider).isConnected) {
+        state = const Mode08DiscoveryState.idle();
+        return;
+      }
+
       if (discoveryResult.supportStatus == EcuSupportStatus.supported ||
           discoveryResult.supportStatus == EcuSupportStatus.unsupported) {
         state = Mode08DiscoveryState.completed(result: discoveryResult);
@@ -165,6 +175,10 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
         );
       }
     } catch (e) {
+      if (!ref.read(obdSessionProvider).isConnected) {
+        state = const Mode08DiscoveryState.idle();
+        return;
+      }
       state = Mode08DiscoveryState.failed(
         message: 'Unexpected discovery failure: $e',
       );
