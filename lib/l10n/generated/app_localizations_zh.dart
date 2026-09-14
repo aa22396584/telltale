@@ -4102,6 +4102,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String serviceRecipesDiscoveryPartialWarning(String reason, String blocks) {
+    return '探索未完全完成（$reason）。未完成區塊：$blocks。未查到不代表不支援。';
+  }
+
+  @override
   String get serviceRecipesCatalogSection => '可用服務配方清單';
 
   @override
@@ -8249,6 +8254,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String serviceRecipesDiscoveryUnknown(String reason) {
     return 'Mode 08 支援狀態未知：$reason';
+  }
+
+  @override
+  String serviceRecipesDiscoveryPartialWarning(String reason, String blocks) {
+    return '探索未完全完成（$reason）。未完成區塊：$blocks。未查到不代表不支援。';
   }
 
   @override

@@ -1207,6 +1207,13 @@
       "reason": { "type": "String" }
     }
   },
+  "serviceRecipesDiscoveryPartialWarning": "探索未完全完成（{reason}）。未完成區塊：{blocks}。未查到不代表不支援。",
+  "@serviceRecipesDiscoveryPartialWarning": {
+    "placeholders": {
+      "reason": { "type": "String" },
+      "blocks": { "type": "String" }
+    }
+  },
   "serviceRecipesCatalogSection": "可用服務配方清單",
   "serviceRecipesSimulationBadge": "模擬可用",
   "serviceRecipesLiveBlockedBadge": "禁止實車（0 實車候選）",

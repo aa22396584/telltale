@@ -7218,6 +7218,12 @@ abstract class AppLocalizations {
   /// **'Mode 08 support is unknown: {reason}'**
   String serviceRecipesDiscoveryUnknown(String reason);
 
+  /// No description provided for @serviceRecipesDiscoveryPartialWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery partially completed ({reason}). Uncompleted blocks: {blocks}. Note: Not found does not mean unsupported (未查到不代表不支援).'**
+  String serviceRecipesDiscoveryPartialWarning(String reason, String blocks);
+
   /// No description provided for @serviceRecipesCatalogSection.
   ///
   /// In en, this message translates to:

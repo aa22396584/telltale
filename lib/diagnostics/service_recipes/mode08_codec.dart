@@ -15,6 +15,8 @@
 /// - Silence / NO DATA is unknown, never unsupported.
 library;
 
+import '../../obd/addressing.dart';
+import '../../obd/elm327_client.dart';
 import 'active_test_profile.dart';
 import 'qualification_tier.dart';
 
@@ -44,6 +46,9 @@ enum Mode08MalformedReason {
 /// Sealed result of parsing a Mode 08 response.
 sealed class Mode08ParseResult {
   const Mode08ParseResult();
+
+  /// Per-ECU parsed outcomes (keyed by ECU identifier such as '7E8', '7E9').
+  Map<String, Mode08ParseResult> get ecuResults => const {};
 }
 
 /// Successfully decoded supported TID bitmask.
@@ -53,6 +58,7 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
     required this.bitmask,
     required Iterable<int> supportedTids,
     required this.hasNextBlock,
+    this.ecuResults = const {},
   }) : supportedTids = Set.unmodifiable(supportedTids);
 
   const Mode08SupportSuccess.constant({
@@ -60,6 +66,7 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
     required this.bitmask,
     required this.supportedTids,
     required this.hasNextBlock,
+    this.ecuResults = const {},
   });
 
   final int baseTid;
@@ -69,6 +76,9 @@ final class Mode08SupportSuccess extends Mode08ParseResult {
   /// Whether bit 0 is set indicating TIDs in the subsequent block may be supported.
   final bool hasNextBlock;
 
+  @override
+  final Map<String, Mode08ParseResult> ecuResults;
+
   bool isTidSupported(int tid) => supportedTids.contains(tid);
 }
 
@@ -77,15 +87,20 @@ final class Mode08ExecutionSuccess extends Mode08ParseResult {
   Mode08ExecutionSuccess({
     required this.testId,
     required Iterable<int> dataBytes,
+    this.ecuResults = const {},
   }) : dataBytes = List.unmodifiable(dataBytes);
 
   const Mode08ExecutionSuccess.constant({
     required this.testId,
     required this.dataBytes,
+    this.ecuResults = const {},
   });
 
   final int testId;
   final List<int> dataBytes;
+
+  @override
+  final Map<String, Mode08ParseResult> ecuResults;
 }
 
 /// Negative response returned by ECU (e.g. 7F 08 11, 7F 08 12, 7F 08 22, 7F 08 31).
@@ -93,10 +108,14 @@ final class Mode08NegativeResponse extends Mode08ParseResult {
   const Mode08NegativeResponse({
     required this.originalSid,
     required this.nrc,
+    this.ecuResults = const {},
   });
 
   final int originalSid;
   final int nrc;
+
+  @override
+  final Map<String, Mode08ParseResult> ecuResults;
 
   /// Whether the NRC affirmatively indicates that the service, subfunction, or TID is unsupported.
   ///
@@ -131,8 +150,15 @@ final class Mode08NegativeResponse extends Mode08ParseResult {
 
 /// No response from ECU (silence, NO DATA, BUS ERROR, timeout).
 final class Mode08NoResponse extends Mode08ParseResult {
-  const Mode08NoResponse({required this.reason});
+  const Mode08NoResponse({
+    required this.reason,
+    this.ecuResults = const {},
+  });
+
   final String reason;
+
+  @override
+  final Map<String, Mode08ParseResult> ecuResults;
 
   /// CRITICAL: Silence or NO DATA is unknown, NOT unsupported.
   EcuSupportStatus get supportStatus => EcuSupportStatus.unknown;
@@ -143,10 +169,14 @@ final class Mode08MalformedResponse extends Mode08ParseResult {
   const Mode08MalformedResponse({
     required this.reason,
     required this.rawResponse,
+    this.ecuResults = const {},
   });
 
   final Mode08MalformedReason reason;
   final String rawResponse;
+
+  @override
+  final Map<String, Mode08ParseResult> ecuResults;
 }
 
 /// Non-actuating Mode 08 discovery codec.
@@ -189,7 +219,70 @@ final class Mode08DiscoveryCodec {
     return '08$tidHex';
   }
 
-  /// Parses raw ECU response for a supported TID query.
+  /// Parses an [ObdResponse] directly, preserving adapter error codes, ISO-TP frames,
+  /// observed frames, and attributed ECU sources.
+  static Mode08ParseResult parseObdResponse(
+    ObdResponse response, {
+    required int expectedBaseTid,
+  }) {
+    if (!validBaseTids.contains(expectedBaseTid)) {
+      throw ProhibitedActiveProbeException(expectedBaseTid);
+    }
+
+    // 1. Adapter-level error code classifications from Elm327 parser
+    switch (response.errorCode) {
+      case Elm327ErrorCode.noData:
+        return const Mode08NoResponse(reason: 'NO DATA');
+      case Elm327ErrorCode.canError:
+      case Elm327ErrorCode.busError:
+      case Elm327ErrorCode.busBusy:
+      case Elm327ErrorCode.busInitError:
+      case Elm327ErrorCode.unableToConnect:
+      case Elm327ErrorCode.stopped:
+        return Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
+      case Elm327ErrorCode.dataError:
+        return Mode08MalformedResponse(
+          reason: Mode08MalformedReason.invalidHex,
+          rawResponse: response.rawLines.join('\n'),
+        );
+      case Elm327ErrorCode.none:
+      default:
+        break;
+    }
+
+    // 2. Parse from structured frames if available
+    if (response.frames.isNotEmpty) {
+      final perEcu = <String, Mode08ParseResult>{};
+      for (var i = 0; i < response.frames.length; i++) {
+        final frame = response.frames[i];
+        final sourceId = frame.sourceId ?? 'ecu_$i';
+        final body = frame.payload ?? frame.bytes;
+        final hexBody = body
+            .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+            .join('');
+        final parsed = _parseSinglePayload(
+          hexBody,
+          expectedBaseTid: expectedBaseTid,
+          originalRaw: hexBody,
+          sourceId: sourceId,
+        );
+        perEcu[sourceId] = parsed;
+      }
+      return _aggregateEcuResults(
+        perEcu,
+        expectedBaseTid: expectedBaseTid,
+        defaultNoResponseReason: 'NO DATA across all nodes',
+      );
+    }
+
+    // 3. Fall back to raw response lines
+    return parseResponse(
+      response.rawLines.join('\n'),
+      expectedBaseTid: expectedBaseTid,
+    );
+  }
+
+  /// Parses raw ECU response string for a supported TID query.
   static Mode08ParseResult parseResponse(
     String rawResponse, {
     required int expectedBaseTid,
@@ -202,148 +295,207 @@ final class Mode08DiscoveryCodec {
         .split(RegExp(r'\r?\n'))
         .map((l) => l.trim())
         .where((l) => l.isNotEmpty)
+        .where((l) {
+          final upper = l.toUpperCase();
+          return upper != 'SEARCHING...' &&
+              upper != 'SEARCHING' &&
+              !upper.startsWith('BUS INIT') &&
+              upper != 'OK' &&
+              upper != 'STOPPED' &&
+              !upper.startsWith('ELM327');
+        })
         .toList();
 
+    if (lines.isEmpty) {
+      return const Mode08NoResponse(reason: 'EMPTY');
+    }
+
     if (lines.length > 1) {
-      return _parseMultiLineResponse(
-        lines,
+      final perEcu = <String, Mode08ParseResult>{};
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final extracted = _extractPayloadAndSource(line);
+        final sourceId = extracted.sourceId ?? 'ecu_$i';
+        final parsed = _parseSinglePayload(
+          extracted.payload,
+          expectedBaseTid: expectedBaseTid,
+          originalRaw: line,
+          sourceId: sourceId,
+        );
+        perEcu[sourceId] = parsed;
+      }
+      return _aggregateEcuResults(
+        perEcu,
         expectedBaseTid: expectedBaseTid,
-        originalRaw: rawResponse,
+        defaultNoResponseReason: 'NO DATA across all nodes',
       );
     }
 
-    return _parseSingleLineResponse(
-      lines.isEmpty ? '' : lines.first,
+    final singleLine = lines.first;
+    final extracted = _extractPayloadAndSource(singleLine);
+    return _parseSinglePayload(
+      extracted.payload,
       expectedBaseTid: expectedBaseTid,
-      originalRaw: rawResponse,
+      originalRaw: singleLine,
+      sourceId: extracted.sourceId,
     );
   }
 
-  static Mode08ParseResult _parseMultiLineResponse(
-    List<String> lines, {
-    required int expectedBaseTid,
-    required String originalRaw,
-  }) {
-    final successTids = <int>{};
-    bool hasNextBlock = false;
-    bool hasSuccess = false;
-    Mode08NegativeResponse? firstNegative;
-    Mode08MalformedResponse? firstMalformed;
-    int noResponseCount = 0;
-
-    for (final line in lines) {
-      final upper = line.trim().toUpperCase();
-      if (upper == 'SEARCHING...' ||
-          upper == 'SEARCHING' ||
-          upper.startsWith('BUS INIT') ||
-          upper == 'OK' ||
-          upper == 'STOPPED' ||
-          upper.startsWith('ELM327')) {
-        continue;
-      }
-
-      final parsed = _parseSingleLineResponse(
-        line,
-        expectedBaseTid: expectedBaseTid,
-        originalRaw: line,
-      );
-
-      switch (parsed) {
-        case Mode08SupportSuccess success:
-          hasSuccess = true;
-          successTids.addAll(success.supportedTids);
-          if (success.hasNextBlock) {
-            hasNextBlock = true;
-          }
-        case Mode08NegativeResponse negative:
-          firstNegative ??= negative;
-        case Mode08NoResponse _:
-          noResponseCount++;
-        case Mode08MalformedResponse malformed:
-          firstMalformed ??= malformed;
-        case Mode08ExecutionSuccess _:
-          break;
-      }
-    }
-
-    if (hasSuccess) {
-      var aggregateBitmask = 0;
-      for (final tid in successTids) {
-        final offset = tid - expectedBaseTid - 1;
-        if (offset >= 0 && offset < 32) {
-          aggregateBitmask |= (1 << (31 - offset));
-        }
-      }
-      if (hasNextBlock) {
-        aggregateBitmask |= 1;
-      }
-
-      return Mode08SupportSuccess(
-        baseTid: expectedBaseTid,
-        bitmask: aggregateBitmask,
-        supportedTids: successTids,
-        hasNextBlock: hasNextBlock,
-      );
-    }
-
-    if (firstNegative != null) {
-      return firstNegative;
-    }
-
-    if (firstMalformed != null) {
-      return firstMalformed;
-    }
-
-    return Mode08NoResponse(
-      reason: noResponseCount > 0 ? 'NO DATA across all nodes' : 'EMPTY',
-    );
-  }
-
-  static String _stripCanHeader(String line) {
+  /// Extracts application payload and optional ECU source ID from [line].
+  ///
+  /// Enforces:
+  /// - Complete headerless payloads (e.g. 12 hex digits for 0x48, 6 for 0x7F) are never misclassified as CAN headers.
+  /// - CAN headers must strictly be legal CAN IDs per [BusAddressing.isLegalCanId].
+  /// - Non-hex characters fail-closed immediately as 'INVALID_HEX'.
+  /// - ISO-TP PCI bytes are validated for Single Frame length contract.
+  static ({String? sourceId, String payload}) _extractPayloadAndSource(String line) {
     final trimmed = line.trim();
-    if (trimmed.isEmpty) return trimmed;
+    if (trimmed.isEmpty) {
+      return (sourceId: null, payload: '');
+    }
+
+    final cleanedNoSpaces = trimmed.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    if (cleanedNoSpaces == 'NODATA' ||
+        cleanedNoSpaces == 'BUSERROR' ||
+        cleanedNoSpaces == 'ERROR' ||
+        cleanedNoSpaces == 'CANERROR' ||
+        cleanedNoSpaces == 'TIMEOUT' ||
+        cleanedNoSpaces == '?' ||
+        cleanedNoSpaces == 'UNABLETOCONNECT') {
+      return (sourceId: null, payload: trimmed);
+    }
 
     if (trimmed.contains(' ')) {
       final tokens = trimmed.split(RegExp(r'\s+'));
-      if (tokens.length >= 4) {
-        final is11Bit = RegExp(r'^[0-9A-Fa-f]{3}$').hasMatch(tokens[0]);
-        final is29Bit = RegExp(r'^[0-9A-Fa-f]{8}$').hasMatch(tokens[0]);
-        if (is11Bit || is29Bit) {
-          if (tokens.length >= 3 &&
-              tokens[1].length == 2 &&
-              (tokens[2].toUpperCase() == '48' || tokens[2].toUpperCase() == '7F')) {
-            return tokens.sublist(2).join(' ');
-          }
-          if (tokens[1].toUpperCase() == '48' || tokens[1].toUpperCase() == '7F') {
-            return tokens.sublist(1).join(' ');
-          }
+      if (tokens.isEmpty) return (sourceId: null, payload: '');
+
+      // Check for non-hex characters in tokens
+      for (final t in tokens) {
+        if (!RegExp(r'^[0-9A-Fa-f]+$').hasMatch(t)) {
+          return (sourceId: null, payload: 'INVALID_HEX');
         }
       }
-      return trimmed;
+
+      // Check if first token is already an OBD SID (48 or 7F) -> unheadered
+      final firstUpper = tokens[0].toUpperCase();
+      if (firstUpper == '48' || firstUpper == '7F') {
+        return (sourceId: null, payload: tokens.join(''));
+      }
+
+      // Check if line begins with a legal CAN ID (11-bit or 29-bit)
+      if (BusAddressing.isLegalCanId(tokens[0])) {
+        final sourceId = tokens[0].toUpperCase();
+        if (tokens.length >= 3) {
+          // DLC digit at tokens[1] (length 1) + PCI at tokens[2]
+          if (tokens[1].length == 1 &&
+              tokens.length >= 4 &&
+              tokens[2].length == 2 &&
+              tokens[2].startsWith('0')) {
+            final declaredLen = int.tryParse(tokens[2].substring(1, 2), radix: 16) ?? 0;
+            final payloadTokens = tokens.sublist(3);
+            if (payloadTokens.length >= declaredLen) {
+              return (
+                sourceId: sourceId,
+                payload: payloadTokens.take(declaredLen).join(''),
+              );
+            }
+          }
+
+          // Single Frame ISO-TP PCI byte at tokens[1] (e.g. 06 or 03)
+          if (tokens[1].length == 2 && tokens[1].startsWith('0')) {
+            final declaredLen = int.tryParse(tokens[1].substring(1, 2), radix: 16) ?? 0;
+            final payloadTokens = tokens.sublist(2);
+            if (payloadTokens.length >= declaredLen) {
+              return (
+                sourceId: sourceId,
+                payload: payloadTokens.take(declaredLen).join(''),
+              );
+            }
+          }
+
+          // Raw unformatted frames without PCI byte
+          if (tokens[1].toUpperCase() == '48' || tokens[1].toUpperCase() == '7F') {
+            return (sourceId: sourceId, payload: tokens.sublist(1).join(''));
+          }
+        }
+        return (sourceId: sourceId, payload: 'INVALID_FRAMING');
+      }
+
+      return (sourceId: null, payload: tokens.join(''));
     }
 
+    // Compact string (no spaces)
     final upper = trimmed.toUpperCase();
-    final match11 = RegExp(r'^[0-9A-F]{3}([0-9A-F]{2})?(48[0-9A-F]*|7F08[0-9A-F]*)$').firstMatch(upper);
-    if (match11 != null && match11.group(2) != null) {
-      return match11.group(2)!;
+    if (!RegExp(r'^[0-9A-Fa-f]+$').hasMatch(upper)) {
+      return (sourceId: null, payload: 'INVALID_HEX');
     }
 
-    final match29 = RegExp(r'^[0-9A-F]{8}([0-9A-F]{2})?(48[0-9A-F]*|7F08[0-9A-F]*)$').firstMatch(upper);
-    if (match29 != null && match29.group(2) != null) {
-      return match29.group(2)!;
+    // 1. Exclude complete headerless payloads first:
+    // Mode 08 supported TID query positive response is 12 hex digits (48 <tid> <4 bytes bitmask>)
+    if (upper.startsWith('48') && upper.length == 12) {
+      return (sourceId: null, payload: upper);
+    }
+    // Negative response is 6 hex digits (7F 08 <nrc>)
+    if (upper.startsWith('7F08') && upper.length == 6) {
+      return (sourceId: null, payload: upper);
     }
 
-    return trimmed;
+    // 2. Check 11-bit CAN header: 3 hex chars ID + 2 hex chars PCI
+    if (upper.length >= 5 && BusAddressing.isLegalCanId(upper.substring(0, 3))) {
+      final id = upper.substring(0, 3);
+      final pciHigh = upper.substring(3, 4);
+      final declaredLen = int.tryParse(upper.substring(4, 5), radix: 16) ?? 0;
+      if (pciHigh == '0' && declaredLen > 0) {
+        final expectedTotal = 3 + 2 + declaredLen * 2;
+        if (upper.length >= expectedTotal) {
+          return (sourceId: id, payload: upper.substring(5, expectedTotal));
+        }
+      }
+    }
+
+    // 3. Check 29-bit CAN header: 8 hex chars ID + 2 hex chars PCI
+    if (upper.length >= 10 && BusAddressing.isLegalCanId(upper.substring(0, 8))) {
+      final id = upper.substring(0, 8);
+      final pciHigh = upper.substring(8, 9);
+      final declaredLen = int.tryParse(upper.substring(9, 10), radix: 16) ?? 0;
+      if (pciHigh == '0' && declaredLen > 0) {
+        final expectedTotal = 8 + 2 + declaredLen * 2;
+        if (upper.length >= expectedTotal) {
+          return (sourceId: id, payload: upper.substring(10, expectedTotal));
+        }
+      }
+    }
+
+    return (sourceId: null, payload: upper);
   }
 
-  static Mode08ParseResult _parseSingleLineResponse(
-    String line, {
+  static Mode08ParseResult _parseSinglePayload(
+    String payload, {
     required int expectedBaseTid,
     required String originalRaw,
+    String? sourceId,
   }) {
-    final stripped = _stripCanHeader(line);
-    final rawUpper = stripped.trim().toUpperCase();
-    final cleaned = stripped.replaceAll(' ', '').trim().toUpperCase();
+    if (payload == 'INVALID_HEX') {
+      return Mode08MalformedResponse(
+        reason: Mode08MalformedReason.invalidHex,
+        rawResponse: originalRaw,
+        ecuResults: sourceId != null
+            ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: originalRaw)}
+            : const {},
+      );
+    }
+    if (payload == 'INVALID_FRAMING') {
+      return Mode08MalformedResponse(
+        reason: Mode08MalformedReason.truncated,
+        rawResponse: originalRaw,
+        ecuResults: sourceId != null
+            ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: originalRaw)}
+            : const {},
+      );
+    }
+
+    final rawUpper = payload.trim().toUpperCase();
+    final cleaned = payload.replaceAll(' ', '').trim().toUpperCase();
 
     // Check for silence / no response / bus errors
     if (cleaned.isEmpty ||
@@ -355,22 +507,31 @@ final class Mode08DiscoveryCodec {
         cleaned == 'CANERROR' ||
         cleaned == 'TIMEOUT' ||
         cleaned == '?') {
-      return Mode08NoResponse(reason: rawUpper.isEmpty ? 'EMPTY' : rawUpper);
+      final noResp = Mode08NoResponse(reason: rawUpper.isEmpty ? 'EMPTY' : rawUpper);
+      return Mode08NoResponse(
+        reason: noResp.reason,
+        ecuResults: sourceId != null ? {sourceId: noResp} : const {},
+      );
     }
 
-    // Check for negative response (7F 08 <NRC>)
+    // Negative response (7F 08 <NRC>)
     if (cleaned.startsWith('7F')) {
       if (cleaned.length < 6) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: originalRaw)}
+              : const {},
         );
       }
-      if (cleaned.length != 6 ||
-          !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
+      if (cleaned.length != 6 || !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidNegativeResponse, rawResponse: originalRaw)}
+              : const {},
         );
       }
       final sidHex = cleaned.substring(2, 4);
@@ -381,30 +542,46 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidNegativeResponse, rawResponse: originalRaw)}
+              : const {},
         );
       }
-      return Mode08NegativeResponse(originalSid: sid, nrc: nrc);
+      final neg = Mode08NegativeResponse(originalSid: sid, nrc: nrc);
+      return Mode08NegativeResponse(
+        originalSid: sid,
+        nrc: nrc,
+        ecuResults: sourceId != null ? {sourceId: neg} : const {},
+      );
     }
 
     // Positive response: 48 <baseTid> <4 bytes bitmask>
-    // Total hex chars: 2 (SID) + 2 (TID) + 8 (bitmask) = 12 hex chars (6 bytes).
     if (cleaned.startsWith('48')) {
       if (cleaned.length < 12) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: originalRaw)}
+              : const {},
         );
       }
       if (cleaned.length != 12) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidBitmaskLength,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidBitmaskLength, rawResponse: originalRaw)}
+              : const {},
         );
       }
       if (!RegExp(r'^[0-9A-F]{12}$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: originalRaw)}
+              : const {},
         );
       }
 
@@ -413,6 +590,9 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.wrongBaseTidEcho,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.wrongBaseTidEcho, rawResponse: originalRaw)}
+              : const {},
         );
       }
 
@@ -421,6 +601,9 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
           rawResponse: originalRaw,
+          ecuResults: sourceId != null
+              ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: originalRaw)}
+              : const {},
         );
       }
 
@@ -433,25 +616,147 @@ final class Mode08DiscoveryCodec {
       }
 
       final hasNextBlock = (bitmask & 0x01) != 0;
-
-      return Mode08SupportSuccess(
+      final success = Mode08SupportSuccess(
         baseTid: expectedBaseTid,
         bitmask: bitmask,
         supportedTids: supportedTids,
         hasNextBlock: hasNextBlock,
       );
+      return Mode08SupportSuccess(
+        baseTid: expectedBaseTid,
+        bitmask: bitmask,
+        supportedTids: supportedTids,
+        hasNextBlock: hasNextBlock,
+        ecuResults: sourceId != null ? {sourceId: success} : const {},
+      );
     }
 
-    // Response has invalid or unhandled SID
     if (cleaned.length < 2) {
       return Mode08MalformedResponse(
         reason: Mode08MalformedReason.truncated,
         rawResponse: originalRaw,
+        ecuResults: sourceId != null
+            ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: originalRaw)}
+            : const {},
       );
     }
     return Mode08MalformedResponse(
       reason: Mode08MalformedReason.invalidSid,
       rawResponse: originalRaw,
+      ecuResults: sourceId != null
+          ? {sourceId: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidSid, rawResponse: originalRaw)}
+          : const {},
+    );
+  }
+
+  /// Aggregates per-ECU results with strict permutation order invariance.
+  ///
+  /// Rules:
+  /// 1. If any ECU affirmatively supports Mode 08, the overall response is [Mode08SupportSuccess]
+  ///    containing the union of all supported TIDs across all responding ECUs.
+  /// 2. If no positive support is present:
+  ///    a. If any ECU response is malformed / corrupted, the aggregate cannot be determined unsupported
+  ///       and returns [Mode08MalformedResponse].
+  ///    b. If any ECU returns a negative response where `!isUnsupported` (e.g. conditionsNotCorrect 0x22,
+  ///       busy 0x21, security 0x33, pending 0x78), the vehicle CANNOT be declared unsupported;
+  ///       the aggregate returns [Mode08NegativeResponse] with sound [EcuSupportStatus.unknown].
+  ///    c. Only when ALL responding ECUs returned affirmative negative responses (0x11, 0x12, 0x31)
+  ///       does the aggregate return [Mode08NegativeResponse] with [EcuSupportStatus.unsupported].
+  ///    d. Deterministic tie-breaking is enforced by sorting so arrival order never affects the verdict.
+  static Mode08ParseResult _aggregateEcuResults(
+    Map<String, Mode08ParseResult> perEcu, {
+    required int expectedBaseTid,
+    required String defaultNoResponseReason,
+  }) {
+    if (perEcu.isEmpty) {
+      return const Mode08NoResponse(reason: 'EMPTY');
+    }
+
+    final successes = <String, Mode08SupportSuccess>{};
+    final negatives = <String, Mode08NegativeResponse>{};
+    final malformed = <String, Mode08MalformedResponse>{};
+    final noResponses = <String, Mode08NoResponse>{};
+
+    for (final entry in perEcu.entries) {
+      switch (entry.value) {
+        case Mode08SupportSuccess s:
+          successes[entry.key] = s;
+        case Mode08NegativeResponse n:
+          negatives[entry.key] = n;
+        case Mode08MalformedResponse m:
+          malformed[entry.key] = m;
+        case Mode08NoResponse nr:
+          noResponses[entry.key] = nr;
+        case Mode08ExecutionSuccess _:
+          break;
+      }
+    }
+
+    // 1. Affirmative support across any ECU takes precedence
+    if (successes.isNotEmpty) {
+      final allTids = <int>{};
+      bool hasNextBlock = false;
+      for (final s in successes.values) {
+        allTids.addAll(s.supportedTids);
+        if (s.hasNextBlock) hasNextBlock = true;
+      }
+      var aggregateBitmask = 0;
+      for (final tid in allTids) {
+        final offset = tid - expectedBaseTid - 1;
+        if (offset >= 0 && offset < 32) {
+          aggregateBitmask |= (1 << (31 - offset));
+        }
+      }
+      if (hasNextBlock) aggregateBitmask |= 1;
+
+      return Mode08SupportSuccess(
+        baseTid: expectedBaseTid,
+        bitmask: aggregateBitmask,
+        supportedTids: allTids,
+        hasNextBlock: hasNextBlock,
+        ecuResults: Map.unmodifiable(perEcu),
+      );
+    }
+
+    // 2. Corrupted data prevents determining unsupported status
+    if (malformed.isNotEmpty) {
+      final sortedKeys = malformed.keys.toList()..sort();
+      final chosen = malformed[sortedKeys.first]!;
+      return Mode08MalformedResponse(
+        reason: chosen.reason,
+        rawResponse: chosen.rawResponse,
+        ecuResults: Map.unmodifiable(perEcu),
+      );
+    }
+
+    // 3. Negative responses: conditionsNotCorrect/busy/unknown take precedence over unsupported
+    if (negatives.isNotEmpty) {
+      final unknownNegatives =
+          negatives.values.where((n) => !n.isUnsupported).toList();
+      if (unknownNegatives.isNotEmpty) {
+        unknownNegatives.sort((a, b) => a.nrc.compareTo(b.nrc));
+        final chosen = unknownNegatives.first;
+        return Mode08NegativeResponse(
+          originalSid: chosen.originalSid,
+          nrc: chosen.nrc,
+          ecuResults: Map.unmodifiable(perEcu),
+        );
+      }
+
+      // All responding ECUs returned affirmative unsupported NRCs (0x11, 0x12, 0x31)
+      final unsupportedNegatives = negatives.values.toList()
+        ..sort((a, b) => a.nrc.compareTo(b.nrc));
+      final chosen = unsupportedNegatives.first;
+      return Mode08NegativeResponse(
+        originalSid: chosen.originalSid,
+        nrc: chosen.nrc,
+        ecuResults: Map.unmodifiable(perEcu),
+      );
+    }
+
+    return Mode08NoResponse(
+      reason: defaultNoResponseReason,
+      ecuResults: Map.unmodifiable(perEcu),
     );
   }
 
@@ -468,9 +773,28 @@ final class Mode08DiscoveryCodec {
     int? expectedResponseBytes,
     Mode08Descriptor? descriptor,
   }) {
-    final stripped = _stripCanHeader(rawResponse);
-    final rawUpper = stripped.trim().toUpperCase();
-    final cleaned = stripped.replaceAll(' ', '').trim().toUpperCase();
+    final extracted = _extractPayloadAndSource(rawResponse);
+    if (extracted.payload == 'INVALID_HEX') {
+      return Mode08MalformedResponse(
+        reason: Mode08MalformedReason.invalidHex,
+        rawResponse: rawResponse,
+        ecuResults: extracted.sourceId != null
+            ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: rawResponse)}
+            : const {},
+      );
+    }
+    if (extracted.payload == 'INVALID_FRAMING') {
+      return Mode08MalformedResponse(
+        reason: Mode08MalformedReason.truncated,
+        rawResponse: rawResponse,
+        ecuResults: extracted.sourceId != null
+            ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: rawResponse)}
+            : const {},
+      );
+    }
+
+    final rawUpper = extracted.payload.trim().toUpperCase();
+    final cleaned = extracted.payload.replaceAll(' ', '').trim().toUpperCase();
 
     // Check for silence / no response / bus errors
     if (cleaned.isEmpty ||
@@ -482,7 +806,12 @@ final class Mode08DiscoveryCodec {
         cleaned == 'CANERROR' ||
         cleaned == 'TIMEOUT' ||
         cleaned == '?') {
-      return Mode08NoResponse(reason: rawUpper.isEmpty ? 'EMPTY' : rawUpper);
+      return Mode08NoResponse(
+        reason: rawUpper.isEmpty ? 'EMPTY' : rawUpper,
+        ecuResults: extracted.sourceId != null
+            ? {extracted.sourceId!: Mode08NoResponse(reason: rawUpper.isEmpty ? 'EMPTY' : rawUpper)}
+            : const {},
+      );
     }
 
     // Check for negative response (7F 08 <NRC>)
@@ -491,13 +820,18 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: rawResponse)}
+              : const {},
         );
       }
-      if (cleaned.length != 6 ||
-          !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
+      if (cleaned.length != 6 || !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidNegativeResponse, rawResponse: rawResponse)}
+              : const {},
         );
       }
       final sidHex = cleaned.substring(2, 4);
@@ -508,9 +842,17 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidNegativeResponse,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidNegativeResponse, rawResponse: rawResponse)}
+              : const {},
         );
       }
-      return Mode08NegativeResponse(originalSid: sid, nrc: nrc);
+      final neg = Mode08NegativeResponse(originalSid: sid, nrc: nrc);
+      return Mode08NegativeResponse(
+        originalSid: sid,
+        nrc: nrc,
+        ecuResults: extracted.sourceId != null ? {extracted.sourceId!: neg} : const {},
+      );
     }
 
     // Positive response: 48 <echoedTestId> [dataBytes...]
@@ -519,12 +861,18 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.truncated,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: rawResponse)}
+              : const {},
         );
       }
       if (cleaned.length.isOdd || !RegExp(r'^[0-9A-F]+$').hasMatch(cleaned)) {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.invalidHex,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: rawResponse)}
+              : const {},
         );
       }
 
@@ -533,6 +881,9 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.wrongTestIdEcho,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.wrongTestIdEcho, rawResponse: rawResponse)}
+              : const {},
         );
       }
 
@@ -544,6 +895,9 @@ final class Mode08DiscoveryCodec {
           return Mode08MalformedResponse(
             reason: Mode08MalformedReason.invalidHex,
             rawResponse: rawResponse,
+            ecuResults: extracted.sourceId != null
+                ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidHex, rawResponse: rawResponse)}
+                : const {},
           );
         }
         dataBytes.add(b);
@@ -556,12 +910,22 @@ final class Mode08DiscoveryCodec {
         return Mode08MalformedResponse(
           reason: Mode08MalformedReason.wrongResponseLength,
           rawResponse: rawResponse,
+          ecuResults: extracted.sourceId != null
+              ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.wrongResponseLength, rawResponse: rawResponse)}
+              : const {},
         );
       }
 
-      return Mode08ExecutionSuccess(
+      final execSuccess = Mode08ExecutionSuccess(
         testId: echoedTid!,
         dataBytes: dataBytes,
+      );
+      return Mode08ExecutionSuccess(
+        testId: echoedTid,
+        dataBytes: dataBytes,
+        ecuResults: extracted.sourceId != null
+            ? {extracted.sourceId!: execSuccess}
+            : const {},
       );
     }
 
@@ -569,11 +933,17 @@ final class Mode08DiscoveryCodec {
       return Mode08MalformedResponse(
         reason: Mode08MalformedReason.truncated,
         rawResponse: rawResponse,
+        ecuResults: extracted.sourceId != null
+            ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.truncated, rawResponse: rawResponse)}
+            : const {},
       );
     }
     return Mode08MalformedResponse(
       reason: Mode08MalformedReason.invalidSid,
       rawResponse: rawResponse,
+      ecuResults: extracted.sourceId != null
+          ? {extracted.sourceId!: Mode08MalformedResponse(reason: Mode08MalformedReason.invalidSid, rawResponse: rawResponse)}
+          : const {},
     );
   }
 }

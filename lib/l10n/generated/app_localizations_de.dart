@@ -4684,6 +4684,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String serviceRecipesDiscoveryPartialWarning(String reason, String blocks) {
+    return 'Erkennung unvollständig ($reason). Nicht abgeschlossene Blöcke: $blocks. Hinweis: Nicht gefunden bedeutet nicht nicht unterstützt (未查到不代表不支援).';
+  }
+
+  @override
   String get serviceRecipesCatalogSection => 'Verfügbare Service-Rezepte';
 
   @override

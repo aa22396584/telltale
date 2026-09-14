@@ -356,6 +356,80 @@ void main() {
     );
 
     testWidgets(
+      'Mode 08 discovery partially completed renders partial warning with failure reason, uncompleted blocks, and disclaimer',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final result = Mode08DiscoveryResult(
+          isSupported: true,
+          supportStatus: EcuSupportStatus.supported,
+          supportedTids: const {0x01, 0x02},
+          queriedBlocks: const [0x00],
+          unqueriedBlocks: const [0x20],
+          isComplete: false,
+          failureReason: 'Timeout on block 0x20',
+          discoveredAt: DateTime.utc(2026, 9, 14),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              obdSessionProvider.overrideWith(_ConnectedCanSession.new),
+              serviceRecipesMatrixProvider.overrideWith(
+                (ref) async => bundledMatrix,
+              ),
+              mode08DiscoveryStateProvider.overrideWith(
+                () => _TestDiscoveryNotifier(
+                  Mode08DiscoveryState.completed(result: result),
+                ),
+              ),
+            ],
+            child: localizedMaterialApp(
+              home: const ServiceRecipesScreen(),
+              locale: const Locale('en'),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final warningContainer = find.byKey(const Key('mode08_discovery_partial_warning'));
+        expect(warningContainer, findsOneWidget);
+        expect(
+          find.descendant(
+            of: warningContainer,
+            matching: find.textContaining('Timeout on block 0x20'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: warningContainer,
+            matching: find.textContaining('Uncompleted blocks: \$20'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: warningContainer,
+            matching: find.textContaining('未查到不代表不支援'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('mode08_discovery_success_container')),
+          findsOneWidget,
+        );
+        expect(find.text('TID \$01'), findsOneWidget);
+        expect(find.text('TID \$02'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'Mode 08 discovery unsupported state renders unsupported message',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);

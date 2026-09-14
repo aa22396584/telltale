@@ -25,6 +25,9 @@ final class Mode08DiscoveryResult {
     required this.supportedTids,
     required this.queriedBlocks,
     required this.discoveredAt,
+    this.isComplete = true,
+    this.unqueriedBlocks = const [],
+    this.ecuResults = const {},
     this.failureReason,
     this.nrc,
   });
@@ -35,15 +38,21 @@ final class Mode08DiscoveryResult {
     required String reason,
     int? nrc,
     DateTime? discoveredAt,
+    List<int> queriedBlocks = const [],
+    List<int> unqueriedBlocks = const [],
+    Map<String, Mode08ParseResult> ecuResults = const {},
   }) =>
       Mode08DiscoveryResult(
         isSupported: false,
         supportStatus: supportStatus,
         supportedTids: const {},
-        queriedBlocks: const [],
+        queriedBlocks: queriedBlocks,
+        unqueriedBlocks: unqueriedBlocks,
         discoveredAt: discoveredAt ?? DateTime.now().toUtc(),
+        isComplete: false,
         failureReason: reason,
         nrc: nrc,
+        ecuResults: ecuResults,
       );
 
   /// Whether Mode 08 is affirmatively supported by the ECU.
@@ -57,6 +66,15 @@ final class Mode08DiscoveryResult {
 
   /// Base TIDs queried during this discovery session (e.g. `[0x00, 0x20]`).
   final List<int> queriedBlocks;
+
+  /// Whether the full discovery sequence ran to completion without interruption.
+  final bool isComplete;
+
+  /// Uncompleted or unqueried blocks if discovery was interrupted or aborted early.
+  final List<int> unqueriedBlocks;
+
+  /// Per-ECU response breakdown.
+  final Map<String, Mode08ParseResult> ecuResults;
 
   /// Timestamp when discovery was performed.
   final DateTime discoveredAt;
@@ -87,6 +105,7 @@ abstract final class Mode08DiscoveryService {
     Duration budget = defaultTotalBudget,
     DateTime? deadline,
     Object? owner,
+    bool Function()? isSessionValid,
   }) async {
     final now = DateTime.now().toUtc();
 
@@ -101,11 +120,36 @@ abstract final class Mode08DiscoveryService {
     final header = targetHeader ?? client.addressing.functionalHeader;
     final allSupportedTids = <int>{};
     final queriedBlocks = <int>[];
+    final aggregatedEcuResults = <String, Mode08ParseResult>{};
     int currentBaseTid = 0x00;
 
     final stopwatch = Stopwatch()..start();
 
     while (currentBaseTid <= 0xE0) {
+      if (isSessionValid?.call() == false || !client.transport.isConnected) {
+        if (allSupportedTids.isNotEmpty) {
+          return Mode08DiscoveryResult(
+            isSupported: true,
+            supportStatus: EcuSupportStatus.supported,
+            supportedTids: Set.unmodifiable(allSupportedTids),
+            queriedBlocks: List.unmodifiable(queriedBlocks),
+            discoveredAt: now,
+            isComplete: false,
+            unqueriedBlocks: [currentBaseTid],
+            failureReason: 'Session disconnected or superseded during discovery',
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
+          );
+        }
+        return Mode08DiscoveryResult.failure(
+          supportStatus: EcuSupportStatus.unknown,
+          reason: 'Session disconnected or superseded during discovery',
+          discoveredAt: now,
+          queriedBlocks: List.unmodifiable(queriedBlocks),
+          unqueriedBlocks: [currentBaseTid],
+          ecuResults: Map.unmodifiable(aggregatedEcuResults),
+        );
+      }
+
       final remainingBudget = budget - stopwatch.elapsed;
       if (remainingBudget <= Duration.zero) {
         if (allSupportedTids.isNotEmpty) {
@@ -116,13 +160,18 @@ abstract final class Mode08DiscoveryService {
             supportedTids: Set.unmodifiable(allSupportedTids),
             queriedBlocks: List.unmodifiable(queriedBlocks),
             discoveredAt: now,
+            isComplete: false,
+            unqueriedBlocks: [currentBaseTid],
             failureReason: 'Discovery budget reached before all blocks queried',
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
         }
         return Mode08DiscoveryResult.failure(
           supportStatus: EcuSupportStatus.unknown,
           reason: 'Discovery budget exceeded',
           discoveredAt: now,
+          unqueriedBlocks: [currentBaseTid],
+          ecuResults: Map.unmodifiable(aggregatedEcuResults),
         );
       }
 
@@ -146,13 +195,18 @@ abstract final class Mode08DiscoveryService {
             supportedTids: Set.unmodifiable(allSupportedTids),
             queriedBlocks: List.unmodifiable(queriedBlocks),
             discoveredAt: now,
+            isComplete: false,
+            unqueriedBlocks: [currentBaseTid],
             failureReason: 'Query timed out for block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}',
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
         }
         return Mode08DiscoveryResult.failure(
           supportStatus: EcuSupportStatus.unknown,
           reason: 'Mode 08 query timed out',
           discoveredAt: now,
+          unqueriedBlocks: [currentBaseTid],
+          ecuResults: Map.unmodifiable(aggregatedEcuResults),
         );
       } on TransportException catch (e) {
         if (allSupportedTids.isNotEmpty) {
@@ -162,28 +216,38 @@ abstract final class Mode08DiscoveryService {
             supportedTids: Set.unmodifiable(allSupportedTids),
             queriedBlocks: List.unmodifiable(queriedBlocks),
             discoveredAt: now,
+            isComplete: false,
+            unqueriedBlocks: [currentBaseTid],
             failureReason: 'Transport failed during block query: $e',
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
         }
         return Mode08DiscoveryResult.failure(
           supportStatus: EcuSupportStatus.unknown,
           reason: 'Mode 08 transport failed: $e',
           discoveredAt: now,
+          unqueriedBlocks: [currentBaseTid],
+          ecuResults: Map.unmodifiable(aggregatedEcuResults),
         );
       } catch (e) {
         return Mode08DiscoveryResult.failure(
           supportStatus: EcuSupportStatus.unknown,
           reason: 'Internal error during Mode 08 discovery: $e',
           discoveredAt: now,
+          unqueriedBlocks: [currentBaseTid],
+          ecuResults: Map.unmodifiable(aggregatedEcuResults),
         );
       }
 
       queriedBlocks.add(currentBaseTid);
-      final rawResponse = response.rawLines.join('\n');
-      final parseResult = Mode08DiscoveryCodec.parseResponse(
-        rawResponse,
+      final parseResult = Mode08DiscoveryCodec.parseObdResponse(
+        response,
         expectedBaseTid: currentBaseTid,
       );
+
+      if (parseResult.ecuResults.isNotEmpty) {
+        aggregatedEcuResults.addAll(parseResult.ecuResults);
+      }
 
       switch (parseResult) {
         case Mode08SupportSuccess success:
@@ -198,6 +262,9 @@ abstract final class Mode08DiscoveryService {
               supportedTids: Set.unmodifiable(allSupportedTids),
               queriedBlocks: List.unmodifiable(queriedBlocks),
               discoveredAt: now,
+              isComplete: true,
+              unqueriedBlocks: const [],
+              ecuResults: Map.unmodifiable(aggregatedEcuResults),
             );
           }
 
@@ -209,8 +276,11 @@ abstract final class Mode08DiscoveryService {
               supportedTids: Set.unmodifiable(allSupportedTids),
               queriedBlocks: List.unmodifiable(queriedBlocks),
               discoveredAt: now,
+              isComplete: false,
+              unqueriedBlocks: [currentBaseTid],
               failureReason: 'Negative response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()} (NRC 0x${negative.nrc.toRadixString(16).padLeft(2, '0').toUpperCase()})',
               nrc: negative.nrc,
+              ecuResults: Map.unmodifiable(aggregatedEcuResults),
             );
           }
           return Mode08DiscoveryResult.failure(
@@ -218,6 +288,8 @@ abstract final class Mode08DiscoveryService {
             reason: 'ECU returned negative response: NRC 0x${negative.nrc.toRadixString(16).padLeft(2, '0').toUpperCase()}',
             nrc: negative.nrc,
             discoveredAt: now,
+            queriedBlocks: List.unmodifiable(queriedBlocks),
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
 
         case Mode08NoResponse noResponse:
@@ -228,13 +300,18 @@ abstract final class Mode08DiscoveryService {
               supportedTids: Set.unmodifiable(allSupportedTids),
               queriedBlocks: List.unmodifiable(queriedBlocks),
               discoveredAt: now,
+              isComplete: false,
+              unqueriedBlocks: [currentBaseTid],
               failureReason: 'No response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${noResponse.reason}',
+              ecuResults: Map.unmodifiable(aggregatedEcuResults),
             );
           }
           return Mode08DiscoveryResult.failure(
             supportStatus: noResponse.supportStatus,
             reason: 'No response from ECU for Mode 08: ${noResponse.reason}',
             discoveredAt: now,
+            queriedBlocks: List.unmodifiable(queriedBlocks),
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
 
         case Mode08MalformedResponse malformed:
@@ -245,13 +322,18 @@ abstract final class Mode08DiscoveryService {
               supportedTids: Set.unmodifiable(allSupportedTids),
               queriedBlocks: List.unmodifiable(queriedBlocks),
               discoveredAt: now,
+              isComplete: false,
+              unqueriedBlocks: [currentBaseTid],
               failureReason: 'Malformed response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${malformed.reason}',
+              ecuResults: Map.unmodifiable(aggregatedEcuResults),
             );
           }
           return Mode08DiscoveryResult.failure(
             supportStatus: EcuSupportStatus.unknown,
             reason: 'Malformed Mode 08 response: ${malformed.reason}',
             discoveredAt: now,
+            queriedBlocks: List.unmodifiable(queriedBlocks),
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
 
         case Mode08ExecutionSuccess _:
@@ -260,6 +342,8 @@ abstract final class Mode08DiscoveryService {
             supportStatus: EcuSupportStatus.unknown,
             reason: 'Unexpected execution response for supported TID query',
             discoveredAt: now,
+            queriedBlocks: List.unmodifiable(queriedBlocks),
+            ecuResults: Map.unmodifiable(aggregatedEcuResults),
           );
       }
     }
@@ -270,6 +354,9 @@ abstract final class Mode08DiscoveryService {
       supportedTids: Set.unmodifiable(allSupportedTids),
       queriedBlocks: List.unmodifiable(queriedBlocks),
       discoveredAt: now,
+      isComplete: true,
+      unqueriedBlocks: const [],
+      ecuResults: Map.unmodifiable(aggregatedEcuResults),
     );
   }
 }

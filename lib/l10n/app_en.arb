@@ -3963,6 +3963,13 @@
       "reason": { "type": "String" }
     }
   },
+  "serviceRecipesDiscoveryPartialWarning": "Discovery partially completed ({reason}). Uncompleted blocks: {blocks}. Note: Not found does not mean unsupported (未查到不代表不支援).",
+  "@serviceRecipesDiscoveryPartialWarning": {
+    "placeholders": {
+      "reason": { "type": "String" },
+      "blocks": { "type": "String" }
+    }
+  },
   "serviceRecipesCatalogSection": "Available Service Recipes",
   "serviceRecipesSimulationBadge": "Simulation Ready",
   "serviceRecipesLiveBlockedBadge": "Live Blocked (0 Live Candidates)",

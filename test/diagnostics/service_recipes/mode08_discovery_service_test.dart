@@ -287,5 +287,67 @@ void main() {
       expect(result.supportStatus, equals(EcuSupportStatus.supported));
       expect(result.supportedTids, equals({0x01}));
     });
+
+    test('preserves discovered TIDs as partial discovery when subsequent block times out', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        faults: const AdapterFaults(swallowPromptFor: {'0820'}),
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 01'], // Has next block (0x20)
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake, commandTimeout: const Duration(milliseconds: 50));
+
+      final result = await Mode08DiscoveryService.discoverSupportedTids(
+        client: client,
+        timeout: const Duration(milliseconds: 50),
+        budget: const Duration(milliseconds: 200),
+      );
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportStatus, equals(EcuSupportStatus.supported));
+      expect(result.isComplete, isFalse);
+      expect(result.supportedTids, equals({0x01, 0x20}));
+      expect(result.unqueriedBlocks, equals([0x20]));
+      expect(result.failureReason, contains('0x20'));
+    });
+
+    test('preserves discovered TIDs as partial discovery when subsequent block returns NRC 0x22', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              '0800': ['48 00 80 00 00 01'], // Has next block (0x20)
+              '0820': ['7F 08 22'], // Conditions not correct
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+
+      final result = await Mode08DiscoveryService.discoverSupportedTids(
+        client: client,
+      );
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportStatus, equals(EcuSupportStatus.supported));
+      expect(result.isComplete, isFalse);
+      expect(result.supportedTids, equals({0x01, 0x20}));
+      expect(result.unqueriedBlocks, equals([0x20]));
+      expect(result.failureReason, contains('NRC 0x22'));
+    });
   });
 }

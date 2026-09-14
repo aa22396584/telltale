@@ -400,5 +400,62 @@ void main() {
       final success = result as Mode08SupportSuccess;
       expect(success.supportedTids, equals({0x01}));
     });
+
+    test('parses compact 480000004800 as valid headerless positive response, not truncated', () {
+      final spaced = Mode08DiscoveryCodec.parseResponse(
+        '48 00 00 00 48 00',
+        expectedBaseTid: 0x00,
+      );
+      final compact = Mode08DiscoveryCodec.parseResponse(
+        '480000004800',
+        expectedBaseTid: 0x00,
+      );
+
+      expect(spaced, isA<Mode08SupportSuccess>());
+      expect(compact, isA<Mode08SupportSuccess>());
+      expect((compact as Mode08SupportSuccess).supportedTids,
+          equals((spaced as Mode08SupportSuccess).supportedTids));
+    });
+
+    test('rejects non-hex token in CAN line fail-closed (7E8 ZZ 48 00 80 00 00 00)', () {
+      final res = Mode08DiscoveryCodec.parseResponse(
+        '7E8 ZZ 48 00 80 00 00 00',
+        expectedBaseTid: 0x00,
+      );
+      expect(res, isA<Mode08MalformedResponse>());
+      expect((res as Mode08MalformedResponse).reason,
+          equals(Mode08MalformedReason.invalidHex));
+    });
+
+    test('multi-ECU response aggregation is order-invariant (11 vs 22)', () {
+      const r1 = '7E8 03 7F 08 11\n7E9 03 7F 08 22';
+      const r2 = '7E9 03 7F 08 22\n7E8 03 7F 08 11';
+
+      final res1 = Mode08DiscoveryCodec.parseResponse(r1, expectedBaseTid: 0x00);
+      final res2 = Mode08DiscoveryCodec.parseResponse(r2, expectedBaseTid: 0x00);
+
+      expect(res1, isA<Mode08NegativeResponse>());
+      expect(res2, isA<Mode08NegativeResponse>());
+      final neg1 = res1 as Mode08NegativeResponse;
+      final neg2 = res2 as Mode08NegativeResponse;
+
+      // Both must classify as unknown (conditions not correct on 7E9 prevents declaring whole vehicle unsupported)
+      expect(neg1.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(neg2.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(neg1.supportStatus, equals(neg2.supportStatus));
+      expect(neg1.nrc, equals(neg2.nrc));
+    });
+
+    test('multi-ECU response aggregation is order-invariant with malformed response', () {
+      const r1 = '7E8 03 7F 08 11\n7E9 03 7F 08 ZZ';
+      const r2 = '7E9 03 7F 08 ZZ\n7E8 03 7F 08 11';
+
+      final res1 = Mode08DiscoveryCodec.parseResponse(r1, expectedBaseTid: 0x00);
+      final res2 = Mode08DiscoveryCodec.parseResponse(r2, expectedBaseTid: 0x00);
+
+      expect(res1.runtimeType, equals(res2.runtimeType));
+      expect(res1, isA<Mode08MalformedResponse>());
+      expect(res2, isA<Mode08MalformedResponse>());
+    });
   });
 }

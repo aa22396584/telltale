@@ -1204,6 +1204,13 @@
       "reason": { "type": "String" }
     }
   },
+  "serviceRecipesDiscoveryPartialWarning": "Erkennung unvollständig ({reason}). Nicht abgeschlossene Blöcke: {blocks}. Hinweis: Nicht gefunden bedeutet nicht nicht unterstützt (未查到不代表不支援).",
+  "@serviceRecipesDiscoveryPartialWarning": {
+    "placeholders": {
+      "reason": { "type": "String" },
+      "blocks": { "type": "String" }
+    }
+  },
   "serviceRecipesCatalogSection": "Verfügbare Service-Rezepte",
   "serviceRecipesSimulationBadge": "Simulationsbereit",
   "serviceRecipesLiveBlockedBadge": "Live gesperrt (0 Live-Kandidaten)",

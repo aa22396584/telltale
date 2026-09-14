@@ -17,6 +17,7 @@ import '../diagnostics/service_recipes/active_test_profile.dart';
 import '../diagnostics/service_recipes/candidate_matrix.dart';
 import '../diagnostics/service_recipes/mode08_discovery_service.dart';
 import '../diagnostics/service_recipes/qualification_tier.dart';
+import '../obd/elm327_client.dart';
 import 'obd_session.dart';
 
 /// Function type for loading a [CandidateMatrix] from asset storage or fakes.
@@ -104,16 +105,35 @@ final class Mode08DiscoveryState {
 
 /// Notifier managing the lifecycle of Mode 08 supported TID discovery.
 class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
+  int _requestToken = 0;
+
   @override
   Mode08DiscoveryState build() {
     // Invalidate / reset discovery state when session connection changes
     ref.listen(obdSessionProvider, (previous, next) {
       if (previous?.isConnected == true && !next.isConnected) {
+        _requestToken++;
         state = const Mode08DiscoveryState.idle();
       }
     });
 
+    ref.onDispose(() {
+      _requestToken++;
+    });
+
     return const Mode08DiscoveryState.idle();
+  }
+
+  bool _isSuperseded(int token, int sessionGeneration, Elm327Client client) {
+    if (token != _requestToken) return true;
+    final currentConnection = ref.read(obdSessionProvider);
+    if (!currentConnection.isConnected) return true;
+    final currentNotifier = ref.read(obdSessionProvider.notifier);
+    if (currentNotifier.generation != sessionGeneration) return true;
+    final currentClient = currentNotifier.client;
+    if (currentClient == null || !identical(currentClient, client)) return true;
+    if (!client.transport.isConnected) return true;
+    return false;
   }
 
   /// Initiates non-actuating Mode 08 discovery against the connected vehicle/adapter.
@@ -134,7 +154,8 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
       return;
     }
 
-    final client = ref.read(obdSessionProvider.notifier).client;
+    final sessionController = ref.read(obdSessionProvider.notifier);
+    final client = sessionController.client;
     if (client == null) {
       state = const Mode08DiscoveryState.refused(
         reason: 'OBD client is not available',
@@ -149,6 +170,9 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
       return;
     }
 
+    final token = ++_requestToken;
+    final sessionGeneration = sessionController.generation;
+
     state = Mode08DiscoveryState.discovering(startedAt: DateTime.now().toUtc());
 
     try {
@@ -157,11 +181,11 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
         timeout: timeout,
         budget: budget,
         deadline: deadline,
+        isSessionValid: () => !_isSuperseded(token, sessionGeneration, client),
       );
 
-      // Verify connection did not drop while discovery was running
-      if (!ref.read(obdSessionProvider).isConnected) {
-        state = const Mode08DiscoveryState.idle();
+      // Verify task was not superseded while discovery was running
+      if (_isSuperseded(token, sessionGeneration, client)) {
         return;
       }
 
@@ -175,8 +199,7 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
         );
       }
     } catch (e) {
-      if (!ref.read(obdSessionProvider).isConnected) {
-        state = const Mode08DiscoveryState.idle();
+      if (_isSuperseded(token, sessionGeneration, client)) {
         return;
       }
       state = Mode08DiscoveryState.failed(
@@ -187,6 +210,7 @@ class Mode08DiscoveryNotifier extends Notifier<Mode08DiscoveryState> {
 
   /// Manually resets discovery state.
   void reset() {
+    _requestToken++;
     state = const Mode08DiscoveryState.idle();
   }
 }

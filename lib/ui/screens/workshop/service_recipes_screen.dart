@@ -259,48 +259,90 @@ class _Mode08DiscoveryPanel extends StatelessWidget {
       final tidsFormatted = result.supportedTids
           .map((t) => '\$${t.toRadixString(16).padLeft(2, '0').toUpperCase()}')
           .join(', ');
+      final uncompletedFormatted = result.unqueriedBlocks.isEmpty
+          ? 'N/A'
+          : result.unqueriedBlocks
+              .map((b) => '\$${b.toRadixString(16).padLeft(2, '0').toUpperCase()}')
+              .join(', ');
 
-      return Container(
-        key: const Key('mode08_discovery_success_container'),
-        width: double.infinity,
-        padding: const EdgeInsets.all(Spacing.md),
-        decoration: BoxDecoration(
-          color: palette.surfaceAlt,
-          borderRadius: BorderRadius.circular(Radii.sm),
-          border: Border.all(color: palette.accent.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.check_circle, color: palette.accent, size: 18),
-                const SizedBox(width: Spacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.serviceRecipesDiscoverySuccess(tidsFormatted),
-                    style: context.texts.bodySmall?.copyWith(
-                      color: palette.textPrimary,
-                      fontWeight: FontWeight.w600,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!result.isComplete) ...[
+            Container(
+              key: const Key('mode08_discovery_partial_warning'),
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: Spacing.sm),
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                color: palette.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(Radii.sm),
+                border: Border.all(color: palette.warning.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: palette.warning, size: 18),
+                  const SizedBox(width: Spacing.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.serviceRecipesDiscoveryPartialWarning(
+                        result.failureReason ?? 'Partial',
+                        uncompletedFormatted,
+                      ),
+                      style: context.texts.bodySmall?.copyWith(
+                        color: palette.warning,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ],
+          Container(
+            key: const Key('mode08_discovery_success_container'),
+            width: double.infinity,
+            padding: const EdgeInsets.all(Spacing.md),
+            decoration: BoxDecoration(
+              color: palette.surfaceAlt,
+              borderRadius: BorderRadius.circular(Radii.sm),
+              border: Border.all(color: palette.accent.withValues(alpha: 0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.check_circle, color: palette.accent, size: 18),
+                    const SizedBox(width: Spacing.sm),
+                    Expanded(
+                      child: Text(
+                        l10n.serviceRecipesDiscoverySuccess(tidsFormatted),
+                        style: context.texts.bodySmall?.copyWith(
+                          color: palette.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.sm),
+                Wrap(
+                  spacing: Spacing.xs,
+                  runSpacing: Spacing.xs,
+                  children: [
+                    for (final tid in result.supportedTids)
+                      _TidChip(
+                        tid: tid,
+                        palette: palette,
+                      ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: Spacing.sm),
-            Wrap(
-              spacing: Spacing.xs,
-              runSpacing: Spacing.xs,
-              children: [
-                for (final tid in result.supportedTids)
-                  _TidChip(
-                    tid: tid,
-                    palette: palette,
-                  ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     } else {
       return _buildStatusContainer(
