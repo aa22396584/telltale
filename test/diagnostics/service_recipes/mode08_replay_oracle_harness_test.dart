@@ -1,80 +1,131 @@
 /// Tests that the Mode 08 Replay Oracle harness decisively fails (never silently skips)
-/// under failure conditions (server unstarted, missing fixture, hash mismatch, result mismatch).
+/// under all failure conditions (server unstarted, missing fixture, hash mismatch, result mismatch, entry mismatch).
 library;
 
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:torque_obd/diagnostics/service_recipes/mode08_discovery_service.dart';
+import 'package:torque_obd/diagnostics/service_recipes/qualification_tier.dart';
+import 'package:torque_obd/obd/elm327_client.dart';
+
+import 'mode08_replay_oracle_test.dart';
 
 void main() {
   group('Mode 08 Replay Oracle Harness Decisive Failure Tests', () {
     test('harness fails decisively when server is unstarted and required-mode is set', () async {
-      // Choose an unallocated loopback port where no server is listening
       const deadPort = 35499;
 
-      bool didFail = false;
-      String? failureMessage;
-
-      // Simulate what oracle setup does in required-mode:
-      try {
-        Socket? socket;
-        try {
-          socket = await Socket.connect('127.0.0.1', deadPort,
-              timeout: const Duration(milliseconds: 200));
-        } on Object catch (e) {
-          // In required mode, failure to connect triggers fail(...)
-          didFail = true;
-          failureMessage = 'MODE08_ORACLE_REQUIRED was set, but server not running: $e';
-        } finally {
-          socket?.destroy();
-        }
-      } catch (_) {}
-
-      expect(didFail, isTrue, reason: 'Must fail when server is unstarted in required-mode');
-      expect(failureMessage, contains('MODE08_ORACLE_REQUIRED was set'));
+      expect(
+        () async => await verifyOraclePreflight(
+          host: '127.0.0.1',
+          port: deadPort,
+          requiredMode: true,
+          identity: oracleIdentity,
+        ),
+        throwsA(isA<TestFailure>()),
+        reason: 'Preflight must fail decisively when server is unstarted in required-mode',
+      );
     });
 
-    test('harness fails decisively when fixture file is missing', () {
-      const nonExistentPath = 'tool/obd_test_rig/non_existent_fixture.json';
-      final file = File(nonExistentPath);
+    test('harness fails decisively when fixture file is missing and required-mode is set', () {
+      const nonExistentPath = 'tool/obd_test_rig/non_existent_fixture_9999.json';
 
-      expect(file.existsSync(), isFalse);
-
-      void checkRequiredFixture() {
-        if (!file.existsSync()) {
-          throw StateError('MODE08_ORACLE_REQUIRED was set, but fixture missing at $nonExistentPath');
-        }
-      }
-
-      expect(checkRequiredFixture, throwsStateError);
+      expect(
+        () => loadReplayFixtures(nonExistentPath, requiredMode: true),
+        throwsA(isA<TestFailure>()),
+        reason: 'Loading missing fixture in required-mode must throw TestFailure',
+      );
     });
 
     test('harness fails decisively when fixture SHA-256 hash mismatches server hash', () {
-      const actualServerHash = '2a56732f1ef6b0cec0b71b3ae28fcc5f6b09d98b4bd04405a62aef84d22c5c1b';
-      const corruptedLocalHash = '0000000000000000000000000000000000000000000000000000000000000000';
-
-      void verifyHash() {
-        if (actualServerHash != corruptedLocalHash) {
-          throw StateError(
-            'Fixture SHA-256 mismatch! Server: $actualServerHash, Local: $corruptedLocalHash',
-          );
-        }
-      }
-
-      expect(verifyHash, throwsStateError);
-    });
-
-    test('harness fails decisively when replay result mismatches expected outcome', () {
-      // Simulate result vs expected outcome
-      const actualIsComplete = true;
-      const tamperedExpectedIsComplete = false;
+      const serverHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const corruptedLocalHash = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
       expect(
-        () {
-          expect(actualIsComplete, equals(tamperedExpectedIsComplete));
-        },
+        () => verifyFixtureHash(serverHash: serverHash, localHash: corruptedLocalHash),
         throwsA(isA<TestFailure>()),
-        reason: 'Any outcome mismatch must produce TestFailure and non-zero exit code',
+        reason: 'Hash mismatch must throw TestFailure and fail decisively',
+      );
+    });
+
+    test('harness fails decisively when replay result mismatches expected outcome (isSupported)', () {
+      final mockResult = Mode08DiscoveryResult(
+        isSupported: true,
+        supportStatus: EcuSupportStatus.supported,
+        supportedTids: const {1},
+        queriedBlocks: const [0],
+        discoveredAt: DateTime.now().toUtc(),
+        isComplete: true,
+        unqueriedBlocks: const [],
+      );
+
+      final tamperedExpected = <String, dynamic>{
+        'isSupported': false, // Mismatch!
+        'supportStatus': 'supported',
+        'supportedTids': [1],
+        'isComplete': true,
+        'unqueriedBlocks': [],
+      };
+
+      expect(
+        () => verifyScenarioOutcome(mockResult, tamperedExpected, scenarioId: 'harness_mismatch_test'),
+        throwsA(isA<TestFailure>()),
+        reason: 'isSupported mismatch must throw TestFailure',
+      );
+    });
+
+    test('harness fails decisively when replay result mismatches expected outcome (isComplete)', () {
+      final mockResult = Mode08DiscoveryResult(
+        isSupported: true,
+        supportStatus: EcuSupportStatus.supported,
+        supportedTids: const {1, 32},
+        queriedBlocks: const [0, 32],
+        discoveredAt: DateTime.now().toUtc(),
+        isComplete: false,
+        unqueriedBlocks: const [32],
+      );
+
+      final tamperedExpected = <String, dynamic>{
+        'isSupported': true,
+        'supportStatus': 'supported',
+        'supportedTids': [1, 32],
+        'isComplete': true, // Mismatch!
+        'unqueriedBlocks': [32],
+      };
+
+      expect(
+        () => verifyScenarioOutcome(mockResult, tamperedExpected, scenarioId: 'harness_mismatch_test'),
+        throwsA(isA<TestFailure>()),
+        reason: 'isComplete mismatch must throw TestFailure',
+      );
+    });
+
+    test('harness fails decisively when parser entries disagree on supportStatus', () {
+      // Structured says supported, but raw says unsupported
+      const structuredResp = ObdResponse(
+        rawLines: ['7E8 06 48 00 80 00 00 00'],
+        frames: [
+          ObdFrame([0x06, 0x48, 0x00, 0x80, 0x00, 0x00, 0x00], sourceId: '7E8', payload: [0x48, 0x00, 0x80, 0x00, 0x00, 0x00]),
+        ],
+        observedFrames: [],
+        attributedSources: {'7E8'},
+      );
+
+      const disagreeingRawResp = ObdResponse(
+        rawLines: ['7E8 03 7F 08 11'],
+        frames: [],
+        observedFrames: [],
+        attributedSources: {'7E8'},
+      );
+
+      expect(
+        () => verifyParserEntryConsistency(
+          structuredResponse: structuredResp,
+          observedOnlyResponse: structuredResp,
+          rawOnlyResponse: disagreeingRawResp,
+          expectedBaseTid: 0x00,
+        ),
+        throwsA(isA<TestFailure>()),
+        reason: 'Entry disagreement must throw TestFailure',
       );
     });
   });
