@@ -3,7 +3,6 @@
   "name": "mode08_replay_fixtures",
   "provenance": "synthetic",
   "description": "Synthetic Mode 08 replay transcripts and independent ground-truth expected outcomes for Mode 08 Replay Oracle & Acceptance Gate 1.",
-  "canonical_hash": "a1b2c3d4e5f6",
   "scenarios": [
     {
       "id": "normal_headered_single_block",
@@ -23,7 +22,15 @@
         "unqueriedBlocks": [],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1]
+            }
+          }
+        }
       }
     },
     {
@@ -48,7 +55,19 @@
         "unqueriedBlocks": [],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 32]
+            },
+            "32": {
+              "supportStatus": "supported",
+              "supportedTids": [34]
+            }
+          }
+        }
       }
     },
     {
@@ -72,7 +91,16 @@
         "unqueriedBlocks": [0],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": true
+        "hasAnonymous": true,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "unsupported",
+              "supportedTids": [],
+              "nrc": 17
+            }
+          }
+        }
       }
     },
     {
@@ -93,7 +121,15 @@
         "unqueriedBlocks": [],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 2]
+            }
+          }
+        }
       }
     },
     {
@@ -122,7 +158,19 @@
         "unqueriedBlocks": [],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 32]
+            },
+            "32": {
+              "supportStatus": "supported",
+              "supportedTids": [34]
+            }
+          }
+        }
       }
     },
     {
@@ -150,7 +198,25 @@
         "unqueriedBlocks": [],
         "failureReasonContains": null,
         "trustedEcus": ["7E8", "7E9"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 32]
+            },
+            "32": {
+              "supportStatus": "supported",
+              "supportedTids": [33]
+            }
+          },
+          "7E9": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [2]
+            }
+          }
+        }
       }
     },
     {
@@ -176,7 +242,8 @@
         "unqueriedBlocks": [32],
         "failureReasonContains": "來源歸因與覆蓋完整度未確認",
         "trustedEcus": [],
-        "hasAnonymous": true
+        "hasAnonymous": true,
+        "perEcuBlockResults": {}
       }
     },
     {
@@ -201,7 +268,19 @@
         "unqueriedBlocks": [32],
         "failureReasonContains": "missing",
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 32]
+            },
+            "32": {
+              "supportStatus": "unknown",
+              "supportedTids": []
+            }
+          }
+        }
       }
     },
     {
@@ -222,7 +301,16 @@
         "unqueriedBlocks": [0],
         "failureReasonContains": null,
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "unknown",
+              "supportedTids": [],
+              "nrc": 34
+            }
+          }
+        }
       }
     },
     {
@@ -247,7 +335,15 @@
         "unqueriedBlocks": [32],
         "failureReasonContains": "Transport failed",
         "trustedEcus": ["7E8"],
-        "hasAnonymous": false
+        "hasAnonymous": false,
+        "perEcuBlockResults": {
+          "7E8": {
+            "0": {
+              "supportStatus": "supported",
+              "supportedTids": [1, 32]
+            }
+          }
+        }
       }
     }
   ]

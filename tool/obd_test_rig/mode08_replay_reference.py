@@ -19,11 +19,58 @@ from typing import Any, Dict, List, Optional
 
 IDENTITY = "Telltale Mode 08 Replay Reference"
 VERSION = "ELM327 v1.5"
+SUPPORTED_SCHEMA_VERSIONS = {"1.0.0"}
 
 
 def compute_file_hash(path: str) -> str:
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
+
+
+def validate_fixtures_data(data: Any) -> None:
+    if not isinstance(data, dict):
+        raise ValueError("Fixtures JSON root must be an object")
+    version = data.get("version")
+    if version not in SUPPORTED_SCHEMA_VERSIONS:
+        raise ValueError(
+            f"Unsupported fixture schema version: {version!r} (supported: {sorted(SUPPORTED_SCHEMA_VERSIONS)})"
+        )
+    for req_field in ["version", "name", "provenance", "description", "scenarios"]:
+        if req_field not in data:
+            raise ValueError(f"Missing required top-level fixture field: {req_field}")
+    scenarios = data.get("scenarios")
+    if not isinstance(scenarios, list) or not scenarios:
+        raise ValueError("Fixture must contain a non-empty 'scenarios' list")
+    seen_ids = set()
+    for idx, s in enumerate(scenarios):
+        if not isinstance(s, dict):
+            raise ValueError(f"Scenario at index {idx} must be an object")
+        sid = s.get("id")
+        if not sid or not isinstance(sid, str):
+            raise ValueError(f"Scenario at index {idx} missing valid 'id'")
+        if sid in seen_ids:
+            raise ValueError(f"Duplicate scenario ID found: {sid}")
+        seen_ids.add(sid)
+        for req_scen_field in ["id", "dimension", "description", "steps", "expected_outcome"]:
+            if req_scen_field not in s:
+                raise ValueError(f"Scenario {sid} missing required field: {req_scen_field}")
+        steps = s.get("steps")
+        if not isinstance(steps, list) or not steps:
+            raise ValueError(f"Scenario {sid} steps must be a non-empty list")
+        for s_idx, step in enumerate(steps):
+            if not isinstance(step, dict):
+                raise ValueError(f"Scenario {sid} step {s_idx} must be an object")
+            if "command" not in step:
+                raise ValueError(f"Scenario {sid} step {s_idx} missing 'command'")
+            if not step.get("drop_connection") and "lines" not in step:
+                raise ValueError(f"Scenario {sid} step {s_idx} must have 'lines' or 'drop_connection'")
+            chunk_sizes = step.get("chunk_sizes")
+            if chunk_sizes is not None:
+                if not isinstance(chunk_sizes, list) or not chunk_sizes:
+                    raise ValueError(f"Scenario {sid} step {s_idx} chunk_sizes must be non-empty list")
+                for c in chunk_sizes:
+                    if not isinstance(c, int) or c <= 0:
+                        raise ValueError(f"Scenario {sid} step {s_idx} has invalid chunk size: {c}")
 
 
 class AdapterState:
@@ -48,6 +95,7 @@ class ReplayServer:
         self.file_hash = compute_file_hash(fixtures_path)
         with open(fixtures_path, "r", encoding="utf-8") as f:
             self.fixtures_data = json.load(f)
+        validate_fixtures_data(self.fixtures_data)
         self.scenarios: Dict[str, Any] = {
             s["id"]: s for s in self.fixtures_data.get("scenarios", [])
         }
@@ -301,7 +349,11 @@ async def main() -> None:
         sys.stderr.write(f"Refusing: fixtures file not found at {args.fixtures}\n")
         sys.exit(2)
 
-    server = ReplayServer(args.fixtures, default_scenario=args.scenario, log_file=args.log)
+    try:
+        server = ReplayServer(args.fixtures, default_scenario=args.scenario, log_file=args.log)
+    except Exception as e:
+        sys.stderr.write(f"Refusing: invalid fixtures file ({e})\n")
+        sys.exit(2)
     server.log_event("ready", {"hash": server.file_hash, "port": args.port, "scenarios": list(server.scenarios.keys())})
 
     loop = asyncio.get_running_loop()

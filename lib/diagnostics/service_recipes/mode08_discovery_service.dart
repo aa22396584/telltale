@@ -31,6 +31,7 @@ final class Mode08DiscoveryResult {
     this.perEcuBlockResults = const {},
     this.failureReason,
     this.nrc,
+    this.hasAnonymous = false,
   });
 
   /// Factory for a failed or refused discovery attempt.
@@ -43,6 +44,7 @@ final class Mode08DiscoveryResult {
     List<int> unqueriedBlocks = const [],
     Map<String, Mode08ParseResult> ecuResults = const {},
     Map<String, Map<int, Mode08ParseResult>> perEcuBlockResults = const {},
+    bool hasAnonymous = false,
   }) =>
       Mode08DiscoveryResult(
         isSupported: false,
@@ -56,6 +58,7 @@ final class Mode08DiscoveryResult {
         nrc: nrc,
         ecuResults: ecuResults,
         perEcuBlockResults: perEcuBlockResults,
+        hasAnonymous: hasAnonymous,
       );
 
   /// Whether Mode 08 is affirmatively supported by the ECU.
@@ -90,6 +93,9 @@ final class Mode08DiscoveryResult {
 
   /// Raw negative response code (NRC) if returned by the ECU.
   final int? nrc;
+
+  /// Whether any block during discovery encountered unattributed/anonymous responses.
+  final bool hasAnonymous;
 
   /// Whether a specific TID is in the discovered supported set.
   bool containsTid(int tid) => supportedTids.contains(tid);
@@ -151,6 +157,7 @@ abstract final class Mode08DiscoveryService {
             failureReason: 'Session disconnected or superseded during discovery',
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
         }
         return Mode08DiscoveryResult.failure(
@@ -161,6 +168,7 @@ abstract final class Mode08DiscoveryService {
           unqueriedBlocks: [currentBaseTid],
           ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
           perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+          hasAnonymous: hadAnonymousResponses,
         );
       }
 
@@ -179,6 +187,7 @@ abstract final class Mode08DiscoveryService {
             failureReason: 'Discovery budget reached before all blocks queried',
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
         }
         return Mode08DiscoveryResult.failure(
@@ -188,6 +197,7 @@ abstract final class Mode08DiscoveryService {
           unqueriedBlocks: [currentBaseTid],
           ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
           perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+          hasAnonymous: hadAnonymousResponses,
         );
       }
 
@@ -217,6 +227,7 @@ abstract final class Mode08DiscoveryService {
             failureReason: 'Query timed out for block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}',
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
         }
         return Mode08DiscoveryResult.failure(
@@ -226,6 +237,7 @@ abstract final class Mode08DiscoveryService {
           unqueriedBlocks: [currentBaseTid],
           ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
           perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+          hasAnonymous: hadAnonymousResponses,
         );
       } on TransportException catch (e) {
         if (allSupportedTids.isNotEmpty) {
@@ -241,6 +253,7 @@ abstract final class Mode08DiscoveryService {
             failureReason: 'Transport failed during block query: $e',
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
         }
         return Mode08DiscoveryResult.failure(
@@ -250,6 +263,7 @@ abstract final class Mode08DiscoveryService {
           unqueriedBlocks: [currentBaseTid],
           ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
           perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+          hasAnonymous: hadAnonymousResponses,
         );
       } catch (e) {
         return Mode08DiscoveryResult.failure(
@@ -259,6 +273,7 @@ abstract final class Mode08DiscoveryService {
           unqueriedBlocks: [currentBaseTid],
           ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
           perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+          hasAnonymous: hadAnonymousResponses,
         );
       }
 
@@ -294,7 +309,11 @@ abstract final class Mode08DiscoveryService {
       }
 
       // Check anonymous responses tracking: anonymous responses cannot establish cross-block identity
-      if (blockAnonymous.isNotEmpty) {
+      final hasTrustedEcu = blockEcuResults.keys.any((k) => k != 'unattributed');
+      final hasAnonymousResponses = blockAnonymous.any(
+        (r) => r is! Mode08NoResponse || hasTrustedEcu,
+      );
+      if (hasAnonymousResponses) {
         hadAnonymousResponses = true;
       }
 
@@ -396,6 +415,7 @@ abstract final class Mode08DiscoveryService {
               failureReason: isComplete ? null : overallFailureReason,
               ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
               perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+              hasAnonymous: hadAnonymousResponses,
             );
           }
 
@@ -420,6 +440,7 @@ abstract final class Mode08DiscoveryService {
               nrc: negative.nrc,
               ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
               perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+              hasAnonymous: hadAnonymousResponses,
             );
           }
           return Mode08DiscoveryResult.failure(
@@ -431,6 +452,7 @@ abstract final class Mode08DiscoveryService {
             unqueriedBlocks: [currentBaseTid],
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
 
         case Mode08NoResponse noResponse:
@@ -453,6 +475,7 @@ abstract final class Mode08DiscoveryService {
               failureReason: overallFailureReason,
               ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
               perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+              hasAnonymous: hadAnonymousResponses,
             );
           }
           return Mode08DiscoveryResult.failure(
@@ -463,6 +486,7 @@ abstract final class Mode08DiscoveryService {
             unqueriedBlocks: [currentBaseTid],
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
 
         case Mode08MalformedResponse malformed:
@@ -485,6 +509,7 @@ abstract final class Mode08DiscoveryService {
               failureReason: overallFailureReason,
               ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
               perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+              hasAnonymous: hadAnonymousResponses,
             );
           }
           return Mode08DiscoveryResult.failure(
@@ -495,6 +520,7 @@ abstract final class Mode08DiscoveryService {
             unqueriedBlocks: [currentBaseTid],
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
 
         case Mode08ExecutionSuccess _:
@@ -506,6 +532,7 @@ abstract final class Mode08DiscoveryService {
             unqueriedBlocks: [currentBaseTid],
             ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
             perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+            hasAnonymous: hadAnonymousResponses,
           );
       }
     }
@@ -537,6 +564,7 @@ abstract final class Mode08DiscoveryService {
       failureReason: isComplete ? null : overallFailureReason,
       ecuResults: _buildAggregatedEcuResults(perEcuBlockResults),
       perEcuBlockResults: _deepUnmodifiablePerEcuBlockResults(perEcuBlockResults),
+      hasAnonymous: hadAnonymousResponses,
     );
   }
 

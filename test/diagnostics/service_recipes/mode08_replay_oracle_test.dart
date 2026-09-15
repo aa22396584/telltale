@@ -10,6 +10,7 @@
 /// 6. Lifecycle (in-flight disconnection yields partial result with clean UI cleanup)
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -19,6 +20,7 @@ import 'package:torque_obd/diagnostics/service_recipes/mode08_codec.dart';
 import 'package:torque_obd/diagnostics/service_recipes/mode08_discovery_service.dart';
 import 'package:torque_obd/diagnostics/service_recipes/qualification_tier.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
+import 'package:torque_obd/obd/transport/obd_transport.dart';
 import 'package:torque_obd/obd/transport/wifi_transport.dart';
 import 'package:torque_obd/obd/vehicle_catalog/catalog_digest.dart';
 import 'package:torque_obd/state/obd_session.dart';
@@ -74,7 +76,9 @@ Future<bool> verifyOraclePreflight({
   }
 }
 
-/// Loads and validates the replay fixtures file.
+const supportedFixtureVersions = {'1.0.0'};
+
+/// Loads and validates the replay fixtures file against strict schema.
 ({File file, Map<String, dynamic> data, String sha256, List<dynamic> scenarios}) loadReplayFixtures(
   String relativePath, {
   required bool requiredMode,
@@ -97,14 +101,122 @@ Future<bool> verifyOraclePreflight({
 
   final bytes = fixtureFile.readAsBytesSync();
   final hash = sha256Hex(bytes);
-  final data = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-  final scenarios = data['scenarios'] as List<dynamic>;
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(utf8.decode(bytes));
+  } catch (e) {
+    if (requiredMode) fail('MODE08_ORACLE_REQUIRED was set, but fixtures JSON malformed: $e');
+    throw FormatException('Invalid JSON in fixtures file: $e');
+  }
+
+  if (decoded is! Map<String, dynamic>) {
+    if (requiredMode) fail('MODE08_ORACLE_REQUIRED was set, but fixtures root is not an object');
+    throw const FormatException('Fixtures root must be a JSON object');
+  }
+
+  final data = decoded;
+  final version = data['version'] as String?;
+  if (!supportedFixtureVersions.contains(version)) {
+    if (requiredMode) {
+      fail('MODE08_ORACLE_REQUIRED was set, but fixtures version $version is unsupported. Supported: $supportedFixtureVersions');
+    }
+    throw FormatException('Unsupported fixture version: $version');
+  }
+
+  for (final reqField in ['version', 'name', 'provenance', 'description', 'scenarios']) {
+    if (!data.containsKey(reqField)) {
+      if (requiredMode) fail('MODE08_ORACLE_REQUIRED was set, but fixtures missing field: $reqField');
+      throw FormatException('Missing required top-level fixture field: $reqField');
+    }
+  }
+
+  final rawScenarios = data['scenarios'];
+  if (rawScenarios is! List<dynamic> || rawScenarios.isEmpty) {
+    if (requiredMode) fail('MODE08_ORACLE_REQUIRED was set, but scenarios list is empty or not a list');
+    throw const FormatException('Scenarios must be a non-empty list');
+  }
+
+  final seenIds = <String>{};
+  for (var i = 0; i < rawScenarios.length; i++) {
+    final s = rawScenarios[i];
+    if (s is! Map<String, dynamic>) {
+      if (requiredMode) fail('Scenario at index $i is not an object');
+      throw FormatException('Scenario at index $i must be an object');
+    }
+    final id = s['id'] as String?;
+    if (id == null || id.isEmpty) {
+      if (requiredMode) fail('Scenario at index $i missing valid id');
+      throw FormatException('Scenario at index $i missing id');
+    }
+    if (!seenIds.add(id)) {
+      if (requiredMode) fail('Duplicate scenario ID found in fixtures: $id');
+      throw FormatException('Duplicate scenario ID: $id');
+    }
+    for (final req in ['id', 'dimension', 'description', 'steps', 'expected_outcome']) {
+      if (!s.containsKey(req)) {
+        if (requiredMode) fail('Scenario $id missing required field: $req');
+        throw FormatException('Scenario $id missing field: $req');
+      }
+    }
+    final steps = s['steps'];
+    if (steps is! List<dynamic> || steps.isEmpty) {
+      if (requiredMode) fail('Scenario $id steps must be a non-empty list');
+      throw FormatException('Scenario $id steps must be non-empty list');
+    }
+    for (var j = 0; j < steps.length; j++) {
+      final step = steps[j];
+      if (step is! Map<String, dynamic>) {
+        if (requiredMode) fail('Scenario $id step $j is not an object');
+        throw FormatException('Scenario $id step $j must be an object');
+      }
+      if (!step.containsKey('command')) {
+        if (requiredMode) fail('Scenario $id step $j missing command');
+        throw FormatException('Scenario $id step $j missing command');
+      }
+      if (step['drop_connection'] != true && !step.containsKey('lines')) {
+        if (requiredMode) fail('Scenario $id step $j must have lines or drop_connection');
+        throw FormatException('Scenario $id step $j must have lines or drop_connection');
+      }
+      final chunkSizes = step['chunk_sizes'];
+      if (chunkSizes != null) {
+        if (chunkSizes is! List<dynamic> || chunkSizes.isEmpty) {
+          if (requiredMode) fail('Scenario $id step $j chunk_sizes must be non-empty list');
+          throw FormatException('Scenario $id step $j chunk_sizes must be non-empty list');
+        }
+        for (final c in chunkSizes) {
+          if (c is! int || c <= 0) {
+            if (requiredMode) fail('Scenario $id step $j invalid chunk_size: $c');
+            throw FormatException('Scenario $id step $j invalid chunk_size: $c');
+          }
+        }
+      }
+    }
+    final expected = s['expected_outcome'];
+    if (expected is! Map<String, dynamic>) {
+      if (requiredMode) fail('Scenario $id expected_outcome must be an object');
+      throw FormatException('Scenario $id expected_outcome must be an object');
+    }
+    for (final expKey in [
+      'isSupported',
+      'supportStatus',
+      'supportedTids',
+      'isComplete',
+      'unqueriedBlocks',
+      'trustedEcus',
+      'hasAnonymous',
+    ]) {
+      if (!expected.containsKey(expKey)) {
+        if (requiredMode) fail('Scenario $id expected_outcome missing field: $expKey');
+        throw FormatException('Scenario $id expected_outcome missing field: $expKey');
+      }
+    }
+  }
 
   return (
     file: fixtureFile,
     data: data,
     sha256: hash,
-    scenarios: scenarios,
+    scenarios: rawScenarios,
   );
 }
 
@@ -116,6 +228,63 @@ void verifyFixtureHash({
   if (serverHash != localHash) {
     fail('Fixture SHA-256 mismatch! Server: $serverHash, Local: $localHash');
   }
+}
+
+/// Normalizes a [Mode08ParseResult] into a deterministic, canonical representation
+/// covering status, TIDs, block chaining, negative response codes, sources, and anonymous uncertainty.
+Map<String, dynamic> normalizeMode08ParseResult(Mode08ParseResult result) {
+  return {
+    'supportStatus': result.supportStatus.name,
+    'supportedTids': result is Mode08SupportSuccess
+        ? (result.supportedTids.toList()..sort())
+        : <int>[],
+    'hasNextBlock': result is Mode08SupportSuccess ? result.hasNextBlock : false,
+    'nrc': result is Mode08NegativeResponse ? result.nrc : null,
+    'hasAnonymous': result.anonymousResponses.isNotEmpty,
+    'anonymousCount': result.anonymousResponses.length,
+    'ecuResults': {
+      for (final entry in (result.ecuResults.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
+        entry.key: {
+          'supportStatus': entry.value.supportStatus.name,
+          'supportedTids': entry.value is Mode08SupportSuccess
+              ? ((entry.value as Mode08SupportSuccess).supportedTids.toList()..sort())
+              : <int>[],
+          'hasNextBlock': entry.value is Mode08SupportSuccess
+              ? (entry.value as Mode08SupportSuccess).hasNextBlock
+              : false,
+          'nrc': entry.value is Mode08NegativeResponse
+              ? (entry.value as Mode08NegativeResponse).nrc
+              : null,
+        }
+    },
+  };
+}
+
+/// Normalizes a [Mode08DiscoveryResult] into an exhaustive canonical projection.
+Map<String, dynamic> normalizeOutcomeProjection(Mode08DiscoveryResult result) {
+  return {
+    'isSupported': result.isSupported,
+    'supportStatus': result.supportStatus.name,
+    'supportedTids': result.supportedTids.toList()..sort(),
+    'isComplete': result.isComplete,
+    'unqueriedBlocks': result.unqueriedBlocks.toList()..sort(),
+    'trustedEcus': result.ecuResults.keys.toList()..sort(),
+    'hasAnonymous': result.hasAnonymous,
+    'perEcuBlockResults': {
+      for (final ecu in (result.perEcuBlockResults.keys.toList()..sort()))
+        ecu: {
+          for (final block in (result.perEcuBlockResults[ecu]!.keys.toList()..sort()))
+            block.toString(): {
+              'supportStatus': result.perEcuBlockResults[ecu]![block]!.supportStatus.name,
+              'supportedTids': result.perEcuBlockResults[ecu]![block]! is Mode08SupportSuccess
+                  ? ((result.perEcuBlockResults[ecu]![block]! as Mode08SupportSuccess).supportedTids.toList()..sort())
+                  : <int>[],
+              if (result.perEcuBlockResults[ecu]![block]! is Mode08NegativeResponse)
+                'nrc': (result.perEcuBlockResults[ecu]![block]! as Mode08NegativeResponse).nrc,
+            }
+        }
+    },
+  };
 }
 
 /// Verifies discovery result against independently stored expected outcome.
@@ -150,11 +319,12 @@ void verifyScenarioOutcome(
     reason: '[$scenarioId] isComplete mismatch',
   );
 
-  final expectedUnqueried = List<int>.from(expected['unqueriedBlocks'] as List<dynamic>);
+  final expectedUnqueried = List<int>.from(expected['unqueriedBlocks'] as List<dynamic>)..sort();
+  final actualUnqueried = List<int>.from(result.unqueriedBlocks)..sort();
   expect(
-    result.unqueriedBlocks,
-    containsAll(expectedUnqueried),
-    reason: '[$scenarioId] unqueriedBlocks mismatch',
+    actualUnqueried,
+    equals(expectedUnqueried),
+    reason: '[$scenarioId] unqueriedBlocks exact match failed',
   );
 
   final failureReasonSubstring = expected['failureReasonContains'] as String?;
@@ -164,19 +334,87 @@ void verifyScenarioOutcome(
       contains(failureReasonSubstring),
       reason: '[$scenarioId] failureReason must contain $failureReasonSubstring',
     );
+  } else if (result.isComplete) {
+    expect(
+      result.failureReason,
+      isNull,
+      reason: '[$scenarioId] failureReason must be null when outcome isComplete',
+    );
+  } else {
+    expect(
+      result.failureReason,
+      isNotNull,
+      reason: '[$scenarioId] failureReason must be non-null when outcome is incomplete',
+    );
   }
 
-  final trustedEcus = List<String>.from(expected['trustedEcus'] as List<dynamic>? ?? []);
-  for (final ecu in trustedEcus) {
+  final expectedTrustedEcus = Set<String>.from(expected['trustedEcus'] as List<dynamic>? ?? []);
+  expect(
+    result.ecuResults.keys.toSet(),
+    equals(expectedTrustedEcus),
+    reason: '[$scenarioId] trusted ECUs set exact match failed (expected: $expectedTrustedEcus, actual: ${result.ecuResults.keys.toSet()})',
+  );
+
+  final expectedHasAnonymous = expected['hasAnonymous'] as bool? ?? false;
+  expect(
+    result.hasAnonymous,
+    equals(expectedHasAnonymous),
+    reason: '[$scenarioId] hasAnonymous mismatch',
+  );
+
+  if (expected.containsKey('perEcuBlockResults')) {
+    final expectedPerEcu = expected['perEcuBlockResults'] as Map<String, dynamic>;
     expect(
-      result.ecuResults.containsKey(ecu),
-      isTrue,
-      reason: '[$scenarioId] expected trusted ECU $ecu in results',
+      result.perEcuBlockResults.keys.toSet(),
+      equals(expectedPerEcu.keys.toSet()),
+      reason: '[$scenarioId] perEcuBlockResults ECU keys mismatch',
     );
+    for (final ecuId in expectedPerEcu.keys) {
+      final expectedBlocks = expectedPerEcu[ecuId] as Map<String, dynamic>;
+      final actualBlocks = result.perEcuBlockResults[ecuId] ?? {};
+      final expectedBlockInts = expectedBlocks.keys.map(int.parse).toSet();
+      expect(
+        actualBlocks.keys.toSet(),
+        equals(expectedBlockInts),
+        reason: '[$scenarioId] ECU $ecuId block base TIDs mismatch',
+      );
+      for (final blockKey in expectedBlocks.keys) {
+        final blockInt = int.parse(blockKey);
+        final expBlock = expectedBlocks[blockKey] as Map<String, dynamic>;
+        final actualBlock = actualBlocks[blockInt]!;
+
+        expect(
+          actualBlock.supportStatus.name,
+          equals(expBlock['supportStatus']),
+          reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportStatus mismatch',
+        );
+
+        if (expBlock.containsKey('supportedTids')) {
+          final expTids = Set<int>.from(expBlock['supportedTids'] as List<dynamic>);
+          final actualTids = actualBlock is Mode08SupportSuccess ? actualBlock.supportedTids : <int>{};
+          expect(
+            actualTids,
+            equals(expTids),
+            reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportedTids mismatch',
+          );
+        }
+
+        if (expBlock.containsKey('nrc')) {
+          final expNrc = expBlock['nrc'] as int;
+          final actualNrc = actualBlock is Mode08NegativeResponse ? actualBlock.nrc : null;
+          expect(
+            actualNrc,
+            equals(expNrc),
+            reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} NRC mismatch',
+          );
+        }
+      }
+    }
   }
 }
 
-/// Verifies parser entry consistency across structured frames, observed frames, and raw lines.
+/// Verifies parser entry consistency across structured frames, observed frames, and raw lines
+/// using normalized full evidence projections.
 void verifyParserEntryConsistency({
   required ObdResponse structuredResponse,
   required ObdResponse observedOnlyResponse,
@@ -196,16 +434,82 @@ void verifyParserEntryConsistency({
     expectedBaseTid: expectedBaseTid,
   );
 
+  final structuredNorm = normalizeMode08ParseResult(structuredResult);
+  final observedNorm = normalizeMode08ParseResult(observedResult);
+  final rawNorm = normalizeMode08ParseResult(rawResult);
+
   expect(
-    observedResult.supportStatus,
-    equals(structuredResult.supportStatus),
-    reason: 'Observed-only entry must match structured entry support status on 0x${expectedBaseTid.toRadixString(16)}',
+    observedNorm,
+    equals(structuredNorm),
+    reason: 'Observed-only entry must match structured entry evidence projection on 0x${expectedBaseTid.toRadixString(16)}',
   );
   expect(
-    rawResult.supportStatus,
-    equals(structuredResult.supportStatus),
-    reason: 'Raw-only entry must match structured entry support status on 0x${expectedBaseTid.toRadixString(16)}',
+    rawNorm,
+    equals(structuredNorm),
+    reason: 'Raw-only entry must match structured entry evidence projection on 0x${expectedBaseTid.toRadixString(16)}',
   );
+}
+
+/// Controllable transport decorator for observing wire events and establishing causal lifecycle barriers.
+class WireBarrierWifiTransport implements ObdTransport {
+  WireBarrierWifiTransport(this._inner);
+
+  final WifiTransport _inner;
+  final List<String> observedEvents = [];
+  Completer<void>? wireCommandBarrier;
+  String? targetCommand;
+  Completer<void>? delayIncomingCompleter;
+  bool isTargetCommandInFlight = false;
+
+  @override
+  TransportKind get kind => _inner.kind;
+
+  @override
+  String get displayName => _inner.displayName;
+
+  @override
+  Map<String, Object> get diagnosticMetadata => _inner.diagnosticMetadata;
+
+  @override
+  bool get isConnected => _inner.isConnected;
+
+  @override
+  Stream<bool> get connectionChanges => _inner.connectionChanges;
+
+  @override
+  Future<void> connect() => _inner.connect();
+
+  @override
+  Future<void> disconnect() {
+    observedEvents.add('disconnect()');
+    return _inner.disconnect();
+  }
+
+  @override
+  Future<void> write(List<int> data) async {
+    final text = String.fromCharCodes(data).trim();
+    observedEvents.add('write: $text');
+    if (targetCommand != null && text.contains(targetCommand!)) {
+      isTargetCommandInFlight = true;
+      if (wireCommandBarrier != null && !wireCommandBarrier!.isCompleted) {
+        observedEvents.add('barrier_reached: $targetCommand');
+        wireCommandBarrier!.complete();
+      }
+    }
+    await _inner.write(data);
+  }
+
+  @override
+  Stream<List<int>> get incoming => _inner.incoming.asyncMap((bytes) async {
+    final text = String.fromCharCodes(bytes);
+    observedEvents.add('incoming: $text');
+    if (isTargetCommandInFlight && delayIncomingCompleter != null) {
+      observedEvents.add('delaying incoming bytes for in-flight target');
+      await delayIncomingCompleter!.future;
+      observedEvents.add('released incoming bytes for in-flight target');
+    }
+    return bytes;
+  });
 }
 
 Future<Elm327Client> _connectClient({
@@ -223,25 +527,41 @@ Future<Elm327Client> _connectClient({
 }
 
 class _OracleSession extends ObdSession {
-  _OracleSession(this._client);
-  final Elm327Client _client;
+  _OracleSession(this._client, {this.generation = 1});
+  Elm327Client? _client;
+
+  @override
+  int generation;
 
   @override
   Elm327Client? get client => _client;
 
   @override
-  int get generation => 1;
-
-  @override
-  ObdConnectionState build() => const ObdConnectionState(
-        phase: ConnectionPhase.connected,
-        protocol: 'ISO 15765-4 (CAN 11/500)',
-      );
+  ObdConnectionState build() => _client != null
+      ? const ObdConnectionState(
+          phase: ConnectionPhase.connected,
+          protocol: 'ISO 15765-4 (CAN 11/500)',
+        )
+      : const ObdConnectionState(
+          phase: ConnectionPhase.disconnected,
+          protocol: '',
+        );
 
   void triggerDisconnect() {
+    generation++;
+    _client = null;
     state = const ObdConnectionState(
       phase: ConnectionPhase.disconnected,
       protocol: '',
+    );
+  }
+
+  void triggerReconnect(Elm327Client newClient) {
+    generation++;
+    _client = newClient;
+    state = const ObdConnectionState(
+      phase: ConnectionPhase.connected,
+      protocol: 'ISO 15765-4 (CAN 11/500)',
     );
   }
 }
@@ -403,19 +723,29 @@ void main() {
       expect(r3.supportStatus, equals(EcuSupportStatus.unknown));
     });
 
-    test('lifecycle: Mode08DiscoveryNotifier handles in-flight disconnect and prevents stale completion', () async {
+    test('lifecycle: wire-bound flight barrier, session disconnect race, and stale completion rejection', () async {
       if (!available || fixtureResult == null) {
         if (_oracleRequired) fail('Replay server or fixtures not available');
         markTestSkipped('Mode 08 replay reference or fixtures not running/available');
         return;
       }
 
-      final client = await _connectClient();
-      try {
-        final switchResp = await client.send('AT#SCENARIO lifecycle_disconnect_in_flight');
-        expect(switchResp.isSuccess, isTrue);
+      final wifiTransportA = WifiTransport(host: oracleHost, port: _port);
+      final barrierTransportA = WireBarrierWifiTransport(wifiTransportA);
+      final clientA = Elm327Client(barrierTransportA, commandTimeout: const Duration(seconds: 2));
+      final connectedA = await clientA.connect();
+      expect(connectedA, isTrue, reason: 'Client A must connect to replay reference');
 
-        final session = _OracleSession(client);
+      Elm327Client? clientB;
+      final barrierA = Completer<void>();
+      final delayA = Completer<void>();
+
+      try {
+        final switchRespA = await clientA.send('AT#SCENARIO normal_headered_multi_block');
+        expect(switchRespA.isSuccess, isTrue);
+        await clientA.send('ATH1');
+
+        final session = _OracleSession(clientA, generation: 1);
         final container = ProviderContainer(
           overrides: [
             obdSessionProvider.overrideWith(() => session),
@@ -426,26 +756,71 @@ void main() {
         final notifier = container.read(mode08DiscoveryStateProvider.notifier);
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
 
-        // Run discovery which drops during 0820
-        final discoveryFuture = notifier.runDiscovery(
-          timeout: const Duration(milliseconds: 500),
+        barrierTransportA.targetCommand = '0800';
+        barrierTransportA.wireCommandBarrier = barrierA;
+        barrierTransportA.delayIncomingCompleter = delayA;
+
+        // Run discovery which will write 0800 on wire then be held by delayA
+        final discoveryFutureA = notifier.runDiscovery(
+          timeout: const Duration(seconds: 1),
+          budget: const Duration(seconds: 4),
+        );
+
+        try {
+          await barrierA.future.timeout(const Duration(seconds: 2));
+        } catch (e) {
+          fail('Flight A did not reach wire within budget: flight=0800, session=${session.generation}, events: ${barrierTransportA.observedEvents}');
+        }
+
+        expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue,
+            reason: 'Task A must be in discovering state while in-flight on wire');
+
+        // Session disconnect in-flight while A is held
+        session.triggerDisconnect();
+        expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue,
+            reason: 'Disconnected session must reset to idle immediately');
+
+        // Client B connects and establishes new session generation
+        final wifiTransportB = WifiTransport(host: oracleHost, port: _port);
+        clientB = Elm327Client(wifiTransportB, commandTimeout: const Duration(seconds: 2));
+        final connectedB = await clientB.connect();
+        expect(connectedB, isTrue, reason: 'Client B must connect to replay reference');
+
+        final switchRespB = await clientB.send('AT#SCENARIO normal_headered_single_block');
+        expect(switchRespB.isSuccess, isTrue);
+        await clientB.send('ATH1');
+
+        session.triggerReconnect(clientB);
+        expect(session.generation, equals(3));
+        expect(session.client, isNotNull);
+
+        // Discovery on Session B runs to completion
+        await notifier.runDiscovery(
+          timeout: const Duration(seconds: 1),
           budget: const Duration(seconds: 3),
         );
 
-        // Session disconnect in-flight
-        session.triggerDisconnect();
-        await discoveryFuture;
+        final stateB = container.read(mode08DiscoveryStateProvider);
+        expect(stateB.isCompleted, isTrue, reason: 'Session B discovery must complete successfully');
+        expect(stateB.result!.supportedTids, equals({1}),
+            reason: 'Session B result must reflect single block TID {1}');
 
-        final state = container.read(mode08DiscoveryStateProvider);
-        expect(state.isIdle, isTrue,
-            reason: 'Disconnected session must reset to idle and never backfill stale completed result');
-        expect(state.isCompleted, isFalse);
+        // Now release late-arriving completion of superseded task A
+        delayA.complete();
+        await discoveryFutureA;
 
-        // Resetting notifier while idle preserves idle
+        final stateAfterLateA = container.read(mode08DiscoveryStateProvider);
+        expect(stateAfterLateA.isCompleted, isTrue);
+        expect(stateAfterLateA.result!.supportedTids, equals({1}),
+            reason: 'Late completion of superseded task A must not overwrite session B result');
+
+        // Resetting notifier while idle restores idle
         notifier.reset();
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
       } finally {
-        await client.disconnect();
+        if (!delayA.isCompleted) delayA.complete();
+        await clientA.disconnect();
+        if (clientB != null) await clientB.disconnect();
       }
     });
   });

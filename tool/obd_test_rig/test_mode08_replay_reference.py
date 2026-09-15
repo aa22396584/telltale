@@ -119,6 +119,66 @@ class Mode08ReplayReferenceTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(should_close)
         self.assertTrue(writer.closed)
 
+    def test_unsupported_version_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["version"] = "999.0.0"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("Unsupported fixture schema version", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_missing_required_top_level_field_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        del data["provenance"]
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("Missing required top-level fixture field", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_duplicate_scenario_id_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["scenarios"].append(dict(data["scenarios"][0]))
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("Duplicate scenario ID", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_invalid_chunk_sizes_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["scenarios"][0]["steps"][0]["chunk_sizes"] = [0, -1]
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("invalid chunk size", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
 
 if __name__ == "__main__":
     unittest.main()
