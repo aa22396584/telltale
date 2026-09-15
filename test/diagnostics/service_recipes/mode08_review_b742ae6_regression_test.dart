@@ -166,7 +166,7 @@ void main() {
       expect(result.failureReason, isNull);
     });
 
-    test('Control 2: normal multi-block discovery completes cleanly across 0800 and 0820', () async {
+    test('Control 2: normal headered multi-block discovery completes cleanly across 0800 and 0820', () async {
       final fake = FakeElm327(
         protocol: BusProtocol.can11,
         ecus: [
@@ -176,13 +176,14 @@ void main() {
             responseId: '7E8',
             responses: _physicsReplies(),
             literalResponses: {
-              '0800': ['48 00 80 00 00 01'],
-              '0820': ['48 20 40 00 00 00'],
+              '0800': ['7E8 06 48 00 80 00 00 01'],
+              '0820': ['7E8 06 48 20 40 00 00 00'],
             },
           ),
         ],
       );
       final client = await _connect(fake);
+      expect((await client.send('ATH1')).isSuccess, isTrue);
       final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
 
       expect(result.isSupported, isTrue);
@@ -787,6 +788,65 @@ void main() {
       expect(result.perEcuBlockResults.containsKey('ecu_1'), isFalse);
     });
 
+    test('Probe 11 (Gap A): raw fallback with errorCode noData is NOT upgraded to unsupported', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.noData,
+          rawLines: ['7E8 03 7F 08 11'],
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      // Must NOT be upgraded to unsupported!
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res, isA<Mode08NoResponse>());
+    });
+
+    test('Probe 11b (Gap A): raw fallback with errorCode dataError is NOT upgraded to unsupported', () {
+      final res = Mode08DiscoveryCodec.parseObdResponse(
+        const ObdResponse(
+          errorCode: Elm327ErrorCode.dataError,
+          rawLines: ['7E8 03 7F 08 11'],
+        ),
+        expectedBaseTid: 0x00,
+      );
+
+      // Must NOT be upgraded to unsupported!
+      expect(res.supportStatus, equals(EcuSupportStatus.unknown));
+      expect(res, isA<Mode08MalformedResponse>());
+    });
+
+    test('Probe 12 (Gap B): single anonymous response per block across multi-block queries marks isComplete: false with partial warning', () async {
+      final fake = FakeElm327(
+        protocol: BusProtocol.can11,
+        ecus: [
+          FakeEcu(
+            name: 'ECM',
+            requestId: '7E0',
+            responseId: '7E8',
+            responses: _physicsReplies(),
+            literalResponses: {
+              // Exactly one anonymous response in block 0x00 (declaring next block 0x20)
+              '0800': ['48 00 80 00 00 01'],
+              // Exactly one anonymous response in block 0x20
+              '0820': ['48 20 40 00 00 00'],
+            },
+          ),
+        ],
+      );
+      final client = await _connect(fake);
+      final result = await Mode08DiscoveryService.discoverSupportedTids(client: client);
+
+      expect(result.isSupported, isTrue);
+      expect(result.supportedTids, equals({0x01, 0x20, 0x22}));
+      expect(result.queriedBlocks, equals([0x00, 0x20]));
+      expect(result.isComplete, isFalse,
+          reason: 'Single anonymous response per block cannot establish cross-block identity');
+      expect(result.unqueriedBlocks, contains(0x20));
+      expect(result.failureReason, contains('來源歸因與覆蓋完整度未確認'));
+      expect(result.perEcuBlockResults.containsKey('ecu_0'), isFalse);
+    });
+
     // -------------------------------------------------------------------------
     // True Interactive Flow: Real Mode08DiscoveryNotifier (Section 3)
     // -------------------------------------------------------------------------
@@ -858,12 +918,20 @@ void main() {
       expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // Release gate and wait for discovery execution to complete
+      // Release gate and wait for discovery execution to complete with bounded deadline
       gate.complete();
       await tester.runAsync(() async {
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
         while (!container.read(mode08DiscoveryStateProvider).isCompleted &&
                !container.read(mode08DiscoveryStateProvider).isFailed &&
                !container.read(mode08DiscoveryStateProvider).isRefused) {
+          if (DateTime.now().isAfter(deadline)) {
+            final currentState = container.read(mode08DiscoveryStateProvider);
+            throw TimeoutException(
+              'Interactive test 1 timed out waiting for discovery completion. '
+              'Phase: ${currentState.phase}, message: ${currentState.message}',
+            );
+          }
           await Future.delayed(const Duration(milliseconds: 20));
         }
       });
@@ -948,9 +1016,17 @@ void main() {
 
       gate.complete();
       await tester.runAsync(() async {
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
         while (!container.read(mode08DiscoveryStateProvider).isFailed &&
                !container.read(mode08DiscoveryStateProvider).isCompleted &&
                !container.read(mode08DiscoveryStateProvider).isRefused) {
+          if (DateTime.now().isAfter(deadline)) {
+            final currentState = container.read(mode08DiscoveryStateProvider);
+            throw TimeoutException(
+              'Interactive test 2 timed out waiting for discovery failure. '
+              'Phase: ${currentState.phase}, message: ${currentState.message}',
+            );
+          }
           await Future.delayed(const Duration(milliseconds: 20));
         }
       });

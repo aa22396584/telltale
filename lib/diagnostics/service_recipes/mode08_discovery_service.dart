@@ -132,7 +132,7 @@ abstract final class Mode08DiscoveryService {
     bool isComplete = true;
     String? overallFailureReason;
     int currentBaseTid = 0x00;
-    bool hadMultipleAnonymousResponses = false;
+    bool hadAnonymousResponses = false;
 
     final stopwatch = Stopwatch()..start();
 
@@ -294,8 +294,8 @@ abstract final class Mode08DiscoveryService {
       }
 
       // Check anonymous responses tracking: anonymous responses cannot establish cross-block identity
-      if (blockAnonymous.length > 1) {
-        hadMultipleAnonymousResponses = true;
+      if (blockAnonymous.isNotEmpty) {
+        hadAnonymousResponses = true;
       }
 
       // Check if any responding node in this block had an unknown/damaged/unattributed outcome
@@ -304,8 +304,16 @@ abstract final class Mode08DiscoveryService {
         if (entry.key == 'unattributed') {
           isComplete = false;
           uncompletedBlocks.add(currentBaseTid);
-          overallFailureReason ??=
-              'Unattributed response or transaction damage on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+          if (ecuRes is Mode08NoResponse) {
+            overallFailureReason ??=
+                'Unattributed response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${ecuRes.reason}';
+          } else if (ecuRes is Mode08MalformedResponse) {
+            overallFailureReason ??=
+                'Unattributed damaged response on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}: ${ecuRes.reason}';
+          } else {
+            overallFailureReason ??=
+                'Unattributed response or transaction damage on block 0x${currentBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+          }
         } else if (ecuRes is Mode08MalformedResponse) {
           isComplete = false;
           uncompletedBlocks.add(currentBaseTid);
@@ -371,7 +379,7 @@ abstract final class Mode08DiscoveryService {
               overallFailureReason ??=
                   'Unqueried blocks announced by ECUs: ${ecuExpectedNextBlocks.values.map((b) => '0x${b.toRadixString(16).padLeft(2, '0').toUpperCase()}').join(', ')}';
             }
-            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+            if (hadAnonymousResponses && queriedBlocks.length > 1) {
               isComplete = false;
               uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
               overallFailureReason ??=
@@ -395,7 +403,7 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
-            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+            if (hadAnonymousResponses && queriedBlocks.length > 1) {
               uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
             }
             overallFailureReason ??=
@@ -429,7 +437,7 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
-            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+            if (hadAnonymousResponses && queriedBlocks.length > 1) {
               uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
             }
             overallFailureReason ??=
@@ -461,7 +469,7 @@ abstract final class Mode08DiscoveryService {
           if (allSupportedTids.isNotEmpty) {
             isComplete = false;
             uncompletedBlocks.add(currentBaseTid);
-            if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+            if (hadAnonymousResponses && queriedBlocks.length > 1) {
               uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
             }
             overallFailureReason ??=
@@ -509,7 +517,7 @@ abstract final class Mode08DiscoveryService {
           'Unqueried blocks announced by ECUs: ${ecuExpectedNextBlocks.values.map((b) => '0x${b.toRadixString(16).padLeft(2, '0').toUpperCase()}').join(', ')}';
     }
 
-    if (hadMultipleAnonymousResponses && queriedBlocks.length > 1) {
+    if (hadAnonymousResponses && queriedBlocks.length > 1) {
       isComplete = false;
       uncompletedBlocks.addAll(queriedBlocks.where((b) => b > 0));
       overallFailureReason ??=

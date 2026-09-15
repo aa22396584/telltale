@@ -445,100 +445,75 @@ final class Mode08DiscoveryCodec {
       );
     }
 
-    // 3. Check if rawLines has candidate response lines that should be parsed
-    final hasCandidateLines = response.rawLines.any((l) {
-      final u = l.trim().toUpperCase();
-      return u.isNotEmpty &&
-          u != 'NO DATA' &&
-          u != 'NODATA' &&
-          u != '?' &&
-          u != 'SEARCHING' &&
-          u != 'SEARCHING...' &&
-          u != 'OK' &&
-          u != 'STOPPED' &&
-          !u.startsWith('AT') &&
-          !u.startsWith('BUS INIT') &&
-          !u.startsWith('ELM327');
-    });
-    if (hasCandidateLines) {
-      return parseResponse(
-        response.rawLines.join('\n'),
+    // 3. Raw lines when frames and observedFrames are empty
+    final perEcu = <String, Mode08ParseResult>{};
+    final anonymousResults = <Mode08ParseResult>[];
+
+    final commandEcho =
+        '08${expectedBaseTid.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+    for (final rawLine in response.rawLines) {
+      final trimmed = rawLine.trim();
+      if (trimmed.isEmpty) continue;
+      final upper = trimmed.toUpperCase();
+      if (upper == commandEcho ||
+          upper == '>' ||
+          upper == 'OK' ||
+          upper == 'SEARCHING' ||
+          upper == 'SEARCHING...' ||
+          upper == 'STOPPED' ||
+          upper.startsWith('AT') ||
+          upper.startsWith('BUS INIT') ||
+          upper.startsWith('ELM327')) {
+        continue;
+      }
+      final extracted = _extractPayloadAndSource(trimmed);
+      final rawSource = extracted.sourceId;
+      final isTrusted =
+          rawSource != null && BusAddressing.isLegalCanId(rawSource);
+      final parsed = _parseSinglePayload(
+        extracted.payload,
         expectedBaseTid: expectedBaseTid,
+        originalRaw: trimmed,
+        sourceId: isTrusted ? rawSource : null,
       );
+      if (isTrusted) {
+        perEcu[rawSource] = parsed;
+      } else {
+        anonymousResults.add(parsed);
+      }
     }
 
-    // 4. Adapter-level error code classifications
-    final perEcuFromAttributed = <String, Mode08ParseResult>{};
-    switch (response.errorCode) {
-      case Elm327ErrorCode.noData:
-        for (final src in response.attributedSources) {
-          perEcuFromAttributed[src] = const Mode08NoResponse(reason: 'NO DATA');
-        }
-        return Mode08NoResponse(
-          reason: 'NO DATA',
-          ecuResults: perEcuFromAttributed.isNotEmpty
-              ? Map.unmodifiable(perEcuFromAttributed)
-              : const {},
-        );
-      case Elm327ErrorCode.canError:
-      case Elm327ErrorCode.busError:
-      case Elm327ErrorCode.busBusy:
-      case Elm327ErrorCode.busInitError:
-      case Elm327ErrorCode.unableToConnect:
-      case Elm327ErrorCode.stopped:
-        for (final src in response.attributedSources) {
-          perEcuFromAttributed[src] =
-              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
-        }
-        return Mode08NoResponse(
-          reason: response.errorCode.name.toUpperCase(),
-          ecuResults: perEcuFromAttributed.isNotEmpty
-              ? Map.unmodifiable(perEcuFromAttributed)
-              : const {},
-        );
-      case Elm327ErrorCode.dataError:
-        for (final src in response.attributedSources) {
-          perEcuFromAttributed[src] = Mode08MalformedResponse(
-            reason: Mode08MalformedReason.invalidHex,
-            rawResponse: response.rawLines.join('\n'),
-          );
-        }
-        if (perEcuFromAttributed.isEmpty) {
-          perEcuFromAttributed['unattributed'] = Mode08MalformedResponse(
-            reason: Mode08MalformedReason.invalidHex,
-            rawResponse: response.rawLines.join('\n'),
-          );
-        }
-        return Mode08MalformedResponse(
-          reason: Mode08MalformedReason.invalidHex,
-          rawResponse: response.rawLines.join('\n'),
-          ecuResults: perEcuFromAttributed.isNotEmpty
-              ? Map.unmodifiable(perEcuFromAttributed)
-              : const {},
-        );
-      case Elm327ErrorCode.none:
-        break;
-      default:
-        for (final src in response.attributedSources) {
-          perEcuFromAttributed[src] =
-              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
-        }
-        if (perEcuFromAttributed.isEmpty) {
-          perEcuFromAttributed['unattributed'] =
-              Mode08NoResponse(reason: response.errorCode.name.toUpperCase());
-        }
-        return Mode08NoResponse(
-          reason: response.errorCode.name.toUpperCase(),
-          ecuResults: perEcuFromAttributed.isNotEmpty
-              ? Map.unmodifiable(perEcuFromAttributed)
-              : const {},
-        );
+    // Include attributed sources that did not yield a valid frame
+    for (final src in response.attributedSources) {
+      if (!perEcu.containsKey(src)) {
+        perEcu[src] = (response.errorCode == Elm327ErrorCode.dataError)
+            ? const Mode08MalformedResponse(
+                reason: Mode08MalformedReason.invalidHex,
+                rawResponse: '',
+              )
+            : Mode08NoResponse(reason: 'NO DATA from $src');
+      }
     }
 
-    // 4. Fall back to raw response lines
-    return parseResponse(
-      response.rawLines.join('\n'),
+    // Preserve unattributed damage and transaction-level error codes
+    _captureUnattributedDamageAndErrors(
+      response,
+      perEcu,
       expectedBaseTid: expectedBaseTid,
+      anonymousResults: anonymousResults,
+    );
+
+    final defaultReason = response.errorCode != Elm327ErrorCode.none
+        ? (response.errorCode == Elm327ErrorCode.noData
+            ? 'NO DATA'
+            : response.errorCode.name.toUpperCase())
+        : 'NO DATA across all nodes';
+
+    return _aggregateEcuResults(
+      perEcu,
+      anonymousResponses: anonymousResults,
+      expectedBaseTid: expectedBaseTid,
+      defaultNoResponseReason: defaultReason,
     );
   }
 
