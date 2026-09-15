@@ -96,6 +96,18 @@ def validate_fixtures_data(data: Any) -> None:
                     raise ValueError(f"Scenario {sid} perEcuBlockResults for ECU {ecu_id} block {block_id} must be an object")
                 if "supportStatus" not in bdata:
                     raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} missing 'supportStatus'")
+                if bdata["supportStatus"] not in ["supported", "unsupported", "partiallySupported", "unknown"]:
+                    raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} invalid 'supportStatus': {bdata['supportStatus']!r}")
+                if "supportedTids" not in bdata:
+                    raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} missing 'supportedTids'")
+                if not isinstance(bdata["supportedTids"], list):
+                    raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} 'supportedTids' must be a list")
+                for tid in bdata["supportedTids"]:
+                    if not isinstance(tid, int) or tid < 0:
+                        raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} invalid TID in 'supportedTids': {tid!r}")
+                if "nrc" in bdata and bdata["nrc"] is not None:
+                    if not isinstance(bdata["nrc"], int) or bdata["nrc"] < 0:
+                        raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} invalid NRC: {bdata['nrc']!r}")
 
 
 
@@ -395,7 +407,9 @@ async def main() -> None:
             pass
 
     async_server = await asyncio.start_server(server.handle_client, args.bind, args.port)
-    sys.stdout.write(f"Mode 08 replay reference listening on {args.bind}:{args.port} (hash: {server.file_hash[:12]})\n")
+    actual_port = async_server.sockets[0].getsockname()[1] if async_server.sockets else args.port
+    server.log_event("ready", {"hash": server.file_hash, "port": actual_port, "scenarios": list(server.scenarios.keys())})
+    sys.stdout.write(f"Mode 08 replay reference listening on {args.bind}:{actual_port} (hash: {server.file_hash[:12]})\n")
     sys.stdout.flush()
 
     try:

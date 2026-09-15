@@ -210,6 +210,87 @@ class Mode08ReplayReferenceTest(unittest.IsolatedAsyncioTestCase):
             os.unlink(tmp_path)
 
 
+    def test_missing_block_supported_tids_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        del data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"]["7E8"]["0"]["supportedTids"]
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("missing 'supportedTids'", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_missing_block_support_status_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        del data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"]["7E8"]["0"]["supportStatus"]
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("missing 'supportStatus'", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_invalid_block_support_status_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"]["7E8"]["0"]["supportStatus"] = "invalid_status"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("invalid 'supportStatus'", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_invalid_block_supported_tids_type_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"]["7E8"]["0"]["supportedTids"] = "not_a_list"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("'supportedTids' must be a list", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_subprocess_unsupported_version_specific_error(self) -> None:
+        import json
+        import subprocess
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["version"] = "999.0.0"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            res = subprocess.run(
+                [sys.executable, "tool/obd_test_rig/mode08_replay_reference.py", "--fixtures", tmp_path],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.exitCode if hasattr(res, 'exitCode') else res.returncode, 2)
+            self.assertIn("Unsupported fixture schema version: '999.0.0'", res.stderr)
+        finally:
+            os.unlink(tmp_path)
+
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -3,6 +3,7 @@
 /// schema mutations, and subprocess negative controls).
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,6 +14,65 @@ import 'package:torque_obd/diagnostics/service_recipes/qualification_tier.dart';
 import 'package:torque_obd/obd/elm327_client.dart';
 
 import 'mode08_replay_oracle_test.dart';
+
+String resolveFlutterExecutable() {
+  final envFlutter = Platform.environment['FLUTTER'];
+  if (envFlutter != null && envFlutter.isNotEmpty && File(envFlutter).existsSync()) {
+    return envFlutter;
+  }
+  final dartPath = Platform.resolvedExecutable;
+  final dartFile = File(dartPath);
+  final candidate = File('${dartFile.parent.parent.parent.parent.path}/bin/flutter');
+  if (candidate.existsSync()) {
+    return candidate.path;
+  }
+  final whichResult = Process.runSync('which', ['flutter']);
+  if (whichResult.exitCode == 0) {
+    final path = whichResult.stdout.toString().trim();
+    if (path.isNotEmpty && File(path).existsSync()) {
+      return path;
+    }
+  }
+  final home = Platform.environment['HOME'] ?? '';
+  final fvmCandidate = File('$home/fvm/versions/3.47.0/bin/flutter');
+  if (fvmCandidate.existsSync()) {
+    return fvmCandidate.path;
+  }
+  throw StateError('Cannot locate flutter executable. Set FLUTTER environment variable.');
+}
+
+Future<({Process process, int port})> startDedicatedReplayServer({required String fixturesPath}) async {
+  final proc = await Process.start(
+    'python3',
+    ['tool/obd_test_rig/mode08_replay_reference.py', '--fixtures', fixturesPath, '--port', '0'],
+  );
+  final completer = Completer<int>();
+  final outLines = <String>[];
+  final errLines = <String>[];
+  proc.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+    outLines.add(line);
+    final match = RegExp(r'listening on 127\.0\.0\.1:(\d+)').firstMatch(line);
+    if (match != null && !completer.isCompleted) {
+      completer.complete(int.parse(match.group(1)!));
+    }
+  });
+  proc.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+    errLines.add(line);
+  });
+  unawaited(proc.exitCode.then((code) {
+    if (!completer.isCompleted) {
+      completer.completeError(StateError('Replay server exited early with code $code: ${errLines.join("\n")}'));
+    }
+  }));
+  final port = await completer.future.timeout(
+    const Duration(seconds: 5),
+    onTimeout: () {
+      proc.kill();
+      throw TimeoutException('Timed out waiting for replay server to report listening port. Output: ${outLines.join("\n")}');
+    },
+  );
+  return (process: proc, port: port);
+}
 
 void main() {
   group('Mode 08 Replay Oracle Harness Decisive Failure Tests', () {
@@ -182,8 +242,12 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, swappedExpected, scenarioId: 'swapped_ecu_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Swapped ECU data in perEcuBlockResults must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('supportedTids mismatch') &&
+          e.message!.contains('ECU 7E8 block 0x0')
+        )),
+        reason: 'Swapped ECU data in perEcuBlockResults must throw TestFailure specifically on supportedTids mismatch',
       );
     });
 
@@ -602,6 +666,78 @@ void main() {
       }
     });
 
+    test('harness fails decisively when fixture schema is missing supportedTids in a block', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      final scenarios = validData['scenarios'] as List<dynamic>;
+      final s0 = Map<String, dynamic>.from(scenarios[0] as Map<String, dynamic>);
+      final exp = Map<String, dynamic>.from(s0['expected_outcome'] as Map<String, dynamic>);
+      final perEcu = Map<String, dynamic>.from(exp['perEcuBlockResults'] as Map<String, dynamic>);
+      final ecu7E8 = Map<String, dynamic>.from(perEcu['7E8'] as Map<String, dynamic>);
+      final block0 = Map<String, dynamic>.from(ecu7E8['0'] as Map<String, dynamic>);
+      block0.remove('supportedTids');
+      ecu7E8['0'] = block0;
+      perEcu['7E8'] = ecu7E8;
+      exp['perEcuBlockResults'] = perEcu;
+      s0['expected_outcome'] = exp;
+      validData['scenarios'] = [s0];
+
+      final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_no_tids_');
+      final tempFile = File('${tempDir.path}/fixtures_no_tids.json');
+      try {
+        tempFile.writeAsStringSync(jsonEncode(validData));
+
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: true),
+          throwsA(predicate<TestFailure>((e) => e.message != null && e.message!.contains('missing supportedTids'))),
+          reason: 'Missing supportedTids in required-mode must throw TestFailure with missing supportedTids message',
+        );
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: false),
+          throwsA(predicate<FormatException>((e) => e.message.contains('missing supportedTids'))),
+          reason: 'Missing supportedTids in normal mode must throw FormatException with missing supportedTids message',
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('harness fails decisively when fixture schema is missing supportStatus in a block', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      final scenarios = validData['scenarios'] as List<dynamic>;
+      final s0 = Map<String, dynamic>.from(scenarios[0] as Map<String, dynamic>);
+      final exp = Map<String, dynamic>.from(s0['expected_outcome'] as Map<String, dynamic>);
+      final perEcu = Map<String, dynamic>.from(exp['perEcuBlockResults'] as Map<String, dynamic>);
+      final ecu7E8 = Map<String, dynamic>.from(perEcu['7E8'] as Map<String, dynamic>);
+      final block0 = Map<String, dynamic>.from(ecu7E8['0'] as Map<String, dynamic>);
+      block0.remove('supportStatus');
+      ecu7E8['0'] = block0;
+      perEcu['7E8'] = ecu7E8;
+      exp['perEcuBlockResults'] = perEcu;
+      s0['expected_outcome'] = exp;
+      validData['scenarios'] = [s0];
+
+      final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_no_status_');
+      final tempFile = File('${tempDir.path}/fixtures_no_status.json');
+      try {
+        tempFile.writeAsStringSync(jsonEncode(validData));
+
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: true),
+          throwsA(predicate<TestFailure>((e) => e.message != null && e.message!.contains('missing supportStatus'))),
+          reason: 'Missing supportStatus in required-mode must throw TestFailure with missing supportStatus message',
+        );
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: false),
+          throwsA(predicate<FormatException>((e) => e.message.contains('missing supportStatus'))),
+          reason: 'Missing supportStatus in normal mode must throw FormatException with missing supportStatus message',
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
     test('harness fails decisively when unexpected NRC is returned on ECU block', () {
       final mockResult = Mode08DiscoveryResult(
         isSupported: false,
@@ -611,6 +747,7 @@ void main() {
         discoveredAt: DateTime.now().toUtc(),
         isComplete: false,
         unqueriedBlocks: const [0],
+        failureReason: 'Transaction condition not correct (NRC 0x22)',
         ecuResults: {
           '7E8': const Mode08NegativeResponse(originalSid: 0x08, nrc: 0x22),
         },
@@ -641,20 +778,24 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, expectedWithoutNrc, scenarioId: 'unexpected_nrc_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Unexpected NRC returned on ECU block must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('NRC mismatch') &&
+          e.message!.contains('ECU 7E8 block 0x0')
+        )),
+        reason: 'Unexpected NRC returned on ECU block must throw TestFailure specifically on NRC mismatch',
       );
     });
 
     test('subprocess negative control: Python replay server exits code 2 on unsupported fixture version', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      validData['version'] = '999.0.0';
+
       final tempDir = Directory.systemTemp.createTempSync('mode08_py_ver_test_');
       final tempFile = File('${tempDir.path}/bad_ver.json');
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '999.0.0',
-          'name': 'test',
-          'scenarios': [],
-        }));
+        tempFile.writeAsStringSync(jsonEncode(validData));
 
         final result = Process.runSync(
           'python3',
@@ -665,54 +806,217 @@ void main() {
           equals(2),
           reason: 'Python reference must exit with code 2 on unsupported schema version. stderr: ${result.stderr}',
         );
+        expect(
+          result.stderr,
+          contains("Unsupported fixture schema version: '999.0.0'"),
+          reason: 'Python reference stderr must specifically state unsupported fixture schema version: ${result.stderr}',
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }
     });
 
+    test('subprocess positive control: Python replay server starts cleanly on valid fixtures', () async {
+      final server = await startDedicatedReplayServer(fixturesPath: oracleFixturesRelativePath);
+      try {
+        expect(server.port, greaterThan(0), reason: 'Replay server must bind to a dynamic port > 0');
+      } finally {
+        server.process.kill();
+      }
+    });
+
     test('subprocess negative control: Python replay server exits code 2 on missing fixture file', () {
+      const nonExistentPath = 'tool/obd_test_rig/non_existent_fixture_file_9999.json';
       final result = Process.runSync(
         'python3',
-        ['tool/obd_test_rig/mode08_replay_reference.py', '--fixtures', 'tool/obd_test_rig/non_existent_fixture_file_9999.json'],
+        ['tool/obd_test_rig/mode08_replay_reference.py', '--fixtures', nonExistentPath],
       );
       expect(
         result.exitCode,
         equals(2),
         reason: 'Python reference must exit with code 2 on missing fixture file. stderr: ${result.stderr}',
       );
+      expect(
+        result.stderr,
+        contains('fixtures file not found at'),
+        reason: 'Python reference stderr must specifically state fixture file not found. stderr: ${result.stderr}',
+      );
     });
 
-    test('subprocess negative control: Flutter test in required-mode exits non-zero on unsupported fixture version', () {
-      final tempDir = Directory.systemTemp.createTempSync('mode08_flutter_ver_test_');
-      final tempFile = File('${tempDir.path}/bad_ver.json');
+    test('subprocess positive control: Flutter test in required-mode passes with exit code 0', () async {
+      final server = await startDedicatedReplayServer(fixturesPath: oracleFixturesRelativePath);
+      final flutterBin = resolveFlutterExecutable();
+      Process? testProc;
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '999.0.0',
-          'name': 'test',
-          'provenance': 'synthetic',
-          'description': 'test',
-          'scenarios': [],
-        }));
-
-        final flutterBin = Platform.environment['FLUTTER'] ??
-            '${Platform.environment['HOME']}/fvm/versions/3.47.0/bin/flutter';
-
-        final result = Process.runSync(
+        testProc = await Process.start(
           flutterBin,
           [
             'test',
             '--dart-define=MODE08_ORACLE_REQUIRED=true',
+            '--dart-define=MODE08_ORACLE_PORT=${server.port}',
+            'test/diagnostics/service_recipes/mode08_replay_oracle_test.dart',
+          ],
+        );
+        final outLines = <String>[];
+        final errLines = <String>[];
+        testProc.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(outLines.add);
+        testProc.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(errLines.add);
+
+        final exitCode = await testProc.exitCode.timeout(
+          const Duration(seconds: 45),
+          onTimeout: () {
+            testProc?.kill();
+            throw TimeoutException('Timed out waiting for Flutter positive control test');
+          },
+        );
+        expect(
+          exitCode,
+          equals(0),
+          reason: 'Flutter test in required-mode must pass with exit 0 when server and fixtures are valid.\nstdout: ${outLines.join("\n")}\nstderr: ${errLines.join("\n")}',
+        );
+      } finally {
+        testProc?.kill();
+        server.process.kill();
+      }
+    });
+
+    test('subprocess negative control: Flutter test in required-mode exits non-zero on unsupported fixture version', () async {
+      final server = await startDedicatedReplayServer(fixturesPath: oracleFixturesRelativePath);
+      final flutterBin = resolveFlutterExecutable();
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      validData['version'] = '999.0.0';
+
+      final tempDir = Directory.systemTemp.createTempSync('mode08_flutter_ver_test_');
+      final tempFile = File('${tempDir.path}/bad_ver.json');
+      Process? testProc;
+      try {
+        tempFile.writeAsStringSync(jsonEncode(validData));
+
+        testProc = await Process.start(
+          flutterBin,
+          [
+            'test',
+            '--dart-define=MODE08_ORACLE_REQUIRED=true',
+            '--dart-define=MODE08_ORACLE_PORT=${server.port}',
             '--dart-define=MODE08_FIXTURES_PATH=${tempFile.path}',
             'test/diagnostics/service_recipes/mode08_replay_oracle_test.dart',
           ],
         );
+        final outLines = <String>[];
+        final errLines = <String>[];
+        testProc.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(outLines.add);
+        testProc.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(errLines.add);
+
+        final exitCode = await testProc.exitCode.timeout(
+          const Duration(seconds: 45),
+          onTimeout: () {
+            testProc?.kill();
+            throw TimeoutException('Timed out waiting for Flutter unsupported version negative control test');
+          },
+        );
+        final allOutput = '${outLines.join("\n")}\n${errLines.join("\n")}';
         expect(
-          result.exitCode,
+          exitCode,
           isNot(0),
-          reason: 'Flutter test in required-mode must exit non-zero when fixture version is unsupported. stdout: ${result.stdout}',
+          reason: 'Flutter test in required-mode must exit non-zero when fixture version is unsupported. Output: $allOutput',
+        );
+        expect(
+          allOutput,
+          contains('fixtures version 999.0.0 is unsupported'),
+          reason: 'Flutter test must fail specifically on unsupported fixture version. Output: $allOutput',
         );
       } finally {
+        testProc?.kill();
+        server.process.kill();
         tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('subprocess negative control: Flutter test in required-mode exits non-zero when server is unstarted', () async {
+      const deadPort = 35499;
+      final flutterBin = resolveFlutterExecutable();
+      Process? testProc;
+      try {
+        testProc = await Process.start(
+          flutterBin,
+          [
+            'test',
+            '--dart-define=MODE08_ORACLE_REQUIRED=true',
+            '--dart-define=MODE08_ORACLE_PORT=$deadPort',
+            'test/diagnostics/service_recipes/mode08_replay_oracle_test.dart',
+          ],
+        );
+        final outLines = <String>[];
+        final errLines = <String>[];
+        testProc.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(outLines.add);
+        testProc.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(errLines.add);
+
+        final exitCode = await testProc.exitCode.timeout(
+          const Duration(seconds: 45),
+          onTimeout: () {
+            testProc?.kill();
+            throw TimeoutException('Timed out waiting for Flutter unstarted server negative control test');
+          },
+        );
+        final allOutput = '${outLines.join("\n")}\n${errLines.join("\n")}';
+        expect(
+          exitCode,
+          isNot(0),
+          reason: 'Flutter test in required-mode must exit non-zero when server is unstarted. Output: $allOutput',
+        );
+        expect(
+          allOutput,
+          contains('Mode 08 replay reference not running on 127.0.0.1:$deadPort'),
+          reason: 'Flutter test must fail specifically because server is unstarted. Output: $allOutput',
+        );
+      } finally {
+        testProc?.kill();
+      }
+    });
+
+    test('subprocess negative control: Flutter test in required-mode exits non-zero when fixture file is missing', () async {
+      final server = await startDedicatedReplayServer(fixturesPath: oracleFixturesRelativePath);
+      final flutterBin = resolveFlutterExecutable();
+      const nonExistentPath = 'tool/obd_test_rig/non_existent_fixture_9999.json';
+      Process? testProc;
+      try {
+        testProc = await Process.start(
+          flutterBin,
+          [
+            'test',
+            '--dart-define=MODE08_ORACLE_REQUIRED=true',
+            '--dart-define=MODE08_ORACLE_PORT=${server.port}',
+            '--dart-define=MODE08_FIXTURES_PATH=$nonExistentPath',
+            'test/diagnostics/service_recipes/mode08_replay_oracle_test.dart',
+          ],
+        );
+        final outLines = <String>[];
+        final errLines = <String>[];
+        testProc.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(outLines.add);
+        testProc.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen(errLines.add);
+
+        final exitCode = await testProc.exitCode.timeout(
+          const Duration(seconds: 45),
+          onTimeout: () {
+            testProc?.kill();
+            throw TimeoutException('Timed out waiting for Flutter missing fixture negative control test');
+          },
+        );
+        final allOutput = '${outLines.join("\n")}\n${errLines.join("\n")}';
+        expect(
+          exitCode,
+          isNot(0),
+          reason: 'Flutter test in required-mode must exit non-zero when fixture file is missing. Output: $allOutput',
+        );
+        expect(
+          allOutput,
+          contains('fixtures file missing at $nonExistentPath'),
+          reason: 'Flutter test must fail specifically because fixture file is missing. Output: $allOutput',
+        );
+      } finally {
+        testProc?.kill();
+        server.process.kill();
       }
     });
   });

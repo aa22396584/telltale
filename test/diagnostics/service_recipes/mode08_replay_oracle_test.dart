@@ -216,6 +216,54 @@ const supportedFixtureVersions = {'1.0.0'};
       if (requiredMode) fail('Scenario $id perEcuBlockResults must be an object');
       throw FormatException('Scenario $id perEcuBlockResults must be an object');
     }
+    final perEcu = expected['perEcuBlockResults'] as Map<String, dynamic>;
+    for (final ecuEntry in perEcu.entries) {
+      final ecuId = ecuEntry.key;
+      final blocks = ecuEntry.value;
+      if (blocks is! Map<String, dynamic>) {
+        if (requiredMode) fail('Scenario $id perEcuBlockResults for ECU $ecuId must be an object');
+        throw FormatException('Scenario $id perEcuBlockResults for ECU $ecuId must be an object');
+      }
+      for (final blockEntry in blocks.entries) {
+        final blockId = blockEntry.key;
+        final bdata = blockEntry.value;
+        if (bdata is! Map<String, dynamic>) {
+          if (requiredMode) fail('Scenario $id perEcuBlockResults for ECU $ecuId block $blockId must be an object');
+          throw FormatException('Scenario $id perEcuBlockResults for ECU $ecuId block $blockId must be an object');
+        }
+        if (!bdata.containsKey('supportStatus')) {
+          if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId missing supportStatus');
+          throw FormatException('Scenario $id ECU $ecuId block $blockId missing supportStatus');
+        }
+        final status = bdata['supportStatus'];
+        if (status is! String || !['supported', 'unsupported', 'partiallySupported', 'unknown'].contains(status)) {
+          if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId invalid supportStatus: $status');
+          throw FormatException('Scenario $id ECU $ecuId block $blockId invalid supportStatus: $status');
+        }
+        if (!bdata.containsKey('supportedTids')) {
+          if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId missing supportedTids');
+          throw FormatException('Scenario $id ECU $ecuId block $blockId missing supportedTids');
+        }
+        final tids = bdata['supportedTids'];
+        if (tids is! List<dynamic>) {
+          if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId supportedTids must be a list');
+          throw FormatException('Scenario $id ECU $ecuId block $blockId supportedTids must be a list');
+        }
+        for (final tid in tids) {
+          if (tid is! int || tid < 0) {
+            if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId invalid tid in supportedTids: $tid');
+            throw FormatException('Scenario $id ECU $ecuId block $blockId invalid tid in supportedTids: $tid');
+          }
+        }
+        if (bdata.containsKey('nrc')) {
+          final nrc = bdata['nrc'];
+          if (nrc != null && (nrc is! int || nrc < 0)) {
+            if (requiredMode) fail('Scenario $id ECU $ecuId block $blockId invalid nrc: $nrc');
+            throw FormatException('Scenario $id ECU $ecuId block $blockId invalid nrc: $nrc');
+          }
+        }
+      }
+    }
   }
 
   return (
@@ -394,15 +442,16 @@ void verifyScenarioOutcome(
         reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportStatus mismatch',
       );
 
-      if (expBlock.containsKey('supportedTids')) {
-        final expTids = Set<int>.from(expBlock['supportedTids'] as List<dynamic>);
-        final actualTids = actualBlock is Mode08SupportSuccess ? actualBlock.supportedTids : <int>{};
-        expect(
-          actualTids,
-          equals(expTids),
-          reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportedTids mismatch',
-        );
+      if (!expBlock.containsKey('supportedTids')) {
+        fail('[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} missing mandatory supportedTids');
       }
+      final expTids = Set<int>.from(expBlock['supportedTids'] as List<dynamic>);
+      final actualTids = actualBlock is Mode08SupportSuccess ? actualBlock.supportedTids : <int>{};
+      expect(
+        actualTids,
+        equals(expTids),
+        reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportedTids mismatch',
+      );
 
       final expNrc = expBlock['nrc'] as int?;
       final actualNrc = actualBlock is Mode08NegativeResponse ? actualBlock.nrc : null;
@@ -458,7 +507,8 @@ class WireBarrierWifiTransport implements ObdTransport {
 
   final WifiTransport _inner;
   final List<String> observedEvents = [];
-  Completer<void>? wireCommandBarrier;
+  Completer<void>? wireWriteBarrier;
+  Completer<void>? wireReceiptBarrier;
   String? targetCommand;
   Completer<void>? delayIncomingCompleter;
   bool isTargetCommandInFlight = false;
@@ -493,9 +543,9 @@ class WireBarrierWifiTransport implements ObdTransport {
     observedEvents.add('write: $text');
     if (targetCommand != null && text.contains(targetCommand!)) {
       isTargetCommandInFlight = true;
-      if (wireCommandBarrier != null && !wireCommandBarrier!.isCompleted) {
-        observedEvents.add('barrier_reached: $targetCommand');
-        wireCommandBarrier!.complete();
+      if (wireWriteBarrier != null && !wireWriteBarrier!.isCompleted) {
+        observedEvents.add('write_dispatched: $targetCommand');
+        wireWriteBarrier!.complete();
       }
     }
     await _inner.write(data);
@@ -506,6 +556,10 @@ class WireBarrierWifiTransport implements ObdTransport {
     final text = String.fromCharCodes(bytes);
     observedEvents.add('incoming: $text');
     if (isTargetCommandInFlight && delayIncomingCompleter != null) {
+      if (wireReceiptBarrier != null && !wireReceiptBarrier!.isCompleted) {
+        observedEvents.add('server_receipt_held_at_gate: $targetCommand');
+        wireReceiptBarrier!.complete();
+      }
       observedEvents.add('delaying incoming bytes for in-flight target');
       await delayIncomingCompleter!.future;
       observedEvents.add('released incoming bytes for in-flight target');
@@ -573,13 +627,6 @@ void main() {
   ({File file, Map<String, dynamic> data, String sha256, List<dynamic> scenarios})? fixtureResult;
 
   setUpAll(() async {
-    available = await verifyOraclePreflight(
-      host: oracleHost,
-      port: _port,
-      requiredMode: _oracleRequired,
-      identity: oracleIdentity,
-    );
-
     try {
       final fixturesPath = _customFixturesPath.isNotEmpty ? _customFixturesPath : oracleFixturesRelativePath;
       fixtureResult = loadReplayFixtures(
@@ -590,6 +637,13 @@ void main() {
     } catch (_) {
       if (_oracleRequired) rethrow;
     }
+
+    available = await verifyOraclePreflight(
+      host: oracleHost,
+      port: _port,
+      requiredMode: _oracleRequired,
+      identity: oracleIdentity,
+    );
   });
 
   group('Mode 08 Replay Oracle Preflight & Provenance', () {
@@ -740,8 +794,9 @@ void main() {
       expect(connectedA, isTrue, reason: 'Client A must connect to replay reference');
 
       Elm327Client? clientB;
-      final barrierA = Completer<void>();
+      final barrierReceiptA = Completer<void>();
       final delayA = Completer<void>();
+      Completer<void>? delayReset;
 
       try {
         final switchRespA = await clientA.send('AT#SCENARIO normal_headered_multi_block');
@@ -760,23 +815,26 @@ void main() {
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
 
         barrierTransportA.targetCommand = '0800';
-        barrierTransportA.wireCommandBarrier = barrierA;
+        barrierTransportA.wireReceiptBarrier = barrierReceiptA;
         barrierTransportA.delayIncomingCompleter = delayA;
 
-        // Run discovery which will write 0800 on wire then be held by delayA
+        // Run discovery which will write 0800 on wire then receive server response held by delayA
+        bool isAFutureDone = false;
         final discoveryFutureA = notifier.runDiscovery(
           timeout: const Duration(seconds: 1),
           budget: const Duration(seconds: 4),
-        );
+        ).whenComplete(() => isAFutureDone = true);
 
         try {
-          await barrierA.future.timeout(const Duration(seconds: 2));
+          await barrierReceiptA.future.timeout(const Duration(seconds: 2));
         } catch (e) {
-          fail('Flight A did not reach wire within budget: flight=0800, session=${session.generation}, events: ${barrierTransportA.observedEvents}');
+          fail('Flight A did not reach server receipt wire gate within budget: flight=0800, session=${session.generation}, events: ${barrierTransportA.observedEvents}');
         }
 
         expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue,
             reason: 'Task A must be in discovering state while in-flight on wire');
+        expect(isAFutureDone, isFalse,
+            reason: 'Task A future must not be completed while response is held on wire gate');
 
         // Session disconnect in-flight while A is held
         session.triggerDisconnect();
@@ -808,9 +866,15 @@ void main() {
         expect(stateB.result!.supportedTids, equals({1}),
             reason: 'Session B result must reflect single block TID {1}');
 
+        // Verify that before releasing delayed wire response for superseded task A,
+        // task A is STILL pending (has not timed out or completed early).
+        expect(isAFutureDone, isFalse,
+            reason: 'Superseded Task A must remain pending and held on wire when Task B completes');
+
         // Now release late-arriving completion of superseded task A
         delayA.complete();
         await discoveryFutureA;
+        expect(isAFutureDone, isTrue);
 
         final stateAfterLateA = container.read(mode08DiscoveryStateProvider);
         expect(stateAfterLateA.isCompleted, isTrue);
@@ -822,23 +886,26 @@ void main() {
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
 
         // Reset while in-flight test:
-        final barrierReset = Completer<void>();
-        final delayReset = Completer<void>();
+        final barrierReceiptReset = Completer<void>();
+        delayReset = Completer<void>();
         barrierTransportA.isTargetCommandInFlight = false;
         barrierTransportA.targetCommand = '0800';
-        barrierTransportA.wireCommandBarrier = barrierReset;
+        barrierTransportA.wireReceiptBarrier = barrierReceiptReset;
         barrierTransportA.delayIncomingCompleter = delayReset;
 
         session.triggerReconnect(clientA);
+        bool isResetFutureDone = false;
         final futureReset = notifier.runDiscovery(
           timeout: const Duration(seconds: 1),
           budget: const Duration(seconds: 3),
-        );
+        ).whenComplete(() => isResetFutureDone = true);
+
         try {
-          await barrierReset.future.timeout(const Duration(seconds: 2));
+          await barrierReceiptReset.future.timeout(const Duration(seconds: 2));
         } catch (e) {
-          fail('Reset probe did not reach wire: ${barrierTransportA.observedEvents}');
+          fail('Reset probe did not reach wire gate: ${barrierTransportA.observedEvents}');
         }
+        expect(isResetFutureDone, isFalse);
         expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
 
         notifier.reset();
@@ -847,10 +914,12 @@ void main() {
 
         delayReset.complete();
         await futureReset;
+        expect(isResetFutureDone, isTrue);
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue,
             reason: 'Aborted in-flight query completing after reset must remain idle');
       } finally {
         if (!delayA.isCompleted) delayA.complete();
+        if (delayReset != null && !delayReset.isCompleted) delayReset.complete();
         await clientA.disconnect();
         if (clientB != null) await clientB.disconnect();
       }
@@ -869,7 +938,7 @@ void main() {
       final connected = await client.connect();
       expect(connected, isTrue);
 
-      final barrier = Completer<void>();
+      final barrierReceipt = Completer<void>();
       final delay = Completer<void>();
       final session = _OracleSession(client);
       final container = ProviderContainer(
@@ -882,26 +951,29 @@ void main() {
         await client.send('ATH1');
 
         barrierTransport.targetCommand = '0800';
-        barrierTransport.wireCommandBarrier = barrier;
+        barrierTransport.wireReceiptBarrier = barrierReceipt;
         barrierTransport.delayIncomingCompleter = delay;
 
+        bool isFutureDone = false;
         final future = container.read(mode08DiscoveryStateProvider.notifier).runDiscovery(
           timeout: const Duration(seconds: 1),
           budget: const Duration(seconds: 3),
-        );
+        ).whenComplete(() => isFutureDone = true);
 
         try {
-          await barrier.future.timeout(const Duration(seconds: 2));
+          await barrierReceipt.future.timeout(const Duration(seconds: 2));
         } catch (e) {
-          fail('Dispose probe did not reach wire: ${barrierTransport.observedEvents}');
+          fail('Dispose probe did not reach wire gate: ${barrierTransport.observedEvents}');
         }
+        expect(isFutureDone, isFalse);
 
-        // Dispose container while 0800 is held in flight
+        // Dispose container while 0800 incoming response is held at wire gate
         container.dispose();
 
         // Release delayed wire response
         delay.complete();
         await future;
+        expect(isFutureDone, isTrue);
       } finally {
         if (!delay.isCompleted) delay.complete();
         await client.disconnect();
