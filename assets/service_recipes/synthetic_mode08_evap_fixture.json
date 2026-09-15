@@ -1,0 +1,54 @@
+{
+  "profile_id": "synthetic_mode08_evap_01",
+  "schema_version": 1,
+  "version": "1.0.0",
+  "standard": "SAE J1979:2014",
+  "source_url": "https://standards.sae.org/j1979_201408/",
+  "document_section": "Section 8.4 Mode 08 - Request control of on-board system, test or component",
+  "redistribution_rights": "syntheticFixtureOnly",
+  "provenance_kind": "syntheticFixture",
+  "addressing": {
+    "bus_type": "can11Bit",
+    "target_ecu_header": "7E0",
+    "expected_response_header": "7E8"
+  },
+  "applicability": {
+    "make": "Synthetic",
+    "model": "BenchSim",
+    "target_ecu_name": "ECM",
+    "software_versions": [
+      "SIM_ECM_V1"
+    ]
+  },
+  "session_type": "defaultSession",
+  "service_descriptor": {
+    "descriptor_type": "mode08",
+    "test_id": 1,
+    "parameters": [],
+    "expected_response_bytes": 1
+  },
+  "preconditions": [
+    {
+      "parameter_name": "vehicleSpeedKmh",
+      "min_value": 0,
+      "max_value": 0,
+      "max_age_ms": 1000,
+      "source_rule": "liveEcuOnly"
+    }
+  ],
+  "constraints": {
+    "max_commands": 2,
+    "min_command_interval_ms": 200,
+    "step_timeout_ms": 2000,
+    "overall_timeout_ms": 5000
+  },
+  "recovery": {
+    "release_command_description": "Automatic return upon completion or timeout",
+    "loss_of_client_behavior": "ECU returns control to normal operation after 1000ms",
+    "watchdog_timeout_ms": 1000
+  },
+  "postconditions": [],
+  "evidence_tier": "syntheticFixture",
+  "is_revoked": false,
+  "canonical_hash": "341756910e1fac80dfe5c34410a5a2ce5487c2f2c0d4e4abc1025f3e595f287d"
+}

@@ -144,6 +144,7 @@ flutter:
     - assets/vehicle_catalog/tw_moeaea_vehicles.manifest.json
     - assets/vehicle_catalog/ca_nrcan_vehicles.csv
     - assets/vehicle_catalog/ca_nrcan_vehicles.manifest.json
+    - assets/service_recipes/
 
   # Fonts are bundled rather than fetched at runtime: demo mode must work with
   # no network, and a runtime fetch shows a fallback-font flash on first frame.
