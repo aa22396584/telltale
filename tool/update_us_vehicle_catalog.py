@@ -24,7 +24,7 @@ from typing import Mapping, Sequence
 
 SOURCE_URL = "https://www.fueleconomy.gov/feg/epadata/vehicles.csv.zip"
 SOURCE_PAGE = "https://www.fueleconomy.gov/feg/download.shtml"
-USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/ImL1s/telltale)"
+USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/aa22396584/telltale)"
 DOWNLOAD_TIMEOUT_SECONDS = 120
 ARCHIVE_MEMBER = "vehicles.csv"
 

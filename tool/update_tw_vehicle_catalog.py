@@ -28,7 +28,7 @@ from typing import Callable, Mapping, Sequence
 from urllib.request import Request, urlopen
 
 
-USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/ImL1s/telltale)"
+USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/aa22396584/telltale)"
 DOWNLOAD_TIMEOUT_SECONDS = 120
 DATASET_API_11163 = "https://data.gov.tw/api/v2/rest/dataset/11163"
 DATASET_API_6032 = "https://data.gov.tw/api/v2/rest/dataset/6032"

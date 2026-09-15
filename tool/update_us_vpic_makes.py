@@ -22,7 +22,7 @@ import urllib.request
 
 
 SOURCE_URL = "https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json"
-USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/ImL1s/telltale)"
+USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/aa22396584/telltale)"
 DOWNLOAD_TIMEOUT_SECONDS = 120
 
 SCRIPT_DIR = Path(__file__).resolve().parent
