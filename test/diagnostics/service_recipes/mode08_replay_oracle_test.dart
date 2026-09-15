@@ -36,6 +36,7 @@ const _port = int.fromEnvironment(
   'MODE08_ORACLE_PORT',
   defaultValue: oracleDefaultPort,
 );
+const _customFixturesPath = String.fromEnvironment('MODE08_FIXTURES_PATH');
 const _oracleRequired = bool.fromEnvironment('MODE08_ORACLE_REQUIRED');
 
 /// Verifies preflight availability of the Mode 08 replay reference.
@@ -204,11 +205,16 @@ const supportedFixtureVersions = {'1.0.0'};
       'unqueriedBlocks',
       'trustedEcus',
       'hasAnonymous',
+      'perEcuBlockResults',
     ]) {
       if (!expected.containsKey(expKey)) {
         if (requiredMode) fail('Scenario $id expected_outcome missing field: $expKey');
         throw FormatException('Scenario $id expected_outcome missing field: $expKey');
       }
+    }
+    if (expected['perEcuBlockResults'] is! Map<String, dynamic>) {
+      if (requiredMode) fail('Scenario $id perEcuBlockResults must be an object');
+      throw FormatException('Scenario $id perEcuBlockResults must be an object');
     }
   }
 
@@ -362,53 +368,49 @@ void verifyScenarioOutcome(
     reason: '[$scenarioId] hasAnonymous mismatch',
   );
 
-  if (expected.containsKey('perEcuBlockResults')) {
-    final expectedPerEcu = expected['perEcuBlockResults'] as Map<String, dynamic>;
+  final expectedPerEcu = expected['perEcuBlockResults'] as Map<String, dynamic>;
+  expect(
+    result.perEcuBlockResults.keys.toSet(),
+    equals(expectedPerEcu.keys.toSet()),
+    reason: '[$scenarioId] perEcuBlockResults ECU keys mismatch',
+  );
+  for (final ecuId in expectedPerEcu.keys) {
+    final expectedBlocks = expectedPerEcu[ecuId] as Map<String, dynamic>;
+    final actualBlocks = result.perEcuBlockResults[ecuId] ?? {};
+    final expectedBlockInts = expectedBlocks.keys.map(int.parse).toSet();
     expect(
-      result.perEcuBlockResults.keys.toSet(),
-      equals(expectedPerEcu.keys.toSet()),
-      reason: '[$scenarioId] perEcuBlockResults ECU keys mismatch',
+      actualBlocks.keys.toSet(),
+      equals(expectedBlockInts),
+      reason: '[$scenarioId] ECU $ecuId block base TIDs mismatch',
     );
-    for (final ecuId in expectedPerEcu.keys) {
-      final expectedBlocks = expectedPerEcu[ecuId] as Map<String, dynamic>;
-      final actualBlocks = result.perEcuBlockResults[ecuId] ?? {};
-      final expectedBlockInts = expectedBlocks.keys.map(int.parse).toSet();
+    for (final blockKey in expectedBlocks.keys) {
+      final blockInt = int.parse(blockKey);
+      final expBlock = expectedBlocks[blockKey] as Map<String, dynamic>;
+      final actualBlock = actualBlocks[blockInt]!;
+
       expect(
-        actualBlocks.keys.toSet(),
-        equals(expectedBlockInts),
-        reason: '[$scenarioId] ECU $ecuId block base TIDs mismatch',
+        actualBlock.supportStatus.name,
+        equals(expBlock['supportStatus']),
+        reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportStatus mismatch',
       );
-      for (final blockKey in expectedBlocks.keys) {
-        final blockInt = int.parse(blockKey);
-        final expBlock = expectedBlocks[blockKey] as Map<String, dynamic>;
-        final actualBlock = actualBlocks[blockInt]!;
 
+      if (expBlock.containsKey('supportedTids')) {
+        final expTids = Set<int>.from(expBlock['supportedTids'] as List<dynamic>);
+        final actualTids = actualBlock is Mode08SupportSuccess ? actualBlock.supportedTids : <int>{};
         expect(
-          actualBlock.supportStatus.name,
-          equals(expBlock['supportStatus']),
-          reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportStatus mismatch',
+          actualTids,
+          equals(expTids),
+          reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportedTids mismatch',
         );
-
-        if (expBlock.containsKey('supportedTids')) {
-          final expTids = Set<int>.from(expBlock['supportedTids'] as List<dynamic>);
-          final actualTids = actualBlock is Mode08SupportSuccess ? actualBlock.supportedTids : <int>{};
-          expect(
-            actualTids,
-            equals(expTids),
-            reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} supportedTids mismatch',
-          );
-        }
-
-        if (expBlock.containsKey('nrc')) {
-          final expNrc = expBlock['nrc'] as int;
-          final actualNrc = actualBlock is Mode08NegativeResponse ? actualBlock.nrc : null;
-          expect(
-            actualNrc,
-            equals(expNrc),
-            reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} NRC mismatch',
-          );
-        }
       }
+
+      final expNrc = expBlock['nrc'] as int?;
+      final actualNrc = actualBlock is Mode08NegativeResponse ? actualBlock.nrc : null;
+      expect(
+        actualNrc,
+        equals(expNrc),
+        reason: '[$scenarioId] ECU $ecuId block 0x${blockInt.toRadixString(16)} NRC mismatch (expected: $expNrc, actual: $actualNrc)',
+      );
     }
   }
 }
@@ -579,10 +581,11 @@ void main() {
     );
 
     try {
+      final fixturesPath = _customFixturesPath.isNotEmpty ? _customFixturesPath : oracleFixturesRelativePath;
       fixtureResult = loadReplayFixtures(
-        oracleFixturesRelativePath,
+        fixturesPath,
         requiredMode: _oracleRequired,
-        altPath: oracleFixturesAltPath,
+        altPath: _customFixturesPath.isNotEmpty ? null : oracleFixturesAltPath,
       );
     } catch (_) {
       if (_oracleRequired) rethrow;
@@ -814,13 +817,94 @@ void main() {
         expect(stateAfterLateA.result!.supportedTids, equals({1}),
             reason: 'Late completion of superseded task A must not overwrite session B result');
 
-        // Resetting notifier while idle restores idle
+        // Resetting notifier restores idle
         notifier.reset();
         expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue);
+
+        // Reset while in-flight test:
+        final barrierReset = Completer<void>();
+        final delayReset = Completer<void>();
+        barrierTransportA.isTargetCommandInFlight = false;
+        barrierTransportA.targetCommand = '0800';
+        barrierTransportA.wireCommandBarrier = barrierReset;
+        barrierTransportA.delayIncomingCompleter = delayReset;
+
+        session.triggerReconnect(clientA);
+        final futureReset = notifier.runDiscovery(
+          timeout: const Duration(seconds: 1),
+          budget: const Duration(seconds: 3),
+        );
+        try {
+          await barrierReset.future.timeout(const Duration(seconds: 2));
+        } catch (e) {
+          fail('Reset probe did not reach wire: ${barrierTransportA.observedEvents}');
+        }
+        expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
+
+        notifier.reset();
+        expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue,
+            reason: 'Calling reset() while in-flight must immediately restore idle');
+
+        delayReset.complete();
+        await futureReset;
+        expect(container.read(mode08DiscoveryStateProvider).isIdle, isTrue,
+            reason: 'Aborted in-flight query completing after reset must remain idle');
       } finally {
         if (!delayA.isCompleted) delayA.complete();
         await clientA.disconnect();
         if (clientB != null) await clientB.disconnect();
+      }
+    });
+
+    test('lifecycle: container disposal while query is in-flight cleans up safely', () async {
+      if (!available || fixtureResult == null) {
+        if (_oracleRequired) fail('Replay server or fixtures not available');
+        markTestSkipped('Mode 08 replay reference or fixtures not running/available');
+        return;
+      }
+
+      final wifiTransport = WifiTransport(host: oracleHost, port: _port);
+      final barrierTransport = WireBarrierWifiTransport(wifiTransport);
+      final client = Elm327Client(barrierTransport, commandTimeout: const Duration(seconds: 2));
+      final connected = await client.connect();
+      expect(connected, isTrue);
+
+      final barrier = Completer<void>();
+      final delay = Completer<void>();
+      final session = _OracleSession(client);
+      final container = ProviderContainer(
+        overrides: [obdSessionProvider.overrideWith(() => session)],
+      );
+
+      try {
+        final resp = await client.send('AT#SCENARIO normal_headered_multi_block');
+        expect(resp.isSuccess, isTrue);
+        await client.send('ATH1');
+
+        barrierTransport.targetCommand = '0800';
+        barrierTransport.wireCommandBarrier = barrier;
+        barrierTransport.delayIncomingCompleter = delay;
+
+        final future = container.read(mode08DiscoveryStateProvider.notifier).runDiscovery(
+          timeout: const Duration(seconds: 1),
+          budget: const Duration(seconds: 3),
+        );
+
+        try {
+          await barrier.future.timeout(const Duration(seconds: 2));
+        } catch (e) {
+          fail('Dispose probe did not reach wire: ${barrierTransport.observedEvents}');
+        }
+
+        // Dispose container while 0800 is held in flight
+        container.dispose();
+
+        // Release delayed wire response
+        delay.complete();
+        await future;
+      } finally {
+        if (!delay.isCompleted) delay.complete();
+        await client.disconnect();
       }
     });
   });

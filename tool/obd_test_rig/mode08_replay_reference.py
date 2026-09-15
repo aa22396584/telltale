@@ -71,6 +71,32 @@ def validate_fixtures_data(data: Any) -> None:
                 for c in chunk_sizes:
                     if not isinstance(c, int) or c <= 0:
                         raise ValueError(f"Scenario {sid} step {s_idx} has invalid chunk size: {c}")
+        exp = s.get("expected_outcome")
+        if not isinstance(exp, dict):
+            raise ValueError(f"Scenario {sid} expected_outcome must be an object")
+        for req_exp_field in [
+            "isSupported",
+            "supportStatus",
+            "supportedTids",
+            "isComplete",
+            "unqueriedBlocks",
+            "trustedEcus",
+            "hasAnonymous",
+            "perEcuBlockResults",
+        ]:
+            if req_exp_field not in exp:
+                raise ValueError(f"Scenario {sid} expected_outcome missing required field: {req_exp_field}")
+        if not isinstance(exp["perEcuBlockResults"], dict):
+            raise ValueError(f"Scenario {sid} perEcuBlockResults must be an object")
+        for ecu_id, blocks in exp["perEcuBlockResults"].items():
+            if not isinstance(blocks, dict):
+                raise ValueError(f"Scenario {sid} perEcuBlockResults for ECU {ecu_id} must be an object")
+            for block_id, bdata in blocks.items():
+                if not isinstance(bdata, dict):
+                    raise ValueError(f"Scenario {sid} perEcuBlockResults for ECU {ecu_id} block {block_id} must be an object")
+                if "supportStatus" not in bdata:
+                    raise ValueError(f"Scenario {sid} ECU {ecu_id} block {block_id} missing 'supportStatus'")
+
 
 
 class AdapterState:

@@ -559,6 +559,93 @@ void main() {
       }
     });
 
+    test('harness fails decisively when fixture schema is missing perEcuBlockResults field', () {
+      final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_per_ecu_');
+      final tempFile = File('${tempDir.path}/fixtures_no_per_ecu.json');
+      try {
+        tempFile.writeAsStringSync(jsonEncode({
+          'version': '1.0.0',
+          'name': 'bad',
+          'provenance': 'test',
+          'description': 'test',
+          'scenarios': [
+            {
+              'id': 's1',
+              'dimension': 'd',
+              'description': 'desc',
+              'steps': [{'command': '0800', 'lines': ['OK']}],
+              'expected_outcome': {
+                'isSupported': true,
+                'supportStatus': 'supported',
+                'supportedTids': [1],
+                'isComplete': true,
+                'unqueriedBlocks': [],
+                'trustedEcus': [],
+                'hasAnonymous': false,
+              },
+            },
+          ],
+        }));
+
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: true),
+          throwsA(isA<TestFailure>()),
+          reason: 'Missing perEcuBlockResults in required-mode must throw TestFailure',
+        );
+        expect(
+          () => loadReplayFixtures(tempFile.path, requiredMode: false),
+          throwsA(isA<FormatException>()),
+          reason: 'Missing perEcuBlockResults in normal mode must throw FormatException',
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('harness fails decisively when unexpected NRC is returned on ECU block', () {
+      final mockResult = Mode08DiscoveryResult(
+        isSupported: false,
+        supportStatus: EcuSupportStatus.unknown,
+        supportedTids: const {},
+        queriedBlocks: const [0],
+        discoveredAt: DateTime.now().toUtc(),
+        isComplete: false,
+        unqueriedBlocks: const [0],
+        ecuResults: {
+          '7E8': const Mode08NegativeResponse(originalSid: 0x08, nrc: 0x22),
+        },
+        perEcuBlockResults: {
+          '7E8': {
+            0: const Mode08NegativeResponse(originalSid: 0x08, nrc: 0x22),
+          },
+        },
+      );
+
+      final expectedWithoutNrc = <String, dynamic>{
+        'isSupported': false,
+        'supportStatus': 'unknown',
+        'supportedTids': <int>[],
+        'isComplete': false,
+        'unqueriedBlocks': [0],
+        'trustedEcus': ['7E8'],
+        'hasAnonymous': false,
+        'perEcuBlockResults': {
+          '7E8': {
+            '0': {
+              'supportStatus': 'unknown',
+              'supportedTids': <int>[],
+            },
+          },
+        },
+      };
+
+      expect(
+        () => verifyScenarioOutcome(mockResult, expectedWithoutNrc, scenarioId: 'unexpected_nrc_test'),
+        throwsA(isA<TestFailure>()),
+        reason: 'Unexpected NRC returned on ECU block must throw TestFailure',
+      );
+    });
+
     test('subprocess negative control: Python replay server exits code 2 on unsupported fixture version', () {
       final tempDir = Directory.systemTemp.createTempSync('mode08_py_ver_test_');
       final tempFile = File('${tempDir.path}/bad_ver.json');
@@ -593,6 +680,40 @@ void main() {
         equals(2),
         reason: 'Python reference must exit with code 2 on missing fixture file. stderr: ${result.stderr}',
       );
+    });
+
+    test('subprocess negative control: Flutter test in required-mode exits non-zero on unsupported fixture version', () {
+      final tempDir = Directory.systemTemp.createTempSync('mode08_flutter_ver_test_');
+      final tempFile = File('${tempDir.path}/bad_ver.json');
+      try {
+        tempFile.writeAsStringSync(jsonEncode({
+          'version': '999.0.0',
+          'name': 'test',
+          'provenance': 'synthetic',
+          'description': 'test',
+          'scenarios': [],
+        }));
+
+        final flutterBin = Platform.environment['FLUTTER'] ??
+            '${Platform.environment['HOME']}/fvm/versions/3.47.0/bin/flutter';
+
+        final result = Process.runSync(
+          flutterBin,
+          [
+            'test',
+            '--dart-define=MODE08_ORACLE_REQUIRED=true',
+            '--dart-define=MODE08_FIXTURES_PATH=${tempFile.path}',
+            'test/diagnostics/service_recipes/mode08_replay_oracle_test.dart',
+          ],
+        );
+        expect(
+          result.exitCode,
+          isNot(0),
+          reason: 'Flutter test in required-mode must exit non-zero when fixture version is unsupported. stdout: ${result.stdout}',
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
     });
   });
 }

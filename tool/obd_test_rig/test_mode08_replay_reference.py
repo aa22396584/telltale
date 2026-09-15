@@ -179,6 +179,37 @@ class Mode08ReplayReferenceTest(unittest.IsolatedAsyncioTestCase):
         finally:
             os.unlink(tmp_path)
 
+    def test_missing_expected_outcome_per_ecu_block_results_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        del data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"]
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("missing required field: perEcuBlockResults", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
+    def test_invalid_per_ecu_block_structure_is_rejected(self) -> None:
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["scenarios"][0]["expected_outcome"]["perEcuBlockResults"] = "not_a_dict"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("perEcuBlockResults must be an object", str(ctx.exception))
+        finally:
+            os.unlink(tmp_path)
+
 
 if __name__ == "__main__":
     unittest.main()
+
