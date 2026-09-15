@@ -312,7 +312,7 @@ workflow 比 main 的 push CI 早跑完，於是 release 建置以
 
 ```bash
 SHA=$(git rev-parse main)
-gh api --method GET repos/ImL1s/telltale/actions/workflows/ci.yml/runs \
+gh api --method GET repos/aa22396584/telltale/actions/workflows/ci.yml/runs \
   -f branch=main -f event=push -f status=success -f head_sha="$SHA" \
   --jq '.workflow_runs[] | .html_url'          # 有輸出才算過閘
 

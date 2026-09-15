@@ -22,7 +22,7 @@ from typing import Mapping, Sequence
 import urllib.request
 
 
-USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/ImL1s/telltale)"
+USER_AGENT = "TelltaleVehicleCatalogUpdater/1.0 (+https://github.com/aa22396584/telltale)"
 DOWNLOAD_TIMEOUT_SECONDS = 120
 DATASET_PAGE = (
     "https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64"
