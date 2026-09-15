@@ -3230,6 +3230,10 @@
   "@settingsManualCommandCanReceiveFilterUnavailable": {
     "description": "TransportIssue.canReceiveFilterUnavailable. ATCRA with an address was refused or bare ATCRA could not clear the filter. Zero decoded value. ATCRA is a machine token."
   },
+  "settingsManualCommandHeaderRestoreFailed": "The adapter refused to restore the header (ATSH), so polling is stopped until you reconnect.",
+  "@settingsManualCommandHeaderRestoreFailed": {
+    "description": "TransportIssue.headerRestoreFailed. The adapter answered ATSH with '?' during header restoration. Commands are refused until reconnect."
+  },
   "manualCommandRefusedEmpty": "Nothing was typed, so nothing was sent.",
   "@manualCommandRefusedEmpty": {
     "description": "ManualCommandRefusalReason.emptyCommand. The box refuses before the adapter is involved at all, so it must not read as a failure of anything."

@@ -114,6 +114,7 @@ const _commandPath = <TransportIssue>{
   TransportIssue.rawIsoTpModeUnavailable,
   TransportIssue.canPriorityUnavailable,
   TransportIssue.canReceiveFilterUnavailable,
+  TransportIssue.headerRestoreFailed,
 };
 
 /// The identifiers whose throw must also carry the address its sentence names.
