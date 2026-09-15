@@ -16,6 +16,7 @@ import math
 import re
 import struct
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,799 @@ DERIVED_FAMILY_KEYS = frozenset({"derived_from", "fork_of"})
 SOURCE_ROLES = frozenset({"primary", "corroborating", "secondary"})
 INHERIT_LOCATOR_PREFIXES = ("row:", "research:", "research_row:", "sibling:")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-BLANK_SCOPE = frozenset({"", "unknown", "unspecified", "n/a", "na"})
+BLANK_SCOPE = frozenset({"", "unknown", "unspecified", "n/a", "na", "tbd"})
+GENERIC_BRAND_PLATFORM_ALIASES = frozenset(
+    {
+        "byd",
+        "tesla",
+        "toyota",
+        "nissan",
+        "volkswagen",
+        "vw",
+        "hyundai",
+        "kia",
+        "renault",
+        "bmw",
+        "mg",
+        "meb",
+        "e-gmp",
+        "egmp",
+        "blade",
+        "e-platform",
+    }
+)
+BRAND_ALIASES: dict[str, str] = {
+    "vw": "volkswagen",
+    "chevy": "chevrolet",
+}
+GENERIC_MODEL_PREFIXES = frozenset({"model", "ioniq", "id", "ev", "atto"})
+NON_MODEL_WORDS = frozenset(
+    {
+        "actively",
+        "default",
+        "periodic",
+        "cyclic",
+        "continuous",
+        "regular",
+        "standard",
+        "normal",
+        "fast",
+        "slow",
+        "can",
+        "bms",
+        "ecu",
+        "pid",
+        "pids",
+        "obd",
+    }
+)
+
+
+def normalize_brand(brand: str) -> str:
+    b = brand.lower().strip().replace("-", "_")
+    return BRAND_ALIASES.get(b, b)
+
+
+def _norm_token(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+GENERATION_TRIM_SUFFIXES = frozenset(
+    {
+        "ze0",
+        "ze1",
+        "i01",
+        "mk1",
+        "mk2",
+        "ph1",
+        "ph2",
+        "gen1",
+        "gen2",
+        "facelift",
+    }
+)
+
+NON_MODEL_SUFFIXES = frozenset(
+    {
+        "meb",
+        "egmp",
+        "ev",
+        "bev",
+        "phev",
+        "fcev",
+        "electric",
+        "electrified",
+        "hybrid",
+        "current",
+        "gen",
+        "generation",
+        "facelift",
+        "highland",
+        "juniper",
+        "pre",
+        "post",
+        "source",
+        "vehicle",
+        "community",
+        "experimental",
+        "research",
+        "beyond",
+        "shipped",
+        "de",
+        "os",
+        "sk3",
+        "ze0",
+        "ze1",
+        "i01",
+        "au",
+        "us",
+        "uk",
+        "eu",
+        "global",
+        "tnga",
+        "ph1",
+        "ph2",
+        "mk1",
+        "mk2",
+        "update",
+    }
+)
+
+
+def _normalize_repo_identity(repo: str) -> str:
+    norm = repo.strip().lower()
+    for prefix in (
+        "https://github.com/",
+        "http://github.com/",
+        "ssh://git@github.com/",
+        "git@github.com:",
+        "github.com/",
+    ):
+        if norm.startswith(prefix):
+            norm = norm[len(prefix):]
+    norm = norm.rstrip("/")
+    if norm.endswith(".git"):
+        norm = norm[:-4]
+    norm = norm.rstrip("/")
+    return norm
+
+
+def _normalize_locator_identity(locator: str) -> str:
+    return " ".join(locator.strip().lower().split())
+
+
+@dataclass(frozen=True)
+class ReviewedEvidenceBinding:
+    """Explicit, per-target reviewed evidence record.
+
+    Target scope, signal, source repository, revision, hash, path, and locator
+    must belong to the exact same reviewed record. Formal records that elevate
+    evidence qualification must not use wildcards; missing or wildcard fields
+    are rejected immediately.
+    """
+
+    target_scope: str
+    path: str
+    signal: str
+    source_repository: str
+    revision: str
+    source_hash: str
+    locator: str
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "target_scope",
+            "path",
+            "signal",
+            "source_repository",
+            "revision",
+            "source_hash",
+            "locator",
+        ):
+            val = getattr(self, field_name, None)
+            if not isinstance(val, str) or not val.strip():
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must be a non-empty string; got {val!r}"
+                )
+            if val.strip() in ("*", "?"):
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must not be wildcard; got {val!r}"
+                )
+            if field_name != "locator" and any(c in val for c in ("*", "?")):
+                raise ValueError(
+                    f"ReviewedEvidenceBinding {field_name} must not contain wildcards; got {val!r}"
+                )
+
+
+REVIEWED_EVIDENCE_BINDINGS: list[ReviewedEvidenceBinding] = [
+    # BYD Atto 3
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/byd/byd_202410_update.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="884a967ddcde195b953fe9070119561c6defde0f22866834260b3a65746c1116",
+            locator="EU version, only before 2024.10 update; ATSH7E7; 220005 SOC_D=B4; 220008 HV_V=((B5*256)+B4); 220009 HV_A=(raw-5000)/10",
+        )
+        for target in ("byd-atto3", "byd-atto-3", "byd-atto3-2022-2024-community")
+        for signal in ("battery_profile", "soc", "pack_voltage", "pack_current", "pack_temp")
+    ),
+    # MEB architecture profiles
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="volkswagen/meb.json",
+            signal=signal,
+            source_repository="iternio/ev-obd-pids",
+            revision="c45a018b60b3341d2d8bfb22cf0491c4e878165a",
+            source_hash="434936a9b4571b63b013a159c1b38fcffdd70651f4a3966ae6d3026d9f42b03d",
+            locator=loc,
+        )
+        for target, loc in (
+            ("cupra-born", "catalog locator cupra:born* alias"),
+            ("cupra-born-meb", "catalog locator cupra:born* alias"),
+            ("skoda-enyaq", "catalog locator skoda:enyaq* alias"),
+            ("skoda-enyaq-meb", "catalog locator skoda:enyaq* alias"),
+            ("volkswagen-id-buzz", "catalog locator volkswagen:id* alias for ID. Buzz"),
+            ("volkswagen-id-buzz-meb", "catalog locator volkswagen:id* alias for ID. Buzz"),
+            ("volkswagen-id3", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id3-meb", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id4", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id4-meb", "volkswagen:id* alias; ATSP7 ATCP17 ATSH FC007B"),
+            ("volkswagen-id5", "catalog locator volkswagen:id* alias for ID.5"),
+            ("volkswagen-id5-meb", "catalog locator volkswagen:id* alias for ID.5"),
+        )
+        for signal in ("battery_profile", "soc")
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/vw/ev_meb.json",
+            signal="battery_profile",
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="7355c159c20afca957ee486dc7585e7323a57f98124bcecf5a5bc45379985108",
+            locator=loc,
+        )
+        for target, loc in (
+            ("volkswagen-id3", "car_model lists ID.3 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id3-meb", "car_model lists ID.3 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id4", "car_model lists ID.4 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+            ("volkswagen-id4-meb", "car_model lists ID.4 among MEB aliases; pid_init ATSP7 ATCP17 17FC007B"),
+        )
+    ),
+    # E-GMP platform OVMS polling source (Kia EV6)
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path=path,
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="e5ffbdadd1725cbc672249fd6c2ca4d475e8d68661abdcb0a4551d95289d89b2",
+            locator="E-GMP BMS poll table and decode for 220101/220105 on 7E4/7EC",
+        )
+        for target in ("kia-ev6", "kia-ev6-egmp-2022-2024-community", "genesis-gv60")
+        for path in (
+            "vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp",
+            "components/vehicle_hkmc/hif_can_poll.cpp",
+        )
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+        )
+    ),
+    # HKMC Niro/Soul/Kona platform OVMS polling source (Hyundai Kona)
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path=path,
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
+            locator="Kona/e-Niro BMS poll table and decode for 220101/220105 on 7E4/7EC",
+        )
+        for target in (
+            "hyundai-kona",
+            "hyundai-kona-electric",
+            "hyundai-kona-electric-os-2019-2023-community",
+        )
+        for path in (
+            "vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
+            "components/vehicle_hkmc/kn_can_poll.cpp",
+        )
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "battery_inlet_temp",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
+        )
+    ),
+    # Multi-model profiles (Hyundai Ioniq 6)
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/hyundai/ioniq5-6.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="7ca3dadb99590a9377c688d73b6291440d1eea942b18b3dcc3a9ab538775c507",
+            locator="car_model 'Hyundai: Ioniq5/Ioniq6 (2021-2024)'; 220101/220105 windows and scales incl. signed current S17",
+        )
+        for target in (
+            "hyundai-ioniq6",
+            "hyundai-ioniq-6",
+            "hyundai-ioniq6-egmp-2022-2024-community",
+        )
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+        )
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle/ovms.v3/components/vehicle_hyundai_ioniq5/src/hif_can_poll.cpp",
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="e5ffbdadd1725cbc672249fd6c2ca4d475e8d68661abdcb0a4551d95289d89b2",
+            locator="E-GMP BMS poll table and decode for 220101/220105 on 7E4/7EC (map corroboration; component lists Ioniq 5/EV6, not Ioniq 6)",
+        )
+        for target in (
+            "hyundai-ioniq6",
+            "hyundai-ioniq-6",
+            "hyundai-ioniq6-egmp-2022-2024-community",
+        )
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "batt_temp_max",
+            "batt_temp_min",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+        )
+    ),
+    # Multi-model profiles (Kia Soul EV)
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle_profiles/kia/nirosoulkona-ev.json",
+            signal=signal,
+            source_repository="meatpiHQ/wican-fw",
+            revision="bc3ae6d4ad09f32b96ca101b31950e4fbf56b825",
+            source_hash="fcb59badaf765eb1eb1522c356bc31b378510d1797c3ff23c62e5b1570ea4f9e",
+            locator="car_model 'Kia: Niro/Soul'; 2201019/2201057 (9/7-frame) windows and scales",
+        )
+        for target in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
+        )
+    ),
+    *(
+        ReviewedEvidenceBinding(
+            target_scope=target,
+            path="vehicle/ovms.v3/components/vehicle_kianiroev/src/kn_can_poll.cpp",
+            signal=signal,
+            source_repository="openvehicles/Open-Vehicle-Monitoring-System-3",
+            revision="587a91d7b46bd7ce6d092e5acb7c2d3b7c5d7740",
+            source_hash="537242c15478e1fbd4b11d50877e28677229e7564c611a59bcf14cb64666cffb",
+            locator="byte-identical Kona/e-Niro OS map corroboration (component docs list e-Niro/Kona/Ioniq FL, not e-Soul; map-level evidence only)",
+        )
+        for target in ("kia-soul", "kia-soul-ev", "kia-soul-ev-sk3-2020-community")
+        for signal in (
+            "battery_profile",
+            "soc_bms",
+            "pack_current",
+            "pack_voltage",
+            "cell_volt_max",
+            "cell_volt_max_no",
+            "cell_volt_min",
+            "cell_volt_min_no",
+            "aux_batt_voltage",
+            "cum_charge_ah",
+            "cum_discharge_ah",
+            "cum_energy_charged",
+            "cum_energy_discharged",
+            "soh",
+            "soc_display",
+            "cell_deterioration_min",
+        )
+    ),
+]
+
+
+def _normalize_binding_path(path: str) -> str:
+    norm = path.replace("\\", "/").strip().lstrip("/")
+    while norm.startswith("./"):
+        norm = norm[2:].lstrip("/")
+    return norm.lower()
+
+
+def _target_scope_matches(target_id: str, binding_scope: str) -> bool:
+    """Exact token-normalized match between target_id and binding target_scope.
+
+    Formal evidence bindings require exact target matching. Approved aliases must
+    be explicitly registered rather than stripping market, year, or platform tokens.
+    """
+    clean_target = _norm_token(target_id)
+    clean_scope = _norm_token(binding_scope)
+    if not clean_target or not clean_scope:
+        return False
+    return clean_target == clean_scope
+
+
+def _find_reviewed_evidence_binding(
+    target_id: str,
+    path: str,
+    *,
+    locator: str,
+    signal: str,
+    repository: str,
+    revision: str,
+    source_hash: str,
+) -> ReviewedEvidenceBinding | None:
+    if (
+        not target_id
+        or not target_id.strip()
+        or "*" in target_id
+        or "?" in target_id
+        or not path
+        or not path.strip()
+        or "*" in path
+        or "?" in path
+        or not signal
+        or not signal.strip()
+        or "*" in signal
+        or "?" in signal
+        or not repository
+        or not repository.strip()
+        or "*" in repository
+        or "?" in repository
+        or not revision
+        or not revision.strip()
+        or "*" in revision
+        or "?" in revision
+        or not source_hash
+        or not source_hash.strip()
+        or "*" in source_hash
+        or "?" in source_hash
+        or not locator
+        or not locator.strip()
+        or locator.strip() in ("*", "?")
+    ):
+        return None
+
+    norm_path = _normalize_binding_path(path)
+    norm_repo = _normalize_repo_identity(repository)
+    norm_loc = _normalize_locator_identity(locator)
+    clean_signal = signal.strip().lower()
+    clean_rev = revision.strip().lower()
+    clean_hash = source_hash.strip().lower()
+
+    for binding in REVIEWED_EVIDENCE_BINDINGS:
+        if _normalize_binding_path(binding.path) != norm_path:
+            continue
+        if not _target_scope_matches(target_id, binding.target_scope):
+            continue
+        if binding.signal.strip().lower() != clean_signal:
+            continue
+        if _normalize_repo_identity(binding.source_repository) != norm_repo:
+            continue
+        if binding.revision.strip().lower() != clean_rev:
+            continue
+        if binding.source_hash.strip().lower() != clean_hash:
+            continue
+        if _normalize_locator_identity(binding.locator) != norm_loc:
+            continue
+        return binding
+    return None
+
+
+def _has_reviewed_shared_binding(
+    target_id: str,
+    path_clean: str,
+    *,
+    locator: str,
+    signal: str,
+    repository: str,
+    revision: str,
+    source_hash: str,
+) -> bool:
+    return (
+        _find_reviewed_evidence_binding(
+            target_id=target_id,
+            path=path_clean,
+            locator=locator,
+            signal=signal,
+            repository=repository,
+            revision=revision,
+            source_hash=source_hash,
+        )
+        is not None
+    )
+
+
+def _resolve_target_models(
+    target_id: str,
+    target_make: str,
+    aliases: list[str] | None = None,
+) -> set[str]:
+    target_parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
+    model_parts = [
+        p
+        for p in target_parts[1:]
+        if p not in NON_MODEL_SUFFIXES and (not p.isdigit() or len(p) <= 2)
+    ]
+    models = set()
+    if model_parts:
+        clean = _norm_token("".join(model_parts))
+        if clean:
+            models.add(clean)
+
+    # Aliases are search/display metadata and MUST NOT override or add conflicting models
+    # when the target_id already resolves a distinct model.
+    # Only if target_id has no model parts (e.g. generic nameplates like 'renault-current-ev'),
+    # aliases can provide the base model.
+    if not models and aliases:
+        for alias in aliases:
+            if not isinstance(alias, str):
+                continue
+            a_parts = [p for p in re.split(r"[^a-z0-9]+", alias.lower()) if p]
+            a_model_parts = [
+                p
+                for p in a_parts
+                if p != target_make
+                and p not in NON_MODEL_SUFFIXES
+                and (not p.isdigit() or len(p) <= 2)
+            ]
+            if a_model_parts:
+                clean = _norm_token("".join(a_model_parts))
+                if clean:
+                    models.add(clean)
+            has_gen2 = any(
+                g in alias.lower()
+                for g in ("ph2", "gen2", "gen 2", "ph 2", "ze50")
+            )
+            if has_gen2:
+                for base in list(models):
+                    models.add(f"{base}2")
+    return models
+
+
+def _is_cross_model_source(
+    target_id: str,
+    locator: str,
+    path: str,
+    url: str,
+    *,
+    aliases: list[str] | None = None,
+    signal: str = "",
+    signals: Sequence[str] | None = None,
+    repository: str = "",
+    revision: str = "",
+    source_hash: str = "",
+) -> bool:
+    target_parts = [p for p in re.split(r"[^a-z0-9]+", target_id.lower()) if p]
+    if not target_parts:
+        return False
+
+    target_make = normalize_brand(target_parts[0])
+    target_models = _resolve_target_models(target_id, target_make, aliases)
+    path_clean = path.lower().replace("\\", "/")
+
+    # 1. Check foreign locator specification (e.g. '<Model> polls')
+    m_poll = re.search(r"\b([a-z0-9_-]+(?:\s+[a-z0-9_-]+)?)\s+polls\b", locator.lower())
+    if m_poll:
+        poll_veh = _norm_token(m_poll.group(1))
+        if poll_veh not in NON_MODEL_WORDS:
+            if target_models and not any(
+                poll_veh == m or poll_veh in m or m in poll_veh for m in target_models
+            ):
+                return True
+
+    # 2. Check structured reviewed shared-source binding
+    candidate_signals: list[str] = []
+    if signals:
+        candidate_signals.extend(s for s in signals if isinstance(s, str) and s.strip())
+    if signal and signal.strip() and signal not in candidate_signals:
+        candidate_signals.append(signal.strip())
+    if not candidate_signals:
+        candidate_signals.append("battery_profile")
+
+    for sig in candidate_signals:
+        if _has_reviewed_shared_binding(
+            target_id,
+            path_clean,
+            locator=locator,
+            signal=sig,
+            repository=repository,
+            revision=revision,
+            source_hash=source_hash,
+        ):
+            return False
+
+    # 3. OVMS component paths
+    m_ovms = re.search(r"components/vehicle_([a-z0-9_]+)(?:/|$)", path_clean)
+    if m_ovms:
+        comp_raw = m_ovms.group(1)
+        # Check C++ source file if vehicle-specific: vehicle_<name>.cpp
+        m_cpp = re.search(r"vehicle_([a-z0-9_]+)\.cpp", path_clean)
+        if m_cpp:
+            cpp_raw = m_cpp.group(1)
+            cpp_clean = _norm_token(cpp_raw)
+            cpp_cmp = cpp_clean
+            if cpp_cmp.startswith(target_make):
+                cpp_cmp = cpp_cmp[len(target_make):]
+
+            if cpp_cmp:
+                matches_cpp = (
+                    cpp_cmp in target_models
+                    or any(
+                        cpp_cmp.startswith(m) or m.startswith(cpp_cmp)
+                        for m in target_models
+                    )
+                    or any(cpp_clean.startswith(m) for m in target_models)
+                )
+                if not matches_cpp:
+                    return True
+
+        # Check component brand / sharing
+        if comp_raw.startswith("vw"):
+            comp_make = "volkswagen"
+        elif "_" in comp_raw:
+            parts = comp_raw.split("_", 1)
+            comp_make = normalize_brand(parts[0])
+        elif comp_raw.startswith(target_make):
+            comp_make = target_make
+        else:
+            comp_make = comp_raw
+
+        if comp_make != target_make:
+            return True
+
+    # 4. Dedicated vehicle JSON file path
+    m = re.search(
+        r"(?:vehicle_profiles/|^)([a-z0-9_-]+)/([a-z0-9_.-]+)\.json$", path_clean
+    )
+    if m:
+        dir_name = m.group(1)
+        generic_dirs = {
+            "shared",
+            "common",
+            "signalsets",
+            "app",
+            "components",
+            "src",
+            "docs",
+            "tests",
+            "data",
+            "fixtures",
+            "builtin",
+        }
+        if dir_name not in generic_dirs and not any(g in path_clean for g in generic_dirs):
+            src_make = normalize_brand(dir_name)
+            src_file_raw = m.group(2)
+            src_file_clean = _norm_token(src_file_raw)
+
+            # Rule A: Make must match
+            if src_make != target_make:
+                return True
+
+            # Rule B: Model must match
+            # Check multi-model files (e.g. ioniq5-6, mg5-marvel-zs)
+            is_multi_model = (
+                "5-6" in src_file_raw
+                or "5_6" in src_file_raw
+                or "marvel" in src_file_raw
+            )
+            if is_multi_model:
+                sub_tokens = [
+                    _norm_token(t)
+                    for t in re.split(r"[-_]+", src_file_raw)
+                    if t and t != src_make and t not in NON_MODEL_SUFFIXES
+                ]
+                if any(
+                    m in sub_tokens
+                    or any(t.startswith(m) or m.startswith(t) for t in sub_tokens)
+                    for m in target_models
+                ):
+                    return False
+
+            # Single-model file matching
+            src_model_cmp = src_file_clean
+            if src_model_cmp.startswith(src_make):
+                src_model_cmp = src_model_cmp[len(src_make):]
+
+            # Stripped of non-model suffixes (e.g. niro-ev -> niro)
+            src_tokens_clean = "".join(
+                _norm_token(t)
+                for t in re.split(r"[-_]+", src_file_raw)
+                if t and t != src_make and t not in NON_MODEL_SUFFIXES
+            )
+
+            # Exact match with any target model candidate
+            if any(
+                src_model_cmp == m
+                or src_file_clean == m
+                or src_tokens_clean == m
+                for m in target_models
+            ):
+                return False
+
+            # Check generation / trim suffix
+            matched_gen = False
+            for m in target_models:
+                if src_model_cmp.startswith(m):
+                    suffix = src_model_cmp[len(m):]
+                    if suffix in GENERATION_TRIM_SUFFIXES or suffix in NON_MODEL_SUFFIXES:
+                        matched_gen = True
+                        break
+                if m.startswith(src_model_cmp):
+                    suffix = m[len(src_model_cmp):]
+                    if suffix in GENERATION_TRIM_SUFFIXES or suffix in NON_MODEL_SUFFIXES:
+                        matched_gen = True
+                        break
+            if matched_gen:
+                return False
+
+            return True
+
+    return False
 SIGNEDNESS = frozenset({"unsigned", "signed"})
 HEX_SERVICE = re.compile(r"^[0-9A-Fa-f]{2}$")
 HEX_DID = re.compile(r"^[0-9A-Fa-f]{2,4}$")
@@ -1111,6 +1904,12 @@ def validate_research_row(
         not isinstance(item, str) for item in aliases
     ):
         issues.append(f"{prefix}: aliases must be a list of strings")
+    else:
+        for alias in aliases:
+            if alias.strip().lower() in GENERIC_BRAND_PLATFORM_ALIASES:
+                issues.append(
+                    f"{prefix}: alias {alias!r} extrapolates entire brand/platform without model specificity"
+                )
 
     commands = row.get("commands")
     if commands is not None and not isinstance(commands, list):
@@ -1240,6 +2039,48 @@ def validate_research_row(
             issues.append(
                 f"{prefix}: source {source_id} declared family {declared_family!r} "
                 f"does not match derived family {derived_family!r}"
+            )
+        loc = _text(source.get("locator"))
+        if not loc:
+            issues.append(
+                f"{prefix}: source {source_id} missing row-specific evidence locator"
+            )
+        elif any(loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+            issues.append(
+                f"{prefix}: source {source_id} locator uses prohibited inheritance reference: {loc}"
+            )
+        src_path = _text(source.get("path")).lower()
+        src_url = _text(source.get("url")).lower()
+        src_repo = _text(source.get("family") or source.get("name") or source.get("repository"))
+        src_rev = _text(source.get("revision"))
+        src_hash = _text(source.get("artifact_sha256") or source.get("hash"))
+        row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
+        generation = _text(row.get("generation"))
+        if generation:
+            row_aliases.append(generation)
+        row_signals: list[str] = []
+        for s in _as_list(row.get("signals")):
+            if isinstance(s, str) and s.strip():
+                row_signals.append(s.strip())
+            elif isinstance(s, dict) and _text(s.get("id")):
+                row_signals.append(_text(s.get("id")))
+        if _text(row.get("signal")):
+            row_signals.append(_text(row.get("signal")))
+        if not row_signals:
+            row_signals = ["battery_profile"]
+        if _is_cross_model_source(
+            row_id,
+            loc,
+            src_path,
+            src_url,
+            aliases=row_aliases,
+            signals=row_signals,
+            repository=src_repo,
+            revision=src_rev,
+            source_hash=src_hash,
+        ):
+            issues.append(
+                f"{prefix}: source {source_id} path {source.get('path')!r} belongs to a different vehicle model than {row_id}"
             )
 
     primaries = [s for s in sources if _text(s.get("role")) == "primary"]
@@ -1435,12 +2276,134 @@ def validate_research_row(
     return issues
 
 
-def validate_catalog_object(catalog: dict[str, Any]) -> list[str]:
+def validate_catalog_community_profile(profile: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    profile_id = _text(profile.get("id")) or "<missing-id>"
+    prefix = f"catalog profile {profile_id}"
+
+    source = profile.get("source")
+    primary_family = ""
+    if not isinstance(source, dict):
+        issues.append(f"{prefix}: community profile missing primary source object")
+    else:
+        primary_family = derive_source_family(source)
+        if not primary_family:
+            issues.append(f"{prefix}: primary source has no derivable family identity")
+        if not _text(source.get("license")):
+            issues.append(f"{prefix}: primary source missing licence")
+        if not is_immutable_revision(_text(source.get("revision"))):
+            issues.append(f"{prefix}: primary source missing immutable revision pin")
+        if not is_sha256_hex(_text(source.get("artifact_sha256"))):
+            issues.append(f"{prefix}: primary source missing valid artifact sha256")
+        loc = _text(source.get("locator"))
+        if not loc:
+            issues.append(f"{prefix}: primary source missing row-specific evidence locator")
+        elif any(loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+            issues.append(f"{prefix}: primary source locator uses prohibited inheritance reference: {loc}")
+
+    secondaries = profile.get("secondary_sources")
+    if not isinstance(secondaries, list) or not secondaries:
+        issues.append(f"{prefix}: community profile requires at least one secondary source")
+    else:
+        sec_families: list[str] = []
+        for idx, sec in enumerate(secondaries):
+            if not isinstance(sec, dict):
+                issues.append(f"{prefix}: secondary source [{idx}] must be an object")
+                continue
+            sec_fam = derive_source_family(sec)
+            if not sec_fam:
+                issues.append(f"{prefix}: secondary source [{idx}] has no derivable family identity")
+            else:
+                sec_families.append(sec_fam)
+            if not _text(sec.get("license")):
+                issues.append(f"{prefix}: secondary source [{idx}] missing licence")
+            if not is_immutable_revision(_text(sec.get("revision"))):
+                issues.append(f"{prefix}: secondary source [{idx}] missing immutable revision pin")
+            if not is_sha256_hex(_text(sec.get("artifact_sha256"))):
+                issues.append(f"{prefix}: secondary source [{idx}] missing valid artifact sha256")
+            sec_loc = _text(sec.get("locator"))
+            if not sec_loc:
+                issues.append(f"{prefix}: secondary source [{idx}] missing row-specific evidence locator")
+            elif any(sec_loc.lower().startswith(p) for p in INHERIT_LOCATOR_PREFIXES):
+                issues.append(f"{prefix}: secondary source [{idx}] locator uses prohibited inheritance reference: {sec_loc}")
+
+        if primary_family and sec_families:
+            independent = [f for f in sec_families if f != primary_family]
+            if not independent:
+                issues.append(
+                    f"{prefix}: community profile requires independent corroborating source family, "
+                    f"found only same family as primary: {primary_family}"
+                )
+
+    market = _text(profile.get("market"))
+    if not market or market.lower() in BLANK_SCOPE:
+        issues.append(f"{prefix}: community profile missing exact market scope")
+    make = _text(profile.get("make"))
+    if not make:
+        issues.append(f"{prefix}: community profile missing make scope")
+    model = _text(profile.get("model"))
+    if not model:
+        issues.append(f"{prefix}: community profile missing model scope")
+
+    year_from = profile.get("year_from")
+    year_to = profile.get("year_to")
+    if not isinstance(year_from, int) or not isinstance(year_to, int):
+        issues.append(f"{prefix}: community profile year_from and year_to must be integer years")
+    elif year_from > year_to:
+        issues.append(f"{prefix}: community profile reversed year range: {year_from} > {year_to}")
+    elif year_from < 1900 or year_to > 2100:
+        issues.append(f"{prefix}: community profile year range {year_from}-{year_to} outside plausible bounds")
+
+    all_sources = [source] if isinstance(source, dict) else []
+    if isinstance(secondaries, list):
+        all_sources.extend(s for s in secondaries if isinstance(s, dict))
+    for src_item in all_sources:
+        src_path = _text(src_item.get("path")).lower()
+        src_url = _text(src_item.get("url")).lower()
+        src_loc = _text(src_item.get("locator"))
+        src_repo = _text(src_item.get("name") or src_item.get("repository") or src_item.get("family"))
+        src_rev = _text(src_item.get("revision"))
+        src_hash = _text(src_item.get("artifact_sha256") or src_item.get("hash") or src_item.get("sha256"))
+        target_id = f"{make}-{model}".lower()
+        profile_aliases = [
+            _text(profile.get("id")),
+            _text(profile.get("variant")),
+            _text(profile.get("display_name")),
+        ]
+        profile_signals = ["battery_profile"]
+        for cmd in _as_list(profile.get("commands")):
+            if isinstance(cmd, dict):
+                for sig in _as_list(cmd.get("signals")):
+                    if isinstance(sig, dict) and _text(sig.get("id")):
+                        profile_signals.append(_text(sig.get("id")))
+        if make and model and _is_cross_model_source(
+            target_id,
+            src_loc,
+            src_path,
+            src_url,
+            aliases=profile_aliases,
+            signals=profile_signals,
+            repository=src_repo,
+            revision=src_rev,
+            source_hash=src_hash,
+        ):
+            issues.append(
+                f"{prefix}: source path {src_item.get('path')!r} belongs to a different vehicle model than {make} {model}"
+            )
+    return issues
+
+
+def validate_catalog_object(
+    catalog: dict[str, Any],
+    *,
+    validate_evidence: bool = False,
+) -> list[str]:
     issues: list[str] = []
     for profile in _as_list(catalog.get("profiles")):
         if not isinstance(profile, dict):
             continue
         profile_id = _text(profile.get("id")) or "<missing-id>"
+        prefix = f"catalog profile {profile_id}"
         status = _text(profile.get("status"))
         raw_commands = profile.get("commands")
         command_items = raw_commands if isinstance(raw_commands, list) else []
@@ -1453,18 +2416,21 @@ def validate_catalog_object(catalog: dict[str, Any]) -> list[str]:
             )
         ):
             issues.append(
-                f"catalog profile {profile_id}: status={status} has 0 executable commands"
+                f"{prefix}: status={status} has 0 executable commands"
             )
         locator = extract_vehicle_evidence_locator(profile) or _physical_locator(profile)
         evidence = _text(profile.get("evidence"))
         if status == "ready" and (evidence != "physicalVehicle" or not locator):
             issues.append(
-                f"catalog profile {profile_id}: ready profile requires retained physical-vehicle evidence"
+                f"{prefix}: ready profile requires retained physical-vehicle evidence"
             )
         elif evidence == "physicalVehicle" and not locator:
             issues.append(
-                f"catalog profile {profile_id}: physicalVehicle evidence has no retained vehicle-evidence locator"
+                f"{prefix}: physicalVehicle evidence has no retained vehicle-evidence locator"
             )
+
+        if validate_evidence and status == "community":
+            issues.extend(validate_catalog_community_profile(profile))
     return issues
 
 
@@ -1499,7 +2465,7 @@ def validate_matrix_document(
     if not isinstance(catalog_obj, dict):
         issues.append("catalog JSON must be an object")
         return issues
-    issues.extend(validate_catalog_object(catalog_obj))
+    issues.extend(validate_catalog_object(catalog_obj, validate_evidence=True))
 
     expected_catalog = extract_catalog_section(catalog_bytes, manifest)
     actual_catalog = matrix.get("catalog")
@@ -1513,11 +2479,14 @@ def validate_matrix_document(
     if dump_canonical(actual_research) != dump_canonical(expected_research):
         issues.append("research section is stale versus research/rows.json")
 
-    catalog_ids = {
-        _text(profile.get("id"))
-        for profile in _as_list(catalog_obj.get("profiles"))
-        if isinstance(profile, dict) and _text(profile.get("id"))
+    catalog_profiles_list = _as_list(catalog_obj.get("profiles"))
+    catalog_profiles_by_id = {
+        _text(p.get("id")): p
+        for p in catalog_profiles_list
+        if isinstance(p, dict) and _text(p.get("id"))
     }
+
+    catalog_ids = set(catalog_profiles_by_id.keys())
     rows = _as_list(actual_research)
     research_ids = {
         _text(row.get("id"))
@@ -1541,6 +2510,65 @@ def validate_matrix_document(
                 row, catalog_ids=catalog_ids, research_ids=research_ids
             )
         )
+
+        cat_ids_for_row = row.get("catalog_profile_ids")
+        if isinstance(cat_ids_for_row, list):
+            disposition = _text(row.get("disposition"))
+            row_yf = row.get("year_from")
+            row_yt = row.get("year_to")
+            row_aliases = [str(a) for a in _as_list(row.get("aliases")) if isinstance(a, str)]
+            for pid in cat_ids_for_row:
+                if pid in catalog_profiles_by_id:
+                    cat_prof = catalog_profiles_by_id[pid]
+                    cat_status = _text(cat_prof.get("status"))
+                    if disposition in {"transport-blocked", "identity-only", "no-source"} and cat_status in {"community", "ready"}:
+                        issues.append(
+                            f"research row {row_id}: disposition={disposition} conflicts with catalog profile {pid} status={cat_status}"
+                        )
+                    row_make = row_id.split("-")[0]
+                    cat_make = _text(cat_prof.get("make")) or pid.split("-")[0]
+                    norm_row_make = normalize_brand(row_make)
+                    norm_cat_make = normalize_brand(cat_make)
+                    row_makes = {norm_row_make}
+                    if "hyundai-kia" in row_id:
+                        row_makes.update({"hyundai", "kia"})
+                    if norm_cat_make not in row_makes:
+                        issues.append(
+                            f"research row {row_id}: incorrect join with catalog profile {pid} (brand mismatch {row_make} != {cat_make.lower()})"
+                        )
+                        continue
+
+                    # Model check
+                    cat_model = _text(cat_prof.get("model")) or (pid.split("-")[1] if len(pid.split("-")) > 1 else "")
+                    clean_cat_model = _norm_token(cat_model)
+                    clean_row_id = _norm_token(row_id)
+                    clean_aliases = [_norm_token(a) for a in row_aliases]
+                    all_targets = [clean_row_id] + clean_aliases
+
+                    model_words = [
+                        w for w in re.split(r"[^a-z0-9]", cat_model.lower())
+                        if len(w) >= 2 and w not in {"fwd", "awd", "rwd", "bev", "phev", "ev", "gen1", "gen2", "long", "range", "us", "eu", "uk", "60", "63kwh", "kwh", "ah"}
+                    ]
+                    model_matches = any(clean_cat_model in tgt for tgt in all_targets) or \
+                                    any(w in tgt for w in model_words for tgt in all_targets)
+                    if not model_matches:
+                        issues.append(
+                            f"research row {row_id}: incorrect join with catalog profile {pid} (model mismatch {row_id} does not match model {cat_model})"
+                        )
+
+                    # Year range overlap check
+                    cat_yf = cat_prof.get("year_from")
+                    cat_yt = cat_prof.get("year_to")
+                    if (
+                        isinstance(row_yf, int)
+                        and isinstance(row_yt, int)
+                        and isinstance(cat_yf, int)
+                        and isinstance(cat_yt, int)
+                    ):
+                        if row_yf > cat_yt or cat_yf > row_yt:
+                            issues.append(
+                                f"research row {row_id}: incorrect join with catalog profile {pid} (year range {row_yf}-{row_yt} does not overlap with profile {cat_yf}-{cat_yt})"
+                            )
     return issues
 
 
