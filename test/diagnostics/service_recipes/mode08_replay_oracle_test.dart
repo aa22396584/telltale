@@ -830,6 +830,8 @@ void main() {
         } catch (e) {
           fail('Flight A did not reach server receipt wire gate within budget: flight=0800, session=${session.generation}, events: ${barrierTransportA.observedEvents}');
         }
+        expect(barrierTransportA.observedEvents, contains('server_receipt_held_at_gate: 0800'),
+            reason: 'Observed events must record server response receipt held at wire gate before Task A completes');
 
         expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue,
             reason: 'Task A must be in discovering state while in-flight on wire');
@@ -905,6 +907,8 @@ void main() {
         } catch (e) {
           fail('Reset probe did not reach wire gate: ${barrierTransportA.observedEvents}');
         }
+        expect(barrierTransportA.observedEvents, contains('server_receipt_held_at_gate: 0800'),
+            reason: 'Reset probe must record server receipt held at wire gate');
         expect(isResetFutureDone, isFalse);
         expect(container.read(mode08DiscoveryStateProvider).isDiscovering, isTrue);
 
@@ -965,6 +969,8 @@ void main() {
         } catch (e) {
           fail('Dispose probe did not reach wire gate: ${barrierTransport.observedEvents}');
         }
+        expect(barrierTransport.observedEvents, contains('server_receipt_held_at_gate: 0800'),
+            reason: 'Dispose probe must record server receipt held at wire gate');
         expect(isFutureDone, isFalse);
 
         // Dispose container while 0800 incoming response is held at wire gate

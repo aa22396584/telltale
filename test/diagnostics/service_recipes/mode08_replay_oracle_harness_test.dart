@@ -86,7 +86,10 @@ void main() {
           requiredMode: true,
           identity: oracleIdentity,
         ),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Mode 08 replay reference not running on 127.0.0.1:$deadPort')
+        )),
         reason: 'Preflight must fail decisively when server is unstarted in required-mode',
       );
     });
@@ -96,7 +99,10 @@ void main() {
 
       expect(
         () => loadReplayFixtures(nonExistentPath, requiredMode: true),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('fixtures file missing at $nonExistentPath')
+        )),
         reason: 'Loading missing fixture in required-mode must throw TestFailure',
       );
     });
@@ -107,7 +113,10 @@ void main() {
 
       expect(
         () => verifyFixtureHash(serverHash: serverHash, localHash: corruptedLocalHash),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Fixture SHA-256 mismatch')
+        )),
         reason: 'Hash mismatch must throw TestFailure and fail decisively',
       );
     });
@@ -123,6 +132,20 @@ void main() {
         unqueriedBlocks: const [],
       );
 
+      final matchingExpected = <String, dynamic>{
+        'isSupported': true,
+        'supportStatus': 'supported',
+        'supportedTids': [1],
+        'isComplete': true,
+        'unqueriedBlocks': <int>[],
+        'trustedEcus': <String>[],
+        'hasAnonymous': false,
+        'perEcuBlockResults': <String, dynamic>{},
+      };
+
+      // 1. Positive control: matching expected passes cleanly
+      expect(() => verifyScenarioOutcome(mockResult, matchingExpected, scenarioId: 'harness_match_test'), returnsNormally);
+
       final tamperedExpected = <String, dynamic>{
         'isSupported': false, // Mismatch!
         'supportStatus': 'supported',
@@ -131,11 +154,16 @@ void main() {
         'unqueriedBlocks': [],
         'trustedEcus': [],
         'hasAnonymous': false,
+        'perEcuBlockResults': <String, dynamic>{},
       };
 
+      // 2. Negative control: tampered isSupported throws specific TestFailure
       expect(
         () => verifyScenarioOutcome(mockResult, tamperedExpected, scenarioId: 'harness_mismatch_test'),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('isSupported mismatch')
+        )),
         reason: 'isSupported mismatch must throw TestFailure',
       );
     });
@@ -149,7 +177,23 @@ void main() {
         discoveredAt: DateTime.now().toUtc(),
         isComplete: false,
         unqueriedBlocks: const [32],
+        failureReason: 'Block unqueried',
       );
+
+      final matchingExpected = <String, dynamic>{
+        'isSupported': true,
+        'supportStatus': 'supported',
+        'supportedTids': [1, 32],
+        'isComplete': false,
+        'unqueriedBlocks': [32],
+        'failureReasonContains': 'Block unqueried',
+        'trustedEcus': <String>[],
+        'hasAnonymous': false,
+        'perEcuBlockResults': <String, dynamic>{},
+      };
+
+      // 1. Positive control: matching expected passes cleanly
+      expect(() => verifyScenarioOutcome(mockResult, matchingExpected, scenarioId: 'harness_match_test'), returnsNormally);
 
       final tamperedExpected = <String, dynamic>{
         'isSupported': true,
@@ -157,13 +201,19 @@ void main() {
         'supportedTids': [1, 32],
         'isComplete': true, // Mismatch!
         'unqueriedBlocks': [32],
+        'failureReasonContains': 'Block unqueried',
         'trustedEcus': [],
         'hasAnonymous': false,
+        'perEcuBlockResults': <String, dynamic>{},
       };
 
+      // 2. Negative control: tampered isComplete throws specific TestFailure
       expect(
         () => verifyScenarioOutcome(mockResult, tamperedExpected, scenarioId: 'harness_mismatch_test'),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('isComplete mismatch')
+        )),
         reason: 'isComplete mismatch must throw TestFailure',
       );
     });
@@ -186,6 +236,18 @@ void main() {
         attributedSources: {'7E8'},
       );
 
+      // 1. Positive control: consistent responses pass cleanly
+      expect(
+        () => verifyParserEntryConsistency(
+          structuredResponse: structuredResp,
+          observedOnlyResponse: structuredResp,
+          rawOnlyResponse: structuredResp,
+          expectedBaseTid: 0x00,
+        ),
+        returnsNormally,
+      );
+
+      // 2. Negative control: disagreeing response throws specific TestFailure
       expect(
         () => verifyParserEntryConsistency(
           structuredResponse: structuredResp,
@@ -193,7 +255,10 @@ void main() {
           rawOnlyResponse: disagreeingRawResp,
           expectedBaseTid: 0x00,
         ),
-        throwsA(isA<TestFailure>()),
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Raw-only entry must match structured entry evidence projection on 0x0')
+        )),
         reason: 'Entry disagreement on supportStatus must throw TestFailure',
       );
     });
@@ -277,8 +342,11 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, fakeEcuExpected, scenarioId: 'fake_ecu_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Fake ECU inserted into trusted set must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('trusted ECUs set exact match failed')
+        )),
+        reason: 'Fake ECU inserted into trusted set must throw TestFailure specifically on trusted ECUs mismatch',
       );
     });
 
@@ -319,8 +387,11 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, missingBlockExpected, scenarioId: 'missing_block_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Missing block evidence in perEcuBlockResults must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('ECU 7E8 block base TIDs mismatch')
+        )),
+        reason: 'Missing block evidence in perEcuBlockResults must throw TestFailure specifically on block base TIDs mismatch',
       );
     });
 
@@ -349,8 +420,11 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, strippedAnonymousExpected, scenarioId: 'stripped_anonymous_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Stripped anonymous uncertainty must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('hasAnonymous mismatch')
+        )),
+        reason: 'Stripped anonymous uncertainty must throw TestFailure specifically on hasAnonymous mismatch',
       );
     });
 
@@ -378,8 +452,11 @@ void main() {
 
       expect(
         () => verifyScenarioOutcome(mockResult, tamperedUnqueriedExpected, scenarioId: 'extra_uncompleted_block_test'),
-        throwsA(isA<TestFailure>()),
-        reason: 'Mismatched uncompleted blocks must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('unqueriedBlocks exact match failed')
+        )),
+        reason: 'Mismatched uncompleted blocks must throw TestFailure specifically on unqueriedBlocks mismatch',
       );
     });
 
@@ -408,8 +485,11 @@ void main() {
           rawOnlyResponse: disagreeingRawResp,
           expectedBaseTid: 0x00,
         ),
-        throwsA(isA<TestFailure>()),
-        reason: 'Parser entry divergence on supported TIDs must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Raw-only entry must match structured entry evidence projection on 0x0')
+        )),
+        reason: 'Parser entry divergence on supported TIDs must throw TestFailure specifically on projection mismatch',
       );
     });
 
@@ -438,8 +518,11 @@ void main() {
           rawOnlyResponse: disagreeingRawResp,
           expectedBaseTid: 0x00,
         ),
-        throwsA(isA<TestFailure>()),
-        reason: 'Parser entry divergence on responding sources must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Raw-only entry must match structured entry evidence projection on 0x0')
+        )),
+        reason: 'Parser entry divergence on responding sources must throw TestFailure specifically on projection mismatch',
       );
     });
 
@@ -468,48 +551,48 @@ void main() {
           rawOnlyResponse: unheaderedRawResp,
           expectedBaseTid: 0x00,
         ),
-        throwsA(isA<TestFailure>()),
-        reason: 'Parser entry divergence on anonymous uncertainty must throw TestFailure',
+        throwsA(predicate<TestFailure>((e) =>
+          e.message != null &&
+          e.message!.contains('Raw-only entry must match structured entry evidence projection on 0x0')
+        )),
+        reason: 'Parser entry divergence on anonymous uncertainty must throw TestFailure specifically on projection mismatch',
       );
     });
 
+    test('harness passes positive control when loading valid fixture file in required and normal mode', () {
+      final reqResult = loadReplayFixtures(oracleFixturesRelativePath, requiredMode: true);
+      expect(reqResult.scenarios.length, equals(10));
+      expect(reqResult.data['version'], equals('1.0.0'));
+      expect(reqResult.sha256, isNotEmpty);
+
+      final normalResult = loadReplayFixtures(oracleFixturesRelativePath, requiredMode: false);
+      expect(normalResult.scenarios.length, equals(10));
+    });
+
     test('harness fails decisively when fixture schema has unsupported version', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      validData['version'] = '999.0.0';
+
       final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_ver_');
       final tempFile = File('${tempDir.path}/fixtures_bad_ver.json');
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '999.0.0',
-          'name': 'bad',
-          'provenance': 'test',
-          'description': 'test',
-          'scenarios': [
-            {
-              'id': 's1',
-              'dimension': 'd',
-              'description': 'desc',
-              'steps': [{'command': '0800', 'lines': ['OK']}],
-              'expected_outcome': {
-                'isSupported': true,
-                'supportStatus': 'supported',
-                'supportedTids': [1],
-                'isComplete': true,
-                'unqueriedBlocks': [],
-                'trustedEcus': [],
-                'hasAnonymous': false,
-              },
-            },
-          ],
-        }));
+        tempFile.writeAsStringSync(jsonEncode(validData));
 
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: true),
-          throwsA(isA<TestFailure>()),
-          reason: 'Unsupported version in required-mode must throw TestFailure',
+          throwsA(predicate<TestFailure>((e) =>
+            e.message != null &&
+            e.message!.contains('fixtures version 999.0.0 is unsupported')
+          )),
+          reason: 'Unsupported version in required-mode must throw TestFailure specifically on unsupported version',
         );
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: false),
-          throwsA(isA<FormatException>()),
-          reason: 'Unsupported version in normal mode must throw FormatException',
+          throwsA(predicate<FormatException>((e) =>
+            e.message.contains('Unsupported fixture version: 999.0.0')
+          )),
+          reason: 'Unsupported version in normal mode must throw FormatException specifically on unsupported version',
         );
       } finally {
         tempDir.deleteSync(recursive: true);
@@ -517,57 +600,31 @@ void main() {
     });
 
     test('harness fails decisively when fixture schema has duplicate scenario IDs', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      final scenarios = validData['scenarios'] as List<dynamic>;
+      final duplicateScenario = Map<String, dynamic>.from(scenarios[0] as Map<String, dynamic>);
+      scenarios.add(duplicateScenario);
+
       final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_dup_');
       final tempFile = File('${tempDir.path}/fixtures_dup_id.json');
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '1.0.0',
-          'name': 'bad',
-          'provenance': 'test',
-          'description': 'test',
-          'scenarios': [
-            {
-              'id': 'duplicate_id',
-              'dimension': 'd1',
-              'description': 'desc1',
-              'steps': [{'command': '0800', 'lines': ['OK']}],
-              'expected_outcome': {
-                'isSupported': true,
-                'supportStatus': 'supported',
-                'supportedTids': [1],
-                'isComplete': true,
-                'unqueriedBlocks': [],
-                'trustedEcus': [],
-                'hasAnonymous': false,
-              },
-            },
-            {
-              'id': 'duplicate_id',
-              'dimension': 'd2',
-              'description': 'desc2',
-              'steps': [{'command': '0800', 'lines': ['OK']}],
-              'expected_outcome': {
-                'isSupported': true,
-                'supportStatus': 'supported',
-                'supportedTids': [1],
-                'isComplete': true,
-                'unqueriedBlocks': [],
-                'trustedEcus': [],
-                'hasAnonymous': false,
-              },
-            },
-          ],
-        }));
+        tempFile.writeAsStringSync(jsonEncode(validData));
 
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: true),
-          throwsA(isA<TestFailure>()),
-          reason: 'Duplicate scenario ID in required-mode must throw TestFailure',
+          throwsA(predicate<TestFailure>((e) =>
+            e.message != null &&
+            e.message!.contains('Duplicate scenario ID found in fixtures: normal_headered_single_block')
+          )),
+          reason: 'Duplicate scenario ID in required-mode must throw TestFailure specifically on duplicate ID',
         );
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: false),
-          throwsA(isA<FormatException>()),
-          reason: 'Duplicate scenario ID in normal mode must throw FormatException',
+          throwsA(predicate<FormatException>((e) =>
+            e.message.contains('Duplicate scenario ID: normal_headered_single_block')
+          )),
+          reason: 'Duplicate scenario ID in normal mode must throw FormatException specifically on duplicate ID',
         );
       } finally {
         tempDir.deleteSync(recursive: true);
@@ -575,48 +632,36 @@ void main() {
     });
 
     test('harness fails decisively when fixture schema has invalid chunk_sizes', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      final scenarios = validData['scenarios'] as List<dynamic>;
+      final s0 = Map<String, dynamic>.from(scenarios[0] as Map<String, dynamic>);
+      final steps = List<dynamic>.from(s0['steps'] as List<dynamic>);
+      final step0 = Map<String, dynamic>.from(steps[0] as Map<String, dynamic>);
+      step0['chunk_sizes'] = [0, -1];
+      steps[0] = step0;
+      s0['steps'] = steps;
+      scenarios[0] = s0;
+
       final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_chunk_');
       final tempFile = File('${tempDir.path}/fixtures_bad_chunk.json');
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '1.0.0',
-          'name': 'bad',
-          'provenance': 'test',
-          'description': 'test',
-          'scenarios': [
-            {
-              'id': 's1',
-              'dimension': 'd',
-              'description': 'desc',
-              'steps': [
-                {
-                  'command': '0800',
-                  'lines': ['OK'],
-                  'chunk_sizes': [0, -1], // Invalid!
-                },
-              ],
-              'expected_outcome': {
-                'isSupported': true,
-                'supportStatus': 'supported',
-                'supportedTids': [1],
-                'isComplete': true,
-                'unqueriedBlocks': [],
-                'trustedEcus': [],
-                'hasAnonymous': false,
-              },
-            },
-          ],
-        }));
+        tempFile.writeAsStringSync(jsonEncode(validData));
 
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: true),
-          throwsA(isA<TestFailure>()),
-          reason: 'Invalid chunk sizes in required-mode must throw TestFailure',
+          throwsA(predicate<TestFailure>((e) =>
+            e.message != null &&
+            e.message!.contains('invalid chunk_size: 0')
+          )),
+          reason: 'Invalid chunk sizes in required-mode must throw TestFailure specifically on invalid chunk_size',
         );
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: false),
-          throwsA(isA<FormatException>()),
-          reason: 'Invalid chunk sizes in normal mode must throw FormatException',
+          throwsA(predicate<FormatException>((e) =>
+            e.message.contains('invalid chunk_size: 0')
+          )),
+          reason: 'Invalid chunk sizes in normal mode must throw FormatException specifically on invalid chunk_size',
         );
       } finally {
         tempDir.deleteSync(recursive: true);
@@ -624,42 +669,34 @@ void main() {
     });
 
     test('harness fails decisively when fixture schema is missing perEcuBlockResults field', () {
+      final validRaw = File(oracleFixturesRelativePath).readAsStringSync();
+      final validData = jsonDecode(validRaw) as Map<String, dynamic>;
+      final scenarios = validData['scenarios'] as List<dynamic>;
+      final s0 = Map<String, dynamic>.from(scenarios[0] as Map<String, dynamic>);
+      final exp = Map<String, dynamic>.from(s0['expected_outcome'] as Map<String, dynamic>);
+      exp.remove('perEcuBlockResults');
+      s0['expected_outcome'] = exp;
+      scenarios[0] = s0;
+
       final tempDir = Directory.systemTemp.createTempSync('mode08_schema_test_per_ecu_');
       final tempFile = File('${tempDir.path}/fixtures_no_per_ecu.json');
       try {
-        tempFile.writeAsStringSync(jsonEncode({
-          'version': '1.0.0',
-          'name': 'bad',
-          'provenance': 'test',
-          'description': 'test',
-          'scenarios': [
-            {
-              'id': 's1',
-              'dimension': 'd',
-              'description': 'desc',
-              'steps': [{'command': '0800', 'lines': ['OK']}],
-              'expected_outcome': {
-                'isSupported': true,
-                'supportStatus': 'supported',
-                'supportedTids': [1],
-                'isComplete': true,
-                'unqueriedBlocks': [],
-                'trustedEcus': [],
-                'hasAnonymous': false,
-              },
-            },
-          ],
-        }));
+        tempFile.writeAsStringSync(jsonEncode(validData));
 
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: true),
-          throwsA(isA<TestFailure>()),
-          reason: 'Missing perEcuBlockResults in required-mode must throw TestFailure',
+          throwsA(predicate<TestFailure>((e) =>
+            e.message != null &&
+            e.message!.contains('missing field: perEcuBlockResults')
+          )),
+          reason: 'Missing perEcuBlockResults in required-mode must throw TestFailure specifically on missing perEcuBlockResults',
         );
         expect(
           () => loadReplayFixtures(tempFile.path, requiredMode: false),
-          throwsA(isA<FormatException>()),
-          reason: 'Missing perEcuBlockResults in normal mode must throw FormatException',
+          throwsA(predicate<FormatException>((e) =>
+            e.message.contains('missing field: perEcuBlockResults')
+          )),
+          reason: 'Missing perEcuBlockResults in normal mode must throw FormatException specifically on missing perEcuBlockResults',
         );
       } finally {
         tempDir.deleteSync(recursive: true);
@@ -758,12 +795,36 @@ void main() {
         },
       );
 
+      // 1. Positive control: when expected outcome includes matching NRC 0x22, it passes cleanly
+      final expectedWithNrc = <String, dynamic>{
+        'isSupported': false,
+        'supportStatus': 'unknown',
+        'supportedTids': <int>[],
+        'isComplete': false,
+        'unqueriedBlocks': [0],
+        'failureReasonContains': 'Transaction condition not correct',
+        'trustedEcus': ['7E8'],
+        'hasAnonymous': false,
+        'perEcuBlockResults': {
+          '7E8': {
+            '0': {
+              'supportStatus': 'unknown',
+              'supportedTids': <int>[],
+              'nrc': 0x22,
+            },
+          },
+        },
+      };
+      expect(() => verifyScenarioOutcome(mockResult, expectedWithNrc, scenarioId: 'expected_nrc_test'), returnsNormally);
+
+      // 2. Negative control: when expected outcome omits NRC, it fails specifically on NRC mismatch
       final expectedWithoutNrc = <String, dynamic>{
         'isSupported': false,
         'supportStatus': 'unknown',
         'supportedTids': <int>[],
         'isComplete': false,
         'unqueriedBlocks': [0],
+        'failureReasonContains': 'Transaction condition not correct',
         'trustedEcus': ['7E8'],
         'hasAnonymous': false,
         'perEcuBlockResults': {

@@ -290,6 +290,53 @@ class Mode08ReplayReferenceTest(unittest.IsolatedAsyncioTestCase):
         finally:
             os.unlink(tmp_path)
 
+    def test_subprocess_positive_control_starts_cleanly(self) -> None:
+        import subprocess
+        proc = subprocess.Popen(
+            [sys.executable, "tool/obd_test_rig/mode08_replay_reference.py", "--fixtures", self.fixtures_path, "--port", "0"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            line = proc.stdout.readline() if proc.stdout else ""
+            self.assertIn("Mode 08 replay reference listening on", line)
+            self.assertIn("hash:", line)
+        finally:
+            if proc.stdout:
+                proc.stdout.close()
+            if proc.stderr:
+                proc.stderr.close()
+            proc.terminate()
+            proc.wait(timeout=5)
+
+    def test_version_guard_causal_isolation(self) -> None:
+        """Confirms that if the version guard is bypassed, an otherwise-valid fixture passes validation."""
+        import json
+        with open(self.fixtures_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["version"] = "999.0.0"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        try:
+            # 1. With normal version guard: fails with Unsupported fixture schema version
+            with self.assertRaises(ValueError) as ctx:
+                ReplayServer(tmp_path)
+            self.assertIn("Unsupported fixture schema version", str(ctx.exception))
+
+            # 2. When version guard is bypassed (e.g. 999.0.0 temporarily added to supported versions):
+            from mode08_replay_reference import SUPPORTED_SCHEMA_VERSIONS
+            SUPPORTED_SCHEMA_VERSIONS.add("999.0.0")
+            try:
+                # Must initialize cleanly without any schema error, proving no missing fields masked the check
+                bypassed_server = ReplayServer(tmp_path)
+                self.assertEqual(len(bypassed_server.scenarios), 10)
+            finally:
+                SUPPORTED_SCHEMA_VERSIONS.discard("999.0.0")
+        finally:
+            os.unlink(tmp_path)
+
 
 if __name__ == "__main__":
     unittest.main()
